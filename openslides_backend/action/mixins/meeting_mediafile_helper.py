@@ -3,6 +3,7 @@ from typing import Any
 from ...services.datastore.interface import DatastoreService, PartialModel
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.patterns import fqid_from_collection_and_id
+from ...shared.exceptions import ActionException
 
 
 def get_meeting_mediafile_filter(meeting_id: int, mediafile_id: int) -> Filter:
@@ -43,9 +44,12 @@ def get_meeting_mediafile_id_or_create_payload(
     )
     if id_:
         return id_
-    if not datastore.get(
-        fqid_from_collection_and_id("mediafile", mediafile_id), ["parent_id"]
-    ).get("parent_id"):
+    mediafile = datastore.get(
+        fqid_from_collection_and_id("mediafile", mediafile_id), ["parent_id", "published_to_meetings_in_organization_id"]
+    )
+    if not mediafile.get("published_to_meetings_in_organization_id"):
+        raise ActionException("No meeting_mediafile creation possible: Mediafile is not published.")
+    if not mediafile.get("parent_id"):
         m_mediafile["access_group_ids"] = m_mediafile["inherited_access_group_ids"]
     return m_mediafile
 

@@ -379,7 +379,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile/2": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
             }
@@ -400,13 +399,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "mediafile/2": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
             }
@@ -431,7 +428,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile/2": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
             }
@@ -552,7 +548,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "meeting_mediafile_ids": [1, 4],
                 },
@@ -567,6 +562,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "mediafile_id": 1,
                 },
                 "mediafile/2": {
+                    "parent_id": 4,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
@@ -614,6 +610,12 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "access_group_ids": [9],
                     "inherited_access_group_ids": [9],
                     "is_public": False,
+                },
+                "mediafile/4": {
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "is_directory": True,
+                    "child_ids": [2],
                 },
             }
         )
@@ -704,6 +706,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("meeting_mediafile/11")
+        self.assert_model_exists("mediafile/4", {"parent_id": None, "child_ids": []})
 
     def test_move_published_to_unpublished_parent_meeting_data(self) -> None:
         self.create_meeting(1)
@@ -719,6 +722,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "is_directory": True,
                 },
                 "mediafile/2": {
+                    "parent_id": 4,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
@@ -766,6 +770,12 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "access_group_ids": [9],
                     "inherited_access_group_ids": [9],
                     "is_public": False,
+                },
+                "mediafile/4": {
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "is_directory": True,
+                    "child_ids": [2],
                 },
             }
         )

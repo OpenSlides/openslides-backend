@@ -38,7 +38,7 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["title", "owner_id", "filename"],
-        optional_properties=["token", "parent_id", "is_published_to_meetings"],
+        optional_properties=["token", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
         additional_optional_fields={
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema()

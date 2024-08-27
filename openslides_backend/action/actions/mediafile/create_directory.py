@@ -18,7 +18,7 @@ class MediafileCreateDirectory(MediafileCreateMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["owner_id", "title"],
-        optional_properties=["parent_id", "is_published_to_meetings"],
+        optional_properties=["parent_id"],
         additional_optional_fields={
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
         },

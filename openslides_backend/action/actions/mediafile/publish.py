@@ -31,7 +31,7 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         relation_key = "published_to_meetings_in_organization_id"
         for instance in action_data:
-            instance["is_published_to_meetings"] = instance.pop("publish", False)
+            publish = instance.pop("publish", False)
             mediafile = self.datastore.get(
                 fqid_from_collection_and_id("mediafile", instance["id"]),
                 [
@@ -39,7 +39,7 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
                     "child_ids",
                     "parent_id",
                     relation_key,
-                    "is_published_to_meetings",
+                    "published_to_meetings_in_organization_id",
                     "meeting_mediafile_ids",
                 ],
             )
@@ -51,13 +51,13 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
             if mediafile.get("parent_id"):
                 raise ActionException("Only top-level mediafiles may be published")
             instance["meeting_mediafile_ids"] = mediafile.get("meeting_mediafile_ids")
-            if instance["is_published_to_meetings"] == mediafile.get(
-                "is_published_to_meetings", False
-            ):
+            if publish == (mediafile.get(
+                "published_to_meetings_in_organization_id"
+            ) is not None):
                 yield instance
             yield from self.get_publish_instances(
                 instance,
-                instance["is_published_to_meetings"],
+                publish,
                 mediafile.get("child_ids", []),
             )
 
@@ -76,22 +76,21 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
                         child_ids,
                         [
                             "child_ids",
-                            "is_published_to_meetings",
+                            "published_to_meetings_in_organization_id",
                             "meeting_mediafile_ids",
                         ],
                     )
                 ]
             )["mediafile"]
             for id_, child in children.items():
-                if not child.get("is_published_to_meetings"):
-                    yield from self.get_publish_instances(
-                        {
-                            "id": id_,
-                            "meeting_mediafile_ids": child.get("meeting_mediafile_ids"),
-                        },
-                        is_published,
-                        child.get("child_ids", []),
-                    )
+                yield from self.get_publish_instances(
+                    {
+                        "id": id_,
+                        "meeting_mediafile_ids": child.get("meeting_mediafile_ids"),
+                    },
+                    is_published,
+                    child.get("child_ids", []),
+                )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)

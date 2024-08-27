@@ -80,29 +80,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         for field in ["inherited_access_group_ids", "is_public"]:
             assert field not in mediafile
 
-    def test_create_directory_organization_published(self) -> None:
-        response = self.request(
-            "mediafile.create_directory",
-            {
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "title": "title_Xcdfgee",
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 200)
-        mediafile = self.assert_model_exists(
-            "mediafile/1",
-            {
-                "title": "title_Xcdfgee",
-                "is_directory": True,
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": 1,
-            },
-        )
-        for field in ["inherited_access_group_ids", "is_public"]:
-            assert field not in mediafile
-
     def test_create_directory_organization_with_published_parent(self) -> None:
         self.set_models(
             {
@@ -110,7 +87,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "title": "published",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                 }
             }
@@ -150,7 +126,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "title": "published",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                     "meeting_mediafile_ids": [11, 41],
                 },
@@ -158,7 +133,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "title": "publishedToo",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                     "meeting_mediafile_ids": [42],
                 },
@@ -812,50 +786,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]
-
-    def test_create_directory_publicize_meeting_directory(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
-                "group/11": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "mediafile.create_directory",
-            {
-                "owner_id": "meeting/1",
-                "title": "title_1",
-                "access_group_ids": [11],
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "Only organization-owned mediafiles may be published."
-            in response.json["message"]
-        )
-
-    def test_create_directory_with_parent_and_publish(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "title": "don't care",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                }
-            }
-        )
-        response = self.request(
-            "mediafile.create_directory",
-            {
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "title": "title_xXRGTLAJ",
-                "parent_id": 1,
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "Only top-level mediafiles may be published" in response.json["message"]
 
     def test_create_directory_access_groups_on_orga_owner(self) -> None:
         self.set_models(

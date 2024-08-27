@@ -920,7 +920,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "mediafile/111": {
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 }
             }
@@ -946,7 +945,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "mediafile/111": {
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [112],
                 },
@@ -991,7 +989,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "mediafile_inherited_access_group_ids": [1111],
                 },
                 "mediafile/111": {
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [112],
                 },
@@ -1035,7 +1032,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "mediafile_inherited_access_group_ids": [1111],
                 },
                 "mediafile/111": {
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [112],
                 },
@@ -1098,7 +1094,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "mediafile/111": {
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [112],
                 },

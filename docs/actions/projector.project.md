@@ -15,7 +15,8 @@
 ```
 
 ## Action
-Creates a new projection projection.
+Creates a new projection projection. 
+If the content_object_id is a mediafile, it will be replaced with the appropriate meeting_mediafile, which may be created if it doesn't exist.
 
 ## Parameters
 *ids*: The projectors where the projection will be displayed.

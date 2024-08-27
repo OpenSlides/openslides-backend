@@ -63,7 +63,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile_inherited_access_group_ids": [1113],
             },
             "mediafile/110": {
-                "is_published_to_meetings": True,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 "meeting_mediafile_ids": [1110],
             },
@@ -118,19 +117,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("meeting_mediafile/1110")
-        self.assert_model_exists(
-            "mediafile/110",
-            {
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-        for id_ in [111, 112, 113]:
+        for id_ in [110, 111, 112, 113]:
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "is_published_to_meetings": None,
                 },
             )
 
@@ -150,22 +141,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         for id_ in [110, 111, 112, 113]:
-            self.assert_model_exists(f"meeting_mediafile/1{id_}", {"mediafile_id": id_})
-        self.assert_model_exists(
-            "mediafile/110",
-            {
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-        for id_ in [111, 112, 113]:
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "is_published_to_meetings": None,
                 },
             )
+            self.assert_model_exists(f"meeting_mediafile/1{id_}", {"mediafile_id": id_})
 
     def test_publish_non_top_level_file(self) -> None:
         self.set_models(self.test_models)
@@ -207,23 +189,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile_inherited_access_group_ids": [],
             },
         )
-        self.assert_model_exists(
-            "mediafile/110",
-            {
-                "is_published_to_meetings": False,
-                "published_to_meetings_in_organization_id": None,
-            },
-        )
-        for id_ in [1110, 1111, 1112, 1113]:
-            self.assert_model_deleted(f"meeting_mediafile/{id_}")
-        for id_ in [111, 112, 113]:
+        for id_ in [110, 111, 112, 113]:
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
                     "published_to_meetings_in_organization_id": None,
-                    "is_published_to_meetings": None,
                 },
             )
+            self.assert_model_deleted(f"meeting_mediafile/1{id_}")
 
     def test_publish_wrong_payload(self) -> None:
         self.set_models(self.test_models)
@@ -265,7 +238,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "mediafile/111",
             {
-                "is_published_to_meetings": True,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
             },
         )

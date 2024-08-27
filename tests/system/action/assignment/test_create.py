@@ -191,7 +191,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Mediafile is neither a meeting mediafile nor published.",
+            "No meeting_mediafile creation possible: Mediafile is not published.",
             response.json["message"],
         )
 

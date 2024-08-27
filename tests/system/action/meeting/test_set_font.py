@@ -134,11 +134,11 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Mediafile is neither a meeting mediafile nor published.",
+            "No meeting_mediafile creation possible: Mediafile is not published.",
             response.json["message"],
         )
 
-    def test_set_font_published_orga_mediafile(self) -> None:
+    def test_set_font_published_root_orga_mediafile(self) -> None:
         self.create_meeting(1)
         self.set_models(
             {
@@ -172,7 +172,6 @@ class MeetingSetFontActionTest(BaseActionTestCase):
                     "is_directory": False,
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
             }

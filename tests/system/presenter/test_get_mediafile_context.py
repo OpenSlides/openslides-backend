@@ -276,7 +276,6 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "meeting_mediafile_ids": [4, 5],
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "is_published_to_meetings": True,
                     "child_ids": [5],
                 },
                 "mediafile/5": {
@@ -289,7 +288,6 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "meeting_mediafile_ids": [9],
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "is_published_to_meetings": True,
                     "child_ids": [7],
                 },
                 "mediafile/7": {

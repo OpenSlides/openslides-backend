@@ -1,5 +1,6 @@
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -80,16 +81,19 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": "meeting/1",
                     "meeting_mediafile_ids": [11],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID
                 },
                 "meeting_mediafile/11": {"mediafile_id": 1, "meeting_id": 1},
-                "mediafile/2": {"owner_id": "meeting/1", "child_ids": [3]},
+                "mediafile/2": {"owner_id": "meeting/1", "child_ids": [3], "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID},
                 "mediafile/3": {
                     "parent_id": 2,
                     "owner_id": "meeting/1",
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID
                 },
                 "mediafile/4": {
                     "owner_id": "meeting/1",
                     "meeting_mediafile_ids": [14],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID
                 },
                 "meeting_mediafile/14": {"mediafile_id": 4, "meeting_id": 1},
                 "tag/37": {"meeting_id": 1},

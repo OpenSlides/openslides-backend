@@ -76,10 +76,5 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
     def check_owner(self, mediafile: dict[str, Any], instance: dict[str, Any]) -> None:
         owner_id = mediafile["owner_id"]
         collection, id_ = owner_id.split(KEYSEPARATOR)
-        if collection != "meeting":
-            if not mediafile.get("published_to_meetings_in_organization_id"):
-                raise ActionException(
-                    "Mediafile is neither a meeting mediafile nor published."
-                )
-        elif int(id_) != instance["id"]:
+        if collection == "meeting" and int(id_) != instance["id"]:
             raise ActionException("Mediafile has to belong to this meeting..")

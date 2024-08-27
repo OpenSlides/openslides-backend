@@ -81,34 +81,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("create_timestamp", 0) >= start_time
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
-    def test_upload_organization_published(self) -> None:
-        filename = "fn_jumbo.txt"
-        file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.request(
-            "mediafile.upload",
-            {
-                "title": "title_xXRGTLAJ",
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "filename": filename,
-                "file": file_content,
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "mediafile/1",
-            {
-                "title": "title_xXRGTLAJ",
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "file": None,
-                "mimetype": "text/plain",
-                "filesize": 12,
-                "is_directory": None,
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": 1,
-            },
-        )
-
     def test_upload_organization_with_published_parent(self) -> None:
         self.set_models(
             {
@@ -116,7 +88,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "title": "published",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                 }
             }
@@ -160,7 +131,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "title": "published",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                     "meeting_mediafile_ids": [11, 41],
                 },
@@ -168,7 +138,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "title": "publishedToo",
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": 1,
                     "meeting_mediafile_ids": [42],
                 },
@@ -250,32 +219,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("meeting_mediafile/45")
-
-    def test_upload_with_parent_and_publish(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "title": "don't care",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                }
-            }
-        )
-        filename = "fn_jumbo.txt"
-        file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.request(
-            "mediafile.upload",
-            {
-                "title": "title_xXRGTLAJ",
-                "owner_id": ONE_ORGANIZATION_FQID,
-                "filename": filename,
-                "file": file_content,
-                "parent_id": 1,
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "Only top-level mediafiles may be published" in response.json["message"]
 
     def test_create_orga_missing_token(self) -> None:
         filename = "fn_jumbo.txt"
@@ -770,31 +713,6 @@ l,m,n,"""
         )
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]
-
-    def test_upload_publicize_meeting_file(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
-                "group/11": {"meeting_id": 1},
-            }
-        )
-        file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.request(
-            "mediafile.upload",
-            {
-                "owner_id": "meeting/1",
-                "title": "title_1",
-                "access_group_ids": [11],
-                "file": file_content,
-                "filename": "test.txt",
-                "is_published_to_meetings": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "Only organization-owned mediafiles may be published."
-            in response.json["message"]
-        )
 
     def test_upload_access_groups_on_orga_owner(self) -> None:
         self.set_models(

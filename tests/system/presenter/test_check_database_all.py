@@ -331,7 +331,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "child_ids": [4],
                     "is_directory": True,
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "mediafile/4": {

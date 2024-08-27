@@ -45,8 +45,6 @@ class MediafileMixin(Action):
 
         if collection == "organization":
             self.check_token_unique(instance.get("token"), instance.get("id"))
-            if instance.get("is_published_to_meetings") and parent_id:
-                raise ActionException("Only top-level mediafiles may be published")
             if "access_group_ids" in instance and (
                 "meeting_id" not in instance
                 or not self.check_implicitly_published(instance, parent_id)
@@ -55,10 +53,6 @@ class MediafileMixin(Action):
                     "access_group_ids is not allowed in organization mediafiles."
                 )
         else:
-            if instance.get("is_published_to_meetings"):
-                raise ActionException(
-                    "Only organization-owned mediafiles may be published."
-                )
             # check for token, not allowed in meeting.
             if "token" in instance:
                 raise ActionException("token is not allowed in meeting mediafiles.")
@@ -69,7 +63,7 @@ class MediafileMixin(Action):
     def check_implicitly_published(
         self, instance: dict[str, Any], parent_id: int | None
     ) -> bool:
-        if instance.get("is_published_to_meetings") or (
+        if (
             "id" in instance
             and self.datastore.get(
                 fqid_from_collection_and_id("mediafile", instance["id"]),
@@ -203,17 +197,12 @@ class MediafileMixin(Action):
 class MediafileCreateMixin(MediafileMixin):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        published = (
-            ONE_ORGANIZATION_ID if instance.get("is_published_to_meetings") else None
-        )
-        if not published and (parent_id := instance.get("parent_id")):
+        if (parent_id := instance.get("parent_id")):
             parent = self.datastore.get(
                 fqid_from_collection_and_id("mediafile", parent_id),
                 ["published_to_meetings_in_organization_id"],
             )
-            published = parent.get("published_to_meetings_in_organization_id")
-        if published:
-            instance["published_to_meetings_in_organization_id"] = published
+            instance["published_to_meetings_in_organization_id"] = parent.get("published_to_meetings_in_organization_id")
         return instance
 
     def handle_orga_meeting_mediafile_creation(self, instance: dict[str, Any]) -> None:

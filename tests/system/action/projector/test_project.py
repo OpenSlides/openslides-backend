@@ -447,7 +447,6 @@ class ProjectorProject(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "meeting_mediafile_ids": [2],
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "meeting_mediafile/2": {
@@ -511,7 +510,6 @@ class ProjectorProject(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "meeting_mediafile_ids": [2],
-                    "is_published_to_meetings": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "meeting_mediafile/2": {
@@ -550,7 +548,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Mediafile is neither a meeting mediafile nor published."
+            "No meeting_mediafile creation possible: Mediafile is not published."
             in response.json["message"]
         )
 

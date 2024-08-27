@@ -72,7 +72,8 @@ class MediafileMoveAction(
             ids,
             [
                 "owner_id",
-                "is_published_to_meetings",
+                "parent_id",
+                "published_to_meetings_in_organization_id",
                 "meeting_mediafile_ids",
                 "child_ids",
             ],
@@ -107,7 +108,7 @@ class MediafileMoveAction(
         for id_ in ids:
             if id_ not in db_instances:
                 raise ActionException(f"Id {id_} not in db_instances.")
-            if db_instances[id_].get("is_published_to_meetings"):
+            if db_instances[id_].get("published_to_meetings_in_organization_id") and not db_instances[id_].get("parent_id"):
                 raise ActionException(
                     f"Item {id_} is published and may therefore not be moved away from the root directory. Please unpublish it first."
                 )
