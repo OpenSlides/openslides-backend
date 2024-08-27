@@ -10,7 +10,7 @@ from openslides_backend.models.checker import (
 )
 from openslides_backend.models.models import Meeting, MeetingUser
 from openslides_backend.services.datastore.interface import GetManyRequest
-from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
@@ -76,6 +76,18 @@ class MeetingClone(MeetingImport):
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
+        if "committee_id" in instance:
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+                ["committee_id", "template_for_organization_id"],
+                lock_result=False,
+            )
+            if meeting["committee_id"] != instance["committee_id"] and not meeting.get(
+                "template_for_organization_id"
+            ):
+                raise PermissionDenied(
+                    "Cannot clone meeting to a different committee if it is a non-template meeting."
+                )
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -95,6 +107,9 @@ class MeetingClone(MeetingImport):
         # checks if the meeting is correct
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
+
+        if meeting.get("locked_from_inside"):
+            raise ActionException("Cannot clone locked meeting.")
 
         if committee_id := instance.get("committee_id"):
             meeting["committee_id"] = committee_id

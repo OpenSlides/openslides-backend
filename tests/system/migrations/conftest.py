@@ -20,7 +20,6 @@ from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
 )
-from openslides_backend.datastore.writer.core import Writer
 from openslides_backend.datastore.writer.flask_frontend.json_handlers import (
     WriteHandler,
 )
@@ -65,18 +64,8 @@ def setup() -> None:
     shutdown_service.shutdown()
 
 
-@pytest.fixture(autouse=True)
-def clear_datastore(setup) -> None:
-    def _clear_datastore() -> None:
-        writer: Writer = injector.get(Writer)
-        writer.truncate_db()
-
-    _clear_datastore()
-    return _clear_datastore
-
-
 @pytest.fixture()
-def write(clear_datastore) -> None:
+def write() -> None:
     def _write(*events: dict[str, Any]):
         payload = {
             "user_id": 1,
@@ -108,7 +97,7 @@ def setup_dummy_migration_handler(migration_module_name):
 
 
 @pytest.fixture()
-def migrate(clear_datastore):
+def migrate():
     def _migrate(migration_module_name):
         setup_dummy_migration_handler(migration_module_name).migrate()
 
@@ -116,7 +105,7 @@ def migrate(clear_datastore):
 
 
 @pytest.fixture()
-def finalize(clear_datastore):
+def finalize():
     def _finalize(migration_module_name):
         setup_dummy_migration_handler(migration_module_name).finalize()
 
@@ -136,7 +125,7 @@ def finalize(clear_datastore):
 
 
 @pytest.fixture()
-def read_model(clear_datastore):
+def read_model():
     def _read_model(fqid, position=None):
         reader: Reader = injector.get(Reader)
         with reader.get_database_context():

@@ -1,6 +1,8 @@
 import os
 
-from psycopg import Connection, sql
+from psycopg import Connection
+from psycopg import errors as psycopg_errors
+from psycopg import sql
 
 from openslides_backend.database.db_connection_handling import (
     env,
@@ -11,7 +13,8 @@ from openslides_backend.shared.exceptions import DatabaseException
 
 def create_schema() -> None:
     """
-    Helper function to write the database schema into the database.
+    Helper function to write the relational database schema into the database.
+    Other schemata, vote and event-schema ar expected to be applied by their services, i.e. vote and datastore-service
     """
     connection: Connection
     try:
@@ -33,8 +36,15 @@ def create_schema() -> None:
             path = os.path.realpath(
                 os.path.join(os.getcwd(), os.path.dirname(__file__), "schema.sql")
             )
-            cursor.execute(open(path).read())
-            print("Idempotent key-value-schema applied\n")
+            try:
+                cursor.execute(open(path).read())
+                print("Idempotent key-value-schema applied by backend\n")
+            except psycopg_errors.InternalError_ as e:
+                if str(e) == "tuple concurrently updated":
+                    connection.rollback()
+                    print("Idempotent key-value-schema applied by datastore\n")
+                else:
+                    raise e
 
             # programmatic migrations of schema necessary, only apply if not exists
             result = cursor.execute(
@@ -44,9 +54,16 @@ def create_schema() -> None:
                 ("organization_t", "public"),
             ).fetchone()
             if result and result.get("exists"):
+                print(
+                    "Assuming relational schema is applied, because table organization_t exists\n"
+                )
                 return
             path = os.path.realpath(
                 os.path.join("global", "meta", "dev", "sql", "schema_relational.sql")
             )
-            cursor.execute(open(path).read())
+            try:
+                cursor.execute(open(path).read())
+            except Exception as e:
+                print(f"On applying relational schema there was an error: {str(e)}\n")
+                return
             print("Relational schema applied\n")

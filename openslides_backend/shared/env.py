@@ -70,7 +70,7 @@ class Environment(Env):
         "DB_POOL_MAX_LIFETIME": "3600",
         "DB_POOL_MAX_IDLE": "60",
         "DB_POOL_RECONNECT_TIMEOUT": "300",
-        "DB_POOL_NUM_WORKERS": "3",
+        "DB_POOL_NUM_WORKERS": "2",
     }
 
     def __init__(self, os_env: Any, *args: Any, **kwargs: Any) -> None:

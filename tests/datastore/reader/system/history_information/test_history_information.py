@@ -12,13 +12,13 @@ from tests.datastore.util import assert_success_response
 def setup(db_connection, db_cur):
     def _setup(fqid, user_id, information, timestamp):
         db_cur.execute(
-            """insert into positions (user_id, information, timestamp, migration_index)
-            values (%s, %s, %s, 1) returning position""",
+            """INSERT INTO positions (user_id, information, timestamp, migration_index)
+            VALUES (%s, %s, %s, 1) RETURNING position""",
             [user_id, json.dumps(information), timestamp],
         )
-        position = db_cur.fetchone()[0]
+        position = db_cur.fetchone()["position"]
         db_cur.execute(
-            "insert into events (position, fqid, type, data, weight) values (%s, %s, %s, %s, 1)",
+            "INSERT INTO events (position, fqid, type, data, weight) VALUES (%s, %s, %s, %s, 1)",
             [position, fqid, EVENT_TYPE.CREATE, json.dumps({})],
         )
         db_connection.commit()

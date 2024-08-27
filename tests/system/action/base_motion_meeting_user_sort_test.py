@@ -89,4 +89,11 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
                 Permissions.Motion.CAN_MANAGE_METADATA,
             )
 
+        def test_sort_permissions_locked_meeting(self) -> None:
+            self.base_locked_out_superadmin_permission_test(
+                self.permission_test_models,
+                self.action,
+                {"motion_id": 222, f"{collection}_ids": [32, 31]},
+            )
+
     return BaseMotionMeetingUserSortTest

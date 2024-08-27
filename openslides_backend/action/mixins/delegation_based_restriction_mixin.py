@@ -3,10 +3,10 @@ from typing import Literal
 from openslides_backend.action.action import Action
 from openslides_backend.shared.filters import And, FilterOperator, Or
 
-from ....permissions.base_classes import Permission
-from ....permissions.permission_helper import has_perm
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import MissingPermission
+from ...permissions.base_classes import Permission
+from ...permissions.permission_helper import has_perm
+from ...services.datastore.commands import GetManyRequest
+from ...shared.exceptions import MissingPermission
 
 DelegationBasedRestriction = Literal[
     "users_forbid_delegator_in_list_of_speakers",
@@ -51,43 +51,38 @@ class DelegationBasedRestrictionMixin(Action):
         """
         if not len(meeting_ids):
             return []
-        data = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "user",
-                    [self.user_id],
-                    ["meeting_user_ids"],
+
+        meeting_users = self.datastore.filter(
+            "meeting_user",
+            And(
+                Or(
+                    FilterOperator("meeting_id", "=", meeting_id)
+                    for meeting_id in meeting_ids
                 ),
-                GetManyRequest(
-                    "meeting",
-                    meeting_ids,
-                    [restriction, "users_enable_vote_delegations"],
-                ),
-            ]
+                FilterOperator("user_id", "=", self.user_id),
+                FilterOperator("vote_delegated_to_id", "!=", None),
+            ),
+            ["meeting_id"],
+            lock_result=False,
         )
-        operator = data["user"][self.user_id]
-        if operator.get("meeting_user_ids"):
-            meeting_users = self.datastore.filter(
-                "meeting_user",
-                And(
-                    Or(
-                        FilterOperator("meeting_id", "=", meeting_id)
-                        for meeting_id in meeting_ids
+        if len(meeting_users):
+            delegation_meeting_ids = [
+                meeting_user["meeting_id"] for meeting_user in meeting_users.values()
+            ]
+            delegation_meetings = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting",
+                        delegation_meeting_ids,
+                        [restriction, "users_enable_vote_delegations"],
                     ),
-                    Or(
-                        FilterOperator("id", "=", meeting_user_id)
-                        for meeting_user_id in operator["meeting_user_ids"]
-                    ),
-                ),
-                ["vote_delegated_to_id", "meeting_id"],
-            )
+                ],
+                lock_result=False,
+            )["meeting"]
             broken_meetings: list[int] = []
-            for meeting_user in meeting_users.values():
-                meeting_id = meeting_user["meeting_id"]
-                if (
-                    (meeting := data["meeting"][meeting_id]).get(restriction)
-                    and (meeting.get("users_enable_vote_delegations"))
-                    and meeting_user.get("vote_delegated_to_id")
+            for meeting_id, meeting in delegation_meetings.items():
+                if meeting.get(restriction) and (
+                    meeting.get("users_enable_vote_delegations")
                 ):
                     broken_meetings.append(meeting_id)
             return broken_meetings

@@ -51,8 +51,7 @@ class TestPermissions(BaseActionTestCase):
         )
 
     def test_anonymous_valid(self) -> None:
-        self.set_anonymous(True)
-        self.set_group_permissions(1, [Permissions.Motion.CAN_CREATE])
+        self.set_anonymous(True, permissions=[Permissions.Motion.CAN_CREATE])
         response = self.request(
             "fake_model_p.create", {"meeting_id": 1}, anonymous=True
         )

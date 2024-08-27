@@ -77,7 +77,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "group/3": {"meeting_id": 3},
             }
         )
-        self.client.login("test", TEST_USER_PW)
+        self.client.login("test", TEST_USER_PW, 3)
         status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 3})
         assert status_code == 403
         assert "Missing permission" in data["message"]
@@ -168,7 +168,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 },
             }
         )
-        self.client.login("test", TEST_USER_PW)
+        self.client.login("test", TEST_USER_PW, 3)
         status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 1})
         self.assertEqual(status_code, 200)
         self.assertEqual(
@@ -301,3 +301,14 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "message": "There is no committee given for meeting/1 meeting1.",
             },
         )
+
+    def test_with_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/3": {"group_ids": [3], "locked_from_inside": True},
+                "group/3": {"meeting_id": 3},
+            }
+        )
+        status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 3})
+        assert status_code == 403
+        assert "Missing permission: motion.can_manage" in data["message"]

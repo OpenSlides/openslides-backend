@@ -142,3 +142,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_delete_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "topic.delete",
+            {"id": 111},
+        )

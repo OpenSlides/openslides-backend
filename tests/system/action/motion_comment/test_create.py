@@ -133,6 +133,13 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_SEE,
         )
 
+    def test_create_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_comment.create",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+
     def test_create_no_permission_cause_write_group(self) -> None:
         self.permission_test_models["motion_comment_section/78"]["write_group_ids"] = [
             2

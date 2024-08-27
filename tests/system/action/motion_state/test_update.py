@@ -172,3 +172,10 @@ class MotionStateActionTest(BaseActionTestCase):
             {"id": 111, "name": "name_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_state.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+        )

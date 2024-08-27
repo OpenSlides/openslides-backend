@@ -11,11 +11,20 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .history_mixin import MeetingUserHistoryMixin
-from .mixin import meeting_user_standard_fields
+from .mixin import (
+    CheckLockOutPermissionMixin,
+    MeetingUserGroupMixin,
+    meeting_user_standard_fields,
+)
 
 
 @register_action("meeting_user.create", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
+class MeetingUserCreate(
+    MeetingUserHistoryMixin,
+    CreateAction,
+    MeetingUserGroupMixin,
+    CheckLockOutPermissionMixin,
+):
     """
     Action to create a meeting user.
     """
@@ -38,6 +47,7 @@ class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
             raise ActionException(
                 f"MeetingUser instance with user {instance['user_id']} and meeting {instance['meeting_id']} already exists"
             )
+        self.check_locking_status(instance["meeting_id"], instance, instance["user_id"])
         return super().update_instance(instance)
 
     def get_history_information(self) -> HistoryInformation | None:

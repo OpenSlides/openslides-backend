@@ -76,6 +76,10 @@ class RequiredFieldsException(ActionException):
         )
 
 
+class BadCodingException(BackendBaseException):
+    """Exception that should only be thrown if something is wrong with the coding"""
+
+
 class PresenterException(View400Exception):
     pass
 

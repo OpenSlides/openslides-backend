@@ -52,3 +52,10 @@ class ProjectorMessageUpdate(BaseActionTestCase):
             {"id": 2, "message": "geredegerede"},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "projector_message.update",
+            {"id": 2, "message": "geredegerede"},
+        )

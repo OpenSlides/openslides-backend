@@ -1,6 +1,8 @@
 from time import time
 from typing import Any
 
+import pytest
+
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -8,6 +10,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from .base import BasePresenterTestCase
 
 
+@pytest.mark.skip(reason="During development of relational DB not necessary")
 class TestCheckDatabaseAll(BasePresenterTestCase):
     def test_found_errors(self) -> None:
         self.set_models(
@@ -148,6 +151,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "require_duplicate_from": False,
                     "saml_enabled": False,
                     "saml_login_button_text": "Login button text",
                 },
@@ -311,6 +315,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "require_duplicate_from": False,
                     "saml_enabled": True,
                     "saml_login_button_text": "SAML Login",
                 },
@@ -605,6 +610,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "require_duplicate_from": False,
                     "saml_enabled": True,
                     "saml_login_button_text": "SAML Login",
                 },

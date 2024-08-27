@@ -61,3 +61,10 @@ class ProjectorMessageDelete(BaseActionTestCase):
             {"id": 2},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "projector_message.delete",
+            {"id": 2},
+        )

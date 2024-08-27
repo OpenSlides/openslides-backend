@@ -715,30 +715,49 @@ class SendInvitationMail(BaseActionTestCase):
         self.assert_with_meeting_permission(Permissions.User.CAN_UPDATE)
 
     def assert_with_meeting_permission(self, perm: Permission) -> None:
-        self.base_permission_test(
+        self.set_models(
             {
                 "meeting/1": {
-                    "meeting_user_ids": [2],
-                },
-                "user/2": {
-                    "username": "Testuser 2",
-                    "first_name": "Jim",
-                    "last_name": "Beam",
-                    "default_password": "secret",
-                    "email": "recipient2@example.com",
-                    "meeting_user_ids": [2],
-                    "meeting_ids": [1],
-                },
-                "meeting_user/2": {
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                }
+            }
+        )
+        self.set_group_permissions(3, [perm])
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
                     "meeting_id": 1,
-                    "user_id": 2,
-                    "group_ids": [1],
                 },
-            },
-            "user.send_invitation_email",
+            )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["sent"]
+
+    def test_with_locked_meeting(self) -> None:
+        self.set_models(
             {
-                "id": 2,
-                "meeting_id": 1,
-            },
-            perm,
+                "meeting/1": {
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                    "locked_from_inside": True,
+                }
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        assert not response.json["results"][0][0]["sent"]
+        self.assertIn(
+            "Missing Permission: user.can_update Mail 1 from 1",
+            response.json["results"][0][0]["message"],
         )

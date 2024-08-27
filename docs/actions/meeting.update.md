@@ -14,6 +14,7 @@
     location: string;
     start_time: timestamp;
     end_time: timestamp;
+    locked_from_inside: boolean;
 
     conference_show: boolean;
     conference_auto_connect: boolean;
@@ -177,13 +178,14 @@
 
 // Group E
     organization_tag_ids: Id[];
-    set_as_template: boolean;
 
 // Group F
     jitsi_domain: string;
     jitsi_room_name: string;
     jitsi_room_password: string;
-    enable_chat: boolean;
+
+// Group G
+    set_as_template: boolean;
 }
 ```
 
@@ -193,6 +195,12 @@ Updates the meeting.
 If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, it has to be set to `None`.
 `reference_projector_id` can only be set to a projector, which is not internal.
 
+This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown. Same for `enable_anonymous` and `locked_from_inside` being true at the same time
+
+If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Anonymous` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set.
+
+The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
+
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A
 - Users with `user.can_update` can modify group B
@@ -200,3 +208,7 @@ If `set_as_template` is `True`, `template_for_organization_id` has to be set to 
 - Admins of the meeting can modify group D
 - Users with CML `can_manage` or users with a OML of `can_manage_organization` can modify group E
 - Only users with OML `superadmin` can modify group F
+- Users with CML `can_manage` or users with a OML of `can_manage_organization` can modify group G
+  if organization setting `require_duplicate_from` is false.
+  Users with a OML of `can_manage_organization` can modify group G if the organization setting
+  `require_duplicate_from` is true.

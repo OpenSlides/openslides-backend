@@ -211,3 +211,25 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             {"meeting_id": 1},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_numbering_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
+                },
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+            },
+            "agenda_item.numbering",
+            {"meeting_id": 1},
+        )

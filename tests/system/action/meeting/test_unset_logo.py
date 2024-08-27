@@ -91,3 +91,10 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             {"id": 1, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
+
+    def test_unset_logo_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "meeting.unset_logo",
+            {"id": 1, "place": "web_header"},
+        )

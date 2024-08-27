@@ -19,6 +19,9 @@ from .speech_state import SpeechState
 class SpeakerUpdate(
     UpdateAction, CheckSpeechState, StructureLevelMixin, PointOfOrderPermissionMixin
 ):
+
+    internal_fields = ["weight", "structure_level_list_of_speakers_id"]
+
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(
         optional_properties=[
@@ -27,12 +30,22 @@ class SpeakerUpdate(
             "point_of_order",
             "point_of_order_category_id",
             "note",
+            *internal_fields,
         ],
         additional_optional_fields={"structure_level_id": optional_id_schema},
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
+    def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if (not self.internal) and len(
+            forbidden := {field for field in self.internal_fields if field in instance}
+        ):
+            raise ActionException(f"data must not contain {forbidden} properties")
+        return super().validate_fields(instance)
+
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if self.internal:
+            return instance
         if instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
             raise ActionException(
                 "You cannot set the speech state to interposed_question."

@@ -81,12 +81,6 @@ def test_writer_delete_history_information(writer, database):
     database.delete_history_information.assert_called()
 
 
-def test_writer_truncate_db(writer, database):
-    writer.truncate_db()
-    database.get_context.assert_called()
-    database.truncate_db.assert_called()
-
-
 def test_writer_single_thread(writer):
     writer.locks = [threading.Lock(), threading.Lock()]
     writer.locks[0].acquire()

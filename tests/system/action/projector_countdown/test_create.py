@@ -101,3 +101,15 @@ class ProjectorCountdown(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector_countdown.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "description": "good description",
+                "default_time": 30,
+            },
+        )

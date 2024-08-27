@@ -45,8 +45,8 @@ ConnectionContext = MagicMock()
 
 def test_get_connection(handler):
     connection = MagicMock()
-    handler.connection_pool = pool = MagicMock()
-    pool.connection = MagicMock(return_value=connection)
+    handler.connection_pool = MagicMock()
+    handler.connection_pool.connection = MagicMock(return_value=connection)
 
     assert handler.get_connection() == connection
 

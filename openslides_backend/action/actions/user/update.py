@@ -12,6 +12,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
@@ -30,10 +31,20 @@ class UserUpdate(
     LimitOfUserMixin,
     UpdateHistoryMixin,
     ConditionalSpeakerCascadeMixin,
+    CheckLockOutPermissionMixin,
 ):
     """
     Action to update a user.
     """
+
+    internal_id_fields = [
+        "is_present_in_meeting_ids",
+        "option_ids",
+        "poll_candidate_ids",
+        "poll_voted_ids",
+        "vote_ids",
+        "delegated_vote_ids",
+    ]
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
@@ -55,6 +66,7 @@ class UserUpdate(
             "is_demo_user",
             "saml_id",
             "member_number",
+            *internal_id_fields,
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
@@ -64,7 +76,21 @@ class UserUpdate(
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
 
+    def validate_instance(self, instance: dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if not self.internal and any(
+            forbidden_keys_used := {
+                key for key in instance if key in self.internal_id_fields
+            }
+        ):
+            raise ActionException(
+                f"data must not contain {forbidden_keys_used} properties"
+            )
+
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.check_locking_status(
+            instance.get("meeting_id"), instance, instance["id"], None
+        )
         instance = super().update_instance(instance)
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),

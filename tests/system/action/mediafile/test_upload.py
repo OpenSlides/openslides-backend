@@ -576,6 +576,18 @@ l,m,n,"""
             Permissions.Mediafile.CAN_MANAGE,
         )
 
+    def test_upload_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/1",
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+        )
+
     def test_upload_orga_owner_no_permissions(self) -> None:
         self.base_permission_test(
             {},

@@ -3,10 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.postgresql_backend import (
-    ALL_TABLES,
-    ConnectionHandler,
-)
+from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
 from openslides_backend.datastore.shared.util import BadCodingError, InvalidFormat
 from openslides_backend.datastore.writer.core.database import Database
@@ -370,15 +367,3 @@ def test_delete_history_information(sql_backend, connection):
     sql_backend.delete_history_information()
     assert ex.call_count == 1
     assert ex.call_args[0][0] == "UPDATE positions SET information = NULL;"
-
-
-def test_truncate_db(sql_backend, connection):
-    connection.execute = ex = MagicMock()
-    sql_backend.truncate_db()
-    assert ex.call_count == len(ALL_TABLES) + 3  # account for sequence resets
-    assert all(
-        "DELETE FROM" in call.args[0] for call in ex.call_args_list[: len(ALL_TABLES)]
-    )
-    assert all(
-        "RESTART" in call.args[0] for call in ex.call_args_list[len(ALL_TABLES) + 1 :]
-    )
