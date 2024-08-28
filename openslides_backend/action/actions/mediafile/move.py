@@ -228,17 +228,26 @@ class MediafileMoveAction(
                     MeetingMediafileUpdate, update_meeting_mediafiles
                 )
         elif meeting_mediafile_ids := self.get_entire_branch_of_meeting_mediafile_ids(
-            db_instance
+            [db_instance]
         ):
             self.execute_other_action(
                 MeetingMediafileDelete, [{"id": id_} for id_ in meeting_mediafile_ids]
             )
 
     def get_entire_branch_of_meeting_mediafile_ids(
-        self, db_instance: dict[str, Any]
+        self, db_instances: list[dict[str, Any]]
     ) -> list[int]:
-        ids: list[int] = db_instance.get("meeting_mediafile_ids", [])
-        if child_ids := db_instance.get("child_ids"):
+        ids: list[int] = [
+            m_mediafile_id
+            for db_instance in db_instances
+            for m_mediafile_id in db_instance.get("meeting_mediafile_ids", [])
+        ]
+        child_ids: list[int] = [
+            child_id
+            for db_instance in db_instances
+            for child_id in db_instance.get("child_ids", [])
+        ]
+        if child_ids:
             children = self.datastore.get_many(
                 [
                     GetManyRequest(
@@ -246,8 +255,9 @@ class MediafileMoveAction(
                     )
                 ]
             )["mediafile"]
-            for child in children.values():
-                ids.extend(self.get_entire_branch_of_meeting_mediafile_ids(child))
+            ids.extend(
+                self.get_entire_branch_of_meeting_mediafile_ids(list(children.values()))
+            )
         return ids
 
     def expand_children_meeting_mediafile_payload_lists(
