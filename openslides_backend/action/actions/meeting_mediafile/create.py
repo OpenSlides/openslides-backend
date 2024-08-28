@@ -3,7 +3,6 @@ from typing import Any
 from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import MeetingMediafile
-from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ...generics.create import CreateAction
 from ...mixins.meeting_mediafile_helper import get_meeting_mediafile_filter
 from ...util.action_type import ActionType

@@ -197,12 +197,14 @@ class MediafileMixin(Action):
 class MediafileCreateMixin(MediafileMixin):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        if (parent_id := instance.get("parent_id")):
+        if parent_id := instance.get("parent_id"):
             parent = self.datastore.get(
                 fqid_from_collection_and_id("mediafile", parent_id),
                 ["published_to_meetings_in_organization_id"],
             )
-            instance["published_to_meetings_in_organization_id"] = parent.get("published_to_meetings_in_organization_id")
+            instance["published_to_meetings_in_organization_id"] = parent.get(
+                "published_to_meetings_in_organization_id"
+            )
         return instance
 
     def handle_orga_meeting_mediafile_creation(self, instance: dict[str, Any]) -> None:

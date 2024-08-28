@@ -51,9 +51,9 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
             if mediafile.get("parent_id"):
                 raise ActionException("Only top-level mediafiles may be published")
             instance["meeting_mediafile_ids"] = mediafile.get("meeting_mediafile_ids")
-            if publish == (mediafile.get(
-                "published_to_meetings_in_organization_id"
-            ) is not None):
+            if publish == (
+                mediafile.get("published_to_meetings_in_organization_id") is not None
+            ):
                 yield instance
             yield from self.get_publish_instances(
                 instance,

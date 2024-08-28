@@ -191,8 +191,7 @@ class GetMediafileContext(BasePresenter):
                         for place in self.projection_places
                     },
                 }
-        if meeting_mediafiles := data.get("meeting_mediafile", {}):
-            pass  # TODO: What here
+        meeting_mediafiles = data.get("meeting_mediafile", {})
         if children := data.get("mediafile", {}):
             for i, child in enumerate(children.values()):
                 child_number_of_children, child_meeting_data = (
