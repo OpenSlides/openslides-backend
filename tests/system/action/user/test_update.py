@@ -3011,6 +3011,29 @@ class UserUpdateActionTest(BaseActionTestCase):
         ]:
             self.assertIn(field, message)
 
+    def test_update_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        user_id = self.create_user("dummy", [1])
+        response = self.request(
+            "user.update",
+            {
+                "id": user_id,
+                "meeting_id": 1,
+                "group_ids": [1, 4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
     def create_data_for_locked_out_test(self) -> dict[str, tuple[int, int | None]]:
         """
         Creates two meetings and a bunch of users with different roles.
