@@ -82,7 +82,7 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
                     m_mediafile[field] = instance.pop(field)
             if len(m_mediafile):
                 m_id, _ = find_meeting_mediafile(
-                    self.datastore, meeting_id, instance["id"]
+                    self.datastore, meeting_id, instance["id"], lock_result=False
                 )
                 if m_id:
                     self.execute_other_action(
@@ -95,6 +95,7 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
                         self.datastore.get(
                             fqid_from_collection_and_id("meeting", meeting_id),
                             ["admin_group_id"],
+                            lock_result=False,
                         )["admin_group_id"]
                     ]:
                         self.execute_other_action(

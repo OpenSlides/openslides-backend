@@ -293,7 +293,7 @@ class MediafileMoveAction(
         )
         for child in list(children):
             meeting_mediafile_id, _ = find_meeting_mediafile(
-                self.datastore, child["meeting_id"], child["id"]
+                self.datastore, child["meeting_id"], child["id"], lock_result=False
             )
             if meeting_mediafile_id:
                 child["id"] = meeting_mediafile_id

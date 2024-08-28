@@ -29,6 +29,7 @@ class MeetingMediafileCreate(CreateAction):
             get_meeting_mediafile_filter(
                 instance["meeting_id"], instance["mediafile_id"]
             ),
+            lock_result=False,
         ):
             raise ActionException(
                 f"MeetingMediafile instance with mediafile {instance['mediafile_id']} and meeting {instance['meeting_id']} already exists"

@@ -14,7 +14,7 @@ class AttachmentMixin(Action):
             meeting_id = self.get_meeting_id(instance)
             attachment_data = [
                 get_meeting_mediafile_id_or_create_payload(
-                    self.datastore, meeting_id, attachment_id
+                    self.datastore, meeting_id, attachment_id, lock_result=False
                 )
                 for attachment_id in attachment_ids
             ]

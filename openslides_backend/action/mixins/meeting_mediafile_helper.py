@@ -18,11 +18,13 @@ def find_meeting_mediafile(
     meeting_id: int,
     mediafile_id: int,
     mapped_fields: list[str] = [],
+    lock_result: bool = True,
 ) -> tuple[int | None, PartialModel]:
     m_mediafiles = datastore.filter(
         "meeting_mediafile",
         get_meeting_mediafile_filter(meeting_id, mediafile_id),
         list({"id", *mapped_fields}),
+        lock_result=lock_result,
     )
     assert len(m_mediafiles) <= 1
     if len(m_mediafiles):
@@ -35,18 +37,21 @@ def get_meeting_mediafile_id_or_create_payload(
     datastore: DatastoreService,
     meeting_id: int,
     mediafile_id: int,
+    lock_result: bool = True,
 ) -> int | dict[str, Any]:
     id_, m_mediafile = find_meeting_mediafile_generate_implicit(
         datastore,
         meeting_id,
         mediafile_id,
         ["meeting_id", "mediafile_id", "inherited_access_group_ids", "is_public"],
+        lock_result,
     )
     if id_:
         return id_
     mediafile = datastore.get(
         fqid_from_collection_and_id("mediafile", mediafile_id),
         ["parent_id", "published_to_meetings_in_organization_id"],
+        lock_result=lock_result,
     )
     if not mediafile.get("published_to_meetings_in_organization_id"):
         raise ActionException(
@@ -62,12 +67,17 @@ def find_meeting_mediafile_generate_implicit(
     meeting_id: int,
     mediafile_id: int,
     mapped_fields: list[str] = [],
+    lock_result: bool = True,
 ) -> tuple[int | None, PartialModel]:
-    result = find_meeting_mediafile(datastore, meeting_id, mediafile_id, mapped_fields)
+    result = find_meeting_mediafile(
+        datastore, meeting_id, mediafile_id, mapped_fields, lock_result
+    )
     if result[0]:
         return result
     meeting = datastore.get(
-        fqid_from_collection_and_id("meeting", meeting_id), ["admin_group_id"]
+        fqid_from_collection_and_id("meeting", meeting_id),
+        ["admin_group_id"],
+        lock_result=False,
     )
     fake_meeting_mediafile = {
         "meeting_id": meeting_id,
