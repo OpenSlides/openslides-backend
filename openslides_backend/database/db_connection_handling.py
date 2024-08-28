@@ -13,6 +13,7 @@ conn_string_without_db = f"host='{env.DATABASE_HOST}' port='{env.DATABASE_PORT}'
 
 
 def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
+    """create the global connection pool on the openslides-db"""
     global os_conn_pool
     if "os_conn_pool" in globals() and not os_conn_pool.closed:
         os_conn_pool.close()

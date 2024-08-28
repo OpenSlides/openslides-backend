@@ -50,7 +50,7 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     # teardown session
     with get_current_os_conn_pool().connection() as conn:
         with conn.cursor() as curs:
-            curs.execute(generate_remove_all_test_functions(tablenames))
+            curs.execute(generate_remove_all_test_functions())
     login_patch.stop()
     auth_http_adapter_patch.stop()
 
