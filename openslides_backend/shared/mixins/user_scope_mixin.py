@@ -48,7 +48,6 @@ class UserScopeMixin(BaseServiceProvider):
                 set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
-            meetingcheck = self.check_for_admin_in_all_meetings(id_or_instance.get("id"))
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -61,7 +60,6 @@ class UserScopeMixin(BaseServiceProvider):
             meetings.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
-            meetingcheck = self.check_for_admin_in_all_meetings(id_or_instance)
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -78,7 +76,7 @@ class UserScopeMixin(BaseServiceProvider):
             if meeting_data.get("is_active_in_organization_id")
         }
         committees = committees_manager | set(meetings_committee.values())
-        if len(meetings_committee) == 1 and len(committees) == 1 or meetingcheck:
+        if len(meetings_committee) == 1 and len(committees) == 1:
             return (
                 UserScope.Meeting,
                 next(iter(meetings_committee)),
@@ -96,7 +94,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def check_permissions_for_scope(
         self,
-        id: int,
+        instance_id: int,
         always_check_user_oml: bool = True,
         meeting_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
@@ -107,7 +105,7 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml, committees = self.get_user_scope(id)
+        scope, scope_id, user_oml, committees = self.get_user_scope(instance_id)
         if (
             always_check_user_oml
             and user_oml
@@ -165,8 +163,10 @@ class UserScopeMixin(BaseServiceProvider):
                 committees,
             ):
                 return
-            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
-
+            if not self.check_for_admin_in_all_meetings(instance_id):
+                raise MissingPermission(
+                    {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
+                )
 
     def check_for_admin_in_all_meetings(self, instance_id: int) -> bool:
         """
@@ -186,7 +186,17 @@ class UserScopeMixin(BaseServiceProvider):
         b_meeting_ids = set(b_user.get("meeting_ids", []))
         if not b_meeting_ids:
             return False
-        a_meeting_ids = self.permstore.user_meetings
+        if hasattr(self, "permstore"):
+            a_meeting_ids = self.permstore.user_meetings
+        else:
+            a_user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance_id),
+                ["meeting_ids"],
+                lock_result=False,
+            )
+            a_meeting_ids = set(a_user.get("meeting_ids", []))
+        if not a_meeting_ids:
+            return False
         intersection_meeting_ids = a_meeting_ids.intersection(b_meeting_ids)
         if not b_meeting_ids.issubset(intersection_meeting_ids):
             return False
@@ -202,37 +212,41 @@ class UserScopeMixin(BaseServiceProvider):
         ).get("meeting", {})
         for meeting_id, meeting_dict in intersection_meetings.items():
             # get meetings admins
-            admin_group = self.datastore.get(
-                fqid_from_collection_and_id(
-                    "group", meeting_dict.get("admin_group_id", 0)
-                ),
-                ["meeting_user_ids"],
-                lock_result=False,
-            )
-            admin_meeting_users = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting_user",
-                        admin_group.get("meeting_user_ids", []),
-                        ["user_id"],
-                    )
-                ],
-                lock_result=False,
-            ).get("meeting_user", {})
-            # if instance/requested user is a meeting admin in this meeting.
-            if [
-                admin_meeting_user
-                for admin_meeting_user in admin_meeting_users.values()
-                if admin_meeting_user.get("user_id") == instance_id
-            ] != []:
+            if admin_group_id := meeting_dict.get("admin_group_id"):
+                admin_group = self.datastore.get(
+                    fqid_from_collection_and_id("group", admin_group_id),
+                    ["meeting_user_ids"],
+                    lock_result=False,
+                )
+                admin_meeting_users = self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "meeting_user",
+                            admin_group.get("meeting_user_ids", []),
+                            ["user_id"],
+                        )
+                    ],
+                    lock_result=False,
+                ).get("meeting_user", {})
+            else:
                 return False
-            # if requesting user is not a meeting admin in this meeting.
-            if not next(
-                iter(
+            # if instance/requested user is a meeting admin in this meeting.
+            if admin_meeting_users:
+                if [
                     admin_meeting_user
                     for admin_meeting_user in admin_meeting_users.values()
-                    if admin_meeting_user.get("user_id") == self.user_id
-                )
-            ):
+                    if admin_meeting_user.get("user_id") == instance_id
+                ] != []:
+                    return False
+                # if requesting user is not a meeting admin in this meeting.
+                if not next(
+                    iter(
+                        admin_meeting_user
+                        for admin_meeting_user in admin_meeting_users.values()
+                        if admin_meeting_user.get("user_id") == self.user_id
+                    )
+                ):
+                    return False
+            else:
                 return False
         return True

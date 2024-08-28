@@ -17,8 +17,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             }
         )
 
-    def two_meetings_standard_fails(self, committee_id: None | int = None, group_B_success: bool = False) -> None:
-        #test group A
+    def two_meetings_standard_fails(
+        self, committee_id: None | int = None, group_B_success: bool = False
+    ) -> None:
+        # test group A
         response = self.request(
             "user.update",
             {
@@ -37,12 +39,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": None,
             },
         )
-        #test group D
+        # test group D
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "committee_management_ids": [1,2],
+                "committee_management_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 403)
@@ -68,7 +70,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "committee_management_ids": None,
                 },
             )
-        #test group E
+        # test group E
         response = self.request(
             "user.update",
             {
@@ -87,7 +89,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "organization_management_level": None,
             },
         )
-        #test group F
+        # test group F
         response = self.request(
             "user.update",
             {
@@ -106,7 +108,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": None,
             },
         )
-        #test group G
+        # test group G
         response = self.request(
             "user.update",
             {
@@ -125,7 +127,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_demo_user": None,
             },
         )
-        #test group H
+        # test group H
         response = self.request(
             "user.update",
             {
@@ -995,7 +997,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         # Admin groups of meeting/1 and meeting/4 for test user
         self.set_user_groups(self.user_id, [2, 5])
         # 111 into both meetings
-        self.set_user_groups(111, [1, 4])  
+        self.set_user_groups(111, [1, 4])
         response = self.request(
             "user.update",
             {
@@ -1018,16 +1020,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         # Admin groups of only meeting/1 for test user
         self.set_user_groups(self.user_id, [2, 4])
         # 111 into both meetings
-        self.set_user_groups(111, [1, 4])  
+        self.set_user_groups(111, [1, 4])
         self.two_meetings_standard_fails()
-        #test group B and C
+        # test group B and C
         response = self.request(
             "user.update",
-            {
-                "id": 111,
-                "number": "I'm not gonna get updated.",
-                "meeting_id": 4
-            },
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
         )
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -1048,16 +1046,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         # Admin groups of meeting/1 and meeting/4 for test user
         self.set_user_groups(self.user_id, [2, 5])
         # 111 into both meetings (one admin group)
-        self.set_user_groups(111, [1, 5])  
+        self.set_user_groups(111, [1, 5])
         self.two_meetings_standard_fails()
-        #test group B and C
+        # test group B and C
         response = self.request(
             "user.update",
-            {
-                "id": 111,
-                "number": "I'm not gonna get updated.",
-                "meeting_id": 4
-            },
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1094,19 +1088,15 @@ class UserUpdateActionTest(BaseActionTestCase):
         # Admin groups of meeting/1 and meeting/4 for test user
         self.set_user_groups(self.user_id, [2, 5])
         # 111 into both meetings
-        self.set_user_groups(111, [1, 4])  
+        self.set_user_groups(111, [1, 4])
         # 111 is committee admin
         committee_id = 60
-        self.set_committee_management_level([committee_id], 111)  
+        self.set_committee_management_level([committee_id], 111)
         self.two_meetings_standard_fails(committee_id)
-        #test group B and C
+        # test group B and C
         response = self.request(
             "user.update",
-            {
-                "id": 111,
-                "number": "I'm not gonna get updated.",
-                "meeting_id": 4
-            },
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(

@@ -235,7 +235,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
             self.instance_committee_ids,
-        ) = self.get_user_scope(instance.get("id")  or instance)
+        ) = self.get_user_scope(instance.get("id") or instance)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
             self._check_for_higher_OML(actual_group_fields, instance)
@@ -249,92 +249,17 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 lock_result=False,
             ).get("locked_from_inside", False)
 
-        # positive test for user that can manage in every meeting of updated user.
-        # if self._meeting_admin_can_manage_non_admin(instance.get("id") ):
-        #     return
         # Ordered by supposed speed advantages. Changing order can only effect the sequence of detected errors for tests
         self.check_group_H(actual_group_fields["H"])
         self.check_group_E(actual_group_fields["E"], instance)
         self.check_group_D(actual_group_fields["D"], instance)
         self.check_group_C(actual_group_fields["C"], instance, locked_from_inside)
         self.check_group_B(actual_group_fields["B"], instance, locked_from_inside)
-        self.check_group_A(actual_group_fields["A"])
-        self.check_group_F(actual_group_fields["F"])
+        self.check_group_A(actual_group_fields["A"], instance)
+        self.check_group_F(actual_group_fields["F"], instance)
         self.check_group_G(actual_group_fields["G"])
 
-    # def _meeting_admin_can_manage_non_admin(self, instance_id: int) -> bool:
-    #     """
-    #     Checks if the requesting user has permissions to manage participants in all of requested users meetings.
-    #     Also checks if the requesting user has meeting admin rights and the requested user doesn't.
-    #     Returns true if permissions are given. False if not. Raises no Exceptions.
-    #     """
-    #     if not instance_id:
-    #         return False
-    #     b_user = self.datastore.get(
-    #         fqid_from_collection_and_id("user", instance_id),
-    #         ["meeting_ids", "committee_management_ids"],
-    #         lock_result=False,
-    #     )
-    #     if b_user.get("committee_management_ids"):
-    #         return False
-    #     b_meeting_ids = set(b_user.get("meeting_ids", []))
-    #     if not b_meeting_ids:
-    #         return False
-    #     a_meeting_ids = self.permstore.user_meetings
-    #     intersection_meeting_ids = a_meeting_ids.intersection(b_meeting_ids)
-    #     if not b_meeting_ids.issubset(intersection_meeting_ids):
-    #         return False
-    #     intersection_meetings = self.datastore.get_many(
-    #         [
-    #             GetManyRequest(
-    #                 "meeting",
-    #                 list(intersection_meeting_ids),
-    #                 ["meeting_user_ids", "admin_group_id"],
-    #             )
-    #         ],
-    #         lock_result=False,
-    #     ).get("meeting", {})
-    #     for meeting_id, meeting_dict in intersection_meetings.items():
-    #         # get meetings admins
-    #         admin_group = self.datastore.get(
-    #             fqid_from_collection_and_id(
-    #                 "group", meeting_dict.get("admin_group_id", 0)
-    #             ),
-    #             ["meeting_user_ids"],
-    #             lock_result=False,
-    #         )
-    #         admin_meeting_users = self.datastore.get_many(
-    #             [
-    #                 GetManyRequest(
-    #                     "meeting_user",
-    #                     admin_group.get("meeting_user_ids", []),
-    #                     ["user_id"],
-    #                 )
-    #             ],
-    #             lock_result=False,
-    #         ).get("meeting_user", {})
-    #         # if instance/requested user is a meeting admin in this meeting.
-    #         if [
-    #             admin_meeting_user
-    #             for admin_meeting_user in admin_meeting_users.values()
-    #             if admin_meeting_user.get("user_id") == instance_id
-    #         ] != []:
-    #             return False
-    #         # if requesting user is not a meeting admin in this meeting.
-    #         if not next(
-    #             iter(
-    #                 admin_meeting_user
-    #                 for admin_meeting_user in admin_meeting_users.values()
-    #                 if admin_meeting_user.get("user_id") == self.user_id
-    #             )
-    #         ):
-    #             return False
-    #     return True
-
-    def check_group_A(
-        self,
-        fields: list[str],
-    ) -> None:
+    def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group A: Depending on scope of user to act on"""
         if (
             self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN
@@ -346,15 +271,19 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if self.instance_user_scope == UserScope.Organization:
             if self.permstore.user_committees.intersection(self.instance_committee_ids):
                 return
-            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
+            elif not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
+                raise MissingPermission(
+                    {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
+                )
         if self.instance_user_scope == UserScope.Committee:
             if self.instance_user_scope_id not in self.permstore.user_committees:
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                    }
-                )
+                if not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
+                    raise MissingPermission(
+                        {
+                            OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                            CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                        }
+                    )
         elif (
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
@@ -434,10 +363,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())}."
                 )
 
-    def check_group_F(
-        self,
-        fields: list[str],
-    ) -> None:
+    def check_group_F(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
         if (
@@ -460,7 +386,10 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 ):
                     return
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
-            if expected_oml_permission > self.permstore.user_oml:
+            if (
+                expected_oml_permission > self.permstore.user_oml
+                and not self.check_for_admin_in_all_meetings(instance.get("id", 0))
+            ):
                 raise MissingPermission({expected_oml_permission: 1})
             else:
                 return
@@ -673,8 +602,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                 instance,
                 locked_from_inside,
             ),
-            (self.check_group_A, actual_group_fields["A"], None, None),
-            (self.check_group_F, actual_group_fields["F"], None, None),
+            (self.check_group_A, actual_group_fields["A"], instance, None),
+            (self.check_group_F, actual_group_fields["F"], instance, None),
             (self.check_group_G, actual_group_fields["G"], None, None),
         ]:
             try:

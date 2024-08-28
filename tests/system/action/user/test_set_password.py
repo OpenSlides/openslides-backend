@@ -23,6 +23,52 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_history_information("user/2", ["Password changed"])
         self.assert_logged_in()
 
+    def test_two_meetings(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)  # meeting 4
+        user_id = self.create_user("test", group_ids=[1])
+        self.login(user_id)
+        self.create_model("user/111", {"password": "old_pw"})
+        # Admin groups of meeting/1 for test user meeting/2 as normal user
+        self.set_user_groups(user_id, [2, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.set_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+        model = self.get_model("user/111")
+        assert "old_pw" == model.get("password", "")
+        # Admin groups of meeting/1 for test user
+        self.set_user_groups(user_id, [2])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.set_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+        model = self.get_model("user/111")
+        assert "old_pw" == model.get("password", "")
+        # Admin groups of meeting/1 and meeting/4 for test user
+        self.set_user_groups(user_id, [2, 5])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_history_information("user/111", ["Password changed"])
+
     def test_update_correct_default_case(self) -> None:
         self.update_model("user/1", {"password": "old_pw"})
         response = self.request(
