@@ -7,6 +7,7 @@ from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .base import base_check_onehundred_percent_base
@@ -15,7 +16,11 @@ from .mixins import PollHistoryMixin, PollPermissionMixin
 
 @register_action("poll.update")
 class PollUpdateAction(
-    ExtendHistoryMixin, UpdateAction, PollPermissionMixin, PollHistoryMixin
+    ExtendHistoryMixin,
+    UpdateAction,
+    PollPermissionMixin,
+    PollHistoryMixin,
+    ForbidAnonymousGroupMixin,
 ):
     """
     Action to update a poll.
@@ -136,6 +141,7 @@ class PollUpdateAction(
                     instance[field] = "-2.000000"
 
         instance.pop("publish_immediately", None)
+        self.check_anonymous_not_in_list_fields(instance, ["entitled_group_ids"])
         return instance
 
     def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:

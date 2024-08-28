@@ -60,6 +60,7 @@ Creates a user.
 * The given `gender` must be present in `organization/genders`
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
 * The `member_number` must be unique within all users.
+* Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
 
 ### Generate a username
