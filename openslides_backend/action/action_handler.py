@@ -5,6 +5,8 @@ from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
+from openslides_backend.database.db_connection_handling import get_current_os_conn
+
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
@@ -103,47 +105,50 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            self.user_id = user_id
-            self.internal = internal
+            with get_current_os_conn() as db_connection:
+                self.db_connection = db_connection
+                self.user_id = user_id
+                self.internal = internal
 
-            try:
-                payload_schema(payload)
-            except fastjsonschema.JsonSchemaException as exception:
-                raise ActionException(exception.message)
+                try:
+                    payload_schema(payload)
+                except fastjsonschema.JsonSchemaException as exception:
+                    raise ActionException(exception.message)
 
-            results: ActionsResponseResults = []
-            if atomic:
-                results = self.execute_write_requests(self.parse_actions, payload)
-            else:
+                results: ActionsResponseResults = []
+                if atomic:
+                    results = self.execute_write_requests(self.parse_actions, payload)
+                else:
 
-                def transform_to_list(
-                    tuple: tuple[WriteRequest | None, ActionResults | None]
-                ) -> tuple[list[WriteRequest], ActionResults | None]:
-                    return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
+                    def transform_to_list(
+                        tuple: tuple[WriteRequest | None, ActionResults | None]
+                    ) -> tuple[list[WriteRequest], ActionResults | None]:
+                        return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
-                for element in payload:
-                    try:
-                        result = self.execute_write_requests(
-                            lambda e: transform_to_list(self.perform_action(e)), element
-                        )
-                        results.append(result)
-                    except ActionException as exception:
-                        error = cast(ActionError, exception.get_json())
-                        results.append(error)
-                    self.datastore.reset()
+                    for element in payload:
+                        try:
+                            result = self.execute_write_requests(
+                                lambda e: transform_to_list(self.perform_action(e)),
+                                element,
+                            )
+                            results.append(result)
+                        except ActionException as exception:
+                            error = cast(ActionError, exception.get_json())
+                            results.append(error)
+                        self.datastore.reset()
 
-            # execute cleanup methods
-            for on_success in self.on_success:
-                on_success()
+                # execute cleanup methods
+                for on_success in self.on_success:
+                    on_success()
 
-            # Return action result
-            self.logger.info("Request was successful. Send response now.")
-            return ActionsResponse(
-                status_code=HTTPStatus.OK.value,
-                success=True,
-                message="Actions handled successfully",
-                results=results,
-            )
+                # Return action result
+                self.logger.info("Request was successful. Send response now.")
+                return ActionsResponse(
+                    status_code=HTTPStatus.OK.value,
+                    success=True,
+                    message="Actions handled successfully",
+                    results=results,
+                )
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
         """Helper function to execute an internal action with user id -1."""
