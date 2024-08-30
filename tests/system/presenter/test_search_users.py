@@ -17,6 +17,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "last_name": "last2",
             "username": "user2",
             "saml_id": None,
+            "member_number": None,
         }
         self.user3 = {
             "id": 3,
@@ -25,6 +26,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "last_name": "last3",
             "username": "user3",
             "saml_id": None,
+            "member_number": None,
         }
         self.user4 = {
             "id": 4,
@@ -33,6 +35,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "last_name": "last4",
             "username": "user4",
             "saml_id": None,
+            "member_number": None,
         }
         self.user5 = {
             "id": 5,
@@ -41,6 +44,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "last_name": "last5",
             "username": "user5",
             "saml_id": "saml5",
+            "member_number": None,
         }
         self.user6 = {
             "id": 6,
@@ -132,7 +136,7 @@ class TestSearchUsers(BasePresenterTestCase):
             },
         )
         self.assertEqual(status_code, 200)
-        self.assertEqual(len(data), 7)
+        self.assertEqual(len(data), 8)
         self.assertEqual(data[0], [self.user2])
         self.assertEqual(data[1], [])
         self.assertEqual(data[2], [self.user2])
