@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 from typing import Any
 
@@ -15,7 +16,7 @@ from ...permissions.permission_helper import (
 )
 from ...permissions.permissions import Permission, Permissions
 from ...services.datastore.interface import GetManyRequest
-from ..exceptions import MissingPermission
+from ..exceptions import MissingPermission, PermissionDenied
 from ..patterns import fqid_from_collection_and_id
 
 
@@ -31,12 +32,14 @@ class UserScope(str, Enum):
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, list[int]]:
+    ) -> tuple[UserScope, int, str, dict[int, Any]]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization), the OML level of the user as string (empty string if the user
         has none) and the ids of all committees that the user is either a manager in or a member of.
+        and their respective meetings the user is part of. #A committe can have no meetings if the
+        user just has committee management rights and is not part of any of its meetings.
         """
         meetings: set[int] = set()
         committees_manager: set[int] = set()
@@ -76,21 +79,28 @@ class UserScopeMixin(BaseServiceProvider):
             if meeting_data.get("is_active_in_organization_id")
         }
         committees = committees_manager | set(meetings_committee.values())
+        committee_meetings: dict[int, Any] = defaultdict(list)
+        for meeting, committee in meetings_committee.items():
+            committee_meetings[committee].append(meeting)
+        for committee in committees:
+            if committee not in committee_meetings.keys():
+                committee_meetings[committee] = None
+
         if len(meetings_committee) == 1 and len(committees) == 1:
             return (
                 UserScope.Meeting,
                 next(iter(meetings_committee)),
                 oml_right,
-                list(committees),
+                committee_meetings,
             )
         elif len(committees) == 1:
             return (
                 UserScope.Committee,
                 next(iter(committees)),
                 oml_right,
-                list(committees),
+                committee_meetings,
             )
-        return UserScope.Organization, 1, oml_right, list(committees)
+        return UserScope.Organization, 1, oml_right, committee_meetings
 
     def check_permissions_for_scope(
         self,
@@ -105,7 +115,9 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml, committees = self.get_user_scope(instance_id)
+        scope, scope_id, user_oml, committees_to_meetings = self.get_user_scope(
+            instance_id
+        )
         if (
             always_check_user_oml
             and user_oml
@@ -160,30 +172,29 @@ class UserScopeMixin(BaseServiceProvider):
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                committees,
+                [ci for ci in committees_to_meetings.keys()],
             ):
                 return
-            if not self.check_for_admin_in_all_meetings(instance_id):
+            meeting_ids = set()
+            for mi in committees_to_meetings.values():
+                meeting_ids.add(*mi)
+            if not self.check_for_admin_in_all_meetings(instance_id, meeting_ids):#
                 raise MissingPermission(
                     {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
                 )
 
-    def check_for_admin_in_all_meetings(self, instance_id: int) -> bool:
+    def check_for_admin_in_all_meetings(self, instance_id: int, b_meeting_ids: set[int] = None) -> bool:#
         """
         Checks if the requesting user has permissions to manage participants in all of requested users meetings.
         Also checks if the requesting user has meeting admin rights and the requested user doesn't.
-        Returns true if permissions are given. False if not. Raises no Exceptions.
+        Returns true if permissions are given. False if not. Raises no Exceptions. TODO ooops!!!
         """
         if not instance_id:
             return False
-        b_user = self.datastore.get(
-            fqid_from_collection_and_id("user", instance_id),
-            ["meeting_ids", "committee_management_ids"],
-            lock_result=False,
-        )
-        if b_user.get("committee_management_ids"):
-            return False
-        b_meeting_ids = set(b_user.get("meeting_ids", []))
+        if not b_meeting_ids:
+            b_meeting_ids = set()
+            for mi in self.instance_committee_meeting_ids.values():
+                b_meeting_ids.add(*mi)
         if not b_meeting_ids:
             return False
         if hasattr(self, "permstore"):
@@ -205,13 +216,15 @@ class UserScopeMixin(BaseServiceProvider):
                 GetManyRequest(
                     "meeting",
                     list(intersection_meeting_ids),
-                    ["meeting_user_ids", "admin_group_id"],
+                    ["admin_group_id", "group_ids", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
         ).get("meeting", {})
         for meeting_id, meeting_dict in intersection_meetings.items():
             # get meetings admins
+            admin_meeting_users = {}
+            # unnecessary "if" due to admin group always existant?
             if admin_group_id := meeting_dict.get("admin_group_id"):
                 admin_group = self.datastore.get(
                     fqid_from_collection_and_id("group", admin_group_id),
@@ -228,6 +241,31 @@ class UserScopeMixin(BaseServiceProvider):
                     ],
                     lock_result=False,
                 ).get("meeting_user", {})
+            # unnecessary "if" due to default group always existant?
+            if group_ids := meeting_dict.get("group_ids", []):
+                groups = self.datastore.get_many(
+                    [GetManyRequest("group", group_ids, ["meeting_user_ids"])],
+                    lock_result=False,
+                ).get("group", {})
+                for group_id, group in groups.items():
+                    meeting_user_ids = group.get("meeting_user_ids", [])
+                    group_permissions = group.get("permissions", [])
+                    if meeting_user_ids and (
+                        "user.can_manage" in group_permissions
+                        or "user.can_update" in group_permissions
+                    ):  # TODO test mit can manage hier nur can update
+                        admin_meeting_users.update(
+                            self.datastore.get_many(
+                                [
+                                    GetManyRequest(
+                                        "meeting_user",
+                                        meeting_user_ids,
+                                        ["user_id"],
+                                    )
+                                ],
+                                lock_result=False,
+                            ).get("meeting_user", {})
+                        )
             else:
                 return False
             # if instance/requested user is a meeting admin in this meeting.

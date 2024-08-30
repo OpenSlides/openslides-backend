@@ -11,6 +11,7 @@ from openslides_backend.permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions, permission_parents
+from openslides_backend.permissions.permission_helper import has_committee_management_level
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.shared.exceptions import (
@@ -229,12 +230,12 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
-        # store scope, scope id, OML-permission and committee ids for requested user
+        # store scope, scope id, OML-permission and committee ids including the the respective meetings for requested user
         (
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
-            self.instance_committee_ids,
+            self.instance_committee_meeting_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
@@ -262,28 +263,50 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group A: Depending on scope of user to act on"""
         if (
-            self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN
-            or not fields
+            not fields
             or self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
 
         if self.instance_user_scope == UserScope.Organization:
-            if self.permstore.user_committees.intersection(self.instance_committee_ids):
+            if self.permstore.user_committees.intersection(
+                self.instance_committee_meeting_ids
+            ) or self.check_for_admin_in_all_meetings(instance.get("id", 0)):
+                for committee_id in self.instance_committee_meeting_ids:
+                    if has_committee_management_level(
+                        self.datastore,
+                        instance.get("id"),
+                        CommitteeManagementLevel.CAN_MANAGE,
+                        committee_id,
+                    ):
+                        raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
                 return
-            elif not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
+            else:
                 raise MissingPermission(
                     {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
                 )
-        if self.instance_user_scope == UserScope.Committee:
-            if self.instance_user_scope_id not in self.permstore.user_committees:
-                if not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
-                    raise MissingPermission(
-                        {
-                            OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                            CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                        }
-                    )
+        elif self.instance_user_scope == UserScope.Committee:
+            if (
+                self.instance_user_scope_id in self.permstore.user_committees
+                or self.check_for_admin_in_all_meetings(instance.get("id", 0))
+            ):
+                for committee_id in self.instance_committee_meeting_ids:
+                    if has_committee_management_level(
+                        self.datastore,
+                        instance.get("id"),
+                        CommitteeManagementLevel.CAN_MANAGE,
+                        committee_id,
+                    ):
+                        raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                            CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,})
+                return
+            else:
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                    }
+                )
         elif (
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
@@ -382,7 +405,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 )
             else:
                 if self.permstore.user_committees.intersection(
-                    self.instance_committee_ids
+                    self.instance_committee_meeting_ids
                 ):
                     return
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -392,6 +415,14 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             ):
                 raise MissingPermission({expected_oml_permission: 1})
             else:
+                for committee_id in self.instance_committee_meeting_ids:
+                    if has_committee_management_level(
+                        self.datastore,
+                        instance.get("id"),
+                        CommitteeManagementLevel.CAN_MANAGE,
+                        committee_id,
+                    ):
+                        raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1,})
                 return
         else:
             if self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
@@ -574,7 +605,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
-            self.instance_committee_ids,
+            self.instance_committee_meeting_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         instance_meeting_id = instance.get("meeting_id")

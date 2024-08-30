@@ -11,7 +11,6 @@ from ...util.register import register_action
 from .password_mixins import ClearSessionsMixin, SetPasswordMixin
 
 
-# TODO auch ermöglichen
 @register_action("user.set_password")
 class UserSetPasswordAction(
     SetPasswordMixin,
