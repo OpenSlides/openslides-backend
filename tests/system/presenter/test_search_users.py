@@ -42,6 +42,15 @@ class TestSearchUsers(BasePresenterTestCase):
             "username": "user5",
             "saml_id": "saml5",
         }
+        self.user6 = {
+            "id": 6,
+            "email": "user6@test.de",
+            "first_name": "first6",
+            "last_name": "last6",
+            "username": "user6",
+            "saml_id": "saml6",
+            "member_number": "member6",
+        }
 
         self.set_models(
             {
@@ -56,6 +65,9 @@ class TestSearchUsers(BasePresenterTestCase):
                 },
                 "user/5": {
                     **self.user5,
+                },
+                "user/6": {
+                    **self.user6,
                 },
             }
         )
@@ -113,6 +125,9 @@ class TestSearchUsers(BasePresenterTestCase):
                         "username": "userX",
                         "saml_id": "saml5",
                     },
+                    {
+                        "member_number": "member6",
+                    },
                 ],
             },
         )
@@ -125,6 +140,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.assertEqual(data[4], [self.user2])
         self.assertEqual(data[5], [self.user5])
         self.assertEqual(data[6], [])
+        self.assertEqual(data[7], [self.user6])
 
     def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(
