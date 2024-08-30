@@ -21,7 +21,12 @@ from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-search_fields = [["username"], ["saml_id"], ["member_number"], ["first_name", "last_name", "email"]]
+search_fields = [
+    ["username"],
+    ["saml_id"],
+    ["member_number"],
+    ["first_name", "last_name", "email"],
+]
 all_fields = [field for fields in search_fields for field in fields]
 
 search_users_schema = fastjsonschema.compile(
