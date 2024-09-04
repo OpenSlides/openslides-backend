@@ -15,15 +15,10 @@ python-magic==0.4.27
 python-sql==1.5.1
 requests==2.32.3
 roman==4.2
-<<<<<<< HEAD
-simplejson==3.19.2
-Werkzeug==3.0.3
-=======
 simplejson==3.19.3
 Werkzeug==3.0.4
 python-magic==0.4.27
 pygments==2.18.0
->>>>>>> 02a218f53e1a7449f39073a26416118713476215
 
 # opentelemetry
 opentelemetry-api==1.26.0

@@ -1,3 +1,4 @@
+from datetime import datetime
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
@@ -11,6 +12,7 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     OrganizationField,
     RelationListField,
+    TimestampField,
 )
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
@@ -36,12 +38,12 @@ class Sql_helper:
         - integer : number of fqid in sql models table
         """
         with os_conn_pool.connection() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute("SELECT COUNT(fqid) FROM models;")
                 result = cur.fetchone()
                 if result is not None:
                     if len(result) > 0:
-                        return int(result[0].get("count", "0"))
+                        return int(result.get("count", "0"))
                 return 0
 
     # END OF FUNCTION
@@ -85,53 +87,24 @@ class Sql_helper:
     # END OF FUNCTION
 
     @staticmethod
-    def parse_data_to_sql_value(data: Any, quote: str = "'") -> str:
+    def cast_data(data: Any, field: Field | None = None) -> Any:
         """
         Purpose:
-            Parses the dictionary data into a sql friendly string format.
+            Casts data so it is psycopg friendly.
         Input:
-            - data: dictionary containing the python formatted data
-            - quote(optional): which quote-type should be used. Necessary for sql formatting arrays
+            - data: python formatted data
         Returns:
-            - data: sql friendly string formatted data
+            - data: psycopg friendly data
         """
-        list_str: str
 
-        # 1.1) format number to string
-        if isinstance(data, (int, float)):
-            data = str(data)
+        if field is None:
+            return data
 
-        # 1.2) format bool to string
-        elif isinstance(data, bool):
-            if data:
-                data = "true"
-            else:
-                data = "false"
+        elif isinstance(field, TimestampField):
+            data = datetime.fromtimestamp(data)
 
-        # 1.3) format dictionary to json string
         elif isinstance(data, dict):
             data = json_dumps(data)
-            data = f"'{data}'"
-
-        # 1.4) format list to array string e.g. [1, 'test', 'b'] -> '{1, "test", "b"}'
-        # INFO: doesn't cover nested lists yet
-        elif isinstance(data, list):
-            list_str = ""
-            # 1.4.1) format list items
-            for n, item in enumerate(data):
-                value = Sql_helper.parse_data_to_sql_value(item, quote='"')
-                if len(list_str) == 0:
-                    list_str = "'{" + f"{value}"
-                else:
-                    list_str += f", {value}"
-
-                if n + 1 == len(data):
-                    list_str += "}'"
-            data = list_str
-
-        # 1.5) format string to string
-        else:
-            data = f"{quote}{str(data)}{quote}"
 
         return data
 
@@ -171,7 +144,7 @@ class Sql_helper:
     # END OF FUNCTION
 
     @staticmethod
-    def insert_intermediate_table(field: Field, data: dict[str, Any]) -> list:
+    def get_insert_intermediate_t_commands(field: Field, data: dict[str, Any]) -> list:
         """
         Purpose:
             Parses the dictionary data into a sql friendly string format.
@@ -179,15 +152,14 @@ class Sql_helper:
             - field: field that will be checked for relational dependencies
             - data: dictionary containing the data of the collection
         Returns:
-            - sql_command: string containing one or several sql_commands built during the method
+            - tuple sql_command: string containing one or several insert_intermediate_t_commands built during the method
         """
-        sql_commands: list = []
+        insert_intermediate_t_commands: list = []
         values: Any
         collection_id: str
         intermediate_table: str
         field1: str
         field2: str
-        sql_value: str
 
         values = data.get(field.own_field_name)
         collection_id = data.get("id", "")
@@ -200,12 +172,14 @@ class Sql_helper:
 
         # 1.3) Add sql command
         for data_item in values:
-            sql_value = Sql_helper.parse_data_to_sql_value(data_item)
-            sql_commands.append(
-                f"INSERT INTO {intermediate_table}_t ({field1}, {field2}) VALUES ({collection_id}, {sql_value});"
+            insert_intermediate_t_commands.append(
+                (
+                    f"INSERT INTO {intermediate_table}_t ({field1}, {field2}) VALUES (%s, %s);",
+                    [collection_id, data_item],
+                )
             )
 
-        return sql_commands
+        return insert_intermediate_t_commands
 
     # END OF FUNCTION
 
@@ -240,9 +214,9 @@ def data_manipulation() -> None:
     collection: str
     data: dict[str, Any]
     model: Model
-    sql_commands: list
+    insert_intermediate_t_commands: list
     sql_fields: str
-    sql_values: str
+    sql_values: list
 
     # 1) Prepare connection & cursor
     with os_conn_pool.connection() as conn:
@@ -259,8 +233,10 @@ def data_manipulation() -> None:
                         collection = data_row["fqid"].split("/")[0]
                         data = data_row["data"]
                         model = model_registry[collection]()
-                        sql_fields, sql_values = "", ""
-                        sql_commands = []
+                        sql_fields = ""
+                        sql_placeholder = ""
+                        sql_values = []
+                        insert_intermediate_t_commands = []
 
                         # 4) Iterate over any field found in the data_row
                         for field in data.keys():
@@ -273,18 +249,20 @@ def data_manipulation() -> None:
                                 ):
                                     continue
 
-                                # 5.3) If field is non relational simply write
-                                sql_value = Sql_helper.parse_data_to_sql_value(
-                                    data[field]
+                                # 5.2) If field is non relational simply write
+                                value = Sql_helper.cast_data(
+                                    data[field], model.get_field(field)
                                 )
                                 if len(sql_fields) == 0:
                                     sql_fields = field
-                                    sql_values = sql_value
+                                    sql_placeholder = "%s"
+                                    sql_values = [value]
                                 else:
                                     sql_fields += f", {field}"
-                                    sql_values += f", {sql_value}"
+                                    sql_placeholder += ", %s"
+                                    sql_values.append(value)
 
-                                # 5.2) If field is RelationListField write the other tables
+                                # 5.3) If field is RelationListField write the other tables
                                 if isinstance(
                                     model.get_field(field),
                                     tuple(RELATION_LIST_FIELD_CLASSES),
@@ -294,18 +272,19 @@ def data_manipulation() -> None:
                                         model_field.is_primary
                                         and model_field.write_fields is not None
                                     ):
-                                        sql_commands.extend(
-                                            Sql_helper.insert_intermediate_table(
+                                        insert_intermediate_t_commands.extend(
+                                            Sql_helper.get_insert_intermediate_t_commands(
                                                 model.get_field(field), data
                                             )
                                         )
-
-                        sql_commands.append(
-                            f"INSERT INTO {collection}_t ({sql_fields}) VALUES({sql_values});"
+                        # END LOOP data.keys()
+                        cur.execute(
+                            f"INSERT INTO {collection}_t ({sql_fields}) VALUES ({sql_placeholder})",
+                            sql_values,
                         )
-                        for command in sql_commands:
-                            cur.execute(command)
-                            # BESPRECHEN: Funktioniert gut, bis etwas nicht deferred ist bspw. agenda_item_t_content_object_id_motion_id
+                        for command, values in insert_intermediate_t_commands:
+                            cur.execute(command, values)
+
                         # 6) Extend TRANSACTION by INSERT
                     # END LOOP data_rows
                 # END LOOP data chunks

@@ -8,7 +8,9 @@ from openslides_backend.models.base import Model
 
 # ENV Variables
 EXAMPLE_DATA_PATH = "global/data/example-data.json"
-TEST_MODULE_PATH = "openslides_backend.migrations.migrations_reldb.0001_test"
+TEST_MODULE_PATH = (
+    "openslides_backend.migrations.migrations_reldb.0001_initial_migration"
+)
 
 # VARIABLE DECLARATION
 
