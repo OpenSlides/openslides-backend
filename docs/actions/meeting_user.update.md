@@ -38,4 +38,7 @@
 ```
 ## Internal action
 Updates a meeting_user. `vote_delegated_to_id` and `vote_delegations_from_ids` has special checks, see user checks.
+
+Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
+
 The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated meeting_user and throws an error if that is the case.

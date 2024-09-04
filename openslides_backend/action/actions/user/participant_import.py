@@ -49,6 +49,11 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 model_name,
                 And(
                     FilterOperator("meeting_id", "=", self.meeting_id),
+                    *(
+                        [FilterOperator("anonymous_group_for_meeting_id", "=", None)]
+                        if model_name == "group"
+                        else []
+                    ),
                     Or([FilterOperator("name", "=", name) for name in to_create]),
                 ),
                 ["name", "id"],

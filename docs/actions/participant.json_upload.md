@@ -62,7 +62,7 @@ Same as in [account.json_upload#user-matching](account.json_upload.md#user-match
 This action is the first part of the actions for the import of participants (mean: users in a meeting).
 It should use the `JsonUploadMixin` and is a single payload action.
 
-The `groups` field includes a list of group names. The group names will be looked up in the meeting.
+The `groups` field includes a list of group names. The group names will be looked up among the groups in the meeting, with the exception of the meetings anonymous group, which will be ignored.
 If a group is found, info will be *done* and id is the id of the group. If no group is found, info will be *warning*.
 If no group in groups is found at all, the entry state will be *error* and import shouldn't be possible.
 
