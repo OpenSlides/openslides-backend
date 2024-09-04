@@ -193,9 +193,9 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
 anonymous_perms_whitelist: set[Permission] = {
     Permissions.AgendaItem.CAN_SEE,
     Permissions.AgendaItem.CAN_SEE_INTERNAL,
-    Permissions.AgendaItem.CAN_SEE_MODERATOR_NOTES,
     Permissions.Assignment.CAN_SEE,
     Permissions.ListOfSpeakers.CAN_SEE,
+    Permissions.ListOfSpeakers.CAN_SEE_MODERATOR_NOTES,
     Permissions.Mediafile.CAN_SEE,
     Permissions.Meeting.CAN_SEE_AUTOPILOT,
     Permissions.Meeting.CAN_SEE_FRONTPAGE,

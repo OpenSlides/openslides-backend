@@ -942,8 +942,6 @@ class Group(Model):
                 "agenda_item.can_manage",
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
-                "agenda_item.can_manage_moderator_notes",
-                "agenda_item.can_see_moderator_notes",
                 "assignment.can_manage",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
@@ -952,6 +950,8 @@ class Group(Model):
                 "list_of_speakers.can_be_speaker",
                 "list_of_speakers.can_manage",
                 "list_of_speakers.can_see",
+                "list_of_speakers.can_manage_moderator_notes",
+                "list_of_speakers.can_see_moderator_notes",
                 "mediafile.can_manage",
                 "mediafile.can_see",
                 "meeting.can_manage_logos_and_fonts",
@@ -1084,7 +1084,6 @@ class AgendaItem(Model, AgendaItemModelMixin):
     duration = fields.IntegerField(
         constraints={"description": "Given in seconds", "minimum": 0}
     )
-    moderator_notes = fields.HTMLStrictField()
     is_internal = fields.BooleanField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
@@ -1139,6 +1138,7 @@ class ListOfSpeakers(Model):
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
+    moderator_notes = fields.HTMLStrictField()
     content_object_id = fields.GenericRelationField(
         to={
             "motion": "list_of_speakers_id",
