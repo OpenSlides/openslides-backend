@@ -47,10 +47,8 @@ from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
-from ..gender.create import GenderCreate
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
-from ..user.update import UserUpdate
 from ..user.user_mixins import LimitOfUserMixin, UsernameMixin
 
 
@@ -321,24 +319,38 @@ class MeetingImport(
             entry["username"] = username
 
     def handle_gender_string(self, instance: dict[str, Any]) -> None:
-        genders = self.datastore.get_all("gender", ["name"], lock_result=False)
-        gender_dict = {
-            gender.get("name", ""): gender_id for gender_id, gender in genders.items()
+        genders = self.datastore.get_all("gender", ["id", "name"], lock_result=True)
+        gender_dict = {gender.get("name", ""): gender for gender in genders.values()}
+        new_genders = list(
+            {value for value in self.user_id_to_gender.values()}.difference(gender_dict)
+        )
+        new_genders.sort()  # fix order for tests
+        new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))
+        new_gender_dict = {
+            t[0]: {
+                "id": t[1],
+                "name": t[0],
+                "meta_new": True,
+                "organization_id": ONE_ORGANIZATION_ID,
+            }
+            for t in zip(new_genders, new_gender_ids)
+        }
+        gender_dict.update(new_gender_dict)
+        instance["meeting"]["gender"] = {
+            str(gender["id"]): gender for gender in gender_dict.values()
         }
         for user_id, gender in self.user_id_to_gender.items():
             if user_id not in self.merge_user_map:
-                if gender in gender_dict:
-                    gender_id = gender_dict[gender]
-                else:
-                    action_result = self.execute_other_action(
-                        GenderCreate, [{"name": gender}]
-                    )
-                    gender_id = action_result[0].get("id", 0)  # type: ignore
-                    gender_dict[gender] = gender_id
-                self.execute_other_action(
-                    UserUpdate,
-                    [{"id": self.replace_map["user"][user_id], "gender_id": gender_id}],
+                gender_id = gender_dict[gender]["id"]
+                replace_user_id = self.replace_map["user"][user_id]
+                instance["meeting"]["user"][str(replace_user_id)][
+                    "gender_id"
+                ] = gender_id
+                user_ids = instance["meeting"]["gender"][str(gender_id)].get(
+                    "user_ids", []
                 )
+                user_ids.append(replace_user_id)
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = user_ids
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "
@@ -585,11 +597,14 @@ class MeetingImport(
         meeting_id = meeting["id"]
         events = []
         update_events = []
+        add_genders_to_organisation = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 fqid = fqid_from_collection_and_id(collection, entry["id"])
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
+                    if collection == "gender":
+                        add_genders_to_organisation.append(entry["id"])
                     events.append(
                         self.build_event(
                             EventType.Create,
@@ -597,20 +612,19 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection == "user":
+                elif collection in ["user", "gender"]:
                     list_fields: ListFields = {"add": {}, "remove": {}}
-                    fields: dict[str, Any] = {}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
                         if isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                    if fields or list_fields["add"]:
+                    if list_fields["add"]:
                         update_events.append(
                             self.build_event(
                                 EventType.Update,
                                 fqid,
-                                fields=fields if fields else None,
-                                list_fields=list_fields if list_fields["add"] else None,
+                                fields=None,
+                                list_fields=list_fields,
                             )
                         )
                 elif collection == "meeting_user":
@@ -641,6 +655,8 @@ class MeetingImport(
             adder["active_meeting_ids"] = [meeting_id]
         if meeting.get("template_for_organization_id"):
             adder["template_meeting_ids"] = [meeting_id]
+        if add_genders_to_organisation:
+            adder["gender_ids"] = add_genders_to_organisation
 
         if adder:
             events.append(

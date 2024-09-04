@@ -2355,9 +2355,13 @@ class MeetingImport(BaseActionTestCase):
 
     def test_gender_import(self) -> None:
         """
+        different cases, user bumber belongs to the request data, NOT the pre-existing-users
         User 1 shows that a new user will be created with gender_id (also with a new gender).
-        User 2 is added to showcase the gender is not being updated.
-        User 3 shows that a user with empty gender can be created.
+        User 2 shows that a new user will be created with gender_id, but the same like User 1
+        User 3 is added to showcase the gender is not being updated on existent user with id=2 (same name etc.)
+        User 4 shows that a user with empty gender can be created.
+        User 5 new user with second new gender to create
+        User 6 new user with existing gender
         """
         data = self.create_request_data({})
         self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
@@ -2409,6 +2413,14 @@ class MeetingImport(BaseActionTestCase):
                 "gender": "needs_to_be_created_too",
                 "organization_id": 1,
             },
+            "6": {
+                "id": 6,
+                "username": "ultra_newest_user",
+                "first_name": "ultra newest",
+                "last_name": "user",
+                "gender": "diverse",
+                "organization_id": 1,
+            },
         }
         data["meeting"]["user"].update(other_users_request_data)
         response = self.request("meeting.import", data)
@@ -2448,9 +2460,16 @@ class MeetingImport(BaseActionTestCase):
                 "gender_id": 6,
             },
         )
-        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2]})
+        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2, 7]})
         self.assert_model_exists(
             "gender/5", {"name": "needs_to_be_created", "user_ids": [3, 4]}
+        )
+        self.assert_model_exists(
+            "gender/6", {"name": "needs_to_be_created_too", "user_ids": [6]}
+        )
+        self.assert_model_exists(
+            "organization/1",
+            {"user_ids": [1, 2, 3, 4, 5, 6, 7], "gender_ids": [1, 4, 5, 6]},
         )
 
     def test_import_existing_user_with_vote(self) -> None:
