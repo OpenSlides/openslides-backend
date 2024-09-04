@@ -968,6 +968,7 @@ class Group(Model):
                 "motion.can_manage_polls",
                 "motion.can_see",
                 "motion.can_see_internal",
+                "motion.can_see_origin",
                 "motion.can_support",
                 "poll.can_manage",
                 "projector.can_manage",
