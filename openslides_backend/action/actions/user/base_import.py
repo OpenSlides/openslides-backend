@@ -24,7 +24,9 @@ class BaseUserImport(BaseImportAction):
             rows = self.flatten_copied_object_fields(
                 self.handle_remove_and_group_fields
             )
-            self.create_other_actions(rows)
+            self.create_other_actions(
+                rows
+            )  # Hier muss doch eigentlich die collection bestimmt werden, oder nicht?
 
         return {}
 
@@ -69,7 +71,7 @@ class BaseUserImport(BaseImportAction):
         ):
             entry.pop("gender")
 
-        # remove all fields fields marked with "remove"-state
+        # remove all fields marked with "remove"-state
         to_remove = []
         for k, v in entry.items():
             if isinstance(v, dict):

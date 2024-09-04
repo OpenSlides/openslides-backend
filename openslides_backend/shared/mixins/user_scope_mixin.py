@@ -16,7 +16,7 @@ from ...permissions.permission_helper import (
 )
 from ...permissions.permissions import Permission, Permissions
 from ...services.datastore.interface import GetManyRequest
-from ..exceptions import MissingPermission, PermissionDenied
+from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
 
 
@@ -30,6 +30,8 @@ class UserScope(str, Enum):
 
 
 class UserScopeMixin(BaseServiceProvider):
+    instance_committee_meeting_ids: dict
+
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
     ) -> tuple[UserScope, int, str, dict[int, Any]]:
@@ -59,6 +61,7 @@ class UserScopeMixin(BaseServiceProvider):
                     "organization_management_level",
                     "committee_management_ids",
                 ],
+                lock_result=False,
             )
             meetings.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
@@ -175,26 +178,30 @@ class UserScopeMixin(BaseServiceProvider):
                 [ci for ci in committees_to_meetings.keys()],
             ):
                 return
-            meeting_ids = set()
+            meeting_ids: set = set()
             for mi in committees_to_meetings.values():
                 meeting_ids.add(*mi)
-            if not self.check_for_admin_in_all_meetings(instance_id, meeting_ids):#
+            if not self.check_for_admin_in_all_meetings(instance_id, meeting_ids):
                 raise MissingPermission(
                     {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
                 )
 
-    def check_for_admin_in_all_meetings(self, instance_id: int, b_meeting_ids: set[int] = None) -> bool:#
+    def check_for_admin_in_all_meetings(
+        self, instance_id: int, b_meeting_ids: set[int] | None = None
+    ) -> bool:
         """
         Checks if the requesting user has permissions to manage participants in all of requested users meetings.
         Also checks if the requesting user has meeting admin rights and the requested user doesn't.
-        Returns true if permissions are given. False if not. Raises no Exceptions. TODO ooops!!!
+        Returns true if permissions are given. False if not. Raises no Exceptions.
         """
         if not instance_id:
             return False
         if not b_meeting_ids:
+            if not hasattr(self, "instance_committee_meeting_ids"):
+                return False
             b_meeting_ids = set()
-            for mi in self.instance_committee_meeting_ids.values():
-                b_meeting_ids.add(*mi)
+            for m_ids in self.instance_committee_meeting_ids.values():
+                b_meeting_ids.update(m_ids)
         if not b_meeting_ids:
             return False
         if hasattr(self, "permstore"):

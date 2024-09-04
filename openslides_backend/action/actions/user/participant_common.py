@@ -7,14 +7,14 @@ from openslides_backend.permissions.management_levels import (
 )
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import MissingPermission
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsFailingFields,
+    PermissionVarStore,
+)
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ...mixins.import_mixins import ImportRow, ImportState
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from ..user.create_update_permissions_mixin import (
-    CreateUpdatePermissionsFailingFields,
-    PermissionVarStore,
-)
 
 
 class ParticipantCommon(BaseImportJsonUploadAction, CheckLockOutPermissionMixin):

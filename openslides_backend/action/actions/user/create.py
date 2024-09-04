@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -15,13 +18,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
 @register_action("user.create")
 class UserCreate(
+    UserMixin,
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
@@ -66,6 +69,10 @@ class UserCreate(
     check_email_field = "email"
     history_information = "Account created"
     own_history_information_first = True
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.assert_not_anonymous()
+        super().check_permissions(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.meeting_id: int | None = instance.get("meeting_id")

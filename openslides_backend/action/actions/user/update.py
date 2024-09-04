@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -14,7 +17,6 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
@@ -25,6 +27,7 @@ from .user_mixins import (
 
 @register_action("user.update")
 class UserUpdate(
+    UserMixin,
     EmailCheckMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
@@ -75,6 +78,10 @@ class UserUpdate(
     )
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.assert_not_anonymous()
+        super().check_permissions(instance)
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
