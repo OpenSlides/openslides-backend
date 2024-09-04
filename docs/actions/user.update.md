@@ -75,6 +75,8 @@ Note: `is_present_in_meeting_ids` is not available in update, since there is no 
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
 
+If the user was the last member of the meetings admin group and he happens to be removed from the latter through this action, as long as the meeting is not a template, there will be an error.
+
 ## Permissions
 If the OML of the request user is lower than the OML of the user to update, only meeting-specific fields (groups B and C) are allowed to be changed. If any other fields are present in the payload, the request must fail.
 If the user to be updated has a `saml_id`, the fields `can_change_own_password` and
