@@ -105,6 +105,7 @@
     motion_poll_ballot_paper_selection: string;
     motion_poll_ballot_paper_number: number;
     motion_poll_default_type: string;
+    motion_poll_default_method: string;
     motion_poll_default_100_percent_base: string;
     motion_poll_default_group_ids: Id[];
 
