@@ -2171,12 +2171,14 @@ class MeetingMediafile(Model):
     is_public = fields.BooleanField(
         required=True,
         constraints={
-            "description": "Calculated in actions. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
+            "description": "Calculated in actions. Used to discern whether the (meeting-)mediafile can be seen by everyone, because, in the case of inherited_access_group_ids == [], it would otherwise not be clear. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
         },
     )
     inherited_access_group_ids = fields.RelationListField(
         to={"group": "mediafile_inherited_access_group_ids"},
-        constraints={"description": "Calculated in actions."},
+        constraints={
+            "description": "Calculated in actions. Shows what access group permissions are actually relevant. Calculated as the intersection of this meeting_mediafiles access_group_ids and the related mediafiles potential parent mediafiles inherited_access_group_ids. If the parent has no meeting_mediafile for this meeting, its inherited access group is assumed to be the meetings admin group. If there is no parent, the inherited_access_group_ids is equal to the access_group_ids."
+        },
     )
     access_group_ids = fields.RelationListField(
         to={"group": "mediafile_access_group_ids"}
