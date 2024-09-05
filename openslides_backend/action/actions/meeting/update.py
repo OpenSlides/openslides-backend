@@ -130,6 +130,7 @@ meeting_settings_keys = [
     "motion_poll_ballot_paper_selection",
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",
+    "motion_poll_default_method",
     "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",

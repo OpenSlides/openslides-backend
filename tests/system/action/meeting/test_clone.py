@@ -1166,6 +1166,7 @@ class MeetingClone(BaseActionTestCase):
             "motion_poll_ballot_paper_selection": "NUMBER_OF_DELEGATES",
             "motion_poll_ballot_paper_number": 42,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YN",
             "users_enable_presence_view": True,
             "users_enable_vote_weight": True,
