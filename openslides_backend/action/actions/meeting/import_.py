@@ -319,38 +319,40 @@ class MeetingImport(
             entry["username"] = username
 
     def handle_gender_string(self, instance: dict[str, Any]) -> None:
+        for user_id in list(self.user_id_to_gender.keys()):
+            if user_id in self.merge_user_map:
+                del self.user_id_to_gender[user_id]
         genders = self.datastore.get_all("gender", ["id", "name"], lock_result=True)
         gender_dict = {gender.get("name", ""): gender for gender in genders.values()}
         new_genders = list(
             {value for value in self.user_id_to_gender.values()}.difference(gender_dict)
         )
-        new_genders.sort()  # fix order for tests
-        new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))
-        new_gender_dict = {
-            t[0]: {
-                "id": t[1],
-                "name": t[0],
-                "meta_new": True,
-                "organization_id": ONE_ORGANIZATION_ID,
+        if new_genders:
+            new_genders.sort()  # fix order for tests
+            new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))
+            new_gender_dict = {
+                new_gender: {
+                    "id": new_gender_id,
+                    "name": new_gender,
+                    "meta_new": True,
+                    "organization_id": ONE_ORGANIZATION_ID,
+                }
+                for new_gender, new_gender_id in zip(new_genders, new_gender_ids)
             }
-            for t in zip(new_genders, new_gender_ids)
-        }
-        gender_dict.update(new_gender_dict)
+            gender_dict.update(new_gender_dict)
         instance["meeting"]["gender"] = {
             str(gender["id"]): gender for gender in gender_dict.values()
         }
         for user_id, gender in self.user_id_to_gender.items():
-            if user_id not in self.merge_user_map:
-                gender_id = gender_dict[gender]["id"]
-                replace_user_id = self.replace_map["user"][user_id]
-                instance["meeting"]["user"][str(replace_user_id)][
-                    "gender_id"
-                ] = gender_id
-                user_ids = instance["meeting"]["gender"][str(gender_id)].get(
-                    "user_ids", []
+            gender_id = gender_dict[gender]["id"]
+            replace_user_id = self.replace_map["user"][user_id]
+            instance["meeting"]["user"][str(replace_user_id)]["gender_id"] = gender_id
+            try:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"].append(
+                    replace_user_id
                 )
-                user_ids.append(replace_user_id)
-                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = user_ids
+            except KeyError:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = [replace_user_id]
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "
@@ -649,7 +651,7 @@ class MeetingImport(
             )
         )
 
-        # add meetings to organization if set in meeting
+        # add meetings to organization if set in meeting, also genders if new created
         adder: ListFieldsDict = {}
         if meeting.get("is_active_in_organization_id"):
             adder["active_meeting_ids"] = [meeting_id]

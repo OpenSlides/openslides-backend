@@ -2355,13 +2355,14 @@ class MeetingImport(BaseActionTestCase):
 
     def test_gender_import(self) -> None:
         """
-        different cases, user bumber belongs to the request data, NOT the pre-existing-users
+        Each user represents different cases. The user number belongs to the request data, NOT the pre-existing-users.
         User 1 shows that a new user will be created with gender_id (also with a new gender).
-        User 2 shows that a new user will be created with gender_id, but the same like User 1
-        User 3 is added to showcase the gender is not being updated on existent user with id=2 (same name etc.)
-        User 4 shows that a user with empty gender can be created.
-        User 5 new user with second new gender to create
-        User 6 new user with existing gender
+        User 2 shows that a new user will be created with gender_id, but the same like User 1.
+        User 3 shows that the gender is not being updated on existing user with id=2 (same name etc.).
+        User 4 shows that a new user with empty gender can be created.
+        User 5 shows that a new user with a second new gender will be created.
+        User 6 shows that a new user will be added to an existing gender with filled user_ids.
+        User 7 shows the same as User 3 but with a new gender which should not be created.
         """
         data = self.create_request_data({})
         self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
@@ -2421,6 +2422,15 @@ class MeetingImport(BaseActionTestCase):
                 "gender": "diverse",
                 "organization_id": 1,
             },
+            "7": {
+                "id": 7,
+                "username": "other_user",
+                "first_name": "other",
+                "last_name": "user",
+                "email": "other@us.er",
+                "gender": "not_to_be_created",
+                "organization_id": 1,
+            },
         }
         data["meeting"]["user"].update(other_users_request_data)
         response = self.request("meeting.import", data)
@@ -2458,6 +2468,14 @@ class MeetingImport(BaseActionTestCase):
                 "username": "newest_user",
                 "gender": None,
                 "gender_id": 6,
+            },
+        )
+        self.assert_model_exists(
+            "user/7",
+            {
+                "username": "ultra_newest_user",
+                "gender": None,
+                "gender_id": 4,
             },
         )
         self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2, 7]})
