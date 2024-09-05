@@ -30,6 +30,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         instance = super().update_instance(instance)
         return instance
 
+    def check_all_rows(self) -> None:
+        if (
+            not self.check_meeting_admin_integrity(self.meeting_id, self.rows)
+        ) and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
+
     def update_models_to_create(self, model_name: str, field_name: str) -> None:
         self.models_to_create[field_name] = []
         to_create: set[str] = {
@@ -43,6 +49,11 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 model_name,
                 And(
                     FilterOperator("meeting_id", "=", self.meeting_id),
+                    *(
+                        [FilterOperator("anonymous_group_for_meeting_id", "=", None)]
+                        if model_name == "group"
+                        else []
+                    ),
                     Or([FilterOperator("name", "=", name) for name in to_create]),
                 ),
                 ["name", "id"],

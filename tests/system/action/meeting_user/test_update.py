@@ -75,6 +75,28 @@ class MeetingUserUpdate(BaseActionTestCase):
             },
         )
 
+    def test_update_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        self.create_user("dummy", [1])
+        response = self.request(
+            "meeting_user.update",
+            {
+                "id": 1,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
     def test_update_checks_locked_out_with_error(self) -> None:
         self.set_models(
             {

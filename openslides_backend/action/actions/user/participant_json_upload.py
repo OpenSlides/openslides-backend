@@ -71,6 +71,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 },
             ]
         )
+        self.check_meeting_admin_integrity(self.meeting_id, self.rows)
         return data
 
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
@@ -205,7 +206,12 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 GetManyRequest(
                     "group",
                     meeting.get("group_ids", []),
-                    ["name", "id", "default_group_for_meeting_id"],
+                    [
+                        "name",
+                        "id",
+                        "default_group_for_meeting_id",
+                        "anonymous_group_for_meeting_id",
+                    ],
                 ),
                 GetManyRequest(
                     "structure_level",
@@ -214,6 +220,11 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 ),
             ]
         )
+        result["group"] = {
+            id_: group
+            for id_, group in result["group"].items()
+            if not group.get("anonymous_group_for_meeting_id")
+        }
         for collection in ("group", "structure_level"):
             self.lookups[collection] = self.create_lookup(result[collection].values())
         for group in result["group"].values():

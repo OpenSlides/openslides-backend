@@ -519,6 +519,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
+    motion_poll_default_method = fields.CharField(default="YNA")
     motion_poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
