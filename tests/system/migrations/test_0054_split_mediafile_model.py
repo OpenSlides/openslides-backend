@@ -169,7 +169,7 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 1,
                 "meeting_id": 2,
-                "attachment_meeting_mediafile_ids": [5, 6],
+                "attachment_ids": [5, 6],
             },
         },
         {
@@ -178,7 +178,7 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 1,
                 "meeting_id": 2,
-                "attachment_meeting_mediafile_ids": [6],
+                "attachment_ids": [6],
             },
         },
         {
@@ -187,7 +187,7 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 1,
                 "meeting_id": 2,
-                "attachment_meeting_mediafile_ids": [6],
+                "attachment_ids": [6],
             },
         },
     )
