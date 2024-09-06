@@ -446,7 +446,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"mediafile_inherited_access_group_ids": [1]},
+                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
                 "meeting/4": {"meeting_mediafile_ids": [4]},
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
@@ -543,7 +543,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"mediafile_inherited_access_group_ids": [1]},
+                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
                 "meeting/4": {"meeting_mediafile_ids": [4]},
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
@@ -715,7 +715,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"mediafile_inherited_access_group_ids": [1]},
+                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
                 "meeting/4": {"meeting_mediafile_ids": [4]},
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,

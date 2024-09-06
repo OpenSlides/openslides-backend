@@ -403,7 +403,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
-                    "mediafile_access_group_ids": [4],
+                    "meeting_mediafile_access_group_ids": [4],
                 },
                 "group/2": {
                     "meeting_id": 1,

@@ -164,12 +164,12 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [6],
                 },
                 "group/5": {
-                    "mediafile_access_group_ids": [41, 42],
-                    "mediafile_inherited_access_group_ids": [41],
+                    "meeting_mediafile_access_group_ids": [41, 42],
+                    "meeting_mediafile_inherited_access_group_ids": [41],
                 },
                 "group/6": {
-                    "mediafile_access_group_ids": [41, 42],
-                    "mediafile_inherited_access_group_ids": [42],
+                    "meeting_mediafile_access_group_ids": [41, 42],
+                    "meeting_mediafile_inherited_access_group_ids": [42],
                 },
             }
         )
@@ -863,8 +863,8 @@ l,m,n,"""
         self.assert_model_exists(
             "group/1",
             {
-                "mediafile_access_group_ids": [1111],
-                "mediafile_inherited_access_group_ids": [1111],
+                "meeting_mediafile_access_group_ids": [1111],
+                "meeting_mediafile_inherited_access_group_ids": [1111],
             },
         )
 
@@ -928,7 +928,7 @@ l,m,n,"""
         )
         self.media.upload_mediafile.assert_called_with(file_content, 11, "text/plain")
         self.assert_model_exists(
-            "group/1", {"mediafile_inherited_access_group_ids": [1111]}
+            "group/1", {"meeting_mediafile_inherited_access_group_ids": [1111]}
         )
 
     def test_create_media_both_groups(self) -> None:
@@ -994,8 +994,10 @@ l,m,n,"""
         self.assert_model_exists(
             "group/1",
             {
-                "mediafile_access_group_ids": [1111],
-                "mediafile_inherited_access_group_ids": [1111],
+                "meeting_mediafile_access_group_ids": [1111],
+                "meeting_mediafile_inherited_access_group_ids": [1111],
             },
         )
-        self.assert_model_exists("group/2", {"mediafile_access_group_ids": [1111]})
+        self.assert_model_exists(
+            "group/2", {"meeting_mediafile_access_group_ids": [1111]}
+        )

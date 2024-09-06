@@ -9,7 +9,7 @@
 
 // Optional
     parent_id: Id;
-    access_group_ids: (group/mediafile_access_group_ids)[];  // only for meeting-wide mediafiles
+    access_group_ids: (group/meeting_mediafile_access_group_ids)[];  // only for meeting-wide mediafiles
     token: string,                                           // only for organization-wide mediafiles
 }
 ```

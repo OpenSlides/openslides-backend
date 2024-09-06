@@ -7,7 +7,7 @@
 
 // Optional
     parent_id: Id;
-    access_group_ids: (group/mediafile_access_group_ids)[];
+    access_group_ids: (group/meeting_mediafile_access_group_ids)[];
 }
 ```
 

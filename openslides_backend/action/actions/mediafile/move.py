@@ -4,7 +4,7 @@ from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.patterns import collection_and_id_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...mixins.meeting_mediafile_helper import find_meeting_mediafile
@@ -51,7 +51,9 @@ class MediafileMoveAction(
         action_data = super().get_updated_instances(action_data)
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
-        owner_collection, owner_id_str = str(instance["owner_id"]).split(KEYSEPARATOR)
+        owner_collection, owner_id_str = collection_and_id_from_fqid(
+            instance["owner_id"]
+        )
         owner_id = int(owner_id_str)
         yield from self.prepare_move_data(
             parent_id=instance["parent_id"],

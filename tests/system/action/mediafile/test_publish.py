@@ -59,8 +59,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.published_update_data: dict[str, dict[str, Any]] = {
             "meeting/1": {"meeting_mediafile_ids": [1110, 1111, 1112, 1113]},
             "group/7": {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
+                "meeting_mediafile_access_group_ids": [1113],
+                "meeting_mediafile_inherited_access_group_ids": [1113],
             },
             "mediafile/110": {
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
@@ -112,8 +112,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/7",
             {
-                "mediafile_access_group_ids": None,
-                "mediafile_inherited_access_group_ids": None,
+                "meeting_mediafile_access_group_ids": None,
+                "meeting_mediafile_inherited_access_group_ids": None,
             },
         )
         self.assert_model_not_exists("meeting_mediafile/1110")
@@ -136,8 +136,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/7",
             {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
+                "meeting_mediafile_access_group_ids": [1113],
+                "meeting_mediafile_inherited_access_group_ids": [1113],
             },
         )
         for id_ in [110, 111, 112, 113]:
@@ -185,8 +185,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/7",
             {
-                "mediafile_access_group_ids": [],
-                "mediafile_inherited_access_group_ids": [],
+                "meeting_mediafile_access_group_ids": [],
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
         )
         for id_ in [110, 111, 112, 113]:

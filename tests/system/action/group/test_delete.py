@@ -139,13 +139,13 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "meeting_mediafile_ids": [1, 2],
                 },
                 "group/111": {
-                    "mediafile_access_group_ids": [1, 2],
-                    "mediafile_inherited_access_group_ids": [1, 2],
+                    "meeting_mediafile_access_group_ids": [1, 2],
+                    "meeting_mediafile_inherited_access_group_ids": [1, 2],
                 },
                 "group/112": {
                     "meeting_id": 22,
-                    "mediafile_access_group_ids": [1],
-                    "mediafile_inherited_access_group_ids": [1],
+                    "meeting_mediafile_access_group_ids": [1],
+                    "meeting_mediafile_inherited_access_group_ids": [1],
                 },
                 "meeting_mediafile/1": {
                     "access_group_ids": [111, 112],
@@ -171,15 +171,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "group/111",
             {
-                "mediafile_access_group_ids": [1, 2],
-                "mediafile_inherited_access_group_ids": [1, 2],
+                "meeting_mediafile_access_group_ids": [1, 2],
+                "meeting_mediafile_inherited_access_group_ids": [1, 2],
             },
         )
         self.assert_model_exists(
             "group/112",
             {
-                "mediafile_access_group_ids": [1],
-                "mediafile_inherited_access_group_ids": [1],
+                "meeting_mediafile_access_group_ids": [1],
+                "meeting_mediafile_inherited_access_group_ids": [1],
             },
         )
         self.assert_model_exists(
@@ -207,13 +207,13 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "meeting_mediafile_ids": [1, 2, 3, 4],
                 },
                 "group/111": {
-                    "mediafile_access_group_ids": [1, 4],
-                    "mediafile_inherited_access_group_ids": [1, 2, 3, 4],
+                    "meeting_mediafile_access_group_ids": [1, 4],
+                    "meeting_mediafile_inherited_access_group_ids": [1, 2, 3, 4],
                 },
                 "group/112": {
                     "meeting_id": 22,
-                    "mediafile_access_group_ids": [4],
-                    "mediafile_inherited_access_group_ids": [],
+                    "meeting_mediafile_access_group_ids": [4],
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "mediafile/1": {
                     "child_ids": [2],
@@ -262,15 +262,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "group/111",
             {
-                "mediafile_access_group_ids": [1, 4],
-                "mediafile_inherited_access_group_ids": [1, 2, 3, 4],
+                "meeting_mediafile_access_group_ids": [1, 4],
+                "meeting_mediafile_inherited_access_group_ids": [1, 2, 3, 4],
             },
         )
         self.assert_model_exists(
             "group/112",
             {
-                "mediafile_access_group_ids": [4],
-                "mediafile_inherited_access_group_ids": [4],
+                "meeting_mediafile_access_group_ids": [4],
+                "meeting_mediafile_inherited_access_group_ids": [4],
             },
         )
         self.assert_model_exists(
@@ -314,13 +314,13 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "meeting_mediafile_ids": [1, 2],
                 },
                 "group/111": {
-                    "mediafile_access_group_ids": [1, 2],
-                    "mediafile_inherited_access_group_ids": [1, 2],
+                    "meeting_mediafile_access_group_ids": [1, 2],
+                    "meeting_mediafile_inherited_access_group_ids": [1, 2],
                 },
                 "group/112": {
                     "meeting_id": 22,
-                    "mediafile_access_group_ids": [2],
-                    "mediafile_inherited_access_group_ids": [],
+                    "meeting_mediafile_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "mediafile/1": {
                     "child_ids": [2],
@@ -350,15 +350,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "group/111",
             {
-                "mediafile_access_group_ids": [1, 2],
-                "mediafile_inherited_access_group_ids": [1, 2],
+                "meeting_mediafile_access_group_ids": [1, 2],
+                "meeting_mediafile_inherited_access_group_ids": [1, 2],
             },
         )
         self.assert_model_deleted(
             "group/112",
             {
-                "mediafile_access_group_ids": [2],
-                "mediafile_inherited_access_group_ids": [2],
+                "meeting_mediafile_access_group_ids": [2],
+                "meeting_mediafile_inherited_access_group_ids": [2],
             },
         )
         self.assert_model_exists(

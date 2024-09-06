@@ -39,8 +39,8 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 2,
                 "meeting_id": 2,
-                "mediafile_access_group_ids": [4, 6],
-                "mediafile_inherited_access_group_ids": [4, 5, 6],
+                "meeting_mediafile_access_group_ids": [4, 6],
+                "meeting_mediafile_inherited_access_group_ids": [4, 5, 6],
             },
         },
         {
@@ -49,8 +49,8 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 3,
                 "meeting_id": 2,
-                "mediafile_access_group_ids": [6],
-                "mediafile_inherited_access_group_ids": [],
+                "meeting_mediafile_access_group_ids": [6],
+                "meeting_mediafile_inherited_access_group_ids": [],
             },
         },
         {
@@ -227,8 +227,8 @@ def test_migration(write, finalize, assert_model):
         {
             "id": 2,
             "meeting_id": 2,
-            "mediafile_access_group_ids": [4, 6],
-            "mediafile_inherited_access_group_ids": [4, 5, 6],
+            "meeting_mediafile_access_group_ids": [4, 6],
+            "meeting_mediafile_inherited_access_group_ids": [4, 5, 6],
         },
     )
     assert_model(
@@ -236,8 +236,8 @@ def test_migration(write, finalize, assert_model):
         {
             "id": 3,
             "meeting_id": 2,
-            "mediafile_access_group_ids": [6],
-            "mediafile_inherited_access_group_ids": [],
+            "meeting_mediafile_access_group_ids": [6],
+            "meeting_mediafile_inherited_access_group_ids": [],
         },
     )
     assert_model(

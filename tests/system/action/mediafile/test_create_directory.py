@@ -159,12 +159,12 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [6],
                 },
                 "group/5": {
-                    "mediafile_access_group_ids": [41, 42],
-                    "mediafile_inherited_access_group_ids": [41],
+                    "meeting_mediafile_access_group_ids": [41, 42],
+                    "meeting_mediafile_inherited_access_group_ids": [41],
                 },
                 "group/6": {
-                    "mediafile_access_group_ids": [41, 42],
-                    "mediafile_inherited_access_group_ids": [42],
+                    "meeting_mediafile_access_group_ids": [41, 42],
+                    "meeting_mediafile_inherited_access_group_ids": [42],
                 },
             }
         )

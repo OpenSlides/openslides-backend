@@ -765,8 +765,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/7",
             {
-                "mediafile_access_group_ids": [1110],
-                "mediafile_inherited_access_group_ids": [1110, 1111, 1112, 1113],
+                "meeting_mediafile_access_group_ids": [1110],
+                "meeting_mediafile_inherited_access_group_ids": [
+                    1110,
+                    1111,
+                    1112,
+                    1113,
+                ],
             },
         )
         self.assert_model_exists(
@@ -985,8 +990,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"meeting_mediafile_ids": [1111]},
                 "group/8": {
-                    "mediafile_access_group_ids": [1111],
-                    "mediafile_inherited_access_group_ids": [1111],
+                    "meeting_mediafile_access_group_ids": [1111],
+                    "meeting_mediafile_inherited_access_group_ids": [1111],
                 },
                 "mediafile/111": {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
@@ -1028,8 +1033,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"meeting_mediafile_ids": [1]},
                 "group/8": {
-                    "mediafile_access_group_ids": [1111],
-                    "mediafile_inherited_access_group_ids": [1111],
+                    "meeting_mediafile_access_group_ids": [1111],
+                    "meeting_mediafile_inherited_access_group_ids": [1111],
                 },
                 "mediafile/111": {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
@@ -1085,8 +1090,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"meeting_mediafile_ids": [1]},
                 "group/8": {
-                    "mediafile_access_group_ids": [1111],
-                    "mediafile_inherited_access_group_ids": [1111],
+                    "meeting_mediafile_access_group_ids": [1111],
+                    "meeting_mediafile_inherited_access_group_ids": [1111],
                 },
                 "group/9": {
                     "name": "group_3",

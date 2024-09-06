@@ -37,8 +37,8 @@ class GroupDeleteAction(DeleteAction):
         group = self.datastore.get(
             fqid_from_collection_and_id("group", instance["id"]),
             [
-                "mediafile_access_group_ids",
-                "mediafile_inherited_access_group_ids",
+                "meeting_mediafile_access_group_ids",
+                "meeting_mediafile_inherited_access_group_ids",
                 "meeting_user_ids",
                 "meeting_id",
             ],
@@ -48,8 +48,8 @@ class GroupDeleteAction(DeleteAction):
         ):
             raise ActionException("You cannot delete a group with users.")
         self.meeting_mediafile_ids: list[int] = list(
-            set(group.get("mediafile_access_group_ids", []))
-            | set(group.get("mediafile_inherited_access_group_ids", []))
+            set(group.get("meeting_mediafile_access_group_ids", []))
+            | set(group.get("meeting_mediafile_inherited_access_group_ids", []))
         )
         return instance
 
@@ -123,7 +123,9 @@ class GroupDeleteAction(DeleteAction):
                 EventType.Update,
                 fqid_from_collection_and_id("group", group_id),
                 list_fields={
-                    "add": {"mediafile_inherited_access_group_ids": mediafile_ids},
+                    "add": {
+                        "meeting_mediafile_inherited_access_group_ids": mediafile_ids
+                    },
                     "remove": {},
                 },
             )
