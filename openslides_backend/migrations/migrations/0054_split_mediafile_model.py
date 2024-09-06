@@ -119,4 +119,22 @@ class Migration(BaseModelMigration):
                             {"content_object_id": "meeting_" + fqid},
                         )
                     )
+        for collection in ["topic", "motion", "assignment"]:
+            models = cast(
+                dict[int, PartialModel],
+                self.reader.get_all(collection, ["id", "attachment_ids"]),
+            )
+            events.extend(
+                [
+                    RequestUpdateEvent(
+                        fqid_from_collection_and_id(collection, id_),
+                        {
+                            "attachment_meeting_mediafile_ids": model["attachment_ids"],
+                            "attachment_ids": None,
+                        },
+                    )
+                    for id_, model in models.items()
+                    if "attachment_ids" in model
+                ]
+            )
         return events

@@ -1298,7 +1298,7 @@ class Topic(Model):
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
-    attachment_ids = fields.RelationListField(
+    attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     agenda_item_id = fields.RelationField(
@@ -1471,7 +1471,7 @@ class Motion(Model):
     tag_ids = fields.RelationListField(
         to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
-    attachment_ids = fields.RelationListField(
+    attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
@@ -2044,7 +2044,7 @@ class Assignment(Model):
     tag_ids = fields.RelationListField(
         to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
-    attachment_ids = fields.RelationListField(
+    attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
@@ -2191,9 +2191,9 @@ class MeetingMediafile(Model):
     )
     attachment_ids = fields.GenericRelationListField(
         to={
-            "motion": "attachment_ids",
-            "topic": "attachment_ids",
-            "assignment": "attachment_ids",
+            "motion": "attachment_meeting_mediafile_ids",
+            "topic": "attachment_meeting_mediafile_ids",
+            "assignment": "attachment_meeting_mediafile_ids",
         }
     )
     used_as_logo_projector_main_in_meeting_id = fields.RelationField(

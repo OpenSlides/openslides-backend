@@ -240,7 +240,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "supporter_meeting_user_ids": [],
                     "additional_submitter": "additional",
                     "tag_ids": [],
-                    "attachment_ids": [],
+                    "attachment_mediafile_ids": [],
                     "workflow_timestamp": 9876543210,
                 },
             )
@@ -253,7 +253,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("supporter_meeting_user_ids") == []
         assert model.get("additional_submitter") == "additional"
         assert model.get("tag_ids") == []
-        assert model.get("attachment_ids") == []
+        assert model.get("attachment_meeting_mediafile_ids") == []
         # motion/113 does not exist and should therefore not be present in the relations
         assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
@@ -427,7 +427,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "block_id": 51,
                 "supporter_meeting_user_ids": [],
                 "tag_ids": [],
-                "attachment_ids": [],
+                "attachment_mediafile_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -699,7 +699,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "text": "test",
             "reason": "test",
             "modified_final_version": "test",
-            "attachment_ids": [1],
+            "attachment_mediafile_ids": [1],
         }.items():
             response = self.request(
                 "motion.update",
@@ -826,7 +826,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion.update",
             {
                 "id": 111,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -849,7 +849,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion.update",
             {
                 "id": 111,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -882,7 +882,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion.update",
             {
                 "id": 111,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)

@@ -45,7 +45,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -53,7 +53,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             "assignment/111",
             {
                 "title": "title_Xcdfgee",
-                "attachment_ids": [11],
+                "attachment_meeting_mediafile_ids": [11],
                 "description": "text_test1",
                 "open_posts": 12,
                 "phase": "search",

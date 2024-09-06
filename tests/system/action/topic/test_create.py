@@ -111,7 +111,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "agenda_type": AgendaItem.INTERNAL_ITEM,
                 "agenda_duration": 60,
                 "agenda_tag_ids": [37],
-                "attachment_ids": [1, 3, 4],
+                "attachment_mediafile_ids": [1, 3, 4],
             },
         )
         self.assert_status_code(response, 200)
@@ -121,7 +121,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "agenda_item_id": 1,
                 "agenda_type": None,
-                "attachment_ids": [11, 15, 14],
+                "attachment_meeting_mediafile_ids": [11, 15, 14],
             },
         )
         self.assert_model_exists(

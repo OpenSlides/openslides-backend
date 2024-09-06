@@ -10,7 +10,8 @@ from .create import MeetingMediafileCreate
 class AttachmentMixin(Action):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        if attachment_ids := instance.get("attachment_ids"):
+        if "attachment_mediafile_ids" in instance:
+            attachment_ids = instance.pop("attachment_mediafile_ids", [])
             meeting_id = self.get_meeting_id(instance)
             attachment_data = [
                 get_meeting_mediafile_id_or_create_payload(
@@ -37,5 +38,5 @@ class AttachmentMixin(Action):
                 if not isinstance(attachment_data[i], int):
                     attachment_data[i] = result_ids[j]
                     j += 1
-            instance["attachment_ids"] = attachment_data
+            instance["attachment_meeting_mediafile_ids"] = attachment_data
         return instance

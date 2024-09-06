@@ -59,7 +59,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             return {
                 f"topic/{id_}": {
                     "meeting_id": meeting_id,
-                    "attachment_ids": attachment_ids,
+                    "attachment_meeting_mediafile_ids": attachment_ids,
                 },
             }
 

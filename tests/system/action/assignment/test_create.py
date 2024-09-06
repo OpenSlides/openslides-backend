@@ -139,7 +139,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -153,7 +153,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
-                "attachment_ids": [11],
+                "attachment_meeting_mediafile_ids": [11],
                 "sequential_number": 1,
             },
         )
@@ -186,7 +186,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 400)

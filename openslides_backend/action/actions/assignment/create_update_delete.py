@@ -1,5 +1,6 @@
 from ....models.models import Assignment
 from ....permissions.permissions import Permissions
+from ....shared.schema import id_list_schema
 from ...action_set import ActionSet
 from ...generics.update import UpdateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -47,10 +48,12 @@ class AssignmentActionSet(ActionSet):
             "phase",
             "default_poll_description",
             "number_poll_candidates",
-            "attachment_ids",
             "tag_ids",
         ],
-        additional_optional_fields=agenda_creation_properties,
+        additional_optional_fields={
+            **agenda_creation_properties,
+            "attachment_mediafile_ids": id_list_schema,
+        },
     )
     update_schema = DefaultSchema(Assignment()).get_update_schema(
         optional_properties=[
@@ -60,9 +63,9 @@ class AssignmentActionSet(ActionSet):
             "phase",
             "default_poll_description",
             "number_poll_candidates",
-            "attachment_ids",
             "tag_ids",
-        ]
+        ],
+        additional_optional_fields={"attachment_mediafile_ids": id_list_schema},
     )
     delete_schema = DefaultSchema(Assignment()).get_delete_schema()
     permission = Permissions.Assignment.CAN_MANAGE

@@ -15,7 +15,11 @@ from ....shared.patterns import (
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
 )
-from ....shared.schema import number_string_json_schema, optional_id_schema
+from ....shared.schema import (
+    id_list_schema,
+    number_string_json_schema,
+    optional_id_schema,
+)
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -61,13 +65,13 @@ class MotionUpdate(
             "block_id",
             "supporter_meeting_user_ids",
             "tag_ids",
-            "attachment_ids",
             "created",
             "workflow_timestamp",
         ],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
             "amendment_paragraphs": number_string_json_schema,
+            "attachment_mediafile_ids": id_list_schema,
         },
     )
 
@@ -92,7 +96,7 @@ class MotionUpdate(
                         "block_id",
                         "supporter_meeting_user_ids",
                         "tag_ids",
-                        "attachment_ids",
+                        "attachment_meeting_mediafile_ids",
                         "recommendation_extension_reference_ids",
                         "state_id",
                         "submitter_ids",
@@ -250,7 +254,7 @@ class MotionUpdate(
                 "title",
                 "text",
                 "reason",
-                "attachment_ids",
+                "attachment_meeting_mediafile_ids",
                 "amendment_paragraphs",
                 "workflow_id",
                 "start_line_number",

@@ -169,18 +169,26 @@ def test_migration(write, finalize, assert_model):
             "fields": {
                 "id": 1,
                 "meeting_id": 2,
-                "attachment_ids": [5, 6],
+                "attachment_meeting_mediafile_ids": [5, 6],
             },
         },
         {
             "type": "create",
             "fqid": "motion/1",
-            "fields": {"id": 1, "meeting_id": 2, "attachment_ids": [6]},
+            "fields": {
+                "id": 1,
+                "meeting_id": 2,
+                "attachment_meeting_mediafile_ids": [6],
+            },
         },
         {
             "type": "create",
             "fqid": "assignment/1",
-            "fields": {"id": 1, "meeting_id": 2, "attachment_ids": [6]},
+            "fields": {
+                "id": 1,
+                "meeting_id": 2,
+                "attachment_meeting_mediafile_ids": [6],
+            },
         },
     )
 
@@ -371,14 +379,14 @@ def test_migration(write, finalize, assert_model):
         {
             "id": 1,
             "meeting_id": 2,
-            "attachment_ids": [5, 6],
+            "attachment_meeting_mediafile_ids": [5, 6],
         },
     )
     assert_model(
         "motion/1",
-        {"id": 1, "meeting_id": 2, "attachment_ids": [6]},
+        {"id": 1, "meeting_id": 2, "attachment_meeting_mediafile_ids": [6]},
     )
     assert_model(
         "assignment/1",
-        {"id": 1, "meeting_id": 2, "attachment_ids": [6]},
+        {"id": 1, "meeting_id": 2, "attachment_meeting_mediafile_ids": [6]},
     )

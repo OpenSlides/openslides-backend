@@ -45,7 +45,6 @@ class MotionCreate(
             "block_id",
             "supporter_meeting_user_ids",
             "tag_ids",
-            "attachment_ids",
             "text",
             "lead_motion_id",
             "statute_paragraph_id",
@@ -57,6 +56,7 @@ class MotionCreate(
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
             "amendment_paragraphs": number_string_json_schema,
+            "attachment_mediafile_ids": id_list_schema,
             **agenda_creation_properties,
         },
     )
@@ -154,9 +154,9 @@ class MotionCreate(
         forbidden_fields = set()
         perm = Permissions.Mediafile.CAN_SEE
         if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            whitelist.append("attachment_ids")
-        elif "attachment_ids" in instance:
-            forbidden_fields.add("attachment_ids")
+            whitelist.append("attachment_mediafile_ids")
+        elif "attachment_mediafile_ids" in instance:
+            forbidden_fields.add("attachment_mediafile_ids")
 
         perm = Permissions.Motion.CAN_MANAGE
         if (

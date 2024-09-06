@@ -38,11 +38,21 @@ class TopicUpdateTest(BaseActionTestCase):
         )
         response = self.request(
             "topic.update",
-            {"id": 1, "title": "test2", "text": "text", "attachment_ids": [1]},
+            {
+                "id": 1,
+                "title": "test2",
+                "text": "text",
+                "attachment_mediafile_ids": [1],
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "topic/1", {"title": "test2", "text": "text", "attachment_ids": [11]}
+            "topic/1",
+            {
+                "title": "test2",
+                "text": "text",
+                "attachment_meeting_mediafile_ids": [11],
+            },
         )
 
     def test_update_text_with_iframe(self) -> None:
