@@ -2506,6 +2506,14 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/33": {"group_ids": [8]},
                 "meeting_user/34": {"locked_out": True, "group_ids": [8]},
                 "meeting_user/45": {"locked_out": True, "group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
@@ -2535,6 +2543,15 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/33": {"group_ids": [8]},
                 "meeting_user/34": {"locked_out": True, "group_ids": [8]},
                 "meeting_user/45": {"locked_out": True, "group_ids": [10]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/4": {"meeting_user_ids": [24]},
+                "group/5": {"meeting_user_ids": [22, 23]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/10": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 6, 7, 9, 11, 12]
+                },
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
@@ -2556,6 +2573,14 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/33": {"locked_out": True, "group_ids": [8]},
                 "meeting_user/34": {"group_ids": [8]},
                 "meeting_user/45": {"group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
             }
         )
         self.set_organization_management_level(
@@ -2580,6 +2605,14 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/33": {"locked_out": True, "group_ids": [8]},
                 "meeting_user/34": {"group_ids": [8]},
                 "meeting_user/45": {"group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
             }
         )
         self.set_committee_management_level([1, 3], 5)

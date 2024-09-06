@@ -522,6 +522,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
+    motion_poll_default_method = fields.CharField(default="YNA")
     motion_poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
@@ -974,6 +975,7 @@ class Group(Model):
                 "motion.can_manage_polls",
                 "motion.can_see",
                 "motion.can_see_internal",
+                "motion.can_see_origin",
                 "motion.can_support",
                 "poll.can_manage",
                 "projector.can_manage",
@@ -2462,7 +2464,7 @@ class ChatMessage(Model):
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "chat_message_ids"}, required=True, constant=True
+        to={"meeting_user": "chat_message_ids"}, constant=True
     )
     chat_group_id = fields.RelationField(
         to={"chat_group": "chat_message_ids"}, required=True, constant=True

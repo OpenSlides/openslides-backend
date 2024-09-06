@@ -111,6 +111,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": False,
