@@ -352,7 +352,9 @@ class MeetingImport(
                     replace_user_id
                 )
             except KeyError:
-                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = [replace_user_id]
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = [
+                    replace_user_id
+                ]
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "

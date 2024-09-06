@@ -11,11 +11,9 @@ from datastore.writer.core import (
 
 class Migration(BaseModelMigration):
     """
-    This migration introduces the new gender model which enables
-    custom gender names for non default genders.
-    This requires to replace all gender strings in organization and
-    user models to be replaced with the corresponding gender id.
-    If the migration runs in memory then all gender information is set to None.
+    This migration introduces the new gender model which enables custom gender names for non default genders.
+    This requires to replace all gender strings in organization and user models to be replaced with the corresponding gender id.
+    If the migration runs in memory then all gender information is left untouched since the import will still handle it as a string.
     """
 
     target_migration_index = 55
@@ -24,7 +22,7 @@ class Migration(BaseModelMigration):
         events: list[BaseRequestEvent] = []
         if not self.reader.is_in_memory_migration:
             users = self.reader.get_all("user", ["gender"])
-            default_genders = ["male", "femle", "diverse", "non-binary"]
+            default_genders = ["male", "female", "diverse", "non-binary"]
             gender_strings = self.reader.get("organization/1", ["genders"]).get(
                 "genders", ""
             )
