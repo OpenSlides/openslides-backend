@@ -21,6 +21,7 @@ class Migration(BaseModelMigration):
         events: list[BaseRequestEvent] = [
             RequestUpdateEvent(
                 fqid_from_collection_and_id("user", id_), {"is_active": True}
-            ) for id_ in users
+            )
+            for id_ in users
         ]
         return events

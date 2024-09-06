@@ -19,23 +19,17 @@ def test_migration(write, finalize, assert_model):
             "type": "create",
             "fqid": "user/4",
             "fields": {"id": 4, "is_active": None},
-        }
+        },
     )
 
     finalize("0054_is_active_true_default")
 
-    for i in [1,3,4]:
+    for i in [1, 3, 4]:
         assert_model(
             f"user/{i}",
-            {
-                "id": i,
-                "is_active": True
-            },
+            {"id": i, "is_active": True},
         )
     assert_model(
         "user/2",
-        {
-            "id": 2,
-            "is_active": False
-        },
+        {"id": 2, "is_active": False},
     )
