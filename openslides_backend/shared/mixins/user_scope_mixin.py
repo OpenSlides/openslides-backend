@@ -178,10 +178,12 @@ class UserScopeMixin(BaseServiceProvider):
                 [ci for ci in committees_to_meetings.keys()],
             ):
                 return
-            meeting_ids: set = set()
-            for mi in committees_to_meetings.values():
-                meeting_ids.add(*mi)
-            if not self.check_for_admin_in_all_meetings(instance_id, meeting_ids):
+            meeting_ids = set()
+            for mids in committees_to_meetings.values():
+                meeting_ids = {meeting_id for meeting_id in mids}
+            if not meeting_ids or not self.check_for_admin_in_all_meetings(
+                instance_id, meeting_ids
+            ):
                 raise MissingPermission(
                     {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
                 )
@@ -201,11 +203,15 @@ class UserScopeMixin(BaseServiceProvider):
                 return False
             b_meeting_ids = set()
             for m_ids in self.instance_committee_meeting_ids.values():
-                b_meeting_ids.update(m_ids)
+                if m_ids:
+                    b_meeting_ids.update(m_ids)
         if not b_meeting_ids:
             return False
+        # During participant import there is no permstore.
         if hasattr(self, "permstore"):
-            a_meeting_ids = self.permstore.user_meetings
+            a_meeting_ids = (
+                self.permstore.user_meetings
+            )  # returns only admin level meetings
         else:
             a_user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance_id),
@@ -251,7 +257,11 @@ class UserScopeMixin(BaseServiceProvider):
             # unnecessary "if" due to default group always existant?
             if group_ids := meeting_dict.get("group_ids", []):
                 groups = self.datastore.get_many(
-                    [GetManyRequest("group", group_ids, ["meeting_user_ids"])],
+                    [
+                        GetManyRequest(
+                            "group", group_ids, ["meeting_user_ids", "permissions"]
+                        )
+                    ],
                     lock_result=False,
                 ).get("group", {})
                 for group_id, group in groups.items():
@@ -260,7 +270,7 @@ class UserScopeMixin(BaseServiceProvider):
                     if meeting_user_ids and (
                         "user.can_manage" in group_permissions
                         or "user.can_update" in group_permissions
-                    ):  # TODO test mit can manage hier nur can update
+                    ):
                         admin_meeting_users.update(
                             self.datastore.get_many(
                                 [
@@ -275,22 +285,14 @@ class UserScopeMixin(BaseServiceProvider):
                         )
             else:
                 return False
-            # if instance/requested user is a meeting admin in this meeting.
             if admin_meeting_users:
-                if [
-                    admin_meeting_user
-                    for admin_meeting_user in admin_meeting_users.values()
-                    if admin_meeting_user.get("user_id") == instance_id
-                ] != []:
-                    return False
-                # if requesting user is not a meeting admin in this meeting.
-                if not next(
-                    iter(
-                        admin_meeting_user
-                        for admin_meeting_user in admin_meeting_users.values()
-                        if admin_meeting_user.get("user_id") == self.user_id
-                    )
-                ):
+                is_admin = False
+                for admin_meeting_user in admin_meeting_users.values():
+                    if admin_meeting_user.get("user_id") == instance_id:
+                        return False
+                    if admin_meeting_user.get("user_id") == self.user_id:
+                        is_admin = True
+                if not is_admin:
                     return False
             else:
                 return False
