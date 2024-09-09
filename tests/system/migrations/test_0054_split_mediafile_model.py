@@ -25,7 +25,7 @@ def test_migration(write, finalize, assert_model):
             "fqid": "meeting/2",
             "fields": {
                 "id": 2,
-                "mediafile_ids": [4, 5, 6],
+                "mediafile_ids": [4, 5, 6, 20],
                 "group_ids": [2, 3],
                 "topic_ids": [1],
                 "assignment_ids": [1],
@@ -190,6 +190,22 @@ def test_migration(write, finalize, assert_model):
                 "attachment_ids": [6],
             },
         },
+        {
+            "type": "create",
+            "fqid": "mediafile/20",
+            "fields": {
+                "id": 20,
+                "owner_id": "meeting/2",
+                "title": "pic2.png",
+                "filesize": 8,
+                "filename": "pic2.png",
+                "mimetype": "image/png",
+                "create_timestamp": 7,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+                "is_public": True,
+            },
+        },
     )
 
     finalize("0054_split_mediafile_model")
@@ -213,8 +229,8 @@ def test_migration(write, finalize, assert_model):
         "meeting/2",
         {
             "id": 2,
-            "mediafile_ids": [4, 5, 6],
-            "meeting_mediafile_ids": [4, 5, 6],
+            "mediafile_ids": [4, 5, 6, 20],
+            "meeting_mediafile_ids": [4, 5, 6, 20],
             "group_ids": [2, 3],
             "topic_ids": [1],
             "assignment_ids": [1],
@@ -389,4 +405,28 @@ def test_migration(write, finalize, assert_model):
     assert_model(
         "assignment/1",
         {"id": 1, "meeting_id": 2, "attachment_meeting_mediafile_ids": [6]},
+    )
+    assert_model(
+        "mediafile/20",
+        {
+            "id": 20,
+            "owner_id": "meeting/2",
+            "title": "pic2.png",
+            "filesize": 8,
+            "filename": "pic2.png",
+            "mimetype": "image/png",
+            "create_timestamp": 7,
+            "meeting_mediafile_ids": [20],
+        },
+    )
+    assert_model(
+        "meeting_mediafile/20",
+        {
+            "id": 20,
+            "meeting_id": 2,
+            "mediafile_id": 20,
+            "access_group_ids": [],
+            "inherited_access_group_ids": [],
+            "is_public": True,
+        },
     )
