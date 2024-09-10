@@ -6,7 +6,13 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import Action
+from ..meeting_mediafile.create import MeetingMediafileCreate
+from .calculate_mixins import (
+    calculate_inherited_groups_helper,
+    calculate_inherited_groups_helper_with_parent_id,
+)
 
 
 class MediafileMixin(Action):
@@ -39,7 +45,10 @@ class MediafileMixin(Action):
 
         if collection == "organization":
             self.check_token_unique(instance.get("token"), instance.get("id"))
-            if "access_group_ids" in instance:
+            if "access_group_ids" in instance and (
+                "meeting_id" not in instance
+                or not self.check_implicitly_published(instance, parent_id)
+            ):
                 raise ActionException(
                     "access_group_ids is not allowed in organization mediafiles."
                 )
@@ -50,6 +59,28 @@ class MediafileMixin(Action):
             self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
 
         return instance
+
+    def check_implicitly_published(
+        self, instance: dict[str, Any], parent_id: int | None
+    ) -> bool:
+        if (
+            "id" in instance
+            and self.datastore.get(
+                fqid_from_collection_and_id("mediafile", instance["id"]),
+                ["published_to_meetings_in_organization_id"],
+            ).get("published_to_meetings_in_organization_id")
+            == ONE_ORGANIZATION_ID
+        ):
+            return True
+        if not parent_id:
+            return False
+        return (
+            self.datastore.get(
+                fqid_from_collection_and_id("mediafile", parent_id),
+                ["published_to_meetings_in_organization_id"],
+            ).get("published_to_meetings_in_organization_id")
+            == ONE_ORGANIZATION_ID
+        )
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         collection, _ = self.get_owner_data(instance)
@@ -161,3 +192,61 @@ class MediafileMixin(Action):
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
                 raise ActionException(f"Token '{token}' is not unique.")
+
+
+class MediafileCreateMixin(MediafileMixin):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
+        if parent_id := instance.get("parent_id"):
+            parent = self.datastore.get(
+                fqid_from_collection_and_id("mediafile", parent_id),
+                ["published_to_meetings_in_organization_id"],
+            )
+            instance["published_to_meetings_in_organization_id"] = parent.get(
+                "published_to_meetings_in_organization_id"
+            )
+        return instance
+
+    def handle_orga_meeting_mediafile_creation(self, instance: dict[str, Any]) -> None:
+        if parent_id := instance.get("parent_id"):
+            parent_meeting_data = self.datastore.filter(
+                "meeting_mediafile",
+                FilterOperator("mediafile_id", "=", parent_id),
+                ["inherited_access_group_ids", "is_public", "meeting_id"],
+            )
+            mm_instances: list[dict[str, Any]] = []
+            for parent_meeting_mediafile in parent_meeting_data.values():
+                mm_instance: dict[str, Any] = {
+                    "meeting_id": parent_meeting_mediafile["meeting_id"],
+                    "mediafile_id": instance["id"],
+                }
+                (
+                    mm_instance["is_public"],
+                    mm_instance["inherited_access_group_ids"],
+                ) = calculate_inherited_groups_helper(
+                    None,
+                    parent_meeting_mediafile.get("is_public"),
+                    parent_meeting_mediafile.get("inherited_access_group_ids"),
+                )
+                mm_instances.append(mm_instance)
+            self.execute_other_action(MeetingMediafileCreate, mm_instances)
+
+    def handle_meeting_meeting_mediafile_creation(
+        self, meeting_id: int, instance: dict[str, Any]
+    ) -> None:
+        mm_instance: dict[str, Any] = {
+            "meeting_id": meeting_id,
+            "mediafile_id": instance["id"],
+        }
+        if "access_group_ids" in instance:
+            mm_instance["access_group_ids"] = instance.pop("access_group_ids")
+        (
+            mm_instance["is_public"],
+            mm_instance["inherited_access_group_ids"],
+        ) = calculate_inherited_groups_helper_with_parent_id(
+            self.datastore,
+            mm_instance.get("access_group_ids"),
+            instance.get("parent_id"),
+            meeting_id,
+        )
+        self.execute_other_action(MeetingMediafileCreate, [mm_instance])

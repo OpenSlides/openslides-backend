@@ -1,17 +1,16 @@
 import time
 from typing import Any
 
-from ....models.models import Mediafile
+from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
-from .mixins import MediafileMixin
+from .mixins import MediafileCreateMixin
 
 
 @register_action("mediafile.create_directory")
-class MediafileCreateDirectory(MediafileMixin, CreateAction):
+class MediafileCreateDirectory(MediafileCreateMixin, CreateAction):
     """
     Action to create directory a mediafile.
     """
@@ -19,7 +18,10 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["owner_id", "title"],
-        optional_properties=["access_group_ids", "parent_id"],
+        optional_properties=["parent_id"],
+        additional_optional_fields={
+            "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
+        },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
@@ -31,16 +33,9 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
         instance = super().update_instance(instance)
         instance["is_directory"] = True
         instance["create_timestamp"] = round(time.time())
-        collection, id_ = self.get_owner_data(instance)
+        collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
-            (
-                instance["is_public"],
-                instance["inherited_access_group_ids"],
-            ) = calculate_inherited_groups_helper_with_parent_id(
-                self.datastore,
-                instance.get("access_group_ids"),
-                instance.get("parent_id"),
-            )
+            self.handle_meeting_meeting_mediafile_creation(meeting_id, instance)
         else:
-            instance["is_public"] = True
+            self.handle_orga_meeting_mediafile_creation(instance)
         return instance

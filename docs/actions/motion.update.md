@@ -21,7 +21,7 @@ Includes workflow_timestamp from Issue2112
     block_id: Id;
     supporter_meeting_user_ids: Id[];
     tag_ids: Id[];
-    attachment_ids: Id[];
+    attachment_mediafile_ids: Id[];
     workflow_id: Id;
     start_line_number: int;
     workflow_timestamp: timestamp;

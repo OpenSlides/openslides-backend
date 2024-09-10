@@ -1,15 +1,15 @@
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
 
 class ProjectorProject(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/2": {"is_active_in_organization_id": 1},
-                "group/1": {"meeting_id": 1},
                 "projector/23": {
                     "meeting_id": 1,
                     "current_projection_ids": [105, 106],
@@ -438,6 +438,117 @@ class ProjectorProject(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'."
+            in response.json["message"]
+        )
+
+    def test_mediafile_as_content_object(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "meeting_mediafile_ids": [2],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "meeting_mediafile/2": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "access_group_ids": [1],
+                    "inherited_access_group_ids": [1],
+                    "is_public": False,
+                },
+            }
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projection/112",
+            {
+                "content_object_id": "meeting_mediafile/2",
+                "current_projector_id": 75,
+            },
+        )
+
+    def test_mediafile_as_content_object_generate_meeting_mediafile(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+            }
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/1",
+            {
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": [2],
+                "inherited_access_group_ids": [2],
+                "is_public": False,
+                "projection_ids": [112],
+            },
+        )
+        self.assert_model_exists(
+            "projection/112",
+            {
+                "content_object_id": "meeting_mediafile/1",
+                "current_projector_id": 75,
+            },
+        )
+
+    def test_meeting_mediafile_as_content_object(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "meeting_mediafile_ids": [2],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "meeting_mediafile/2": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "access_group_ids": [1],
+                    "inherited_access_group_ids": [1],
+                    "is_public": False,
+                },
+            }
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "meeting_mediafile/2", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projection/112",
+            {
+                "content_object_id": "meeting_mediafile/2",
+                "current_projector_id": 75,
+            },
+        )
+
+    def test_unpublished_mediafile_as_content_object(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                },
+            }
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "No meeting_mediafile creation possible: Mediafile is not published."
             in response.json["message"]
         )
 
