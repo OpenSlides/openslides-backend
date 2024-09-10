@@ -52,10 +52,8 @@ class ProjectorAddToPreview(WeightMixin, UpdateAction):
                     )[0]["id"]
                 else:
                     meeting_mediafile_id = meeting_mediafile
-                fqid_content_object = instance["content_object_id"] = (
-                    fqid_from_collection_and_id(
-                        "meeting_mediafile", meeting_mediafile_id
-                    )
+                instance["content_object_id"] = fqid_from_collection_and_id(
+                    "meeting_mediafile", meeting_mediafile_id
                 )
             # add the preview projections
             for projector_id in instance["ids"]:
