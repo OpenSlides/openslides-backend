@@ -9,7 +9,7 @@
 
 // Optional
     parent_id: Id;
-    access_group_ids: (group/mediafile_access_group_ids)[];  // only for meeting-wide mediafiles
+    access_group_ids: (group/meeting_mediafile_access_group_ids)[];  // only for meeting-wide mediafiles
     token: string,                                           // only for organization-wide mediafiles
 }
 ```
@@ -23,7 +23,6 @@ The `parent_id`, if given, must be a directory (flag `mediafile/is_directory`) a
 Additional fields to set:
 - `is_directory` must be set to `false`.
 - `create_timestamp` must be set to the current timestamp.
-- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile.
 - `mimetype` is guessed by the ~~`filename`~~ `filecontent` (since 4.0.16)
 - `pdf_information`: If the mimetype is `aplication/pdf` this object needs to be filled:
     ```
@@ -34,6 +33,7 @@ Additional fields to set:
     ```
     It is tried to get the amount of pages from the pdf. If it is encrypted or the extraction fails `pages` will be set to 0 and `entrypted` to true.
 - `filesize`: Size of the file in bytes.
+- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile or a published orga-level parent (for those meetings where the parent has meeting_mediafiles).
 
 The `file` is not stored into the datastore but uploaded to the mediaservice.
 

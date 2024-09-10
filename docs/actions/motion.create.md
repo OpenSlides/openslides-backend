@@ -13,7 +13,7 @@
     block_id: Id;
     supporter_meeting_user_ids: Id[]; // meeting user ids
     tag_ids: Id[];
-    attachment_ids: Id[];
+    attachment_mediafile_ids: Id[];
 
 
 // Special logic given by the type of the motion
