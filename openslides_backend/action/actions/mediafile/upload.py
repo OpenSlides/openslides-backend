@@ -10,7 +10,7 @@ from pygments.util import ClassNotFound
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from ....models.models import Mediafile
+from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -20,9 +20,8 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
-from .mixins import MediafileMixin
+from .mixins import MediafileCreateMixin
 
 
 class PDFInformation(TypedDict, total=False):
@@ -31,7 +30,7 @@ class PDFInformation(TypedDict, total=False):
 
 
 @register_action("mediafile.upload")
-class MediafileUploadAction(MediafileMixin, CreateAction):
+class MediafileUploadAction(MediafileCreateMixin, CreateAction):
     """
     Action to upload a mediafile.
     """
@@ -39,8 +38,11 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["title", "owner_id", "filename"],
-        optional_properties=["token", "access_group_ids", "parent_id"],
+        optional_properties=["token", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
+        additional_optional_fields={
+            "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
+        },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
@@ -156,18 +158,11 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         instance["mimetype"] = use_mimetype
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
-        collection, _ = self.get_owner_data(instance)
+        collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
-            (
-                instance["is_public"],
-                instance["inherited_access_group_ids"],
-            ) = calculate_inherited_groups_helper_with_parent_id(
-                self.datastore,
-                instance.get("access_group_ids"),
-                instance.get("parent_id"),
-            )
+            self.handle_meeting_meeting_mediafile_creation(meeting_id, instance)
         else:
-            instance["is_public"] = True
+            self.handle_orga_meeting_mediafile_creation(instance)
         self.media.upload_mediafile(file_, id_, cast(str, use_mimetype))
         return instance
 
