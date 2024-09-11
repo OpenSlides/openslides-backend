@@ -22,6 +22,7 @@ class MediafileMixin(Action):
     """
 
     meeting_fields: list[str] = ["meeting_id", "access_group_ids"]
+    is_delete_action: bool = False
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         collection, id_ = self.get_owner_data(instance)
@@ -92,8 +93,9 @@ class MediafileMixin(Action):
             self.assert_not_anonymous()
             instance_fields = set(instance.keys())
             instance_fields.discard("id")
-            if len(
-                instance_fields.difference(self.meeting_fields)
+            if (
+                len(instance_fields.difference(self.meeting_fields))
+                or self.is_delete_action
             ) and not has_organization_management_level(
                 self.datastore,
                 self.user_id,
@@ -102,7 +104,7 @@ class MediafileMixin(Action):
                 raise MissingPermission(
                     OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 )
-            if not len(instance_fields.intersection(self.meeting_fields)):
+            if "meeting_id" not in instance_fields:
                 return
         else:
             assert collection == "meeting"
