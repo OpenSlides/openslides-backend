@@ -82,7 +82,11 @@ class Migration(BaseModelMigration):
                     ]
                 )
             else:
-                assert not any(mediafile.get(field) for field in self.split_fields)
+                assert not any(
+                    mediafile.get(field)
+                    for field in self.split_fields
+                    if field != "is_public"
+                )
                 events.extend(
                     [
                         RequestUpdateEvent(
