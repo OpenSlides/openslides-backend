@@ -21,6 +21,8 @@ class MediafileMixin(Action):
     Overwrite update_instance(), check_permissions() and get_meeting_id().
     """
 
+    meeting_fields: list[str] = ["meeting_id", "access_group_ids"]
+
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         collection, id_ = self.get_owner_data(instance)
         self.check_parent_is_dir_and_owner(
@@ -88,7 +90,11 @@ class MediafileMixin(Action):
         # handle organization permissions
         if collection == "organization":
             self.assert_not_anonymous()
-            if not has_organization_management_level(
+            instance_fields = set(instance.keys())
+            instance_fields.discard("id")
+            if len(
+                instance_fields.difference(self.meeting_fields)
+            ) and not has_organization_management_level(
                 self.datastore,
                 self.user_id,
                 OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
@@ -96,8 +102,10 @@ class MediafileMixin(Action):
                 raise MissingPermission(
                     OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 )
-            return
-        assert collection == "meeting"
+            if not len(instance_fields.intersection(self.meeting_fields)):
+                return
+        else:
+            assert collection == "meeting"
         super().check_permissions(instance)
 
     def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
@@ -110,6 +118,8 @@ class MediafileMixin(Action):
         collection, id_ = self.get_owner_data(instance)
         if collection == "meeting":
             return id_
+        elif "meeting_id" in instance:
+            return instance["meeting_id"]
         raise ActionException("Try to get a meeting id from a organization mediafile.")
 
     def get_owner_data(self, instance: dict[str, Any]) -> tuple[str, int]:
