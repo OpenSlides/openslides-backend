@@ -1312,3 +1312,28 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {"id": 111, "title": "title_Xcdfgee"},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
+
+    def test_update_meeting_permissions_orga_owner_on_published_file_error(
+        self,
+    ) -> None:
+        self.orga_permission_test_models["mediafile/111"][
+            "published_to_meetings_in_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.base_permission_test(
+            self.orga_permission_test_models,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee"},
+            Permissions.Mediafile.CAN_MANAGE,
+            fail=True,
+        )
+
+    def test_update_meeting_permissions_orga_owner_on_published_file(self) -> None:
+        self.orga_permission_test_models["mediafile/111"][
+            "published_to_meetings_in_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.base_permission_test(
+            self.orga_permission_test_models,
+            "mediafile.update",
+            {"id": 111, "meeting_id": 1, "access_group_ids": [7]},
+            Permissions.Mediafile.CAN_MANAGE,
+        )
