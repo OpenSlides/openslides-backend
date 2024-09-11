@@ -85,7 +85,7 @@ def test_migration(write, finalize, assert_model):
                 "is_directory": True,
                 "create_timestamp": 2,
                 "child_ids": [3],
-                "is_public": False,
+                "is_public": True,
                 "inherited_access_group_ids": [],
             },
         },
