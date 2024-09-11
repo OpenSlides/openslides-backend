@@ -79,10 +79,6 @@ class UserUpdate(
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
 
-    def check_permissions(self, instance: dict[str, Any]) -> None:
-        self.assert_not_anonymous()
-        super().check_permissions(instance)
-
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if not self.internal and any(

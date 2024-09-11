@@ -45,13 +45,15 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                     "meeting/1": {
                         "user_ids": [111],
                         "committee_id": 1,
-                        "group_ids": [11],
+                        "group_ids": [11, 12],
+                        "admin_group_id": 12,
                         "is_active_in_organization_id": 1,
                     },
                     "meeting/2": {
                         "user_ids": [111],
                         "committee_id": 2,
-                        "group_ids": [22],
+                        "group_ids": [22, 23],
+                        "admin_group_id": 23,
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
@@ -70,7 +72,9 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "group_ids": [22],
                     },
                     "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
+                    "group/12": {"meeting_id": 1},
                     "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
+                    "group/23": {"meeting_id": 2},
                 }
             )
         elif scope == UserScope.Committee:

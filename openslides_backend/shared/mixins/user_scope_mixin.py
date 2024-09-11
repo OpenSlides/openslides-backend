@@ -31,6 +31,7 @@ class UserScope(str, Enum):
 
 class UserScopeMixin(BaseServiceProvider):
     instance_committee_meeting_ids: dict
+    name: str
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
@@ -39,8 +40,8 @@ class UserScopeMixin(BaseServiceProvider):
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization), the OML level of the user as string (empty string if the user
-        has none) and the ids of all committees that the user is either a manager in or a member of.
-        and their respective meetings the user is part of. #A committe can have no meetings if the
+        has none) and the ids of all committees that the user is either a manager in or a member of
+        together with their respective meetings the user being part of. A committee can have no meetings if the
         user just has committee management rights and is not part of any of its meetings.
         """
         meetings: set[int] = set()
@@ -189,15 +190,32 @@ class UserScopeMixin(BaseServiceProvider):
                 )
 
     def check_for_admin_in_all_meetings(
-        self, instance_id: int, b_meeting_ids: set[int] | None = None
+        self,
+        instance_or_id: int | dict[str, Any],
+        b_meeting_ids: set[int] | None = None,
     ) -> bool:
         """
-        Checks if the requesting user has permissions to manage participants in all of requested users meetings.
-        Also checks if the requesting user has meeting admin rights and the requested user doesn't.
+        Checks if the requesting user has permissions to manage participants in all of requested users meetings but requested user doesn't.
+        Also checks requested user has no committee management rights if a dict was provided instead of an id.
         Returns true if permissions are given. False if not. Raises no Exceptions.
         """
-        if not instance_id:
-            return False
+        if isinstance(instance_or_id, dict):
+            if not (instance_id := instance_or_id.get("id")):
+                return False
+            if hasattr(self, "name") and self.name == "user.create":
+                if instance_or_id.get("committee_management_ids", []):
+                    return False
+            else:
+                user = self.datastore.get(
+                    fqid_from_collection_and_id("user", instance_id),
+                    ["committee_management_ids"],
+                    lock_result=False,
+                    use_changed_models=False,
+                )
+                if user.get("committee_management_ids", []):
+                    return False
+        else:
+            instance_id = instance_or_id
         if not b_meeting_ids:
             if not hasattr(self, "instance_committee_meeting_ids"):
                 return False
@@ -235,56 +253,51 @@ class UserScopeMixin(BaseServiceProvider):
             lock_result=False,
         ).get("meeting", {})
         for meeting_id, meeting_dict in intersection_meetings.items():
-            # get meetings admins
             admin_meeting_users = {}
-            # unnecessary "if" due to admin group always existant?
-            if admin_group_id := meeting_dict.get("admin_group_id"):
-                admin_group = self.datastore.get(
-                    fqid_from_collection_and_id("group", admin_group_id),
-                    ["meeting_user_ids"],
-                    lock_result=False,
-                )
-                admin_meeting_users = self.datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "meeting_user",
-                            admin_group.get("meeting_user_ids", []),
-                            ["user_id"],
-                        )
-                    ],
-                    lock_result=False,
-                ).get("meeting_user", {})
-            # unnecessary "if" due to default group always existant?
-            if group_ids := meeting_dict.get("group_ids", []):
-                groups = self.datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "group", group_ids, ["meeting_user_ids", "permissions"]
-                        )
-                    ],
-                    lock_result=False,
-                ).get("group", {})
-                for group_id, group in groups.items():
-                    meeting_user_ids = group.get("meeting_user_ids", [])
-                    group_permissions = group.get("permissions", [])
-                    if meeting_user_ids and (
-                        "user.can_manage" in group_permissions
-                        or "user.can_update" in group_permissions
-                    ):
-                        admin_meeting_users.update(
-                            self.datastore.get_many(
-                                [
-                                    GetManyRequest(
-                                        "meeting_user",
-                                        meeting_user_ids,
-                                        ["user_id"],
-                                    )
-                                ],
-                                lock_result=False,
-                            ).get("meeting_user", {})
-                        )
-            else:
-                return False
+            admin_group_id = meeting_dict.get("admin_group_id", 0)
+            admin_group = self.datastore.get(
+                fqid_from_collection_and_id("group", admin_group_id),
+                ["meeting_user_ids"],
+                lock_result=False,
+            )
+            admin_meeting_users = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting_user",
+                        admin_group.get("meeting_user_ids", []),
+                        ["user_id"],
+                    )
+                ],
+                lock_result=False,
+            ).get("meeting_user", {})
+            group_ids = meeting_dict.get("group_ids", [])
+            groups = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "group", group_ids, ["meeting_user_ids", "permissions"]
+                    )
+                ],
+                lock_result=False,
+            ).get("group", {})
+            for group_id, group in groups.items():
+                meeting_user_ids = group.get("meeting_user_ids", [])
+                group_permissions = group.get("permissions", [])
+                if meeting_user_ids and (
+                    "user.can_manage" in group_permissions
+                    or "user.can_update" in group_permissions
+                ):
+                    admin_meeting_users.update(
+                        self.datastore.get_many(
+                            [
+                                GetManyRequest(
+                                    "meeting_user",
+                                    meeting_user_ids,
+                                    ["user_id"],
+                                )
+                            ],
+                            lock_result=False,
+                        ).get("meeting_user", {})
+                    )
             if admin_meeting_users:
                 is_admin = False
                 for admin_meeting_user in admin_meeting_users.values():

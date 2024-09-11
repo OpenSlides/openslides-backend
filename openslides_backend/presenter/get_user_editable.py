@@ -55,10 +55,8 @@ class GetUserEditable(CreateUpdatePermissionsMixin, BasePresenter):
             instance.update({"id": user_id})
             result[str(user_id)] = {}
             try:
-                if self.check_permissions(instance):
-                    result[str(user_id)]["editable"] = True
-                else:
-                    result[str(user_id)]["editable"] = False
+                self.check_permissions(instance)
+                result[str(user_id)]["editable"] = True
             except (PermissionDenied, MissingPermission, ActionException) as e:
                 result[str(user_id)]["editable"] = False
                 result[str(user_id)]["message"] = e.message

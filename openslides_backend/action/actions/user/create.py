@@ -70,10 +70,6 @@ class UserCreate(
     history_information = "Account created"
     own_history_information_first = True
 
-    def check_permissions(self, instance: dict[str, Any]) -> None:
-        self.assert_not_anonymous()
-        super().check_permissions(instance)
-
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.meeting_id: int | None = instance.get("meeting_id")
 

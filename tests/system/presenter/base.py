@@ -75,16 +75,6 @@ class BasePresenterTestCase(BaseSystemTestCase):
                 f"meeting_user/{base}{user2}": {"user_id": user2, "meeting_id": base},
             }
         )
-        # meet_user_ids = self.datastore.get(f"user/{user1}", ["meeting_user_ids"]).get("meeting_user_ids")
-        # self.update_model(
-        #     f"user/{user1}",
-        #     {"meeting_user_ids": meet_user_ids + int(f"{base}{user1}")}
-        # )
-        # meet_user_ids = self.datastore.get(f"user/{user2}", ["meeting_user_ids"]).get("meeting_user_ids")
-        # self.update_model(
-        #     f"user/{user2}",
-        #     {"meeting_user_ids": meet_user_ids + int(f"{base}{user2}")}
-        # )
 
     def move_user_to_group(self, meeting_user_to_groups: dict[int, Any]) -> None:
         """

@@ -24,9 +24,7 @@ class BaseUserImport(BaseImportAction):
             rows = self.flatten_copied_object_fields(
                 self.handle_remove_and_group_fields
             )
-            self.create_other_actions(
-                rows
-            )  # Hier muss doch eigentlich die collection bestimmt werden, oder nicht?
+            self.create_other_actions(rows)
 
         return {}
 
