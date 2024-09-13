@@ -59,7 +59,7 @@ There are some fields that need special attention:
 - `submitter_ids`: These are **user ids** and not ids of the `submitter` model. If nothing is given (`[]`), the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list.
 - `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
-Another thing to do when creating a motion:
+Other things to do when creating motions:
 - Set the field `sequential_number`: It is the `max+1` of `sequential_number` of all motions in the same meeting. If there are no other motions in this meeting (e.g. this is the first one), it gets 1.
 - Set timestamps:
   - always set `last_modified` and `created` to the current timestamp
