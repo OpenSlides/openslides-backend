@@ -7,7 +7,7 @@
 
 // Optional
     parent_id: Id;
-    access_group_ids: (group/mediafile_access_group_ids)[];
+    access_group_ids: (group/meeting_mediafile_access_group_ids)[];
 }
 ```
 
@@ -20,8 +20,8 @@ The `parent_id`, if given, must be a directory (flag `mediafile/is_directory`) a
 Additional fields to set:
 - `is_directory` must be set to `true`.
 - `create_timestamp` must be set to the current timestamp.
-- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile.
 - `mimetype`, `pdf_information`, `filesize`, `filename` and `token` must be left empty.
+- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile or a published orga-level parent (for those meetings where the parent has meeting_mediafiles).
 
 ## Permissions
 The request user needs `mediafile.can_manage` for meeting-wide mediafiles or the OML `can_manage_organization` for organization-wide mediafiles.
