@@ -22,7 +22,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0054_is_active_true_default")
+    finalize("0055_is_active_true_default")
 
     for i in [1, 3, 4]:
         assert_model(

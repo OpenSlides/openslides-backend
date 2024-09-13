@@ -30,7 +30,7 @@
 ## Logic
 
 It iterates over the given `user_ids`. For every id of `user_ids` all objects are searched which are associated with that id. This means that for every committee it is checked if the user (specified by the id) is a manager or member of the committee, and for every meeting if the user is listed as a speaker of any `agenda_item` or as a submitter of any `motion` or as a candidate of any `assignment`.
-The result is a dictionary whose keys are the `user_ids`. The values are threefolded: `organization_management_level` contains the OML of the user. The two other values are arrays, one for the `committees` and one for the `meetings`. If a user is no member of any committee, then the `committees` array is empty and omitted. The same applies to the `meetings` array.
+The result is a dictionary whose keys are the `user_ids`. The values are threefold: `organization_management_level` contains the OML of the user. The two other values are arrays, one for the `committees` and one for the `meetings`. If a user is no member of any committee, then the `committees` array is empty and omitted. The same applies to the `meetings` array.
 If a meeting has `locked_from_inside` set to true, `is_locked` will be true and `motion_submitter_ids`, `assignment_candidate_ids` and `speaker_ids`, `locked_out` will be left out for this meeting, unless the calling user is in the meeting himself.
 
 To make the distinction clear: `is_locked` denominates that the entire meeting has been locked from inside, `locked_out` means that only the user has been locked out of the meeting.

@@ -10,7 +10,7 @@ class Migration(BaseModelMigration):
     This migration writes True into every user/is_active field that is currently not set at all
     """
 
-    target_migration_index = 55
+    target_migration_index = 56
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         users = self.reader.filter(
