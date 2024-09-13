@@ -121,6 +121,9 @@ class Migration(BaseModelMigration):
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
         )
+        to_remove_in_users: defaultdict[int, defaultdict[str, list]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         tags_to_update: defaultdict[int, list] = defaultdict(list)
         meeting_users_to_update: defaultdict[str, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
@@ -183,6 +186,7 @@ class Migration(BaseModelMigration):
                     meeting_id,
                     events,
                     to_remove_in_projectors,
+                    to_remove_in_users,
                 )
                 self.update_agenda_item(
                     motion.get("agenda_item_id", 0),
@@ -217,15 +221,33 @@ class Migration(BaseModelMigration):
                     ):
                         events.append(response)
 
-        for meeting_users_fqid, field_default_dict in meeting_users_to_update.items():
-            meeting_user = self.reader.get(meeting_users_fqid)
-            meeting_user_fields = {}
-            for field_name, ids_to_delete in field_default_dict.items():
-                field_value = meeting_user.get(field_name)
-                field_value = self.subtract_ids(field_value, ids_to_delete)
-                meeting_user_fields[field_name] = field_value
+        for user_id, user_data in to_remove_in_users.items():
+            user_fqid = fqid_from_collection_and_id("user", user_id)
+            user = self.reader.get(user_fqid)
             events.append(
-                RequestUpdateEvent(meeting_users_fqid, {**meeting_user_fields})
+                RequestUpdateEvent(
+                    user_fqid,
+                    {
+                        field_name: self.subtract_ids(
+                            user.get(field_name), ids_to_delete
+                        )
+                        for field_name, ids_to_delete in user_data.items()
+                    },
+                )
+            )
+
+        for meeting_user_fqid, meeting_user_data in meeting_users_to_update.items():
+            meeting_user = self.reader.get(meeting_user_fqid)
+            events.append(
+                RequestUpdateEvent(
+                    meeting_user_fqid,
+                    {
+                        field_name: self.subtract_ids(
+                            meeting_user.get(field_name), ids_to_delete
+                        )
+                        for field_name, ids_to_delete in meeting_user_data.items()
+                    },
+                )
             )
 
         for tag_id, object_list in tags_to_update.items():
@@ -236,45 +258,41 @@ class Migration(BaseModelMigration):
                 "agenda_item",
             ):
                 events.append(response)
-
-        # find and update statute related motion workflows
+        # TODO test if non statute workflows not deleted
+        # find and update statute related motion workflows. That will make sure to get all.
         motion_workflows = self.reader.get_all(
             "motion_workflow", ["default_statute_amendment_workflow_meeting_id"]
         )
         for workflow_id, workflow in motion_workflows.items():
-            events.append(
-                RequestUpdateEvent(
-                    fqid_from_collection_and_id("motion_workflow", workflow_id),
-                    {"default_statute_amendment_workflow_meeting_id": None},
+            if workflow.get("default_statute_amendment_workflow_meeting_id", ""):
+                events.append(
+                    RequestUpdateEvent(
+                        fqid_from_collection_and_id("motion_workflow", workflow_id),
+                        {"default_statute_amendment_workflow_meeting_id": None},
+                    )
                 )
-            )
 
+        # update meetings
         simple_fields = [
-                            "motion_ids",
-                            "forwarded_motion_ids",
-                            "list_of_speakers_ids",
-                            "speaker_ids",
-                            "poll_ids",
-                            "option_ids",
-                            "vote_ids",
-                        ]
+            "motion_ids",
+            "forwarded_motion_ids",
+            "list_of_speakers_ids",
+            "speaker_ids",
+            "poll_ids",
+            "option_ids",
+            "vote_ids",
+        ]
         meetings = self.reader.get_all(
             "meeting",
             [
-                "motion_statute_paragraph_ids",
-                "motion_submitter_ids",
-                "motion_comment_ids",
-                "motions_statutes_enabled",
-                "motions_statute_recommendations_by",
-                "motion_change_recommendation_ids",
-                "motion_statute_paragraph_ids",
-                "motions_default_statute_amendment_workflow_id",
+                *[
+                    meeting_field.get("meeting_field", "")
+                    for meeting_field in self.motion_reference_id_list_delete
+                ],
                 "structure_level_list_of_speakers_ids",
-                "personal_note_ids",
                 "agenda_item_ids",
                 "all_projection_ids",
-                "statute_paragraph_ids",
-                *simple_fields
+                *simple_fields,
             ],
         )
         for meeting_id, meeting in meetings.items():
@@ -291,19 +309,16 @@ class Migration(BaseModelMigration):
                 model_ids = self.subtract_ids(model_ids, deleted_ids)
                 additional_meeting_update_fields[foreign_field] = model_ids
 
+            # update manual approach fields
             meeting_update_data: dict[str, Any] = {
                 meeting_field: self.subtract_ids(
                     meeting.get(meeting_field),
                     to_remove_in_meetings[meeting_id].get(field),
                 )
                 for meeting_field, field in {
-                    "motion_statute_paragraph_ids": "statute_paragraph_ids",
                     "structure_level_list_of_speakers_ids": "structure_level_los_ids",
                     "all_projection_ids": "projection_ids",
-                    **{
-                        d_field: d_field
-                        for d_field in simple_fields
-                    },
+                    **{d_field: d_field for d_field in simple_fields},
                 }.items()
             }
             if agenda_item_ids := to_remove_in_meetings[meeting_id].get(
@@ -319,6 +334,7 @@ class Migration(BaseModelMigration):
                 meeting.get("agenda_item_ids"),
                 agenda_item_ids,
             )
+
             events.append(
                 RequestUpdateEvent(
                     meeting_fqid,
@@ -427,6 +443,7 @@ class Migration(BaseModelMigration):
         meeting_id: int,
         events: list,
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
+        to_remove_in_users: defaultdict[int, defaultdict[str, list]],
     ) -> None:
         """deletes all polls and its subitems in motion"""
         for poll_id in poll_ids_to_migrate:
@@ -450,24 +467,14 @@ class Migration(BaseModelMigration):
                 )
                 vote_ids = option.get("vote_ids", [])
                 for vote_id in vote_ids:
-                    # TODO collect users do one update_relations after this loop for each user?
                     vote_fqid = fqid_from_collection_and_id("vote", vote_id)
                     vote = self.reader.get(vote_fqid, ["user_id", "delegated_user_id"])
-                    vote = self.reader.get(fqid_from_collection_and_id("vote", vote_id))
-                    if response := self.update_relations(
-                        fqid_from_collection_and_id("user", vote.get("user_id", 0)),
-                        "vote_ids",
-                        vote_id,
-                    ):
-                        events.append(response)
-                    if response := self.update_relations(
-                        fqid_from_collection_and_id(
-                            "user", vote.get("delegated_user_id", 0)
-                        ),
-                        "delegated_vote_ids",
-                        vote_id,
-                    ):
-                        events.append(response)
+                    to_remove_in_users[vote.get("user_id", 0)]["vote_ids"].append(
+                        vote_id
+                    )
+                    to_remove_in_users[vote.get("delegated_user_id", 0)][
+                        "delegated_vote_ids"
+                    ].append(vote_id)
                     to_remove_in_meetings[meeting_id]["vote_ids"].append(vote_id)
                     events.append(RequestDeleteEvent(vote_fqid))
                 content_object_fqid = option.get("content_object_id", "")
@@ -492,14 +499,9 @@ class Migration(BaseModelMigration):
                 to_remove_in_meetings,
                 to_remove_in_projectors,
             )
-            voted_ids = poll.get("voted_ids", "")
-            for voted_id in voted_ids:
-                if response := self.update_relations(
-                    fqid_from_collection_and_id("user", voted_id),
-                    "poll_voted_ids",
-                    poll_id,
-                ):
-                    events.append(response)
+            if voted_ids := poll.get("voted_ids", ""):
+                for voted_id in voted_ids:
+                    to_remove_in_users[voted_id]["poll_voted_ids"].append(poll_id)
             group_ids = poll.get("entitled_group_ids", "")
             for group_id in group_ids:
                 if response := self.update_relations(

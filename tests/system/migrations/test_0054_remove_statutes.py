@@ -127,7 +127,6 @@ def create_comprehensive_data(write) -> None:
             "fields": {
                 "id": 1,
                 "meeting_ids": [11],
-                "motion_ids": [1],
                 "meeting_user_ids": [1],
                 "poll_voted_ids": [1],
                 "vote_ids": [1],
@@ -140,7 +139,6 @@ def create_comprehensive_data(write) -> None:
             "fields": {
                 "id": 2,
                 "meeting_ids": [11],
-                "motion_ids": [1],
                 "meeting_user_ids": [2],
                 "delegated_vote_ids": [1],
             },
@@ -184,12 +182,12 @@ def create_comprehensive_data(write) -> None:
         {
             "type": "create",
             "fqid": "motion_editor/1",
-            "fields": {"id": 1, "meeting_user_id": 1, "motion_id": 1},
+            "fields": {"id": 1, "meeting_user_id": 1, "motion_id": 1, "meeting_id": 11},
         },
         {
             "type": "create",
             "fqid": "motion_working_group_speaker/1",
-            "fields": {"id": 1, "meeting_user_id": 1, "motion_id": 1},
+            "fields": {"id": 1, "meeting_user_id": 1, "motion_id": 1, "meeting_id": 11},
         },
         {
             "type": "create",
@@ -728,9 +726,24 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "is_public": True,
             "attachment_ids": ["motion/3"],
         },
-        "motion_submitter/2": {"id": 2, "meeting_user_id": 1, "motion_id": 3, "meeting_id": 11},
-        "motion_editor/2": {"id": 2, "meeting_user_id": 1, "motion_id": 3},
-        "motion_working_group_speaker/2": {"id": 2, "meeting_user_id": 1, "motion_id": 3},
+        "motion_submitter/2": {
+            "id": 2,
+            "meeting_user_id": 1,
+            "motion_id": 3,
+            "meeting_id": 11,
+        },
+        "motion_editor/2": {
+            "id": 2,
+            "meeting_user_id": 1,
+            "motion_id": 3,
+            "meeting_id": 11,
+        },
+        "motion_working_group_speaker/2": {
+            "id": 2,
+            "meeting_user_id": 1,
+            "motion_id": 3,
+            "meeting_id": 11,
+        },
         "motion_change_recommendation/2": {
             "id": 2,
             "line_from": 1,
@@ -1001,7 +1014,7 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "type": "update",
             "fqid": "user/1",
             "fields": {
-                "motion_ids": [1, 3],
+                # "motion_ids": [1, 3],
                 "poll_voted_ids": [1, 2],
                 "vote_ids": [1, 2],
                 "option_ids": [2, 12],
@@ -1011,7 +1024,7 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "type": "update",
             "fqid": "user/2",
             "fields": {
-                "motion_ids": [1, 3],
+                # "motion_ids": [1, 3],
                 "delegated_vote_ids": [1, 2],
                 "poll_voted_ids": [1, 2],
             },
@@ -1059,7 +1072,8 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
                 "type": "create",
                 "fqid": fqid,
                 "fields": fields,
-            } for fqid, fields in data.items()
+            }
+            for fqid, fields in data.items()
         ]
     )
     finalize("0054_remove_statutes")
@@ -1068,24 +1082,25 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
         {
             "id": 1,
             "statute_paragraph_id": 1,
-            "title": "text",'agenda_item_id': 2,
-            'attachment_ids': [1],
-            'block_id': 1,
-            'category_id': 1,
-            'comment_ids': [1],
-            'editor_ids': [1],
-            'list_of_speakers_id': 1,
-            'option_ids': [1, 2, 3],
-            'personal_note_ids': [1],
-            'poll_ids': [1],
-            'recommendation_extension_reference_ids': ['motion/2'],
-            'recommendation_id': 1,
-            'referenced_in_motion_recommendation_extension_ids': [2],
-            'referenced_in_motion_state_extension_ids': [2],
-            'state_extension_reference_ids': ['motion/2'],
-            'submitter_ids': [1],
-            'supporter_meeting_user_ids': [1],
-            'tag_ids': [1],
+            "title": "text",
+            "agenda_item_id": 2,
+            "attachment_ids": [1],
+            "block_id": 1,
+            "category_id": 1,
+            "comment_ids": [1],
+            "editor_ids": [1],
+            "list_of_speakers_id": 1,
+            "option_ids": [1, 2, 3],
+            "personal_note_ids": [1],
+            "poll_ids": [1],
+            "recommendation_extension_reference_ids": ["motion/2"],
+            "recommendation_id": 1,
+            "referenced_in_motion_recommendation_extension_ids": [2],
+            "referenced_in_motion_state_extension_ids": [2],
+            "state_extension_reference_ids": ["motion/2"],
+            "submitter_ids": [1],
+            "supporter_meeting_user_ids": [1],
+            "tag_ids": [1],
             "meeting_id": 11,
             "meta_deleted": True,
         },
@@ -1095,24 +1110,21 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
         {
             "id": 2,
             "title": "text",
-            'agenda_item_id': 1,
-            'change_recommendation_ids': [1],
-            'recommendation_extension_reference_ids': ['motion/1'],
-            'recommendation_id': 1,
-            'referenced_in_motion_recommendation_extension_ids': [1],
-            'referenced_in_motion_state_extension_ids': [1],
-            'state_extension_reference_ids': ['motion/1'],
-            'statute_paragraph_id': 2,
-            'working_group_speaker_ids': [1],
+            "agenda_item_id": 1,
+            "change_recommendation_ids": [1],
+            "recommendation_extension_reference_ids": ["motion/1"],
+            "recommendation_id": 1,
+            "referenced_in_motion_recommendation_extension_ids": [1],
+            "referenced_in_motion_state_extension_ids": [1],
+            "state_extension_reference_ids": ["motion/1"],
+            "statute_paragraph_id": 2,
+            "working_group_speaker_ids": [1],
             "meeting_id": 11,
             "meta_deleted": True,
         },
     )
     for fqid, fields in data.items():
-        assert_model(
-            fqid,
-            fields
-        )
+        assert_model(fqid, fields)
 
 
 def test_two_meetings(write, finalize, assert_model):
@@ -1201,7 +1213,7 @@ def test_two_meetings(write, finalize, assert_model):
             "personal_note_ids": [1],
             "submitter_ids": [1],
             "poll_ids": [1],
-            'option_ids': [1, 2, 3],
+            "option_ids": [1, 2, 3],
             "agenda_item_id": 2,
             "list_of_speakers_id": 1,
         },
@@ -1427,7 +1439,7 @@ def test_migration_full(write, finalize, assert_model):
         {
             "id": 1,
             "meeting_ids": [11],
-            "motion_ids": [1],
+            # "motion_ids": [1],
             "meeting_user_ids": [1],
         },
     )
@@ -1436,7 +1448,7 @@ def test_migration_full(write, finalize, assert_model):
         {
             "id": 2,
             "meeting_ids": [11],
-            "motion_ids": [1],
+            # "motion_ids": [1],
             "meeting_user_ids": [2],
         },
     )
@@ -1469,11 +1481,23 @@ def test_migration_full(write, finalize, assert_model):
     )
     assert_model(
         "motion_editor/1",
-        {"id": 1, "meeting_user_id": 1, "motion_id": 1, "meta_deleted": True},
+        {
+            "id": 1,
+            "meeting_user_id": 1,
+            "motion_id": 1,
+            "meeting_id": 11,
+            "meta_deleted": True,
+        },
     )
     assert_model(
         "motion_working_group_speaker/1",
-        {"id": 1, "meeting_user_id": 1, "motion_id": 1, "meta_deleted": True},
+        {
+            "id": 1,
+            "meeting_user_id": 1,
+            "motion_id": 1,
+            "meeting_id": 11,
+            "meta_deleted": True,
+        },
     )
     assert_model(
         "motion_change_recommendation/1",
