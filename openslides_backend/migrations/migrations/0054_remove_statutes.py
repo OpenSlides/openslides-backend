@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, cast
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core.requests import GetManyRequestPart
@@ -124,7 +124,7 @@ class Migration(BaseModelMigration):
         to_remove_in_users: defaultdict[int, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
         )
-        tags_to_update: defaultdict[int, list] = defaultdict(list)
+        tags_to_update: defaultdict[int, set] = defaultdict(set)
         meeting_users_to_update: defaultdict[str, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
         )
@@ -161,10 +161,9 @@ class Migration(BaseModelMigration):
                 motion = self.reader.get(motion_fqid)
                 meeting_id = motion.get("meeting_id", "")
 
-                self.list_update(motion, deleted_motions_ids, events)
+                self.list_update(motion, set(deleted_motions_ids), events)
                 self.list_delete(
                     motion,
-                    deleted_motions_ids,
                     to_remove_in_meetings,
                     meeting_users_to_update,
                     meeting_id,
@@ -206,7 +205,7 @@ class Migration(BaseModelMigration):
 
                 if tag_ids := motion.get("tag_ids", []):
                     for tag_id in tag_ids:
-                        tags_to_update[tag_id].append(motion_fqid)
+                        tags_to_update[tag_id].add(motion_fqid)
                 events.append(
                     RequestDeleteEvent(fqid_from_collection_and_id("motion", motion_id))
                 )
@@ -217,7 +216,7 @@ class Migration(BaseModelMigration):
                     if response := self.update_relations(
                         fqid_from_collection_and_id("projector", projector_id),
                         f"{state}_projection_ids",
-                        projection_ids,
+                        set(projection_ids),
                     ):
                         events.append(response)
 
@@ -250,15 +249,15 @@ class Migration(BaseModelMigration):
                 )
             )
 
-        for tag_id, object_list in tags_to_update.items():
+        for tag_id, object_fqids in tags_to_update.items():
             if response := self.update_relations(
                 fqid_from_collection_and_id("tag", tag_id),
                 "tagged_ids",
-                object_list,
+                object_fqids,
                 "agenda_item",
             ):
                 events.append(response)
-        # TODO test if non statute workflows not deleted
+
         # find and update statute related motion workflows. That will make sure to get all.
         motion_workflows = self.reader.get_all(
             "motion_workflow", ["default_statute_amendment_workflow_meeting_id"]
@@ -351,9 +350,7 @@ class Migration(BaseModelMigration):
             )
         return events
 
-    def list_update(
-        self, motion: dict, deleted_motions_ids: list, events: list
-    ) -> None:
+    def list_update(self, motion: dict, deleted_motions_ids: set, events: list) -> None:
         """updates models related with motion"""
         for entry in self.motion_reference_id_list_update:
             field_name = entry.get("field", "")
@@ -396,7 +393,6 @@ class Migration(BaseModelMigration):
     def list_delete(
         self,
         motion: dict,
-        deleted_motions_ids: list,
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
         meeting_users_to_update: defaultdict[str, defaultdict[str, list]],
         meeting_id: int,
@@ -516,7 +512,7 @@ class Migration(BaseModelMigration):
     def update_agenda_item(
         self,
         agenda_item_id: int,
-        tags_to_update: defaultdict[int, list],
+        tags_to_update: defaultdict[int, set],
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
         meeting_id: int,
         events: list,
@@ -557,7 +553,7 @@ class Migration(BaseModelMigration):
                 )
             tag_ids = agenda_item.get("tag_ids", [0])
             for tag_id in tag_ids:
-                tags_to_update[tag_id].append(agenda_item_fqid)
+                tags_to_update[tag_id].add(agenda_item_fqid)
             self.delete_projections(
                 agenda_item.get("projection_ids", ""),
                 events,
@@ -697,21 +693,16 @@ class Migration(BaseModelMigration):
         self,
         fqid: str,
         foreign_field: str,
-        deleted_ids: int | set[int] | set[str] | list[int] | list[str],
+        deleted_ids: int | set[int] | set[str],
         origin_collection: str | None = None,
     ) -> RequestUpdateEvent | None:
         """
         This updates the relations in the by `fqid` given object in the `foreign_field` by subtracting the `deleted_ids`.
-        The deleted ids can either be a singular id, a set or list of either fqids or ids.
+        The deleted ids can either be a singular id or a set of either fqids or ids.
         The `origin_collection` is needed if the foreign field is generic.
         """
         model = self.reader.get(fqid, [foreign_field])
         if field_value := model.get(foreign_field, []):
-            if isinstance(deleted_ids, list):  # TODO conversion shit auslagern?
-                if isinstance(deleted_ids[0], int):
-                    deleted_ids = cast(set[int], set(deleted_ids))
-                elif isinstance(deleted_ids[0], str):
-                    deleted_ids = cast(set[str], set(deleted_ids))
             if isinstance(deleted_ids, set):
                 # if target field is generic and deleted_ids contains ints, convert to fqids
                 if isinstance(field_value[0], str) and isinstance(
@@ -726,6 +717,7 @@ class Migration(BaseModelMigration):
             # deleted_ids is an int and so is field_value
             elif field_value == deleted_ids:
                 field_value = None
+            # field_value is int deleted_ids is set
             else:
                 field_value.remove(deleted_ids)
             if field_value == []:

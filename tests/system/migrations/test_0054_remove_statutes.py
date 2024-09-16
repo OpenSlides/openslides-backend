@@ -1014,7 +1014,6 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "type": "update",
             "fqid": "user/1",
             "fields": {
-                # "motion_ids": [1, 3],
                 "poll_voted_ids": [1, 2],
                 "vote_ids": [1, 2],
                 "option_ids": [2, 12],
@@ -1024,7 +1023,6 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "type": "update",
             "fqid": "user/2",
             "fields": {
-                # "motion_ids": [1, 3],
                 "delegated_vote_ids": [1, 2],
                 "poll_voted_ids": [1, 2],
             },
@@ -1121,6 +1119,15 @@ def test_delete_motion_without_sideffects_to_submodels(write, finalize, assert_m
             "working_group_speaker_ids": [1],
             "meeting_id": 11,
             "meta_deleted": True,
+        },
+    )
+    assert_model(
+        "tag/2",
+        {
+            "id": 2,
+            "name": "A 2nd Tag",
+            "meeting_id": 11,
+            "tagged_ids": ["agenda_item/11", "agenda_item/12"],
         },
     )
     for fqid, fields in data.items():
@@ -1857,5 +1864,3 @@ def test_non_deleted_motion_extension(write, finalize, assert_model):
             "meta_deleted": True,
         },
     )
-
-    # assert models updated and backrelation emtied including workflow and motion
