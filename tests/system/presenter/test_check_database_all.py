@@ -4,6 +4,7 @@ from typing import Any
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from .base import BasePresenterTestCase
 
@@ -101,6 +102,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": False,
@@ -312,6 +314,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "require_duplicate_from": False,
                     "saml_enabled": True,
                     "saml_login_button_text": "SAML Login",
+                    "mediafile_ids": [3, 4],
+                    "published_mediafile_ids": [3, 4],
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -320,6 +324,25 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "warn_500": "#000000",
                     "organization_id": 1,
                     "theme_for_organization_id": 1,
+                },
+                "mediafile/3": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "child_ids": [4],
+                    "is_directory": True,
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "mediafile/4": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 3,
+                    "meeting_mediafile_ids": [4],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "meeting_mediafile/4": {
+                    "meeting_id": 1,
+                    "mediafile_id": 4,
+                    "access_group_ids": [1],
+                    "inherited_access_group_ids": [],  # Because parent meeting mediafile is assumed to have admin group
+                    "is_public": False,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
@@ -364,6 +387,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "user_ids": [1, 2, 3, 4, 5, 6],
                     "present_user_ids": [2],
                     "mediafile_ids": [1, 2],
+                    "meeting_mediafile_ids": [1, 2, 4],
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
@@ -376,6 +400,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
+                    "meeting_mediafile_access_group_ids": [4],
                 },
                 "group/2": {
                     "meeting_id": 1,
@@ -510,14 +535,18 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_clock": True,
                     **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
-                "mediafile/1": {
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
+                "mediafile/2": {"owner_id": "meeting/1", "meeting_mediafile_ids": [2]},
+                "meeting_mediafile/1": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
                     "is_public": True,
-                    "owner_id": "meeting/1",
                     "used_as_logo_web_header_in_meeting_id": 1,
                 },
-                "mediafile/2": {
+                "meeting_mediafile/2": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
                     "is_public": True,
-                    "owner_id": "meeting/1",
                     "used_as_font_bold_in_meeting_id": 1,
                 },
                 "motion/1": {

@@ -13,7 +13,7 @@
     number_poll_candidates: boolean;
 
     tag_ids: Id[];
-    attachment_ids: Id[];
+    attachment_mediafile_ids: Id[];
 }
 ```
 

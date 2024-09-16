@@ -3,6 +3,7 @@ from typing import Any
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from tests.system.base import ADMIN_USERNAME
 from tests.util import Response
 
 from .test_json_upload import TestCommitteeJsonUploadForImport
@@ -439,17 +440,24 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "motions_default_workflow_id": 1,
                     "reference_projector_id": 1,
                     "projector_ids": [1],
-                    "group_ids": [1],
+                    "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
                     **{field: [1] for field in Meeting.all_default_projectors()},
                     "is_active_in_organization_id": 1,
+                    "admin_group_id": 2,
                 },
                 "group/1": {
                     "meeting_id": 1,
                     "name": "default group",
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
+                },
+                "group/2": {
+                    "meeting_id": 1,
+                    "name": "default group",
+                    "weight": 1,
+                    "admin_group_for_meeting_id": 1,
                 },
                 "motion_workflow/1": {
                     "meeting_id": 1,
@@ -480,6 +488,14 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "name": "renamed_new",
                     "committee_id": 14,
                     "description": "test",
+                    "admin_group_id": 3,
+                    "group_ids": [3],
+                },
+                "group/3": {
+                    "meeting_id": 2,
+                    "name": "default group",
+                    "weight": 1,
+                    "admin_group_for_meeting_id": 2,
                 },
                 "import_preview/1": {
                     "name": "committee",
@@ -501,6 +517,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                                         "info": ImportState.DONE,
                                         "id": 1,
                                     },
+                                    "meeting_admins": [
+                                        {
+                                            "info": ImportState.DONE,
+                                            "value": ADMIN_USERNAME,
+                                            "id": 1,
+                                        }
+                                    ],
                                 },
                             },
                             {
@@ -517,6 +540,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                                         "value": "missing",
                                         "info": ImportState.WARNING,
                                     },
+                                    "meeting_admins": [
+                                        {
+                                            "info": ImportState.DONE,
+                                            "value": ADMIN_USERNAME,
+                                            "id": 1,
+                                        }
+                                    ],
                                 },
                             },
                             {
@@ -534,6 +564,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                                         "info": ImportState.DONE,
                                         "id": 2,
                                     },
+                                    "meeting_admins": [
+                                        {
+                                            "info": ImportState.DONE,
+                                            "value": ADMIN_USERNAME,
+                                            "id": 1,
+                                        }
+                                    ],
                                 },
                             },
                             {
@@ -551,6 +588,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                                         "info": ImportState.DONE,
                                         "id": 17,
                                     },
+                                    "meeting_admins": [
+                                        {
+                                            "info": ImportState.DONE,
+                                            "value": ADMIN_USERNAME,
+                                            "id": 1,
+                                        }
+                                    ],
                                 },
                             },
                         ],
@@ -566,6 +610,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": {"info": "done", "value": "test1"},
                 "meeting_name": "meeting",
                 "meeting_template": {"id": 1, "info": "done", "value": "test"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
             "messages": [],
             "state": "done",
@@ -580,6 +627,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": {"info": "done", "value": "test2"},
                 "meeting_name": "meeting",
                 "meeting_template": {"info": "warning", "value": "missing"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
             "messages": [],
             "state": "done",
@@ -603,6 +653,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "info": "warning",
                     "value": "renamed_old",
                 },
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
             "messages": [
                 "Expected model '2 renamed_old' changed its name to 'renamed_new'."
@@ -624,6 +677,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": {"info": "done", "value": "test4"},
                 "meeting_name": "meeting",
                 "meeting_template": {"id": 17, "info": "warning", "value": "deleted"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
             "messages": ["Model '17 deleted' doesn't exist anymore"],
             "state": "done",
@@ -662,3 +718,116 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {"id": 1, "import": True},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
+
+    def test_json_upload_meeting_template_not_found(self) -> None:
+        self.json_upload_meeting_template_not_found()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert self.get_row(response, 0) == {
+            "data": {
+                "name": {"info": "new", "value": "test"},
+                "meeting_name": "test meeting",
+                "meeting_template": {"info": "warning", "value": "test"},
+                "meeting_admins": [{"info": ImportState.DONE, "value": "bob", "id": 2}],
+            },
+            "messages": ["Template meetings can only be used for existing committees."],
+            "state": "new",
+        }
+        self.assert_model_exists("committee/1", {"meeting_ids": [1]})
+        self.assert_model_exists(
+            "meeting/1", {"name": "test meeting", "committee_id": 1}
+        )
+
+    def test_json_upload_admin_defined_meeting_template_found(self) -> None:
+        self.json_upload_admin_defined_meeting_template_found()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert self.get_row(response, 0) == {
+            "data": {
+                "id": 61,
+                "name": {"info": "done", "value": "committee", "id": 61},
+                "meeting_name": "test",
+                "meeting_template": {"id": 2, "info": "done", "value": "template"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
+            },
+            "messages": [],
+            "state": "done",
+        }
+        self.assert_model_exists("committee/61", {"meeting_ids": [2, 3]})
+        self.assert_model_exists("meeting/3", {"name": "test", "committee_id": 61})
+
+    def test_json_upload_meeting_template_with_admins_found(self) -> None:
+        self.json_upload_meeting_template_with_admins_found()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert self.get_row(response, 0) == {
+            "data": {
+                "id": 61,
+                "name": {"info": "done", "value": "committee", "id": 61},
+                "meeting_name": "test",
+                "meeting_template": {"id": 2, "info": "done", "value": "template"},
+            },
+            "messages": [],
+            "state": "done",
+        }
+        self.assert_model_exists("committee/61", {"meeting_ids": [2, 3]})
+        self.assert_model_exists("meeting/3", {"name": "test", "committee_id": 61})
+
+    def test_json_upload_meeting_template_with_admins_no_longer_found(self) -> None:
+        self.json_upload_meeting_template_with_admins_found()
+        self.request("meeting.delete", {"id": 2})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        preview_row = self.get_row(response, 0)
+        assert preview_row["data"] == {
+            "id": 61,
+            "name": {"info": "done", "value": "committee", "id": 61},
+            "meeting_name": "test",
+            "meeting_template": {"id": 2, "info": "warning", "value": "template"},
+            "meeting_admins": [
+                {
+                    "info": "error",
+                    "value": "",
+                },
+            ],
+        }
+        assert sorted(preview_row["messages"]) == sorted(
+            [
+                "Error: Meeting cannot be created without admins",
+                "Model '2 template' doesn't exist anymore",
+            ]
+        )
+        assert preview_row["state"] == "error"
+        self.assert_model_exists("committee/61", {"meeting_ids": []})
+        self.assert_model_not_exists("meeting/3")
+
+    def test_json_upload_meeting_template_admin_not_found_anymore(self) -> None:
+        self.json_upload_meeting_template_not_found()
+        self.request("user.delete", {"id": 2})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        preview_row = self.get_row(response, 0)
+        assert preview_row["data"] == {
+            "name": {"info": "new", "value": "test"},
+            "meeting_name": "test meeting",
+            "meeting_template": {"info": "warning", "value": "test"},
+            "meeting_admins": [
+                {"info": ImportState.WARNING, "value": "bob", "id": 2},
+                {
+                    "info": "error",
+                    "value": "",
+                },
+            ],
+        }
+        assert sorted(preview_row["messages"]) == sorted(
+            [
+                "Template meetings can only be used for existing committees.",
+                "Model '2 bob' doesn't exist anymore",
+                "Error: Meeting cannot be created without admins",
+            ]
+        )
+        assert preview_row["state"] == "error"
+        self.assert_model_not_exists("committee/1")
+        self.assert_model_not_exists("meeting/1")

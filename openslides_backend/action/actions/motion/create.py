@@ -17,6 +17,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
+from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin
@@ -28,6 +29,7 @@ class MotionCreate(
     MotionCreatePayloadValidationMixin,
     DelegationBasedRestrictionMixin,
     TextHashMixin,
+    AttachmentMixin,
     MotionCreateBase,
 ):
     """
@@ -43,7 +45,6 @@ class MotionCreate(
             "block_id",
             "supporter_meeting_user_ids",
             "tag_ids",
-            "attachment_ids",
             "text",
             "lead_motion_id",
             "reason",
@@ -54,6 +55,7 @@ class MotionCreate(
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
             "amendment_paragraphs": number_string_json_schema,
+            "attachment_mediafile_ids": id_list_schema,
             **agenda_creation_properties,
         },
     )
@@ -128,6 +130,7 @@ class MotionCreate(
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
+        instance = super().update_instance(instance)
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -148,9 +151,9 @@ class MotionCreate(
         forbidden_fields = set()
         perm = Permissions.Mediafile.CAN_SEE
         if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            whitelist.append("attachment_ids")
-        elif "attachment_ids" in instance:
-            forbidden_fields.add("attachment_ids")
+            whitelist.append("attachment_mediafile_ids")
+        elif "attachment_mediafile_ids" in instance:
+            forbidden_fields.add("attachment_mediafile_ids")
 
         perm = Permissions.Motion.CAN_MANAGE
         if (

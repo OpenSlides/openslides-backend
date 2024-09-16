@@ -394,14 +394,14 @@ class UserMergeTogether(
                         [{"id": id_} for id_ in to_delete],
                     )
 
+            if main_user_payload.get("default_vote_weight") == "0.000000":
+                main_user_payload["default_vote_weight"] = "0.000001"
+            self.execute_other_action(UserUpdate, [main_user_payload])
             if len(to_delete := update_operations["user"]["delete"]):
                 self.execute_other_action(
                     UserDelete,
                     [{"id": id_} for id_ in to_delete],
                 )
-            if main_user_payload.get("default_vote_weight") == "0.000000":
-                main_user_payload["default_vote_weight"] = "0.000001"
-            self.execute_other_action(UserUpdate, [main_user_payload])
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]

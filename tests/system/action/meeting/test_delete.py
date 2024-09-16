@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -132,6 +132,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"assignment_candidate/{i+1}")
         for i in range(1):
             self.assert_model_deleted(f"mediafile/{i+1}")
+        for i in range(1):
+            self.assert_model_deleted(f"meeting_mediafile/{i+1}")
         for i in range(2):
             self.assert_model_deleted(f"projector/{i+1}")
         for i in range(5):
@@ -426,3 +428,25 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             False,
             lock_meeting=True,
         )
+
+    def test_delete_with_public_orga_file(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "mediafile_ids": [1],
+                    "published_mediafile_ids": [1],
+                },
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "meeting_mediafile_ids": [2],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "meeting_mediafile/2": {"meeting_id": 1, "mediafile_id": 1},
+                "meeting/1": {"meeting_mediafile_ids": [2]},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting/1")
+        self.assert_model_deleted("meeting_mediafile/2")
+        self.assert_model_exists("mediafile/1")

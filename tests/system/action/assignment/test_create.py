@@ -1,4 +1,5 @@
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -113,13 +114,20 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert agenda_item.get("content_object_id") == "assignment/1"
 
     def test_create_full_fields(self) -> None:
-        self.create_model(
-            "meeting/110",
+        self.set_models(
             {
-                "name": "name_zvfbAjpZ",
-                "agenda_item_creation": "default_yes",
-                "is_active_in_organization_id": 1,
-            },
+                "meeting/110": {
+                    "name": "name_zvfbAjpZ",
+                    "agenda_item_creation": "default_yes",
+                    "is_active_in_organization_id": 1,
+                    "meeting_mediafile_ids": [11],
+                },
+                "mediafile/1": {
+                    "owner_id": "meeting/110",
+                    "meeting_mediafile_ids": [11],
+                },
+                "meeting_mediafile/11": {"mediafile_id": 1, "meeting_id": 110},
+            }
         )
         response = self.request(
             "assignment.create",
@@ -131,20 +139,61 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("assignment/1")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 110
-        assert model.get("description") == "text_test1"
-        assert model.get("open_posts") == 12
-        assert model.get("phase") == "search"
-        assert model.get("default_poll_description") == "text_test2"
-        assert model.get("number_poll_candidates") is True
-        agenda_item = self.get_model("agenda_item/1")
-        self.assertEqual(agenda_item.get("meeting_id"), 110)
-        self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
+        self.assert_model_exists(
+            "assignment/1",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "description": "text_test1",
+                "open_posts": 12,
+                "phase": "search",
+                "default_poll_description": "text_test2",
+                "number_poll_candidates": True,
+                "attachment_meeting_mediafile_ids": [11],
+                "sequential_number": 1,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/1", {"meeting_id": 110, "content_object_id": "assignment/1"}
+        )
+
+    def test_create_non_published_orga_attachments(self) -> None:
+        self.set_models(
+            {
+                "meeting/110": {
+                    "name": "name_zvfbAjpZ",
+                    "agenda_item_creation": "default_yes",
+                    "is_active_in_organization_id": 1,
+                    "admin_group_id": 1,
+                },
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                },
+                "group/1": {"admin_group_for_meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "description": "text_test1",
+                "open_posts": 12,
+                "phase": "search",
+                "default_poll_description": "text_test2",
+                "number_poll_candidates": True,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "No meeting_mediafile creation possible: Mediafile is not published.",
+            response.json["message"],
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.request("assignment.create", {})
