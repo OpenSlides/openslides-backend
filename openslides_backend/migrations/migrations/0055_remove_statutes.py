@@ -17,7 +17,7 @@ class Migration(BaseModelMigration):
     Poll candidate lists and their candidates of deleted polls will not be deleted since they are not expected in this context.
     """
 
-    target_migration_index = 55
+    target_migration_index = 56
 
     motion_reference_id_list_update = [
         {

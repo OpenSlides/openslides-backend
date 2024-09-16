@@ -2464,7 +2464,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_not_exists("user/2")
 
     def test_delete_statutes(self) -> None:
-        """test for deleted statute motions in event.data after migration. Uses migrations 0054 and onwards."""
+        """test for deleted statute motions in event.data after migration. Uses migrations 0055 and onwards."""
         data = self.create_request_data()
         data["meeting"]["meeting"]["1"][
             "motions_default_statute_amendment_workflow_id"
@@ -2478,7 +2478,7 @@ class MeetingImport(BaseActionTestCase):
         data["meeting"]["motion_workflow"]["1"][
             "default_statute_amendment_workflow_meeting_id"
         ] = 1
-        data["meeting"]["_migration_index"] = 54
+        data["meeting"]["_migration_index"] = 55
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("motion_workflow/2")
