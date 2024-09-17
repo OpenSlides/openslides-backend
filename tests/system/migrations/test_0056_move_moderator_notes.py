@@ -129,7 +129,7 @@ def test_migration_everything(write, finalize, assert_model):
         },
     )
 
-    finalize("0055_move_moderator_notes")
+    finalize("0056_move_moderator_notes")
 
     assert_model(
         "group/1",
