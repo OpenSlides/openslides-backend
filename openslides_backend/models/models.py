@@ -93,7 +93,7 @@ class User(Model):
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
-    is_active = fields.BooleanField()
+    is_active = fields.BooleanField(default=True)
     is_physical_person = fields.BooleanField(default=True)
     password = fields.CharField()
     default_password = fields.CharField()
