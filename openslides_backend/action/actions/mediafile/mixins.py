@@ -104,7 +104,10 @@ class MediafileMixin(Action):
                 raise MissingPermission(
                     OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 )
-            if "meeting_id" not in instance_fields or instance["meeting_id"] == None:
+            if (
+                "meeting_id" not in instance_fields
+                or instance["meeting_id"] is not None
+            ):
                 return
         else:
             assert collection == "meeting"
