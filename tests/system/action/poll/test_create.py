@@ -276,6 +276,7 @@ class CreatePoll(BasePollTestCase):
         response = self.request(
             "poll.create",
             {
+                "content_object_id": "assignment/1",
                 "title": "test_title_ahThai4pae1pi4xoogoo",
                 "pollmethod": "YN",
                 "type": "pseudoanonymous",
@@ -799,10 +800,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "Creation of poll/1: You try to set following required fields to an empty value: ['content_object_id']"
-        )
+        assert response.json["message"] == "No 'content_object_id' was given"
 
     def test_create_no_permissions_assignment(self) -> None:
         self.base_permission_test(
