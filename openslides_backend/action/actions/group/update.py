@@ -9,6 +9,7 @@ from ....permissions.permission_helper import (
     is_admin,
 )
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -29,14 +30,16 @@ class GroupUpdateAction(GroupMixin, UpdateAction):
     permission = Permissions.User.CAN_MANAGE
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        group = self.datastore.get(
+            fqid_from_collection_and_id("group", instance["id"]),
+            ["anonymous_group_for_meeting_id", "meeting_user_ids"],
+        )
         if "permissions" in instance:
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]
             )
-        if self.datastore.get(
-            fqid_from_collection_and_id("group", instance["id"]),
-            ["anonymous_group_for_meeting_id"],
-        ).get("anonymous_group_for_meeting_id"):
+            self.check_locked_users(instance, group.get("meeting_user_ids", []))
+        if group.get("anonymous_group_for_meeting_id"):
             if perms := instance.get("permissions", []):
                 check_if_perms_are_allowed_for_anonymous(perms)
             if "name" in instance:
@@ -52,3 +55,20 @@ class GroupUpdateAction(GroupMixin, UpdateAction):
             self.get_meeting_id(instance),
         ):
             raise PermissionDenied("Missing permission: Not admin of this meeting")
+
+    def check_locked_users(
+        self, instance: dict[str, Any], meeting_user_ids: list[int]
+    ) -> None:
+        if meeting_user_ids and {Permissions.User.CAN_MANAGE}.intersection(
+            instance.get("permissions", [])
+        ):
+            meeting_users = self.datastore.get_many(
+                [GetManyRequest("meeting_user", meeting_user_ids, ["locked_out"])]
+            )["meeting_user"]
+            if any(
+                meeting_user.get("locked_out", False)
+                for meeting_user in meeting_users.values()
+            ):
+                raise ActionException(
+                    "Cannot give user manage permissions to a group with locked users."
+                )
