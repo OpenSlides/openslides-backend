@@ -77,8 +77,9 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_category/124": {"name": "name_wbtlHQro", "meeting_id": 1},
                 "motion_block/78": {"title": "title_kXTvKvjc", "meeting_id": 1},
                 "tag/56": {"name": "name_56", "meeting_id": 1},
-                "mediafile/8": {"owner_id": "meeting/1"},
-                "meeting/1": {"mediafile_ids": [8]},
+                "mediafile/8": {"owner_id": "meeting/1", "meeting_mediafile_ids": [80]},
+                "meeting_mediafile/80": {"meeting_id": 1, "mediafile_id": 8},
+                "meeting/1": {"mediafile_ids": [8], "meeting_mediafile_ids": [80]},
                 "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
@@ -91,15 +92,23 @@ class MotionCreateActionTest(BaseActionTestCase):
             "block_id": 78,
             "supporter_meeting_user_ids": [1],
             "tag_ids": [56],
-            "attachment_ids": [8],
             "text": "test",
             "reason": "test",
             "additional_submitter": "test",
         }
 
-        response = self.request("motion.create", motion | {"workflow_id": 12})
+        response = self.request(
+            "motion.create",
+            motion
+            | {
+                "workflow_id": 12,
+                "attachment_mediafile_ids": [8],
+            },
+        )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/2", motion)
+        self.assert_model_exists(
+            "motion/2", {**motion, "attachment_meeting_mediafile_ids": [80]}
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion.create", {})
@@ -467,9 +476,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE, Permissions.Mediafile.CAN_SEE],
             {
-                "mediafile/1": {
-                    "owner_id": "meeting/1",
-                },
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
             },
         )
         response = self.request(
@@ -478,18 +486,20 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/11", {"attachment_ids": ["motion/1"]}
+        )
 
     def test_create_permission_with_can_create_and_not_mediafile_can_see(self) -> None:
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE],
             {
-                "mediafile/1": {
-                    "owner_id": "meeting/1",
-                },
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
             },
         )
         response = self.request(
@@ -498,19 +508,18 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 403)
-        assert "Forbidden fields: attachment_ids" in response.json["message"]
+        assert "Forbidden fields: attachment_mediafile_ids" in response.json["message"]
 
     def test_create_permission_no_double_error(self) -> None:
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE],
             {
-                "mediafile/1": {
-                    "owner_id": "meeting/1",
-                },
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
             },
         )
         response = self.request(
@@ -519,13 +528,13 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "attachment_ids": [1],
+                "attachment_mediafile_ids": [1],
             },
         )
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action motion.create. Forbidden fields: attachment_ids"
+            == "You are not allowed to perform action motion.create. Forbidden fields: attachment_mediafile_ids"
         )
 
     def test_create_check_not_unique_number(self) -> None:

@@ -24,7 +24,7 @@ def create_data(write):
 def test_migration_full(write, finalize, assert_model):
     create_data(write)
 
-    finalize("0054_introduce_flexible_gender_model")
+    finalize("0056_gender_model")
 
     assert_model(
         "gender/3",
@@ -49,7 +49,7 @@ def test_migration_with_empty_gender(write, finalize, assert_model):
         {"type": "create", "fqid": "user/6", "fields": {"id": 6, "gender": None}},
     )
 
-    finalize("0054_introduce_flexible_gender_model")
+    finalize("0056_gender_model")
 
     assert_model(
         "gender/4",

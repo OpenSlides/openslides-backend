@@ -211,6 +211,22 @@ class MeetingClone(MeetingImport):
                 additional_admin_ids,
                 meeting_id,
             )
+            if not set_as_template and not len(
+                group_in_instance.get("meeting_user_ids", [])
+            ):
+                raise ActionException(
+                    "Cannot create a non-template meeting without administrators"
+                )
+        elif not set_as_template and any(
+            [
+                not len(group.get("meeting_user_ids", []))
+                for group in meeting_json["group"].values()
+                if group.get("admin_group_for_meeting_id")
+            ]
+        ):
+            raise ActionException(
+                "Cannot create a non-template meeting without administrators"
+            )
         return instance
 
     def _update_default_and_admin_group(

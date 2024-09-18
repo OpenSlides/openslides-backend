@@ -16,6 +16,8 @@ the record with the matching `id` should still have the same username. Don't bui
 default passwords. On error, don't import anything, but create data as in json_upload. Do the actual
 import with bulk `user.create` and `user.update` actions.
 
+The `groups` integrity check for non-template meetings from the json_upload will be repeated here.
+
 If `import` is `False` or the import was successful, remove the action worker.
 
 ## Permission

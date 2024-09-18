@@ -1506,7 +1506,7 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
                 "can_change_own_password": False,
                 "password": None,
                 "is_physical_person": True,
-                "is_active": None,  # optional field and not set
+                "is_active": True,
             },
         )
 

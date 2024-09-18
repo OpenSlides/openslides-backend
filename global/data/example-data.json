@@ -1,5 +1,5 @@
 {
-    "_migration_index": 55,
+    "_migration_index": 57,
     "gender":{
         "1":{
             "id": 1,
@@ -347,6 +347,7 @@
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_group_ids": [
                 2,
@@ -617,7 +618,8 @@
                 3
             ],
             "default_group_id": 1,
-            "admin_group_id": 2
+            "admin_group_id": 2,
+            "meeting_mediafile_ids": [1]
         }
     },
     "group": {
@@ -653,10 +655,10 @@
             "meeting_user_ids": [
                 1
             ],
-            "mediafile_access_group_ids": [
+            "meeting_mediafile_access_group_ids": [
                 1
             ],
-            "mediafile_inherited_access_group_ids": [
+            "meeting_mediafile_inherited_access_group_ids": [
                 1
             ],
             "read_chat_group_ids": [
@@ -693,10 +695,10 @@
                 "user.can_manage"
             ],
             "weight": 3,
-            "mediafile_access_group_ids": [
+            "meeting_mediafile_access_group_ids": [
                 1
             ],
-            "mediafile_inherited_access_group_ids": [
+            "meeting_mediafile_inherited_access_group_ids": [
                 1
             ],
             "read_comment_section_ids": [
@@ -1090,7 +1092,7 @@
         "16": {
             "id": 16,
             "sequential_number": 16,
-            "content_object_id": "mediafile/1",
+            "content_object_id": "meeting_mediafile/1",
             "closed": false,
             "meeting_id": 1
         }
@@ -2356,8 +2358,17 @@
             "title": "logos",
             "token": null,
             "is_directory": true,
-            "is_public": false,
             "create_timestamp": 1584513763,
+            "owner_id": "meeting/1",
+            "meeting_mediafile_ids": [1]
+        }
+    },
+    "meeting_mediafile": {
+        "1": {
+            "id": 1,
+            "meeting_id": 1,
+            "mediafile_id": 1,
+            "is_public": false,
             "access_group_ids": [
                 2,
                 3
@@ -2366,8 +2377,7 @@
                 2,
                 3
             ],
-            "list_of_speakers_id": 16,
-            "owner_id": "meeting/1"
+            "list_of_speakers_id": 16
         }
     },
     "projector": {

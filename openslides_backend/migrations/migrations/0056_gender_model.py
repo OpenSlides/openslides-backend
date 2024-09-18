@@ -16,7 +16,7 @@ class Migration(BaseModelMigration):
     If the migration runs in memory then all gender information is left untouched since the import will still handle it as a string.
     """
 
-    target_migration_index = 55
+    target_migration_index = 57
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

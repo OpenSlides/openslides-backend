@@ -154,6 +154,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
+                        "motion_poll_default_method": "YNA",
                         "motion_poll_default_onehundred_percent_base": "YNA",
                         "motion_poll_default_group_ids": [],
                         "motion_poll_default_backend": "fast",
@@ -376,8 +377,8 @@ class MeetingImport(BaseActionTestCase):
             "admin_group_for_meeting_id": None,
             "default_group_for_meeting_id": None,
             "permissions": [],
-            "mediafile_access_group_ids": [],
-            "mediafile_inherited_access_group_ids": [],
+            "meeting_mediafile_access_group_ids": [],
+            "meeting_mediafile_inherited_access_group_ids": [],
             "read_comment_section_ids": [],
             "write_comment_section_ids": [],
             "read_chat_group_ids": [],
@@ -428,11 +429,22 @@ class MeetingImport(BaseActionTestCase):
             "mimetype": "text/plain",
             "pdf_information": {},
             "create_timestamp": 1584513771,
+            "parent_id": None,
+            "child_ids": [],
+            "meeting_mediafile_ids": [obj_id],
+            **data,
+        }
+
+    def get_meeting_mediafile_data(
+        self, obj_id: int, data: dict[str, Any] = {}
+    ) -> dict[str, Any]:
+        return {
+            "id": obj_id,
+            "meeting_id": 1,
+            "mediafile_id": obj_id,
             "is_public": True,
             "access_group_ids": [],
             "inherited_access_group_ids": [],
-            "parent_id": None,
-            "child_ids": [],
             "list_of_speakers_id": None,
             "projection_ids": [],
             "attachment_ids": [],
@@ -1053,20 +1065,26 @@ class MeetingImport(BaseActionTestCase):
         request_data = self.create_request_data(
             {
                 "mediafile": {"1": self.get_mediafile_data(1)},
+                "meeting_mediafile": {"1": self.get_meeting_mediafile_data(1)},
             }
         )
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        mediafile = self.get_model("mediafile/1")
+        mediafile = self.assert_model_exists("mediafile/1", {"owner_id": "meeting/2"})
         assert mediafile.get("blob") is None
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
+        self.assert_model_exists(
+            "meeting_mediafile/1", {"mediafile_id": 1, "meeting_id": 2}
+        )
 
     def test_inherited_access_group_ids_none(self) -> None:
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "1": self.get_mediafile_data(
+                "mediafile": {"1": self.get_mediafile_data(1)},
+                "meeting_mediafile": {
+                    "1": self.get_meeting_mediafile_data(
                         1,
                         {
                             "access_group_ids": None,
@@ -1077,6 +1095,7 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
@@ -1088,8 +1107,8 @@ class MeetingImport(BaseActionTestCase):
                         1,
                         {
                             "admin_group_for_meeting_id": 1,
-                            "mediafile_access_group_ids": [1],
-                            "mediafile_inherited_access_group_ids": [1],
+                            "meeting_mediafile_access_group_ids": [1],
+                            "meeting_mediafile_inherited_access_group_ids": [1],
                             "meeting_user_ids": [11],
                         },
                     ),
@@ -1097,13 +1116,14 @@ class MeetingImport(BaseActionTestCase):
                         2,
                         {
                             "default_group_for_meeting_id": 1,
-                            "mediafile_access_group_ids": [1],
-                            "mediafile_inherited_access_group_ids": [1],
+                            "meeting_mediafile_access_group_ids": [1],
+                            "meeting_mediafile_inherited_access_group_ids": [1],
                         },
                     ),
                 },
-                "mediafile": {
-                    "1": self.get_mediafile_data(
+                "mediafile": {"1": self.get_mediafile_data(1)},
+                "meeting_mediafile": {
+                    "1": self.get_meeting_mediafile_data(
                         1,
                         {
                             "is_public": False,
@@ -1115,13 +1135,16 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["group_ids"] = [1, 2]
 
         # try both orders, both should work
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         # other order
-        request_data["meeting"]["mediafile"]["1"]["inherited_access_group_ids"] = [2, 1]
+        request_data["meeting"]["meeting_mediafile"]["1"][
+            "inherited_access_group_ids"
+        ] = [2, 1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
@@ -1247,18 +1270,20 @@ class MeetingImport(BaseActionTestCase):
         # Template Relation Field
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "3": self.get_mediafile_data(
+                "mediafile": {"3": self.get_mediafile_data(3)},
+                "meeting_mediafile": {
+                    "3": self.get_meeting_mediafile_data(
                         3,
                         {
                             "used_as_logo_web_header_in_meeting_id": 1,
                         },
                     )
-                }
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["logo_web_header_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("mediafile/1")
@@ -1268,18 +1293,20 @@ class MeetingImport(BaseActionTestCase):
         # Template Relation Field
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "3": self.get_mediafile_data(
+                "mediafile": {"3": self.get_mediafile_data(3)},
+                "meeting_mediafile": {
+                    "3": self.get_meeting_mediafile_data(
                         3,
                         {
                             "used_as_font_italic_in_meeting_id": 1,
                         },
                     )
-                }
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["font_italic_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("mediafile/1")
@@ -1289,22 +1316,24 @@ class MeetingImport(BaseActionTestCase):
         # Template Relation Field
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "3": self.get_mediafile_data(
+                "mediafile": {"3": self.get_mediafile_data(3)},
+                "meeting_mediafile": {
+                    "3": self.get_meeting_mediafile_data(
                         3,
                         {
                             "used_as_logo_web_in_meeting_id": 1,
                         },
                     )
-                }
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["logo_web_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "\tmeeting/1: Invalid fields logo_web_id (value: 3)\n\tmediafile/3: Invalid fields used_as_logo_web_in_meeting_id (value: 1)"
+            "\tmeeting/1: Invalid fields logo_web_id (value: 3)\n\tmeeting_mediafile/3: Invalid fields used_as_logo_web_in_meeting_id (value: 1)"
             in response.json["message"]
         )
 
@@ -1315,7 +1344,6 @@ class MeetingImport(BaseActionTestCase):
                     "3": self.get_mediafile_data(
                         3,
                         {
-                            "used_as_logo_web_header_in_meeting_id": 1,
                             "parent_id": 2,
                         },
                     ),
@@ -1327,15 +1355,27 @@ class MeetingImport(BaseActionTestCase):
                             "filesize": 0,
                             "filename": None,
                             "mimetype": None,
-                            "is_public": False,
                             "child_ids": [3],
                         },
                     ),
-                }
+                },
+                "meeting_mediafile": {
+                    "3": self.get_meeting_mediafile_data(
+                        3,
+                        {"used_as_logo_web_header_in_meeting_id": 1},
+                    ),
+                    "2": self.get_meeting_mediafile_data(
+                        2,
+                        {
+                            "is_public": False,
+                        },
+                    ),
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["logo_web_header_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [2, 3]
+        request_data["meeting"]["meeting"]["1"]["meeting_mediafile_ids"] = [2, 3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert "mediafile/3: is_public is wrong." in response.json["message"]
@@ -1499,14 +1539,15 @@ class MeetingImport(BaseActionTestCase):
     def test_field_check(self) -> None:
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "1": self.get_mediafile_data(
+                "mediafile": {"1": self.get_mediafile_data(1)},
+                "meeting_mediafile": {
+                    "1": self.get_meeting_mediafile_data(
                         1,
                         {
                             "foobar": "test this",
                         },
                     ),
-                }
+                },
             }
         )
         response = self.request("meeting.import", request_data)
@@ -2099,7 +2140,7 @@ class MeetingImport(BaseActionTestCase):
     def test_with_listfields_from_migration(self) -> None:
         """
         Test for listFields in event.data after migration. Uses migration 0035 to create one
-        Additionally adds a gender to user 1 to show that migration 0054 does not interfere with the import.
+        Additionally adds a gender to user 1 to show that migration 0056 does not interfere with the import.
         """
         data = self.create_request_data(
             {
