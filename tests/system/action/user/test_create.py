@@ -1,5 +1,8 @@
+from typing import Any
+
 from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -740,6 +743,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [2, 3],
                 "group_ids": [1],
                 "is_present_in_meeting_ids": [1],
+                "locked_out": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -764,6 +768,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "comment": "comment for meeting/1",
                 "vote_delegations_from_ids": [2, 3],
                 "group_ids": [1],
+                "locked_out": True,
             },
         )
         self.assert_model_exists(
@@ -1370,6 +1375,78 @@ class UserCreateActionTest(BaseActionTestCase):
             "meeting/2", {"user_ids": [223], "meeting_user_ids": [1]}
         )
 
+    def assert_lock_out_user(
+        self,
+        meeting_id: int,
+        other_payload_data: dict[str, Any],
+        errormsg: str | None = None,
+    ) -> None:
+        self.create_meeting()  # committee:60; groups: default:1, admin:2, can_manage:3
+        self.create_meeting(4)  # committee:63; groups: default:4, admin:5, can_update:6
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.add_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        response = self.request(
+            "user.create",
+            {
+                "username": "test",
+                "meeting_id": meeting_id,
+                "locked_out": True,
+                **other_payload_data,
+            },
+        )
+        if errormsg is not None:
+            self.assert_status_code(response, 400)
+            self.assertIn(
+                errormsg,
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+
+    def test_create_locked_out_user_foreign_cml_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_superadmin_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"organization_management_level": "superadmin"},
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel superadmin",
+        )
+
+    def test_create_locked_out_user_other_oml_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"organization_management_level": "can_manage_users"},
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel can_manage_users",
+        )
+
+    def test_create_locked_out_user_cml_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"committee_management_ids": [60]},
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+        )
+
+    def test_create_locked_out_user_meeting_admin_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"group_ids": [2]},
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_create_locked_out_user_can_manage_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"group_ids": [3]},
+            errormsg="Group(s) 3 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_create_locked_out_user_can_update_allowed(self) -> None:
+        self.assert_lock_out_user(
+            4,
+            {"group_ids": [6]},
+        )
+
 
 class UserCreateActionTestInternal(BaseInternalActionTest):
     def test_create_empty_saml_id_and_empty_values(self) -> None:
@@ -1414,7 +1491,7 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
                 "can_change_own_password": False,
                 "password": None,
                 "is_physical_person": True,
-                "is_active": None,  # optional field and not set
+                "is_active": True,
             },
         )
 
@@ -1446,4 +1523,48 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         self.assert_status_code(response, 400)
         self.assertIn(
             "A user with the username 123saml already exists.", response.json["message"]
+        )
+
+    def test_create_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 1,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
+    def test_create_permission_as_locked_out(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
+        self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
+        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 1,
+                "group_ids": [1],
+                "number": "123456",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            response.json["message"],
         )

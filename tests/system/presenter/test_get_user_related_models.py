@@ -112,6 +112,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "motion_submitter_ids": [2],
                     "assignment_candidate_ids": [3],
                     "group_ids": [1],
+                    "locked_out": True,
                 },
                 "group/1": {"meeting_user_ids": [1], "meeting_id": 1},
             }
@@ -130,6 +131,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                         "motion_submitter_ids": [2],
                         "assignment_candidate_ids": [3],
                         "speaker_ids": [4],
+                        "locked_out": True,
                     }
                 ],
             }
@@ -518,6 +520,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                             "motion_submitter_ids": [id_],
                             "assignment_candidate_ids": [id_],
                             "group_ids": [id_],
+                            "locked_out": id_ == 3,
                         },
                         f"group/{id_}": {"meeting_id": id_, "meeting_user_ids": [id_]},
                     }.items()

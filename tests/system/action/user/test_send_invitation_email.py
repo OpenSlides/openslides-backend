@@ -533,7 +533,12 @@ class SendInvitationMail(BaseActionTestCase):
     def test_correct_subject_and_body_from_default(self) -> None:
         response = self.request(
             "meeting.create",
-            {"committee_id": 60, "name": "Test Meeting", "language": "en"},
+            {
+                "committee_id": 60,
+                "name": "Test Meeting",
+                "language": "en",
+                "admin_ids": [1],
+            },
         )
         meeting_id = response.json["results"][0][0]["id"]
         self.set_models(

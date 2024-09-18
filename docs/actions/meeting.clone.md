@@ -22,10 +22,14 @@
 The meeting will be duplicated as it is including all its items. That means, that every motion, every topic, every mediafile, every assignment and so will be duplicated too. Users should not be duplicated, instead the existing users from the source meeting should be included in the new meeting as part of the default- or admin-group.
 The users in user_ids/admin_ids will also be added to the default_group/admin_group of the new meeting. The difference is, that they don't have to be part of the source meeting.
 
+If `set_as_template` is not true and there are no `admin_ids` in the payload and no admins in meeting that should be duplicated, there will be an error.
+
 A differing committee_id can be given, otherwise the committee_id
 will be cloned untouched. 
 
-It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids, if the new meeting is not archived (`is_active_in_organization_id` is set)
+If an archived meeting is cloned, the created meeting will be active.
+
+It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids.
 
 Meetings that have `locked_from_inside` set to true can not be cloned.
 
@@ -37,5 +41,7 @@ If set_as_template is given, template_for_organization_id has to be set to 1.
 
 ## Permission
 
-The request user must have the CML `can_manage` in the target committee (where the meeting is created).
-If the organization setting `require_duplicate_from` is set, a committee manager can only clone template meetings.
+It is not allowed to clone a meeting from a different committee if said meeting isn't a template.
+
+Otherwise the request user only needs the CML `can_manage` in the target committee (where the meeting is created).
+

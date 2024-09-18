@@ -24,6 +24,7 @@
     vote_weight: decimal;
     about_me: HTML;
     comment: HTML;
+    locked_out: boolean;
 
     structure_level_id: Id;
     vote_delegated_to_id: Id;
@@ -67,10 +68,14 @@ Updates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 * The `member_number` must be unique within all users.
+* Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
+* The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
+
+If the user was the last member of the meetings admin group and he happens to be removed from the latter through this action, as long as the meeting is not a template, there will be an error.
 
 ## Permissions
 If the OML of the request user is lower than the OML of the user to update, only meeting-specific fields (groups B and C) are allowed to be changed. If any other fields are present in the payload, the request must fail.

@@ -103,9 +103,79 @@ class GroupUpdateActionTest(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_update_with_user(self) -> None:
+        self.create_user("sherlock", [3])
+        response = self.request(
+            "group.update", {"id": 3, "permissions": [Permissions.User.CAN_MANAGE]}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_with_locked_out_user_error(self) -> None:
+        self.create_user("sherlock", [3])
+        self.set_models({"meeting_user/1": {"locked_out": True}})
+        response = self.request(
+            "group.update", {"id": 3, "permissions": [Permissions.User.CAN_MANAGE]}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot give user manage permissions to a group with locked users.",
+            response.json["message"],
+        )
+
+    def test_update_with_locked_out_user_no_error(self) -> None:
+        self.create_user("sherlock", [3])
+        self.set_models({"meeting_user/1": {"locked_out": True}})
+        response = self.request(
+            "group.update", {"id": 3, "permissions": [Permissions.User.CAN_SEE]}
+        )
+        self.assert_status_code(response, 200)
+
     def test_update_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
             {},
             "group.update",
             {"id": 3, "name": "name_Xcdfgee"},
+        )
+
+    def test_update_permissions_on_anonymous_group_forbidden(self) -> None:
+        self.set_anonymous()
+        response = self.request(
+            "group.update",
+            {
+                "id": 4,
+                "permissions": [Permissions.User.CAN_MANAGE, Permissions.User.CAN_SEE],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following permissions may not be set for the anonymous group: {'user.can_manage'}",
+            response.json["message"],
+        )
+
+    def test_update_permissions_on_anonymous_group_allowed(self) -> None:
+        self.set_anonymous()
+        response = self.request(
+            "group.update",
+            {
+                "id": 4,
+                "permissions": [Permissions.User.CAN_SEE],
+            },
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("group/4")
+        assert model.get("permissions") == [Permissions.User.CAN_SEE]
+
+    def test_update_name_on_anonymous_group(self) -> None:
+        self.set_anonymous()
+        response = self.request(
+            "group.update",
+            {
+                "id": 4,
+                "name": "Fight club",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot change name of anonymous group.",
+            response.json["message"],
         )

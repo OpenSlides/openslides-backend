@@ -14,6 +14,7 @@ from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
+from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
@@ -27,6 +28,7 @@ class UserCreate(
     SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
+    CheckLockOutPermissionMixin,
 ):
     """
     Action to create a user.
@@ -79,6 +81,7 @@ class UserCreate(
                 instance["username"] = self.generate_username(instance)
         elif re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
+        self.check_locking_status(instance.get("meeting_id"), instance, None, None)
         instance = super().update_instance(instance)
         if saml_id:
             instance["can_change_own_password"] = False

@@ -53,7 +53,7 @@ def test_migration_forwarding_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0054_remove_forwarding_user")
+    finalize("0056_remove_forwarding_user")
 
     for collection, id_ in [
         *[("user", id_) for id_ in range(2, 6)],

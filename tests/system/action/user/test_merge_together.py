@@ -2479,3 +2479,132 @@ class UserMergeTogether(BaseVoteTestCase):
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"is_present_in_meeting_ids": [3, 4]})
+
+    def test_merge_with_locked_out(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"locked_out": True, "group_ids": [2]},
+                "meeting_user/14": {"group_ids": [2]},
+                "meeting_user/15": {"group_ids": [2]},
+                "meeting_user/22": {"group_ids": [5]},
+                "meeting_user/23": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/24": {"group_ids": [5]},
+                "meeting_user/33": {"group_ids": [8]},
+                "meeting_user/34": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/45": {"locked_out": True, "group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/12", {"user_id": 2, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/22", {"user_id": 2, "meeting_id": 2, "locked_out": None}
+        )
+        self.assert_model_exists(
+            "meeting_user/46", {"user_id": 2, "meeting_id": 3, "locked_out": None}
+        )
+        self.assert_model_exists(
+            "meeting_user/47", {"user_id": 2, "meeting_id": 4, "locked_out": True}
+        )
+
+    def test_merge_with_locked_out_meetingadmin_error(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"locked_out": True, "group_ids": [2]},
+                "meeting_user/14": {"group_ids": [2]},
+                "meeting_user/15": {"group_ids": [2]},
+                "meeting_user/22": {"group_ids": [5]},
+                "meeting_user/23": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/24": {"group_ids": [4]},
+                "meeting_user/33": {"group_ids": [8]},
+                "meeting_user/34": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/45": {"locked_out": True, "group_ids": [10]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/4": {"meeting_user_ids": [24]},
+                "group/5": {"meeting_user_ids": [22, 23]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/10": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 6, 7, 9, 11, 12]
+                },
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Group(s) 10 have user.can_manage permissions and may therefore not be used by users who are locked out",
+            response.json["message"],
+        )
+
+    def test_merge_with_locked_out_super_admin_error(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"group_ids": [2]},
+                "meeting_user/14": {"group_ids": [2]},
+                "meeting_user/15": {"group_ids": [2]},
+                "meeting_user/22": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/23": {"group_ids": [5]},
+                "meeting_user/24": {"group_ids": [5]},
+                "meeting_user/33": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/34": {"group_ids": [8]},
+                "meeting_user/45": {"group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
+            }
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 5
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot give OrganizationManagementLevel superadmin to user 2 as he is locked out of meeting(s) 2, 3",
+            response.json["message"],
+        )
+
+    def test_merge_with_locked_out_committee_admin_error(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/12": {"locked_out": True, "group_ids": [2]},
+                "meeting_user/14": {"group_ids": [2]},
+                "meeting_user/15": {"group_ids": [2]},
+                "meeting_user/22": {"group_ids": [5]},
+                "meeting_user/23": {"group_ids": [5]},
+                "meeting_user/24": {"group_ids": [5]},
+                "meeting_user/33": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/34": {"group_ids": [8]},
+                "meeting_user/45": {"group_ids": [11]},
+                "group/2": {"meeting_user_ids": [12, 14, 15]},
+                "group/5": {"meeting_user_ids": [22, 23, 24]},
+                "group/8": {"meeting_user_ids": [33, 34]},
+                "group/11": {"meeting_user_ids": [45]},
+                **{
+                    f"group/{id_}": {"meeting_user_ids": None}
+                    for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
+                },
+            }
+        )
+        self.set_committee_management_level([1, 3], 5)
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set user 2 as manager for committee(s) 1 due to being locked out of meeting(s) 1",
+            response.json["message"],
+        )
