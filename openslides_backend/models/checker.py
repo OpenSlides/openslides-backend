@@ -549,18 +549,36 @@ class Checker:
         model: dict[str, Any],
         collection: str,
     ) -> None:
-        if collection != "mediafile":
+        if collection != "meeting_mediafile":
             return
+
+        source_model = self.find_model("mediafile", model["mediafile_id"])
 
         access_group_ids = model.get("access_group_ids")
         parent_is_public = None
         parent_inherited_access_group_ids = None
-        if model.get("parent_id"):
-            parent = self.find_model(collection, model["parent_id"])
+        if source_model and source_model.get("parent_id"):
+            source_parent = self.find_model("mediafile", source_model["parent_id"])
+            meeting = self.find_model("meeting", model["meeting_id"])
             # relations are checked beforehand, so parent always exists
-            assert parent
-            parent_is_public = parent["is_public"]
-            parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+            assert source_parent
+            assert meeting
+            parent_ids = set(meeting.get("meeting_mediafile_ids", [])).intersection(
+                source_parent.get("meeting_mediafile_ids", [])
+            )
+            assert len(parent_ids) <= 1
+            if len(parent_ids):
+                parent = self.find_model(collection, parent_ids.pop())
+                assert parent
+                parent_is_public = parent["is_public"]
+                parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+            else:
+                # If the parent has no meeting_mediafiles, but the child does,
+                # that means that both are published and that the parent just
+                # doesn't have explicit meeting data. In this case the parent
+                # must be assumed to have inherited_access_group admin
+                parent_is_public = False
+                parent_inherited_access_group_ids = [meeting["admin_group_id"]]
         is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
             access_group_ids, parent_is_public, parent_inherited_access_group_ids
         )

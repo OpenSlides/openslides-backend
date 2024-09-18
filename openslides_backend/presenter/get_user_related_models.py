@@ -97,6 +97,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "speaker_ids",
             "motion_submitter_ids",
             "assignment_candidate_ids",
+            "locked_out",
         )
         meeting_users = [
             meeting_user
