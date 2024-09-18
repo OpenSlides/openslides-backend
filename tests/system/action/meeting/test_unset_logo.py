@@ -10,14 +10,20 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_meeting1",
-                "logo_pdf_header_l_id": 17,
-                "logo_pdf_header_r_id": 17,
+                "logo_pdf_header_l_id": 7,
+                "logo_pdf_header_r_id": 7,
                 "is_active_in_organization_id": 1,
+                "meeting_mediafile_ids": [7],
             },
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "image/png",
                 "owner_id": "meeting/1",
+                "meeting_mediafile_ids": [7],
+            },
+            "meeting_mediafile/7": {
+                "meeting_id": 1,
+                "mediafile_id": 17,
                 "used_as_logo_pdf_header_l_in_meeting_id": 1,
                 "used_as_logo_pdf_header_r_in_meeting_id": 1,
             },
@@ -28,14 +34,20 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             {
                 "meeting/222": {
                     "name": "name_meeting222",
-                    "logo_pdf_header_l_id": 17,
-                    "logo_pdf_header_r_id": 17,
+                    "logo_pdf_header_l_id": 7,
+                    "logo_pdf_header_r_id": 7,
                     "is_active_in_organization_id": 1,
+                    "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "image/png",
                     "owner_id": "meeting/222",
+                    "meeting_mediafile_ids": [7],
+                },
+                "meeting_mediafile/7": {
+                    "meeting_id": 222,
+                    "mediafile_id": 17,
                     "used_as_logo_pdf_header_l_in_meeting_id": 222,
                     "used_as_logo_pdf_header_r_in_meeting_id": 222,
                 },
@@ -47,8 +59,8 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/222")
         assert meeting.get("logo_pdf_header_l_id") is None
-        assert meeting.get("logo_pdf_header_r_id") == 17
-        mediafile = self.get_model("mediafile/17")
+        assert meeting.get("logo_pdf_header_r_id") == 7
+        mediafile = self.get_model("meeting_mediafile/7")
         assert mediafile.get("used_as_logo_pdf_header_l_in_meeting_id") is None
         assert mediafile.get("used_as_logo_pdf_header_r_in_meeting_id") == 222
 
@@ -57,13 +69,19 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             {
                 "meeting/222": {
                     "name": "name_meeting222",
-                    "logo_web_header_id": 17,
+                    "logo_web_header_id": 7,
                     "is_active_in_organization_id": 1,
+                    "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "image/png",
                     "owner_id": "meeting/222",
+                    "meeting_mediafile_ids": [7],
+                },
+                "meeting_mediafile/7": {
+                    "meeting_id": 222,
+                    "mediafile_id": 17,
                     "used_as_logo_web_header_in_meeting_id": 222,
                 },
             }
@@ -74,8 +92,9 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/222")
         assert meeting.get("logo_web_header_id") is None
-        mediafile = self.get_model("mediafile/17")
-        assert mediafile.get("used_as_logo_web_header_in_meeting_id") is None
+        self.assert_model_exists(
+            "meeting_mediafile/7", {"used_as_logo_web_header_in_meeting_id": None}
+        )
 
     def test_unset_logo_no_permissions(self) -> None:
         self.base_permission_test(

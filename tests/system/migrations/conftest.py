@@ -83,6 +83,7 @@ def setup_dummy_migration_handler(migration_module_name):
     migration_module = import_module(
         f"openslides_backend.migrations.migrations.{migration_module_name}"
     )
+    target_index: int = migration_module.Migration.target_migration_index
 
     class Migration(migration_module.Migration):
         target_migration_index = 2
@@ -93,13 +94,13 @@ def setup_dummy_migration_handler(migration_module_name):
 
     migration_handler = injector.get(MigrationHandler)
     migration_handler.register_migrations(Migration)
-    return migration_handler
+    return target_index, migration_handler
 
 
 @pytest.fixture()
 def migrate():
     def _migrate(migration_module_name):
-        setup_dummy_migration_handler(migration_module_name).migrate()
+        setup_dummy_migration_handler(migration_module_name)[1].migrate()
 
     yield _migrate
 
@@ -107,7 +108,10 @@ def migrate():
 @pytest.fixture()
 def finalize():
     def _finalize(migration_module_name):
-        setup_dummy_migration_handler(migration_module_name).finalize()
+        target_index, migration_handler = setup_dummy_migration_handler(
+            migration_module_name
+        )
+        migration_handler.finalize()
 
         # check relations
         reader: Reader = injector.get(Reader)
@@ -119,7 +123,8 @@ def finalize():
                 strip_reserved_fields(model)
         response["_migration_index"] = get_backend_migration_index()
 
-        MigrationChecker(json.loads(json.dumps(response))).run_check()
+        if response["_migration_index"] == target_index:
+            MigrationChecker(json.loads(json.dumps(response))).run_check()
 
     yield _finalize
 

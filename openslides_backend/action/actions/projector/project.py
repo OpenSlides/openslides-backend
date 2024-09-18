@@ -1,17 +1,21 @@
-from typing import Any
+from typing import Any, cast
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import collection_and_id_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
+from ...mixins.meeting_mediafile_helper import (
+    get_meeting_mediafile_id_or_create_payload,
+)
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.weight_mixin import WeightMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_mediafile.create import MeetingMediafileCreate
 from ..projection.create import ProjectionCreate
 from ..projection.delete import ProjectionDelete
 from ..projection.update import ProjectionUpdate
@@ -44,15 +48,39 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         for instance in action_data:
             meeting_id = instance["meeting_id"]
             fqid_content_object = instance["content_object_id"]
-            assert_belongs_to_meeting(
-                self.datastore,
-                [fqid_content_object]
-                + [
-                    fqid_from_collection_and_id("projector", id)
-                    for id in instance["ids"]
-                ],
-                meeting_id,
+            content_object_collection, content_object_id = collection_and_id_from_fqid(
+                fqid_content_object
             )
+            meeting_member_check_necessary = True
+            if content_object_collection == "mediafile":
+                meeting_mediafile = get_meeting_mediafile_id_or_create_payload(
+                    self.datastore, meeting_id, content_object_id, lock_result=False
+                )
+                if not isinstance(meeting_mediafile, int):
+                    create_result = self.execute_other_action(
+                        MeetingMediafileCreate, [meeting_mediafile]
+                    )
+                    meeting_mediafile_id: int = cast(
+                        list[dict[str, Any]], create_result
+                    )[0]["id"]
+                    meeting_member_check_necessary = False
+                else:
+                    meeting_mediafile_id = meeting_mediafile
+                fqid_content_object = instance["content_object_id"] = (
+                    fqid_from_collection_and_id(
+                        "meeting_mediafile", meeting_mediafile_id
+                    )
+                )
+            if meeting_member_check_necessary:
+                assert_belongs_to_meeting(
+                    self.datastore,
+                    [fqid_content_object]
+                    + [
+                        fqid_from_collection_and_id("projector", id)
+                        for id in instance["ids"]
+                    ],
+                    meeting_id,
+                )
 
             self.move_equal_projections_to_history_or_unset(instance, meeting_id)
             if not instance.get("stable"):

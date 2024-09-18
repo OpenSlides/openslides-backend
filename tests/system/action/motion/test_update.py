@@ -4,6 +4,7 @@ from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
 
@@ -239,7 +240,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "supporter_meeting_user_ids": [],
                     "additional_submitter": "additional",
                     "tag_ids": [],
-                    "attachment_ids": [],
+                    "attachment_mediafile_ids": [],
                     "workflow_timestamp": 9876543210,
                 },
             )
@@ -252,7 +253,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("supporter_meeting_user_ids") == []
         assert model.get("additional_submitter") == "additional"
         assert model.get("tag_ids") == []
-        assert model.get("attachment_ids") == []
+        assert model.get("attachment_meeting_mediafile_ids") == []
         # motion/113 does not exist and should therefore not be present in the relations
         assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
@@ -426,7 +427,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "block_id": 51,
                 "supporter_meeting_user_ids": [],
                 "tag_ids": [],
-                "attachment_ids": [],
+                "attachment_mediafile_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -698,7 +699,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "text": "test",
             "reason": "test",
             "modified_final_version": "test",
-            "attachment_ids": [1],
+            "attachment_mediafile_ids": [1],
         }.items():
             response = self.request(
                 "motion.update",
@@ -807,3 +808,92 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Number is not unique." in response.json["message"]
+
+    def test_update_permission_with_mediafile(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        user_id = self.create_user("user")
+        self.login(user_id)
+        self.set_user_groups(user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
+        self.set_models(
+            {
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
+            },
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/11", {"attachment_ids": ["motion/111"]}
+        )
+
+    def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": "organization/1",
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+            },
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/1",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": [2],
+                "inherited_access_group_ids": [2],
+                "is_public": False,
+            },
+        )
+
+    def test_update_with_published_orga_mediafile(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": "organization/1",
+                    "meeting_mediafile_ids": [11],
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                },
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
+            },
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/11",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": None,
+                "inherited_access_group_ids": None,
+                "is_public": None,
+            },
+        )

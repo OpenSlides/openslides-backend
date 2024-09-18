@@ -3,8 +3,10 @@ from time import time
 from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState, StatisticEntry
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
+from tests.system.base import ADMIN_USERNAME
 from tests.util import Response
 
 
@@ -330,7 +332,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             },
         }
 
-    def test_json_upload_with_meeting_name(self) -> None:
+    def test_json_upload_with_meeting_name_no_admin(self) -> None:
         response = self.request(
             "committee.json_upload",
             {
@@ -344,11 +346,39 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
+            "state": ImportState.ERROR,
+            "messages": ["Error: Meeting cannot be created without admins"],
+            "data": {
+                "name": {"value": "test", "info": ImportState.NEW},
+                "meeting_name": "test meeting",
+                "meeting_admins": [{"value": "", "info": ImportState.ERROR}],
+            },
+        }
+        self.assert_statistics(response, {"meetings_created": 0, "error": 1})
+
+    def test_json_upload_with_meeting_name_and_admin(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
             "state": ImportState.NEW,
             "messages": [],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
         self.assert_statistics(response, {"meetings_created": 1})
@@ -363,6 +393,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "meeting_name": "test meeting",
                         "meeting_start_time": "2023-08-09",
                         "meeting_end_time": "2023-08-10",
+                        "meeting_admins": [ADMIN_USERNAME],
                     }
                 ]
             },
@@ -376,6 +407,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
 
@@ -400,6 +434,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "meeting_name": "meeting",
                         "meeting_start_time": "2023-08-09",
                         "meeting_end_time": "2023-08-10",
+                        "meeting_admins": [ADMIN_USERNAME],
                     }
                 ]
             },
@@ -414,6 +449,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
 
@@ -426,11 +464,13 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "name": "test",
                         "meeting_name": "test meeting",
                         "meeting_start_time": "2023-08-09",
+                        "meeting_admins": [ADMIN_USERNAME],
                     },
                     {
                         "name": "test2",
                         "meeting_name": "test meeting 2",
                         "meeting_end_time": "2023-08-10",
+                        "meeting_admins": [ADMIN_USERNAME],
                     },
                 ]
             },
@@ -445,6 +485,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691539200,
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
         assert self.get_row(response, 1) == {
@@ -456,6 +499,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "name": {"value": "test2", "info": ImportState.NEW},
                 "meeting_name": "test meeting 2",
                 "meeting_end_time": 1691625600,
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
 
@@ -487,6 +533,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "meeting_name": "test meeting",
                         "meeting_start_time": "2023-08-10",
                         "meeting_end_time": "2023-08-09",
+                        "meeting_admins": [ADMIN_USERNAME],
                     }
                 ]
             },
@@ -502,6 +549,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691625600,
                 "meeting_end_time": 1691539200,
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
 
@@ -534,32 +584,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         }
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 0})
 
-    def test_json_upload_meeting_template_not_found(self) -> None:
-        response = self.request(
-            "committee.json_upload",
-            {
-                "data": [
-                    {
-                        "name": "test",
-                        "meeting_name": "test meeting",
-                        "meeting_template": "test",
-                    }
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
-        assert self.get_row(response) == {
-            "state": ImportState.NEW,
-            "messages": ["Template meetings can only be used for existing committees."],
-            "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_name": "test meeting",
-                "meeting_template": {"value": "test", "info": ImportState.WARNING},
-            },
-        }
-        self.assert_statistics(response, {"meetings_created": 1})
-
-    def test_json_upload_meeting_template_found(self) -> None:
+    def test_json_upload_meeting_template_found_but_no_admin(self) -> None:
         self.set_models(
             {
                 "committee/1": {"name": "committee", "meeting_ids": [2]},
@@ -580,8 +605,8 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
-            "state": ImportState.DONE,
-            "messages": [],
+            "state": ImportState.ERROR,
+            "messages": ["Error: Meeting cannot be created without admins"],
             "data": {
                 "id": 1,
                 "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
@@ -591,9 +616,12 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                     "info": ImportState.DONE,
                     "id": 2,
                 },
+                "meeting_admins": [{"value": "", "info": ImportState.ERROR}],
             },
         }
-        self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
+        self.assert_statistics(
+            response, {"meetings_created": 0, "meetings_cloned": 0, "error": 1}
+        )
 
     def test_json_upload_meeting_template_in_another_committee(self) -> None:
         self.set_models(
@@ -611,6 +639,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "name": "committee2",
                         "meeting_name": "test",
                         "meeting_template": "template",
+                        "meeting_admins": [ADMIN_USERNAME],
                     }
                 ]
             },
@@ -629,6 +658,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                     "value": "template",
                     "info": ImportState.WARNING,
                 },
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
             },
         }
 
@@ -728,3 +760,162 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 ],
             },
         }
+
+    def json_upload_meeting_template_not_found(self) -> None:
+        self.create_user("bob")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_template": "test",
+                        "meeting_admins": ["bob"],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": ["Template meetings can only be used for existing committees."],
+            "data": {
+                "name": {"value": "test", "info": ImportState.NEW},
+                "meeting_name": "test meeting",
+                "meeting_template": {"value": "test", "info": ImportState.WARNING},
+                "meeting_admins": [{"info": ImportState.DONE, "value": "bob", "id": 2}],
+            },
+        }
+        self.assert_statistics(response, {"meetings_created": 1})
+
+    def json_upload_admin_defined_meeting_template_found(self) -> None:
+        self.create_meeting(2)
+        self.set_models(
+            {
+                "committee/61": {"name": "committee"},
+                "meeting/2": {
+                    "name": "template",
+                    "language": "en",
+                    "reference_projector_id": 1,
+                    "projector_ids": [1],
+                    "motion_workflow_ids": [2],
+                    "motion_state_ids": [2],
+                    "motions_default_amendment_workflow_id": 2,
+                    "motions_default_statute_amendment_workflow_id": 2,
+                    **{field: [1] for field in Meeting.all_default_projectors()},
+                },
+                "projector/1": {
+                    "sequential_number": 1,
+                    "meeting_id": 2,
+                    "used_as_reference_projector_meeting_id": 2,
+                    "name": "Default projector",
+                    **{field: 2 for field in Meeting.reverse_default_projectors()},
+                },
+                "motion_workflow/2": {
+                    "name": "yay",
+                    "default_amendment_workflow_meeting_id": 2,
+                    "default_statute_amendment_workflow_meeting_id": 2,
+                    "sequential_number": 1,
+                },
+                "motion_state/2": {"weight": 1, "name": "dismissed"},
+                "user/2": {"organization_id": 1},
+                "organization/1": {"user_ids": [1, 2]},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee",
+                        "meeting_name": "test",
+                        "meeting_template": "template",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 61,
+                "name": {"value": "committee", "info": ImportState.DONE, "id": 61},
+                "meeting_name": "test",
+                "meeting_template": {
+                    "value": "template",
+                    "info": ImportState.DONE,
+                    "id": 2,
+                },
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
+            },
+        }
+        self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
+
+    def json_upload_meeting_template_with_admins_found(self) -> None:
+        self.create_meeting(2)
+        self.create_user("bob", [3])  # create admin for meeting 2
+        self.set_models(
+            {
+                "committee/61": {"name": "committee"},
+                "meeting/2": {
+                    "name": "template",
+                    "language": "en",
+                    "reference_projector_id": 1,
+                    "projector_ids": [1],
+                    "motion_workflow_ids": [2],
+                    "motion_state_ids": [2],
+                    "motions_default_amendment_workflow_id": 2,
+                    "motions_default_statute_amendment_workflow_id": 2,
+                    **{field: [1] for field in Meeting.all_default_projectors()},
+                },
+                "projector/1": {
+                    "sequential_number": 1,
+                    "meeting_id": 2,
+                    "used_as_reference_projector_meeting_id": 2,
+                    "name": "Default projector",
+                    **{field: 2 for field in Meeting.reverse_default_projectors()},
+                },
+                "motion_workflow/2": {
+                    "name": "yay",
+                    "default_amendment_workflow_meeting_id": 2,
+                    "default_statute_amendment_workflow_meeting_id": 2,
+                    "sequential_number": 1,
+                },
+                "motion_state/2": {"weight": 1, "name": "dismissed"},
+                "user/2": {"organization_id": 1},
+                "organization/1": {"user_ids": [1, 2]},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee",
+                        "meeting_name": "test",
+                        "meeting_template": "template",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 61,
+                "name": {"value": "committee", "info": ImportState.DONE, "id": 61},
+                "meeting_name": "test",
+                "meeting_template": {
+                    "value": "template",
+                    "info": ImportState.DONE,
+                    "id": 2,
+                },
+            },
+        }
+        self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
