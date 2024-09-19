@@ -246,8 +246,6 @@ class UserScopeMixin(BaseServiceProvider):
         Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible.
         """
         if not b_meeting_ids:
-            if not hasattr(self, "instance_committee_meeting_ids"):
-                return False
             if not (
                 b_meeting_ids := {
                     m_id
