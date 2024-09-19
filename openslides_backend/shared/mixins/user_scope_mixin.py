@@ -224,6 +224,10 @@ class UserScopeMixin(BaseServiceProvider):
         return self._analyze_meetings(meeting_to_admin_users, instance_id)
 
     def _check_not_committee_manager(self, instance_id: int) -> bool:
+        """
+        Helper function used in method check_for_admin_in_all_meetings.
+        Checks that requested user is not a committee manager.
+        """
         if not (hasattr(self, "name") and self.name == "user.create"):
             if self.datastore.get(
                 fqid_from_collection_and_id("user", instance_id),
@@ -237,7 +241,10 @@ class UserScopeMixin(BaseServiceProvider):
     def _collect_intersected_meetings(
         self, b_meeting_ids: set[int] | None
     ) -> dict[int, Any] | bool:
-        """Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible."""
+        """
+        Helper function used in method check_for_admin_in_all_meetings.
+        Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible.
+        """
         if not b_meeting_ids:
             if not hasattr(self, "instance_committee_meeting_ids"):
                 return False
@@ -326,7 +333,10 @@ class UserScopeMixin(BaseServiceProvider):
         }
 
     def _collect_admin_users(self, meeting_user_ids: set[int]) -> dict[int, set[int]]:
-        """Returns the corresponding users of the groups meeting_users in a defaultdict meeting_id: user_ids."""
+        """
+        Helper function used in method check_for_admin_in_all_meetings.
+        Returns the corresponding users of the groups meeting_users in a defaultdict meeting_id: user_ids.
+        """
         meeting_to_admin_user = defaultdict(set)
         for meeting_user in (
             self.datastore.get_many(
@@ -350,6 +360,11 @@ class UserScopeMixin(BaseServiceProvider):
     def _analyze_meetings(
         self, meeting_to_admin_users: dict[int, set[int]], instance_id: int
     ) -> bool:
+        """
+        Helper function used in method check_for_admin_in_all_meetings.
+        Compares the admin users of all meetings with the ids of requested user and requesting user.
+        Requesting user must be admin in all meetings. Requested user cannot be admin in any.
+        """
         for meeting_id, admin_users in meeting_to_admin_users.items():
             if instance_id in admin_users:
                 return False
