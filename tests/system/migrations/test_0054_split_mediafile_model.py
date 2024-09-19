@@ -147,6 +147,11 @@ def test_migration(write, finalize, assert_model):
         },
         {
             "type": "create",
+            "fqid": "projection/2",
+            "fields": {"id": 2, "meeting_id": 2, "content_object_id": None},
+        },
+        {
+            "type": "create",
             "fqid": "mediafile/6",
             "fields": {
                 "id": 6,

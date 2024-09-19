@@ -638,6 +638,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_password": "",
                 "can_change_own_password": False,
                 "meeting_user_ids": [35],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(
@@ -660,6 +662,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_vote_weight": "1.000000",
                 "can_change_own_password": False,
                 "meeting_user_ids": [36],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(
@@ -680,6 +684,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "last_name": "Baez7",
                 "can_change_own_password": True,
                 "meeting_user_ids": [37],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(

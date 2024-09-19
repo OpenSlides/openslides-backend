@@ -286,6 +286,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "username": username,
             "can_change_own_password": False,
             "is_physical_person": True,
+            "is_active": True,
             "default_vote_weight": "1.000000",
             "organization_id": 1,
             **datapart,
@@ -414,12 +415,14 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
                     "organization_id": 1,
+                    "is_active": True,
                 },
                 "user/2": self.get_new_user(
                     "present_user",
                     {
                         "is_present_in_meeting_ids": [1],
                         "meeting_user_ids": [12],
+                        "is_active": False,
                     },
                 ),
                 "user/3": self.get_new_user(
@@ -430,10 +433,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 ),
                 "user/4": self.get_new_user(
                     "vote_user",
-                    {
-                        "meeting_user_ids": [14],
-                        "vote_ids": [7],
-                    },
+                    {"meeting_user_ids": [14], "vote_ids": [7], "is_active": False},
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
