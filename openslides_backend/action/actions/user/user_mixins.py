@@ -2,13 +2,15 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.datastore.interface import PartialModel
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....presenter.search_users import SearchUsers
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
+from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
 from ...action import Action, original_instances
@@ -282,3 +284,59 @@ def check_gender_helper(datastore: DatastoreService, instance: dict[str, Any]) -
                 raise ActionException(
                     f"Gender '{instance['gender']}' is not in the allowed gender list."
                 )
+
+
+class AdminIntegrityCheckMixin(Action):
+    def check_admin_group_integrity(
+        self,
+        meeting_user_filter: Filter,
+        admin_group_ids: list[int],
+        added_groups: set[int] = set(),
+    ) -> None:
+        meeting_users = self.datastore.filter(
+            "meeting_user", meeting_user_filter, ["group_ids", "user_id"]
+        )
+        groups = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "group",
+                    admin_group_ids,
+                    ["meeting_user_ids", "admin_group_for_meeting_id"],
+                )
+            ]
+        )["group"]
+        broken_meetings: list[str] = []
+        for group_id, group_data in groups.items():
+            if group_id in added_groups:
+                continue
+            if group_data.get("meeting_user_ids") and not any(
+                m_user_id not in meeting_users
+                for m_user_id in group_data.get("meeting_user_ids", [])
+            ):
+                broken_meetings.append(str(group_data["admin_group_for_meeting_id"]))
+        if len(broken_meetings):
+            raise ActionException(
+                f"Cannot remove last admin from meeting(s) {', '.join(sorted(broken_meetings))}"
+            )
+
+    def get_meeting_data_from_meeting_ids(
+        self, meeting_ids: list[int]
+    ) -> dict[int, PartialModel]:
+        if len(meeting_ids):
+            return self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting",
+                        meeting_ids,
+                        ["admin_group_id", "template_for_organization_id"],
+                    )
+                ]
+            )["meeting"]
+        return {}
+
+    def filter_templates_from_meetings_data_dict(
+        self, meetings_data_dict: dict[int, Any], meeting_data: dict[int, PartialModel]
+    ) -> None:
+        for meeting_id, meeting in meeting_data.items():
+            if meeting.get("template_for_organization_id"):
+                del meetings_data_dict[meeting_id]

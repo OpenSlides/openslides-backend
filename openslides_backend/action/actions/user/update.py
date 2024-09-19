@@ -6,9 +6,12 @@ from openslides_backend.shared.mixins.user_create_update_permissions_mixin impor
     CreateUpdatePermissionsMixin,
 )
 
+from ....action.action import original_instances
+from ....action.util.typing import ActionData
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
@@ -18,6 +21,7 @@ from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .user_mixins import (
+    AdminIntegrityCheckMixin,
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
@@ -34,6 +38,7 @@ class UserUpdate(
     LimitOfUserMixin,
     UpdateHistoryMixin,
     ConditionalSpeakerCascadeMixin,
+    AdminIntegrityCheckMixin,
     CheckLockOutPermissionMixin,
 ):
     """
@@ -141,7 +146,56 @@ class UserUpdate(
         check_gender_helper(self.datastore, instance)
         return instance
 
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.check_meeting_admin_integrity(action_data)
+        return super().get_updated_instances(action_data)
+
     def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
         if instance.get("group_ids") == []:
             return instance.get("meeting_id")
         return None
+
+    def check_meeting_admin_integrity(self, instances: ActionData) -> None:
+        instances = [
+            instance
+            for instance in instances
+            if instance.get("meeting_id") and "group_ids" in instance
+        ]
+        meeting_ids_to_user_ids_to_group_ids: dict[int, dict[int, list[int]]] = {
+            date["meeting_id"]: {} for date in instances
+        }
+        for date in instances:
+            meeting_ids_to_user_ids_to_group_ids[date["meeting_id"]][date["id"]] = date[
+                "group_ids"
+            ]
+        meetings = self.get_meeting_data_from_meeting_ids(
+            list(meeting_ids_to_user_ids_to_group_ids)
+        )
+        self.filter_templates_from_meetings_data_dict(
+            meeting_ids_to_user_ids_to_group_ids, meetings
+        )
+        if not len(meeting_ids_to_user_ids_to_group_ids):
+            return
+        self.check_admin_group_integrity(
+            Or(
+                And(
+                    FilterOperator("meeting_id", "=", meeting_id),
+                    Or(
+                        FilterOperator("user_id", "=", user_id) for user_id in user_data
+                    ),
+                )
+                for meeting_id, user_data in meeting_ids_to_user_ids_to_group_ids.items()
+            ),
+            [
+                admin_group_id
+                for meeting in meetings.values()
+                if (admin_group_id := meeting.get("admin_group_id"))
+            ],
+            {
+                group_id
+                for user_data in meeting_ids_to_user_ids_to_group_ids.values()
+                for group_list in user_data.values()
+                for group_id in group_list
+            },
+        )
