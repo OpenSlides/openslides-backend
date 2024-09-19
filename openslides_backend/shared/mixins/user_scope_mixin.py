@@ -44,12 +44,12 @@ class UserScopeMixin(BaseServiceProvider):
         together with their respective meetings the user being part of. A committee can have no meetings if the
         user just has committee management rights and is not part of any of its meetings.
         """
-        meetings: set[int] = set()
+        meeting_ids: set[int] = set()
         committees_manager: set[int] = set()
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
-                    meetings.add(id_or_instance["meeting_id"])
+                    meeting_ids.add(id_or_instance["meeting_id"])
             committees_manager.update(
                 set(id_or_instance.get("committee_management_ids", []))
             )
@@ -64,14 +64,14 @@ class UserScopeMixin(BaseServiceProvider):
                 ],
                 lock_result=False,
             )
-            meetings.update(user.get("meeting_ids", []))
+            meeting_ids.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
         result = self.datastore.get_many(
             [
                 GetManyRequest(
                     "meeting",
-                    list(meetings),
+                    list(meeting_ids),
                     ["committee_id", "is_active_in_organization_id"],
                 )
             ]
@@ -179,134 +179,180 @@ class UserScopeMixin(BaseServiceProvider):
                 [ci for ci in committees_to_meetings.keys()],
             ):
                 return
-            meeting_ids = set()
-            for mids in committees_to_meetings.values():
-                meeting_ids = {meeting_id for meeting_id in mids}
+            meeting_ids = {
+                meeting_id
+                for mids in committees_to_meetings.values()
+                for meeting_id in mids
+            }
             if not meeting_ids or not self.check_for_admin_in_all_meetings(
                 instance_id, meeting_ids
             ):
                 raise MissingPermission(
-                    {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        **{
+                            Permissions.User.CAN_UPDATE: meeting_id
+                            for meeting_id in meeting_ids
+                        },
+                    }
                 )
 
     def check_for_admin_in_all_meetings(
         self,
-        instance_or_id: int | dict[str, Any],
+        instance_id: int,
         b_meeting_ids: set[int] | None = None,
     ) -> bool:
         """
-        Checks if the requesting user has permissions to manage participants in all of requested users meetings but requested user doesn't.
+        This is used during a permission check for scope request, user.update/create with payload fields A and F and during
+        user altering actions like user.delete or set_default_password.
+        Checks if the requesting user has permissions to manage participants in all of requested users meetings
+        but requested user doesn't have any of these permissions. See backend issue 2522 on github for more details.
         Also checks requested user has no committee management rights if a dict was provided instead of an id.
+        An ID will be provided during user deletion.
         Returns true if permissions are given. False if not. Raises no Exceptions.
         """
-        if isinstance(instance_or_id, dict):
-            if not (instance_id := instance_or_id.get("id")):
+        if not self._check_not_committee_manager(instance_id):
+            return False
+
+        if not (
+            intersection_meetings := self._collect_intersected_meetings(b_meeting_ids)
+        ):
+            return False
+        assert isinstance(intersection_meetings, dict)
+        admin_meeting_users = self._collect_admin_meeting_users(intersection_meetings)
+        meeting_to_admin_users = self._collect_admin_users(admin_meeting_users)
+        return self._analyze_meetings(meeting_to_admin_users, instance_id)
+
+    def _check_not_committee_manager(self, instance_id: int) -> bool:
+        if not (hasattr(self, "name") and self.name == "user.create"):
+            if self.datastore.get(
+                fqid_from_collection_and_id("user", instance_id),
+                ["committee_management_ids"],
+                lock_result=False,
+                use_changed_models=False,
+            ).get("committee_management_ids", []):
                 return False
-            if hasattr(self, "name") and self.name == "user.create":
-                if instance_or_id.get("committee_management_ids", []):
-                    return False
-            else:
-                user = self.datastore.get(
-                    fqid_from_collection_and_id("user", instance_id),
-                    ["committee_management_ids"],
-                    lock_result=False,
-                    use_changed_models=False,
-                )
-                if user.get("committee_management_ids", []):
-                    return False
-        else:
-            instance_id = instance_or_id
+        return True
+
+    def _collect_intersected_meetings(
+        self, b_meeting_ids: set[int] | None
+    ) -> dict[int, Any] | bool:
+        """Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible."""
         if not b_meeting_ids:
             if not hasattr(self, "instance_committee_meeting_ids"):
                 return False
-            b_meeting_ids = set()
-            for m_ids in self.instance_committee_meeting_ids.values():
-                if m_ids:
-                    b_meeting_ids.update(m_ids)
-        if not b_meeting_ids:
-            return False
+            if not (
+                b_meeting_ids := {
+                    m_id
+                    for m_ids in self.instance_committee_meeting_ids.values()
+                    for m_id in m_ids
+                }
+            ):
+                return False
         # During participant import there is no permstore.
         if hasattr(self, "permstore"):
             a_meeting_ids = (
                 self.permstore.user_meetings
             )  # returns only admin level meetings
-        else:
-            a_user = self.datastore.get(
-                fqid_from_collection_and_id("user", instance_id),
-                ["meeting_ids"],
-                lock_result=False,
+        elif not (
+            a_meeting_ids := set(
+                self.datastore.get(
+                    fqid_from_collection_and_id("user", self.user_id),
+                    ["meeting_ids"],
+                    lock_result=False,
+                ).get("meeting_ids", [])
             )
-            a_meeting_ids = set(a_user.get("meeting_ids", []))
-        if not a_meeting_ids:
+        ):
             return False
         intersection_meeting_ids = a_meeting_ids.intersection(b_meeting_ids)
         if not b_meeting_ids.issubset(intersection_meeting_ids):
             return False
-        intersection_meetings = self.datastore.get_many(
+        return self.datastore.get_many(
             [
                 GetManyRequest(
                     "meeting",
                     list(intersection_meeting_ids),
-                    ["admin_group_id", "group_ids", "meeting_user_ids"],
+                    ["admin_group_id", "group_ids"],
                 )
             ],
             lock_result=False,
         ).get("meeting", {})
-        for meeting_id, meeting_dict in intersection_meetings.items():
-            admin_meeting_users = {}
-            admin_group_id = meeting_dict.get("admin_group_id", 0)
-            admin_group = self.datastore.get(
-                fqid_from_collection_and_id("group", admin_group_id),
-                ["meeting_user_ids"],
-                lock_result=False,
-            )
-            admin_meeting_users = self.datastore.get_many(
+
+    def _collect_admin_meeting_users(
+        self, intersection_meetings: dict[int, Any]
+    ) -> set[int]:
+        """
+        Gets the admin groups and those groups with permission User.CAN_UPDATE and USER.CAN_MANAGE of the meetings.
+        Returns a set of the groups meeting_user_ids.
+        """
+        group_ids = [
+            group_id
+            for meeting_id, meeting_dict in intersection_meetings.items()
+            for group_id in meeting_dict.get("group_ids", [])
+        ]
+        admin_group_ids = [
+            meeting_dict["admin_group_id"]
+            for meeting_dict in intersection_meetings.values()
+        ]
+        return {
+            *{
+                mu_id
+                for group_id, group in self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "group", group_ids, ["meeting_user_ids", "permissions"]
+                        )
+                    ],
+                    lock_result=False,
+                )
+                .get("group", {})
+                .items()
+                if (
+                    "user.can_update" in group.get("permissions", [])
+                    or "user.can_manage" in group.get("permissions", [])
+                )
+                for mu_id in group.get("meeting_user_ids", [])
+            },
+            *{
+                mu_id
+                for group_id, group in self.datastore.get_many(
+                    [GetManyRequest("group", admin_group_ids, ["meeting_user_ids"])],
+                    lock_result=False,
+                )
+                .get("group", {})
+                .items()
+                for mu_id in group.get("meeting_user_ids", [])
+            },
+        }
+
+    def _collect_admin_users(self, meeting_user_ids: set[int]) -> dict[int, set[int]]:
+        """Returns the corresponding users of the groups meeting_users in a defaultdict meeting_id: user_ids."""
+        meeting_to_admin_user = defaultdict(set)
+        for meeting_user in (
+            self.datastore.get_many(
                 [
                     GetManyRequest(
                         "meeting_user",
-                        admin_group.get("meeting_user_ids", []),
-                        ["user_id"],
+                        list(meeting_user_ids),
+                        ["user_id", "meeting_id"],
                     )
                 ],
                 lock_result=False,
-            ).get("meeting_user", {})
-            group_ids = meeting_dict.get("group_ids", [])
-            groups = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "group", group_ids, ["meeting_user_ids", "permissions"]
-                    )
-                ],
-                lock_result=False,
-            ).get("group", {})
-            for group_id, group in groups.items():
-                meeting_user_ids = group.get("meeting_user_ids", [])
-                group_permissions = group.get("permissions", [])
-                if meeting_user_ids and (
-                    "user.can_manage" in group_permissions
-                    or "user.can_update" in group_permissions
-                ):
-                    admin_meeting_users.update(
-                        self.datastore.get_many(
-                            [
-                                GetManyRequest(
-                                    "meeting_user",
-                                    meeting_user_ids,
-                                    ["user_id"],
-                                )
-                            ],
-                            lock_result=False,
-                        ).get("meeting_user", {})
-                    )
-            if admin_meeting_users:
-                is_admin = False
-                for admin_meeting_user in admin_meeting_users.values():
-                    if admin_meeting_user.get("user_id") == instance_id:
-                        return False
-                    if admin_meeting_user.get("user_id") == self.user_id:
-                        is_admin = True
-                if not is_admin:
-                    return False
-            else:
+            )
+            .get("meeting_user", {})
+            .values()
+        ):
+            meeting_to_admin_user[meeting_user["meeting_id"]].add(
+                meeting_user["user_id"]
+            )
+        return meeting_to_admin_user
+
+    def _analyze_meetings(
+        self, meeting_to_admin_users: dict[int, set[int]], instance_id: int
+    ) -> bool:
+        for meeting_id, admin_users in meeting_to_admin_users.items():
+            if instance_id in admin_users:
+                return False
+            if self.user_id not in admin_users:
                 return False
         return True

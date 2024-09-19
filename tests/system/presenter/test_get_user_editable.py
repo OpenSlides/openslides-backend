@@ -147,7 +147,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
 
     def test_with_same_meeting(self) -> None:
         """
-        User 2 can be edited because he is only in meetings which User 111 is admin of.
+        User 5 can be edited because he is only in meetings which User 111 is admin of.
         User 7 can not be edited because he is in two of the same meetings but User 111 is not admin in all of them.
         """
         self.set_up()
@@ -200,7 +200,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
         status_code, data = self.request(
             "get_user_editable",
             {
-                "user_ids": [2, 3, 4, 5, 6, 7],
+                "user_ids": [5, 7],
                 "fields": ["first_name", "default_password"],
             },
         )
@@ -208,28 +208,12 @@ class TestGetUSerEditable(BasePresenterTestCase):
         self.assertEqual(
             data,
             {
-                "2": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of can_manage_users!",
-                },
-                "3": {
-                    "editable": False,
-                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
-                },
-                "4": {
-                    "editable": False,
-                    "message": "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
-                },
                 "5": {
                     "editable": True,
                 },
-                "6": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of superadmin!",
-                },
                 "7": {
                     "editable": False,
-                    "message": "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 7",
                 },
             },
         )

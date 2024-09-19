@@ -30,7 +30,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
         self.assert_model_exists(
@@ -99,7 +99,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
         self.assert_model_exists(
@@ -1139,7 +1139,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
         self.assert_model_exists(
@@ -1184,7 +1184,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
         self.assert_model_exists(
@@ -1193,6 +1193,18 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": None,
             },
         )
+
+    def test_perm_group_A_belongs_to_same_meetings_multiple_missing(self) -> None:
+        """May not update group A fields on any scope as long as admin user Ann belongs
+        to all meetings user Ben belongs to but Ben is committee admin. See issue 2522.
+        """
+        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.create_meeting(4)  # meeting 4
+        # Admin groups of meeting/1 and meeting/4 for test user
+        self.set_user_groups(self.user_id, [1, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
 
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
         self.perm_group_A_meeting_manage_user_archived_meeting(
@@ -1256,7 +1268,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
 
@@ -1403,7 +1415,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
         self.assert_model_exists(

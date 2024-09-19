@@ -153,15 +153,26 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         self.create_meeting_for_two_users(user_id, 111)
         self.create_meeting_for_two_users(user_id, 111, 4)  # meeting 4
+        self.set_models(
+            {
+                "user/777": {"meeting_user_ids": [666]},
+                "meeting_user/666": {
+                    "group_ids": [12, 23],
+                    "meeting_id": 12,
+                    "user_id": 777,
+                },
+            }
+        )
+        self.update_model("group/5", {"meeting_user_ids": [666]})
         self.login(user_id)
         # Admin groups of meeting/1 for executor user meeting/2 as normal user
         # 111 into both meetings
-        meeting_user_to_group = {12: 2, 42: 4, 1111: 1, 4111: 4}
+        meeting_user_to_group = {12: 2, 42: 4, 1111: 1, 4111: 4, 666: 5}
         self.move_user_to_group(meeting_user_to_group)
         status_code, data = self.request("get_user_related_models", {"user_ids": [111]})
         self.assertEqual(status_code, 403)
         self.assertEqual(
-            "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             data["message"],
         )
         # Admin groups of meeting/1 for executor user
@@ -170,7 +181,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         status_code, data = self.request("get_user_related_models", {"user_ids": [111]})
         self.assertEqual(status_code, 403)
         self.assertEqual(
-            "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             data["message"],
         )
         # Admin groups of meeting/1 and meeting/4 for executor user
