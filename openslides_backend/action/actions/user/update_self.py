@@ -3,8 +3,7 @@ from typing import Any
 from ....models.models import MeetingUser, User
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.exceptions import MissingPermission
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
@@ -32,13 +31,6 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
         Set id = user_id.
         """
         instance["id"] = self.user_id
-        if (meeting_id := instance.get("meeting_id", None)) and not self.datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id),
-            ["users_enable_delegation_self_editing"],
-        ).get("users_enable_delegation_self_editing"):
-            raise ActionException(
-                f"Meeting {meeting_id} forbids users from setting their own delegations."
-            )
         instance = super().update_instance(instance)
         check_gender_helper(self.datastore, instance)
         return instance

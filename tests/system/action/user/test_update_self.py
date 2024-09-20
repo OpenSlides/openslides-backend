@@ -97,7 +97,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11],
                 },
             }
@@ -118,7 +117,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11],
                 },
             }
@@ -143,10 +141,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11],
                 },
-                "meeting/4": {"users_enable_delegation_self_editing": True},
             }
         )
         self.set_user_groups(1, [3])
@@ -169,7 +165,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11],
                 },
             }
@@ -192,7 +187,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11],
                 },
             }
@@ -209,32 +203,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_delegation_not_allowed(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {"meeting_user_ids": [11]},
-            }
-        )
-        self.set_user_groups(1, [3])
-        self.create_user("mandy", [3])
-        response = self.request(
-            "user.update_self",
-            {"meeting_id": 1, "vote_delegated_to_id": 12},
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Meeting 1 forbids users from setting their own delegations.",
-            response.json["message"],
-        )
-
     def test_update_delegation_permission(self) -> None:
         self.base_permission_test(
             {
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11, 12],
                 },
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
@@ -251,7 +223,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.base_permission_test(
             {
                 "meeting/1": {
-                    "users_enable_delegation_self_editing": True,
                     "meeting_user_ids": [11, 12],
                 },
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
