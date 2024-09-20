@@ -19,6 +19,15 @@ class Migration(BaseModelMigration):
 
     target_migration_index = 57
 
+    simple_fields = [
+        "motion_ids",
+        "forwarded_motion_ids",
+        "list_of_speakers_ids",
+        "speaker_ids",
+        "poll_ids",
+        "option_ids",
+        "vote_ids",
+    ]
     motion_reference_id_list_update = [
         {
             "field": "state_id",
@@ -124,7 +133,7 @@ class Migration(BaseModelMigration):
         to_remove_in_users: defaultdict[int, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
         )
-        tags_to_update: defaultdict[int, set] = defaultdict(set)
+        tags_to_update: defaultdict[int, set[str]] = defaultdict(set)
         meeting_users_to_update: defaultdict[str, defaultdict[str, list]] = defaultdict(
             lambda: defaultdict(list)
         )
@@ -145,80 +154,25 @@ class Migration(BaseModelMigration):
                 "statute_paragraph_ids"
             ].append(statute_paragraph_id)
 
-        # find statute related motions
-        motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
-        for motion_id, motion in motions.items():
-            if motion.get("statute_paragraph_id", ""):
-                # will delete motions later when updating meeting to prevent ModelDoesNotExist errors.
-                to_remove_in_meetings[motion.get("meeting_id", 0)]["motion_ids"].append(
-                    motion_id
-                )
-        # update and delete motion related models
-        for meeting_id, to_remove_dict in to_remove_in_meetings.items():
-            deleted_motions_ids = to_remove_dict.get("motion_ids", [])
-            for motion_id in deleted_motions_ids:
-                motion_fqid = fqid_from_collection_and_id("motion", motion_id)
-                motion = self.reader.get(motion_fqid)
-                meeting_id = motion.get("meeting_id", "")
-
-                self.list_update(motion, set(deleted_motions_ids), events)
-                self.list_delete(
-                    motion,
-                    to_remove_in_meetings,
-                    meeting_users_to_update,
-                    meeting_id,
-                    events,
-                )
-
-                self.delete_projections(
-                    motion.get("projection_ids", ""),
-                    events,
-                    meeting_id,
-                    to_remove_in_meetings,
-                    to_remove_in_projectors,
-                )
-
-                # delete models cascading delete to other models
-                self.delete_polls(
-                    motion.get("poll_ids", []),
-                    to_remove_in_meetings,
-                    meeting_id,
-                    events,
-                    to_remove_in_projectors,
-                    to_remove_in_users,
-                )
-                self.update_agenda_item(
-                    motion.get("agenda_item_id", 0),
-                    tags_to_update,
-                    to_remove_in_meetings,
-                    meeting_id,
-                    events,
-                    to_remove_in_projectors,
-                )
-                self.update_list_of_speakers(
-                    motion.get("list_of_speakers_id", 0),
-                    to_remove_in_meetings,
-                    meeting_id,
-                    events,
-                    to_remove_in_projectors,
-                )
-
-                if tag_ids := motion.get("tag_ids", []):
-                    for tag_id in tag_ids:
-                        tags_to_update[tag_id].add(motion_fqid)
-                events.append(
-                    RequestDeleteEvent(fqid_from_collection_and_id("motion", motion_id))
-                )
+        self.delete_motions_update_related(
+            to_remove_in_meetings,
+            meeting_users_to_update,
+            tags_to_update,
+            to_remove_in_projectors,
+            to_remove_in_users,
+            events,
+        )
 
         for projector_id, projector in to_remove_in_projectors.items():
             for state in ["current", "preview", "history"]:
-                if projection_ids := projector[f"{state}_projection_ids"]:
-                    if response := self.update_relations(
+                if (projection_ids := projector[f"{state}_projection_ids"]) and (
+                    response := self.update_relations(
                         fqid_from_collection_and_id("projector", projector_id),
                         f"{state}_projection_ids",
                         set(projection_ids),
-                    ):
-                        events.append(response)
+                    )
+                ):
+                    events.append(response)
 
         for user_id, user_data in to_remove_in_users.items():
             user_fqid = fqid_from_collection_and_id("user", user_id)
@@ -272,15 +226,6 @@ class Migration(BaseModelMigration):
                 )
 
         # update meetings
-        simple_fields = [
-            "motion_ids",
-            "forwarded_motion_ids",
-            "list_of_speakers_ids",
-            "speaker_ids",
-            "poll_ids",
-            "option_ids",
-            "vote_ids",
-        ]
         meetings = self.reader.get_all(
             "meeting",
             [
@@ -291,7 +236,7 @@ class Migration(BaseModelMigration):
                 "structure_level_list_of_speakers_ids",
                 "agenda_item_ids",
                 "all_projection_ids",
-                *simple_fields,
+                *self.simple_fields,
             ],
         )
         for meeting_id, meeting in meetings.items():
@@ -317,7 +262,7 @@ class Migration(BaseModelMigration):
                 for meeting_field, field in {
                     "structure_level_list_of_speakers_ids": "structure_level_los_ids",
                     "all_projection_ids": "projection_ids",
-                    **{d_field: d_field for d_field in simple_fields},
+                    **{d_field: d_field for d_field in self.simple_fields},
                 }.items()
             }
             if agenda_item_ids := to_remove_in_meetings[meeting_id].get(
@@ -350,8 +295,99 @@ class Migration(BaseModelMigration):
             )
         return events
 
+    def delete_motions_update_related(
+        self,
+        to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
+        meeting_users_to_update: defaultdict[str, defaultdict[str, list]],
+        tags_to_update: defaultdict[int, set[str]],
+        to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
+        to_remove_in_users: defaultdict[int, defaultdict[str, list]],
+        events: list[BaseRequestEvent],
+    ) -> None:
+        # find statute related motions
+        motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
+        for motion_id, motion in motions.items():
+            if motion.get("statute_paragraph_id", ""):
+                # will delete motions later when updating meeting to prevent ModelDoesNotExist errors.
+                to_remove_in_meetings[motion.get("meeting_id", 0)]["motion_ids"].append(
+                    motion_id
+                )
+
+        # update and delete motion related models
+        to_delete_polls = []
+        to_delete_agenda_item_ids = []
+        to_delete_los_ids = []
+        to_delete_projection_ids = []
+        for meeting_id, to_remove_dict in to_remove_in_meetings.items():
+            # Wie ist das mit den forwarded motions? Sind motions anderer Meetings relevant?
+            deleted_motions_ids = to_remove_dict.get("motion_ids", [])
+            for motion_id in deleted_motions_ids:
+                motion_fqid = fqid_from_collection_and_id("motion", motion_id)
+                motion = self.reader.get(motion_fqid)
+                meeting_id = motion.get("meeting_id", "")
+
+                self.list_update(motion, set(deleted_motions_ids), events)
+                self.list_delete(
+                    motion,
+                    to_remove_in_meetings,
+                    meeting_users_to_update,
+                    meeting_id,
+                    events,
+                )
+
+                if projection_ids := motion.get("projection_ids", []):
+                    for projection_id in projection_ids:
+                        to_delete_projection_ids.append(projection_id)
+
+                # collect models cascading delete to other models
+                if poll_ids := motion.get("poll_ids", []):
+                    for poll_id in poll_ids:
+                        to_delete_polls.append(poll_id)
+                if agenda_item_id := motion.get("agenda_item_id", 0):
+                    to_delete_agenda_item_ids.append(agenda_item_id)
+                if list_of_speakers_id := motion.get("list_of_speakers_id", 0):
+                    to_delete_los_ids.append(list_of_speakers_id)
+
+                if tag_ids := motion.get("tag_ids", []):
+                    for tag_id in tag_ids:
+                        tags_to_update[tag_id].add(motion_fqid)
+                events.append(
+                    RequestDeleteEvent(fqid_from_collection_and_id("motion", motion_id))
+                )
+        # delete models cascading delete to other models
+        self.delete_polls(
+            to_delete_polls,
+            to_remove_in_meetings,
+            events,
+            to_remove_in_projectors,
+            to_remove_in_users,
+            to_delete_projection_ids,
+        )
+        self.delete_agenda_items(
+            to_delete_agenda_item_ids,
+            tags_to_update,
+            to_remove_in_meetings,
+            events,
+            to_remove_in_projectors,
+            to_delete_projection_ids,
+        )
+        self.delete_lists_of_speakers(
+            to_delete_los_ids,
+            to_remove_in_meetings,
+            events,
+            to_remove_in_projectors,
+            to_delete_projection_ids,
+        )
+        # cascaded deletes in bulk
+        self.delete_projections(
+            to_delete_projection_ids,
+            events,
+            to_remove_in_meetings,
+            to_remove_in_projectors,
+        )
+
     def list_update(self, motion: dict, deleted_motions_ids: set, events: list) -> None:
-        """updates models related with motion"""
+        """updates models related with motion that won't get deleted."""
         for entry in self.motion_reference_id_list_update:
             field_name = entry.get("field", "")
             foreign_field = entry.get("foreign_field", "")
@@ -359,23 +395,19 @@ class Migration(BaseModelMigration):
             if field_value := motion.get(field_name):
                 if isinstance(field_value, list):
                     for model_id in field_value:
-                        if isinstance(model_id, int):
-                            if (
-                                collection_name == "motion"
-                                and model_id in deleted_motions_ids
-                            ):
-                                continue
-                        elif (
-                            model_id.split("/")[0] == "motion"
-                            and int(model_id.split("/")[1]) in deleted_motions_ids
-                        ):
-                            continue
-                        if isinstance(model_id, int):
+                        if isinstance(model_id, str):
+                            fqid = model_id
+                            collection_name = model_id.split("/")[0]
+                            model_id = int(model_id.split("/")[1])
+                        else:
                             fqid = fqid_from_collection_and_id(
                                 collection_name, model_id
                             )
-                        else:
-                            fqid = model_id
+                        if (
+                            collection_name == "motion"
+                            and model_id in deleted_motions_ids
+                        ):
+                            continue
                         if response := self.update_relations(
                             fqid,
                             foreign_field,
@@ -436,31 +468,47 @@ class Migration(BaseModelMigration):
         self,
         poll_ids_to_migrate: list,
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        meeting_id: int,
         events: list,
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
         to_remove_in_users: defaultdict[int, defaultdict[str, list]],
+        to_delete_projection_ids: list[int],
     ) -> None:
         """deletes all polls and its subitems in motion"""
-        for poll_id in poll_ids_to_migrate:
-            poll_fqid = fqid_from_collection_and_id("poll", poll_id)
-            poll = self.reader.get(
-                poll_fqid,
-                [
-                    "content_object_id",
-                    "option_ids",
-                    "global_option_id",
-                    "voted_ids",
-                    "entitled_group_ids",
-                    "projection_ids",
-                ],
-            )
-            option_ids = poll.get("option_ids", [])
-            for option_id in option_ids:
-                option_fqid = fqid_from_collection_and_id("option", option_id)
-                option = self.reader.get(
-                    option_fqid, ["vote_ids", "content_object_id", "meeting_id"]
+        polls = self.reader.get_many(
+            [
+                GetManyRequestPart(
+                    "poll",
+                    poll_ids_to_migrate,
+                    [
+                        "content_object_id",
+                        "option_ids",
+                        "global_option_id",
+                        "voted_ids",
+                        "entitled_group_ids",
+                        "projection_ids",
+                        "meeting_id",
+                    ],
                 )
+            ]
+        ).get("poll", {})
+        for poll_id, poll in polls.items():
+            meeting_id = poll["meeting_id"]
+            poll_fqid = fqid_from_collection_and_id("poll", poll_id)
+            option_ids = poll.get("option_ids", []) # oder doch für alle meetings auf einen schlag? dict benutzen?
+            options = self.reader.get_many(
+                [
+                    GetManyRequestPart(
+                        "option",
+                        option_ids,
+                        [
+                            "vote_ids",
+                            "content_object_id",
+                        ]
+                    )
+                ]
+            ).get("option", {})
+            for option_id, option in options.items():
+                option_fqid = fqid_from_collection_and_id("option", option_id)
                 vote_ids = option.get("vote_ids", [])
                 for vote_id in vote_ids:
                     vote_fqid = fqid_from_collection_and_id("vote", vote_id)
@@ -488,13 +536,7 @@ class Migration(BaseModelMigration):
                 events.append(RequestDeleteEvent(option_fqid))
                 to_remove_in_meetings[meeting_id]["option_ids"].append(option_id)
             # back to polls
-            self.delete_projections(
-                poll.get("projection_ids", ""),
-                events,
-                meeting_id,
-                to_remove_in_meetings,
-                to_remove_in_projectors,
-            )
+            to_delete_projection_ids.extend(poll.get("projection_ids", []))
             if voted_ids := poll.get("voted_ids", ""):
                 for voted_id in voted_ids:
                     to_remove_in_users[voted_id]["poll_voted_ids"].append(poll_id)
@@ -509,33 +551,42 @@ class Migration(BaseModelMigration):
             to_remove_in_meetings[meeting_id]["poll_ids"].append(poll_id)
             events.append(RequestDeleteEvent(poll_fqid))
 
-    def update_agenda_item(
+    def delete_agenda_items(
         self,
-        agenda_item_id: int,
-        tags_to_update: defaultdict[int, set],
+        agenda_item_ids: list[int],
+        tags_to_update: defaultdict[int, set[str]],
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        meeting_id: int,
         events: list,
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
+        to_delete_projection_ids: list[int],
     ) -> None:
         """
         The actual delete request for the agenda item will be created in meeting update.
         Deletes agenda items id in motion and all its subitems.
         The child items are implicitly moved to the root of the agenda.
         """
-        if agenda_item_id:
+        if not agenda_item_ids:
+            return
+        agenda_items = self.reader.get_many(
+            [
+                GetManyRequestPart(
+                    "agenda_item",
+                    agenda_item_ids,
+                    [
+                        "parent_id",
+                        "child_ids",
+                        "tag_ids",
+                        "projection_ids",
+                        "meeting_id",
+                    ],
+                )
+            ]
+        ).get("agenda_item", {})
+        for agenda_item_id, agenda_item in agenda_items.items():
             agenda_item_fqid = fqid_from_collection_and_id(
                 "agenda_item", agenda_item_id
             )
-            agenda_item = self.reader.get(
-                agenda_item_fqid,
-                [
-                    "parent_id",
-                    "child_ids",
-                    "tag_ids",
-                    "projection_ids",
-                ],
-            )
+            meeting_id = agenda_item["meeting_id"]
             child_ids = agenda_item.get("child_ids", "")
             if parent_id := agenda_item.get("parent_id"):
                 if response := self.update_relations(
@@ -554,105 +605,104 @@ class Migration(BaseModelMigration):
             tag_ids = agenda_item.get("tag_ids", [0])
             for tag_id in tag_ids:
                 tags_to_update[tag_id].add(agenda_item_fqid)
-            self.delete_projections(
-                agenda_item.get("projection_ids", ""),
-                events,
-                meeting_id,
-                to_remove_in_meetings,
-                to_remove_in_projectors,
-            )
+            to_delete_projection_ids.extend(agenda_item.get("projection_ids", []))
             to_remove_in_meetings[meeting_id]["agenda_item_ids"].append(agenda_item_id)
 
-    def update_list_of_speakers(
+    def delete_lists_of_speakers(
         self,
-        list_of_speakers_id: int,
+        list_of_speakers_ids: list[int],
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        meeting_id: int,
         events: list,
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
+        to_delete_projection_ids: list[int],
     ) -> None:
         """deletes list of speakers in motion and all its subitems"""
-        if not list_of_speakers_id:
+        if not list_of_speakers_ids:
             return
-        los_fqid = fqid_from_collection_and_id("list_of_speakers", list_of_speakers_id)
-        list_of_speakers = self.reader.get(
-            los_fqid,
+        lists_of_speakers = self.reader.get_many(
             [
-                "content_object_id",
-                "speaker_ids",
-                "structure_level_list_of_speakers_ids",
-                "projection_ids",
-            ],
-        )
-        speaker_ids = list_of_speakers.get("speaker_ids", "")
-        for speaker_id in speaker_ids:
-            speaker_fqid = fqid_from_collection_and_id("speaker", speaker_id)
-            speaker = self.reader.get(
-                speaker_fqid,
-                [
-                    "meeting_user_id",
-                    "point_of_order_category_id",
-                    "meeting_id",
-                ],
+                GetManyRequestPart(
+                    "list_of_speakers",
+                    list_of_speakers_ids,
+                    [
+                        "content_object_id",
+                        "speaker_ids",
+                        "structure_level_list_of_speakers_ids",
+                        "projection_ids",
+                        "meeting_id",
+                    ],
+                )
+            ]
+        ).get("list_of_speakers", {})
+        for list_of_speakers_id, list_of_speakers in lists_of_speakers.items():
+            meeting_id = list_of_speakers["meeting_id"]
+            los_fqid = fqid_from_collection_and_id(
+                "list_of_speakers", list_of_speakers_id
             )
-            meeting_user_id = speaker.get("meeting_user_id", "")
-            if response := self.update_relations(
-                fqid_from_collection_and_id("meeting_user", meeting_user_id),
-                "speaker_ids",
-                speaker_id,
-            ):
-                events.append(response)
-            point_of_order_category_id = speaker.get("point_of_order_category_id", "")
-            if response := self.update_relations(
-                fqid_from_collection_and_id(
-                    "point_of_order_category",
-                    point_of_order_category_id,
-                ),
-                "speaker_ids",
-                (speaker_id),
-            ):
-                events.append(response)
-            to_remove_in_meetings[meeting_id]["speaker_ids"].append(speaker_id)
-            events.append(RequestDeleteEvent(speaker_fqid))
-        structure_level_los_ids = list_of_speakers.get(
-            "structure_level_list_of_speakers_ids", ""
-        )
-        for structure_level_los_id in structure_level_los_ids:
-            structure_level_los_fqid = fqid_from_collection_and_id(
-                "structure_level_list_of_speakers",
-                structure_level_los_id,
+            speaker_ids = list_of_speakers.get("speaker_ids", "")
+            for speaker_id in speaker_ids:
+                speaker_fqid = fqid_from_collection_and_id("speaker", speaker_id)
+                speaker = self.reader.get(  # TODO get many
+                    speaker_fqid,
+                    [
+                        "meeting_user_id",
+                        "point_of_order_category_id",
+                        "meeting_id",  # nötig wenn todo oberhalb erledigt?
+                    ],
+                )
+                meeting_user_id = speaker.get("meeting_user_id", "")
+                if response := self.update_relations(
+                    fqid_from_collection_and_id("meeting_user", meeting_user_id),
+                    "speaker_ids",
+                    speaker_id,
+                ):
+                    events.append(response)
+                point_of_order_category_id = speaker.get(
+                    "point_of_order_category_id", ""
+                )
+                if response := self.update_relations(
+                    fqid_from_collection_and_id(
+                        "point_of_order_category",
+                        point_of_order_category_id,
+                    ),
+                    "speaker_ids",
+                    (speaker_id),
+                ):
+                    events.append(response)
+                to_remove_in_meetings[meeting_id]["speaker_ids"].append(speaker_id)
+                events.append(RequestDeleteEvent(speaker_fqid))
+            structure_level_los_ids = list_of_speakers.get(
+                "structure_level_list_of_speakers_ids", ""
             )
-            structure_level_los = self.reader.get(
-                structure_level_los_fqid, ["structure_level_id"]
+            for structure_level_los_id in structure_level_los_ids:
+                structure_level_los_fqid = fqid_from_collection_and_id(
+                    "structure_level_list_of_speakers",
+                    structure_level_los_id,
+                )
+                structure_level_los = self.reader.get(  # TODO get many
+                    structure_level_los_fqid, ["structure_level_id"]
+                )
+                structure_level_id = structure_level_los.get("structure_level_id", 0)
+                if response := self.update_relations(
+                    fqid_from_collection_and_id("structure_level", structure_level_id),
+                    "structure_level_list_of_speakers_ids",
+                    structure_level_los_id,
+                ):
+                    events.append(response)
+                to_remove_in_meetings[meeting_id]["structure_level_los_ids"].append(
+                    structure_level_los_id
+                )
+                events.append(RequestDeleteEvent(structure_level_los_fqid))
+            to_delete_projection_ids.extend(list_of_speakers.get("projection_ids", ""))
+            to_remove_in_meetings[meeting_id]["list_of_speakers_ids"].append(
+                list_of_speakers_id
             )
-            structure_level_id = structure_level_los.get("structure_level_id", 0)
-            if response := self.update_relations(
-                fqid_from_collection_and_id("structure_level", structure_level_id),
-                "structure_level_list_of_speakers_ids",
-                structure_level_los_id,
-            ):
-                events.append(response)
-            to_remove_in_meetings[meeting_id]["structure_level_los_ids"].append(
-                structure_level_los_id
-            )
-            events.append(RequestDeleteEvent(structure_level_los_fqid))
-        self.delete_projections(
-            list_of_speakers.get("projection_ids", ""),
-            events,
-            meeting_id,
-            to_remove_in_meetings,
-            to_remove_in_projectors,
-        )
-        to_remove_in_meetings[meeting_id]["list_of_speakers_ids"].append(
-            list_of_speakers_id
-        )
-        events.append(RequestDeleteEvent(los_fqid))
+            events.append(RequestDeleteEvent(los_fqid))
 
     def delete_projections(
         self,
         projection_ids: list[int],
         events: list[BaseRequestEvent],
-        meeting_id: int,
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
         to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
     ) -> None:
@@ -667,21 +717,18 @@ class Migration(BaseModelMigration):
                         "preview_projector_id",
                         "history_projector_id",
                         "content_object_id",
+                        "meeting_id",
                     ],
                 )
             ]
         ).get("projection", {})
         for projection_id, projection in projections.items():
+            meeting_id = projection["meeting_id"]
             for state in ["current", "preview", "history"]:
                 if projector_id := projection.get(f"{state}_projector_id", ""):
                     to_remove_in_projectors[projector_id][
                         f"{state}_projection_ids"
                     ].append(projection_id)
-            content_object_fqid = projection.get("content_object_id", "")
-            if response := self.update_relations(
-                content_object_fqid, "projection_ids", projection_id
-            ):
-                events.append(response)
             events.append(
                 RequestDeleteEvent(
                     fqid_from_collection_and_id("projection", projection_id)

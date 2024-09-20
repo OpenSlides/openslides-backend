@@ -944,6 +944,7 @@ def test_no_sideffects_submodels(write, finalize, assert_model):
             "supporter_meeting_user_ids": [1],
             "tag_ids": [1],
             "meeting_id": 11,
+            "projection_ids": [1],
             "meta_deleted": True,
         },
     )
@@ -1048,7 +1049,6 @@ def test_two_meetings(write, finalize, assert_model):
             "statute_paragraph_id": 1,
             "title": "text",
             "meeting_id": 11,
-            "meta_deleted": True,
             "recommendation_id": 1,
             "state_extension_reference_ids": ["motion/2"],
             "referenced_in_motion_state_extension_ids": [2],
@@ -1067,6 +1067,8 @@ def test_two_meetings(write, finalize, assert_model):
             "option_ids": [1, 2, 3],
             "agenda_item_id": 2,
             "list_of_speakers_id": 1,
+            "projection_ids": [1],
+            "meta_deleted": True,
         },
     )
     assert_model(
@@ -1076,8 +1078,8 @@ def test_two_meetings(write, finalize, assert_model):
             "statute_paragraph_id": 3,
             "title": "text",
             "meeting_id": 12,
-            "meta_deleted": True,
             "recommendation_id": 2,
+            "meta_deleted": True,
         },
     )
     assert_model(
@@ -1181,7 +1183,6 @@ def test_migration_full(write, finalize, assert_model):
             "motion_working_group_speaker_ids": None,
         },
         "motion/1": {
-            "projection_ids": None,
             "meta_deleted": True,
         },
         "motion/2": {
@@ -1268,7 +1269,6 @@ def test_migration_full(write, finalize, assert_model):
             "meta_deleted": True,
         },
         "poll/1": {
-            "projection_ids": None,
             "meta_deleted": True,
         },
         "option/1": {
@@ -1287,12 +1287,10 @@ def test_migration_full(write, finalize, assert_model):
         "group/1": {"poll_ids": None},
         "agenda_item/1": {
             "child_ids": None,
-            "projection_ids": None,
             "meta_deleted": True,
         },
         "agenda_item/2": {
             "parent_id": None,
-            "projection_ids": None,
             "meta_deleted": True,
         },
         "agenda_item/3": {
@@ -1300,7 +1298,6 @@ def test_migration_full(write, finalize, assert_model):
             "parent_id": None,
         },
         "list_of_speakers/1": {
-            "projection_ids": None,
             "meta_deleted": True,
         },
         "structure_level_list_of_speakers/1": {
