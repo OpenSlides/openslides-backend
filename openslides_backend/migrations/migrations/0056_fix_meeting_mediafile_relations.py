@@ -3,8 +3,6 @@ from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-from ...shared.filters import And, FilterOperator, Or
-
 
 class Migration(BaseModelMigration):
     """
@@ -12,32 +10,33 @@ class Migration(BaseModelMigration):
     """
 
     target_migration_index = 57
-    old_group_fields = [
-        "mediafile_access_group_ids",
-        "mediafile_inherited_access_group_ids",
+    group_fields = [
+        "access_group_ids",
+        "inherited_access_group_ids",
     ]
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
-        groups = self.reader.filter(
-            "group",
-            And(
-                Or(
-                    FilterOperator(field, "!=", None) for field in self.old_group_fields
-                ),
-                FilterOperator("meta_deleted", "!=", True),
-            ),
-            [*self.old_group_fields],
-        )
+        groups_to_access_groups: dict[int, dict[str, list[int]]] = {
+            group["id"]: {
+                "meeting_mediafile_" + field: [] for field in self.group_fields
+            }
+            for group in self.reader.get_all("group", ["id"]).values()
+        }
+        for mmediafile in self.reader.get_all(
+            "meeting_mediafile", ["id", *self.group_fields]
+        ).values():
+            for field in self.group_fields:
+                for group_id in mmediafile.get(field, []):
+                    groups_to_access_groups[group_id][
+                        "meeting_mediafile_" + field
+                    ].append(mmediafile["id"])
         return [
             RequestUpdateEvent(
-                fqid_from_collection_and_id("group", id_),
-                {field: None for field in self.old_group_fields},
+                fqid_from_collection_and_id("group", group_id),
                 {
-                    "add": {
-                        "meeting_" + field: group.get(field, [])
-                        for field in self.old_group_fields
-                    }
+                    **{"mediafile_" + field: None for field in self.group_fields},
+                    **access_groups,
                 },
             )
-            for id_, group in groups.items()
+            for group_id, access_groups in groups_to_access_groups.items()
         ]
