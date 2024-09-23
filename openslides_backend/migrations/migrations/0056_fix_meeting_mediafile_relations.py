@@ -1,4 +1,3 @@
-
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
