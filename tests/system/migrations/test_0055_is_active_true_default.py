@@ -20,7 +20,13 @@ def test_migration(write, finalize, assert_model):
             "fqid": "user/4",
             "fields": {"id": 4, "is_active": None},
         },
+        {
+            "type": "create",
+            "fqid": "user/5",
+            "fields": {"id": 5},
+        },
     )
+    write({"type": "delete", "fqid": "user/5", "fields": {}})
 
     finalize("0055_is_active_true_default")
 
