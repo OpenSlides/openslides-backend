@@ -28,6 +28,6 @@ class GroupCreate(GroupMixin, WeightMixin, CreateAction):
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]
             )
-        if not "weight" in instance:
+        if "weight" not in instance:
             instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance
