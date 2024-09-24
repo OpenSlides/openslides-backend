@@ -3,7 +3,7 @@ from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core.requests import GetManyRequestPart
-from datastore.shared.util import fqid_from_collection_and_id
+from datastore.shared.util import fqid_from_collection_and_id, collection_and_id_from_fqid
 from datastore.writer.core import (
     BaseRequestEvent,
     RequestDeleteEvent,
@@ -293,6 +293,12 @@ class Migration(BaseModelMigration):
                     },
                 )
             )
+
+        # update lost references in bulk TODO delete when finished 
+        for collection, update_schema_part in self.update_schema.items():
+            self.generic_update(
+                events, collection, update_schema_part, self.to_be_updated[collection], self.deleted_instances
+            )
         return events
 
     def delete_motions_update_related(
@@ -474,13 +480,84 @@ class Migration(BaseModelMigration):
         to_delete_projection_ids: list[int],
     ) -> None:
         """deletes all polls and its subitems in motion"""
+        deletion_schema: dict[str, dict[str, list[str]]] = {
+            "meeting": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "poll": {
+                "precursors": [],  # motion
+                "cascaded_delete_collections": ["option"],  # projections
+                "cascaded_delete_fields": ["option_ids"],
+                "update_ids_fields": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "option": {
+                "precursors": ["poll"],
+                "cascaded_delete_collections": ["vote"],
+                "cascaded_delete_fields": ["vote_ids"],
+                "update_ids_fields": ["content_object_id", "content_object_id", "content_object_id"],
+                "update_collections": ["motion", "poll_candidate_list", "user"],
+                "update_foreign_fields": ["option_ids", "option_ids", "option_ids"],
+            },
+            "vote": {
+                "precursors": ["option"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": ["meeting_id", "user_id", "delegated_user_id"],
+                "update_collections": ["meeting", "user", "user"],
+                "update_foreign_fields": ["vote_ids", "vote_ids", "delegated_vote_ids"],
+            },
+        }
+        self.deleted_instances: dict[str, set | None] = {
+            collection: None for collection in deletion_schema.keys()
+        }
+        self.update_schema: defaultdict[str, list[str]] = defaultdict(list)
+        for schema_part in deletion_schema.values():
+            for collection, collection_fields in zip(
+                schema_part["update_collections"], schema_part["update_foreign_fields"]
+            ):
+                self.update_schema[collection].extend([collection_fields])
+        to_be_deleted: dict[str, set] = {
+            collection: set() for collection in deletion_schema.keys()
+        }
+        self.to_be_updated: dict[str, dict[str, list]] = {
+            collection: defaultdict(lambda: defaultdict(list))  # collection : id : fields : values
+            for collection in self.update_schema.keys()
+        }
+        # not needed if motion is part of this TODO delete
+        to_be_deleted["poll"] = set(poll_ids_to_migrate)
+        self.deleted_instances.update({"motion": {1}})
+        self.to_be_updated.update({"motion": defaultdict(lambda: defaultdict(list))})
+
+        # delete until all have at least empty list (means finished)
+        while not self.is_finished(self.deleted_instances):
+            for collection, schema_part in deletion_schema.items():
+                # check precursors have finished
+                if not any(
+                    precursor
+                    for precursor in schema_part["precursors"]
+                    if self.deleted_instances[precursor] is None
+                ):
+                    self.generic_delete(
+                        events, collection, schema_part, to_be_deleted, self.to_be_updated
+                    )
+                    # safe all ids in deleted
+                    self.deleted_instances[collection] = to_be_deleted[collection]
+        # update lost references in bulk
+        # for collection, update_schema_part in update_schema.items():
+        #     self.update(
+        #         events, collection, update_schema_part, to_be_updated[collection]
+        #     )
+
         polls = self.reader.get_many(
             [
                 GetManyRequestPart(
                     "poll",
                     poll_ids_to_migrate,
                     [
-                        "content_object_id",
                         "option_ids",
                         "global_option_id",
                         "voted_ids",
@@ -493,8 +570,10 @@ class Migration(BaseModelMigration):
         ).get("poll", {})
         for poll_id, poll in polls.items():
             meeting_id = poll["meeting_id"]
-            poll_fqid = fqid_from_collection_and_id("poll", poll_id)
-            option_ids = poll.get("option_ids", []) # oder doch für alle meetings auf einen schlag? dict benutzen?
+            # poll_fqid = fqid_from_collection_and_id("poll", poll_id)
+            option_ids = poll.get(
+                "option_ids", []
+            )  # oder doch für alle meetings auf einen schlag? dict benutzen?
             options = self.reader.get_many(
                 [
                     GetManyRequestPart(
@@ -503,24 +582,24 @@ class Migration(BaseModelMigration):
                         [
                             "vote_ids",
                             "content_object_id",
-                        ]
+                        ],
                     )
                 ]
             ).get("option", {})
             for option_id, option in options.items():
-                option_fqid = fqid_from_collection_and_id("option", option_id)
-                vote_ids = option.get("vote_ids", [])
-                for vote_id in vote_ids:
-                    vote_fqid = fqid_from_collection_and_id("vote", vote_id)
-                    vote = self.reader.get(vote_fqid, ["user_id", "delegated_user_id"])
-                    to_remove_in_users[vote.get("user_id", 0)]["vote_ids"].append(
-                        vote_id
-                    )
-                    to_remove_in_users[vote.get("delegated_user_id", 0)][
-                        "delegated_vote_ids"
-                    ].append(vote_id)
-                    to_remove_in_meetings[meeting_id]["vote_ids"].append(vote_id)
-                    events.append(RequestDeleteEvent(vote_fqid))
+                # option_fqid = fqid_from_collection_and_id("option", option_id)
+                # vote_ids = option.get("vote_ids", [])
+                # for vote_id in vote_ids:
+                #     vote_fqid = fqid_from_collection_and_id("vote", vote_id)
+                #     vote = self.reader.get(vote_fqid, ["user_id", "delegated_user_id"])
+                #     to_remove_in_users[vote.get("user_id", 0)]["vote_ids"].append(
+                #         vote_id
+                #     )
+                #     to_remove_in_users[vote.get("delegated_user_id", 0)][
+                #         "delegated_vote_ids"
+                #     ].append(vote_id)
+                #     to_remove_in_meetings[meeting_id]["vote_ids"].append(vote_id)
+                #     events.append(RequestDeleteEvent(vote_fqid))
                 content_object_fqid = option.get("content_object_id", "")
                 if "poll_candidate_list" in content_object_fqid:
                     foreign_field = "option_id"
@@ -533,7 +612,7 @@ class Migration(BaseModelMigration):
                     )
                 ):
                     events.append(response)
-                events.append(RequestDeleteEvent(option_fqid))
+                # events.append(RequestDeleteEvent(option_fqid))
                 to_remove_in_meetings[meeting_id]["option_ids"].append(option_id)
             # back to polls
             to_delete_projection_ids.extend(poll.get("projection_ids", []))
@@ -549,7 +628,113 @@ class Migration(BaseModelMigration):
                 ):
                     events.append(response)
             to_remove_in_meetings[meeting_id]["poll_ids"].append(poll_id)
-            events.append(RequestDeleteEvent(poll_fqid))
+            # events.append(RequestDeleteEvent(poll_fqid))
+
+    def is_finished(self, deleted_instances: dict) -> bool:
+        for collection in deleted_instances.values():
+            if collection is None:
+                return False
+        return True
+
+    def generic_delete(
+        self,
+        events: list,
+        collection: str,
+        collection_delete_schema: dict[str, list],
+        to_be_deleted: dict,
+        to_be_updated: dict,
+    ) -> None:
+        to_be_deleted_ids = to_be_deleted[collection]
+        # get many of model to be deleted
+        models = self.reader.get_many(
+            [
+                GetManyRequestPart(
+                    collection,
+                    to_be_deleted_ids,
+                    collection_delete_schema.get("cascaded_delete_fields", [])
+                    + collection_delete_schema.get("update_ids_fields", []),
+                )
+            ]
+        ).get(collection, {})
+        for model_id, model in models.items():
+            # stage new instances for deletion
+            for foreign_collection, own_field in zip(
+                collection_delete_schema["cascaded_delete_collections"], collection_delete_schema["cascaded_delete_fields"]
+            ):
+                to_be_deleted[foreign_collection].update(
+                    model[own_field]
+                )
+            # stage instance ids for removal
+            for foreign_collection, foreign_ids_field, foreign_field in zip(
+                collection_delete_schema["update_collections"],
+                collection_delete_schema["update_ids_fields"],
+                collection_delete_schema["update_foreign_fields"],
+            ):
+                if "_ids" in foreign_ids_field:
+                    for foreign_id in model[foreign_ids_field]:
+                        if isinstance(foreign_id, str):
+                            foreign_id, foreign_collection = collection_and_id_from_fqid(foreign_id)
+                        # to_be_updated[foreign_collection][foreign_id][
+                        #     foreign_field
+                        # ].extend(model_id)
+                else:
+                    if isinstance(model[foreign_ids_field], str):
+                        foreign_collection, foreign_id = collection_and_id_from_fqid(model[foreign_ids_field])
+                    else: 
+                        foreign_id = model[foreign_ids_field]
+                    # to_be_updated[foreign_collection][foreign_id][
+                    #     foreign_field
+                    # ] = [model_id]
+                to_be_updated[foreign_collection][foreign_id][
+                    foreign_field
+                ].extend([model_id])
+        # finally delete
+        for to_be_deleted_id in to_be_deleted_ids:
+            events.append(
+                RequestDeleteEvent(
+                    fqid_from_collection_and_id(collection, to_be_deleted_id)
+                )
+            )
+
+    def generic_update(
+        self,
+        events: list,
+        collection: str,
+        schema: list[str],
+        to_be_updated_in_collection: dict,
+        deleted_instances: dict
+    ) -> None:
+        if collection == "user":
+            pass
+        to_remove = []
+        # if there were no instances deleted we don't need to remove them from our update list.
+        if collection in deleted_instances:
+            for instance_id in to_be_updated_in_collection.keys():
+                if instance_id in deleted_instances[collection]:
+                    to_remove.append(instance_id)
+            for instance_id in to_remove:
+                del to_be_updated_in_collection[instance_id]
+
+        instances = self.reader.get_many(
+            [
+                GetManyRequestPart(
+                    collection,
+                    [instance_id for instance_id in to_be_updated_in_collection.keys()],
+                    schema,
+                )
+            ]
+        ).get(collection, {})
+        for instance_id, fields_and_ids in to_be_updated_in_collection.items():
+            instance = instances.get(instance_id, {})
+            # save the instances data without the deleted ids
+            for field, ids in fields_and_ids.items():
+                fields_and_ids[field] = self.subtract_ids(instance.get(field, []), ids)
+            events.append(
+                RequestUpdateEvent(
+                    fqid_from_collection_and_id(collection, instance_id), fields_and_ids
+                )
+            )
+            pass
 
     def delete_agenda_items(
         self,
@@ -776,7 +961,8 @@ class Migration(BaseModelMigration):
         self, front_ids: list | None, without_ids: list | None
     ) -> list | None:
         """
-        this subtracts a list of a list in an efficient manner
+        this subtracts items of a list from another list in an efficient manner
+        returns a list
         """
         if not front_ids:
             return None
