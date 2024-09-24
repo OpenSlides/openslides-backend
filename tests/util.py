@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any, TypedDict, cast
 
 import simplejson as json
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
+from os_authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse

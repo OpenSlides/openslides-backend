@@ -1,6 +1,6 @@
 from urllib import parse
 
-from authlib import (
+from os_authlib import (
     ANONYMOUS_USER,
     AUTHORIZATION_HEADER,
     AuthenticateException,
@@ -8,11 +8,10 @@ from authlib import (
     AuthorizationException,
     InvalidCredentialsException,
 )
-
+from .interface import AuthenticationService
+from ..shared.authenticated_service import AuthenticatedService
 from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
-from ..shared.authenticated_service import AuthenticatedService
-from .interface import AuthenticationService
 
 
 class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
@@ -34,9 +33,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
             f"Start request to authentication service with the following data: access_token: {self.access_token}, cookie: {self.refresh_id}"
         )
         try:
-            return self.auth_handler.authenticate(
-                self.access_token, parse.unquote(self.refresh_id)
-            )
+            return self.auth_handler.authenticate(self.access_token)
         except (AuthenticateException, InvalidCredentialsException) as e:
             self.logger.debug(f"Error in auth service: {e.message}")
             raise AuthenticationException(e.message)

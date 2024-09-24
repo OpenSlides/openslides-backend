@@ -4,7 +4,7 @@ from collections.abc import Callable
 from re import Pattern
 from typing import Any, Optional
 
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
+from os_authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
