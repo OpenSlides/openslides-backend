@@ -26,7 +26,7 @@ class Migration(BaseModelMigration):
             "meeting_mediafile", ["id", *self.group_fields]
         ).values():
             for field in self.group_fields:
-                for group_id in mmediafile.get(field, []):
+                for group_id in mmediafile.get(field, []) or []:
                     groups_to_access_groups[group_id][
                         "meeting_mediafile_" + field
                     ].append(mmediafile["id"])
