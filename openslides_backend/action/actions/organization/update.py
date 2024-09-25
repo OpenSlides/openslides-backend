@@ -13,7 +13,6 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..user.save_saml_account import allowed_user_fields
 from ..user.update import UserUpdate
 
 
@@ -48,36 +47,12 @@ class OrganizationUpdate(
         "limit_of_meetings",
         "limit_of_users",
         "url",
-        "saml_enabled",
-        "saml_login_button_text",
-        "saml_attr_mapping",
-        "saml_metadata_idp",
-        "saml_metadata_sp",
-        "saml_private_key",
     )
 
     model = Organization()
-    saml_props = {
-        field: {**optional_str_schema, "max_length": 256}
-        for field in allowed_user_fields
-    }
-    saml_props["meeting"] = {
-        "type": ["object", "null"],
-        "properties": {
-            field: {**optional_str_schema, "max_length": 256}
-            for field in ("external_id", "external_group_id")
-        },
-        "additionalProperties": False,
-    }
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,
         additional_optional_fields={
-            "saml_attr_mapping": {
-                "type": ["object", "null"],
-                "properties": saml_props,
-                "required": ["saml_id"],
-                "additionalProperties": False,
-            },
         },
     )
     check_email_field = "users_email_replyto"

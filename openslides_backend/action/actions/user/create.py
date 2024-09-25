@@ -16,7 +16,6 @@ from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
@@ -25,7 +24,6 @@ class UserCreate(
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
-    SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
