@@ -474,6 +474,7 @@ class Meeting(Model, MeetingModelMixin):
     motions_enable_reason_on_projector = fields.BooleanField(default=False)
     motions_enable_sidebox_on_projector = fields.BooleanField(default=False)
     motions_enable_recommendation_on_projector = fields.BooleanField(default=True)
+    motions_hide_metadata_background = fields.BooleanField(default=False)
     motions_show_referring_motions = fields.BooleanField(default=True)
     motions_show_sequential_number = fields.BooleanField(default=True)
     motions_recommendations_by = fields.CharField()
