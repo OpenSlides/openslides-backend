@@ -2,6 +2,7 @@ import binascii
 from base64 import b64decode
 from pathlib import Path
 
+from os_authlib.message_bus import MessageBus
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
@@ -26,6 +27,10 @@ class ActionView(BaseView):
     The ActionView receives a bundle of actions via HTTP and handles it to the
     ActionHandler after retrieving request user id.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message_bus = MessageBus()
 
     @route(["handle_request", "handle_separately"])
     def action_route(self, request: Request) -> RouteResponse:
@@ -83,6 +88,10 @@ class ActionView(BaseView):
     @route("info", method="GET", json=False)
     def info_route(self, request: Request) -> RouteResponse:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+
+    @route("logout", method="POST", json=False)
+    def backchannel_logout(self, request: Request) -> RouteResponse:
+        return {}, None
 
     @route("version", method="GET", json=False)
     def version_route(self, _: Request) -> RouteResponse:

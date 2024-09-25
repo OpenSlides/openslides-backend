@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completi
 WORKDIR /app
 
 COPY requirements/ requirements/
+COPY pip-auth /pip-auth
 ARG REQUIREMENTS_FILE=requirements_development.txt
 RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
 

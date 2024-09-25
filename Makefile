@@ -142,7 +142,10 @@ run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
 # Build standalone development container (not usable inside the docker container)
 
 build-dev:
+	rm -rf pip-auth
+	cp -r ../openslides-auth-service/libraries/pip-auth pip-auth
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
+	rm -rf pip-auth
 
 rebuild-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
