@@ -25,8 +25,8 @@ class Migration(BaseModelMigration):
         "list_of_speakers_ids",
         "speaker_ids",
         "poll_ids",
-        "option_ids",
-        "vote_ids",
+        # "option_ids",
+        # "vote_ids",
     ]
     motion_reference_id_list_update = [
         {
@@ -498,9 +498,9 @@ class Migration(BaseModelMigration):
                 "precursors": ["poll"],
                 "cascaded_delete_collections": ["vote"],
                 "cascaded_delete_fields": ["vote_ids"],
-                "update_ids_fields": ["content_object_id", "content_object_id", "content_object_id"],
-                "update_collections": ["motion", "poll_candidate_list", "user"],
-                "update_foreign_fields": ["option_ids", "option_ids", "option_ids"],
+                "update_ids_fields": ["meeting_id", "content_object_id", "content_object_id", "content_object_id"],
+                "update_collections": ["meeting", "motion", "poll_candidate_list", "user"],
+                "update_foreign_fields": ["option_ids", "option_ids", "option_id", "option_ids"],
             },
             "vote": {
                 "precursors": ["option"],
@@ -571,22 +571,22 @@ class Migration(BaseModelMigration):
         for poll_id, poll in polls.items():
             meeting_id = poll["meeting_id"]
             # poll_fqid = fqid_from_collection_and_id("poll", poll_id)
-            option_ids = poll.get(
-                "option_ids", []
-            )  # oder doch für alle meetings auf einen schlag? dict benutzen?
-            options = self.reader.get_many(
-                [
-                    GetManyRequestPart(
-                        "option",
-                        option_ids,
-                        [
-                            "vote_ids",
-                            "content_object_id",
-                        ],
-                    )
-                ]
-            ).get("option", {})
-            for option_id, option in options.items():
+            # option_ids = poll.get(
+            #     "option_ids", []
+            # )  # oder doch für alle meetings auf einen schlag? dict benutzen?
+            # options = self.reader.get_many(
+            #     [
+            #         GetManyRequestPart(
+            #             "option",
+            #             option_ids,
+            #             [
+            #                 "vote_ids",
+            #                 "content_object_id",
+            #             ],
+            #         )
+            #     ]
+            # ).get("option", {})
+            # for option_id, option in options.items():
                 # option_fqid = fqid_from_collection_and_id("option", option_id)
                 # vote_ids = option.get("vote_ids", [])
                 # for vote_id in vote_ids:
@@ -600,20 +600,20 @@ class Migration(BaseModelMigration):
                 #     ].append(vote_id)
                 #     to_remove_in_meetings[meeting_id]["vote_ids"].append(vote_id)
                 #     events.append(RequestDeleteEvent(vote_fqid))
-                content_object_fqid = option.get("content_object_id", "")
-                if "poll_candidate_list" in content_object_fqid:
-                    foreign_field = "option_id"
-                else:
-                    foreign_field = "option_ids"
-                # the motion will be deleted anyways
-                if "motion" not in content_object_fqid and (
-                    response := self.update_relations(
-                        content_object_fqid, foreign_field, option_id
-                    )
-                ):
-                    events.append(response)
-                # events.append(RequestDeleteEvent(option_fqid))
-                to_remove_in_meetings[meeting_id]["option_ids"].append(option_id)
+                # content_object_fqid = option.get("content_object_id", "")
+                # if "poll_candidate_list" in content_object_fqid:
+                #     foreign_field = "option_id"
+                # else:
+                #     foreign_field = "option_ids"
+                # # the motion will be deleted anyways
+                # if "motion" not in content_object_fqid and (
+                #     response := self.update_relations(
+                #         content_object_fqid, foreign_field, option_id
+                #     )
+                # ):
+                #     events.append(response)
+                # # events.append(RequestDeleteEvent(option_fqid))
+                # to_remove_in_meetings[meeting_id]["option_ids"].append(option_id)
             # back to polls
             to_delete_projection_ids.extend(poll.get("projection_ids", []))
             if voted_ids := poll.get("voted_ids", ""):
@@ -670,24 +670,21 @@ class Migration(BaseModelMigration):
                 collection_delete_schema["update_ids_fields"],
                 collection_delete_schema["update_foreign_fields"],
             ):
+                if foreign_collection == "user":
+                    pass
+                def storage_helper(foreign_id: int | str, foreign_collection: str, model_id: int, to_be_updated: dict) -> None:
+                    if isinstance(foreign_id, str):
+                        tmp_foreign_collection, foreign_id = collection_and_id_from_fqid(foreign_id)
+                        # generic fields have different collections in themselves
+                        if tmp_foreign_collection != foreign_collection:
+                            return
+                    to_be_updated[foreign_collection][foreign_id][foreign_field].append(model_id)
+
                 if "_ids" in foreign_ids_field:
                     for foreign_id in model[foreign_ids_field]:
-                        if isinstance(foreign_id, str):
-                            foreign_id, foreign_collection = collection_and_id_from_fqid(foreign_id)
-                        # to_be_updated[foreign_collection][foreign_id][
-                        #     foreign_field
-                        # ].extend(model_id)
+                        storage_helper(foreign_id, foreign_collection, model_id, to_be_updated)
                 else:
-                    if isinstance(model[foreign_ids_field], str):
-                        foreign_collection, foreign_id = collection_and_id_from_fqid(model[foreign_ids_field])
-                    else: 
-                        foreign_id = model[foreign_ids_field]
-                    # to_be_updated[foreign_collection][foreign_id][
-                    #     foreign_field
-                    # ] = [model_id]
-                to_be_updated[foreign_collection][foreign_id][
-                    foreign_field
-                ].extend([model_id])
+                    storage_helper(model[foreign_ids_field], foreign_collection, model_id, to_be_updated)
         # finally delete
         for to_be_deleted_id in to_be_deleted_ids:
             events.append(
@@ -704,8 +701,6 @@ class Migration(BaseModelMigration):
         to_be_updated_in_collection: dict,
         deleted_instances: dict
     ) -> None:
-        if collection == "user":
-            pass
         to_remove = []
         # if there were no instances deleted we don't need to remove them from our update list.
         if collection in deleted_instances:
@@ -727,8 +722,12 @@ class Migration(BaseModelMigration):
         for instance_id, fields_and_ids in to_be_updated_in_collection.items():
             instance = instances.get(instance_id, {})
             # save the instances data without the deleted ids
-            for field, ids in fields_and_ids.items():
-                fields_and_ids[field] = self.subtract_ids(instance.get(field, []), ids)
+            for field, without_ids in fields_and_ids.items():
+                if "_ids" in field:
+                    db_ids = instance.get(field, [])
+                else:
+                    db_ids = [instance.get(field, [])]
+                fields_and_ids[field] = self.subtract_ids(db_ids, without_ids)
             events.append(
                 RequestUpdateEvent(
                     fqid_from_collection_and_id(collection, instance_id), fields_and_ids
