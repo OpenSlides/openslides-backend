@@ -661,7 +661,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "group/12",
-            {"meeting_id": 3, "name": "Anonymous", "anonymous_group_for_meeting_id": 3},
+            {
+                "meeting_id": 3,
+                "name": "Public",
+                "anonymous_group_for_meeting_id": 3,
+                "weight": 0,
+            },
         )
 
     def test_update_set_as_template_true(self) -> None:

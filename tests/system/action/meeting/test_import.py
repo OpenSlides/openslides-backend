@@ -2140,7 +2140,7 @@ class MeetingImport(BaseActionTestCase):
     def test_with_listfields_from_migration(self) -> None:
         """
         Test for listFields in event.data after migration. Uses migration 0035 to create one
-        Additionally adds a gender to user 1 to show that migration 0056 does not interfere with the import.
+        Additionally adds a gender to user 1 to show that migration 0057 does not interfere with the import.
         """
         data = self.create_request_data(
             {
