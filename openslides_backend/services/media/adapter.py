@@ -44,7 +44,7 @@ class MediaServiceAdapter(MediaService):
     ) -> None:
         try:
             self.logger.debug(f"Getting access token from : {threading.get_ident()} -> {token_storage.access_token}")
-            response = requests.post(url, json=payload, headers={AUTHORIZATION_HEADER: f'Bearer {token_storage.access_token}'})
+            response = requests.post(url, json=payload, headers={'Authorization': f'Bearer {token_storage.access_token}'})
         except requests.exceptions.ConnectionError as e:
             msg = f"Connect to mediaservice failed. {e}"
             self.logger.debug(description + msg)

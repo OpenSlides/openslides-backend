@@ -105,17 +105,17 @@ class UserUpdate(
             mapped_fields=[
                 "is_active",
                 "organization_management_level",
-                "saml_id",
+                "idp_id",
                 "password",
             ],
         )
-        if user.get("saml_id") and (
+        if user.get("idp_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+                f"user {user['idp_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
-        if instance.get("saml_id") and user.get("password"):
+        if instance.get("idp_id") and user.get("password"):
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""

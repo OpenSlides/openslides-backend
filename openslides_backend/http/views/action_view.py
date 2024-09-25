@@ -51,7 +51,7 @@ class ActionView(BaseView):
         assert_migration_index()
 
         # Get user id.
-        user_id, access_token = int(claims.get("userId")), claims.get("access_token")
+        user_id, access_token = self.get_uid(claims), claims.get("access_token")
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
             request.headers.get(AUTHENTICATION_HEADER, ""),
@@ -66,6 +66,11 @@ class ActionView(BaseView):
             request.json, user_id, is_atomic, handler
         )
         return response, access_token
+
+    def get_uid(self, claims):
+        if not claims.get("os_uid"):
+             return -1
+        return int(claims.get("os_uid"))
 
     @route("handle_request", internal=True)
     def internal_action_route(self, request: Request) -> RouteResponse:

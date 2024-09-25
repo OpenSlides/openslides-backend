@@ -79,8 +79,8 @@ class _User(str, Permission, Enum):
     CAN_UPDATE = "user.can_update"
 
 class _System(str, Permission, Enum):
-    CAN_LOGIN = "user.can_login"
-    CAN_LOGOUT = "user.can_logout"
+    CAN_LOGIN = "system.can_login"
+    CAN_LOGOUT = "system.can_logout"
 
 class Permissions:
     AgendaItem = _AgendaItem
