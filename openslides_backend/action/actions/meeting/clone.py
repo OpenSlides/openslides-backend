@@ -14,12 +14,13 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
+from openslides_backend.shared.util import ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .import_ import ONE_ORGANIZATION_ID, MeetingImport
+from .import_ import MeetingImport
 
 updatable_fields = [
     "committee_id",

@@ -145,7 +145,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                     """
                 ),
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
             },
         )
         self.assert_status_code(response, 200)
@@ -171,7 +170,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
             },
         )
         assert (
@@ -316,40 +314,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"default_language": "it"})
-
-    def test_update_genders_remove(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"username": "with_test_gender", "gender": "test"},
-                "user/7": {"username": "not_changed", "gender": "male"},
-            }
-        )
-        response = self.request(
-            "organization.update", {"id": 1, "genders": ["male", "female"]}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": ["male", "female"]})
-        self.assert_model_exists(
-            "user/6", {"username": "with_test_gender", "gender": None}
-        )
-        self.assert_model_exists(
-            "user/7", {"username": "not_changed", "gender": "male"}
-        )
-
-    def test_update_genders_empty(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"gender": "test"},
-                "user/7": {"gender": "male"},
-            }
-        )
-        response = self.request("organization.update", {"id": 1, "genders": []})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": []})
-        self.assert_model_exists("user/6", {"gender": None})
-        self.assert_model_exists("user/7", {"gender": None})
 
     def test_update_group_a_no_permissions(self) -> None:
         self.set_organization_management_level(
