@@ -1,4 +1,5 @@
 import binascii
+import json
 from base64 import b64decode
 from pathlib import Path
 
@@ -91,7 +92,30 @@ class ActionView(BaseView):
 
     @route("logout", method="POST", json=False)
     def backchannel_logout(self, request: Request) -> RouteResponse:
-        return {}, None
+        # topic '<logout>', field 'sessionId', value sessionId
+        self.logger.debug("Received logout request")
+        try:
+            logout_token = request.form.get("logout_token")
+            if not logout_token:
+                self.logger.error("Missing logout_token")
+                raise ServerError("Missing logout_token")
+
+            # Verify and decode the logout token
+            decoded_token = self.services.authentication().auth_handler.verify_logout_token(logout_token)
+            if decoded_token is None:
+                return AuthenticationException("Invalid logout token")
+
+            # Extract the session ID (sid) from the token
+            session_id = decoded_token.get("sid")
+            if not session_id:
+                return AuthenticationException("Missing session ID (sid) in logout token")
+
+            self.logger.debug(f"Session ID to terminate: {session_id}")
+            self.message_bus.redis.xadd("logout",  {"sessionId": session_id})
+
+            return { "success": True }, None
+        except json.JSONDecodeError:
+            return ServerError("Invalid JSON payload", status=400)
 
     @route("version", method="GET", json=False)
     def version_route(self, _: Request) -> RouteResponse:

@@ -109,14 +109,18 @@ class BaseView(View):
                         if route_options["json"]:
                             # Check mimetype and parse JSON body. The result is cached in request.json
                             if not request.is_json:
+                                self.logger.debug(f"Wrong media type {request.content_type}. Use 'Content-Type: application/json' instead.")
                                 raise View400Exception(
                                     "Wrong media type. Use 'Content-Type: application/json' instead."
                                 )
                             try:
+                                self.logger.debug(f"Unpacking JSON.")
                                 request_body = request.get_json()
                             except WerkzeugBadRequest as exception:
+                                self.logger.debug(f"Request contains invalid JSON.")
                                 raise View400Exception(exception.description)
                             self.logger.debug(f"Request contains JSON: {request_body}.")
 
+                        self.logger.debug(f"Executing handler.")
                         return func(request)
             raise NotFound()
