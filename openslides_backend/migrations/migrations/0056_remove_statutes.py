@@ -3,7 +3,11 @@ from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core.requests import GetManyRequestPart
-from datastore.shared.util import fqid_from_collection_and_id, collection_and_id_from_fqid
+from datastore.shared.util import (
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 from datastore.writer.core import (
     BaseRequestEvent,
     RequestDeleteEvent,
@@ -294,10 +298,14 @@ class Migration(BaseModelMigration):
                 )
             )
 
-        # update lost references in bulk TODO delete when finished 
+        # update lost references in bulk TODO delete when finished
         for collection, update_schema_part in self.update_schema.items():
             self.generic_update(
-                events, collection, update_schema_part, self.to_be_updated[collection], self.deleted_instances
+                events,
+                collection,
+                update_schema_part,
+                self.to_be_updated[collection],
+                self.deleted_instances,
             )
         return events
 
@@ -314,16 +322,10 @@ class Migration(BaseModelMigration):
         motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
         for motion_id, motion in motions.items():
             if motion.get("statute_paragraph_id", ""):
-                # will delete motions later when updating meeting to prevent ModelDoesNotExist errors.
                 to_remove_in_meetings[motion.get("meeting_id", 0)]["motion_ids"].append(
                     motion_id
                 )
-
-        # update and delete motion related models
-        to_delete_polls = []
-        to_delete_agenda_item_ids = []
-        to_delete_los_ids = []
-        to_delete_projection_ids = []
+        
         for meeting_id, to_remove_dict in to_remove_in_meetings.items():
             # Wie ist das mit den forwarded motions? Sind motions anderer Meetings relevant?
             deleted_motions_ids = to_remove_dict.get("motion_ids", [])
@@ -341,56 +343,244 @@ class Migration(BaseModelMigration):
                     events,
                 )
 
-                if projection_ids := motion.get("projection_ids", []):
-                    for projection_id in projection_ids:
-                        to_delete_projection_ids.append(projection_id)
+        deletion_schema: dict[str, dict[str, list[str]]] = {
+            "meeting": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "group": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "projector": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "tag": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "meeting_user": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "point_of_order_category": {
+                "precursors": [],
+                "update_collections": [],
+                "update_foreign_fields": [],
+            },
+            "motion": {
+                "precursors": [],
+                "cascaded_delete_collections": [
+                    "poll",
+                    "projection",
+                    "agenda_item",
+                    "list_of_speakers",
+                ],
+                "cascaded_delete_fields": [
+                    "poll_ids",
+                    "projection_ids",
+                    "agenda_item_id",
+                    "list_of_speakers_id",
+                ],
+                "update_ids_fields": ["meeting_id", "tag_ids"],
+                "update_collections": ["meeting", "tag"],
+                "update_foreign_fields": ["motion_ids", "generic_tagged_ids"],
+            },
+            "poll": {
+                "precursors": ["motion"],
+                "cascaded_delete_collections": ["option", "projection"],
+                "cascaded_delete_fields": ["option_ids", "projection_ids"],
+                "update_ids_fields": ["meeting_id", "entitled_group_ids", "voted_ids"],
+                "update_collections": ["meeting", "group", "user"],
+                "update_foreign_fields": ["poll_ids", "poll_ids", "poll_voted_ids"],
+            },
+            "option": {
+                "precursors": ["poll"],
+                "cascaded_delete_collections": ["vote"],
+                "cascaded_delete_fields": ["vote_ids"],
+                "update_ids_fields": [
+                    "meeting_id",
+                    "content_object_id",
+                    "content_object_id",
+                    "content_object_id",
+                ],
+                "update_collections": [
+                    "meeting",
+                    "motion",
+                    "poll_candidate_list",
+                    "user",
+                ],
+                "update_foreign_fields": [
+                    "option_ids",
+                    "option_ids",
+                    "option_id",
+                    "option_ids",
+                ],
+            },
+            "vote": {
+                "precursors": ["option"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": ["meeting_id", "user_id", "delegated_user_id"],
+                "update_collections": ["meeting", "user", "user"],
+                "update_foreign_fields": ["vote_ids", "vote_ids", "delegated_vote_ids"],
+            },
+            "agenda_item": {
+                "precursors": ["motion"],
+                "cascaded_delete_collections": ["projection"],
+                "cascaded_delete_fields": ["projection_ids"],
+                "update_ids_fields": [
+                    "meeting_id",
+                    "child_ids",
+                    "parent_id",
+                    "tag_ids",
+                ],
+                "update_collections": ["meeting", "agenda_item", "agenda_item", "tag"],
+                "update_foreign_fields": [
+                    "agenda_item_ids",
+                    "parent_id",
+                    "child_ids",
+                    "generic_tagged_ids",
+                ],
+            },
+            "list_of_speakers": {
+                "precursors": ["motion"],
+                "cascaded_delete_collections": [
+                    "projection",
+                    "speaker",
+                    "structure_level_list_of_speakers",
+                ],
+                "cascaded_delete_fields": [
+                    "projection_ids",
+                    "speaker_ids",
+                    "structure_level_list_of_speakers_ids",
+                ],
+                "update_ids_fields": ["meeting_id"],
+                "update_collections": ["meeting"],
+                "update_foreign_fields": ["list_of_speakers_ids"],
+            },
+            "speaker": {
+                "precursors": ["list_of_speakers"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": [
+                    "meeting_id",
+                    "meeting_user_id",
+                    "point_of_order_category_id",
+                ],
+                "update_collections": [
+                    "meeting",
+                    "meeting_user",
+                    "point_of_order_category",
+                ],
+                "update_foreign_fields": ["speaker_ids", "speaker_ids", "speaker_ids"],
+            },
+            "structure_level_list_of_speakers": {
+                "precursors": ["list_of_speakers"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": [
+                    "meeting_id",
+                    "meeting_user_ids",
+                    "structure_level_id",
+                ],
+                "update_collections": ["meeting", "meeting_user", "structure_level"],
+                "update_foreign_fields": [
+                    "structure_level_list_of_speakers_ids",
+                    "structure_level_list_of_speakers_ids",
+                    "structure_level_list_of_speakers_ids",
+                ],
+            },
+            "structure_level": {
+                "precursors": ["list_of_speakers"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": ["meeting_id", "meeting_user_ids"],
+                "update_collections": ["meeting", "meeting_user"],
+                "update_foreign_fields": [
+                    "structure_level_list_of_speakers_ids",
+                    "structure_level_list_of_speakers_ids",
+                ],
+            },
+            "projection": {
+                "precursors": ["motion", "poll", "agenda_item", "list_of_speakers"],
+                "cascaded_delete_collections": [],
+                "cascaded_delete_fields": [],
+                "update_ids_fields": [
+                    "meeting_id",
+                    "current_projector_id",
+                    "preview_projector_id",
+                    "history_projector_id",
+                ],
+                "update_collections": [
+                    "meeting",
+                    "projector",
+                    "projector",
+                    "projector",
+                ],
+                "update_foreign_fields": [
+                    "all_projection_ids",
+                    "current_projection_ids",
+                    "preview_projection_ids",
+                    "history_projection_ids",
+                ],
+            },
+        }
+        self.deleted_instances: dict[str, set | None] = {
+            collection: None for collection in deletion_schema.keys()
+        }
+        self.update_schema: defaultdict[str, list[str]] = defaultdict(list)
+        for schema_part in deletion_schema.values():
+            for collection, collection_fields in zip(
+                schema_part["update_collections"], schema_part["update_foreign_fields"]
+            ):
+                if "generic_" in collection_fields:
+                    collection_fields = collection_fields.lstrip("generic_")
+                self.update_schema[collection].extend([collection_fields])
+        to_be_deleted: dict[str, set] = {
+            collection: set() for collection in deletion_schema.keys()
+        }
+        # dicts structure is {collection : id : fields : values}
+        self.to_be_updated: dict[str, dict[int, dict[str, list]]] = {
+            collection: defaultdict(lambda: defaultdict(list))
+            for collection in self.update_schema.keys()
+        }
+        # set deletion root TODO use the scheme from above
+        to_be_deleted["motion"] = {
+            motion_id 
+            for to_remove_dict in to_remove_in_meetings.values()
+            for motion_id in to_remove_dict.get("motion_ids", [])
+        }
+        for meeting_id, to_remove_dict in to_remove_in_meetings.items():
+            # Wie ist das mit den forwarded motions? Sind motions anderer Meetings relevant?
+            deleted_motions_ids = to_remove_dict.get("motion_ids", [])
 
-                # collect models cascading delete to other models
-                if poll_ids := motion.get("poll_ids", []):
-                    for poll_id in poll_ids:
-                        to_delete_polls.append(poll_id)
-                if agenda_item_id := motion.get("agenda_item_id", 0):
-                    to_delete_agenda_item_ids.append(agenda_item_id)
-                if list_of_speakers_id := motion.get("list_of_speakers_id", 0):
-                    to_delete_los_ids.append(list_of_speakers_id)
-
-                if tag_ids := motion.get("tag_ids", []):
-                    for tag_id in tag_ids:
-                        tags_to_update[tag_id].add(motion_fqid)
-                events.append(
-                    RequestDeleteEvent(fqid_from_collection_and_id("motion", motion_id))
-                )
-        # delete models cascading delete to other models
-        self.delete_polls(
-            to_delete_polls,
-            to_remove_in_meetings,
-            events,
-            to_remove_in_projectors,
-            to_remove_in_users,
-            to_delete_projection_ids,
-        )
-        self.delete_agenda_items(
-            to_delete_agenda_item_ids,
-            tags_to_update,
-            to_remove_in_meetings,
-            events,
-            to_remove_in_projectors,
-            to_delete_projection_ids,
-        )
-        self.delete_lists_of_speakers(
-            to_delete_los_ids,
-            to_remove_in_meetings,
-            events,
-            to_remove_in_projectors,
-            to_delete_projection_ids,
-        )
-        # cascaded deletes in bulk
-        self.delete_projections(
-            to_delete_projection_ids,
-            events,
-            to_remove_in_meetings,
-            to_remove_in_projectors,
-        )
+        # delete until all have at least empty list (means finished)
+        while not self.is_finished(self.deleted_instances):
+            for collection, schema_part in deletion_schema.items():
+                # check collection wasn't handled yet
+                if self.deleted_instances[collection] is None:
+                    # check precursors have finished
+                    if not any(
+                        precursor
+                        for precursor in schema_part["precursors"]
+                        if self.deleted_instances[precursor] is None
+                    ):
+                        self.generic_delete(
+                            events,
+                            collection,
+                            schema_part,
+                            to_be_deleted,
+                            self.to_be_updated,
+                        )
+                        # safe all ids in deleted
+                        self.deleted_instances[collection] = to_be_deleted[collection]
 
     def list_update(self, motion: dict, deleted_motions_ids: set, events: list) -> None:
         """updates models related with motion that won't get deleted."""
@@ -470,166 +660,6 @@ class Migration(BaseModelMigration):
                             meeting_user_field
                         ].append(model_id)
 
-    def delete_polls(
-        self,
-        poll_ids_to_migrate: list,
-        to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        events: list,
-        to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
-        to_remove_in_users: defaultdict[int, defaultdict[str, list]],
-        to_delete_projection_ids: list[int],
-    ) -> None:
-        """deletes all polls and its subitems in motion"""
-        deletion_schema: dict[str, dict[str, list[str]]] = {
-            "meeting": {
-                "precursors": [],
-                "update_collections": [],
-                "update_foreign_fields": [],
-            },
-            "poll": {
-                "precursors": [],  # motion
-                "cascaded_delete_collections": ["option"],  # projections
-                "cascaded_delete_fields": ["option_ids"],
-                "update_ids_fields": [],
-                "update_collections": [],
-                "update_foreign_fields": [],
-            },
-            "option": {
-                "precursors": ["poll"],
-                "cascaded_delete_collections": ["vote"],
-                "cascaded_delete_fields": ["vote_ids"],
-                "update_ids_fields": ["meeting_id", "content_object_id", "content_object_id", "content_object_id"],
-                "update_collections": ["meeting", "motion", "poll_candidate_list", "user"],
-                "update_foreign_fields": ["option_ids", "option_ids", "option_id", "option_ids"],
-            },
-            "vote": {
-                "precursors": ["option"],
-                "cascaded_delete_collections": [],
-                "cascaded_delete_fields": [],
-                "update_ids_fields": ["meeting_id", "user_id", "delegated_user_id"],
-                "update_collections": ["meeting", "user", "user"],
-                "update_foreign_fields": ["vote_ids", "vote_ids", "delegated_vote_ids"],
-            },
-        }
-        self.deleted_instances: dict[str, set | None] = {
-            collection: None for collection in deletion_schema.keys()
-        }
-        self.update_schema: defaultdict[str, list[str]] = defaultdict(list)
-        for schema_part in deletion_schema.values():
-            for collection, collection_fields in zip(
-                schema_part["update_collections"], schema_part["update_foreign_fields"]
-            ):
-                self.update_schema[collection].extend([collection_fields])
-        to_be_deleted: dict[str, set] = {
-            collection: set() for collection in deletion_schema.keys()
-        }
-        self.to_be_updated: dict[str, dict[str, list]] = {
-            collection: defaultdict(lambda: defaultdict(list))  # collection : id : fields : values
-            for collection in self.update_schema.keys()
-        }
-        # not needed if motion is part of this TODO delete
-        to_be_deleted["poll"] = set(poll_ids_to_migrate)
-        self.deleted_instances.update({"motion": {1}})
-        self.to_be_updated.update({"motion": defaultdict(lambda: defaultdict(list))})
-
-        # delete until all have at least empty list (means finished)
-        while not self.is_finished(self.deleted_instances):
-            for collection, schema_part in deletion_schema.items():
-                # check precursors have finished
-                if not any(
-                    precursor
-                    for precursor in schema_part["precursors"]
-                    if self.deleted_instances[precursor] is None
-                ):
-                    self.generic_delete(
-                        events, collection, schema_part, to_be_deleted, self.to_be_updated
-                    )
-                    # safe all ids in deleted
-                    self.deleted_instances[collection] = to_be_deleted[collection]
-        # update lost references in bulk
-        # for collection, update_schema_part in update_schema.items():
-        #     self.update(
-        #         events, collection, update_schema_part, to_be_updated[collection]
-        #     )
-
-        polls = self.reader.get_many(
-            [
-                GetManyRequestPart(
-                    "poll",
-                    poll_ids_to_migrate,
-                    [
-                        "option_ids",
-                        "global_option_id",
-                        "voted_ids",
-                        "entitled_group_ids",
-                        "projection_ids",
-                        "meeting_id",
-                    ],
-                )
-            ]
-        ).get("poll", {})
-        for poll_id, poll in polls.items():
-            meeting_id = poll["meeting_id"]
-            # poll_fqid = fqid_from_collection_and_id("poll", poll_id)
-            # option_ids = poll.get(
-            #     "option_ids", []
-            # )  # oder doch für alle meetings auf einen schlag? dict benutzen?
-            # options = self.reader.get_many(
-            #     [
-            #         GetManyRequestPart(
-            #             "option",
-            #             option_ids,
-            #             [
-            #                 "vote_ids",
-            #                 "content_object_id",
-            #             ],
-            #         )
-            #     ]
-            # ).get("option", {})
-            # for option_id, option in options.items():
-                # option_fqid = fqid_from_collection_and_id("option", option_id)
-                # vote_ids = option.get("vote_ids", [])
-                # for vote_id in vote_ids:
-                #     vote_fqid = fqid_from_collection_and_id("vote", vote_id)
-                #     vote = self.reader.get(vote_fqid, ["user_id", "delegated_user_id"])
-                #     to_remove_in_users[vote.get("user_id", 0)]["vote_ids"].append(
-                #         vote_id
-                #     )
-                #     to_remove_in_users[vote.get("delegated_user_id", 0)][
-                #         "delegated_vote_ids"
-                #     ].append(vote_id)
-                #     to_remove_in_meetings[meeting_id]["vote_ids"].append(vote_id)
-                #     events.append(RequestDeleteEvent(vote_fqid))
-                # content_object_fqid = option.get("content_object_id", "")
-                # if "poll_candidate_list" in content_object_fqid:
-                #     foreign_field = "option_id"
-                # else:
-                #     foreign_field = "option_ids"
-                # # the motion will be deleted anyways
-                # if "motion" not in content_object_fqid and (
-                #     response := self.update_relations(
-                #         content_object_fqid, foreign_field, option_id
-                #     )
-                # ):
-                #     events.append(response)
-                # # events.append(RequestDeleteEvent(option_fqid))
-                # to_remove_in_meetings[meeting_id]["option_ids"].append(option_id)
-            # back to polls
-            to_delete_projection_ids.extend(poll.get("projection_ids", []))
-            if voted_ids := poll.get("voted_ids", ""):
-                for voted_id in voted_ids:
-                    to_remove_in_users[voted_id]["poll_voted_ids"].append(poll_id)
-            group_ids = poll.get("entitled_group_ids", "")
-            for group_id in group_ids:
-                if response := self.update_relations(
-                    fqid_from_collection_and_id("group", group_id),
-                    "poll_ids",
-                    poll_id,
-                ):
-                    events.append(response)
-            to_remove_in_meetings[meeting_id]["poll_ids"].append(poll_id)
-            # events.append(RequestDeleteEvent(poll_fqid))
-
     def is_finished(self, deleted_instances: dict) -> bool:
         for collection in deleted_instances.values():
             if collection is None:
@@ -645,7 +675,7 @@ class Migration(BaseModelMigration):
         to_be_updated: dict,
     ) -> None:
         to_be_deleted_ids = to_be_deleted[collection]
-        # get many of model to be deleted
+        # get models to be deleted now
         models = self.reader.get_many(
             [
                 GetManyRequestPart(
@@ -657,34 +687,68 @@ class Migration(BaseModelMigration):
             ]
         ).get(collection, {})
         for model_id, model in models.items():
-            # stage new instances for deletion
+            # stage related collection instances for later deletion
             for foreign_collection, own_field in zip(
-                collection_delete_schema["cascaded_delete_collections"], collection_delete_schema["cascaded_delete_fields"]
+                collection_delete_schema["cascaded_delete_collections"],
+                collection_delete_schema["cascaded_delete_fields"],
             ):
-                to_be_deleted[foreign_collection].update(
-                    model[own_field]
-                )
-            # stage instance ids for removal
+                if foreign_id_or_ids := model.get(own_field):
+                    if isinstance(foreign_id_or_ids, list) and isinstance(
+                        foreign_id_or_ids[0], str
+                    ):
+                        foreign_id_or_ids = [
+                            id_from_fqid(foreign_id) for foreign_id in foreign_id_or_ids
+                        ]
+                    elif isinstance(foreign_id_or_ids, str):
+                        foreign_id_or_ids = [id_from_fqid(foreign_id_or_ids)]
+                    elif isinstance(foreign_id_or_ids, int):
+                        foreign_id_or_ids = [foreign_id_or_ids]
+                    to_be_deleted[foreign_collection].update(foreign_id_or_ids)
+            # stage instance ids for update in related collection instances
             for foreign_collection, foreign_ids_field, foreign_field in zip(
                 collection_delete_schema["update_collections"],
                 collection_delete_schema["update_ids_fields"],
                 collection_delete_schema["update_foreign_fields"],
             ):
-                if foreign_collection == "user":
+                # TODO delete
+                if foreign_collection == "tag":
                     pass
-                def storage_helper(foreign_id: int | str, foreign_collection: str, model_id: int, to_be_updated: dict) -> None:
-                    if isinstance(foreign_id, str):
-                        tmp_foreign_collection, foreign_id = collection_and_id_from_fqid(foreign_id)
-                        # generic fields have different collections in themselves
-                        if tmp_foreign_collection != foreign_collection:
-                            return
-                    to_be_updated[foreign_collection][foreign_id][foreign_field].append(model_id)
 
-                if "_ids" in foreign_ids_field:
-                    for foreign_id in model[foreign_ids_field]:
-                        storage_helper(foreign_id, foreign_collection, model_id, to_be_updated)
-                else:
-                    storage_helper(model[foreign_ids_field], foreign_collection, model_id, to_be_updated)
+                def storage_helper(
+                    foreign_ids: list[int | str],
+                    foreign_collection: str,
+                    foreign_field: str,
+                    model_id: int,
+                    to_be_updated: dict,
+                ) -> None:
+                    for foreign_id in foreign_ids:
+                        if isinstance(foreign_id, str):
+                            tmp_foreign_collection, foreign_id = (
+                                collection_and_id_from_fqid(foreign_id)
+                            )
+                            # generic fields have different collections in themselves
+                            if tmp_foreign_collection != foreign_collection:
+                                return
+                        # need to store own collection context for generic foreign field
+                        if "generic_" in foreign_field:
+                            foreign_field = foreign_field.lstrip("generic_")
+                            model_id = fqid_from_collection_and_id(collection, model_id)
+                        to_be_updated[foreign_collection][foreign_id][
+                            foreign_field
+                        ].append(model_id)
+
+                if foreign_ids_field in model:
+                    if "_ids" in foreign_ids_field:
+                        foreign_ids = model[foreign_ids_field]
+                    else:
+                        foreign_ids = [model[foreign_ids_field]]
+                    storage_helper(
+                        foreign_ids,
+                        foreign_collection,
+                        foreign_field,
+                        model_id,
+                        to_be_updated,
+                    )
         # finally delete
         for to_be_deleted_id in to_be_deleted_ids:
             events.append(
@@ -699,7 +763,7 @@ class Migration(BaseModelMigration):
         collection: str,
         schema: list[str],
         to_be_updated_in_collection: dict,
-        deleted_instances: dict
+        deleted_instances: dict,
     ) -> None:
         to_remove = []
         # if there were no instances deleted we don't need to remove them from our update list.
@@ -721,6 +785,9 @@ class Migration(BaseModelMigration):
         ).get(collection, {})
         for instance_id, fields_and_ids in to_be_updated_in_collection.items():
             instance = instances.get(instance_id, {})
+            # TODO delete
+            if collection == "tag":
+                pass
             # save the instances data without the deleted ids
             for field, without_ids in fields_and_ids.items():
                 if "_ids" in field:
@@ -733,192 +800,7 @@ class Migration(BaseModelMigration):
                     fqid_from_collection_and_id(collection, instance_id), fields_and_ids
                 )
             )
-            pass
-
-    def delete_agenda_items(
-        self,
-        agenda_item_ids: list[int],
-        tags_to_update: defaultdict[int, set[str]],
-        to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        events: list,
-        to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
-        to_delete_projection_ids: list[int],
-    ) -> None:
-        """
-        The actual delete request for the agenda item will be created in meeting update.
-        Deletes agenda items id in motion and all its subitems.
-        The child items are implicitly moved to the root of the agenda.
-        """
-        if not agenda_item_ids:
-            return
-        agenda_items = self.reader.get_many(
-            [
-                GetManyRequestPart(
-                    "agenda_item",
-                    agenda_item_ids,
-                    [
-                        "parent_id",
-                        "child_ids",
-                        "tag_ids",
-                        "projection_ids",
-                        "meeting_id",
-                    ],
-                )
-            ]
-        ).get("agenda_item", {})
-        for agenda_item_id, agenda_item in agenda_items.items():
-            agenda_item_fqid = fqid_from_collection_and_id(
-                "agenda_item", agenda_item_id
-            )
-            meeting_id = agenda_item["meeting_id"]
-            child_ids = agenda_item.get("child_ids", "")
-            if parent_id := agenda_item.get("parent_id"):
-                if response := self.update_relations(
-                    fqid_from_collection_and_id("agenda_item", parent_id),
-                    "child_ids",
-                    agenda_item_id,
-                ):
-                    events.append(response)
-            for child_id in child_ids:
-                events.append(
-                    RequestUpdateEvent(
-                        fqid_from_collection_and_id("agenda_item", child_id),
-                        {"parent_id": None},
-                    )
-                )
-            tag_ids = agenda_item.get("tag_ids", [0])
-            for tag_id in tag_ids:
-                tags_to_update[tag_id].add(agenda_item_fqid)
-            to_delete_projection_ids.extend(agenda_item.get("projection_ids", []))
-            to_remove_in_meetings[meeting_id]["agenda_item_ids"].append(agenda_item_id)
-
-    def delete_lists_of_speakers(
-        self,
-        list_of_speakers_ids: list[int],
-        to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        events: list,
-        to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
-        to_delete_projection_ids: list[int],
-    ) -> None:
-        """deletes list of speakers in motion and all its subitems"""
-        if not list_of_speakers_ids:
-            return
-        lists_of_speakers = self.reader.get_many(
-            [
-                GetManyRequestPart(
-                    "list_of_speakers",
-                    list_of_speakers_ids,
-                    [
-                        "content_object_id",
-                        "speaker_ids",
-                        "structure_level_list_of_speakers_ids",
-                        "projection_ids",
-                        "meeting_id",
-                    ],
-                )
-            ]
-        ).get("list_of_speakers", {})
-        for list_of_speakers_id, list_of_speakers in lists_of_speakers.items():
-            meeting_id = list_of_speakers["meeting_id"]
-            los_fqid = fqid_from_collection_and_id(
-                "list_of_speakers", list_of_speakers_id
-            )
-            speaker_ids = list_of_speakers.get("speaker_ids", "")
-            for speaker_id in speaker_ids:
-                speaker_fqid = fqid_from_collection_and_id("speaker", speaker_id)
-                speaker = self.reader.get(  # TODO get many
-                    speaker_fqid,
-                    [
-                        "meeting_user_id",
-                        "point_of_order_category_id",
-                        "meeting_id",  # nötig wenn todo oberhalb erledigt?
-                    ],
-                )
-                meeting_user_id = speaker.get("meeting_user_id", "")
-                if response := self.update_relations(
-                    fqid_from_collection_and_id("meeting_user", meeting_user_id),
-                    "speaker_ids",
-                    speaker_id,
-                ):
-                    events.append(response)
-                point_of_order_category_id = speaker.get(
-                    "point_of_order_category_id", ""
-                )
-                if response := self.update_relations(
-                    fqid_from_collection_and_id(
-                        "point_of_order_category",
-                        point_of_order_category_id,
-                    ),
-                    "speaker_ids",
-                    (speaker_id),
-                ):
-                    events.append(response)
-                to_remove_in_meetings[meeting_id]["speaker_ids"].append(speaker_id)
-                events.append(RequestDeleteEvent(speaker_fqid))
-            structure_level_los_ids = list_of_speakers.get(
-                "structure_level_list_of_speakers_ids", ""
-            )
-            for structure_level_los_id in structure_level_los_ids:
-                structure_level_los_fqid = fqid_from_collection_and_id(
-                    "structure_level_list_of_speakers",
-                    structure_level_los_id,
-                )
-                structure_level_los = self.reader.get(  # TODO get many
-                    structure_level_los_fqid, ["structure_level_id"]
-                )
-                structure_level_id = structure_level_los.get("structure_level_id", 0)
-                if response := self.update_relations(
-                    fqid_from_collection_and_id("structure_level", structure_level_id),
-                    "structure_level_list_of_speakers_ids",
-                    structure_level_los_id,
-                ):
-                    events.append(response)
-                to_remove_in_meetings[meeting_id]["structure_level_los_ids"].append(
-                    structure_level_los_id
-                )
-                events.append(RequestDeleteEvent(structure_level_los_fqid))
-            to_delete_projection_ids.extend(list_of_speakers.get("projection_ids", ""))
-            to_remove_in_meetings[meeting_id]["list_of_speakers_ids"].append(
-                list_of_speakers_id
-            )
-            events.append(RequestDeleteEvent(los_fqid))
-
-    def delete_projections(
-        self,
-        projection_ids: list[int],
-        events: list[BaseRequestEvent],
-        to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
-        to_remove_in_projectors: defaultdict[int, defaultdict[str, list]],
-    ) -> None:
-        """This deletes all projections and updates the content_object and projector"""
-        projections = self.reader.get_many(
-            [
-                GetManyRequestPart(
-                    "projection",
-                    projection_ids,
-                    [
-                        "current_projector_id",
-                        "preview_projector_id",
-                        "history_projector_id",
-                        "content_object_id",
-                        "meeting_id",
-                    ],
-                )
-            ]
-        ).get("projection", {})
-        for projection_id, projection in projections.items():
-            meeting_id = projection["meeting_id"]
-            for state in ["current", "preview", "history"]:
-                if projector_id := projection.get(f"{state}_projector_id", ""):
-                    to_remove_in_projectors[projector_id][
-                        f"{state}_projection_ids"
-                    ].append(projection_id)
-            events.append(
-                RequestDeleteEvent(
-                    fqid_from_collection_and_id("projection", projection_id)
-                )
-            )
-            to_remove_in_meetings[meeting_id]["projection_ids"].append(projection_id)
+            pass  # TODO delete
 
     def update_relations(
         self,

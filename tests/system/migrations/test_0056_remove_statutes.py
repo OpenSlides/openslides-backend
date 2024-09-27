@@ -1286,15 +1286,12 @@ def test_migration_full(write, finalize, assert_model):
         "poll_candidate_list/1": {"option_id": None},
         "group/1": {"poll_ids": None},
         "agenda_item/1": {
-            "child_ids": None,
             "meta_deleted": True,
         },
         "agenda_item/2": {
-            "parent_id": None,
             "meta_deleted": True,
         },
         "agenda_item/3": {
-            "projection_ids": [5],
             "parent_id": None,
         },
         "list_of_speakers/1": {
