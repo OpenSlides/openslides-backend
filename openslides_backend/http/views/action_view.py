@@ -1,7 +1,9 @@
 import binascii
+import json
 from base64 import b64decode
 from pathlib import Path
 
+from os_authlib.message_bus import MessageBus
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
@@ -26,6 +28,10 @@ class ActionView(BaseView):
     The ActionView receives a bundle of actions via HTTP and handles it to the
     ActionHandler after retrieving request user id.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message_bus = MessageBus()
 
     @route(["handle_request", "handle_separately"])
     def action_route(self, request: Request) -> RouteResponse:
@@ -83,6 +89,33 @@ class ActionView(BaseView):
     @route("info", method="GET", json=False)
     def info_route(self, request: Request) -> RouteResponse:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+
+    @route("logout", method="POST", json=False)
+    def backchannel_logout(self, request: Request) -> RouteResponse:
+        # topic '<logout>', field 'sessionId', value sessionId
+        self.logger.debug("Received logout request")
+        try:
+            logout_token = request.form.get("logout_token")
+            if not logout_token:
+                self.logger.error("Missing logout_token")
+                raise ServerError("Missing logout_token")
+
+            # Verify and decode the logout token
+            decoded_token = self.services.authentication().auth_handler.verify_logout_token(logout_token)
+            if decoded_token is None:
+                return AuthenticationException("Invalid logout token")
+
+            # Extract the session ID (sid) from the token
+            session_id = decoded_token.get("sid")
+            if not session_id:
+                return AuthenticationException("Missing session ID (sid) in logout token")
+
+            self.logger.debug(f"Session ID to terminate: {session_id}")
+            self.message_bus.redis.xadd("logout",  {"sessionId": session_id})
+
+            return { "success": True }, None
+        except json.JSONDecodeError:
+            return ServerError("Invalid JSON payload", status=400)
 
     @route("version", method="GET", json=False)
     def version_route(self, _: Request) -> RouteResponse:
