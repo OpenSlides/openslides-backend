@@ -370,9 +370,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_new_meeting_setting(self) -> None:
         meeting, _ = self.basic_test(
-            {"agenda_show_topic_navigation_on_detail_view": True}
+            {
+                "agenda_show_topic_navigation_on_detail_view": True,
+                "motions_hide_metadata_background": True,
+            }
         )
         assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
+        assert meeting.get("motions_hide_metadata_background") is True
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
