@@ -362,22 +362,6 @@ class Migration(BaseModelMigration):
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         """migrates all models by deleting everything related to statutes and updateing the relations."""
         events: list[BaseRequestEvent] = []
-        deleted_instances: dict[str, set | None] = {
-            collection: None for collection in self.deletion_schema.keys()
-        }
-        update_schema: defaultdict[str, list[str]] = defaultdict(list)
-        for schema_part in self.deletion_schema.values():
-            for collection, collection_fields in zip(
-                schema_part["update_collections"], schema_part["update_foreign_fields"]
-            ):
-                if "generic_" in collection_fields:
-                    collection_fields = collection_fields.lstrip("generic_")
-                update_schema[collection].extend([collection_fields])
-        # dicts structure is {collection : id : fields : values}
-        to_be_updated: dict[str, dict[int, dict[str, list]]] = {
-            collection: defaultdict(lambda: defaultdict(list))
-            for collection in update_schema.keys()
-        }
 
         # delete all statute paragraphs TODO subprocess of motion delete?
         statute_paragraphs = self.reader.get_all(
@@ -425,40 +409,47 @@ class Migration(BaseModelMigration):
                 )
             )
 
-        self.delete_engine(
-            to_be_updated,
-            deleted_instances,
+        motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
+        self.delete_update_engine(
+            {
+                "motion": {
+                    motion_id
+                    for motion_id, motion in motions.items()
+                    if motion.get("statute_paragraph_id")
+                }
+            },
             events,
         )
-
-        # update lost references in bulk
-        for collection, update_schema_part in update_schema.items():
-            self.generic_update(
-                events,
-                collection,
-                update_schema_part,
-                to_be_updated[collection],
-                deleted_instances,
-            )
         return events
 
-    def delete_engine(
+    def delete_update_engine(
         self,
-        to_be_updated,
-        deleted_instances,
+        initial_deletes: dict[str, set],
         events: list[BaseRequestEvent],
     ) -> None:
+        update_schema: defaultdict[str, list[str]] = defaultdict(list)
+        for schema_part in self.deletion_schema.values():
+            for collection, collection_fields in zip(
+                schema_part["update_collections"], schema_part["update_foreign_fields"]
+            ):
+                if "generic_" in collection_fields:
+                    collection_fields = collection_fields.lstrip("generic_")
+                update_schema[collection].extend([collection_fields])
+        # dicts structure is {collection : id : fields : values}
+        to_be_updated: dict[str, dict[int, dict[str, list]]] = {
+            collection: defaultdict(lambda: defaultdict(list))
+            for collection in update_schema.keys()
+        }
         to_be_deleted: dict[str, set] = {
             collection: set() for collection in self.deletion_schema.keys()
         }
-        # set deletion root by finding statute related motions
-        motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
-        to_be_deleted["motion"] = {
-            motion_id
-            for motion_id, motion in motions.items()
-            if motion.get("statute_paragraph_id")
+        deleted_instances: dict[str, set | None] = {
+            collection: None for collection in self.deletion_schema.keys()
         }
-        # delete until all have at least empty list (means finished)
+        # set deletion root by finding statute related motions
+        for collection, ids in initial_deletes.items():
+            to_be_deleted[collection] = ids
+        # delete until all have at least an empty list (means finished)
         while not self.is_finished(deleted_instances):
             for collection, schema_part in self.deletion_schema.items():
                 # check collection wasn't handled yet
@@ -478,6 +469,16 @@ class Migration(BaseModelMigration):
                         )
                         # safe all ids in deleted
                         deleted_instances[collection] = to_be_deleted[collection]
+
+        # update lost references in bulk
+        for collection, update_schema_part in update_schema.items():
+            self.generic_update(
+                events,
+                collection,
+                update_schema_part,
+                to_be_updated[collection],
+                deleted_instances,
+            )
 
     def is_finished(self, deleted_instances: dict) -> bool:
         for collection in deleted_instances.values():
@@ -530,9 +531,6 @@ class Migration(BaseModelMigration):
                 collection_delete_schema["update_ids_fields"],
                 collection_delete_schema["update_foreign_fields"],
             ):
-                # TODO delete
-                if foreign_collection == "tag":
-                    pass
 
                 def storage_helper(
                     foreign_ids: list[int | str],
@@ -605,9 +603,6 @@ class Migration(BaseModelMigration):
         ).get(collection, {})
         for instance_id, fields_and_ids in to_be_updated_in_collection.items():
             instance = instances.get(instance_id, {})
-            # TODO delete
-            if collection == "mediafile":
-                pass
             # save the instances data without the deleted ids
             for field, without_ids in fields_and_ids.items():
                 if "_ids" in field:
@@ -620,7 +615,6 @@ class Migration(BaseModelMigration):
                     fqid_from_collection_and_id(collection, instance_id), fields_and_ids
                 )
             )
-            pass  # TODO delete
 
     def subtract_ids(
         self, front_ids: list | None, without_ids: list | None
