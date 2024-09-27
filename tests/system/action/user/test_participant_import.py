@@ -38,6 +38,7 @@ class ParticipantImport(BaseActionTestCase):
                                 "info": ImportState.DONE,
                             },
                             "gender": {
+                                "id": 1,
                                 "value": "male",
                                 "info": ImportState.DONE,
                             },
@@ -49,9 +50,11 @@ class ParticipantImport(BaseActionTestCase):
 
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
@@ -108,7 +111,7 @@ class ParticipantImport(BaseActionTestCase):
             {
                 "username": "jonny",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
                 "meeting_ids": [1],
@@ -233,7 +236,7 @@ class ParticipantImport(BaseActionTestCase):
         user = self.assert_model_exists(
             "user/2", {"username": "jonny", "first_name": "Testy"}
         )
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
@@ -563,6 +566,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "can_change_own_password": False,
                 "meeting_ids": [1],
                 "meeting_user_ids": [38],
+                "gender_id": 3,
             },
         )
         level_up = self.assert_model_exists("structure_level/1")
@@ -640,6 +644,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [35],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": None,
             },
         )
         self.assert_model_exists(
@@ -686,6 +691,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [37],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": 2,
             },
         )
         self.assert_model_exists(
@@ -728,6 +734,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up", "id": 2}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -762,6 +769,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -839,6 +847,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up"}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -877,6 +886,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {

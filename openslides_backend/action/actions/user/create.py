@@ -17,7 +17,7 @@ from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import SetPasswordMixin
-from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
+from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
 @register_action("user.create")
@@ -46,7 +46,7 @@ class UserCreate(
             "is_physical_person",
             "default_password",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "organization_management_level",
@@ -96,7 +96,7 @@ class UserCreate(
                 instance["default_password"] = get_random_password()
             self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
-        check_gender_helper(self.datastore, instance)
+        check_gender_exists(self.datastore, instance)
         return instance
 
     def create_action_result_element(

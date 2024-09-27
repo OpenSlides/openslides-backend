@@ -6,18 +6,6 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserBaseSamlAccount(BaseActionTestCase):
     def setUp(self) -> None:
-        self.results = {
-            "saml_id": "111222333",
-            "title": "Dr.",
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "email": "test@example.com",
-            "gender": "male",
-            "pronoun": "er",
-            "is_active": True,
-            "is_physical_person": True,
-        }
-
         super().setUp()
         self.set_models(
             {
@@ -34,7 +22,12 @@ class UserBaseSamlAccount(BaseActionTestCase):
                         "is_active": "is_active",
                         "is_physical_person": "is_person",
                     },
-                }
+                    "gender_ids": [1, 2, 3, 4],
+                },
+                "gender/1": {"organization_id": 1, "name": "male"},
+                "gender/2": {"organization_id": 1, "name": "female"},
+                "gender/3": {"organization_id": 1, "name": "diverse"},
+                "gender/4": {"organization_id": 1, "name": "non-binary"},
             }
         )
 
@@ -70,7 +63,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
 
     def test_save_attr_empty_saml_id_provided(self) -> None:
         response = self.request(
-            "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
+            "user.save_saml_account", {"username": "", "lastName": "Cartwright"}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -117,6 +110,24 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "Joe", "default_number": None})
 
+    def test_create_new_gender(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": "111222333",
+                "gender": "cloud",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "111222333",
+                "gender_id": 5,
+            },
+        )
+        self.assert_model_exists("gender/5", {"name": "cloud"})
+
 
 class UserCreateSamlAccount(UserBaseSamlAccount):
     def test_create_saml_account_all_fields(self) -> None:
@@ -147,7 +158,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -182,7 +193,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -263,7 +274,11 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         )
 
     def test_update_saml_account_all_fields(self) -> None:
-        self.set_models({"user/78": {"username": "Saml", "saml_id": "111222333"}})
+        self.set_models(
+            {
+                "user/78": {"username": "Saml", "saml_id": "111222333", "gender_id": 4},
+            }
+        )
         response = self.request(
             "user.save_saml_account",
             {
@@ -288,7 +303,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -303,7 +318,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "test@example.com",
-            "gender": "male",
+            "gender_id": 1,
             "pronoun": "er",
             "is_active": True,
             "is_physical_person": True,
@@ -340,7 +355,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "test@example.com",
-                    "gender": "male",
+                    "gender_id": 1,
                     "pronoun": "er",
                     "is_active": True,
                     "is_physical_person": True,
@@ -370,10 +385,39 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Maxx",
                 "last_name": "Mustermann",
                 "email": "",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": False,
                 "is_physical_person": True,
+            },
+        )
+
+    def test_gender_to_none(self) -> None:
+        self.set_models(
+            {
+                "user/78": {"username": "Saml", "saml_id": "111222333", "gender_id": 4},
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": "111222333",
+                "title": "Dr.",
+                "firstName": "Max",
+                "lastName": "Mustermann",
+                "gender": "",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/78",
+            {
+                "saml_id": "111222333",
+                "username": "Saml",
+                "title": "Dr.",
+                "first_name": "Max",
+                "last_name": "Mustermann",
+                "gender_id": None,
             },
         )
 
@@ -396,7 +440,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
                 "first_name": None,
                 "last_name": None,
                 "email": None,
-                "gender": None,
+                "gender_id": None,
                 "pronoun": None,
                 "is_active": True,
                 "is_physical_person": True,
