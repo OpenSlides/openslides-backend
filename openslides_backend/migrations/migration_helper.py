@@ -45,7 +45,9 @@ class MigrationHelper:
 
         migration_index = MigrationHelper.pull_migration_index_from_db()
 
-        assert migration_index >= LAST_NON_REL_MIGRATION, f"Migration Index {migration_index} should be at least {LAST_NON_REL_MIGRATION}."
+        assert (
+            migration_index >= LAST_NON_REL_MIGRATION
+        ), f"Migration Index {migration_index} should be at least {LAST_NON_REL_MIGRATION}."
 
         migrations = listdir(MIGRATIONS_RELATIVE_DIRECTORY_PATH)
 
@@ -58,9 +60,7 @@ class MigrationHelper:
                 if migration_number > migration_index:
                     MigrationHelper.migrations[migration_number] = migration
 
-        MigrationHelper.migrations = dict(
-            sorted(MigrationHelper.migrations.items())
-        )
+        MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
     @staticmethod
     def pull_migration_index_from_db() -> int:
@@ -85,8 +85,7 @@ class MigrationHelper:
                 assert row is not None, "No migration_index could be found."
 
                 # the row consists of only the column max, but it's presented as dictionary anyways
-                if len(row) > 0:
-                    migration_index = row["max"]
+                migration_index = getattr(row, "max", 0)
 
         assert isinstance(
             migration_index, int

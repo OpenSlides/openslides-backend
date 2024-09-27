@@ -1,6 +1,5 @@
-import sys
 import os
-
+import sys
 from datetime import datetime
 from json import dumps as json_dumps
 from math import ceil
@@ -21,9 +20,7 @@ from openslides_backend.models.models import *  # type: ignore # noqa # necessar
 
 sys.path.append("global")
 
-from meta.dev.src.helper_get_names import (  # type: ignore # noqa
-    HelperGetNames
-)
+from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 
@@ -100,7 +97,7 @@ class Sql_helper:
     def cast_data(data: Any, field: Field | None = None) -> Any:
         """
         Purpose:
-            Casts data so it is psycopg friendly in case it is not parsable by psycopg. 
+            Casts data so it is psycopg friendly in case it is not parsable by psycopg.
             Known and implemented cases:
                 - Dictionaries
                 - Timestamps
@@ -221,6 +218,8 @@ def data_definition() -> None:
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return
+
+
 # END OF FUNCTION
 
 
@@ -236,7 +235,7 @@ def data_manipulation() -> None:
         TODO: At the moment the iteration for the intermediate table (L.321) is very dirty
         as it iterates over a potentially pretty big list (e.g. some known customers with lots of data).
         Thus it is worth the idea to set the intermediate tables to INITIALLY DEFERRED as well
-        so they can be run immediately. This is a measure we already took for default tables.   
+        so they can be run immediately. This is a measure we already took for default tables.
     """
     data_chunk: list[dict[str, Any]]
     collection: str
@@ -321,4 +320,6 @@ def data_manipulation() -> None:
             # 7) END TRANSACTION
         # 8) Exit cursor
     # 9) Exit connection
+
+
 # END OF FUNCTION

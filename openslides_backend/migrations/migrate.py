@@ -1,12 +1,10 @@
 import sys
 from argparse import ArgumentParser
 
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.migration_wrapper import (
     InvalidMigrationCommand,
     MigrationWrapper,
-)
-from openslides_backend.migrations.migration_helper import (
-    MigrationHelper
 )
 
 
