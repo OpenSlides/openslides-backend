@@ -6,7 +6,7 @@ from openslides_backend.database.db_connection_handling import os_conn_pool
 
 # relative path to the migrations
 MIGRATIONS_RELATIVE_DIRECTORY_PATH = ""
-FIRST_REL_DB_MIGRATION = 0
+LAST_NON_REL_MIGRATION = 53
 
 
 class MigrationHelper:
@@ -45,21 +45,22 @@ class MigrationHelper:
 
         migration_index = MigrationHelper.pull_migration_index_from_db()
 
-        if migration_index >= FIRST_REL_DB_MIGRATION:
-            migrations = listdir(MIGRATIONS_RELATIVE_DIRECTORY_PATH)
+        assert migration_index >= LAST_NON_REL_MIGRATION, f"Migration Index {migration_index} should be at least {LAST_NON_REL_MIGRATION}."
 
-            for n, migration in enumerate(migrations[:]):
-                reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
-                # \d{4}_.*\.py : 4 digits, 1 underscore, any characters, [dot]py
-                if reMatch is not None:
-                    migration_file = reMatch.groupdict()["migration"]
-                    migration_number = int(migration_file[:4])
-                    if migration_number > migration_index:
-                        MigrationHelper.migrations[migration_number] = migration
+        migrations = listdir(MIGRATIONS_RELATIVE_DIRECTORY_PATH)
 
-            MigrationHelper.migrations = dict(
-                sorted(MigrationHelper.migrations.items())
-            )
+        for n, migration in enumerate(migrations[:]):
+            reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
+            # \d{4}_.*\.py : 4 digits, 1 underscore, any characters, [dot]py
+            if reMatch is not None:
+                migration_file = reMatch.groupdict()["migration"]
+                migration_number = int(migration_file[:4])
+                if migration_number > migration_index:
+                    MigrationHelper.migrations[migration_number] = migration
+
+        MigrationHelper.migrations = dict(
+            sorted(MigrationHelper.migrations.items())
+        )
 
     @staticmethod
     def pull_migration_index_from_db() -> int:
@@ -83,9 +84,9 @@ class MigrationHelper:
 
                 assert row is not None, "No migration_index could be found."
 
-                # idx 0 is a wild guess anticipating that (migration_index.value) is delivered by cur.fetchone()
+                # the row consists of only the column max, but it's presented as dictionary anyways
                 if len(row) > 0:
-                    migration_index = row[0]
+                    migration_index = row["max"]
 
         assert isinstance(
             migration_index, int
