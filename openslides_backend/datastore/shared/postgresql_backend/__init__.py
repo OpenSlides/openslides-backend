@@ -24,7 +24,10 @@ def setup_di():
     from openslides_backend.datastore.shared.services import ReadDatabase
 
     from .pg_connection_handler import PgConnectionHandlerService
-    from .sql_read_database_backend_service import SqlReadDatabaseBackendService
+    from .sql_read_database_backend_service import \
+        SqlReadDatabaseBackendService
+
+
 
     injector.register(ConnectionHandler, PgConnectionHandlerService)
     injector.register(SqlQueryHelper, SqlQueryHelper)

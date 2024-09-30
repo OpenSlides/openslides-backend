@@ -4,13 +4,15 @@ from collections.abc import Callable
 
 import psycopg
 import psycopg_pool
-
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import DatabaseException
 
 env = Environment(os.environ)
 conn_string_without_db = f"host='{env.DATABASE_HOST}' port='{env.DATABASE_PORT}' user='{env.DATABASE_USER}' password='{env.PGPASSWORD}' "
 
+def configure_connection(conn: psycopg.Connection) -> None:
+    """ callback, will be called after creation of new connection from connection pool"""
+    conn.isolation_level = psycopg.IsolationLevel.SERIALIZABLE
 
 def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
     """create the global connection pool on the openslides-db"""
@@ -32,6 +34,7 @@ def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
         max_idle=float(env.DB_POOL_MAX_IDLE),
         reconnect_timeout=float(env.DB_POOL_RECONNECT_TIMEOUT),
         num_workers=int(env.DB_POOL_NUM_WORKERS),
+        configure= configure_connection,
     )
     return os_conn_pool
 
@@ -50,7 +53,7 @@ def get_current_os_conn_pool() -> psycopg_pool.ConnectionPool:
     return os_conn_pool
 
 
-def get_current_os_conn() -> contextlib._GeneratorContextManager[psycopg.Connection]:
+def get_new_os_conn() -> contextlib._GeneratorContextManager[psycopg.Connection]:
     os_conn_pool = get_current_os_conn_pool()
     return os_conn_pool.connection()
 

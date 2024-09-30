@@ -3,52 +3,37 @@ from collections.abc import Sequence
 from typing import Any, ContextManager
 
 import simplejson as json
-from simplejson.errors import JSONDecodeError
-
 from openslides_backend.datastore.reader.core import (
-    AggregateRequest,
-    FilterRequest,
-    GetAllRequest,
-    GetManyRequest,
-    GetManyRequestPart,
-    GetRequest,
-    HistoryInformationRequest,
-    MinMaxRequest,
-    Reader,
-)
+    AggregateRequest, FilterRequest, GetAllRequest, GetManyRequest,
+    GetManyRequestPart, GetRequest, HistoryInformationRequest, MinMaxRequest,
+    Reader)
 from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.services.read_database import (
-    HistoryInformation,
-)
+from openslides_backend.datastore.shared.services.read_database import \
+    HistoryInformation
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.patterns import is_reserved_field
+from simplejson.errors import JSONDecodeError
 
 from ...models.base import model_registry
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.collection_field_lock import (
-    CollectionFieldLock,
-    CollectionFieldLockWithFilter,
-)
+    CollectionFieldLock, CollectionFieldLockWithFilter)
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import (
-    COLLECTIONFIELD_PATTERN,
-    Collection,
-    CollectionField,
-    FullQualifiedField,
-    FullQualifiedId,
-    collection_and_field_from_collectionfield,
-    collection_and_field_from_fqfield,
-    collectionfield_from_collection_and_field,
-    fqfield_from_fqid_and_field,
-    fqid_from_collection_and_id,
-    is_collectionfield,
-    is_fqfield,
-)
+from ...shared.patterns import (COLLECTIONFIELD_PATTERN, Collection,
+                                CollectionField, FullQualifiedField,
+                                FullQualifiedId,
+                                collection_and_field_from_collectionfield,
+                                collection_and_field_from_fqfield,
+                                collectionfield_from_collection_and_field,
+                                fqfield_from_fqid_and_field,
+                                fqid_from_collection_and_id,
+                                is_collectionfield, is_fqfield)
 from . import commands
-from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
+from .handle_datastore_errors import (handle_datastore_errors,
+                                      raise_datastore_error)
 from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
 
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
@@ -120,7 +105,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug(
             f"Start GET request to datastore with the following data: {request}"
         )
-        response = self.reader.get(request)
+        response = self.reader.get(request,)
         if lock_result:
             instance_position = response.get("meta_position")
             if not isinstance(instance_position, int):

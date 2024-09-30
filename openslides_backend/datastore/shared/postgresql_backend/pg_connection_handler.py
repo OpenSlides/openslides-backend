@@ -2,17 +2,15 @@ import threading
 from functools import wraps
 from time import sleep
 
+from openslides_backend.datastore.shared.di import (injector,
+                                                    service_as_singleton)
+from openslides_backend.datastore.shared.services import (EnvironmentService,
+                                                          ShutdownService)
+from openslides_backend.datastore.shared.util import BadCodingError, logger
 from psycopg import OperationalError, sql
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 from psycopg_pool import ConnectionPool
-
-from openslides_backend.datastore.shared.di import injector, service_as_singleton
-from openslides_backend.datastore.shared.services import (
-    EnvironmentService,
-    ShutdownService,
-)
-from openslides_backend.datastore.shared.util import BadCodingError, logger
 
 from .connection_handler import DatabaseError
 
@@ -101,6 +99,9 @@ class PgConnectionHandlerService:
 
     def get_current_connection(self):
         try:
+            # raise Exception(
+            #     f"TOREMOVE get_current_connection für aktuelle thread connection id:{id(self._storage.connection)}"
+            # )
             return self._storage.connection
         except AttributeError:
             return None
@@ -128,11 +129,17 @@ class PgConnectionHandlerService:
                 raise BadCodingError(
                     "You cannot start multiple transactions in one thread!"
                 )
-        return self.connection_pool.connection()
+        connection = self.connection_pool.connection()
+        # raise Exception(
+        #     f"TOREMOVE get_connection für neue pool-connection id:{id(connection)}"
+        # )
+        return connection
 
     def get_connection_context(self):
         self.connection_pool.open()
-        return ConnectionContext(self)
+        c_ctx = ConnectionContext(self)
+        # raise Exception(f"TOREMOVE get_connection_context für genau den id:{id(c_ctx)}")
+        return c_ctx
 
     def to_json(self, data):
         return Json(data)

@@ -5,7 +5,7 @@ from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
-from openslides_backend.database.db_connection_handling import get_current_os_conn
+from openslides_backend.database.db_connection_handling import get_new_os_conn
 
 from ..shared.exceptions import (
     ActionException,
@@ -105,7 +105,7 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            with get_current_os_conn() as db_connection:
+            with get_new_os_conn() as db_connection:
                 self.db_connection = db_connection
                 self.user_id = user_id
                 self.internal = internal

@@ -4,7 +4,12 @@ from textwrap import dedent
 from typing import Any, ContextManager
 
 from openslides_backend.datastore.shared.di import service_as_singleton
-from openslides_backend.datastore.shared.postgresql_backend import apply_fields
+from openslides_backend.datastore.shared.postgresql_backend.apply_list_updates import \
+    apply_fields
+from openslides_backend.datastore.shared.postgresql_backend.connection_handler import \
+    ConnectionHandler
+from openslides_backend.datastore.shared.postgresql_backend.sql_event_types import \
+    EVENT_TYPE
 from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import \
     SqlQueryHelper
 from openslides_backend.datastore.shared.services.read_database import (
@@ -29,6 +34,9 @@ from .sql_event_types import EVENT_TYPE
 
 @service_as_singleton
 class SqlReadDatabaseBackendService:
+    """
+        Reading data directly from postgres via Sql
+    """
     connection: ConnectionHandler
     query_helper: SqlQueryHelper
 
