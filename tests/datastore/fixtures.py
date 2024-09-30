@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from openslides_backend.database.db_connection_handling import get_current_os_conn
+from openslides_backend.database.db_connection_handling import get_new_os_conn
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ALL_TABLES
 
@@ -34,7 +34,7 @@ def reset_di():
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db_connection():
-    with get_current_os_conn() as db_connection:
+    with get_new_os_conn() as db_connection:
         yield db_connection
 
     # teardown

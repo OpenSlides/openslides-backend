@@ -6,13 +6,9 @@ from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
-from ...shared.patterns import (
-    Collection,
-    FullQualifiedId,
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-    id_from_fqid,
-)
+from ...shared.patterns import (Collection, FullQualifiedId,
+                                collection_from_fqid,
+                                fqid_from_collection_and_id, id_from_fqid)
 from ...shared.typing import ModelMap
 from .adapter import DatastoreAdapter
 from .commands import GetManyRequest
