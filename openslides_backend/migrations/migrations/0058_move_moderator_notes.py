@@ -46,11 +46,8 @@ class Migration(BaseModelMigration):
                     for co_collection, co_ids in content_object_collection_to_ids.items()
                 ]
             )
-            for (
-                co_collection,
-                co_id,
-            ), mod_note in content_object_id_to_mod_note.items():
-                events.append(
+            events.extend(
+                [
                     RequestUpdateEvent(
                         fqid_from_collection_and_id(
                             "list_of_speakers",
@@ -60,7 +57,12 @@ class Migration(BaseModelMigration):
                         ),
                         {"moderator_notes": mod_note},
                     )
-                )
+                    for (
+                        co_collection,
+                        co_id,
+                    ), mod_note in content_object_id_to_mod_note.items()
+                ]
+            )
         groups = self.reader.get_all("group", ["id", "permissions"])
         events.extend(
             [
@@ -75,6 +77,7 @@ class Migration(BaseModelMigration):
                                     if not any(
                                         "agenda_item." + suffix
                                         in group.get("permissions", [])
+                                        or []
                                         for suffix in ["can_see_internal", "can_manage"]
                                     )
                                     else []
@@ -102,7 +105,7 @@ class Migration(BaseModelMigration):
                         ]
                         if any(
                             permission == "agenda_item" + substr
-                            for permission in group.get("permissions", [])
+                            for permission in group.get("permissions", []) or []
                         )
                     ]
                 )

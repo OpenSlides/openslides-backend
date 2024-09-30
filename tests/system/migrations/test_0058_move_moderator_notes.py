@@ -109,6 +109,14 @@ def test_migration_everything(write, finalize, assert_model):
                 ],
             },
         },
+        {
+            "type": "create",
+            "fqid": "group/10",
+            "fields": {
+                "id": 10,
+                "permissions": None,
+            },
+        },
         *[
             event
             for collection, base, note in collection_base_note
