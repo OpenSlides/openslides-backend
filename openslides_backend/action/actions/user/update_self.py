@@ -8,7 +8,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixins import UpdateHistoryMixin, UserMixin, check_gender_helper
+from .user_mixins import UpdateHistoryMixin, UserMixin, check_gender_exists
 
 
 @register_action("user.update_self")
@@ -19,7 +19,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
 
     model = User()
     schema = DefaultSchema(User()).get_default_schema(
-        optional_properties=["username", "pronoun", "gender", "email"],
+        optional_properties=["username", "pronoun", "gender_id", "email"],
         additional_optional_fields={
             **MeetingUser().get_properties("meeting_id", "vote_delegated_to_id")
         },
@@ -32,7 +32,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
         """
         instance["id"] = self.user_id
         instance = super().update_instance(instance)
-        check_gender_helper(self.datastore, instance)
+        check_gender_exists(self.datastore, instance)
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

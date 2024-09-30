@@ -370,9 +370,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_new_meeting_setting(self) -> None:
         meeting, _ = self.basic_test(
-            {"agenda_show_topic_navigation_on_detail_view": True}
+            {
+                "agenda_show_topic_navigation_on_detail_view": True,
+                "motions_hide_metadata_background": True,
+            }
         )
         assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
+        assert meeting.get("motions_hide_metadata_background") is True
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
@@ -661,7 +665,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "group/12",
-            {"meeting_id": 3, "name": "Anonymous", "anonymous_group_for_meeting_id": 3},
+            {
+                "meeting_id": 3,
+                "name": "Public",
+                "anonymous_group_for_meeting_id": 3,
+                "weight": 0,
+            },
         )
 
     def test_update_set_as_template_true(self) -> None:

@@ -157,11 +157,15 @@ def add_users(
     )
 
     for user in users.values():
+        gender_dict = datastore.get_all("gender", ["name"], lock_result=False)
         user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
+        if user.get("gender_id"):
+            user["gender"] = gender_dict.get(user["gender_id"], {}).get("name")
+            del user["gender_id"]
         # limit user fields to exported objects
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),

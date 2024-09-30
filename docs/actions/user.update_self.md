@@ -4,7 +4,7 @@
 // Optional
     username: string;
     email: string;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     meeting_id: ID;
     vote_delegated_to_id: Id;

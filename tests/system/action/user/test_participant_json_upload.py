@@ -12,9 +12,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
                 "meeting/1": {
                     "name": "test",
                     "group_ids": [1, 7],
@@ -380,6 +378,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "username": "test",
                 },
                 "group/1": {"default_group_for_meeting_id": 1},
+                "gender/1": {"name": "male"},
             }
         )
         fix_fields = {
@@ -416,7 +415,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
         assert row["data"]["vote_weight"] == {"value": "1.456000", "info": "done"}
         assert row["data"]["is_present"] == {"value": False, "info": "done"}
-        assert row["data"]["gender"] == {"value": "male", "info": "done"}
+        assert row["data"]["gender"] == {"id": 1, "value": "male", "info": "done"}
         assert row["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
@@ -1505,12 +1504,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_multiple_users(self) -> None:
         self.set_models(
             {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "user/2": {
                     "username": "user2",
                     "password": "secret",
                     "default_password": "secret",
                     "can_change_own_password": True,
                     "default_vote_weight": "2.300000",
+                    "gender_id": 1,
                 },
                 "user/3": {
                     "username": "user3",
@@ -1581,6 +1586,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "saml_id": "test_saml_id2",
                         "groups": ["group3", "group4"],
                         "structure_level": ["level up"],
+                        "gender": "diverse",
                     },
                     {
                         "saml_id": "saml3",
@@ -1597,6 +1603,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "username": "new_user5",
                         "saml_id": "saml5",
                         "structure_level": ["level up", "no. 5"],
+                        "gender": "unknown",
                     },
                     {"saml_id": "new_saml6", "groups": ["group4"], "is_present": "1"},
                     {
@@ -1609,6 +1616,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                             "unknown",
                             "group7M1",
                         ],
+                        "gender": "female",
                     },
                 ],
             },
@@ -1631,6 +1639,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"info": "new", "value": "group4"},
             ],
             "structure_level": [{"value": "level up", "info": ImportState.NEW}],
+            "gender": {"id": 3, "info": ImportState.DONE, "value": "diverse"},
         }
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
@@ -1661,7 +1670,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
-            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
@@ -1672,6 +1682,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "level up", "info": ImportState.NEW},
                 {"value": "no. 5", "info": ImportState.NEW},
             ],
+            "gender": {"info": ImportState.WARNING, "value": "unknown"},
         }
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
@@ -1706,6 +1717,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"info": "new", "value": "unknown"},
                 {"id": 7, "info": "done", "value": "group7M1"},
             ],
+            "gender": {"id": 2, "info": ImportState.DONE, "value": "female"},
         }
 
     def json_upload_with_complicated_names(self) -> None:
@@ -2272,7 +2284,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "user/5": {
                     "email": "balu@ntvtn.de",
                     "title": "title",
-                    "gender": "non-binary",
+                    "gender_id": 4,
                     "pronoun": "pronoun",
                     "password": "$argon2id$v=19$m=65536,t=3,p=4$iQbqhQ2/XYiFnO6vP6rtGQ$Bv3QuH4l9UQACws9hiuCCUBQepVRnCTqmOn5TkXfnQ8",
                     "username": "balubear",
