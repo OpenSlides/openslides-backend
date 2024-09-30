@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core.requests import GetManyRequestPart
@@ -360,7 +361,7 @@ class Migration(BaseModelMigration):
     }
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
-        """migrates all models by deleting everything related to statutes and updateing the relations."""
+        """migrates all models by deleting everything related to statutes and updating the relations."""
         events: list[BaseRequestEvent] = []
 
         # delete all statute paragraphs TODO subprocess of motion delete?
@@ -396,7 +397,6 @@ class Migration(BaseModelMigration):
         )
         for meeting_id, meeting in meetings.items():
             meeting_fqid = fqid_from_collection_and_id("meeting", meeting_id)
-
             events.append(
                 RequestUpdateEvent(
                     meeting_fqid,
@@ -409,8 +409,9 @@ class Migration(BaseModelMigration):
                 )
             )
 
+        # delete motions cascadingly and update related
         motions = self.reader.get_all("motion", ["statute_paragraph_id", "meeting_id"])
-        self.delete_update_engine(
+        self.delete_update_by_schema(
             {
                 "motion": {
                     motion_id
@@ -418,17 +419,52 @@ class Migration(BaseModelMigration):
                     if motion.get("statute_paragraph_id")
                 }
             },
+            self.deletion_schema,
             events,
         )
         return events
 
-    def delete_update_engine(
+    def delete_update_by_schema(
         self,
         initial_deletes: dict[str, set],
+        deletion_schema:dict[str, dict[str, list[str]]],
         events: list[BaseRequestEvent],
     ) -> None:
+        """
+        This deletes all models specified by a deletion schema of the shape:
+        {
+            super collection: str
+                {
+                    "precursors":
+                        collections: list[str]
+                    "cascaded_delete_collections":
+                        collections: list[str]
+                    "cascaded_delete_fields":
+                        super collections fields of delete collection ids: list[str]
+                    "update_ids_fields":
+                        super collections fields of update collection ids: list[str]
+                    "update_collections":
+                        collections to be updated: list[str],
+                    "update_foreign_fields":
+                        fields of update collections to be updated by removing the super collections id: list[str],
+                },
+            ...
+        }
+        The order delete or update info are given, needs to be matching since these are matched by zip(). This may require to state
+        a collection for deletion or update multiple times if there are multiple fields relating from one collection to the other.
+        This function auto magically handles 1:1, 1:n, n:m relations. It can also handle generic relations.
+        If the update_foreign_field is of generic type the field name needs to be supplemented with a leading "generic_".
+        It first deletes all models denoted by initial_deletes and then marks more models for deletion and update.
+        Iteratively checks to handle deletion for the models marked for deletion by all collections of cascaded_delete_collections.
+        A collections models are only deleted if all precursors have finished.
+        After all deletions are completed the relations of all deleted models are updated in their related models.
+        Collections that are not deleted but being updated need to be specified like the others but it is sufficient to just give
+        empty lists of precursors, update_collections and update_foreign_fields.
+        Returns the list of delete and update requests.
+        """
+
         update_schema: defaultdict[str, list[str]] = defaultdict(list)
-        for schema_part in self.deletion_schema.values():
+        for schema_part in deletion_schema.values():
             for collection, collection_fields in zip(
                 schema_part["update_collections"], schema_part["update_foreign_fields"]
             ):
@@ -436,22 +472,22 @@ class Migration(BaseModelMigration):
                     collection_fields = collection_fields.lstrip("generic_")
                 update_schema[collection].extend([collection_fields])
         # dicts structure is {collection : id : fields : values}
-        to_be_updated: dict[str, dict[int, dict[str, list]]] = {
-            collection: defaultdict(lambda: defaultdict(list))
+        to_be_updated: dict[str, dict[int, dict[str, list[str | int]]]] = {
+            collection: defaultdict(lambda: defaultdict(list[str | int]))
             for collection in update_schema.keys()
         }
         to_be_deleted: dict[str, set] = {
-            collection: set() for collection in self.deletion_schema.keys()
+            collection: set() for collection in deletion_schema.keys()
         }
         deleted_instances: dict[str, set | None] = {
-            collection: None for collection in self.deletion_schema.keys()
+            collection: None for collection in deletion_schema.keys()
         }
         # set deletion root by finding statute related motions
-        for collection, ids in initial_deletes.items():
-            to_be_deleted[collection] = ids
+        for collection, to_delete_ids in initial_deletes.items():
+            to_be_deleted[collection] = to_delete_ids
         # delete until all have at least an empty list (means finished)
         while not self.is_finished(deleted_instances):
-            for collection, schema_part in self.deletion_schema.items():
+            for collection, schema_part in deletion_schema.items():
                 # check collection wasn't handled yet
                 if deleted_instances[collection] is None:
                     # check precursors have finished
@@ -481,6 +517,7 @@ class Migration(BaseModelMigration):
             )
 
     def is_finished(self, deleted_instances: dict) -> bool:
+        """Checks if all collections were handled for deletion."""
         for collection in deleted_instances.values():
             if collection is None:
                 return False
@@ -492,8 +529,13 @@ class Migration(BaseModelMigration):
         collection: str,
         collection_delete_schema: dict[str, list],
         to_be_deleted: dict,
-        to_be_updated: dict,
+        to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
     ) -> None:
+        """
+        Deletes all models noted by the collection_delete_schema.
+        Marks all models for deletion noted by the fields in collection_delete_schema.
+        Marks all models for update noted by the fields in collection_delete_schema.
+        """
         to_be_deleted_ids = to_be_deleted[collection]
         # get models to be deleted now
         models = self.reader.get_many(
@@ -525,48 +567,43 @@ class Migration(BaseModelMigration):
                     elif isinstance(foreign_id_or_ids, int):
                         foreign_id_or_ids = [foreign_id_or_ids]
                     to_be_deleted[foreign_collection].update(foreign_id_or_ids)
+
             # stage instance ids for update in related collection instances
             for foreign_collection, foreign_ids_field, foreign_field in zip(
                 collection_delete_schema["update_collections"],
                 collection_delete_schema["update_ids_fields"],
                 collection_delete_schema["update_foreign_fields"],
             ):
-
-                def storage_helper(
-                    foreign_ids: list[int | str],
-                    foreign_collection: str,
-                    foreign_field: str,
-                    model_id: int | str,
-                    to_be_updated: dict,
-                ) -> None:
-                    for foreign_id in foreign_ids:
-                        if isinstance(foreign_id, str):
-                            tmp_foreign_collection, foreign_id = (
-                                collection_and_id_from_fqid(foreign_id)
-                            )
-                            # generic fields have different collections in themselves
-                            if tmp_foreign_collection != foreign_collection:
-                                return
-                        # need to store own collection context for generic foreign field
-                        if "generic_" in foreign_field:
-                            foreign_field = foreign_field.lstrip("generic_")
-                            model_id = fqid_from_collection_and_id(collection, model_id)
-                        to_be_updated[foreign_collection][foreign_id][
-                            foreign_field
-                        ].append(model_id)
-
+                if "generic_" in foreign_field:
+                    foreign_field = foreign_field.lstrip("generic_")
+                    target_field_generic = True
+                else:
+                    target_field_generic = False
                 if foreign_ids_field in model:
                     if "_ids" in foreign_ids_field:
                         foreign_ids = model[foreign_ids_field]
                     else:
                         foreign_ids = [model[foreign_ids_field]]
-                    storage_helper(
-                        foreign_ids,
-                        foreign_collection,
-                        foreign_field,
-                        model_id,
-                        to_be_updated,
-                    )
+                    for foreign_id in foreign_ids:
+                        if isinstance(foreign_id, str):
+                            tmp_foreign_collection, foreign_id = (
+                                collection_and_id_from_fqid(foreign_id)
+                            )
+                            # generic fields can have different collections in fqid thus differing from target collection.
+                            # will be treated by the next combination of this field and collection
+                            if tmp_foreign_collection != foreign_collection:
+                                continue
+                        # need to store own collection context for generic foreign field
+                        if target_field_generic:
+                            model_id_or_fqid: str | int = fqid_from_collection_and_id(
+                                collection, model_id
+                            )
+                        else:
+                            model_id_or_fqid = model_id
+                        to_be_updated[foreign_collection][foreign_id][
+                            foreign_field
+                        ].append(model_id_or_fqid)
+
         # finally delete
         for to_be_deleted_id in to_be_deleted_ids:
             events.append(
@@ -579,10 +616,14 @@ class Migration(BaseModelMigration):
         self,
         events: list,
         collection: str,
-        schema: list[str],
-        to_be_updated_in_collection: dict,
+        collection_update_schema: list[str],
+        to_be_updated_in_collection: dict[int, dict[str, Any]],
         deleted_instances: dict,
     ) -> None:
+        """
+        Updates all models of the collection with the info provided by the collection_update_schema
+        but not those that were already deleted.
+        """
         to_remove = []
         # if there were no instances deleted we don't need to remove them from our update list.
         if collection in deleted_instances:
@@ -597,7 +638,7 @@ class Migration(BaseModelMigration):
                 GetManyRequestPart(
                     collection,
                     [instance_id for instance_id in to_be_updated_in_collection.keys()],
-                    schema,
+                    collection_update_schema,
                 )
             ]
         ).get(collection, {})
@@ -620,8 +661,8 @@ class Migration(BaseModelMigration):
         self, front_ids: list | None, without_ids: list | None
     ) -> list | None:
         """
-        this subtracts items of a list from another list in an efficient manner
-        returns a list
+        This subtracts items of a list from another list in an efficient manner.
+        Returns a list.
         """
         if not front_ids:
             return None
