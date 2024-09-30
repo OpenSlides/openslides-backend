@@ -84,7 +84,7 @@ class Sql_helper:
         with os_conn_pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
-                    f"SELECT fqid, data FROM models ORDER BY fqid LIMIT {str(Sql_helper.limit)} OFFSET {str(Sql_helper.offset)};"
+                    f"SELECT fqid, data FROM models WHERE deleted='f' ORDER BY fqid LIMIT {str(Sql_helper.limit)} OFFSET {str(Sql_helper.offset)};"
                 )
                 data_rows = cur.fetchall()
         assert data_rows is not None, "No data was found in sql table models"
@@ -320,6 +320,4 @@ def data_manipulation() -> None:
             # 7) END TRANSACTION
         # 8) Exit cursor
     # 9) Exit connection
-
-
 # END OF FUNCTION
