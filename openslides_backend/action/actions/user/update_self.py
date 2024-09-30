@@ -1,6 +1,9 @@
 from typing import Any
 
-from ....models.models import User
+from ....models.models import MeetingUser, User
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import MissingPermission
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
@@ -16,7 +19,10 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
 
     model = User()
     schema = DefaultSchema(User()).get_default_schema(
-        optional_properties=["username", "pronoun", "gender_id", "email"]
+        optional_properties=["username", "pronoun", "gender_id", "email"],
+        additional_optional_fields={
+            **MeetingUser().get_properties("meeting_id", "vote_delegated_to_id")
+        },
     )
     check_email_field = "email"
 
@@ -31,3 +37,14 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         self.assert_not_anonymous()
+        if (
+            (meeting_id := instance.get("meeting_id"))
+            and "vote_delegated_to_id" in instance
+            and not has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.User.CAN_EDIT_OWN_DELEGATION,
+                meeting_id,
+            )
+        ):
+            raise MissingPermission(Permissions.User.CAN_EDIT_OWN_DELEGATION)

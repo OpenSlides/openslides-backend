@@ -999,6 +999,7 @@ class Group(Model):
                 "user.can_see_sensitive_data",
                 "user.can_see",
                 "user.can_update",
+                "user.can_edit_own_delegation",
             ]
         }
     )
