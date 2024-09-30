@@ -17,7 +17,7 @@ class Migration(BaseModelMigration):
     the permission list_of_speakers.can_see_moderator_notes or list_of_speakers.can_manage_moderator_notes instead.
     """
 
-    target_migration_index = 57
+    target_migration_index = 59
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         agenda_items = self.reader.get_all(

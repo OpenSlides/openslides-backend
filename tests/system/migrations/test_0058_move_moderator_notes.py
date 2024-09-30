@@ -129,7 +129,7 @@ def test_migration_everything(write, finalize, assert_model):
         },
     )
 
-    finalize("0056_move_moderator_notes")
+    finalize("0058_move_moderator_notes")
 
     assert_model(
         "group/1",
@@ -241,7 +241,7 @@ def test_migration_some_collections(write, finalize, assert_model):
         },
     )
 
-    finalize("0056_move_moderator_notes")
+    finalize("0058_move_moderator_notes")
 
     for collection, base, note in collection_base_note:
         co_fqid = fqid_from_collection_and_id(collection, base * 11)
