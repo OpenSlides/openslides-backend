@@ -193,9 +193,9 @@ Updates the meeting.
 If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, `template_for_organization_id` has to be set to `None` and if there are currently no users in the meetings admin group, an exception needs to be raised.
 `reference_projector_id` can only be set to a projector, which is not internal.
 
-This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown. Same for `enable_anonymous` and `locked_from_inside` being true at the same time
+This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown. Same for `enable_anonymous` and `locked_from_inside` being true at the same time.
 
-If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Anonymous` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set.
+If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Public` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set. It will always have the lowest weight among all other groups in this meeting, meaning 0.
 
 The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
 

@@ -16,7 +16,7 @@ class Migration(BaseModelMigration, DeletionMixin):
     Poll candidate lists and their candidates of deleted polls will not be deleted since they are not expected in this context.
     """
 
-    target_migration_index = 57
+    target_migration_index = 59
 
     deletion_schema: dict[str, dict[str, list[str]]] = {
         "meeting": {

@@ -101,6 +101,7 @@ meeting_settings_keys = [
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",
+    "motions_hide_metadata_background",
     "motions_enable_recommendation_on_projector",
     "motions_show_referring_motions",
     "motions_show_sequential_number",
@@ -302,12 +303,7 @@ class MeetingUpdate(
         if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
-                [
-                    {
-                        "name": "Anonymous",
-                        "meeting_id": instance["id"],
-                    }
-                ],
+                [{"name": "Public", "weight": 0, "meeting_id": instance["id"]}],
             )
             instance["anonymous_group_id"] = anonymous_group_id = cast(
                 list[dict[str, Any]], group_result
