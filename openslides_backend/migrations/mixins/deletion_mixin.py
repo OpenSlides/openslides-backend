@@ -85,7 +85,7 @@ class DeletionMixin:
         for collection, to_delete_ids in initial_deletes.items():
             to_be_deleted[collection] = to_delete_ids
         # delete until all have at least an empty list (means finished)
-        while not self.is_finished(deleted_instances):
+        while not self.is_finished(to_be_deleted):
             for collection, schema_part in deletion_schema.items():
                 # check collection wasn't handled yet
                 if deleted_instances[collection] is None:
@@ -104,6 +104,7 @@ class DeletionMixin:
                         )
                         # safe all ids in deleted
                         deleted_instances[collection] = to_be_deleted[collection]
+                        to_be_deleted[collection] = set()
 
         # update lost references in bulk
         for collection, update_schema_part in update_schema.items():
@@ -115,11 +116,10 @@ class DeletionMixin:
                 deleted_instances,
             )
 
-    def is_finished(self, deleted_instances: dict) -> bool:
+    def is_finished(self, to_be_deleted: dict[str, set]) -> bool:
         """Checks if all collections were handled for deletion."""
-        # TODO check with to_be_deleted
-        for collection in deleted_instances.values():
-            if collection is None:
+        for collection in to_be_deleted.values():
+            if collection:
                 return False
         return True
 
@@ -128,7 +128,7 @@ class DeletionMixin:
         events: list,
         collection: str,
         collection_delete_schema: dict[str, list],
-        to_be_deleted: dict,
+        to_be_deleted: dict[str, set],
         to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
     ) -> None:
         """
