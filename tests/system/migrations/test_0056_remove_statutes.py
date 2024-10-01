@@ -79,10 +79,7 @@ def write_comprehensive_data(write) -> dict:
             "change_recommendation_ids": [1],
             "agenda_item_id": 1,
         },
-        "motion/666": {
-            "id": 666,
-            "lead_motion_id": 1
-        },
+        "motion/666": {"id": 666, "lead_motion_id": 1},
         "motion_category/1": {
             "id": 1,
             "name": "AA",

@@ -6,8 +6,8 @@ from datastore.writer.core import (
     RequestUpdateEvent,
 )
 
-from ..mixins.deletion_mixin import DeletionMixin
 from ...shared.filters import FilterOperator
+from ..mixins.deletion_mixin import DeletionMixin
 
 
 class Migration(BaseModelMigration, DeletionMixin):
@@ -376,21 +376,17 @@ class Migration(BaseModelMigration, DeletionMixin):
 
         # delete statute related motions cascadingly and update related
         statute_motions = self.reader.filter(
-                "motion",
-                FilterOperator("statute_paragraph_id", "!=", None)
+            "motion", FilterOperator("statute_paragraph_id", "!=", None)
         )
         for motion in statute_motions.values():
             if motion.get("lead_motion_id"):
                 raise MigrationException("A statute motion cannot have a lead motion.")
             if motion.get("identical_motion_ids"):
-                raise MigrationException("A statute motion cannot have a identic motion.")
+                raise MigrationException(
+                    "A statute motion cannot have an identical motion."
+                )
         self.delete_update_by_schema(
-            {
-                "motion": {
-                    motion_id
-                    for motion_id, motion in statute_motions.items()
-                }
-            },
+            {"motion": {motion_id for motion_id, motion in statute_motions.items()}},
             self.deletion_schema,
             events,
         )

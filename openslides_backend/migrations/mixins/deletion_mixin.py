@@ -25,7 +25,7 @@ class DeletionMixin:
 
     def delete_update_by_schema(
         self,
-        initial_deletes: dict[str, set],
+        initial_deletions: dict[str, set[int]],
         deletion_schema: dict[str, dict[str, list[str]]],
         events: list[BaseRequestEvent],
     ) -> None:
@@ -76,14 +76,14 @@ class DeletionMixin:
             collection: defaultdict(lambda: defaultdict(list[str | int]))
             for collection in update_schema.keys()
         }
-        to_be_deleted: dict[str, set] = {
+        to_be_deleted: dict[str, set[int]] = {
             collection: set() for collection in deletion_schema.keys()
         }
         deleted_instances: dict[str, set | None] = {
             collection: None for collection in deletion_schema.keys()
         }
         # set deletion root by finding statute related motions
-        for collection, to_delete_ids in initial_deletes.items():
+        for collection, to_delete_ids in initial_deletions.items():
             to_be_deleted[collection] = to_delete_ids
         # delete until all have at least an empty list (means finished)
         while not self.is_finished(to_be_deleted):
@@ -96,24 +96,30 @@ class DeletionMixin:
                         for precursor in schema_part["precursors"]
                         if deleted_instances[precursor] is None
                     ):
-                        recursive_delete = set()
-                        self.generic_delete(
+                        to_be_deleted_recursively: set = set()
+                        self.delete_collection(
                             events,
                             collection,
                             schema_part,
                             deleted_instances[collection],
-                            recursive_delete,
+                            to_be_deleted_recursively,
                             to_be_deleted,
                             to_be_updated,
                         )
                         # safe all ids in deleted
                         deleted_instances[collection] = to_be_deleted[collection]
                         to_be_deleted[collection] = set()
-                        self.delete_update_by_schema({collection: recursive_delete},deletion_schema,events)
+                        # delete same collection models recursively
+                        if to_be_deleted_recursively:
+                            self.delete_update_by_schema(
+                                {collection: to_be_deleted_recursively},
+                                deletion_schema,
+                                events,
+                            )
 
         # update lost references in bulk
         for collection, update_schema_part in update_schema.items():
-            self.generic_update(
+            self.update_collection(
                 events,
                 collection,
                 update_schema_part,
@@ -128,14 +134,14 @@ class DeletionMixin:
                 return False
         return True
 
-    def generic_delete(
+    def delete_collection(
         self,
         events: list,
         collection: str,
         collection_delete_schema: dict[str, list],
-        collections_deleted_instance_ids: set | None,
-        recursively_delete_ids: set,
-        to_be_deleted: dict[str, set],
+        collections_deleted_instance_ids: set[int] | None,
+        recursively_delete_ids: set[int],
+        to_be_deleted: dict[str, set[int]],
         to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
     ) -> None:
         """
@@ -149,25 +155,26 @@ class DeletionMixin:
             [
                 GetManyRequestPart(
                     collection,
-                    to_be_deleted_ids,
+                    list(to_be_deleted_ids),
                     collection_delete_schema.get("cascaded_delete_fields", [])
                     + collection_delete_schema.get("update_ids_fields", []),
                 )
             ]
         ).get(collection, {})
         for model_id, model in models.items():
-            if collections_deleted_instance_ids and model_id in collections_deleted_instance_ids:
+            if (
+                collections_deleted_instance_ids
+                and model_id in collections_deleted_instance_ids
+            ):
                 continue
             # stage related collection instances for later deletion
             for foreign_collection, own_field in zip(
                 collection_delete_schema["cascaded_delete_collections"],
                 collection_delete_schema["cascaded_delete_fields"],
             ):
-                # assert foreign_collection != collection 
+                # assert foreign_collection != collection
                 if foreign_id_or_ids := model.get(own_field):
-                    if "_ids" in own_field and isinstance(
-                        foreign_id_or_ids[0], str
-                    ):
+                    if "_ids" in own_field and isinstance(foreign_id_or_ids[0], str):
                         foreign_id_or_ids = [
                             id_from_fqid(foreign_id) for foreign_id in foreign_id_or_ids
                         ]
@@ -224,13 +231,13 @@ class DeletionMixin:
                 )
             )
 
-    def generic_update(
+    def update_collection(
         self,
         events: list,
         collection: str,
         collection_update_schema: list[str],
         to_be_updated_in_collection: dict[int, dict[str, Any]],
-        deleted_instances: dict,
+        deleted_instances: dict[str, set[int] | None],
     ) -> None:
         """
         Updates all models of the collection with the info provided by the collection_update_schema
@@ -238,9 +245,9 @@ class DeletionMixin:
         """
         to_remove = []
         # if there were no instances deleted we don't need to remove them from our update list.
-        if collection in deleted_instances:
+        if collections_deleted_ids := deleted_instances.get(collection):
             for instance_id in to_be_updated_in_collection.keys():
-                if instance_id in deleted_instances[collection]:
+                if instance_id in collections_deleted_ids:
                     to_remove.append(instance_id)
             for instance_id in to_remove:
                 del to_be_updated_in_collection[instance_id]
