@@ -56,6 +56,7 @@ class DeletionMixin:
         It first deletes all models denoted by initial_deletes and then marks more models for deletion and update.
         Iteratively checks to handle deletion for the models marked for deletion by all collections of cascaded_delete_collections.
         A collections models are only deleted if all precursors have finished.
+        Can also delete models referenced within the same collection recursively.
         After all deletions are completed the relations of all deleted models are updated in their related models.
         Collections that are not deleted but being updated need to be specified like the others but it is sufficient to just give
         empty lists of precursors, update_collections and update_foreign_fields.
@@ -95,16 +96,20 @@ class DeletionMixin:
                         for precursor in schema_part["precursors"]
                         if deleted_instances[precursor] is None
                     ):
+                        recursive_delete = set()
                         self.generic_delete(
                             events,
                             collection,
                             schema_part,
+                            deleted_instances[collection],
+                            recursive_delete,
                             to_be_deleted,
                             to_be_updated,
                         )
                         # safe all ids in deleted
                         deleted_instances[collection] = to_be_deleted[collection]
                         to_be_deleted[collection] = set()
+                        self.delete_update_by_schema({collection: recursive_delete},deletion_schema,events)
 
         # update lost references in bulk
         for collection, update_schema_part in update_schema.items():
@@ -128,6 +133,8 @@ class DeletionMixin:
         events: list,
         collection: str,
         collection_delete_schema: dict[str, list],
+        collections_deleted_instance_ids: set | None,
+        recursively_delete_ids: set,
         to_be_deleted: dict[str, set],
         to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
     ) -> None:
@@ -136,8 +143,6 @@ class DeletionMixin:
         Marks all models for deletion noted by the fields in collection_delete_schema.
         Marks all models for update noted by the fields in collection_delete_schema.
         """
-        # TODO dissallow deletion and of deleted models
-        # TODO test for same collection delete
         to_be_deleted_ids = to_be_deleted[collection]
         # get models to be deleted now
         models = self.reader.get_many(
@@ -151,6 +156,8 @@ class DeletionMixin:
             ]
         ).get(collection, {})
         for model_id, model in models.items():
+            if collections_deleted_instance_ids and model_id in collections_deleted_instance_ids:
+                continue
             # stage related collection instances for later deletion
             for foreign_collection, own_field in zip(
                 collection_delete_schema["cascaded_delete_collections"],
@@ -168,6 +175,9 @@ class DeletionMixin:
                         foreign_id_or_ids = [id_from_fqid(foreign_id_or_ids)]
                     elif isinstance(foreign_id_or_ids, int):
                         foreign_id_or_ids = [foreign_id_or_ids]
+                    if collection == foreign_collection:
+                        recursively_delete_ids.update(foreign_id_or_ids)
+                        continue
                     to_be_deleted[foreign_collection].update(foreign_id_or_ids)
 
             # stage instance ids for update in related collection instances

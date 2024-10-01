@@ -44,6 +44,7 @@ def write_comprehensive_data(write) -> dict:
             "statute_paragraph_id": 1,
             "title": "text",
             "recommendation_id": 1,
+            "amendment_ids": [666],
             "state_extension_reference_ids": ["motion/2"],
             "referenced_in_motion_state_extension_ids": [2],
             "recommendation_extension_reference_ids": ["motion/2"],
@@ -77,6 +78,10 @@ def write_comprehensive_data(write) -> dict:
             "referenced_in_motion_recommendation_extension_ids": [1],
             "change_recommendation_ids": [1],
             "agenda_item_id": 1,
+        },
+        "motion/666": {
+            "id": 666,
+            "lead_motion_id": 1
         },
         "motion_category/1": {
             "id": 1,
@@ -944,6 +949,7 @@ def test_no_sideffects_submodels(write, finalize, assert_model):
             "id": 1,
             "statute_paragraph_id": 1,
             "title": "text",
+            "amendment_ids": [666],
             "agenda_item_id": 2,
             "attachment_meeting_mediafile_ids": [1],
             "block_id": 1,
@@ -1070,6 +1076,7 @@ def test_two_meetings(write, finalize, assert_model):
             "title": "text",
             "meeting_id": 11,
             "recommendation_id": 1,
+            "amendment_ids": [666],
             "state_extension_reference_ids": ["motion/2"],
             "referenced_in_motion_state_extension_ids": [2],
             "recommendation_extension_reference_ids": ["motion/2"],
@@ -1210,6 +1217,9 @@ def test_migration_full(write, finalize, assert_model):
             "meta_deleted": True,
         },
         "motion/2": {
+            "meta_deleted": True,
+        },
+        "motion/666": {
             "meta_deleted": True,
         },
         "motion_category/1": {"motion_ids": None},
