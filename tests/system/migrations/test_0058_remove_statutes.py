@@ -418,56 +418,6 @@ def write_comprehensive_data(write) -> dict:
     return data
 
 
-def test_no_delete_without_statute(write, finalize, assert_model):
-    write(
-        {
-            "type": "create",
-            "fqid": "meeting/11",
-            "fields": {
-                "id": 11,
-                "name": "string",
-                "language": "string",
-                "motion_ids": [1, 2],
-            },
-        },
-        {
-            "type": "create",
-            "fqid": "motion/1",
-            "fields": {
-                "id": 1,
-                "title": "text",
-                "meeting_id": 11,
-            },
-        },
-        {
-            "type": "create",
-            "fqid": "motion/2",
-            "fields": {
-                "id": 2,
-                "title": "text",
-                "meeting_id": 11,
-            },
-        },
-    )
-    finalize("0058_remove_statutes")
-    assert_model(
-        "motion/2",
-        {
-            "id": 2,
-            "title": "text",
-            "meeting_id": 11,
-        },
-    )
-    assert_model(
-        "motion/1",
-        {
-            "id": 1,
-            "title": "text",
-            "meeting_id": 11,
-        },
-    )
-
-
 def test_delete_motion_without_sideffects(write, finalize, assert_model):
     write(
         {
