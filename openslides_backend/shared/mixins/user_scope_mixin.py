@@ -203,13 +203,13 @@ class UserScopeMixin(BaseServiceProvider):
         b_meeting_ids: set[int] | None = None,
     ) -> bool:
         """
-        This is used during a permission check for scope request, user.update/create with payload fields A and F and during
-        user altering actions like user.delete or set_default_password.
-        Checks if the requesting user has permissions to manage participants in all of requested users meetings
-        but requested user doesn't have any of these permissions. See backend issue 2522 on github for more details.
-        Also checks requested user has no committee management rights if a dict was provided instead of an id.
-        An ID will be provided during user deletion.
-        Returns true if permissions are given. False if not. Raises no Exceptions.
+        This function checks the special permission condition for scope request, user.update/create with 
+        payload fields A and F and other user altering actions like user.delete or set_default_password.
+        This requires all of:
+        * requested user is no committee manager
+        * requested user doesn't have any admin/user.can_update/user.can_manage rights in his meetings
+        * requesting user has those permissions in all of those meetings
+        Returns True if permissions are given. False if not.
         """
         if not self._check_not_committee_manager(instance_id):
             return False
@@ -220,8 +220,7 @@ class UserScopeMixin(BaseServiceProvider):
             return False
         assert isinstance(intersection_meetings, dict)
         admin_meeting_users = self._collect_admin_meeting_users(intersection_meetings)
-        meeting_to_admin_users = self._collect_admin_users(admin_meeting_users)
-        return self._analyze_meetings(meeting_to_admin_users, instance_id)
+        return self._analyze_meeting_admins(admin_meeting_users, instance_id)
 
     def _check_not_committee_manager(self, instance_id: int) -> bool:
         """
@@ -245,15 +244,14 @@ class UserScopeMixin(BaseServiceProvider):
         Helper function used in method check_for_admin_in_all_meetings.
         Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible.
         """
-        if not b_meeting_ids:
-            if not (
-                b_meeting_ids := {
-                    m_id
-                    for m_ids in self.instance_committee_meeting_ids.values()
-                    for m_id in m_ids
-                }
-            ):
-                return False
+        if not b_meeting_ids and not (
+            b_meeting_ids := {
+                m_id
+                for m_ids in self.instance_committee_meeting_ids.values()
+                for m_id in m_ids
+            }
+        ):
+            return False
         # During participant import there is no permstore.
         if hasattr(self, "permstore"):
             a_meeting_ids = (
@@ -295,53 +293,41 @@ class UserScopeMixin(BaseServiceProvider):
             for meeting_id, meeting_dict in intersection_meetings.items()
             for group_id in meeting_dict.get("group_ids", [])
         ]
-        admin_group_ids = [
-            meeting_dict["admin_group_id"]
-            for meeting_dict in intersection_meetings.values()
-        ]
         return {
-            *{
-                mu_id
-                for group_id, group in self.datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "group", group_ids, ["meeting_user_ids", "permissions"]
-                        )
-                    ],
-                    lock_result=False,
-                )
-                .get("group", {})
-                .items()
-                if (
-                    "user.can_update" in group.get("permissions", [])
-                    or "user.can_manage" in group.get("permissions", [])
-                )
-                for mu_id in group.get("meeting_user_ids", [])
-            },
-            *{
-                mu_id
-                for group_id, group in self.datastore.get_many(
-                    [GetManyRequest("group", admin_group_ids, ["meeting_user_ids"])],
-                    lock_result=False,
-                )
-                .get("group", {})
-                .items()
-                for mu_id in group.get("meeting_user_ids", [])
-            },
+            mu_id
+            for group_id, group in self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "group", group_ids, ["meeting_user_ids", "permissions", "admin_group_for_meeting_id"]
+                    )
+                ],
+                lock_result=False,
+            )
+            .get("group", {})
+            .items()
+            if (
+                group.get("admin_group_for_meeting_id")
+                or "user.can_update" in group.get("permissions", [])
+                or "user.can_manage" in group.get("permissions", [])
+            )
+            for mu_id in group.get("meeting_user_ids", [])
         }
 
-    def _collect_admin_users(self, meeting_user_ids: set[int]) -> dict[int, set[int]]:
+    def _analyze_meeting_admins(
+        self, admin_meeting_user_ids: set[int], requested_user_id: int
+    ) -> bool:
         """
         Helper function used in method check_for_admin_in_all_meetings.
-        Returns the corresponding users of the groups meeting_users in a defaultdict meeting_id: user_ids.
+        Compares the users of admin meeting users of all meetings with the ids of requested user and requesting user.
+        Requesting user must be admin in all meetings. Requested user cannot be admin in any.
         """
-        meeting_to_admin_user = defaultdict(set)
+        meeting_to_admin_user_ids = defaultdict(set)
         for meeting_user in (
             self.datastore.get_many(
                 [
                     GetManyRequest(
                         "meeting_user",
-                        list(meeting_user_ids),
+                        list(admin_meeting_user_ids),
                         ["user_id", "meeting_id"],
                     )
                 ],
@@ -350,22 +336,10 @@ class UserScopeMixin(BaseServiceProvider):
             .get("meeting_user", {})
             .values()
         ):
-            meeting_to_admin_user[meeting_user["meeting_id"]].add(
+            meeting_to_admin_user_ids[meeting_user["meeting_id"]].add(
                 meeting_user["user_id"]
             )
-        return meeting_to_admin_user
-
-    def _analyze_meetings(
-        self, meeting_to_admin_users: dict[int, set[int]], instance_id: int
-    ) -> bool:
-        """
-        Helper function used in method check_for_admin_in_all_meetings.
-        Compares the admin users of all meetings with the ids of requested user and requesting user.
-        Requesting user must be admin in all meetings. Requested user cannot be admin in any.
-        """
-        for meeting_id, admin_users in meeting_to_admin_users.items():
-            if instance_id in admin_users:
-                return False
-            if self.user_id not in admin_users:
-                return False
-        return True
+        return not any(
+           requested_user_id in admin_users or self.user_id not in admin_users
+           for meeting_id, admin_users in meeting_to_admin_user_ids.items()
+        )
