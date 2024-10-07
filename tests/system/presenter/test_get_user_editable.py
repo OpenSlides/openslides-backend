@@ -213,7 +213,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
                 },
                 "7": {
                     "editable": False,
-                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 7",
+                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
                 },
             },
         )

@@ -276,8 +276,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        **{
-                            Permissions.User.CAN_UPDATE: meeting_id
+                        Permissions.User.CAN_UPDATE: {
+                            meeting_id
                             for meeting_ids in self.instance_committee_meeting_ids.values()
                             if meeting_ids is not None
                             for meeting_id in meeting_ids
@@ -294,8 +294,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                        **{
-                            Permissions.User.CAN_UPDATE: meeting_id
+                        Permissions.User.CAN_UPDATE: {
+                            meeting_id
                             for meeting_ids in self.instance_committee_meeting_ids.values()
                             if meeting_ids is not None
                             for meeting_id in meeting_ids
@@ -412,8 +412,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 raise MissingPermission(
                     {
                         expected_oml_permission: 1,
-                        **{
-                            Permissions.User.CAN_UPDATE: meeting_id
+                        Permissions.User.CAN_UPDATE: {
+                            meeting_id
                             for meeting_ids in self.instance_committee_meeting_ids.values()
                             if meeting_ids is not None
                             for meeting_id in meeting_ids
