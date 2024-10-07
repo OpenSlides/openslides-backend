@@ -2,21 +2,24 @@ from datastore.migrations import BaseModelMigration
 from datastore.shared.util import fqid_from_collection_and_id
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
-from ...shared.filters import FilterOperator
+from ...shared.filters import And, FilterOperator
 
 
 class Migration(BaseModelMigration):
     """
-    This migration introduces the new gender model which enables custom gender names for non default genders.
-    This requires to replace all gender strings in organization and user models to be replaced with the corresponding gender id.
-    If the migration runs in memory then all gender information is left untouched since the import will still handle it as a string.
+    This migration fills the field 'motion_poll_default_method' for every meeting with 'YNA' mode if it's not set.
+    This was nessecary due to being added as a default field.
     """
 
     target_migration_index = 59
 
     def migrate_models(self) -> list[BaseRequestEvent]:
         meetings_to_fix = self.reader.filter(
-            "meeting", FilterOperator("motion_poll_default_method", "=", None)
+            "meeting",
+            And(
+                FilterOperator("motion_poll_default_method", "=", None),
+                FilterOperator("meta_deleted", "!=", True),
+            ),
         )
         return [
             RequestUpdateEvent(
