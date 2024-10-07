@@ -203,7 +203,7 @@ class UserScopeMixin(BaseServiceProvider):
         b_meeting_ids: set[int] | None = None,
     ) -> bool:
         """
-        This function checks the special permission condition for scope request, user.update/create with 
+        This function checks the special permission condition for scope request, user.update/create with
         payload fields A and F and other user altering actions like user.delete or set_default_password.
         This requires all of:
         * requested user is no committee manager
@@ -298,7 +298,13 @@ class UserScopeMixin(BaseServiceProvider):
             for group_id, group in self.datastore.get_many(
                 [
                     GetManyRequest(
-                        "group", group_ids, ["meeting_user_ids", "permissions", "admin_group_for_meeting_id"]
+                        "group",
+                        group_ids,
+                        [
+                            "meeting_user_ids",
+                            "permissions",
+                            "admin_group_for_meeting_id",
+                        ],
                     )
                 ],
                 lock_result=False,
@@ -340,6 +346,6 @@ class UserScopeMixin(BaseServiceProvider):
                 meeting_user["user_id"]
             )
         return not any(
-           requested_user_id in admin_users or self.user_id not in admin_users
-           for meeting_id, admin_users in meeting_to_admin_user_ids.items()
+            requested_user_id in admin_users or self.user_id not in admin_users
+            for meeting_id, admin_users in meeting_to_admin_user_ids.items()
         )
