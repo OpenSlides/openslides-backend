@@ -183,7 +183,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             "is_active",
             "is_physical_person",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "pronoun",
             "email",
             "default_vote_weight",

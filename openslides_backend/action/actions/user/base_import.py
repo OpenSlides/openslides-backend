@@ -70,11 +70,9 @@ class BaseUserImport(BaseImportAction):
                     )
                 if field_data or entry.get(field):
                     entry[field] = value
-
-        if (
-            isinstance(entry.get("gender"), dict)
-            and entry["gender"].get("info") == ImportState.WARNING
-        ):
+        if isinstance(entry.get("gender"), dict):
+            if entry["gender"].get("info") != ImportState.WARNING:
+                entry["gender_id"] = entry["gender"]["id"]
             entry.pop("gender")
 
         # remove all fields marked with "remove"-state
