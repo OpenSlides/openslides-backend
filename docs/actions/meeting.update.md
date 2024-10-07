@@ -174,6 +174,7 @@
 
 // Group D
     external_id: string;
+    enable_anonymous: boolean
     custom_translations: JSON;
 
 // Group E
@@ -186,9 +187,6 @@
 
 // Group G
     set_as_template: boolean;
-
-// Group H
-    enable_anonymous: boolean
 }
 ```
 
@@ -204,6 +202,8 @@ If `enable_anonymous` is set, this action will create an anonymous group for the
 
 The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
 
+`enable_anonymous` may only be set to true if `enable_anonymous` is set to true in the organization.
+
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A
 - Users with `user.can_update` can modify group B
@@ -215,4 +215,3 @@ The meetings `anonymous_group_id` may not be used for the `assignment_poll_defau
   if organization setting `require_duplicate_from` is false.
   Users with a OML of `can_manage_organization` can modify group G if the organization setting
   `require_duplicate_from` is true.
-- Admins of the meeting can modify group H if the organization has `enable_anonymous` set to true.

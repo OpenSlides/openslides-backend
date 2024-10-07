@@ -360,7 +360,7 @@ class MeetingUpdate(
         ):
             raise MissingPermission(Permissions.Projector.CAN_MANAGE)
 
-        # group D and H check
+        # group D check
         if any(
             [
                 field in instance
