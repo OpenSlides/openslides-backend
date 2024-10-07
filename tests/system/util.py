@@ -87,7 +87,6 @@ def create_test_application(view: type[View]) -> OpenSlidesBackendWSGIApplicatio
     mock_media_service.upload_mediafile = Mock(
         side_effect=side_effect_for_upload_method
     )
-    mock_media_service.upload_resource = Mock(side_effect=side_effect_for_upload_method)
     services.media = MagicMock(return_value=mock_media_service)
 
     return create_base_test_application(view, services, env)

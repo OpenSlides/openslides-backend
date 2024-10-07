@@ -18,6 +18,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
+from ..http.views.auth import AuthContext, token_storage
 
 
 class ActionWorkerState(str, Enum):
@@ -44,7 +45,7 @@ def handle_action_in_worker_thread(
     )
     action_worker_thread = ActionWorker(
         payload,
-        user_id,
+        AuthContext(user_id, token_storage.access_token, token_storage.claims),
         is_atomic,
         handler,
         lock,
@@ -220,7 +221,7 @@ class ActionWorker(threading.Thread):
     def __init__(
         self,
         payload: Payload,
-        user_id: int,
+        auth_context: AuthContext,
         is_atomic: bool,
         handler: ActionHandler,
         lock: threading.Lock,
@@ -229,7 +230,7 @@ class ActionWorker(threading.Thread):
         super().__init__(name="action_worker")
         self.handler = handler
         self.payload = payload
-        self.user_id = user_id
+        self.auth_context = auth_context
         self.is_atomic = is_atomic
         self.lock = lock
         self.internal = internal
@@ -240,8 +241,8 @@ class ActionWorker(threading.Thread):
             self.started = True
             try:
                 self.response = self.handler.handle_request(
-                    self.payload, self.user_id, self.is_atomic, self.internal
-                )
+                    self.payload, self.auth_context, self.is_atomic, self.internal
+               )
             except Exception as exception:
                 self.exception = exception
 

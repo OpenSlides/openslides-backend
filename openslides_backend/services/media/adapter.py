@@ -1,3 +1,4 @@
+import threading
 from typing import Any
 
 import requests
@@ -5,7 +6,7 @@ import requests
 from ...shared.exceptions import MediaServiceException
 from ...shared.interfaces.logging import LoggingModule
 from .interface import MediaService
-
+from ...http.views.auth import token_storage
 
 class MediaServiceAdapter(MediaService):
     """
@@ -27,10 +28,6 @@ class MediaServiceAdapter(MediaService):
         subpath = "upload_mediafile"
         self._upload(file, id, mimetype, subpath)
 
-    def upload_resource(self, file: str, id: int, mimetype: str) -> None:
-        subpath = "upload_resource"
-        self._upload(file, id, mimetype, subpath)
-
     def duplicate_mediafile(self, source_id: int, target_id: int) -> None:
         url = self.media_url + "duplicate_mediafile/"
         payload = {"source_id": source_id, "target_id": target_id}
@@ -41,7 +38,8 @@ class MediaServiceAdapter(MediaService):
         self, url: str, payload: dict[str, Any], description: str
     ) -> None:
         try:
-            response = requests.post(url, json=payload)
+            self.logger.debug(f"Getting access token from : {threading.get_ident()}")
+            response = requests.post(url, json=payload, headers={"Authentication": token_storage.access_token})
         except requests.exceptions.ConnectionError as e:
             msg = f"Connect to mediaservice failed. {e}"
             self.logger.debug(description + msg)

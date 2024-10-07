@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
+from authlib.jose import JWTClaims
 
 from ..shared.exceptions import (
     ActionException,
@@ -29,6 +30,7 @@ from .util.typing import (
     Payload,
     PayloadElement,
 )
+from ..http.views.auth import AuthContext
 
 T = TypeVar("T")
 
@@ -94,7 +96,7 @@ class ActionHandler(BaseHandler):
     def handle_request(
         self,
         payload: Payload,
-        user_id: int,
+        user_id: AuthContext,
         atomic: bool = True,
         internal: bool = False,
     ) -> ActionsResponse:
@@ -154,7 +156,7 @@ class ActionHandler(BaseHandler):
                     "data": [data],
                 }
             ],
-            -1,
+            AuthContext(-1, "", JWTClaims({})),
             internal=True,
         )
 

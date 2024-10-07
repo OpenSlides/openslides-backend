@@ -3,6 +3,8 @@ import json
 from base64 import b64decode
 from pathlib import Path
 
+from authlib.jose import JWTClaims
+
 from os_authlib.message_bus import MessageBus
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
@@ -16,9 +18,9 @@ from ...shared.interfaces.wsgi import RouteResponse
 from ..http_exceptions import Unauthorized
 from ..request import Request
 from .base_view import BaseView, route
+from .auth import token_required
 
 INTERNAL_AUTHORIZATION_HEADER = "Authorization"
-
 
 VERSION_PATH = Path(__file__).parent / ".." / ".." / "version.txt"
 
@@ -34,15 +36,14 @@ class ActionView(BaseView):
         self.message_bus = MessageBus()
 
     @route(["handle_request", "handle_separately"])
-    def action_route(self, request: Request) -> RouteResponse:
+    @token_required
+    def action_route(self, request: Request, claims: JWTClaims) -> RouteResponse:
         self.logger.debug("Start dispatching action request.")
 
         assert_migration_index()
 
         # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(
-            request.headers, request.cookies
-        )
+        user_id, access_token = int(claims.get("userId")), claims.get("access_token")
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
             request.headers.get(AUTHENTICATION_HEADER, ""),
