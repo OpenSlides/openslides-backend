@@ -205,11 +205,10 @@ class UserScopeMixin(BaseServiceProvider):
         """
         This function checks the special permission condition for scope request, user.update/create with
         payload fields A and F and other user altering actions like user.delete or set_default_password.
-        This requires all of:
-        * requested user is no committee manager
-        * requested user doesn't have any admin/user.can_update/user.can_manage rights in his meetings
+        This function returns true if:
+        * requested user is no committee manager and
+        * requested user doesn't have any admin/user.can_update/user.can_manage rights in his meetings and
         * requesting user has those permissions in all of those meetings
-        Returns True if permissions are given. False if not.
         """
         if not self._check_not_committee_manager(instance_id):
             return False
