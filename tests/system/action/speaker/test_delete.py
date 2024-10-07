@@ -402,7 +402,9 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         assert sllos["remaining_time"] == 18
 
-    def add_coupled_countdown(self) -> None:
+    def add_coupled_countdown(self) -> int:
+        """Returns the current date that was used to set the countdown_time"""
+        now = floor(time())
         self.set_models(
             {
                 "meeting/1": {
@@ -412,14 +414,15 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "projector_countdown/75": {
                     "running": True,
                     "default_time": 200,
-                    "countdown_time": floor(time()) + 100,
+                    "countdown_time": now + 100,
                     "meeting_id": 1,
                 },
                 "speaker/890": {
-                    "begin_time": floor(time()) + 100,
+                    "begin_time": now + 100,
                 },
             }
         )
+        return now
 
     def test_delete_update_countdown(self) -> None:
         self.set_models(self.permission_test_models)
@@ -446,7 +449,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "password": self.auth.hash(DEFAULT_PASSWORD),
                 },
                 "meeting_user/8": {"meeting_id": 1, "user_id": 8, "speaker_ids": [891]},
-                "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [890, 891]},
                 "speaker/891": {
                     "meeting_user_id": 8,
                     "list_of_speakers_id": 23,
@@ -454,13 +457,10 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 },
             }
         )
-        self.add_coupled_countdown()
-        now = floor(time())
+        now = self.add_coupled_countdown()
         response = self.request("speaker.delete", {"id": 891})
         self.assert_status_code(response, 200)
-        countdown = self.get_model("projector_countdown/75")
-        assert countdown.get("running") is True
-        self.assert_model_exists(
+        countdown = self.assert_model_exists(
             "projector_countdown/75",
             {
                 "running": True,
