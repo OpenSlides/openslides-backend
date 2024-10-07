@@ -174,7 +174,6 @@
 
 // Group D
     external_id: string;
-    enable_anonymous: boolean;
     custom_translations: JSON;
 
 // Group E
@@ -187,6 +186,9 @@
 
 // Group G
     set_as_template: boolean;
+
+// Group H
+    enable_anonymous: boolean
 }
 ```
 
@@ -213,3 +215,4 @@ The meetings `anonymous_group_id` may not be used for the `assignment_poll_defau
   if organization setting `require_duplicate_from` is false.
   Users with a OML of `can_manage_organization` can modify group G if the organization setting
   `require_duplicate_from` is true.
+- Admins of the meeting can modify group H if the organization has `enable_anonymous` set to true.
