@@ -171,7 +171,7 @@
 
 // Group D
     external_id: string;
-    enable_anonymous: boolean;
+    enable_anonymous: boolean
     custom_translations: JSON;
 
 // Group E
@@ -198,6 +198,8 @@ This action doesn't allow for a meeting to be set as a template and have `locked
 If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Public` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set. It will always have the lowest weight among all other groups in this meeting, meaning 0.
 
 The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
+
+`enable_anonymous` may only be set to true if `enable_anonymous` is set to true in the organization.
 
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A

@@ -21,9 +21,10 @@
     
 // Group B
     enable_electronic_voting: boolean;
+    enable_chat: boolean;
+    enable_anonymous: boolean;
     reset_password_verbose_errors: boolean;
     limit_of_meetings: int;
-    enable_chat: boolean;
     saml_enabled: boolean;
     saml_login_button_text: string;
     saml_attr_mapping: JSON;

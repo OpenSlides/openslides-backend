@@ -464,7 +464,7 @@ def test_delete_motion_without_sideffects(write, finalize, assert_model):
             },
         },
     )
-    finalize("0058_remove_statutes")
+    finalize("0059_remove_statutes")
     assert_model(
         "motion/2",
         {
@@ -889,7 +889,7 @@ def test_no_sideffects_submodels(write, finalize, assert_model):
             for fqid, fields in data.items()
         ]
     )
-    finalize("0058_remove_statutes")
+    finalize("0059_remove_statutes")
     assert_model(
         "motion/1",
         {
@@ -1014,7 +1014,7 @@ def test_two_meetings(write, finalize, assert_model):
             },
         },
     )
-    finalize("0058_remove_statutes")
+    finalize("0059_remove_statutes")
     assert_model(
         "motion/1",
         {
@@ -1137,7 +1137,7 @@ def test_two_meetings(write, finalize, assert_model):
 
 def test_migration_full(write, finalize, assert_model):
     data = write_comprehensive_data(write)
-    finalize("0058_remove_statutes")
+    finalize("0059_remove_statutes")
     data_update = {
         "meeting/11": {
             "motion_statute_paragraph_ids": None,
@@ -1339,7 +1339,7 @@ def test_non_deleted_motion_extension(write, finalize, assert_model):
             },
         },
     )
-    finalize("0058_remove_statutes")
+    finalize("0059_remove_statutes")
     assert_model(
         "motion/3",
         {
