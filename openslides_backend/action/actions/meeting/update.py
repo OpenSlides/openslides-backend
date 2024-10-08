@@ -235,8 +235,16 @@ class MeetingUpdate(
             )
         self.check_locking(instance, set_as_template)
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "enable_anonymous"],
+            lock_result=False,
         )
+        if instance.get("enable_anonymous") and not organization.get(
+            "enable_anonymous"
+        ):
+            raise ActionException(
+                "Anonymous users can not be enabled in this organization."
+            )
         if (
             organization.get("require_duplicate_from")
             and set_as_template is not None

@@ -12,6 +12,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
+            ONE_ORGANIZATION_FQID: {"enable_anonymous": True},
             "committee/1": {"name": "test_committee"},
             "meeting/1": {
                 "name": "test_name",
@@ -622,6 +623,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         """Also tests if the anonymous group is created"""
         self.set_models(
             {
+                ONE_ORGANIZATION_FQID: {"enable_anonymous": True},
                 "committee/1": {"meeting_ids": [3]},
                 "meeting/3": {
                     "is_active_in_organization_id": 1,
@@ -671,6 +673,46 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "anonymous_group_for_meeting_id": 3,
                 "weight": 0,
             },
+        )
+
+    def test_update_anonymous_if_disabled_in_orga(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"meeting_ids": [3]},
+                "meeting/3": {
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                    "group_ids": [11],
+                    "admin_group_id": 11,
+                },
+                "group/11": {"meeting_id": 3, "admin_group_for_meeting_id": 3},
+            }
+        )
+        response = self.request_json(
+            [
+                {
+                    "action": "meeting.update",
+                    "data": [
+                        {
+                            "name": "meeting",
+                            "welcome_title": "title",
+                            "welcome_text": "",
+                            "description": "",
+                            "location": "",
+                            "start_time": 1623016800,
+                            "end_time": 1623016800,
+                            "enable_anonymous": True,
+                            "organization_tag_ids": [],
+                            "id": 3,
+                        }
+                    ],
+                },
+            ]
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous users can not be enabled in this organization.",
+            response.json["message"],
         )
 
     def test_update_set_as_template_true(self) -> None:

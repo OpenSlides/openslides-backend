@@ -42,6 +42,7 @@ class OrganizationUpdate(
     group_B_fields = (
         "enable_electronic_voting",
         "enable_chat",
+        "enable_anonymous",
         "reset_password_verbose_errors",
         "limit_of_meetings",
         "limit_of_users",
