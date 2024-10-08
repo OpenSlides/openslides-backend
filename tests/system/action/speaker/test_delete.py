@@ -468,4 +468,4 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
-        self.assertAlmostEqual(countdown["countdown_time"], 100, delta=now)
+        self.assertAlmostEqual(countdown["countdown_time"], now, delta=200)
