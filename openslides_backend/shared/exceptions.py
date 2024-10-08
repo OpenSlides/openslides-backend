@@ -150,10 +150,10 @@ class MissingPermission(PermissionDenied):
         super().__init__(self.message)
 
     def _plural_s(self, permission_or_id_or_ids: int | set[int] | dict) -> str:
-        if isinstance(permission_or_id_or_ids, set) or (
-            isinstance(permission_or_id_or_ids, dict)
-            and len(permission_or_id_or_ids) > 1
-        ):
+        if (
+            isinstance(permission_or_id_or_ids, set)
+            or (isinstance(permission_or_id_or_ids, dict))
+        ) and len(permission_or_id_or_ids) > 1:
             return "s"
         else:
             return ""
