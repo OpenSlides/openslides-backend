@@ -1,6 +1,6 @@
 ## Payload
 
-```js
+```
 {
     user_ids: Id[];
 }
@@ -8,7 +8,7 @@
 
 ## Returns
 
-```js
+```
 {
   [user_id: Id]: {
     organization_management_level: OML-String,
