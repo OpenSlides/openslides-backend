@@ -20,4 +20,4 @@ If the poll's state is *created* and at least one vote value is given (`Y`, `N` 
 The request user needs:
 - `motion.can_manage_polls` if the poll's content object is a motion
 - `assignment.can_manage` if the poll's content object is an assignment
-- `poll.can_manage` else
+- `poll.can_manage` if the poll's content object is a topic
