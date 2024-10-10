@@ -70,14 +70,14 @@ class DeletionMixin:
         to_be_deleted: dict[str, set[int]] = {
             collection: set() for collection in deletion_schema.keys()
         }
-        deleted_instances: dict[str, set | None] = {
+        deleted_instances: dict[str, set[int] | None] = {
             collection: None for collection in deletion_schema.keys()
         }
 
         # set deletion root by finding statute related motions
         for collection, to_delete_ids in initial_deletions.items():
             to_be_deleted[collection] = to_delete_ids
-        # delete until all have at least an empty list (means finished)
+        # delete until all collections in to_be_deleted have at least an empty list (means finished)
         while not self.is_finished(to_be_deleted):
             for collection, schema_part in deletion_schema.items():
                 # check collection wasn't handled yet
@@ -121,8 +121,8 @@ class DeletionMixin:
 
     def is_finished(self, to_be_deleted: dict[str, set]) -> bool:
         """Checks if all collections were handled for deletion."""
-        for collection in to_be_deleted.values():
-            if collection:
+        for data in to_be_deleted.values():
+            if data:
                 return False
         return True
 
@@ -172,7 +172,7 @@ class DeletionMixin:
                     for own_field in own_fields:
                         # assert foreign_collection != collection
                         if foreign_id_or_ids := model.get(own_field):
-                            if "_ids" in own_field and isinstance(
+                            if isinstance(foreign_id_or_ids, list) and isinstance(
                                 foreign_id_or_ids[0], str
                             ):
                                 foreign_id_or_ids = [
@@ -222,11 +222,9 @@ class DeletionMixin:
                     target_field_generic = True
                 else:
                     target_field_generic = False
-                if own_field in model:
-                    if "_ids" in own_field:
-                        foreign_ids = model[own_field]
-                    else:
-                        foreign_ids = [model[own_field]]
+                if foreign_ids := model.get(own_field):
+                    if not isinstance(foreign_ids, list):
+                        foreign_ids = [foreign_ids]
                     for foreign_id in foreign_ids:
                         if isinstance(foreign_id, str):
                             tmp_foreign_collection, foreign_id = (
@@ -281,9 +279,8 @@ class DeletionMixin:
             instance = instances.get(instance_id, {})
             # save the instances data without the deleted ids
             for field, without_ids in fields_and_ids.items():
-                if "_ids" in field:
-                    db_ids = instance.get(field, [])
-                else:
+                db_ids = instance.get(field, [])
+                if not isinstance(db_ids, list):
                     db_ids = [instance.get(field, [])]
                 fields_and_ids[field] = self.subtract_ids(db_ids, without_ids)
             events.append(
