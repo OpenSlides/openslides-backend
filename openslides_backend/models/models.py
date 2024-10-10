@@ -37,6 +37,7 @@ class Organization(Model):
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
     require_duplicate_from = fields.BooleanField()
+    enable_anonymous = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
@@ -999,6 +1000,7 @@ class Group(Model):
                 "user.can_see_sensitive_data",
                 "user.can_see",
                 "user.can_update",
+                "user.can_edit_own_delegation",
             ]
         }
     )

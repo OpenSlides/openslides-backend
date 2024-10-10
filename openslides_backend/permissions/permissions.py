@@ -71,6 +71,7 @@ class _Tag(str, Permission, Enum):
 
 
 class _User(str, Permission, Enum):
+    CAN_EDIT_OWN_DELEGATION = "user.can_edit_own_delegation"
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
@@ -143,9 +144,14 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE, _User.CAN_SEE_SENSITIVE_DATA],
+    _User.CAN_SEE: [
+        _User.CAN_MANAGE_PRESENCE,
+        _User.CAN_SEE_SENSITIVE_DATA,
+        _User.CAN_EDIT_OWN_DELEGATION,
+    ],
     _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
     _User.CAN_SEE_SENSITIVE_DATA: [_User.CAN_UPDATE],
     _User.CAN_UPDATE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
+    _User.CAN_EDIT_OWN_DELEGATION: [],
 }
