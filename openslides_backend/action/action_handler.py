@@ -30,7 +30,7 @@ from .util.typing import (
     Payload,
     PayloadElement,
 )
-from ..http.views.auth import AuthContext
+from ..http.auth_context import AuthContext
 
 T = TypeVar("T")
 
@@ -156,7 +156,7 @@ class ActionHandler(BaseHandler):
                     "data": [data],
                 }
             ],
-            AuthContext(-1, "", JWTClaims({})),
+            AuthContext(-1, "", JWTClaims({}, {})),
             internal=True,
         )
 

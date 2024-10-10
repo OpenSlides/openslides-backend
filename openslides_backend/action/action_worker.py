@@ -18,8 +18,8 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
-from ..http.views.auth import AuthContext, token_storage
-
+from ..http.token_storage import token_storage
+from ..http.auth_context import AuthContext
 
 class ActionWorkerState(str, Enum):
     RUNNING = "running"

@@ -1,13 +1,11 @@
 import threading
 
 import requests
-from authlib.jose import JsonWebKey, jwt, JWTClaims
+from authlib.jose import JsonWebKey
 from authlib.oauth2.rfc9068 import JWTBearerTokenValidator
 from authlib.oidc.discovery import OpenIDProviderMetadata, get_well_known_url
 from werkzeug.exceptions import Unauthorized, Forbidden
-from werkzeug.local import Local
-
-token_storage = Local()
+from ..token_storage import token_storage
 
 KEYCLOAK_DOMAIN = 'http://keycloak:8080'
 KEYCLOAK_REALM = 'os'
@@ -54,13 +52,3 @@ def token_required(f):
 
         return f(view, request, claims, *args, **kwargs)
     return decorated_function
-
-class AuthContext:
-    user_id: int
-    access_token: str
-    claims: JWTClaims
-
-    def __init__(self, user_id: int, access_token: str, claims: JWTClaims):
-        self.user_id = user_id
-        self.access_token = access_token
-        self.claims = claims
