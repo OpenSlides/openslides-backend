@@ -17,9 +17,9 @@ Updates the group. Permissions are restricted to the following enum: https://git
 If the group is the meetings anonymous group, the name may not be changed and the permissions have to be in the following whitelist:
 - agenda_item.can_see,
 - agenda_item.can_see_internal,
-- agenda_item.can_see_moderator_notes,
 - assignment.can_see,
 - list_of_speakers.can_see,
+- list_of_speakers.can_see_moderator_notes,
 - mediafile.can_see,
 - meeting.can_see_autopilot,
 - meeting.can_see_frontpage,

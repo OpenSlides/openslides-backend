@@ -6,11 +6,10 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .permission_mixin import AgendaItemPermissionMixin
 
 
 @register_action("agenda_item.update")
-class AgendaItemUpdate(AgendaItemPermissionMixin, UpdateAction):
+class AgendaItemUpdate(UpdateAction):
     """
     Action to update agenda items.
     """
@@ -25,7 +24,6 @@ class AgendaItemUpdate(AgendaItemPermissionMixin, UpdateAction):
             "weight",
             "tag_ids",
             "duration",
-            "moderator_notes",
         ]
     )
     permission = Permissions.AgendaItem.CAN_MANAGE

@@ -64,3 +64,20 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
             "list_of_speakers.update",
             {"id": 111, "closed": True},
         )
+
+    def test_update_moderator_notes_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "list_of_speakers.update",
+            {"id": 111, "moderator_notes": "test"},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
+            fail=True,
+        )
+
+    def test_update_moderator_notes_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "list_of_speakers.update",
+            {"id": 111, "moderator_notes": "test"},
+            Permissions.ListOfSpeakers.CAN_MANAGE_MODERATOR_NOTES,
+        )
