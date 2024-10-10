@@ -19,6 +19,8 @@ class BaseUserImport(BaseImportAction):
         for row in self.rows:
             self.validate_entry(row)
 
+        self.check_all_rows()
+
         self.handle_create_relations(instance)
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(
@@ -27,6 +29,12 @@ class BaseUserImport(BaseImportAction):
             self.create_other_actions(rows)
 
         return {}
+
+    def check_all_rows(self) -> None:
+        """
+        Function for bulk-checks of the import rows after validation via 'validate_entry'.
+        Should be overwritten by subclasses if it is required.
+        """
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
         pass
@@ -62,14 +70,12 @@ class BaseUserImport(BaseImportAction):
                     )
                 if field_data or entry.get(field):
                     entry[field] = value
-
-        if (
-            isinstance(entry.get("gender"), dict)
-            and entry["gender"].get("info") == ImportState.WARNING
-        ):
+        if isinstance(entry.get("gender"), dict):
+            if entry["gender"].get("info") != ImportState.WARNING:
+                entry["gender_id"] = entry["gender"]["id"]
             entry.pop("gender")
 
-        # remove all fields fields marked with "remove"-state
+        # remove all fields marked with "remove"-state
         to_remove = []
         for k, v in entry.items():
             if isinstance(v, dict):

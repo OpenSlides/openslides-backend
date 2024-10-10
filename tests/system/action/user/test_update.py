@@ -7,6 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserUpdateActionTest(BaseActionTestCase):
+
     def permission_setup(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
@@ -712,7 +713,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(111, [1, 6])
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request(
@@ -726,7 +733,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -743,7 +750,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -936,9 +943,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(111, [1, 6])
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [2]},
+                "gender/2": {"name": "female"},
                 "meeting/4": {"locked_from_inside": True},
             }
         )
@@ -954,7 +960,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -1765,22 +1771,25 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
-        response = self.request("user.update", {"id": 111, "gender": "test"})
+        response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
-        assert (
-            "Gender 'test' is not in the allowed gender list."
-            in response.json["message"]
-        )
+        assert "Model 'gender/5' does not exist." in response.json["message"]
 
-        response = self.request("user.update", {"id": 111, "gender": "diverse"})
+        response = self.request("user.update", {"id": 111, "gender_id": 3})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "diverse"})
+        self.assert_model_exists("user/111", {"gender_id": 3})
 
-        response = self.request("user.update", {"id": 111, "gender": "non-binary"})
+        response = self.request("user.update", {"id": 111, "gender_id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "non-binary"})
+        self.assert_model_exists("user/111", {"gender_id": 4})
 
     def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
         self.create_model(
@@ -2103,6 +2112,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_no_OML_set(self) -> None:
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
+        self.create_user("dummy", [2])
 
         response = self.request(
             "user.update",
@@ -2659,6 +2669,82 @@ class UserUpdateActionTest(BaseActionTestCase):
         ]:
             self.assertIn(field, message)
 
+    def test_update_groups_on_last_meeting_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        response = self.request(
+            "user.update", {"id": 2, "meeting_id": 1, "group_ids": [3]}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_both_last_meeting_admins(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [2])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 1, "group_ids": [3]},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_last_meeting_admin_multi(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [5])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 4, "group_ids": [6]},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1, 4",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_last_meeting_admin_in_template_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                "organization/1": {"template_meeting_ids": [1]},
+            }
+        )
+        self.create_user("username_srtgb123", [2])
+        response = self.request(
+            "user.update", {"id": 2, "meeting_id": 1, "group_ids": [3]}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_groups_on_last_meeting_admin_and_add_a_new_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [1])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 1, "group_ids": [2]},
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/1", {"user_id": 2, "group_ids": [3]})
+        self.assert_model_exists("meeting_user/2", {"user_id": 3, "group_ids": [2]})
+
     def test_update_anonymous_group_id(self) -> None:
         self.create_meeting()
         self.set_models(
@@ -2720,6 +2806,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 f"user/{users['committeead60'][0]}": {"committee_management_ids": [60]},
             }
         )
+        self.create_user("dummy_meeting_ad", [2])
         return users
 
     def test_update_locked_out_on_self_error(self) -> None:

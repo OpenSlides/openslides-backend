@@ -53,6 +53,7 @@ class _Motion(str, Permission, Enum):
     CAN_MANAGE_POLLS = "motion.can_manage_polls"
     CAN_SEE = "motion.can_see"
     CAN_SEE_INTERNAL = "motion.can_see_internal"
+    CAN_SEE_ORIGIN = "motion.can_see_origin"
     CAN_SUPPORT = "motion.can_support"
 
 
@@ -70,6 +71,7 @@ class _Tag(str, Permission, Enum):
 
 
 class _User(str, Permission, Enum):
+    CAN_EDIT_OWN_DELEGATION = "user.can_edit_own_delegation"
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
@@ -128,6 +130,7 @@ permission_parents: dict[Permission, list[Permission]] = {
         _Motion.CAN_CREATE_AMENDMENTS,
         _Motion.CAN_FORWARD,
         _Motion.CAN_SUPPORT,
+        _Motion.CAN_SEE_ORIGIN,
     ],
     _Motion.CAN_MANAGE_METADATA: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE_POLLS: [_Motion.CAN_MANAGE],
@@ -137,13 +140,19 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Motion.CAN_FORWARD: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE: [],
     _Motion.CAN_SUPPORT: [],
+    _Motion.CAN_SEE_ORIGIN: [],
     _Poll.CAN_MANAGE: [],
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE, _User.CAN_SEE_SENSITIVE_DATA],
+    _User.CAN_SEE: [
+        _User.CAN_MANAGE_PRESENCE,
+        _User.CAN_SEE_SENSITIVE_DATA,
+        _User.CAN_EDIT_OWN_DELEGATION,
+    ],
     _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
     _User.CAN_SEE_SENSITIVE_DATA: [_User.CAN_UPDATE],
     _User.CAN_UPDATE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
+    _User.CAN_EDIT_OWN_DELEGATION: [],
 }

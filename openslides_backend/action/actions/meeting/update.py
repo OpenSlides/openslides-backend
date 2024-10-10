@@ -102,6 +102,7 @@ meeting_settings_keys = [
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",
+    "motions_hide_metadata_background",
     "motions_enable_recommendation_on_projector",
     "motions_show_referring_motions",
     "motions_show_sequential_number",
@@ -130,6 +131,7 @@ meeting_settings_keys = [
     "motion_poll_ballot_paper_selection",
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",
+    "motion_poll_default_method",
     "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
@@ -213,10 +215,36 @@ class MeetingUpdate(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
+        db_meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]),
+            ["template_for_organization_id", "locked_from_inside", "admin_group_id"],
+            lock_result=False,
+        )
+        lock_meeting = (
+            instance.get("locked_from_inside")
+            if instance.get("locked_from_inside") is not None
+            else db_meeting.get("locked_from_inside")
+        )
+        if lock_meeting and (
+            set_as_template
+            if set_as_template is not None
+            else db_meeting.get("template_for_organization_id")
+        ):
+            raise ActionException(
+                "A meeting cannot be locked from the inside and a template at the same time."
+            )
         self.check_locking(instance, set_as_template)
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "enable_anonymous"],
+            lock_result=False,
         )
+        if instance.get("enable_anonymous") and not organization.get(
+            "enable_anonymous"
+        ):
+            raise ActionException(
+                "Anonymous users can not be enabled in this organization."
+            )
         if (
             organization.get("require_duplicate_from")
             and set_as_template is not None
@@ -233,6 +261,14 @@ class MeetingUpdate(
         if set_as_template is True:
             instance["template_for_organization_id"] = 1
         elif set_as_template is False:
+            admin_group = self.datastore.get(
+                fqid_from_collection_and_id("group", db_meeting["admin_group_id"]),
+                ["meeting_user_ids"],
+            )
+            if not admin_group.get("meeting_user_ids"):
+                raise ActionException(
+                    "Can only remove meeting template status if it has at least one administrator."
+                )
             instance["template_for_organization_id"] = None
 
         meeting_check = []
@@ -278,12 +314,7 @@ class MeetingUpdate(
         if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
-                [
-                    {
-                        "name": "Anonymous",
-                        "meeting_id": instance["id"],
-                    }
-                ],
+                [{"name": "Public", "weight": 0, "meeting_id": instance["id"]}],
             )
             instance["anonymous_group_id"] = anonymous_group_id = cast(
                 list[dict[str, Any]], group_result

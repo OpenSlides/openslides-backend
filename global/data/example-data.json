@@ -1,5 +1,31 @@
 {
-    "_migration_index": 57,
+    "_migration_index": 59,
+    "gender":{
+        "1":{
+            "id": 1,
+            "name": "male",
+            "organization_id": 1,
+            "user_ids":[1]
+        },
+        "2":{
+            "id": 2,
+            "name": "female",
+            "organization_id": 1,
+            "user_ids":[2]
+        },
+        "3":{
+            "id": 3,
+            "name": "diverse",
+            "organization_id": 1,
+            "user_ids":[3]
+        },
+        "4":{
+            "id": 4,
+            "name": "non-binary",
+            "organization_id": 1,
+            "user_ids":[]
+        }
+    },
     "organization": {
         "1": {
             "id": 1,
@@ -7,7 +33,7 @@
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
             "login_text": "Good Morning!",
             "default_language": "en",
-            "genders": ["male", "female", "diverse", "non-binary"],
+            "gender_ids": [1, 2 ,3 ,4],
             "enable_electronic_voting": true,
             "enable_chat": true,
             "reset_password_verbose_errors": true,
@@ -60,7 +86,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758flD5BVZAZ8jLy4nYW9iomHcnkXWkfk3PgBjeiTSxjGG7+fBjMBxsaS1vIiAMxYh+K38l0gDW4wcP+i8tgoc4UBg==",
             "default_password": "admin",
             "can_change_own_password": true,
-            "gender": "male",
+            "gender_id": 1,
             "default_vote_weight": "1.000000",
             "organization_management_level": "superadmin",
             "is_present_in_meeting_ids": [
@@ -89,7 +115,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw==",
             "default_password": "a",
             "can_change_own_password": true,
-            "gender": "female",
+            "gender_id": 2,
             "default_vote_weight": "1.000000",
             "committee_ids": [
                 1
@@ -110,7 +136,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg==",
             "default_password": "jKwSLGCk",
             "can_change_own_password": true,
-            "gender": "diverse",
+            "gender_id": 3,
             "default_vote_weight": "1.000000",
             "option_ids": [8, 11],
             "meeting_user_ids": [3],
@@ -296,6 +322,7 @@
             "motions_enable_reason_on_projector": false,
             "motions_enable_sidebox_on_projector": false,
             "motions_enable_recommendation_on_projector": true,
+            "motions_hide_metadata_background": false,
             "motions_show_referring_motions": true,
             "motions_show_sequential_number": true,
             "motions_reason_required": false,
@@ -321,6 +348,7 @@
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_group_ids": [
                 2,

@@ -16,7 +16,7 @@
 
 ## Action
 The attributes for the payload are all configured in organization-wide settings. The configuration consists of a list of source attribute - target attribute pairs, where the target attributes are the ones documented in the payload.
-Creates or updates the saml-account, depending whether the given `saml_id` exists or not. The `saml_id` is guaranteed to be unique in the whole system. The other fields will be set on creation or update.
+Creates or updates the saml-account, depending whether the given `saml_id` exists or not. The `saml_id` is guaranteed to be unique in the whole system. If a gender does not exist in the collection, it will be created. The other fields will be set on creation or update.
 The action must be `STACK_INTERNAL`. It should be called only from the auth service.
 
 Extras to do on creation:

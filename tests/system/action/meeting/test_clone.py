@@ -4,7 +4,11 @@ from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import AgendaItem, Meeting
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import (
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    fqid_from_collection_and_id,
+)
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -84,6 +88,24 @@ class MeetingClone(BaseActionTestCase):
                 **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
+        self.test_models_with_admin = {
+            key: data.copy() for key, data in self.test_models.items()
+        }
+        self.test_models_with_admin["user/1"] = {
+            "meeting_user_ids": [1],
+            "meeting_ids": [1],
+            "organization_id": 1,
+        }
+        self.test_models_with_admin["meeting_user/1"] = {
+            "user_id": 1,
+            "meeting_id": 1,
+            "group_ids": [2],
+        }
+        self.test_models_with_admin["group/2"]["meeting_user_ids"] = [1]
+        self.test_models_with_admin["meeting/1"].update(
+            {"user_ids": [1], "meeting_user_ids": [1]}
+        )
+        self.test_models_with_admin["organization/1"]["user_ids"] = [1]
 
     def test_clone_without_users(self) -> None:
         self.set_models(self.test_models)
@@ -118,7 +140,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_group_with_weight(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("group/2", {"weight": 1})
@@ -126,7 +148,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_users_inc_vote_weight(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -136,7 +158,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                     "vote_weight": "1.000000",
                 },
             }
@@ -147,7 +169,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"user_ids": [1]})
         self.assert_model_exists("meeting/2", {"user_ids": [1]})
         self.assert_model_exists(
-            "group/3",
+            "group/4",
             {
                 "meeting_user_ids": [2],
                 "meeting_id": 2,
@@ -167,7 +189,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "user_id": 1,
-                "group_ids": [1],
+                "group_ids": [2],
                 "vote_weight": "1.000000",
             },
         )
@@ -176,7 +198,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
                 "vote_weight": "1.000000",
             },
         )
@@ -186,7 +208,7 @@ class MeetingClone(BaseActionTestCase):
         they are not required"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -196,7 +218,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
             }
         )
@@ -219,7 +241,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
                 "vote_weight": None,
             },
         )
@@ -228,7 +250,7 @@ class MeetingClone(BaseActionTestCase):
         """vote_weight can remain None, because default_vote_weight is set greater than minimum"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -239,7 +261,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
             }
         )
@@ -263,7 +285,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
                 "vote_weight": None,
             },
         )
@@ -272,7 +294,7 @@ class MeetingClone(BaseActionTestCase):
         """vote_weight set to 0: must be set to 0.000001 any way"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -283,7 +305,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                     "vote_weight": "0.000000",
                 },
             }
@@ -307,7 +329,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
                 "vote_weight": "0.000001",
             },
         )
@@ -316,7 +338,7 @@ class MeetingClone(BaseActionTestCase):
         """vote_weight None, default_vote_weight 0, must be set to 0.000001"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -327,7 +349,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
             }
         )
@@ -351,7 +373,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
                 "vote_weight": "0.000001",
             },
         )
@@ -518,7 +540,10 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_set_fields(self) -> None:
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.set_models(self.test_models_with_admin)
 
         response = self.request(
             "meeting.clone",
@@ -572,7 +597,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_recommendation_extension(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "meeting/1": {
@@ -752,20 +777,20 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_new_committee_and_user_with_group(self) -> None:
         self.test_models["organization/1"]["user_ids"] = [1, 13]
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "user/13": {
                     "username": "user_from_new_committee",
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [2],
                     "meeting_ids": [1],
                     "organization_id": 1,
                 },
-                "group/1": {"meeting_user_ids": [1]},
+                "group/1": {"meeting_user_ids": [2]},
                 "committee/2": {"organization_id": 1},
                 "organization/1": {"committee_ids": [1, 2]},
-                "meeting/1": {"user_ids": [13], "meeting_user_ids": [1]},
-                "meeting_user/1": {
+                "meeting/1": {"user_ids": [1, 13], "meeting_user_ids": [1, 2]},
+                "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 13,
                     "group_ids": [1],
@@ -781,9 +806,10 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"committee_id": 2, "user_ids": [13]})
+        self.assert_model_exists("meeting/2", {"committee_id": 2, "user_ids": [13, 1]})
         self.assert_model_exists(
-            "committee/2", {"user_ids": [13], "organization_id": 1, "meeting_ids": [2]}
+            "committee/2",
+            {"user_ids": [1, 13], "organization_id": 1, "meeting_ids": [2]},
         )
         self.assert_model_exists(
             "user/13",
@@ -791,11 +817,11 @@ class MeetingClone(BaseActionTestCase):
                 "username": "user_from_new_committee",
                 "committee_ids": [1, 2],
                 "meeting_ids": [1, 2],
-                "meeting_user_ids": [1, 2],
+                "meeting_user_ids": [2, 4],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1",
+            "meeting_user/2",
             {
                 "meeting_id": 1,
                 "user_id": 13,
@@ -803,17 +829,17 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/2",
+            "meeting_user/4",
             {
                 "meeting_id": 2,
                 "user_id": 13,
                 "group_ids": [3],
             },
         )
-        self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
+        self.assert_model_exists("group/3", {"meeting_user_ids": [4]})
 
     def test_clone_new_committee_and_add_user(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "user/13": {
@@ -834,10 +860,11 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/2", {"committee_id": 2, "user_ids": [13], "default_group_id": 3}
+            "meeting/2", {"committee_id": 2, "user_ids": [13, 1], "default_group_id": 3}
         )
         self.assert_model_exists(
-            "committee/2", {"user_ids": [13], "organization_id": 1, "meeting_ids": [2]}
+            "committee/2",
+            {"user_ids": [1, 13], "organization_id": 1, "meeting_ids": [2]},
         )
         self.assert_model_exists(
             "user/13",
@@ -845,11 +872,11 @@ class MeetingClone(BaseActionTestCase):
                 "username": "user_from_new_committee",
                 "committee_ids": [2],
                 "meeting_ids": [2],
-                "meeting_user_ids": [1],
+                "meeting_user_ids": [3],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1",
+            "meeting_user/3",
             {
                 "meeting_id": 2,
                 "user_id": 13,
@@ -857,7 +884,7 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "group/3", {"meeting_user_ids": [1], "default_group_for_meeting_id": 2}
+            "group/3", {"meeting_user_ids": [3], "default_group_for_meeting_id": 2}
         )
 
     def test_clone_missing_user_id_in_meeting(self) -> None:
@@ -882,7 +909,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_missing_user_id_in_additional_users(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
 
         response = self.request(
             "meeting.clone",
@@ -898,31 +925,18 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_personal_note(self) -> None:
-        self.test_models["meeting/1"]["user_ids"] = [1]
-        self.test_models["meeting/1"]["personal_note_ids"] = [1]
-        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
-        self.test_models["organization/1"]["user_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["personal_note_ids"] = [1]
+        self.test_models_with_admin["meeting_user/1"]["personal_note_ids"] = [1]
         self.set_models(
             {
-                "user/1": {
-                    "meeting_user_ids": [1],
-                    "organization_id": 1,
-                },
                 "personal_note/1": {
                     "note": "test note",
                     "meeting_user_id": 1,
                     "meeting_id": 1,
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "personal_note_ids": [1],
-                    "group_ids": [1],
-                },
+                }
             }
         )
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -944,7 +958,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["option_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -954,7 +968,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
                 "option/1": {"content_object_id": "user/1", "meeting_id": 1},
             }
@@ -969,7 +983,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["mediafile_ids"] = [1, 2]
         self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
             {
@@ -985,7 +999,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
                 "mediafile/1": {
                     "owner_id": "meeting/1",
@@ -1040,7 +1054,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -1050,7 +1064,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
             }
         )
@@ -1065,7 +1079,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_with_organization_tag(self) -> None:
-        self.test_models["meeting/1"]["organization_tag_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["organization_tag_ids"] = [1]
         self.set_models(
             {
                 "organization_tag/1": {
@@ -1075,7 +1089,7 @@ class MeetingClone(BaseActionTestCase):
                 }
             }
         )
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"organization_tag_ids": [1]})
@@ -1084,7 +1098,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_settings(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         settings = {
             "welcome_title": "title",
             "welcome_text": "text",
@@ -1167,6 +1181,7 @@ class MeetingClone(BaseActionTestCase):
             "motion_poll_ballot_paper_selection": "NUMBER_OF_DELEGATES",
             "motion_poll_ballot_paper_number": 42,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YN",
             "users_enable_presence_view": True,
             "users_enable_vote_weight": True,
@@ -1199,8 +1214,8 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/2", settings)
 
     def test_limit_of_meetings_error(self) -> None:
-        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
-        self.set_models(self.test_models)
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -1209,10 +1224,10 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_limit_of_meetings_error_archived_meeting(self) -> None:
-        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
-        self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
-        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
-        self.set_models(self.test_models)
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
+        self.test_models_with_admin["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models_with_admin)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
@@ -1222,12 +1237,12 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_activate_archived_meeting(self) -> None:
-        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
-        self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
-        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
-        self.test_models["meeting/1"]["is_archived_in_organization_id"] = 1
-        self.test_models[ONE_ORGANIZATION_FQID]["archived_meeting_ids"] = [1]
-        self.set_models(self.test_models)
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
+        self.test_models_with_admin["meeting/1"]["is_active_in_organization_id"] = None
+        self.test_models_with_admin["meeting/1"]["is_archived_in_organization_id"] = 1
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["archived_meeting_ids"] = [1]
+        self.set_models(self.test_models_with_admin)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
@@ -1241,8 +1256,8 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_limit_of_meetings_ok(self) -> None:
-        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
-        self.set_models(self.test_models)
+        self.test_models_with_admin[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         organization = self.get_model(ONE_ORGANIZATION_FQID)
@@ -1275,7 +1290,7 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1633039200,
                 "end_time": 1633039200,
                 "user_ids": [2, 3],
-                "admin_ids": [],
+                "admin_ids": [2],
                 "organization_tag_ids": [],
                 "language": "en",
             },
@@ -1283,18 +1298,121 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
+    def test_create_clone_without_admin(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
+                "user/2": {
+                    "committee_ids": [1],
+                    "username": "user2",
+                    "organization_id": 1,
+                },
+                "user/3": {
+                    "committee_ids": [1],
+                    "username": "user3",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [1, 2, 3]},
+            }
+        )
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [1],
+                "organization_tag_ids": [],
+                "language": "en",
+            },
+        )
+        everything = self.datastore.get_everything()
+        self.created_fqids.update(
+            [
+                fqid_from_collection_and_id(collection, id_)
+                for collection, data in everything.items()
+                for id_ in data.keys()
+            ]
+        )
+        self.set_models(
+            {"meeting_user/1": {"group_ids": []}, "group/2": {"meeting_user_ids": []}}
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            "Cannot create a non-template meeting without administrators"
+            in response.json["message"]
+        )
+
+    def test_create_clone_without_admin_2(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
+                "user/2": {
+                    "committee_ids": [1],
+                    "username": "user2",
+                    "organization_id": 1,
+                },
+                "user/3": {
+                    "committee_ids": [1],
+                    "username": "user3",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [1, 2, 3]},
+            }
+        )
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [1],
+                "organization_tag_ids": [],
+                "language": "en",
+            },
+        )
+        everything = self.datastore.get_everything()
+        self.created_fqids.update(
+            [
+                fqid_from_collection_and_id(collection, id_)
+                for collection, data in everything.items()
+                for id_ in data.keys()
+            ]
+        )
+        self.set_models(
+            {
+                "meeting_user/1": {"group_ids": None},
+                "group/2": {"meeting_user_ids": None},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            "Cannot create a non-template meeting without administrators"
+            in response.json["message"]
+        )
+
     def test_meeting_name_exact_fit(self) -> None:
         long_name = "A" * 93
-        self.test_models["meeting/1"]["name"] = long_name
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["name"] = long_name
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"name": long_name + " - Copy"})
 
     def test_meeting_name_too_long(self) -> None:
         long_name = "A" * 100
-        self.test_models["meeting/1"]["name"] = long_name
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["name"] = long_name
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"name": "A" * 90 + "... - Copy"})
@@ -1310,7 +1428,9 @@ class MeetingClone(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 1})
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "committee_id": 1, "admin_ids": [1]}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
@@ -1331,7 +1451,9 @@ class MeetingClone(BaseActionTestCase):
                 "meeting/1": {"template_for_organization_id": 1},
             }
         )
-        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 1})
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "committee_id": 2, "admin_ids": [1]}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
@@ -1379,7 +1501,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_permissions_oml_can_manage(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "committee/2": {"organization_id": 1},
@@ -1398,7 +1520,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_permissions_missing_source_committee_permission(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "committee/2": {"organization_id": 1},
@@ -1417,7 +1539,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_created_topic_and_agenda_type(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
 
         result = self.execute_action_internally(
             "topic.create",
@@ -1446,8 +1568,8 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_with_created_motion_and_agenda_type(self) -> None:
-        self.test_models["meeting/1"]["user_ids"] = [1]
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["user_ids"] = [1]
+        self.set_models(self.test_models_with_admin)
         response = self.request(
             "motion.create",
             {
@@ -1483,15 +1605,15 @@ class MeetingClone(BaseActionTestCase):
         """
         Archived meeting stays archived by cloning
         """
-        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models_with_admin)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
 
     def test_clone_with_forwarded_motion(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "committee/1": {"organization_id": 1, "meeting_ids": [1, 2]},
@@ -1582,7 +1704,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_underscore_attributes(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
 
         response = self.request(
             "meeting.clone", {"meeting_id": 1, "_collection": "testtest"}
@@ -1592,7 +1714,8 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_vote_delegation(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1, 2]
         self.test_models["meeting/1"]["meeting_user_ids"] = [11, 22]
-        self.test_models["group/1"]["meeting_user_ids"] = [11, 22]
+        self.test_models["group/1"]["meeting_user_ids"] = [22]
+        self.test_models["group/2"]["meeting_user_ids"] = [11]
         self.test_models["organization/1"]["user_ids"] = [1, 2]
         self.set_models(
             {
@@ -1611,7 +1734,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "vote_delegated_to_id": 22,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
                 "meeting_user/22": {
                     "meeting_id": 1,
@@ -1629,7 +1752,14 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists(
             "group/3",
             {
-                "meeting_user_ids": [23, 24],
+                "meeting_user_ids": [24],
+                "meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "group/4",
+            {
+                "meeting_user_ids": [23],
                 "meeting_id": 2,
             },
         )
@@ -1645,7 +1775,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "user_id": 1,
-                "group_ids": [1],
+                "group_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -1653,7 +1783,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 1,
-                "group_ids": [3],
+                "group_ids": [4],
             },
         )
 
@@ -1682,10 +1812,12 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_vote_delegated_vote(self) -> None:
-        self.test_models["meeting/1"]["user_ids"] = [1]
-        self.test_models["meeting/1"]["vote_ids"] = [1]
-        self.test_models["meeting/1"]["option_ids"] = [1]
-        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["user_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["vote_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["option_ids"] = [1]
+        self.test_models_with_admin["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models_with_admin["user/1"]["meeting_user_ids"] = [1, 2]
+        self.test_models_with_admin["user/1"]["meeting_ids"] = [1, 2]
         self.set_models(
             {
                 "meeting/2": {"vote_ids": [2], "meeting_user_ids": [2]},
@@ -1721,7 +1853,7 @@ class MeetingClone(BaseActionTestCase):
                 },
             },
         )
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1734,7 +1866,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user_ids": [1, 2, 3],
                 "vote_ids": [1, 2, 3],
                 "delegated_vote_ids": [1, 2, 3],
-                "meeting_ids": [1, 2],
+                "meeting_ids": [1, 2, 3],
             },
         )
         self.assert_model_exists("meeting_user/3", {"user_id": 1, "meeting_id": 3})
@@ -1742,13 +1874,13 @@ class MeetingClone(BaseActionTestCase):
     def test_with_action_worker(self) -> None:
         """action_worker shouldn't be cloned"""
         aw_name = "test action_worker"
-        self.test_models["action_worker/1"] = {
+        self.test_models_with_admin["action_worker/1"] = {
             "name": aw_name,
             "state": ActionWorkerState.END,
             "created": round(time() - 3),
             "timestamp": round(time()),
         }
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("action_worker/1", {"name": aw_name})
@@ -1756,12 +1888,12 @@ class MeetingClone(BaseActionTestCase):
 
     def test_with_import_preview(self) -> None:
         """import_preview shouldn't be cloned"""
-        self.test_models["import_preview/1"] = {
+        self.test_models_with_admin["import_preview/1"] = {
             "name": "topic",
             "state": "done",
             "created": round(time() - 3),
         }
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("import_preview/1", {"name": "topic"})
@@ -1772,7 +1904,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["committee/1"]["meeting_ids"] = [1, 2]
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
-        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
             {
@@ -1802,7 +1934,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "group_ids": [1],
+                    "group_ids": [2],
                 },
                 "meeting_user/2": {
                     "meeting_id": 2,
@@ -1830,7 +1962,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "user_id": 1,
-                "group_ids": [1],
+                "group_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -1846,7 +1978,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 3,
                 "user_id": 1,
-                "group_ids": [4],
+                "group_ids": [5],
             },
         )
         self.assert_model_exists("meeting/1", {"user_ids": [1]})
@@ -1885,7 +2017,7 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1633039200,
                 "end_time": 1633039200,
                 "user_ids": [2, 3],
-                "admin_ids": [],
+                "admin_ids": [1],
                 "organization_tag_ids": [],
                 "language": "en",
             },
@@ -1896,7 +2028,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 24
+        assert counter.calls == 33
 
     @performance
     def test_clone_performance(self) -> None:
@@ -1969,8 +2101,27 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Cannot clone locked meeting." in response.json["message"]
 
+    def test_clone_require_duplicate_from_allowed(self) -> None:
+        self.set_models(self.test_models_with_admin)
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1, "name": "m1"},
+                "organization/1": {
+                    "template_meeting_ids": [1],
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {"user_ids": [1], "manager_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
     def test_clone_template_allowed(self) -> None:
-        self.set_models(self.test_models)
+        self.set_models(self.test_models_with_admin)
         self.set_models(
             {
                 "meeting/1": {"template_for_organization_id": 1, "name": "m1"},

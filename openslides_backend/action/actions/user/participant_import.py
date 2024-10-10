@@ -30,6 +30,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         instance = super().update_instance(instance)
         return instance
 
+    def check_all_rows(self) -> None:
+        if (
+            not self.check_meeting_admin_integrity(self.meeting_id, self.rows)
+        ) and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
+
     def update_models_to_create(self, model_name: str, field_name: str) -> None:
         self.models_to_create[field_name] = []
         to_create: set[str] = {
@@ -112,6 +118,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
+
+        if isinstance(entry.get("gender"), dict):
+            if entry["gender"].get("info") != ImportState.WARNING:
+                entry["gender_id"] = entry["gender"]["id"]
+            entry.pop("gender")
+
         if "groups" not in entry:
             raise ActionException(
                 f"There is no group in the data of user '{self.get_value_from_union_str_object(entry.get('username'))}'. Is there a default group for the meeting?"

@@ -38,6 +38,7 @@ class ParticipantImport(BaseActionTestCase):
                                 "info": ImportState.DONE,
                             },
                             "gender": {
+                                "id": 1,
                                 "value": "male",
                                 "info": ImportState.DONE,
                             },
@@ -49,18 +50,26 @@ class ParticipantImport(BaseActionTestCase):
 
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
                     "structure_level_ids": [1],
                     "committee_id": 1,
+                    "admin_group_id": 2,
                 },
                 "committee/1": {"meeting_ids": [1], "organization_id": 1},
                 "group/1": {"name": "group1", "meeting_id": 1},
+                "group/2": {
+                    "name": "group2",
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
                 "structure_level/1": {"name": "level", "meeting_id": 1},
             }
         )
@@ -102,7 +111,7 @@ class ParticipantImport(BaseActionTestCase):
             {
                 "username": "jonny",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
                 "meeting_ids": [1],
@@ -227,7 +236,7 @@ class ParticipantImport(BaseActionTestCase):
         user = self.assert_model_exists(
             "user/2", {"username": "jonny", "first_name": "Testy"}
         )
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
@@ -557,6 +566,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "can_change_own_password": False,
                 "meeting_ids": [1],
                 "meeting_user_ids": [38],
+                "gender_id": 3,
             },
         )
         level_up = self.assert_model_exists("structure_level/1")
@@ -634,6 +644,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [35],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": None,
             },
         )
         self.assert_model_exists(
@@ -680,6 +691,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [37],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": 2,
             },
         )
         self.assert_model_exists(
@@ -722,6 +734,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up", "id": 2}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -756,6 +769,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -788,13 +802,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     def test_json_upload_update_multiple_users_all_error(self) -> None:
         self.json_upload_multiple_users()
         self.request("user.delete", {"id": 2})
-        self.request("user.update", {"id": 3, "meeting_id": 1, "group_ids": [1]})
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         self.set_models(
             {
                 "group/1": {"admin_group_for_meeting_id": 1},
-                "group/2": {"admin_group_for_meeting_id": None},
+                "group/2": {
+                    "admin_group_for_meeting_id": None,
+                    "meeting_user_ids": None,
+                },
                 "group/7": {"name": "changed"},
+                "meeting_user/31": {"group_ids": [1]},
             }
         )
         self.request_multi("group.delete", [{"id": 2}, {"id": 3}])
@@ -830,6 +847,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up"}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -868,6 +886,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -1293,6 +1312,62 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "member_number": "mem_nr",
             },
         )
+
+    def test_json_upload_remove_last_admin_add_a_new_one(self) -> None:
+        self.json_upload_remove_last_admin_add_a_new_one()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+        row = response.json["results"][0][0]["rows"][1]
+        assert row["state"] == ImportState.NEW
+        assert row["messages"] == []
+
+    def test_json_upload_remove_admin_group(self) -> None:
+        self.json_upload_remove_admin_group_normal()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+
+    def test_json_upload_remove_last_admin_in_template(self) -> None:
+        self.json_upload_remove_last_admin_in_template()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+
+    def test_json_upload_remove_admin_group_error(self) -> None:
+        self.json_upload_remove_admin_group_normal()
+        self.set_models(
+            {
+                "meeting_user/2": {"group_ids": [3]},
+                "group/2": {"meeting_user_ids": [1]},
+                "group/3": {"meeting_user_ids": [2]},
+            }
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Cannot remove last member of admin group"]
+
+    def test_json_upload_remove_last_admin_in_ex_template_error(self) -> None:
+        self.json_upload_remove_last_admin_in_template()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": None},
+                "organization/1": {"template_meeting_ids": None},
+            }
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Cannot remove last member of admin group"]
 
     def test_json_upload_permission_as_locked_out(self) -> None:
         self.json_upload_dont_recognize_empty_name_and_email()

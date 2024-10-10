@@ -14,7 +14,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
@@ -74,6 +74,8 @@ Updates a user.
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
+
+If the user was the last member of the meetings admin group and he happens to be removed from the latter through this action, as long as the meeting is not a template, there will be an error.
 
 ## Permissions
 If the OML of the request user is lower than the OML of the user to update, only meeting-specific fields (groups B and C) are allowed to be changed. If any other fields are present in the payload, the request must fail.
