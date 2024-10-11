@@ -40,13 +40,11 @@ class DeletionMixin:
         events: list[BaseRequestEvent],
     ) -> None:
         """
-        This deletes all models specified by a MigrationDeletionSchema.
+        This recursively deletes all models specified by initial_deletions and the MigrationDeletionSchema.
+        Also updates all relations in other models related to deleted models by the specifics of the MigrationDeletionSchema.
         This function auto magically handles 1:1, 1:n, n:m relations. It can also handle generic relations.
-        If the update relations foreign field is of generic type the field name needs to be supplemented with a leading "generic-".
-        It first deletes all models denoted by initial_deletes and then marks more models for deletion and update.
-        Iteratively checks to handle deletion for the models marked for deletion by all collections of cascaded_delete_collections.
+        If the update relations foreign field is of generic type the field name needs to be prefixed with "generic-".
         Can also delete models referenced within the same collection recursively.
-        After all deletions are completed the relations of all deleted models are updated in their related models.
         Returns the list of delete and update requests.
         """
 
@@ -173,7 +171,7 @@ class DeletionMixin:
         to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
         collection: str,
     ) -> None:
-        # stage instance ids for update in related collection instances
+        """ stage instance ids for update in related collection instances """
         for (
             foreign_collection,
             relation_fields,
@@ -210,6 +208,7 @@ class DeletionMixin:
     def delete_all(
         self, to_be_deleted: dict[str, set[int]], events: list[BaseRequestEvent]
     ) -> None:
+        """ Creates RequestDeleteEvents for models given in to_be_deleted """
         for collection, to_be_deleted_ids in to_be_deleted.items():
             if to_be_deleted_ids:
                 for to_be_deleted_id in to_be_deleted_ids:
