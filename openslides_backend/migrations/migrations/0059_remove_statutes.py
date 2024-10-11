@@ -22,7 +22,6 @@ class Migration(BaseModelMigration, DeletionMixin):
 
     deletion_schema: MigrationDeletionSchema = {
         "motion": {
-            "precursors": [],
             "deletes_models_from": {
                 "motion_change_recommendation": ["change_recommendation_ids"],
                 "motion_comment": ["comment_ids"],
@@ -77,7 +76,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_submitter": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -89,7 +87,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_editor": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -101,7 +98,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_working_group_speaker": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -113,7 +109,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "personal_note": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -125,7 +120,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_comment": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -137,7 +131,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_comment_section": {
-            "precursors": ["motion_comment"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -146,7 +139,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "motion_change_recommendation": {
-            "precursors": ["motion"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -155,7 +147,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "poll": {
-            "precursors": ["motion"],
             "deletes_models_from": {
                 "option": ["option_ids"],
                 "projection": ["projection_ids"],
@@ -173,7 +164,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "option": {
-            "precursors": ["poll"],
             "deletes_models_from": {
                 "vote": ["vote_ids"],
             },
@@ -193,7 +183,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "vote": {
-            "precursors": ["option"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -206,7 +195,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "agenda_item": {
-            "precursors": ["motion"],
             "deletes_models_from": {
                 "projection": ["projection_ids"],
             },
@@ -224,7 +212,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "list_of_speakers": {
-            "precursors": ["motion"],
             "deletes_models_from": {
                 "projection": ["projection_ids"],
                 "speaker": ["speaker_ids"],
@@ -239,7 +226,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "speaker": {
-            "precursors": ["list_of_speakers"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -254,7 +240,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "structure_level_list_of_speakers": {
-            "precursors": ["list_of_speakers"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -269,7 +254,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "structure_level": {
-            "precursors": ["list_of_speakers"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {
@@ -281,7 +265,6 @@ class Migration(BaseModelMigration, DeletionMixin):
             },
         },
         "projection": {
-            "precursors": ["motion", "poll", "agenda_item", "list_of_speakers"],
             "deletes_models_from": {},
             "updates_models_from": {
                 "meeting": {

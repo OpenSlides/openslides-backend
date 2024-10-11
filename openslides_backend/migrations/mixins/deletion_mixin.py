@@ -16,7 +16,6 @@ from datastore.writer.core import (
 
 
 class CollectionDeletionSchema(TypedDict):
-    precursors: list[str]
     deletes_models_from: dict[str, list[str]]  # {collection: ids_fields}
     updates_models_from: dict[
         str, dict[str, str]
@@ -46,9 +45,6 @@ class DeletionMixin:
         If the update relations foreign field is of generic type the field name needs to be supplemented with a leading "generic-".
         It first deletes all models denoted by initial_deletes and then marks more models for deletion and update.
         Iteratively checks to handle deletion for the models marked for deletion by all collections of cascaded_delete_collections.
-        Precursors, that need to be finished before the collection, can be defined for an improved calculation speed.
-        It can, however, also just be left empty, if there is a concern of infinite looping.
-        A collections models are only deleted if all precursors have finished.
         Can also delete models referenced within the same collection recursively.
         After all deletions are completed the relations of all deleted models are updated in their related models.
         Returns the list of delete and update requests.
@@ -68,50 +64,20 @@ class DeletionMixin:
             collection: defaultdict(lambda: defaultdict(list[str | int]))
             for collection in update_schema.keys()
         }
-        to_be_staged_for_deletion: dict[str, set[int]] = {
+        to_be_deleted: dict[str, set[int]] = {
             collection: set() for collection in deletion_schema.keys()
-        }
-        to_be_deleted: dict[str, set[int] | None] = {
-            collection: None for collection in deletion_schema.keys()
         }
 
         # set deletion root by finding statute related motions
-        for collection, to_delete_ids in initial_deletions.items():
-            to_be_staged_for_deletion[collection] = to_delete_ids
+        # for collection, to_delete_ids in initial_deletions.items():
+        #     to_be_deleted[collection] = to_delete_ids
         # delete until all collections in to_be_deleted have at least an empty list (means finished)
-        while not self.is_finished(to_be_staged_for_deletion):
-            for collection, schema_part in deletion_schema.items():
-                # check collection wasn't handled yet
-                if to_be_deleted[collection] is None:
-                    # check precursors have finished
-                    if not any(
-                        precursor
-                        for precursor in schema_part["precursors"]
-                        if to_be_deleted[precursor] is None
-                    ):
-                        to_be_deleted_recursively: set = set()
-                        self.stage_for_deletion_and_rel_for_update(
-                            events,
-                            collection,
-                            schema_part,
-                            to_be_deleted[collection],
-                            to_be_deleted_recursively,
-                            to_be_staged_for_deletion,
-                            to_be_updated,
-                        )
-                        # safe all ids in deleted
-                        to_be_deleted[collection] = to_be_staged_for_deletion[
-                            collection
-                        ]
-                        to_be_staged_for_deletion[collection] = set()
-                        # delete same collection models recursively
-                        if to_be_deleted_recursively:
-                            self.delete_update_by_schema(
-                                {collection: to_be_deleted_recursively},
-                                deletion_schema,
-                                events,
-                            )
-
+        self._recursively_stage_for_deletion_and_rel_for_update(
+            initial_deletions,
+            deletion_schema,
+            to_be_deleted,
+            to_be_updated,
+        )
         self.delete_all(to_be_deleted, events)
         # update lost references in bulk
         for collection, update_schema_part in update_schema.items():
@@ -123,82 +89,81 @@ class DeletionMixin:
                 to_be_deleted,
             )
 
-    def is_finished(self, to_be_deleted: dict[str, set]) -> bool:
-        """Checks if all collections were handled for deletion."""
-        for data in to_be_deleted.values():
-            if data:
-                return False
-        return True
-
-    def stage_for_deletion_and_rel_for_update(
+    def _recursively_stage_for_deletion_and_rel_for_update(
         self,
-        events: list,
-        collection: str,
-        collection_delete_schema: CollectionDeletionSchema,
-        collections_deleted_instance_ids: set[int] | None,
-        to_be_recursively_staged: set[int],
+        initial_deletes: dict[str, set[int]],
+        delete_schema: MigrationDeletionSchema,
         to_be_deleted: dict[str, set[int]],
         to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
     ) -> None:
         """
-        Deletes all models noted by the collection_delete_schema.
         Marks all models for deletion noted by the fields in collection_delete_schema.
         Marks all models for update noted by the fields in collection_delete_schema.
         """
-        to_be_deleted_ids = to_be_deleted[collection]
-        # get models to be deleted later
-        if fields := [
-            field_name
-            for field_names in collection_delete_schema.get(
-                "deletes_models_from", {}
-            ).values()
-            for field_name in field_names
-        ] + [
-            field_name
-            for relation_fields in collection_delete_schema.get(
-                "updates_models_from", {}
-            ).values()
-            for field_name in relation_fields.keys()
-        ]:
-            models = self.reader.get_many(
-                [GetManyRequestPart(collection, list(to_be_deleted_ids), fields)]
-            ).get(collection, {})
-            for model_id, model in models.items():
-                if (
-                    collections_deleted_instance_ids
-                    and model_id in collections_deleted_instance_ids
-                ):
-                    continue
-                # stage related collection instances for later deletion
-                for foreign_collection, own_fields in collection_delete_schema.get(
-                    "deletes_models_from", {}
-                ).items():
-                    for own_field in own_fields:
-                        # assert foreign_collection != collection
-                        if foreign_id_or_ids := model.get(own_field):
-                            if isinstance(foreign_id_or_ids, list) and isinstance(
-                                foreign_id_or_ids[0], str
-                            ):
-                                foreign_id_or_ids = [
-                                    id_from_fqid(foreign_id)
-                                    for foreign_id in foreign_id_or_ids
-                                ]
-                            elif isinstance(foreign_id_or_ids, str):
-                                foreign_id_or_ids = [id_from_fqid(foreign_id_or_ids)]
-                            elif isinstance(foreign_id_or_ids, int):
-                                foreign_id_or_ids = [foreign_id_or_ids]
-                            # prepare recursion
-                            if collection == foreign_collection:
-                                to_be_recursively_staged.update(foreign_id_or_ids)
-                                continue
-                            to_be_deleted[foreign_collection].update(foreign_id_or_ids)
-                self._stage_for_update(
-                    collection_delete_schema.get("updates_models_from", {}),
-                    model,
-                    model_id,
-                    to_be_updated,
-                    collection,
-                )
+        to_be_staged_recursively: defaultdict[str, set[int]] = defaultdict(set)
+        for collection, model_ids in initial_deletes.items():
+            to_be_deleted[collection].update(model_ids)
+        for collection, collection_delete_schema in delete_schema.items():
+            # get models to be deleted later
+            if (to_be_deleted_ids := initial_deletes.get(collection)) and (
+                fields := [
+                    field_name
+                    for field_names in collection_delete_schema.get(
+                        "deletes_models_from", {}
+                    ).values()
+                    for field_name in field_names
+                ]
+                + [
+                    field_name
+                    for relation_fields in collection_delete_schema.get(
+                        "updates_models_from", {}
+                    ).values()
+                    for field_name in relation_fields.keys()
+                ]
+            ):
+                models = self.reader.get_many(
+                    [GetManyRequestPart(collection, list(to_be_deleted_ids), fields)]
+                ).get(collection, {})
+                for model_id, model in models.items():
+                    self._stage_for_update(
+                        collection_delete_schema.get("updates_models_from", {}),
+                        model,
+                        model_id,
+                        to_be_updated,
+                        collection,
+                    )
+                    # stage related collection instances for later deletion
+                    for foreign_collection, own_fields in collection_delete_schema.get(
+                        "deletes_models_from", {}
+                    ).items():
+                        for own_field in own_fields:
+                            # assert foreign_collection != collection
+                            if foreign_id_or_ids := model.get(own_field):
+                                if isinstance(foreign_id_or_ids, list) and isinstance(
+                                    foreign_id_or_ids[0], str
+                                ):
+                                    foreign_id_or_ids = [
+                                        id_from_fqid(foreign_id)
+                                        for foreign_id in foreign_id_or_ids
+                                    ]
+                                elif isinstance(foreign_id_or_ids, str):
+                                    foreign_id_or_ids = [
+                                        id_from_fqid(foreign_id_or_ids)
+                                    ]
+                                elif isinstance(foreign_id_or_ids, int):
+                                    foreign_id_or_ids = [foreign_id_or_ids]
+                                for foreign_id in foreign_id_or_ids:
+                                    if (
+                                        foreign_id
+                                        not in to_be_deleted[foreign_collection]
+                                    ):
+                                        to_be_staged_recursively[
+                                            foreign_collection
+                                        ].add(foreign_id)
+        if any(to_be_staged_recursively):
+            self._recursively_stage_for_deletion_and_rel_for_update(
+                to_be_staged_recursively, delete_schema, to_be_deleted, to_be_updated
+            )
 
     def _stage_for_update(
         self,
@@ -243,7 +208,7 @@ class DeletionMixin:
                         ].append(model_id_or_fqid)
 
     def delete_all(
-        self, to_be_deleted: dict[str, set[int] | None], events: list[BaseRequestEvent]
+        self, to_be_deleted: dict[str, set[int]], events: list[BaseRequestEvent]
     ) -> None:
         for collection, to_be_deleted_ids in to_be_deleted.items():
             if to_be_deleted_ids:
@@ -260,7 +225,7 @@ class DeletionMixin:
         collection: str,
         collection_update_schema: list[str],
         to_be_updated_in_collection: dict[int, dict[str, Any]],
-        deleted_instances: dict[str, set[int] | None],
+        deleted_instances: dict[str, set[int]],
     ) -> None:
         """
         Updates all models of the collection with the info provided by the collection_update_schema
