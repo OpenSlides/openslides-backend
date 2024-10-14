@@ -48,6 +48,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -57,6 +58,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
             },
         )
 
