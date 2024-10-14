@@ -213,12 +213,10 @@ class UserScopeMixin(BaseServiceProvider):
         if not self._check_not_committee_manager(instance_id):
             return False
 
-        if not (
-            intersection_meetings := self._collect_intersected_meetings(b_meeting_ids)
-        ):
+        if not (meetings := self._get_meetings_if_subset(b_meeting_ids)):
             return False
-        assert isinstance(intersection_meetings, dict)
-        admin_meeting_users = self._collect_admin_meeting_users(intersection_meetings)
+        assert isinstance(meetings, dict)
+        admin_meeting_users = self._collect_admin_meeting_users(meetings)
         return self._analyze_meeting_admins(admin_meeting_users, instance_id)
 
     def _check_not_committee_manager(self, instance_id: int) -> bool:
@@ -236,12 +234,12 @@ class UserScopeMixin(BaseServiceProvider):
                 return False
         return True
 
-    def _collect_intersected_meetings(
+    def _get_meetings_if_subset(
         self, b_meeting_ids: set[int] | None
     ) -> dict[int, Any] | bool:
         """
         Helper function used in method check_for_admin_in_all_meetings.
-        Takes the meeting ids to find intersections with the requesting users meetings. Returns False if this is not possible.
+        Gets the requested users meetings if these are subset of requesting user. Returns False if this is not possible.
         """
         if not b_meeting_ids and not (
             b_meeting_ids := {
@@ -266,30 +264,27 @@ class UserScopeMixin(BaseServiceProvider):
             )
         ):
             return False
-        intersection_meeting_ids = a_meeting_ids.intersection(b_meeting_ids)
-        if not b_meeting_ids.issubset(intersection_meeting_ids):
+        if not b_meeting_ids.issubset(a_meeting_ids):
             return False
         return self.datastore.get_many(
             [
                 GetManyRequest(
                     "meeting",
-                    list(intersection_meeting_ids),
+                    list(b_meeting_ids),
                     ["admin_group_id", "group_ids"],
                 )
             ],
             lock_result=False,
         ).get("meeting", {})
 
-    def _collect_admin_meeting_users(
-        self, intersection_meetings: dict[int, Any]
-    ) -> set[int]:
+    def _collect_admin_meeting_users(self, meetings: dict[int, Any]) -> set[int]:
         """
         Gets the admin groups and those groups with permission User.CAN_UPDATE and USER.CAN_MANAGE of the meetings.
         Returns a set of the groups meeting_user_ids.
         """
         group_ids = [
             group_id
-            for meeting_id, meeting_dict in intersection_meetings.items()
+            for meeting_id, meeting_dict in meetings.items()
             for group_id in meeting_dict.get("group_ids", [])
         ]
         return {
@@ -346,5 +341,5 @@ class UserScopeMixin(BaseServiceProvider):
             )
         return not any(
             requested_user_id in admin_users or self.user_id not in admin_users
-            for meeting_id, admin_users in meeting_to_admin_user_ids.items()
+            for admin_users in meeting_to_admin_user_ids.values()
         )
