@@ -3,6 +3,7 @@ from typing import Any, TypedDict
 
 from datastore.migrations.core.migration_reader import MigrationReader
 from datastore.reader.core.requests import GetManyRequestPart
+from datastore.shared.typing import Collection, Field, Fqid, Id, Model
 from datastore.shared.util import (
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
@@ -16,13 +17,13 @@ from datastore.writer.core import (
 
 
 class CollectionDeletionSchema(TypedDict):
-    deletes_models_from: dict[str, list[str]]  # {collection: ids_fields}
+    deletes_models_from: dict[Collection, list[Field]]  # [ids_field]
     updates_models_from: dict[
-        str, dict[str, str]
-    ]  # {collection: {ids_field : foreign_ids_field}}
+        Collection, dict[Field, Field]
+    ]  # {ids_field : foreign_ids_field}
 
 
-MigrationDeletionSchema = dict[str, CollectionDeletionSchema]
+MigrationDeletionSchema = dict[Collection, CollectionDeletionSchema]
 
 
 class DeletionMixin:
@@ -35,7 +36,7 @@ class DeletionMixin:
 
     def delete_update_by_schema(
         self,
-        initial_deletions: dict[str, set[int]],
+        initial_deletions: dict[Collection, set[Id]],
         deletion_schema: MigrationDeletionSchema,
         events: list[BaseRequestEvent],
     ) -> None:
@@ -48,7 +49,7 @@ class DeletionMixin:
         Returns the list of delete and update requests.
         """
 
-        update_schema: defaultdict[str, list[str]] = defaultdict(list)
+        update_schema: defaultdict[Collection, list[str]] = defaultdict(list)
         for schema_part in deletion_schema.values():
             for collection, relation_fields in schema_part.get(
                 "updates_models_from", {}
@@ -57,19 +58,14 @@ class DeletionMixin:
                     if "generic-" in foreign_ids_field:
                         foreign_ids_field = foreign_ids_field.lstrip("generic-")
                     update_schema[collection].append(foreign_ids_field)
-        # dicts structure is {collection : id : fields : values}
-        to_be_updated: dict[str, dict[int, dict[str, list[str | int]]]] = {
-            collection: defaultdict(lambda: defaultdict(list[str | int]))
+        to_be_updated: dict[Collection, dict[Id, dict[Field, list[Id | Fqid]]]] = {
+            collection: defaultdict(lambda: defaultdict(list[Id | Fqid]))
             for collection in update_schema.keys()
         }
-        to_be_deleted: dict[str, set[int]] = {
+        to_be_deleted: dict[Collection, set[Id]] = {
             collection: set() for collection in deletion_schema.keys()
         }
 
-        # set deletion root by finding statute related motions
-        # for collection, to_delete_ids in initial_deletions.items():
-        #     to_be_deleted[collection] = to_delete_ids
-        # delete until all collections in to_be_deleted have at least an empty list (means finished)
         self._recursively_stage_for_deletion_and_rel_for_update(
             initial_deletions,
             deletion_schema,
@@ -77,7 +73,6 @@ class DeletionMixin:
             to_be_updated,
         )
         self.delete_all(to_be_deleted, events)
-        # update lost references in bulk
         for collection, update_schema_part in update_schema.items():
             self.update_collection(
                 events,
@@ -89,16 +84,16 @@ class DeletionMixin:
 
     def _recursively_stage_for_deletion_and_rel_for_update(
         self,
-        initial_deletes: dict[str, set[int]],
+        initial_deletes: dict[Collection, set[Id]],
         delete_schema: MigrationDeletionSchema,
-        to_be_deleted: dict[str, set[int]],
-        to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
+        to_be_deleted: dict[Collection, set[Id]],
+        to_be_updated: dict[Collection, dict[Id, dict[Field, list[Id | Fqid]]]],
     ) -> None:
         """
         Marks all models for deletion noted by the fields in collection_delete_schema.
         Marks all models for update noted by the fields in collection_delete_schema.
         """
-        to_be_staged_recursively: defaultdict[str, set[int]] = defaultdict(set)
+        to_be_staged_recursively: defaultdict[Collection, set[Id]] = defaultdict(set)
         for collection, model_ids in initial_deletes.items():
             to_be_deleted[collection].update(model_ids)
         for collection, collection_delete_schema in delete_schema.items():
@@ -135,7 +130,6 @@ class DeletionMixin:
                         "deletes_models_from", {}
                     ).items():
                         for own_field in own_fields:
-                            # assert foreign_collection != collection
                             if foreign_id_or_ids := model.get(own_field):
                                 if isinstance(foreign_id_or_ids, list) and isinstance(
                                     foreign_id_or_ids[0], str
@@ -165,13 +159,13 @@ class DeletionMixin:
 
     def _stage_for_update(
         self,
-        collection_schema_updates_models_from: dict[str, dict[str, str]],
-        model: dict[str, Any],
-        model_id: int,
-        to_be_updated: dict[str, dict[int, dict[str, list[int | str]]]],
-        collection: str,
+        collection_schema_updates_models_from: dict[Collection, dict[Field, Field]],
+        model: Model,
+        model_id: Id,
+        to_be_updated: dict[Collection, dict[Id, dict[Field, list[Id | Fqid]]]],
+        collection: Collection,
     ) -> None:
-        """ stage instance ids for update in related collection instances """
+        """stage instance ids for update in related collection instances"""
         for (
             foreign_collection,
             relation_fields,
@@ -196,7 +190,7 @@ class DeletionMixin:
                                 continue
                         # need to store own collection context for generic foreign field
                         if target_field_generic:
-                            model_id_or_fqid: str | int = fqid_from_collection_and_id(
+                            model_id_or_fqid: Id | Fqid = fqid_from_collection_and_id(
                                 collection, model_id
                             )
                         else:
@@ -206,9 +200,9 @@ class DeletionMixin:
                         ].append(model_id_or_fqid)
 
     def delete_all(
-        self, to_be_deleted: dict[str, set[int]], events: list[BaseRequestEvent]
+        self, to_be_deleted: dict[Collection, set[Id]], events: list[BaseRequestEvent]
     ) -> None:
-        """ Creates RequestDeleteEvents for models given in to_be_deleted """
+        """Creates RequestDeleteEvents for models given in to_be_deleted"""
         for collection, to_be_deleted_ids in to_be_deleted.items():
             if to_be_deleted_ids:
                 for to_be_deleted_id in to_be_deleted_ids:
@@ -221,10 +215,10 @@ class DeletionMixin:
     def update_collection(
         self,
         events: list,
-        collection: str,
-        collection_update_schema: list[str],
-        to_be_updated_in_collection: dict[int, dict[str, Any]],
-        deleted_instances: dict[str, set[int]],
+        collection: Collection,
+        collection_update_schema: list[Field],
+        to_be_updated_in_collection: dict[Id, dict[Field, Any]],
+        deleted_instances: dict[Collection, set[Id]],
     ) -> None:
         """
         Updates all models of the collection with the info provided by the collection_update_schema
