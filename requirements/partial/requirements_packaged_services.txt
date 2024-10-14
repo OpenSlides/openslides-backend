@@ -1,2 +1,2 @@
 git+https://github.com/OpenSlides/openslides-datastore-service.git@${DATASTORE_COMMIT_HASH}
--e /pip-auth
+git+https://github.com/kryptance/openslides-auth-service.git@${AUTH_COMMIT_HASH}#egg=os_authlib&subdirectory=libraries/pip-auth
