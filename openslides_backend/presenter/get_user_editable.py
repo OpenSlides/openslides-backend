@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any
 
 import fastjsonschema
@@ -37,7 +38,7 @@ get_user_editable_schema = fastjsonschema.compile(
 @register_presenter("get_user_editable")
 class GetUserEditable(CreateUpdatePermissionsMixin, BasePresenter):
     """
-    Checks for each user whether it is editable by calling user.
+    Checks for each given user whether the given fields are editable by calling user on a per payload group basis.
     """
 
     schema = get_user_editable_schema
@@ -45,19 +46,40 @@ class GetUserEditable(CreateUpdatePermissionsMixin, BasePresenter):
     permission = Permissions.User.CAN_MANAGE
 
     def get_result(self) -> Any:
-        result: dict[str, Any] = {}
-        if not self.data["fields"]:
+        if "fields" not in self.data or not self.data["fields"]:
             raise PresenterException(
                 "Need at least one field name to check editability."
             )
-        instance = {field_name: "" for field_name in self.data["fields"]}
+        reversed_field_rights = {
+            field: group
+            for group, fields in self.field_rights.items()
+            for field in fields
+        }
+        one_field_per_group = {
+            group_fields[0]
+            for field_name in self.data["fields"]
+            for group_fields in self.field_rights.values()
+            if field_name in group_fields
+        }
+        result: defaultdict[str, dict[str, tuple[bool, str]]] = defaultdict(dict)
         for user_id in self.data["user_ids"]:
-            instance.update({"id": user_id})
             result[str(user_id)] = {}
-            try:
-                self.check_permissions(instance)
-                result[str(user_id)]["editable"] = True
-            except (PermissionDenied, MissingPermission, ActionException) as e:
-                result[str(user_id)]["editable"] = False
-                result[str(user_id)]["message"] = e.message
+            groups_editable = {}
+            for field_name in one_field_per_group:
+                try:
+                    self.check_permissions({"id": user_id, field_name: ""})
+                    groups_editable[reversed_field_rights[field_name]] = (True, "")
+                except (PermissionDenied, MissingPermission, ActionException) as e:
+                    groups_editable[reversed_field_rights[field_name]] = (
+                        False,
+                        e.message,
+                    )
+            result[str(user_id)].update(
+                {
+                    data_field_name: groups_editable[
+                        reversed_field_rights[data_field_name]
+                    ]
+                    for data_field_name in self.data["fields"]
+                }
+            )
         return result

@@ -80,23 +80,34 @@ class TestGetUSerEditable(BasePresenterTestCase):
             data,
             {
                 "2": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
                 "3": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
                 "4": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
                 "5": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
                 "6": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    "default_password": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "first_name": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
                 },
                 "7": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
             },
         )
@@ -121,26 +132,52 @@ class TestGetUSerEditable(BasePresenterTestCase):
             data,
             {
                 "2": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of can_manage_users!",
+                    "default_password": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of can_manage_users!",
+                    ],
+                    "first_name": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of can_manage_users!",
+                    ],
                 },
                 "3": {
-                    "editable": False,
-                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+                    "default_password": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+                    ],
+                    "first_name": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+                    ],
                 },
                 "4": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
                 "5": {
-                    "editable": False,
-                    "message": "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+                    "default_password": [
+                        False,
+                        "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+                    ],
+                    "first_name": [
+                        False,
+                        "Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+                    ],
                 },
                 "6": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    "default_password": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "first_name": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
                 },
                 "7": {
-                    "editable": True,
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
                 },
             },
         )
@@ -208,12 +245,16 @@ class TestGetUSerEditable(BasePresenterTestCase):
         self.assertEqual(
             data,
             {
-                "5": {
-                    "editable": True,
-                },
+                "5": {"default_password": [True, ""], "first_name": [True, ""]},
                 "7": {
-                    "editable": False,
-                    "message": "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
+                    "default_password": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
+                    ],
+                    "first_name": [
+                        False,
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
+                    ],
                 },
             },
         )
@@ -250,28 +291,112 @@ class TestGetUSerEditable(BasePresenterTestCase):
             data,
             {
                 "2": {
-                    "editable": False,
-                    "message": "The field 'saml_id' can only be used in internal action calls",
+                    "committee_management_ids": [True, ""],
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Missing OrganizationManagementLevel: superadmin",
+                    ],
+                    "organization_management_level": [True, ""],
+                    "saml_id": [
+                        False,
+                        "The field 'saml_id' can only be used in internal action calls",
+                    ],
+                    "vote_weight": [True, ""],
                 },
                 "3": {
-                    "editable": False,
-                    "message": "The field 'saml_id' can only be used in internal action calls",
+                    "committee_management_ids": [True, ""],
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Missing OrganizationManagementLevel: superadmin",
+                    ],
+                    "organization_management_level": [True, ""],
+                    "saml_id": [
+                        False,
+                        "The field 'saml_id' can only be used in internal action calls",
+                    ],
+                    "vote_weight": [True, ""],
                 },
                 "4": {
-                    "editable": False,
-                    "message": "The field 'saml_id' can only be used in internal action calls",
+                    "committee_management_ids": [True, ""],
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Missing OrganizationManagementLevel: superadmin",
+                    ],
+                    "organization_management_level": [True, ""],
+                    "saml_id": [
+                        False,
+                        "The field 'saml_id' can only be used in internal action calls",
+                    ],
+                    "vote_weight": [True, ""],
                 },
                 "5": {
-                    "editable": False,
-                    "message": "The field 'saml_id' can only be used in internal action calls",
+                    "committee_management_ids": [True, ""],
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Missing OrganizationManagementLevel: superadmin",
+                    ],
+                    "organization_management_level": [True, ""],
+                    "saml_id": [
+                        False,
+                        "The field 'saml_id' can only be used in internal action calls",
+                    ],
+                    "vote_weight": [True, ""],
                 },
                 "6": {
-                    "editable": False,
-                    "message": "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    "committee_management_ids": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "default_password": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "first_name": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "organization_management_level": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "saml_id": [
+                        False,
+                        "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                    ],
+                    "vote_weight": [True, ""],
                 },
                 "7": {
-                    "editable": False,
-                    "message": "The field 'saml_id' can only be used in internal action calls",
+                    "committee_management_ids": [True, ""],
+                    "default_password": [True, ""],
+                    "first_name": [True, ""],
+                    "group_ids": [True, ""],
+                    "is_demo_user": [
+                        False,
+                        "Missing OrganizationManagementLevel: superadmin",
+                    ],
+                    "organization_management_level": [True, ""],
+                    "saml_id": [
+                        False,
+                        "The field 'saml_id' can only be used in internal action calls",
+                    ],
+                    "vote_weight": [True, ""],
                 },
             },
         )

@@ -149,7 +149,7 @@ class MissingPermission(PermissionDenied):
             self.message = f"Missing {permissions.get_verbose_type()}: {permissions}"
         super().__init__(self.message)
 
-    def _plural_s(self, permission_or_id_or_ids: int | set[int] | dict) -> str:
+    def _plural_s(self, permission_or_id_or_ids: dict | int | set[int]) -> str:
         if (
             isinstance(permission_or_id_or_ids, set)
             or (isinstance(permission_or_id_or_ids, dict))
