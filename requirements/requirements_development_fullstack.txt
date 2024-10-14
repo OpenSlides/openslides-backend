@@ -1,0 +1,4 @@
+-r partial/requirements_production.txt
+-r partial/requirements_development.txt
+-e /pip-auth
+-e /openslides-datastore-service

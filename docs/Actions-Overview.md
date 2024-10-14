@@ -231,7 +231,6 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [user.toggle_presence_by_number](actions/user.toggle_presence_by_number.md)
 - [user.update](actions/user.update.md)
 - [user.update_self](actions/user.update_self.md)
-- [user.save_saml_account](actions/user.save_saml_account.md)
 - [meeting_user.create](actions/meeting_user.create.md)
 - [meeting_user.update](actions/meeting_user.update.md)
 - [meeting_user.delete](actions/meeting_user.delete.md)
