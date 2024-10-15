@@ -21,7 +21,9 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
 
-def export_meeting(datastore: DatastoreService, meeting_id: int, internal_target: bool = False) -> dict[str, Any]:
+def export_meeting(
+    datastore: DatastoreService, meeting_id: int, internal_target: bool = False
+) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
     # fetch meeting
@@ -138,7 +140,7 @@ def add_users(
     export_data: dict[str, Any],
     meeting_id: int,
     datastore: DatastoreService,
-    internal_target: bool
+    internal_target: bool,
 ) -> None:
     if not user_ids:
         return
