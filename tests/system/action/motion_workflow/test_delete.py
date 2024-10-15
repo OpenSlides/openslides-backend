@@ -9,7 +9,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/90": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111, 2],
                     "is_active_in_organization_id": 1,
                 },
@@ -75,7 +74,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/90": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 111,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
                 },
@@ -96,7 +94,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/90": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 111,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
                 },
@@ -107,7 +104,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
         self.assertIn(
-            "You cannot delete the workflow as long as it is selected as default workflow for new statute amendments in the settings.",
+            "You cannot delete the last workflow of a meeting.",
             response.json["message"],
         )
 
@@ -117,7 +114,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/90": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motions_default_amendment_workflow_id": 111,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
@@ -153,7 +149,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111, 2],
                     "is_active_in_organization_id": 1,
                 },
@@ -170,7 +165,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111, 2],
                     "is_active_in_organization_id": 1,
                 },
@@ -188,7 +182,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
-                    "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111, 2],
                     "is_active_in_organization_id": 1,
                 },
