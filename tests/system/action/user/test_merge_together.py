@@ -1431,6 +1431,35 @@ class UserMergeTogether(BaseVoteTestCase):
         for id_ in range(2, 10):
             self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
 
+    def test_merge_with_assignment_candidates_in_finished_assignment(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "assignment_ids": [11],
+                    "assignment_candidate_ids": [112, 114],
+                },
+                "assignment/11": {
+                    "meeting_id": 1,
+                    "phase": "finished",
+                    "candidate_ids": [112, 114],
+                },
+                "assignment_candidate/112": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 12,
+                },
+                "assignment_candidate/114": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 14,
+                },
+                "meeting_user/12": {"assignment_candidate_ids": [112]},
+                "meeting_user/14": {"assignment_candidate_ids": [114]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+
     def test_merge_with_motion_working_group_speakers(self) -> None:
         self.base_assignment_or_motion_model_test(
             "motion", "motion_working_group_speaker"
