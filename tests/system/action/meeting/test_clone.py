@@ -785,10 +785,12 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_user_ids": [2],
                     "meeting_ids": [1],
                     "organization_id": 1,
+                    "gender_id": 1
                 },
+                "gender/1": {"name": "male", "organization_id": 1, "user_ids": [3]},
                 "group/1": {"meeting_user_ids": [2]},
                 "committee/2": {"organization_id": 1},
-                "organization/1": {"committee_ids": [1, 2]},
+                "organization/1": {"committee_ids": [1, 2], "gender_ids": [1]},
                 "meeting/1": {"user_ids": [1, 13], "meeting_user_ids": [1, 2]},
                 "meeting_user/2": {
                     "meeting_id": 1,
@@ -818,6 +820,7 @@ class MeetingClone(BaseActionTestCase):
                 "committee_ids": [1, 2],
                 "meeting_ids": [1, 2],
                 "meeting_user_ids": [2, 4],
+                "gender_id": 1
             },
         )
         self.assert_model_exists(
@@ -2010,7 +2013,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 33
+        assert counter.calls == 30
 
     @performance
     def test_clone_performance(self) -> None:
