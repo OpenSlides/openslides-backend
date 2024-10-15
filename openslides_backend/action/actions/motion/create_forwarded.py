@@ -71,7 +71,6 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     [
                         "meeting_id",
                         "lead_motion_id",
-                        "statute_paragraph_id",
                         "state_id",
                         "all_origin_ids",
                         "derived_motion_ids",
@@ -205,13 +204,13 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
             msg += f" Missing permission: {perm_origin}"
             raise PermissionDenied(msg)
 
-        # check if origin motion is amendment or statute_amendment
+        # check if origin motion is amendment
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
-            ["lead_motion_id", "statute_paragraph_id"],
+            ["lead_motion_id"],
             lock_result=False,
         )
-        if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
+        if origin.get("lead_motion_id"):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
 
