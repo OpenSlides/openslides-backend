@@ -91,6 +91,10 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "locked_out": {"type": "boolean"},
     }
 
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.assert_not_anonymous()
+        super().check_permissions(instance)
+
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "meeting_id" not in instance and any(

@@ -317,7 +317,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
     ) -> list[ImportRow]:
         """The self.rows will be deepcopied, flattened and returned, without
         changes on the self.rows.
-        This is necessary for using the data in the executution of actions.
+        This is necessary for using the data in the execution of actions.
         The requests response should be given with the unchanged self.rows.
         Parameter:
         hook_method:

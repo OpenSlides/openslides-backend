@@ -17,6 +17,7 @@ class BasePresenter(BaseServiceProvider):
     Base class for presenters.
     """
 
+    internal: bool = False
     data: Any
     schema: Callable[[Any], None] | None = None
 

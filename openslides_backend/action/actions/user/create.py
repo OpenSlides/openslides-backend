@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -15,13 +18,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
 @register_action("user.create")
 class UserCreate(
+    UserMixin,
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
