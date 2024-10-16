@@ -107,7 +107,8 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         if gender := entry.pop("gender", None):
             entry["gender_id"] = {}
         failing_fields = self.permission_check.get_failing_fields(entry)
-        entry.pop("gender_id")
+        if gender:
+            entry.pop("gender_id")
         entry.pop("group_ids")
         entry.pop("structure_level_ids")
         entry.pop("meeting_id")
