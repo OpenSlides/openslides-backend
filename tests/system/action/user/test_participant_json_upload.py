@@ -370,13 +370,14 @@ class ParticipantJsonUpload(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(4)
         user_id = self.create_user_for_meeting(1)
+        other_user_id = 3
         self.set_models(
             {
-                f"user/3": self._get_user_data("test", {1: [], 4: []}),
+                f"user/{other_user_id}": self._get_user_data("test", {1: [], 4: []}),
             }
         )
         self.set_user_groups(user_id, [2])
-        meetingusers = self.set_user_groups(3, [1, 4])
+        self.set_user_groups(other_user_id, [1, 4])
         self.login(user_id)
         response = self.request(
             "participant.json_upload",
@@ -398,7 +399,9 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "rows": [
                         {
                             "state": ImportState.DONE,
-                            "messages": ['Following fields were removed from payload, because the user has no permissions to change them: username, gender_id, default_password'],
+                            "messages": [
+                                "Following fields were removed from payload, because the user has no permissions to change them: username, gender_id, default_password"
+                            ],
                             "data": {
                                 "username": {
                                     "value": "test",
@@ -409,7 +412,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                                     "value": "secret",
                                     "info": ImportState.REMOVE,
                                 },
-                                "id":3,
+                                "id": 3,
                                 "groups": [
                                     {
                                         "info": ImportState.GENERATED,
