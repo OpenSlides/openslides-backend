@@ -9,6 +9,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class ParticipantJsonUpload(BaseActionTestCase):
     def setUp(self) -> None:
+        self.maxDiff = None
         super().setUp()
         self.set_models(
             {
@@ -365,10 +366,18 @@ class ParticipantJsonUpload(BaseActionTestCase):
             True,
         )
 
-    def test_json_upload_permission_meeting_admin(self) -> None:
+    def test_json_upload_no_permission_meeting_admin(self) -> None:
         self.create_meeting()
+        self.create_meeting(4)
         user_id = self.create_user_for_meeting(1)
+        other_user_id = 3
+        self.set_models(
+            {
+                f"user/{other_user_id}": self._get_user_data("test", {1: [], 4: []}),
+            }
+        )
         self.set_user_groups(user_id, [2])
+        self.set_user_groups(other_user_id, [1, 4])
         self.login(user_id)
         response = self.request(
             "participant.json_upload",
@@ -389,28 +398,32 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "meeting_id": 1,
                     "rows": [
                         {
-                            "state": ImportState.NEW,
-                            "messages": [],
+                            "state": ImportState.DONE,
+                            "messages": [
+                                "Following fields were removed from payload, because the user has no permissions to change them: username, gender_id, default_password"
+                            ],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportState.DONE,
-                                },
-                                "groups": [
-                                    {
-                                        "id": 1,
-                                        "info": ImportState.GENERATED,
-                                        "value": "group1",
-                                    }
-                                ],
-                                "gender": {
-                                    "id": 1,
-                                    "info": ImportState.DONE,
-                                    "value": "male",
+                                    "info": ImportState.REMOVE,
+                                    "id": 3,
                                 },
                                 "default_password": {
                                     "value": "secret",
-                                    "info": ImportState.DONE,
+                                    "info": ImportState.REMOVE,
+                                },
+                                "id": 3,
+                                "groups": [
+                                    {
+                                        "info": ImportState.GENERATED,
+                                        "value": "group1",
+                                        "id": 1,
+                                    }
+                                ],
+                                "gender": {
+                                    "info": ImportState.REMOVE,
+                                    "value": "male",
+                                    "id": 1,
                                 },
                             },
                         }
