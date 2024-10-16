@@ -13,6 +13,10 @@ class ParticipantJsonUpload(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "meeting/1": {
                     "name": "test",
                     "group_ids": [1, 7],
@@ -359,6 +363,60 @@ class ParticipantJsonUpload(BaseActionTestCase):
             {"meeting_id": 1, "data": [{"username": "test"}]},
             Permissions.User.CAN_UPDATE,
             True,
+        )
+
+    def test_json_upload_permission_meeting_admin(self) -> None:
+        self.create_meeting()
+        user_id = self.create_user_for_meeting(1)
+        self.set_user_groups(user_id, [2])
+        self.login(user_id)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "test", "gender": "male", "default_password": "secret"}
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "import_preview/1",
+            {
+                "name": "participant",
+                "state": ImportState.DONE,
+                "result": {
+                    "meeting_id": 1,
+                    "rows": [
+                        {
+                            "state": ImportState.NEW,
+                            "messages": [],
+                            "data": {
+                                "username": {
+                                    "value": "test",
+                                    "info": ImportState.DONE,
+                                },
+                                "groups": [
+                                    {
+                                        "id": 1,
+                                        "info": ImportState.GENERATED,
+                                        "value": "group1",
+                                    }
+                                ],
+                                "gender": {
+                                    "id": 1,
+                                    "info": ImportState.DONE,
+                                    "value": "male",
+                                },
+                                "default_password": {
+                                    "value": "secret",
+                                    "info": ImportState.DONE,
+                                },
+                            },
+                        }
+                    ],
+                },
+            },
         )
 
     def test_json_upload_locked_meeting(self) -> None:

@@ -103,7 +103,12 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         )
 
         payload_index = entry.pop("payload_index", None)
+        # only needed for get_failing_fields not to fail
+        if gender := entry.pop("gender", None):
+            entry["gender_id"] = {}
         failing_fields = self.permission_check.get_failing_fields(entry)
+        if gender:
+            entry.pop("gender_id")
         entry.pop("group_ids")
         entry.pop("structure_level_ids")
         entry.pop("meeting_id")
@@ -152,6 +157,8 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
 
         if payload_index:
             entry["payload_index"] = payload_index
+        if gender:
+            entry["gender"] = gender
 
         return results
 
