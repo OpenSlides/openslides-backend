@@ -231,7 +231,6 @@ class MeetingCreate(
                     "name": _("Simple Workflow"),
                     "default_workflow_meeting_id": instance["id"],
                     "default_amendment_workflow_meeting_id": instance["id"],
-                    "default_statute_amendment_workflow_meeting_id": instance["id"],
                     "meeting_id": instance["id"],
                 }
             ]
