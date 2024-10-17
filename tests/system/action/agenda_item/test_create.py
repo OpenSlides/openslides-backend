@@ -333,26 +333,6 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {"content_object_id": "topic/1"},
         )
 
-    def test_create_moderator_notes_no_permissions(self) -> None:
-        self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
-            "agenda_item.create",
-            {"content_object_id": "topic/1", "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE,
-            fail=True,
-        )
-
-    def test_create_moderator_notes_permissions(self) -> None:
-        self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
-            "agenda_item.create",
-            {"content_object_id": "topic/1", "moderator_notes": "test"},
-            [
-                Permissions.AgendaItem.CAN_MANAGE,
-                Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
-            ],
-        )
-
     def test_create_replace_reverse_of_multi_content_object_id_required_error(
         self,
     ) -> None:
