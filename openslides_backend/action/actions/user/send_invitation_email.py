@@ -16,6 +16,7 @@ from fastjsonschema import JsonSchemaException
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
@@ -23,6 +24,7 @@ from ....permissions.permission_helper import (
     has_perm,
 )
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import DatastoreException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -214,8 +216,35 @@ class UserSendInvitationMail(UpdateAction):
                 "event_name": mail_data.get("name", ""),
                 "name": self.get_verbose_username(user),
                 "username": user.get("username", ""),
+                "title": user.get("title", ""),
+                "first_name": user.get("first_name", ""),
+                "last_name": user.get("last_name", ""),
             },
         )
+        if meeting_id:
+            m_user = get_meeting_user(
+                self.datastore,
+                meeting_id,
+                user_id,
+                ["structure_level_ids", "group_ids"],
+            )
+            gmr = [
+                GetManyRequest(coll, coll_ids, ["name"])
+                for coll in ["group", "structure_level"]
+                if m_user and (coll_ids := m_user.get(coll + "_ids"))
+            ]
+            gm_result: dict[str, dict[int, dict[str, Any]]] = {}
+            if len(gmr):
+                gm_result = self.datastore.get_many(gmr, lock_result=False)
+            subject_format.update(
+                {
+                    coll
+                    + "s": ", ".join(
+                        [model["name"] for model in gm_result.get(coll, {}).values()]
+                    )
+                    for coll in ["group", "structure_level"]
+                }
+            )
         body_dict = {
             "password": user.get("default_password", ""),
             "url": mail_data.get("url", ""),
