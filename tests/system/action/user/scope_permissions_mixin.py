@@ -32,6 +32,26 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_organization_management_level(None)
             self.set_user_groups(1, [3])
             self.set_group_permissions(3, [meeting_permission])
+        self.set_models(
+            {
+                "user/777": {
+                    "username": "admin_group_filler",
+                    "meeting_user_ids": [666, 667],
+                },
+                "meeting_user/666": {
+                    "group_ids": [12, 23],
+                    "meeting_id": 1,
+                    "user_id": 777,
+                },
+                "meeting_user/667": {
+                    "group_ids": [12, 23],
+                    "meeting_id": 2,
+                    "user_id": 777,
+                },
+                "group/12": {"meeting_user_ids": [666]},
+                "group/23": {"meeting_user_ids": [667]},
+            }
+        )
 
     def setup_scoped_user(self, scope: UserScope) -> None:
         """
@@ -45,13 +65,15 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                     "meeting/1": {
                         "user_ids": [111],
                         "committee_id": 1,
-                        "group_ids": [11],
+                        "group_ids": [11, 12],
+                        "admin_group_id": 12,
                         "is_active_in_organization_id": 1,
                     },
                     "meeting/2": {
                         "user_ids": [111],
                         "committee_id": 2,
-                        "group_ids": [22],
+                        "group_ids": [22, 23],
+                        "admin_group_id": 23,
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
@@ -70,7 +92,9 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "group_ids": [22],
                     },
                     "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
+                    "group/12": {"meeting_id": 1, "meeting_user_ids": [666]},
                     "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
+                    "group/23": {"meeting_id": 2, "meeting_user_ids": [667]},
                 }
             )
         elif scope == UserScope.Committee:
