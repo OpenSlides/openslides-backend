@@ -5,7 +5,7 @@ from typing import Any
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import VoteServiceException
+from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import (
     collection_from_fqid,
@@ -33,6 +33,8 @@ class PollPermissionMixin(Action):
             )
             content_object_id = poll.get("content_object_id", "")
             meeting_id = poll["meeting_id"]
+        if not content_object_id:
+            raise ActionException("No 'content_object_id' was given")
         check_poll_or_option_perms(
             content_object_id, self.datastore, self.user_id, meeting_id
         )

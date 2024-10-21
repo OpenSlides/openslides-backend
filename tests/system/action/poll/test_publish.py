@@ -42,8 +42,13 @@ class PollPublishActionTest(BasePollTestCase):
     def test_publish_wrong_state(self) -> None:
         self.set_models(
             {
-                "poll/1": {"state": "created", "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/1": {"poll_ids": [111], "meeting_id": 1},
+                "poll/1": {
+                    "state": "created",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                },
+                "meeting/1": {"is_active_in_organization_id": 1, "topic_ids": [1]},
             }
         )
         response = self.request("poll.publish", {"id": 1})
