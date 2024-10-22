@@ -56,7 +56,7 @@ class _Translator:
             code = code.split("-")[0]
             result.append((q, code))
         # sort by quality value and return only the codes
-        return [t[1] for t in sorted(result)]
+        return [t[1] for t in result]
 
 
 Translator = _Translator()
