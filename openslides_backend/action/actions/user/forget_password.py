@@ -56,9 +56,9 @@ The link will be valid for 10 minutes."""
                 raise ActionException(f"'{email}' is not a valid email adress.")
 
             # search for users with email
-            filter_ = FilterOperator("email", "=", email)
+            filter_ = FilterOperator("email", "~=", email)
             results = self.datastore.filter(
-                self.model.collection, filter_, ["id", "username", "saml_id"]
+                self.model.collection, filter_, ["id", "username", "saml_id", "email"]
             )
 
             organization = self.datastore.get(
@@ -79,11 +79,11 @@ The link will be valid for 10 minutes."""
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,
-                            email,
+                            user["email"],
                             self.PW_FORGET_EMAIL_SUBJECT + f": {username}",
                             self.get_email_body(
                                 user["id"],
-                                self.get_token(user["id"], email),
+                                self.get_token(user["id"], user["email"]),
                                 user["username"],
                                 url,
                             ),
