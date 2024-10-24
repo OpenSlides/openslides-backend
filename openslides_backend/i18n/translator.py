@@ -22,7 +22,7 @@ class _Translator:
 
     def translate(self, msg: str) -> str:
         translation = self.translations[self.current_language].get(msg)
-        if translation:
+        if translation and translation.string:
             return translation.string
         else:
             return msg
