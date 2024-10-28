@@ -10,7 +10,7 @@ class _Translator:
     translations: dict[str, Catalog] = {}
     current_language: str
 
-    def __init__(self) -> None:
+    def __init__(self, extra_translations: dict[str, Catalog] = {}) -> None:
         # read all po files at startup
         path = Path(__file__).parent / "messages"
         for file in path.glob("*.po"):
@@ -18,6 +18,8 @@ class _Translator:
                 self.translations[file.stem] = read_po(f)
         # empty catalog for en since it is not used anyway
         self.translations[DEFAULT_LANGUAGE] = Catalog()
+        if extra_translations:
+            self.translations.update(extra_translations)
         self.current_language = DEFAULT_LANGUAGE
 
     def translate(self, msg: str) -> str:
@@ -56,7 +58,7 @@ class _Translator:
             code = code.split("-")[0]
             result.append((q, code))
         # sort by quality value and return only the codes
-        return [t[1] for t in sorted(result)]
+        return [t[1] for t in sorted(result, key=lambda tup: tup[0])]
 
 
 Translator = _Translator()
