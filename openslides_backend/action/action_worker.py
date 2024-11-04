@@ -9,7 +9,7 @@ from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
 
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from ..shared.patterns import fqid_from_collection_and_id
 
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import ActionException, DatastoreException
@@ -239,6 +239,9 @@ class ActionWorker(threading.Thread):
     def run(self):  # type: ignore
         with self.lock:
             self.started = True
+            # set global werkzeug context
+            token_storage.access_token = self.auth_context.access_token
+            token_storage.claims = self.auth_context.claims
             try:
                 self.response = self.handler.handle_request(
                     self.payload, self.auth_context, self.is_atomic, self.internal

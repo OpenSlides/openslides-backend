@@ -105,7 +105,7 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            self.user_id = user_id
+            self.user_id = user_id.user_id
             self.internal = internal
 
             try:

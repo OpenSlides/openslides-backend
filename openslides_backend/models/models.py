@@ -935,7 +935,6 @@ class StructureLevel(Model):
         to={"meeting": "structure_level_ids"}, required=True
     )
 
-
 class Group(Model):
     collection = "group"
     verbose_name = "group"
