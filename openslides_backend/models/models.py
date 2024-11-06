@@ -2462,6 +2462,7 @@ class ActionWorker(Model):
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)
     result = fields.JSONField()
+    user_id = fields.IntegerField(required=True, constant=True)
 
 
 class ImportPreview(Model):
