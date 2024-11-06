@@ -53,21 +53,27 @@ class MeetingUserCreate(
     def get_history_information(self) -> HistoryInformation | None:
         information = {}
         for instance in self.instances:
-            instance_information = []
-            if "group_ids" in instance:
-                if len(instance["group_ids"]) == 1:
-                    instance_information.extend(
-                        [
-                            "Participant added to group {} in meeting {}",
-                            fqid_from_collection_and_id(
-                                "group", instance["group_ids"][0]
-                            ),
-                        ]
-                    )
-                else:
-                    instance_information.append(
-                        "Participant added to multiple groups in meeting {}",
-                    )
+            instance_information = (
+                []
+            )  # TODO we need a better information string generation generating only one line
+            for collection_name in ["group", "structure_level"]:
+                if f"{collection_name}_ids" in instance:
+                    if len(instance[f"{collection_name}_ids"]) == 1:
+                        instance_information.extend(
+                            [
+                                f"Participant added to {collection_name}"
+                                + " {} in meeting {}",
+                                fqid_from_collection_and_id(
+                                    collection_name,
+                                    instance[f"{collection_name}_ids"][0],
+                                ),
+                            ]
+                        )
+                    else:
+                        instance_information.append(
+                            f"Participant added to multiple {collection_name}s in meeting"
+                            + " {}",
+                        )
             else:
                 instance_information.append(
                     "Participant added to meeting {}",
