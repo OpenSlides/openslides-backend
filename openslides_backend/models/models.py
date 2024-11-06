@@ -2462,7 +2462,13 @@ class ActionWorker(Model):
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)
     result = fields.JSONField()
-    user_id = fields.IntegerField(required=True, constant=True)
+    user_id = fields.IntegerField(
+        required=True,
+        constant=True,
+        constraints={
+            "description": "Id of the calling user. If the action is called via internal route, the value will be -1."
+        },
+    )
 
 
 class ImportPreview(Model):
