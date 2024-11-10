@@ -2,22 +2,14 @@ from abc import abstractmethod
 from typing import Any, Protocol
 
 from ..shared.authenticated_service import AuthenticatedServiceInterface
+from ...models.models import User
 
 
-class KeycloakAdminService(AuthenticatedServiceInterface, Protocol):
+class IdpAdminService(AuthenticatedServiceInterface, Protocol):
     """
-    Interface of the vote service.
+    Interface of a idp admin service.
     """
 
     @abstractmethod
-    def start(self, id: int) -> None: ...
-
-    @abstractmethod
-    def stop(self, id: int) -> dict[str, Any]: ...
-
-    @abstractmethod
-    def clear(self, id: int) -> None: ...
-
-    @abstractmethod
-    def clear_all(self) -> None:
-        """Only for testing purposes."""
+    def create_user(self, username: str, saml_id: str | None) -> str:
+        """Create user and return new IDP user ID"""

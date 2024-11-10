@@ -11,6 +11,9 @@ from datastore.migrations import (
     setup,
 )
 from datastore.shared.typing import Fqid, Model
+from datastore.shared.di import injector
+from openslides_backend.services.keycloak.adapter import KeycloakAdminAdapter
+from openslides_backend.services.keycloak.interface import IdpAdminService
 
 
 class BadMigrationModule(MigrationException):
@@ -32,6 +35,7 @@ class MigrationWrapper:
         memory_only: bool = False,
     ) -> None:
         migrations = MigrationWrapper.load_migrations()
+        injector.register_as_singleton(IdpAdminService, KeycloakAdminAdapter)
         self.handler = setup(verbose, print_fn, memory_only)
         self.handler.register_migrations(*migrations)
 

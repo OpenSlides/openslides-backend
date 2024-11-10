@@ -14,6 +14,7 @@ from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.keycloak.interface import IdpAdminService
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
@@ -52,6 +53,13 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         )
         return convert_to_test_response(response)
 
+class TestIdpAdminAdapter(IdpAdminService):
+    def set_authentication(self, access_token: str, refresh_id: str) -> None:
+        pass
+
+    def create_user(self, username: str, saml_id: str | None) -> str:
+        return username + f"_{saml_id}" if saml_id is not None else ""
+
 
 def create_action_test_application() -> OpenSlidesBackendWSGIApplication:
     return create_test_application(ActionView)
@@ -88,6 +96,7 @@ def create_test_application(view: type[View]) -> OpenSlidesBackendWSGIApplicatio
         side_effect=side_effect_for_upload_method
     )
     services.media = MagicMock(return_value=mock_media_service)
+    services.idp_admin = providers.Singleton(TestIdpAdminAdapter)
 
     return create_base_test_application(view, services, env)
 
