@@ -6,10 +6,10 @@ import simplejson as json
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
 from ..shared.authenticated_service import AuthenticatedService
-from .interface import KeycloakAdminService
+from .interface import VoteService
 
 
-class KeycloakAdminAdapter(KeycloakAdminService, AuthenticatedService):
+class VoteAdapter(VoteService, AuthenticatedService):
     """
     Adapter to connect to the vote service.
     """
