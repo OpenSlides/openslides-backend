@@ -549,7 +549,13 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request_json(
@@ -565,7 +571,7 @@ class UserCreateActionTest(BaseActionTestCase):
                             "is_active": True,
                             "is_physical_person": True,
                             "default_password": "new default_password",
-                            "gender": "female",
+                            "gender_id": 2,
                             "email": "info@openslides.com",
                             "default_vote_weight": "1.234000",
                             "can_change_own_password": False,
@@ -598,7 +604,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -1204,19 +1210,16 @@ class UserCreateActionTest(BaseActionTestCase):
         assert "Username may not contain spaces" in response.json["message"]
 
     def test_create_gender(self) -> None:
-        self.set_models({"organization/1": {"genders": ["male", "female"]}})
+        self.set_models({"organization/1": {"gender_ids": [1, 2]}})
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "gender": "test",
+                "gender_id": 5,
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Gender 'test' is not in the allowed gender list."
-            in response.json["message"]
-        )
+        assert "Model 'gender/5' does not exist." in response.json["message"]
 
     def test_exceed_limit_of_users(self) -> None:
         self.set_models(

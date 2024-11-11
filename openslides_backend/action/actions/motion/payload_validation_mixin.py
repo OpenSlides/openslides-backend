@@ -110,14 +110,7 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
                 {"type": MotionErrorType.TITLE, "message": "Title is required"}
             )
         if instance.get("lead_motion_id"):
-            if instance.get("statute_paragraph_id"):
-                errors.append(
-                    {
-                        "type": MotionErrorType.MOTION_TYPE,
-                        "message": "You can't give both of lead_motion_id and statute_paragraph_id.",
-                    }
-                )
-            elif not instance.get("text") and not instance.get("amendment_paragraphs"):
+            if not instance.get("text") and not instance.get("amendment_paragraphs"):
                 errors.append(
                     {
                         "type": MotionErrorType.TEXT,
@@ -157,17 +150,12 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             [
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
-                "motions_default_statute_amendment_workflow_id",
             ],
         )
         workflow_id = instance.get("workflow_id", None)
         if workflow_id is None:
             if instance.get("lead_motion_id"):
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
-            elif instance.get("statute_paragraph_id"):
-                workflow_id = meeting.get(
-                    "motions_default_statute_amendment_workflow_id"
-                )
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if not workflow_id:

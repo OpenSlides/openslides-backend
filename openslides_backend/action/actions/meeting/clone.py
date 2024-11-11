@@ -14,12 +14,13 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
+from openslides_backend.shared.util import ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .import_ import ONE_ORGANIZATION_ID, MeetingImport
+from .import_ import MeetingImport
 
 updatable_fields = [
     "committee_id",
@@ -91,7 +92,7 @@ class MeetingClone(MeetingImport):
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        meeting_json = export_meeting(self.datastore, instance["meeting_id"])
+        meeting_json = export_meeting(self.datastore, instance["meeting_id"], True)
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
         additional_admin_ids = instance.pop("admin_ids", None) or []

@@ -70,7 +70,6 @@
 
     motions_default_workflow_id: Id;
     motions_default_amendment_workflow_id: Id;
-    motions_default_statute_amendment_workflow_id: Id;
     motions_preamble: string;
     motions_default_line_numbering: string;
     motions_line_length: number;
@@ -83,13 +82,11 @@
     motions_show_sequential_number: boolean;
     motions_recommendations_by: string;
     motions_block_slide_columns: number;
-    motions_statute_recommendations_by: string;
     motions_recommendation_text_mode: string;
     motions_default_sorting: string;
     motions_number_type: string;
     motions_number_min_digits: number;
     motions_number_with_blank: boolean;
-    motions_statutes_enabled: boolean;
     motions_amendments_enabled: boolean;
     motions_amendments_in_main_list: boolean;
     motions_amendments_of_amendments: boolean;
@@ -174,7 +171,7 @@
 
 // Group D
     external_id: string;
-    enable_anonymous: boolean;
+    enable_anonymous: boolean
     custom_translations: JSON;
 
 // Group E
@@ -196,11 +193,13 @@ Updates the meeting.
 If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, `template_for_organization_id` has to be set to `None` and if there are currently no users in the meetings admin group, an exception needs to be raised.
 `reference_projector_id` can only be set to a projector, which is not internal.
 
-This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown. Same for `enable_anonymous` and `locked_from_inside` being true at the same time
+This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown. Same for `enable_anonymous` and `locked_from_inside` being true at the same time.
 
-If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Anonymous` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set.
+If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Public` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set. It will always have the lowest weight among all other groups in this meeting, meaning 0.
 
 The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
+
+`enable_anonymous` may only be set to true if `enable_anonymous` is set to true in the organization.
 
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A

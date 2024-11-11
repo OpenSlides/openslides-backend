@@ -31,13 +31,13 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
 
-        # check if origin motion is amendment or statute_amendment
+        # check if origin motion is amendment
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
-            ["lead_motion_id", "statute_paragraph_id"],
+            ["lead_motion_id"],
             lock_result=False,
         )
-        if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
+        if origin.get("lead_motion_id"):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
 

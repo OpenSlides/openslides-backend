@@ -33,10 +33,14 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.schema import models_map_object
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields, ListFieldsDict
-from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_ID, validate_html
+from ....shared.util import (
+    ALLOWED_HTML_TAGS_STRICT,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    validate_html,
+)
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_password
@@ -146,6 +150,7 @@ class MeetingImport(
     def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.check_one_meeting(instance)
         self.check_locked(instance)
+        self.stash_gender_relations(instance)
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         instance = self.migrate_data(instance)
@@ -159,6 +164,14 @@ class MeetingImport(
     def check_locked(self, instance: dict[str, Any]) -> None:
         if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
             raise ActionException("Cannot import a locked meeting.")
+
+    def stash_gender_relations(self, instance: dict[str, Any]) -> None:
+        # The Checker will not allow the gender to have or not to have an orga relation. So we need to circumvent it.
+        self.user_id_to_gender = {}
+        users = instance["meeting"].get("user", {})
+        for user in users.values():
+            if gender := user.pop("gender", None):
+                self.user_id_to_gender[user["id"]] = gender
 
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
@@ -244,6 +257,7 @@ class MeetingImport(
         meeting_json = instance["meeting"]
         self.update_admin_group(meeting_json)
         self.upload_mediadata()
+        self.handle_gender_string(instance)
         return instance
 
     def empty_if_none(self, value: str | None) -> str:
@@ -302,6 +316,44 @@ class MeetingImport(
 
         for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
+
+    def handle_gender_string(self, instance: dict[str, Any]) -> None:
+        for user_id in list(self.user_id_to_gender.keys()):
+            if user_id in self.merge_user_map:
+                del self.user_id_to_gender[user_id]
+        genders = self.datastore.get_all("gender", ["id", "name"], lock_result=True)
+        gender_dict = {gender.get("name", ""): gender for gender in genders.values()}
+        new_genders = list(
+            {value for value in self.user_id_to_gender.values()}.difference(gender_dict)
+        )
+        if new_genders:
+            new_genders.sort()  # fix order for tests
+            new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))
+            new_gender_dict = {
+                new_gender: {
+                    "id": new_gender_id,
+                    "name": new_gender,
+                    "meta_new": True,
+                    "organization_id": ONE_ORGANIZATION_ID,
+                }
+                for new_gender, new_gender_id in zip(new_genders, new_gender_ids)
+            }
+            gender_dict.update(new_gender_dict)
+        instance["meeting"]["gender"] = {
+            str(gender["id"]): gender for gender in gender_dict.values()
+        }
+        for user_id, gender in self.user_id_to_gender.items():
+            gender_id = gender_dict[gender]["id"]
+            replace_user_id = self.replace_map["user"][user_id]
+            instance["meeting"]["user"][str(replace_user_id)]["gender_id"] = gender_id
+            try:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"].append(
+                    replace_user_id
+                )
+            except KeyError:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = [
+                    replace_user_id
+                ]
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "
@@ -548,11 +600,14 @@ class MeetingImport(
         meeting_id = meeting["id"]
         events = []
         update_events = []
+        add_genders_to_organisation = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 fqid = fqid_from_collection_and_id(collection, entry["id"])
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
+                    if collection == "gender":
+                        add_genders_to_organisation.append(entry["id"])
                     events.append(
                         self.build_event(
                             EventType.Create,
@@ -560,20 +615,19 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection == "user":
+                elif collection in ["user", "gender"]:
                     list_fields: ListFields = {"add": {}, "remove": {}}
-                    fields: dict[str, Any] = {}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
                         if isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                    if fields or list_fields["add"]:
+                    if list_fields["add"]:
                         update_events.append(
                             self.build_event(
                                 EventType.Update,
                                 fqid,
-                                fields=fields if fields else None,
-                                list_fields=list_fields if list_fields["add"] else None,
+                                fields=None,
+                                list_fields=list_fields,
                             )
                         )
                 elif collection == "meeting_user":
@@ -598,12 +652,14 @@ class MeetingImport(
             )
         )
 
-        # add meetings to organization if set in meeting
+        # add meetings to organization if set in meeting, also genders if new created
         adder: ListFieldsDict = {}
         if meeting.get("is_active_in_organization_id"):
             adder["active_meeting_ids"] = [meeting_id]
         if meeting.get("template_for_organization_id"):
             adder["template_meeting_ids"] = [meeting_id]
+        if add_genders_to_organisation:
+            adder["gender_ids"] = add_genders_to_organisation
 
         if adder:
             events.append(

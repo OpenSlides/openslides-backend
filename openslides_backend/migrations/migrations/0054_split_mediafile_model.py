@@ -114,7 +114,8 @@ class Migration(BaseModelMigration):
             )
             for id_, model in models.items():
                 if (
-                    collection_from_fqid(fqid := model["content_object_id"])
+                    model.get("content_object_id")
+                    and collection_from_fqid(fqid := model["content_object_id"])
                     == "mediafile"
                 ):
                     events.append(
