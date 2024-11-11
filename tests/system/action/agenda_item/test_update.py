@@ -226,20 +226,3 @@ class AgendaItemActionTest(BaseActionTestCase):
             "agenda_item.update",
             {"id": 111, "duration": 1200},
         )
-
-    def test_update_moderator_notes_no_permissions(self) -> None:
-        self.base_permission_test(
-            {},
-            "agenda_item.update",
-            {"id": 111, "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE,
-            fail=True,
-        )
-
-    def test_update_moderator_notes_permissions(self) -> None:
-        self.base_permission_test(
-            {},
-            "agenda_item.update",
-            {"id": 111, "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
-        )

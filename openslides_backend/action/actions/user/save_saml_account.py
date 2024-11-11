@@ -17,6 +17,7 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
+from ..gender.create import GenderCreate
 from .create import UserCreate
 from .update import UserUpdate
 from .user_mixins import UsernameMixin
@@ -83,11 +84,26 @@ class UserSaveSamlAccount(
                     ]
                 }
                 for model_field, payload_field in self.saml_attr_mapping.items()
-                if model_field in allowed_user_fields
+                # handle only allowed fields. handle gender separately since it needs conversion to id
+                if model_field in allowed_user_fields and model_field != "gender"
             },
             "required": [self.saml_attr_mapping["saml_id"]],
             "additionalProperties": True,
         }
+        self.schema["properties"].update(
+            {
+                "gender": {
+                    "oneOf": [
+                        {"type": ["string", "null"], "maxLength": 256},
+                        {
+                            "type": "array",
+                            "items": {"type": ["string", "null"], "maxLength": 256},
+                            "minItems": 0,
+                        },
+                    ]
+                },
+            }
+        )
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
@@ -126,8 +142,30 @@ class UserSaveSamlAccount(
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
-            ["id", *allowed_user_fields],
+            ["id", "gender_id", *allowed_user_fields],
         )
+
+        if gender := instance.get("gender"):
+            if gender == "":
+                instance["gender_id"] = None
+            else:
+                gender_dict = self.datastore.filter(
+                    "gender",
+                    FilterOperator("name", "=", gender),
+                    ["id"],
+                )
+                if gender_dict:
+                    gender_id = next(iter(gender_dict.keys()))
+                else:
+                    action_result = self.execute_other_action(
+                        GenderCreate, [{"name": gender}]
+                    )
+                    gender_id = action_result[0].get("id", 0)  # type: ignore
+                instance["gender_id"] = gender_id
+            del instance["gender"]
+        elif gender == "":
+            instance["gender_id"] = None
+            del instance["gender"]
         if len(users) == 1:
             self.user = next(iter(users.values()))
             instance["id"] = (user_id := cast(int, self.user["id"]))
@@ -143,7 +181,6 @@ class UserSaveSamlAccount(
                 else:
                     instance["meeting_id"] = meeting_id
                     instance["group_ids"] = [group_id]
-
             instance = {
                 k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
             }

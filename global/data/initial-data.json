@@ -1,12 +1,38 @@
 {
-    "_migration_index": 56,
+    "_migration_index": 62, 
+    "gender":{
+        "1":{
+            "id": 1,
+            "name": "male",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "2":{
+            "id": 2,
+            "name": "female",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "3":{
+            "id": 3,
+            "name": "diverse",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "4":{
+            "id": 4,
+            "name": "non-binary",
+            "organization_id": 1,
+            "user_ids":[]
+        }
+    },
     "organization": {
         "1": {
             "id": 1,
             "name": "[Your organization]",
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.",
             "login_text": "Welcome to OpenSlides. Please login.",
-            "genders": ["male", "female", "diverse", "non-binary"],
+            "gender_ids": [1, 2, 3, 4],
             "default_language": "en",
             "enable_electronic_voting": true,
             "limit_of_meetings": 0,

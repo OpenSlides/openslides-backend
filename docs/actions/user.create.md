@@ -11,7 +11,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
@@ -56,8 +56,8 @@ Creates a user.
 * If no `default_password` is given a random one is generated. The default password is hashed via the auth service and the hash is saved within `password`. A given `default_password`is also stored as hashed password.
 * If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error must be returned. If the `username` is not given, 1. the saml_id will be used or 2. it has to be generated (see [user.create#generate-a-username](user.create.md#generate-a-username) below). Also the username may not contain spaces.
 * The `organization_management_level` as restring can be taken from the enum of this user field.
-* Remove starting and trailing spaces from `username`, `first_name` and `last_name`
-* The given `gender` must be present in `organization/genders`
+* Remove starting and trailing spaces from `username`, `first_name` and `last_name`.
+* The given `gender_id` must be present in the database.
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
 * The `member_number` must be unique within all users.
 * Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.

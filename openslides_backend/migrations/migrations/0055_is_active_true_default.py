@@ -2,7 +2,7 @@ from datastore.migrations import BaseModelMigration
 from datastore.shared.util import fqid_from_collection_and_id
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
-from ...shared.filters import FilterOperator
+from ...shared.filters import And, FilterOperator
 
 
 class Migration(BaseModelMigration):
@@ -15,7 +15,10 @@ class Migration(BaseModelMigration):
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         users = self.reader.filter(
             "user",
-            FilterOperator("is_active", "=", None),
+            And(
+                FilterOperator("is_active", "=", None),
+                FilterOperator("meta_deleted", "!=", True),
+            ),
             [],
         )
         events: list[BaseRequestEvent] = [

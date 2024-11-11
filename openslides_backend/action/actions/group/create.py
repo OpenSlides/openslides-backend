@@ -19,7 +19,7 @@ class GroupCreate(GroupMixin, WeightMixin, CreateAction):
     model = Group()
     schema = DefaultSchema(Group()).get_create_schema(
         required_properties=["name", "meeting_id"],
-        optional_properties=["permissions", "external_id"],
+        optional_properties=["permissions", "external_id", "weight"],
     )
     permission = Permissions.User.CAN_MANAGE
 
@@ -28,5 +28,6 @@ class GroupCreate(GroupMixin, WeightMixin, CreateAction):
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]
             )
-        instance["weight"] = self.get_weight(instance["meeting_id"])
+        if "weight" not in instance:
+            instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance

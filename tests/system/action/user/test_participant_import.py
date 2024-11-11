@@ -38,9 +38,17 @@ class ParticipantImport(BaseActionTestCase):
                                 "info": ImportState.DONE,
                             },
                             "gender": {
+                                "id": 1,
                                 "value": "male",
                                 "info": ImportState.DONE,
                             },
+                            "groups": [
+                                {
+                                    "id": 1,
+                                    "value": "group1",
+                                    "info": ImportState.DONE,
+                                }
+                            ],
                         },
                     },
                 ],
@@ -49,9 +57,11 @@ class ParticipantImport(BaseActionTestCase):
 
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
@@ -72,6 +82,8 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_without_any_group_in_import_data(self) -> None:
+        del self.import_preview1_data["result"]["rows"][0]["data"]["groups"]
+        self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 400)
         assert (
@@ -97,10 +109,6 @@ class ParticipantImport(BaseActionTestCase):
         self.assert_model_exists("import_preview/1", {"name": "account"})
 
     def test_import_names_and_email_and_create(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
-        self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -108,7 +116,7 @@ class ParticipantImport(BaseActionTestCase):
             {
                 "username": "jonny",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
                 "meeting_ids": [1],
@@ -132,10 +140,6 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_with_group_created_in_between(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
-        self.update_model("import_preview/1", self.import_preview1_data)
         self.set_models(
             {
                 "group/123": {"meeting_id": 1, "name": "2Bcreated"},
@@ -192,9 +196,6 @@ class ParticipantImport(BaseActionTestCase):
             "value": "testsaml",
             "info": ImportState.NEW,
         }
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
         self.set_models(
             {
                 "user/1": {"saml_id": "testsaml"},
@@ -216,9 +217,6 @@ class ParticipantImport(BaseActionTestCase):
             "value": "notAGender",
             "info": ImportState.WARNING,
         }
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
         self.import_preview1_data["result"]["rows"][0]["messages"] = [
             "Gender 'notAGender' is not in the allowed gender list."
         ]
@@ -233,7 +231,7 @@ class ParticipantImport(BaseActionTestCase):
         user = self.assert_model_exists(
             "user/2", {"username": "jonny", "first_name": "Testy"}
         )
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
@@ -252,9 +250,6 @@ class ParticipantImport(BaseActionTestCase):
             "id": 111,
         }
         self.import_preview1_data["result"]["rows"][0]["data"]["id"] = 111
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
         self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -275,10 +270,6 @@ class ParticipantImport(BaseActionTestCase):
         self.base_permission_test({}, "participant.import", {"id": 1, "import": True})
 
     def test_import_permission(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
-        self.update_model("import_preview/1", self.import_preview1_data)
         self.base_permission_test(
             {},
             "participant.import",
@@ -287,10 +278,6 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_permission_2(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
-            {"info": ImportState.DONE, "value": "group1", "id": 1}
-        ]
-        self.update_model("import_preview/1", self.import_preview1_data)
         self.base_permission_test(
             {},
             "participant.import",
@@ -298,6 +285,33 @@ class ParticipantImport(BaseActionTestCase):
             Permissions.User.CAN_UPDATE,
             True,
         )
+
+    def test_import_permission_meeting_admin(self) -> None:
+        self.import_preview1_data["result"]["rows"][0]["data"]["id"] = 1
+        self.import_preview1_data["result"]["rows"][0]["state"] = ImportState.DONE
+        self.import_preview1_data["result"]["rows"][0]["data"]["gender"][
+            "info"
+        ] = ImportState.REMOVE
+        self.update_model("import_preview/1", self.import_preview1_data)
+
+        self.create_meeting()
+        self.create_meeting(4)
+        user_id = self.create_user_for_meeting(1)
+        other_user_id = 3
+        self.set_models(
+            {
+                f"user/{other_user_id}": self._get_user_data("jonny", {1: [], 4: []}),
+            }
+        )
+        self.set_user_groups(user_id, [2])
+        self.set_user_groups(other_user_id, [1, 4])
+        self.login(user_id)
+
+        response = self.request("participant.import", {"id": 1, "import": True})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/3", {"user_id": 3, "meeting_id": 4})
+        self.assert_model_not_exists("meeting_user/4")
 
     def test_import_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
@@ -563,6 +577,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "can_change_own_password": False,
                 "meeting_ids": [1],
                 "meeting_user_ids": [38],
+                "gender_id": 3,
             },
         )
         level_up = self.assert_model_exists("structure_level/1")
@@ -640,6 +655,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [35],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": None,
             },
         )
         self.assert_model_exists(
@@ -686,6 +702,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "meeting_user_ids": [37],
                 "is_physical_person": True,
                 "is_active": True,
+                "gender_id": 2,
             },
         )
         self.assert_model_exists(
@@ -728,6 +745,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up", "id": 2}],
+            "gender": {"id": 3, "info": "done", "value": "diverse"},
         }
 
         row = result["rows"][1]
@@ -762,6 +780,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -772,6 +791,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": ImportState.NEW, "value": "level up", "id": 2},
                 {"info": ImportState.DONE, "value": "no. 5", "id": 1},
             ],
+            "gender": {"info": "warning", "value": "unknown"},
         }
 
         self.assert_model_exists("structure_level/2", {"name": "level up"})
@@ -839,6 +859,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up"}],
+            "gender": {"id": 3, "info": "done", "value": "diverse"},
         }
 
         row = result["rows"][1]
@@ -877,6 +898,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -888,6 +910,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": ImportState.NEW, "value": "level up"},
                 {"info": ImportState.NEW, "value": "no. 5"},
             ],
+            "gender": {"info": "warning", "value": "unknown"},
         }
 
         row = result["rows"][4]

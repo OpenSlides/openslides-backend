@@ -94,7 +94,6 @@ meeting_settings_keys = [
     "list_of_speakers_intervention_time",
     "motions_default_workflow_id",
     "motions_default_amendment_workflow_id",
-    "motions_default_statute_amendment_workflow_id",
     "motions_preamble",
     "motions_default_line_numbering",
     "motions_line_length",
@@ -102,18 +101,17 @@ meeting_settings_keys = [
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",
+    "motions_hide_metadata_background",
     "motions_enable_recommendation_on_projector",
     "motions_show_referring_motions",
     "motions_show_sequential_number",
     "motions_recommendations_by",
     "motions_block_slide_columns",
-    "motions_statute_recommendations_by",
     "motions_recommendation_text_mode",
     "motions_default_sorting",
     "motions_number_type",
     "motions_number_min_digits",
     "motions_number_with_blank",
-    "motions_statutes_enabled",
     "motions_amendments_enabled",
     "motions_amendments_in_main_list",
     "motions_amendments_of_amendments",
@@ -234,8 +232,16 @@ class MeetingUpdate(
             )
         self.check_locking(instance, set_as_template)
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "enable_anonymous"],
+            lock_result=False,
         )
+        if instance.get("enable_anonymous") and not organization.get(
+            "enable_anonymous"
+        ):
+            raise ActionException(
+                "Anonymous users can not be enabled in this organization."
+            )
         if (
             organization.get("require_duplicate_from")
             and set_as_template is not None
@@ -305,12 +311,7 @@ class MeetingUpdate(
         if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
-                [
-                    {
-                        "name": "Anonymous",
-                        "meeting_id": instance["id"],
-                    }
-                ],
+                [{"name": "Public", "weight": 0, "meeting_id": instance["id"]}],
             )
             instance["anonymous_group_id"] = anonymous_group_id = cast(
                 list[dict[str, Any]], group_result
