@@ -11,6 +11,8 @@
     pronoun: string,
     is_active: boolean,
     is_physical_person: boolean,
+    member_number: string,
+    /// meeting related data can be given. See below explanation on meeting mappers.
 }
 ```
 
@@ -31,7 +33,56 @@ Extras to do on creation:
 
     As you can see there is no password for local login and the user can't change it.
 
-- Add user to the meeting by adding him to the group given in the organization-wide field-mapping as `"meeting": { "external_id": "xyz", "external_group_id": "delegates"}` if a `meeting`-entry is given. If it fails for any reason, a log entry is written, but no exception thrown. Add the user always to the group, if it fails try to add him to the default group.
+### Meeting Mappers
+- The saml attribute mapping can have a list of 'meeting_mappers' that can be used to assign users meeting related data. (See example below.)
+    - A mapper can be given a 'name' for debugging purposes.
+    - The 'external_id' maps to the meeting and is required (logged as warning if meeting does not exist). Multiple mappers can map to the same meeting.
+    - If 'allow_update' is set to false, the mapper is only used if the user does not already exist. If it is not given it defaults to true.
+    - Mappers are only used if every condition in the list of 'conditions' resolves to true. For this the 'attribute' in the payload data needs to match the string or regex given in 'condition'. If no condition is given this defaults to true.
+    - The actual mappings are objects or lists of objects of attribute-default pairs (exception: number, which only has the option of an attribute). 
+        - The attribute refers to the payloads data.
+        - A default value can be given in case the payloads attribute does not exist or contains no data. (Logged as debug)
+        - Groups and structure levels are given as a list of attribute-default pairs.
+- On conflict of multiple mappers mappings on a same meetings field the last given mappers data for that field is used. Exception to this are groups and structure levels. Their data is combined. 
+- Values for groups and structure levels can additionally be given in comma separated lists composed as a single string.
+- If no group exists for a meeting and no default is given, the meetings default group is used. (Logged as warning)
+- If a structure level does not exist, it is created.
+- Vote weights need to be given as 6 digit decimal strings.
+
+"meeting_mappers": [{
+   "name": "Mapper-Name",
+   "external_id": "M2025",
+   "allow_update": "false"
+   "conditions": [{
+       "attribute": "membernumber", 
+       "condition": "1426\d{4,6}$" 
+   }, { 
+       "attribute": "function",
+       "condition": "board"
+   }],
+   "mappings": {    
+       "groups": [{
+           "attribute": "membership",
+           "default": "admin, standard"
+       }],
+       "structure_levels": [{
+           "attribute": "ovname",
+           "default": "struct1, struct2",
+       }],
+       "number": {"attribute": "p_number"}
+       "comment": {
+           "attribute": "idp_comment",
+           "default": "Group set via SSO"},
+       "vote_weight": {
+           "attribute": "vote",
+           "default":"1.000000",
+       },
+       "present": {
+           "attribute": "present_key",
+           "default":"True",
+       },
+   }
+}]
 
 ## Return Value
 

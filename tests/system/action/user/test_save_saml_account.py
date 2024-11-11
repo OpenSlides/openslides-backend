@@ -510,65 +510,64 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "pronoun": "pronoun",
                 "is_active": "is_active",
                 "is_physical_person": "is_person",
-                "meeting_mappers": [
-                    {
-                        "name": "works",
-                        "external_id": "Landtag",
-                        "conditions": [
-                            {"attribute": "member_number", "condition": "LV_.*"},
-                            {
-                                "attribute": "email",
-                                "condition": "[\\w\\.]+@([\\w-]+\\.)+[\\w]{2,4}",
-                            },
-                        ],
-                        "mappings": {
-                            "comment": {
-                                "attribute": "idp_commentary",
-                                "default": "Vote weight, groups and structure levels set via SSO.",
-                            },
-                            "number": {"attribute": "participant_number"},
-                            "structure_levels": {
-                                "attribute": "structure",
-                                "default": "structure1",
-                            },
-                            "groups": {
-                                "attribute": "idp_group_attribute",
-                                "default": "not_a_group",
-                            },
-                            "vote_weight": {"attribute": "vw", "default": "1.000000"},
-                            "present": {"attribute": "presence", "default": "True"},
-                        },
-                    },
-                    {
-                        "name": "works_too",
-                        "external_id": "Kreistag",
-                        "conditions": [
-                            {"attribute": "kv_member_number", "condition": "KV_.*"}
-                        ],
-                        "mappings": {
-                            "comment": {
-                                "attribute": "idp_commentary",
-                                "default": "Vote weight, groups and structure levels set via SSO.",
-                            },
-                            "number": {"attribute": "participant_kv_number"},
-                            "structure_levels": {
-                                "attribute": "kv_structure",
-                                "default": "structure1",
-                            },
-                            "groups": {
-                                "attribute": "kv_group_attribute",
-                                "default": "not_a_group",
-                            },
-                            "vote_weight": {
-                                "attribute": "kv_vw",
-                                "default": "1.000000",
-                            },
-                            "present": {"attribute": "kv_presence", "default": "True"},
-                        },
-                    },
-                ],
             },
         }
+        self.meeting_mappers = [
+            {
+                "name": "works",
+                "external_id": "Landtag",
+                "conditions": [
+                    {"attribute": "member_number", "condition": "LV_.*"},
+                    {
+                        "attribute": "email",
+                        "condition": "[\\w\\.]+@([\\w-]+\\.)+[\\w]{2,4}",
+                    },
+                ],
+                "mappings": {
+                    "comment": {
+                        "attribute": "idp_commentary",
+                        "default": "Vote weight, groups and structure levels set via SSO.",
+                    },
+                    "number": {"attribute": "participant_number"},
+                    "structure_levels": {
+                        "attribute": "structure",
+                        "default": "structure1",
+                    },
+                    "groups": {
+                        "attribute": "idp_group_attribute",
+                        "default": "not_a_group",
+                    },
+                    "vote_weight": {"attribute": "vw", "default": "1.000000"},
+                    "present": {"attribute": "presence", "default": "True"},
+                },
+            },
+            {
+                "name": "works_too",
+                "external_id": "Kreistag",
+                "conditions": [{"attribute": "kv_member_number", "condition": "KV_.*"}],
+                "mappings": {
+                    "comment": {
+                        "attribute": "idp_commentary",
+                        "default": "Vote weight, groups and structure levels set via SSO.",
+                    },
+                    "number": {"attribute": "participant_kv_number"},
+                    "structure_levels": {
+                        "attribute": "kv_structure",
+                        "default": "structure1",
+                    },
+                    "groups": {
+                        "attribute": "kv_group_attribute",
+                        "default": "not_a_group",
+                    },
+                    "vote_weight": {
+                        "attribute": "kv_vw",
+                        "default": "1.000000",
+                    },
+                    "present": {"attribute": "kv_presence", "default": "True"},
+                },
+            },
+        ]
+        self.organization["saml_attr_mapping"]["meeting_mappers"] = self.meeting_mappers  # type: ignore
         self.create_meeting()
         self.create_meeting(4)
         self.set_models(
@@ -605,24 +604,47 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
+                "idp_commentary": "normal data used",
             },
         )
         self.assert_status_code(response, 200)
         self.app.logger.warning.assert_called_with(  # type: ignore
-            "save_saml_account found no group in meeting 'Kreistag' for ['not_a_group'], but use default_group of meeting"
+            "save_saml_account found no group in meeting 'Kreistag' for ['not_a_group'], but used default_group of meeting"
         )
         self.assert_model_exists(
             "user/2",
             {
                 "saml_id": "111",
                 "username": "111",
+                "email": "holzi@holz.de",
                 "meeting_user_ids": [1, 2],
                 "meeting_ids": [1, 4],
                 "is_present_in_meeting_ids": [1, 4],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1}
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [2],
+                "structure_level_ids": [1],
+                "vote_weight": "1.000000",
+                "number": "MG_1254",
+                "comment": "normal data used",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "user_id": 2,
+                "group_ids": [4],
+                "meeting_id": 4,
+                "comment": "normal data used",
+                "structure_level_ids": [2],
+                "vote_weight": "1.000000",
+                "number": "MG_1254",
+            },
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
@@ -640,10 +662,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         """
         Shows: if meeting does not exist error is logged.
         """
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0][  # type: ignore
-            "external_id"
-        ] = "Bundestag"
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]  # type: ignore
+        self.meeting_mappers[0]["external_id"] = "Bundestag"
+        del self.meeting_mappers[1]
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -684,9 +704,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 * saml datas values
             * multiple values can be repeated
         """
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
-            "groups"
-        ] = {
+        self.meeting_mappers[1]["mappings"]["groups"] = {  # type: ignore
             "attribute": "use_default",
             "default": "Default, Delegates, Delegates",
         }
@@ -749,7 +767,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_number": "MG_1254",
                 "idp_group_attribute": "Delegates",
                 "kv_member_number": "LV_Königholz",
-                "kv_email": "hols@holz.de",  # TODO what a bullshit but possible?
+                "kv_email": "hols@holz.de",
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
@@ -789,7 +807,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_number": "MG_1254",
                 "idp_group_attribute": "Delegates",
                 "kv_member_number": "KV_Könighols",
-                "kv_email": "hols@holz.de",  # TODO what a bullshit but possible?
+                "kv_email": "hols@holz.de",
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
@@ -851,8 +869,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_mapping_no_mapping(self) -> None:
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][0]["mappings"]  # type: ignore
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]  # type: ignore
+        del self.meeting_mappers[0]["mappings"]
+        del self.meeting_mappers[1]
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -882,12 +900,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_mapping_one_meeting_twice(self) -> None:
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1][  # type: ignore
-            "external_id"
-        ] = "Landtag"
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
-            "groups"
-        ] = {
+        self.meeting_mappers[1]["external_id"] = "Landtag"
+        self.meeting_mappers[1]["mappings"]["groups"] = {  # type: ignore
             "attribute": "use_default",
             "default": "Default",
         }
@@ -937,14 +951,10 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_update_user_with_default_membership(self) -> None:
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [  # type: ignore
+        self.meeting_mappers[1]["conditions"] = [
             {"attribute": "yes", "condition": ".*"}
         ]
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
-            "groups"
-        ][
-            "default"
-        ] = "Delegates"
+        self.meeting_mappers[1]["mappings"]["groups"]["default"] = "Delegates"  # type: ignore
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account", {"username": ["admin_saml"], "yes": "to_all"}
@@ -990,9 +1000,7 @@ class UserAddToGroup(UserBaseSamlAccount):
     def test_update_user_existing_member_in_group(self) -> None:
         """users meeting user updated without changing group 2 adding group 5 and structure level 2 created sl 1 left untouched"""
         # TODO ich denke ich muss hier noch mal pro meeting user ausschließen, dass nichts verändert wird bei not allowed update
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0][  # type: ignore
-            "allow_update"
-        ] = "False"
+        self.meeting_mappers[0]["allow_update"] = "False"
         self.set_models({"organization/1": self.organization})
         self.set_user_groups(1, [2])
         self.set_models(
