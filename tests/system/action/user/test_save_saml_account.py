@@ -640,10 +640,10 @@ class UserAddToGroup(UserBaseSamlAccount):
         """
         Shows: if meeting does not exist error is logged.
         """
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][0][  # type: ignore
             "external_id"
         ] = "Bundestag"
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]
+        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]  # type: ignore
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -684,9 +684,12 @@ class UserAddToGroup(UserBaseSamlAccount):
                 * saml datas values
             * multiple values can be repeated
         """
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
             "groups"
-        ] = {"attribute": "use_default", "default": "Default, Delegates, Delegates"}
+        ] = {
+            "attribute": "use_default",
+            "default": "Default, Delegates, Delegates",
+        }
         self.set_models({"organization/1": self.organization})
         # TODO test Default on same meeting as attribute with 2 mappers
         # TODO multiple same attributes over 2 mappers
@@ -818,7 +821,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_create_user_mapping_no_mapper(self) -> None:
-        del self.organization["saml_attr_mapping"]["meeting_mappers"]
+        del self.organization["saml_attr_mapping"]["meeting_mappers"]  # type: ignore
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -848,8 +851,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_mapping_no_mapping(self) -> None:
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][0]["mappings"]
-        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]
+        del self.organization["saml_attr_mapping"]["meeting_mappers"][0]["mappings"]  # type: ignore
+        del self.organization["saml_attr_mapping"]["meeting_mappers"][1]  # type: ignore
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -879,12 +882,15 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_mapping_one_meeting_twice(self) -> None:
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1][  # type: ignore
             "external_id"
         ] = "Landtag"
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
             "groups"
-        ] = {"attribute": "use_default", "default": "Default"}
+        ] = {
+            "attribute": "use_default",
+            "default": "Default",
+        }
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -931,12 +937,14 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_update_user_with_default_membership(self) -> None:
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [  # type: ignore
             {"attribute": "yes", "condition": ".*"}
         ]
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["mappings"][  # type: ignore
             "groups"
-        ]["default"] = "Delegates"
+        ][
+            "default"
+        ] = "Delegates"
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account", {"username": ["admin_saml"], "yes": "to_all"}
@@ -982,7 +990,7 @@ class UserAddToGroup(UserBaseSamlAccount):
     def test_update_user_existing_member_in_group(self) -> None:
         """users meeting user updated without changing group 2 adding group 5 and structure level 2 created sl 1 left untouched"""
         # TODO ich denke ich muss hier noch mal pro meeting user ausschließen, dass nichts verändert wird bei not allowed update
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0][
+        self.organization["saml_attr_mapping"]["meeting_mappers"][0][  # type: ignore
             "allow_update"
         ] = "False"
         self.set_models({"organization/1": self.organization})

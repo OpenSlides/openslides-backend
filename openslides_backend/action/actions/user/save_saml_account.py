@@ -1,5 +1,6 @@
 import re
-from collections.abc import Iterable
+from collections import defaultdict
+from collections.abc import Generator, Iterable
 from typing import Any, cast
 
 import fastjsonschema
@@ -173,18 +174,26 @@ class UserSaveSamlAccount(
                 FilterOperator("name", "=", gender),
                 ["id"],
             )
+            gender_id = None
             if gender_dict:
                 gender_id = next(iter(gender_dict.keys()))
             else:
                 action_result = self.execute_other_action(
                     GenderCreate, [{"name": gender}]
                 )
-                gender_id = action_result[0].get("id", 0)  # type: ignore
-            instance["gender_id"] = gender_id
+                if action_result and action_result[0]:
+                    gender_id = action_result[0].get("id", 0)
+            if gender_id:
+                instance["gender_id"] = gender_id
+            else:
+                self.logger.warning(
+                    f"save_saml_account could neither find nor create {gender}. Not handling gender."
+                )
         # Empty string: remove gender_id
         elif gender == "":
             instance["gender_id"] = None
-        meeting_users = dict()
+        meeting_users: dict[int, dict[str, Any]] | None = dict()
+        user_id = None
         if len(users) == 1:
             self.user = next(iter(users.values()))
             instance["id"] = (user_id := cast(int, self.user["id"]))
@@ -200,9 +209,11 @@ class UserSaveSamlAccount(
             instance = self.set_defaults(instance)
             meeting_users = instance.pop("meeting_user_data", None)
             response = self.execute_other_action(UserCreate, [instance])
-            user_id = response[0].get("id")  # type: ignore
+            if response and response[0]:
+                user_id = response[0].get("id")
             instance["meeting_user_data"] = meeting_users
-            meeting_users = self.apply_meeting_user_data(instance, user_id, False)
+            if user_id:
+                meeting_users = self.apply_meeting_user_data(instance, user_id, False)
         else:
             ActionException(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
@@ -220,6 +231,7 @@ class UserSaveSamlAccount(
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
+        # TODO do we need mu data returned?
         return {"user_id": instance["id"]}
 
     def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -258,22 +270,21 @@ class UserSaveSamlAccount(
     def apply_meeting_mapping(
         self, instance: dict[str, Any], instance_old: dict[str, Any]
     ) -> None:
-        meeting_user_data: dict[str, Any] = dict()
-        meeting_mappers: list[dict[str, Any]] = self.saml_attr_mapping.get(
-            "meeting_mappers", []
-        )
-        if meeting_mappers:
+        meeting_user_data: dict[str, Any] = defaultdict(dict)
+        if meeting_mappers := cast(
+            list,
+            self.saml_attr_mapping.get("meeting_mappers", []),
+        ):
             for meeting_mapper in meeting_mappers:
                 if self.validate_meeting_mapper(instance_old, meeting_mapper):
-                    meeting_external_id = meeting_mapper["external_id"]
-                    if not (
-                        mapping_results := meeting_user_data.get(
-                            meeting_external_id, dict()
-                        )
-                    ):
-                        meeting_user_data[meeting_external_id] = mapping_results
+                    meeting_external_id = cast(str, meeting_mapper["external_id"])
+                    mapping_results = meeting_user_data[meeting_external_id]
+                    allow_update: str | bool
                     if isinstance(
-                        allow_update := meeting_mapper.get("allow_update", "True"), str
+                        allow_update := cast(
+                            str, meeting_mapper.get("allow_update", "True")
+                        ),
+                        str,
                     ):
                         allow_update = allow_update.casefold() != "False".casefold()
                     result = {
@@ -305,13 +316,13 @@ class UserSaveSamlAccount(
 
     def apply_meeting_user_data(
         self, instance: dict[str, Any], user_id: int, is_update: bool
-    ) -> dict[str, Any]:
+    ) -> dict[int, dict[str, Any]] | None:
         if not (meeting_user_data := instance.pop("meeting_user_data", None)) or not (
             external_meeting_ids := sorted(
                 [ext_id for ext_id in meeting_user_data.keys()]
             )
         ):
-            return
+            return None
         meetings = {
             meeting_id: meeting
             for meeting_id, meeting in sorted(
@@ -374,7 +385,7 @@ class UserSaveSamlAccount(
         return result
 
     def update_meeting_users_from_db(
-        self, meeting_users: dict[str, Any], user_id: int
+        self, meeting_users: dict[int, dict[str, Any]], user_id: int
     ) -> None:
         """updates meeting users with groups and structure level relations from database"""
         for meeting_id, meeting_user in meeting_users.items():
@@ -394,16 +405,16 @@ class UserSaveSamlAccount(
     def get_field_data(
         self,
         instance: dict[str, Any],
-        meeting_user: dict[dict[str, Any]],
-        meeting_mapper: dict[str, str],
-    ) -> str:
+        meeting_user: dict[str, Any],
+        meeting_mapper: dict[str, dict[str, Any]],
+    ) -> Generator[tuple[str, Any]]:
         # TODO #performance inbetween reduction of number of attributes
         """
         returns the field data for the given idp mapping field. Groups the groups and structure levels for each meeting.
         Uses mappers for generating default values.
         """
         for saml_meeting_user_field in allowed_meeting_user_fields:
-            result: set[str] | str = ""
+            result: set[str] | str | bool = ""
             meeting_mapping = meeting_mapper["mappings"]
             attr_default = meeting_mapping.get(saml_meeting_user_field, dict())
             result = meeting_user.get(saml_meeting_user_field, "")
@@ -417,12 +428,13 @@ class UserSaveSamlAccount(
                 if saml_meeting_user_field in ["groups", "structure_levels"]:
                     if not result:
                         result = set()
-                    result.update(value.split(", "))
+                    cast(set, result).update(value.split(", "))
                 elif saml_meeting_user_field == "comment":
-                    result += " ".join([result, value])
+                    result = " ".join([cast(str, result), value])
                     # TODO check if this leads to leading whitespace
                     # TODO is this the normal behaviour?
                 elif saml_meeting_user_field == "present":
+                    # Result is int or bool. int will later be interpreted as bool.
                     result = (
                         value
                         if not isinstance(value, str)
@@ -431,11 +443,15 @@ class UserSaveSamlAccount(
                 else:
                     result = value
             elif saml_meeting_user_field == "number" and idp_attribute:
-                result = instance.get(idp_attribute)
+                result = cast(str, instance.get(idp_attribute))
             if result:
                 yield saml_meeting_user_field, result
 
-    def get_group_ids(self, group_names: set[str], meeting: dict) -> list[int]:
+    def get_group_ids(self, group_names: list[str], meeting: dict) -> list[int]:
+        """
+        Gets the group ids from given group names in that meeting.
+        If none of the groups exists in the meeting, the meetings default group is returned.
+        """
         groups = self.datastore.filter(
             "group",
             And(
@@ -455,10 +471,16 @@ class UserSaveSamlAccount(
                 f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but use default_group of meeting"
             )
             return [default_group_id]
+        else:
+            assert False
 
     def get_structure_level_ids(
-        self, structure_level_names: set[str], meeting: dict[str, Any]
+        self, structure_level_names: list[str], meeting: dict[str, Any]
     ) -> list[int]:
+        """
+        Gets the structure level ids from given structure level names in that meeting.
+        For this also creates new structure levels not already existing in the meeting.
+        """
         if structure_level_names:
             meeting_id = meeting["id"]
             found_structure_levels = self.datastore.filter(
@@ -487,17 +509,21 @@ class UserSaveSamlAccount(
                     if sl_name and sl_name not in found_structure_level_names
                 ]
                 # meeting_user_ids are only known during UserUpdate. Hence we cannot do batch create for all meeting users
-                structure_levels_result = self.execute_other_action(
-                    StructureLevelCreateAction,
-                    [
-                        {"name": structure_level_name, "meeting_id": meeting_id}
-                        for structure_level_name in to_be_created_structure_levels
-                    ],
-                )
-                return sorted(
-                    [
-                        structure_level["id"]
-                        for structure_level in structure_levels_result
-                    ]
-                    + found_structure_level_ids
-                )
+                if structure_levels_result := (
+                    self.execute_other_action(
+                        StructureLevelCreateAction,
+                        [
+                            {"name": structure_level_name, "meeting_id": meeting_id}
+                            for structure_level_name in to_be_created_structure_levels
+                        ],
+                    )
+                ):
+                    return sorted(
+                        [
+                            structure_level["id"]
+                            for structure_level in structure_levels_result
+                            if structure_level
+                        ]
+                        + found_structure_level_ids
+                    )
+        return []
