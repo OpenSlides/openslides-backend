@@ -19,12 +19,12 @@ class Migration(BaseModelMigration):
         db_models = self.reader.get_all("user")
         for id_, model in db_models.items():
             if not "kc_id" in model:
-                idp_id = self.idpAdmin.create_user(model.get("username"), model.get("saml_id"))
+                idp_id = self.idpAdmin.create_user(model.get("username"), model.get("password"), model.get("saml_id"))
                 events.append(
                     RequestUpdateEvent(
                         fqid_from_collection_and_id("user", id_),
                         {
-                            "idp_id": idp_id,
+                            "idp_id": idp_id
                         },
                     )
                 )

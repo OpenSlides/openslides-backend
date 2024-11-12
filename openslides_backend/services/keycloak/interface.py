@@ -11,5 +11,5 @@ class IdpAdminService(AuthenticatedServiceInterface, Protocol):
     """
 
     @abstractmethod
-    def create_user(self, username: str, saml_id: str | None) -> str:
+    def create_user(self, username: str, password_hash: str, saml_id: str | None) -> str:
         """Create user and return new IDP user ID"""

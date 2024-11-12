@@ -70,6 +70,8 @@ class UserCreate(
 
         if instance.get("is_active"):
             self.check_limit_of_user(1)
+
+        idp_id = instance.get("idp_id")
         saml_id = instance.get("saml_id")
         if not instance.get("username"):
             if saml_id:
