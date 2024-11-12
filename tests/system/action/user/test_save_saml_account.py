@@ -529,14 +529,18 @@ class UserAddToGroup(UserBaseSamlAccount):
                         "default": "Vote weight, groups and structure levels set via SSO.",
                     },
                     "number": {"attribute": "participant_number"},
-                    "structure_levels": {
-                        "attribute": "structure",
-                        "default": "structure1",
-                    },
-                    "groups": {
-                        "attribute": "idp_group_attribute",
-                        "default": "not_a_group",
-                    },
+                    "structure_levels": [
+                        {
+                            "attribute": "structure",
+                            "default": "structure1",
+                        }
+                    ],
+                    "groups": [
+                        {
+                            "attribute": "idp_group_attribute",
+                            "default": "not_a_group",
+                        }
+                    ],
                     "vote_weight": {"attribute": "vw", "default": "1.000000"},
                     "present": {"attribute": "presence", "default": "True"},
                 },
@@ -551,14 +555,18 @@ class UserAddToGroup(UserBaseSamlAccount):
                         "default": "Vote weight, groups and structure levels set via SSO.",
                     },
                     "number": {"attribute": "participant_kv_number"},
-                    "structure_levels": {
-                        "attribute": "kv_structure",
-                        "default": "structure1",
-                    },
-                    "groups": {
-                        "attribute": "kv_group_attribute",
-                        "default": "not_a_group",
-                    },
+                    "structure_levels": [
+                        {
+                            "attribute": "kv_structure",
+                            "default": "structure1",
+                        }
+                    ],
+                    "groups": [
+                        {
+                            "attribute": "kv_group_attribute",
+                            "default": "not_a_group",
+                        }
+                    ],
                     "vote_weight": {
                         "attribute": "kv_vw",
                         "default": "1.000000",
@@ -704,10 +712,12 @@ class UserAddToGroup(UserBaseSamlAccount):
                 * saml datas values
             * multiple values can be repeated
         """
-        self.meeting_mappers[1]["mappings"]["groups"] = {  # type: ignore
-            "attribute": "use_default",
-            "default": "Default, Delegates, Delegates",
-        }
+        self.meeting_mappers[1]["mappings"]["groups"] = [  # type: ignore
+            {
+                "attribute": "use_default",
+                "default": "Default, Delegates, Delegates",
+            }
+        ]
         self.set_models({"organization/1": self.organization})
         # TODO test Default on same meeting as attribute with 2 mappers
         # TODO multiple same attributes over 2 mappers
@@ -901,10 +911,12 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_mapping_one_meeting_twice(self) -> None:
         self.meeting_mappers[1]["external_id"] = "Landtag"
-        self.meeting_mappers[1]["mappings"]["groups"] = {  # type: ignore
-            "attribute": "use_default",
-            "default": "Default",
-        }
+        self.meeting_mappers[1]["mappings"]["groups"] = [  # type: ignore
+            {
+                "attribute": "use_default",
+                "default": "Default",
+            }
+        ]
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -954,7 +966,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.meeting_mappers[1]["conditions"] = [
             {"attribute": "yes", "condition": ".*"}
         ]
-        self.meeting_mappers[1]["mappings"]["groups"]["default"] = "Delegates"  # type: ignore
+        self.meeting_mappers[1]["mappings"]["groups"][0]["default"] = "Delegates"  # type: ignore
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account", {"username": ["admin_saml"], "yes": "to_all"}

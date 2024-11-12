@@ -53,31 +53,23 @@ class MeetingUserCreate(
     def get_history_information(self) -> HistoryInformation | None:
         information = {}
         for instance in self.instances:
-            instance_information = (
-                []
-            )  # TODO we need a better information string generation generating only one line
-            for collection_name in ["group", "structure_level"]:
-                if f"{collection_name}_ids" in instance:
-                    if len(instance[f"{collection_name}_ids"]) == 1:
-                        instance_information.extend(
-                            [
-                                f"Participant added to {collection_name}"
-                                + " {} in meeting {}",
-                                fqid_from_collection_and_id(
-                                    collection_name,
-                                    instance[f"{collection_name}_ids"][0],
-                                ),
-                            ]
-                        )
-                    else:
-                        instance_information.append(
-                            f"Participant added to multiple {collection_name}s in meeting"
-                            + " {}",
-                        )
-            else:
-                instance_information.append(
-                    "Participant added to meeting {}",
-                )
+            instance_information = []
+            fqids_per_collection = {
+                collection_name: [
+                    fqid_from_collection_and_id(
+                        collection_name,
+                        _id,
+                    )
+                    for _id in ids
+                ]
+                for collection_name in ["group", "structure_level"]
+                if (ids := instance.get(f"{collection_name}_ids"))
+            }
+            instance_information.append(
+                self.compose_history_string(list(fqids_per_collection.items()))
+            )
+            for collection_name, fqids in fqids_per_collection.items():
+                instance_information.extend(fqids)
             instance_information.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
@@ -85,3 +77,29 @@ class MeetingUserCreate(
                 instance_information
             )
         return information
+
+    def compose_history_string(
+        self, fqids_per_collection: list[tuple[str, list[str]]]
+    ) -> str:
+        """
+        Composes a string of the shape:
+        Participant added to groups {}, {} and structure levels {} in meeting {}.
+        """
+        middle_sentence_parts = [
+            " ".join(
+                [  # prefix and to collection name if it's not the first in list
+                    ("and " if collection_name != fqids_per_collection[0][0] else "")
+                    + collection_name.replace("_", " ")  # replace for human readablity
+                    + ("s" if len(fqids) != 1 else ""),  # plural s
+                    ", ".join(["{}" for _ in range(len(fqids))]),
+                ]
+            )
+            for collection_name, fqids in fqids_per_collection
+        ]
+        return " ".join(
+            [
+                "Participant added to",
+                *middle_sentence_parts,
+                ("in " if fqids_per_collection else "") + "meeting {}.",
+            ]
+        )

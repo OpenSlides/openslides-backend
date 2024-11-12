@@ -414,49 +414,46 @@ class UserSaveSamlAccount(
             result: set[str] | str | bool = ""
             meeting_mapping = meeting_mapper["mappings"]
             result = meeting_user.get(saml_meeting_user_field, "")
-            # TODO should be a list in groups and sl
-            # if saml_meeting_user_field in ["groups", "structure_levels"]:
-            #     for attr_default in meeting_mapping.get(saml_meeting_user_field, dict()):
-            #         if ((idp_attribute := attr_default.get("attribute")) and (value := instance.get(idp_attribute))):
-            #             if not result:
-            #                 result = set()
-            #             cast(set, result).update(value.split(", "))
-            attr_default = meeting_mapping.get(saml_meeting_user_field, dict())
-            if idp_attribute := attr_default.get("attribute"):
-                if saml_meeting_user_field == "number":
-                    # Number cannot have a default.
-                    if value := instance.get(idp_attribute):
-                        result = cast(str, value)
-                    else:
+            if saml_meeting_user_field in ["groups", "structure_levels"]:
+                attr_default_list = meeting_mapping.get(saml_meeting_user_field, [])
+            else:
+                attr_default_list = [meeting_mapping.get(saml_meeting_user_field, dict())]
+            for attr_default in attr_default_list:
+                if idp_attribute := attr_default.get("attribute"):
+                    if saml_meeting_user_field == "number":
+                        # Number cannot have a default.
+                        if value := instance.get(idp_attribute):
+                            result = cast(str, value)
+                        else:
+                            missing_attributes.append(idp_attribute)
+                    elif not (value := instance.get(idp_attribute)):
                         missing_attributes.append(idp_attribute)
-                elif not (value := instance.get(idp_attribute)):
-                    missing_attributes.append(idp_attribute)
-                    value = attr_default.get("default")
-                if value:
-                    if saml_meeting_user_field in ["groups", "structure_levels"]:
-                        # Need to append to group and structure_level for same meeting.
-                        if not result:
-                            result = set()
-                        cast(set, result).update(value.split(", "))
-                    elif saml_meeting_user_field == "comment":
-                        # Want comments from all matching mappers.
-                        if result:
-                            result = cast(str, result) + " " + value
+                        value = attr_default.get("default")
+                    if value:
+                        if saml_meeting_user_field in ["groups", "structure_levels"]:
+                            # Need to append to group and structure_level for same meeting.
+                            if not result:
+                                result = set()
+                            cast(set, result).update(value.split(", "))
+                        elif saml_meeting_user_field == "comment":
+                            # Want comments from all matching mappers.
+                            if result:
+                                result = cast(str, result) + " " + value
+                            else:
+                                result = value
+                        elif saml_meeting_user_field == "present":
+                            # Result is int or bool. int will later be interpreted as bool.
+                            result = (
+                                value
+                                if not isinstance(value, str)
+                                else (
+                                    False
+                                    if value.casefold() == "false".casefold()
+                                    else True
+                                )
+                            )
                         else:
                             result = value
-                    elif saml_meeting_user_field == "present":
-                        # Result is int or bool. int will later be interpreted as bool.
-                        result = (
-                            value
-                            if not isinstance(value, str)
-                            else (
-                                False
-                                if value.casefold() == "false".casefold()
-                                else True
-                            )
-                        )
-                    else:
-                        result = value
             if result:
                 yield saml_meeting_user_field, result
         if fields := ",".join(missing_attributes):
