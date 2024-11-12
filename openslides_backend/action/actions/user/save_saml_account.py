@@ -119,7 +119,6 @@ class UserSaveSamlAccount(
                 },
             }
         )
-        # TODO what about schema validation for mu data?
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
@@ -404,7 +403,6 @@ class UserSaveSamlAccount(
         meeting_user: dict[str, Any],
         meeting_mapper: dict[str, dict[str, Any]],
     ) -> Generator[tuple[str, Any]]:
-        # TODO #performance inbetween reduction of number of attributes
         """
         returns the field data for the given idp mapping field. Groups the groups and structure levels for each meeting.
         Uses mappers for generating default values.
@@ -417,7 +415,9 @@ class UserSaveSamlAccount(
             if saml_meeting_user_field in ["groups", "structure_levels"]:
                 attr_default_list = meeting_mapping.get(saml_meeting_user_field, [])
             else:
-                attr_default_list = [meeting_mapping.get(saml_meeting_user_field, dict())]
+                attr_default_list = [
+                    meeting_mapping.get(saml_meeting_user_field, dict())
+                ]
             for attr_default in attr_default_list:
                 if idp_attribute := attr_default.get("attribute"):
                     if saml_meeting_user_field == "number":
@@ -479,7 +479,7 @@ class UserSaveSamlAccount(
             ["meeting_user_ids"],
         )
         if len(groups) > 0:
-            return sorted([group_id for group_id, group in groups.items()])
+            return sorted(groups)
         elif default_group_id := meeting["default_group_id"]:
             external_meeting_id = meeting["external_id"]
             self.logger.warning(
