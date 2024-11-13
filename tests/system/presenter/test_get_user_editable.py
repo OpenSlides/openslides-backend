@@ -5,6 +5,7 @@ from .base import BasePresenterTestCase
 
 class TestGetUSerEditable(BasePresenterTestCase):
     def set_up(self) -> None:
+        self.maxDiff = None
         self.create_model(
             "user/111",
             {
@@ -256,6 +257,88 @@ class TestGetUSerEditable(BasePresenterTestCase):
                         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
                     ],
                 },
+            },
+        )
+
+    def test_with_same_meeting_can_update_manage(self) -> None:
+        """
+        User 5 can be edited because he is only in meetings which User 111 has can_manage of.
+        User 7 can be edited because he is only in meetings which User 111 has can_update of.
+        """
+        self.set_up()
+        self.create_meeting_for_two_users(5, 111, 1)
+        self.create_meeting_for_two_users(5, 111, 4)
+        self.create_meeting_for_two_users(7, 111, 7)
+        self.create_meeting_for_two_users(7, 111, 10)
+        self.update_model("meeting/1", {"committee_id": 1})
+        self.update_model("meeting/4", {"committee_id": 2})
+        self.update_model("meeting/7", {"committee_id": 1})
+        self.update_model("meeting/10", {"committee_id": 2})
+        self.update_model("group/3", {"permissions": ["user.can_update"]})
+        self.update_model("group/6", {"permissions": ["user.can_update"]})
+        self.update_model("group/9", {"permissions": ["user.can_manage"]})
+        self.update_model("group/12", {"permissions": ["user.can_manage"]})
+        # User 111 has sufficient group rights in meeting 1, 4, 7 and 10
+        # User 5 is normal user in meeting 1 and 4
+        # User 7 is normal user in meeting 7 and 10
+        meeting_user_to_group = {
+            1111: 3,
+            4111: 6,
+            15: 1,
+            45: 4,
+            7111: 9,
+            10111: 12,
+            77: 7,
+            107: 10,
+        }
+        self.move_user_to_group(meeting_user_to_group)
+        self.update_model(
+            "user/5",
+            {
+                "meeting_user_ids": [
+                    15,
+                    45,
+                ],
+                "meeting_ids": [1, 4],
+            },
+        )
+        self.update_model(
+            "user/7",
+            {
+                "meeting_user_ids": [77, 107],
+                "meeting_ids": [7, 10],
+            },
+        )
+        self.update_model(
+            "user/111",
+            {
+                "meeting_user_ids": [1111, 4111, 7111, 10111],
+                "meeting_ids": [1, 4, 7, 10],
+            },
+        )
+        status_code, data = self.request(
+            "get_user_editable",
+            {
+                "user_ids": [5, 7],
+                "fields": ["first_name", "default_password"],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            {
+                "5": {"default_password": [True, ""], "first_name": [True, ""]},
+                "7": {"default_password": [True, ""], "first_name": [True, ""]},
+                # "7": {
+                #     "default_password": [
+                #         False,
+                #         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
+                #     ],
+                #     "first_name": [
+                #         False,
+                #         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
+                #     ],
+                # },
             },
         )
 

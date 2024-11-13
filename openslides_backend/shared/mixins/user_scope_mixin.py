@@ -217,7 +217,7 @@ class UserScopeMixin(BaseServiceProvider):
             return False
         assert isinstance(meetings, dict)
         admin_meeting_users = self._collect_admin_meeting_users(meetings)
-        return self._analyze_meeting_admins(admin_meeting_users, instance_id)
+        return self._analyze_meeting_admins(admin_meeting_users, instance_id, meetings)
 
     def _check_not_committee_manager(self, instance_id: int) -> bool:
         """
@@ -249,12 +249,7 @@ class UserScopeMixin(BaseServiceProvider):
             }
         ):
             return False
-        # During participant import there is no permstore.
-        if hasattr(self, "permstore"):
-            a_meeting_ids = (
-                self.permstore.user_meetings
-            )  # returns only admin level meetings
-        elif not (
+        if not (
             a_meeting_ids := set(
                 self.datastore.get(
                     fqid_from_collection_and_id("user", self.user_id),
@@ -314,14 +309,19 @@ class UserScopeMixin(BaseServiceProvider):
         }
 
     def _analyze_meeting_admins(
-        self, admin_meeting_user_ids: set[int], requested_user_id: int
+        self,
+        admin_meeting_user_ids: set[int],
+        requested_user_id: int,
+        all_meetings: dict[int, Any],
     ) -> bool:
         """
         Helper function used in method check_for_admin_in_all_meetings.
         Compares the users of admin meeting users of all meetings with the ids of requested user and requesting user.
         Requesting user must be admin in all meetings. Requested user cannot be admin in any.
         """
-        meeting_to_admin_user_ids = defaultdict(set)
+        meeting_id_to_admin_user_ids = {
+            meeting_id: set() for meeting_id in all_meetings
+        }
         for meeting_user in (
             self.datastore.get_many(
                 [
@@ -336,10 +336,10 @@ class UserScopeMixin(BaseServiceProvider):
             .get("meeting_user", {})
             .values()
         ):
-            meeting_to_admin_user_ids[meeting_user["meeting_id"]].add(
+            meeting_id_to_admin_user_ids[meeting_user["meeting_id"]].add(
                 meeting_user["user_id"]
             )
-        return not any(
-            requested_user_id in admin_users or self.user_id not in admin_users
-            for admin_users in meeting_to_admin_user_ids.values()
+        return all(
+            requested_user_id not in admin_users and self.user_id in admin_users
+            for admin_users in meeting_id_to_admin_user_ids.values()
         )
