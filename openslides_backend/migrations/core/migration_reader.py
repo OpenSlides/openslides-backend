@@ -137,9 +137,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
     is_in_memory_migration: bool = True
 
     def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model:
-        if fqid not in self.models:
-            raise ModelDoesNotExist(fqid)
-        return self.models[fqid]
+        return self._get_deep_copy_by_fqid(fqid, mapped_fields)
 
     def get_many(
         self, requests: list[GetManyRequestPart]
@@ -149,14 +147,16 @@ class MigrationReaderImplementationMemory(MigrationReader):
             for id in request.ids:
                 fqid = fqid_from_collection_and_id(request.collection, id)
                 if fqid in self.models:
-                    result[request.collection][id] = self.models[fqid]
+                    result[request.collection][id] = self._deep_copy_dict(
+                        self.models[fqid], request.mapped_fields
+                    )
         return result
 
     def get_all(
         self, collection: Collection, mapped_fields: list[Field] = []
     ) -> dict[Id, Model]:
         return {
-            model["id"]: model
+            model["id"]: self._deep_copy_dict(model, mapped_fields)
             for fqid, model in self.models.items()
             if collection_from_fqid(fqid) == collection
         }
@@ -164,7 +164,7 @@ class MigrationReaderImplementationMemory(MigrationReader):
     def filter(
         self, collection: Collection, filter: Filter, mapped_fields: list[Field] = []
     ) -> dict[Id, Model]:
-        return filter_models(self.models, collection, filter)
+        return filter_models(self.models, collection, filter, mapped_fields)
 
     def exists(self, collection: Collection, filter: Filter) -> bool:
         return self.count(collection, filter) > 0
@@ -204,3 +204,32 @@ class MigrationReaderImplementationMemory(MigrationReader):
 
     def model_exists(self, fqid: FullQualifiedId) -> bool:
         return fqid in self.models
+
+    def _get_deep_copy_by_fqid(
+        self, fqid: str, mapped_fields: List[Field]
+    ) -> dict[str, Any]:
+        """
+        Creates a deep copy of given model fqid recursively. Assumes no circular references between dict and subdicts.
+        Also filters all non mapped fields out.
+        """
+        if fqid not in self.models:
+            raise ModelDoesNotExist(fqid)
+        return self._deep_copy_dict(self.models[fqid], mapped_fields)
+
+    def _deep_copy_dict(
+        self, model: dict[str, Any], mapped_fields: List[Field] = []
+    ) -> dict[str, Any]:
+        """
+        Creates a deep copy of given dict recursively. Assumes no circular references between dict and subdicts.
+        Also filters all non mapped fields out.
+        """
+        new_model: dict[str, Any] = dict()
+        for key, value in model.items():
+            if not mapped_fields or key in mapped_fields:
+                if isinstance(value, dict):
+                    new_model[key] = self._deep_copy_dict(model[key])
+                elif isinstance(value, list):
+                    new_model[key] = value.copy()
+                else:
+                    new_model[key] = value
+        return new_model
