@@ -1,5 +1,5 @@
 {
-    "_migration_index": 59,
+    "_migration_index": 62,
     "gender":{
         "1":{
             "id": 1,
@@ -314,7 +314,6 @@
             "list_of_speakers_present_users_only": false,
             "motions_default_workflow_id": 1,
             "motions_default_amendment_workflow_id": 1,
-            "motions_default_statute_amendment_workflow_id": 1,
             "motions_preamble": "The assembly may decide:",
             "motions_default_line_numbering": "outside",
             "motions_line_length": 85,
@@ -327,13 +326,11 @@
             "motions_show_sequential_number": true,
             "motions_reason_required": false,
             "motions_recommendations_by": "ABK",
-            "motions_statute_recommendations_by": "",
             "motions_recommendation_text_mode": "diff",
             "motions_default_sorting": "number",
             "motions_number_type": "per_category",
             "motions_number_min_digits": 2,
             "motions_number_with_blank": false,
-            "motions_statutes_enabled": true,
             "motions_amendments_enabled": true,
             "motions_amendments_in_main_list": true,
             "motions_amendments_of_amendments": true,
@@ -1892,7 +1889,6 @@
             "first_state_id": 1,
             "default_workflow_meeting_id": 1,
             "default_amendment_workflow_meeting_id": 1,
-            "default_statute_amendment_workflow_meeting_id": 1,
             "meeting_id": 1
         },
         "2": {

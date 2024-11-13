@@ -9,10 +9,15 @@ from tests.system.action.base import BaseActionTestCase
 
 class ParticipantJsonUpload(BaseActionTestCase):
     def setUp(self) -> None:
+        self.maxDiff = None
         super().setUp()
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "meeting/1": {
                     "name": "test",
                     "group_ids": [1, 7],
@@ -359,6 +364,72 @@ class ParticipantJsonUpload(BaseActionTestCase):
             {"meeting_id": 1, "data": [{"username": "test"}]},
             Permissions.User.CAN_UPDATE,
             True,
+        )
+
+    def test_json_upload_no_permission_meeting_admin(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        user_id = self.create_user_for_meeting(1)
+        other_user_id = 3
+        self.set_models(
+            {
+                f"user/{other_user_id}": self._get_user_data("test", {1: [], 4: []}),
+            }
+        )
+        self.set_user_groups(user_id, [2])
+        self.set_user_groups(other_user_id, [1, 4])
+        self.login(user_id)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "test", "gender": "male", "default_password": "secret"}
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "import_preview/1",
+            {
+                "name": "participant",
+                "state": ImportState.DONE,
+                "result": {
+                    "meeting_id": 1,
+                    "rows": [
+                        {
+                            "state": ImportState.DONE,
+                            "messages": [
+                                "Following fields were removed from payload, because the user has no permissions to change them: username, gender_id, default_password"
+                            ],
+                            "data": {
+                                "username": {
+                                    "value": "test",
+                                    "info": ImportState.REMOVE,
+                                    "id": 3,
+                                },
+                                "default_password": {
+                                    "value": "secret",
+                                    "info": ImportState.REMOVE,
+                                },
+                                "id": 3,
+                                "groups": [
+                                    {
+                                        "info": ImportState.GENERATED,
+                                        "value": "group1",
+                                        "id": 1,
+                                    }
+                                ],
+                                "gender": {
+                                    "info": ImportState.REMOVE,
+                                    "value": "male",
+                                    "id": 1,
+                                },
+                            },
+                        }
+                    ],
+                },
+            },
         )
 
     def test_json_upload_locked_meeting(self) -> None:

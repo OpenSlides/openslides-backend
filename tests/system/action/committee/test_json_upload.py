@@ -802,7 +802,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "motion_workflow_ids": [2],
                     "motion_state_ids": [2],
                     "motions_default_amendment_workflow_id": 2,
-                    "motions_default_statute_amendment_workflow_id": 2,
                     **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
@@ -815,7 +814,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "motion_workflow/2": {
                     "name": "yay",
                     "default_amendment_workflow_meeting_id": 2,
-                    "default_statute_amendment_workflow_meeting_id": 2,
                     "sequential_number": 1,
                 },
                 "motion_state/2": {"weight": 1, "name": "dismissed"},
@@ -870,7 +868,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "motion_workflow_ids": [2],
                     "motion_state_ids": [2],
                     "motions_default_amendment_workflow_id": 2,
-                    "motions_default_statute_amendment_workflow_id": 2,
                     **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
@@ -883,7 +880,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "motion_workflow/2": {
                     "name": "yay",
                     "default_amendment_workflow_meeting_id": 2,
-                    "default_statute_amendment_workflow_meeting_id": 2,
                     "sequential_number": 1,
                 },
                 "motion_state/2": {"weight": 1, "name": "dismissed"},

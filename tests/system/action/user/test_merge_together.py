@@ -103,7 +103,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
-                "motions_default_statute_amendment_workflow_id": 1,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [1, 2, 3],
@@ -156,7 +155,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 2,
                 "motions_default_amendment_workflow_id": 2,
-                "motions_default_statute_amendment_workflow_id": 2,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [4, 5, 6],
@@ -215,7 +213,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 3,
                 "motions_default_amendment_workflow_id": 3,
-                "motions_default_statute_amendment_workflow_id": 3,
                 "users_enable_vote_delegations": True,
                 "committee_id": 2,
                 "group_ids": [7, 8, 9],
@@ -268,7 +265,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 4,
                 "motions_default_amendment_workflow_id": 4,
-                "motions_default_statute_amendment_workflow_id": 4,
                 "users_enable_vote_delegations": True,
                 "committee_id": 3,
                 "group_ids": [10, 11, 12],
@@ -1430,6 +1426,35 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         for id_ in range(2, 10):
             self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
+
+    def test_merge_with_assignment_candidates_in_finished_assignment(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "assignment_ids": [11],
+                    "assignment_candidate_ids": [112, 114],
+                },
+                "assignment/11": {
+                    "meeting_id": 1,
+                    "phase": "finished",
+                    "candidate_ids": [112, 114],
+                },
+                "assignment_candidate/112": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 12,
+                },
+                "assignment_candidate/114": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 14,
+                },
+                "meeting_user/12": {"assignment_candidate_ids": [112]},
+                "meeting_user/14": {"assignment_candidate_ids": [114]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
 
     def test_merge_with_motion_working_group_speakers(self) -> None:
         self.base_assignment_or_motion_model_test(
