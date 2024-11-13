@@ -564,6 +564,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
     def __init__(
         self,
+        user_id: int,
         permstore: PermissionVarStore,
         services: Services,
         datastore: DatastoreService,
@@ -574,6 +575,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
         self.permstore = permstore
+        self.user_id = user_id
         super().__init__(
             services,
             datastore,

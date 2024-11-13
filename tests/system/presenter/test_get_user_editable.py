@@ -329,16 +329,6 @@ class TestGetUSerEditable(BasePresenterTestCase):
             {
                 "5": {"default_password": [True, ""], "first_name": [True, ""]},
                 "7": {"default_password": [True, ""], "first_name": [True, ""]},
-                # "7": {
-                #     "default_password": [
-                #         False,
-                #         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
-                #     ],
-                #     "first_name": [
-                #         False,
-                #         "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {10, 7}",
-                #     ],
-                # },
             },
         )
 

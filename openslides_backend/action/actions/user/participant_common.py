@@ -51,6 +51,7 @@ class ParticipantCommon(BaseImportJsonUploadAction, CheckLockOutPermissionMixin)
                 )
 
         self.permission_check = CreateUpdatePermissionsFailingFields(
+            self.user_id,
             permstore,
             self.services,
             self.datastore,

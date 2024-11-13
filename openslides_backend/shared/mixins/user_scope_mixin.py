@@ -319,7 +319,7 @@ class UserScopeMixin(BaseServiceProvider):
         Compares the users of admin meeting users of all meetings with the ids of requested user and requesting user.
         Requesting user must be admin in all meetings. Requested user cannot be admin in any.
         """
-        meeting_id_to_admin_user_ids = {
+        meeting_id_to_admin_user_ids: dict[int, set[int]] = {
             meeting_id: set() for meeting_id in all_meetings
         }
         for meeting_user in (
