@@ -427,7 +427,10 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             if self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
                 return
         if self.instance_user_scope == UserScope.Committee:
-            if self.instance_user_scope_id not in self.permstore.user_committees:
+            if not (
+                self.instance_user_scope_id in self.permstore.user_committees
+                or self.check_for_admin_in_all_meetings(instance.get("id", 0))
+            ):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,

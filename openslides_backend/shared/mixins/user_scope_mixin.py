@@ -215,9 +215,8 @@ class UserScopeMixin(BaseServiceProvider):
 
         if not (meetings := self._get_meetings_if_subset(b_meeting_ids)):
             return False
-        assert isinstance(meetings, dict)
         admin_meeting_users = self._collect_admin_meeting_users(meetings)
-        return self._analyze_meeting_admins(admin_meeting_users, instance_id, meetings)
+        return self._analyze_meeting_admins(admin_meeting_users, meetings)
 
     def _check_not_committee_manager(self, instance_id: int) -> bool:
         """
@@ -234,9 +233,7 @@ class UserScopeMixin(BaseServiceProvider):
                 return False
         return True
 
-    def _get_meetings_if_subset(
-        self, b_meeting_ids: set[int] | None
-    ) -> dict[int, Any] | bool:
+    def _get_meetings_if_subset(self, b_meeting_ids: set[int] | None) -> dict[int, Any]:
         """
         Helper function used in method check_for_admin_in_all_meetings.
         Gets the requested users meetings if these are subset of requesting user. Returns False if this is not possible.
@@ -248,7 +245,7 @@ class UserScopeMixin(BaseServiceProvider):
                 for m_id in m_ids
             }
         ):
-            return False
+            return {}
         if not (
             a_meeting_ids := set(
                 self.datastore.get(
@@ -258,9 +255,9 @@ class UserScopeMixin(BaseServiceProvider):
                 ).get("meeting_ids", [])
             )
         ):
-            return False
+            return {}
         if not b_meeting_ids.issubset(a_meeting_ids):
-            return False
+            return {}
         return self.datastore.get_many(
             [
                 GetManyRequest(
@@ -311,7 +308,6 @@ class UserScopeMixin(BaseServiceProvider):
     def _analyze_meeting_admins(
         self,
         admin_meeting_user_ids: set[int],
-        requested_user_id: int,
         all_meetings: dict[int, Any],
     ) -> bool:
         """
@@ -340,6 +336,6 @@ class UserScopeMixin(BaseServiceProvider):
                 meeting_user["user_id"]
             )
         return all(
-            requested_user_id not in admin_users and self.user_id in admin_users
+            self.user_id in admin_users
             for admin_users in meeting_id_to_admin_user_ids.values()
         )

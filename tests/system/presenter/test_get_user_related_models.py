@@ -169,7 +169,9 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         # 777 additional admin for meeting/2 doesn't affect outcome
         meeting_user_to_group = {12: 2, 42: 4, 1111: 1, 4111: 4, 666: 5}
         self.move_user_to_group(meeting_user_to_group)
-        status_code, data = self.request("get_user_related_models", {"user_ids": [111, 777]})
+        status_code, data = self.request(
+            "get_user_related_models", {"user_ids": [111, 777]}
+        )
         self.assertEqual(status_code, 403)
         self.assertEqual(
             "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",

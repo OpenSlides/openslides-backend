@@ -1001,7 +1001,33 @@ class UserUpdateActionTest(BaseActionTestCase):
         """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. See issue 2522."""
         self.permission_setup()  # meeting 1 + logged in test user + user 111
         self.create_meeting(4)  # meeting 4
-        # Admin groups of meeting/1 and meeting/4 for test user
+        # Admin groups of meeting/1 and meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [1, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
+        # Admin group of meeting/1 and default group for meeting/4 for request user
+        self.set_user_groups(self.user_id, [2, 4])
+        # 111 into both meetings (admin group for meeting/4)
+        self.set_user_groups(111, [1, 5])
+        self.two_meetings_test_fail_ADEFGH()
+        # test group B and C
+        response = self.request(
+            "user.update",
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
+        )
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
+            response.json["message"],
+        )
+        self.assert_status_code(response, 403)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "number": None,
+            },
+        )
+        # Admin groups of meeting/1 and meeting/4 for request user
         self.set_user_groups(self.user_id, [2, 5])
         # 111 into both meetings
         self.set_user_groups(111, [1, 4])
@@ -1021,24 +1047,24 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_A_belongs_to_same_meetings_can_update(self) -> None:
-        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. See issue 2522."""
+        """
+        May update group A fields on any scope as long as requesting user has
+        user.can_update rights in requested users meetings.
+        Also makes sure being in multiple groups of a single meeting is no problem.
+        """
         self.permission_setup()  # meeting 1 + logged in test user + user 111
         self.create_meeting(4)  # meeting 4
         self.update_model(
             "group/6",
             {"permissions": ["user.can_update"]},
         )
-        # Admin groups of meeting/1 and meeting/4 for test user (4 via group permission)
-        self.set_user_groups(self.user_id, [2, 5])
-        # 111 admin in meeting 6 via group permission
-        self.set_user_groups(111, [1, 6])
-        self.two_meetings_test_fail_ADEFGH()
-        self.update_model("group/5", {"meeting_user_ids": []})
-        self.update_model("group/6", {"meeting_user_ids": []})
-        # Admin groups of meeting/1 and meeting/4 for test user
-        self.set_user_groups(self.user_id, [2, 4, 6])
+        # Admin group of meeting/1 and default group of meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [2, 4])
         # 111 into both meetings
         self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
+        # Admin groups of meeting/1 and meeting/4 (via group permission) for requesting user
+        self.set_user_groups(self.user_id, [2, 4, 6])
         response = self.request(
             "user.update",
             {
@@ -1055,104 +1081,36 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_A_belongs_to_same_meetings_can_manage(self) -> None:
-        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to.
-        Also makes sure being in multiple groups of a single meeting is no problem. See issue 2522.
         """
-        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        May update group A fields on any scope as long as requesting user has
+        user.can_update rights in requested users meetings.
+        Also makes sure being in multiple groups of a single meeting is no problem.
+        """
+        self.permission_setup()  # meeting 1 + logged in requesting user + user 111
         self.create_meeting(4)  # meeting 4
         self.update_model(
             "group/6",
             {"permissions": ["user.can_manage"]},
         )
-        # Admin groups of meeting/1 and meeting/4 for test user (4 via group permission)
-        self.set_user_groups(self.user_id, [2, 5])
-        # 111 admin in meeting 6 via group permission
-        self.set_user_groups(111, [1, 6])
-        self.two_meetings_test_fail_ADEFGH()
-        self.update_model("group/5", {"meeting_user_ids": []})
-        self.update_model("group/6", {"meeting_user_ids": []})
-        # Admin groups of meeting/1 and meeting/4 for test user
-        self.set_user_groups(self.user_id, [1, 2, 4, 6])
-        # 111 into both meetings
-        self.set_user_groups(111, [1, 4])
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "pronoun": "I'm gonna get updated.",
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "pronoun": "I'm gonna get updated.",
-            },
-        )
-
-    def test_perm_group_A_belongs_to_same_meetings_one_time_admin(self) -> None:
-        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. However, is not admin in one. See issue 2522."""
-        self.permission_setup()  # meeting 1 + logged in test user + user 111
-        self.create_meeting(4)  # meeting 4
-        # Admin groups of only meeting/1 for test user
+        # Admin group of meeting/1 and default group of meeting/4 for requesting user
         self.set_user_groups(self.user_id, [2, 4])
         # 111 into both meetings
         self.set_user_groups(111, [1, 4])
         self.two_meetings_test_fail_ADEFGH()
-        # test group B and C
+        # Admin groups of meeting/1 and meeting/4 (via group permission) for requesting user
+        self.set_user_groups(self.user_id, [1, 2, 4, 6])
         response = self.request(
             "user.update",
-            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
-        )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
-            response.json["message"],
-        )
-        self.assert_model_exists(
-            "user/111",
             {
-                "number": None,
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
             },
-        )
-
-    def test_perm_group_A_belongs_to_same_meetings_both_admin(self) -> None:
-        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. However, Ben is admin too. See issue 2522."""
-        self.permission_setup()  # meeting 1 + logged in test user + user 111
-        self.create_meeting(4)  # meeting 4
-        # Admin groups of meeting/1 and meeting/4 for test user
-        self.set_user_groups(self.user_id, [2, 5])
-        # 111 into both meetings (one admin group)
-        self.set_user_groups(111, [1, 5])
-        self.two_meetings_test_fail_ADEFGH()
-        # test group B and C
-        response = self.request(
-            "user.update",
-            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "number": None,
-            },
-        )
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "pronoun": "I'm not gonna get updated.",
-            },
-        )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
-            response.json["message"],
-        )
-        self.assert_model_exists(
-            "user/111",
-            {
-                "pronoun": None,
+                "pronoun": "I'm gonna get updated.",
             },
         )
 
@@ -1160,9 +1118,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         """May not update group A fields on any scope as long as admin user Ann belongs
         to all meetings user Ben belongs to but Ben is committee admin. See issue 2522.
         """
-        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.permission_setup()  # meeting 1 + logged in requesting user + user 111
         self.create_meeting(4)  # meeting 4
-        # Admin groups of meeting/1 and meeting/4 for test user
+        # Admin groups of meeting/1 and meeting/4 for requesting user
         self.set_user_groups(self.user_id, [2, 5])
         # 111 into both meetings
         self.set_user_groups(111, [1, 4])
@@ -1176,6 +1134,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
         )
         self.assert_status_code(response, 200)
+        self.assertIn(
+            "Actions handled successfully",
+            response.json["message"],
+        )
         self.assert_model_exists(
             "user/111",
             {
@@ -1200,18 +1162,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": None,
             },
         )
-
-    def test_perm_group_A_belongs_to_same_meetings_multiple_missing(self) -> None:
-        """May not update group A fields on any scope as long as admin user Ann belongs
-        to all meetings user Ben belongs to but Ben is committee admin. See issue 2522.
-        """
-        self.permission_setup()  # meeting 1 + logged in test user + user 111
-        self.create_meeting(4)  # meeting 4
-        # Admin groups of meeting/1 and meeting/4 for test user
-        self.set_user_groups(self.user_id, [1, 4])
-        # 111 into both meetings
-        self.set_user_groups(111, [1, 4])
-        self.two_meetings_test_fail_ADEFGH()
 
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
         self.perm_group_A_meeting_manage_user_archived_meeting(
@@ -1361,12 +1311,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_F_with_meeting_scope(self) -> None:
-        """May not update group F fields on meeting scope unless CML rights. User belongs to a meeting, request user having no admin rights in."""
+        """
+        Test user update with various scenarios (admin in different meeting and committee no interference)
+            * not in same meeting fails
+            * same meeting both admin works
+            * same meeting request user is committee admin works
+        """
         self.permission_setup()
         self.create_meeting(4)
         self.set_user_groups(111, [2])
         self.set_user_groups(self.user_id, [5])
-        self.set_models({f"user/{self.user_id}": {"committee_management_ids": [63]}})
+        self.set_committee_management_level([63], self.user_id)
 
         response = self.request(
             "user.update",
@@ -1386,10 +1341,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": None,
             },
         )
-        # assert it works with correct CML/ MA can change MA
+
         self.set_user_groups(111, [2])
-        self.set_user_groups(self.user_id, [2])
-        # self.set_models({f"user/{self.user_id}": {"committee_management_ids": [60]}})
+        self.set_user_groups(self.user_id, [2, 5])
         response = self.request(
             "user.update",
             {
@@ -1405,8 +1359,27 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_perm_group_F_with_meeting_scope_across_committees(self) -> None:
-        """May not update group F fields on meeting scope unless CML rights. User belongs to several meetings, request user having admin rights in."""
+        self.set_committee_management_level([60], self.user_id)
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "newer_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "newer_one",
+            },
+        )
+
+    def test_perm_group_F_with_two_meeting_across_committees(self) -> None:
+        """
+        May not update group F fields unless requesting user has admin rights in
+        all of requested users meetings. Also requested user can be admin himself.
+        """
         self.permission_setup()
         self.create_meeting(4)
         self.set_user_groups(111, [1, 4])
@@ -1430,8 +1403,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": None,
             },
         )
-        # assert MA can change MA
-        self.set_user_groups(111, [1, 4])
+        # assert meeting admin can change normal user
+        self.set_user_groups(111, [1, 5])
         self.set_user_groups(self.user_id, [2, 5])
         response = self.request(
             "user.update",
