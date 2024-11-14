@@ -41,7 +41,7 @@ class GetForwardingMeetings(BasePresenter):
             self.data["meeting_id"],
         ):
             msg = "You are not allowed to perform presenter get_forwarding_meetings"
-            msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
+            msg += f" Missing permission: {Permissions.Motion.CAN_FORWARD}"
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(
