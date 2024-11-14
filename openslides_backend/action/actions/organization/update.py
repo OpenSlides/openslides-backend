@@ -60,13 +60,24 @@ class OrganizationUpdate(
         field: {**optional_str_schema, "max_length": 256}
         for field in allowed_user_fields
     }
-    saml_props["meeting"] = {
-        "type": ["object", "null"],
-        "properties": {
-            field: {**optional_str_schema, "max_length": 256}
-            for field in ("external_id", "external_group_id")
+    saml_props["meeting_mappers"] = {
+        "type": ["array", "null"],
+        "items": {
+            "type": "object",
+            "properties": {
+                **{
+                    field: {**optional_str_schema, "max_length": 256}
+                    for field in ("external_id", "name", "allow_update")
+                },
+                "conditions": {
+                    "type": ["array", "null"],
+                    "max_length": 256,
+                },  # , "items": {"object"}
+                "mappings": {"type": ["object", "array"], "max_length": 256},
+            },
+            "required": ["external_id"],
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
     }
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,
