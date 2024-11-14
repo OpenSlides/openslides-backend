@@ -5,7 +5,6 @@ from .base import BasePresenterTestCase
 
 class TestGetUSerEditable(BasePresenterTestCase):
     def set_up(self) -> None:
-        self.maxDiff = None
         self.create_model(
             "user/111",
             {

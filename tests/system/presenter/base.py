@@ -79,7 +79,8 @@ class BasePresenterTestCase(BaseSystemTestCase):
     def move_user_to_group(self, meeting_user_to_groups: dict[int, Any]) -> None:
         """
         Sets the users groups, returns the meeting_user_ids
-        Be careful as it does not reset previeously set groups if they are not in the data set.
+        Be careful as it does not reset previously set groups if the related meeting 
+        users are not in meeting_user_to_groups.
         """
         groups_to_meeting_user = defaultdict(list)
         for meeting_user_id, group_id in meeting_user_to_groups.items():
