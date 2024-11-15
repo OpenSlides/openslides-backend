@@ -12,7 +12,7 @@
     is_active: boolean,
     is_physical_person: boolean,
     member_number: string,
-    /// meeting related data can be given. See below explanation on meeting mappers.
+    // Additional meeting related data can be given. See below explanation on meeting mappers.
 }
 ```
 
@@ -53,7 +53,7 @@ Extras to do on creation:
 "meeting_mappers": [{
    "name": "Mapper-Name",
    "external_id": "M2025",
-   "allow_update": "false"
+   "allow_update": "false",
    "conditions": [{
        "attribute": "membernumber", 
        "condition": "1426\d{4,6}$" 
@@ -68,22 +68,24 @@ Extras to do on creation:
        }],
        "structure_levels": [{
            "attribute": "ovname",
-           "default": "struct1, struct2",
+           "default": "struct1, struct2"
        }],
-       "number": {"attribute": "p_number"}
+       "number": {"attribute": "p_number"},
        "comment": {
            "attribute": "idp_comment",
-           "default": "Group set via SSO"},
+           "default": "Group set via SSO"
+        },
        "vote_weight": {
            "attribute": "vote",
-           "default":"1.000000",
+           "default":"1.000000"
        },
        "present": {
            "attribute": "present_key",
-           "default":"True",
-       },
+           "default":"True"
+       }
    }
 }]
+If you are using Keycloak as your SAML-server, make sure to fill the attributes of all users. Then you also need to configure for each attribute in 'Clients' a mapping for your Openslides services 'Client Scopes'. Choose 'User Attribute' and assign the 'User Attribute' as in the step before and the 'SAML Attribut Name' as defined in Openslides 'meeting_mappers'.
 
 ## Return Value
 
