@@ -964,6 +964,13 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_update_user_with_default_membership(self) -> None:
+        """ 
+        Shows:
+            * deleting all conditions of a single mapper defaults this mapper to true
+            * updating without any group data in saml payload and not existing group in default inserts user in meetings default group
+            * updating without group data in saml payload but existing group in default works
+        """
+        del self.meeting_mappers[0]["conditions"]
         self.meeting_mappers[1]["conditions"] = [
             {"attribute": "yes", "condition": ".*"}
         ]
@@ -978,15 +985,21 @@ class UserAddToGroup(UserBaseSamlAccount):
             {
                 "saml_id": "admin_saml",
                 "username": "admin",
-                "meeting_user_ids": [1],
-                "meeting_ids": [4],
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 4],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 1, "group_ids": [5], "meeting_id": 4}
+            "meeting_user/1", {"user_id": 1, "group_ids": [1], "meeting_id": 1}
         )
         self.assert_model_exists(
-            "group/5", {"meeting_user_ids": [1], "external_id": "Delegates"}
+            "meeting_user/2", {"user_id": 1, "group_ids": [5], "meeting_id": 4}
+        )
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": [1], "external_id": "Default"}
+        )
+        self.assert_model_exists(
+            "group/5", {"meeting_user_ids": [2], "external_id": "Delegates"}
         )
 
     def test_update_user_participant_already_in_group(self) -> None:
