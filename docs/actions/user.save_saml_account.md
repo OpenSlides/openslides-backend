@@ -50,6 +50,7 @@ Extras to do on creation:
 - If a structure level does not exist, it is created.
 - Vote weights need to be given as 6 digit decimal strings.
 
+```
 "meeting_mappers": [{
    "name": "Mapper-Name",
    "external_id": "M2025",
@@ -85,6 +86,7 @@ Extras to do on creation:
        }
    }
 }]
+```
 If you are using Keycloak as your SAML-server, make sure to fill the attributes of all users. Then you also need to configure for each attribute in 'Clients' a mapping for your Openslides services 'Client Scopes'. Choose 'User Attribute' and assign the 'User Attribute' as in the step before and the 'SAML Attribut Name' as defined in Openslides 'meeting_mappers'.
 
 ## Return Value
