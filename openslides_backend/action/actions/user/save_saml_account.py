@@ -249,7 +249,7 @@ class UserSaveSamlAccount(
         Returns True if the mapper matches its criteria on instances values or no conditions were given.
         Instances values can not be None or empty string.
         """
-        if not meeting_mapper.get("external_id") or not meeting_mapper.get("mappings"):
+        if not meeting_mapper.get("external_id"):
             return False
         if not (mapper_conditions := meeting_mapper.get("conditions")):
             return True
@@ -265,11 +265,11 @@ class UserSaveSamlAccount(
     def apply_meeting_mapping(
         self, instance: dict[str, Any], instance_old: dict[str, Any]
     ) -> None:
-        meeting_user_data: dict[str, Any] = defaultdict(dict)
         if meeting_mappers := cast(
             list[dict[str, Any]],
             self.saml_attr_mapping.get("meeting_mappers", []),
         ):
+            meeting_user_data: dict[str, Any] = defaultdict(dict)
             for meeting_mapper in meeting_mappers:
                 if self.validate_meeting_mapper(instance_old, meeting_mapper):
                     meeting_external_id = cast(str, meeting_mapper["external_id"])
@@ -306,8 +306,12 @@ class UserSaveSamlAccount(
                         }
                     else:
                         mapping_results["for_create"] = result
-        if meeting_user_data:
-            instance["meeting_user_data"] = meeting_user_data
+            if meeting_user_data:
+                instance["meeting_user_data"] = meeting_user_data
+            else:
+                self.logger.warning(
+                    f"save_saml_account found no matching meeting mappers."
+                )
 
     def apply_meeting_user_data(
         self, instance: dict[str, Any], user_id: int, is_update: bool
@@ -357,19 +361,22 @@ class UserSaveSamlAccount(
                 instance_meeting_user = instance_meeting_user_data.get("for_update")
             else:
                 instance_meeting_user = instance_meeting_user_data.get("for_create")
-            if instance_meeting_user:
+            if instance_meeting_user is not None:
                 instance_meeting_user["id"] = user_id
                 instance_meeting_user["meeting_id"] = meeting_id
                 for saml_meeting_user_field in ["groups", "structure_levels"]:
-                    names = sorted(instance_meeting_user.pop(saml_meeting_user_field))
+                    names = sorted(
+                        instance_meeting_user.pop(saml_meeting_user_field, [])
+                    )
                     if saml_meeting_user_field == "groups":
                         ids = self.get_group_ids(names, meeting)
                     elif saml_meeting_user_field == "structure_levels":
                         ids = self.get_structure_level_ids(names, meeting)
-                    instance_meeting_user[
-                        f"{saml_meeting_user_field.rstrip('s')}_ids"
-                    ] = ids
-                if instance_meeting_user.pop("present"):
+                    if ids:
+                        instance_meeting_user[
+                            f"{saml_meeting_user_field.rstrip('s')}_ids"
+                        ] = ids
+                if instance_meeting_user.pop("present", ""):
                     present_in_meeting_ids = instance.get(
                         "is_present_in_meeting_ids", []
                     )
@@ -410,7 +417,7 @@ class UserSaveSamlAccount(
         missing_attributes = []
         for saml_meeting_user_field in allowed_meeting_user_fields:
             result: set[str] | str | bool = ""
-            meeting_mapping = meeting_mapper["mappings"]
+            meeting_mapping = meeting_mapper.get("mappings", dict())
             result = meeting_user.get(saml_meeting_user_field, "")
             if saml_meeting_user_field in ["groups", "structure_levels"]:
                 attr_default_list = meeting_mapping.get(saml_meeting_user_field, [])
@@ -419,41 +426,41 @@ class UserSaveSamlAccount(
                     meeting_mapping.get(saml_meeting_user_field, dict())
                 ]
             for attr_default in attr_default_list:
-                if idp_attribute := attr_default.get("attribute"):
-                    if saml_meeting_user_field == "number":
-                        # Number cannot have a default.
-                        if value := instance.get(idp_attribute):
-                            result = cast(str, value)
-                        else:
-                            missing_attributes.append(idp_attribute)
-                    elif not (value := instance.get(idp_attribute)):
+                idp_attribute = attr_default.get("attribute", "")
+                if saml_meeting_user_field == "number":
+                    # Number cannot have a default.
+                    if value := instance.get(idp_attribute):
+                        result = cast(str, value)
+                    else:
                         missing_attributes.append(idp_attribute)
-                        value = attr_default.get("default")
-                    if value:
-                        if saml_meeting_user_field in ["groups", "structure_levels"]:
-                            # Need to append to group and structure_level for same meeting.
-                            if not result:
-                                result = set()
-                            cast(set, result).update(value.split(", "))
-                        elif saml_meeting_user_field == "comment":
-                            # Want comments from all matching mappers.
-                            if result:
-                                result = cast(str, result) + " " + value
-                            else:
-                                result = value
-                        elif saml_meeting_user_field == "present":
-                            # Result is int or bool. int will later be interpreted as bool.
-                            result = (
-                                value
-                                if not isinstance(value, str)
-                                else (
-                                    False
-                                    if value.casefold() == "false".casefold()
-                                    else True
-                                )
-                            )
+                elif not (value := instance.get(idp_attribute)):
+                    missing_attributes.append(idp_attribute)
+                    value = attr_default.get("default")
+                if value:
+                    if saml_meeting_user_field in ["groups", "structure_levels"]:
+                        # Need to append to group and structure_level for same meeting.
+                        if not result:
+                            result = set()
+                        cast(set, result).update(value.split(", "))
+                    elif saml_meeting_user_field == "comment":
+                        # Want comments from all matching mappers.
+                        if result:
+                            result = cast(str, result) + " " + value
                         else:
                             result = value
+                    elif saml_meeting_user_field == "present":
+                        # Result is int or bool. int will later be interpreted as bool.
+                        result = (
+                            value
+                            if not isinstance(value, str)
+                            else (
+                                False
+                                if value.casefold() == "false".casefold()
+                                else True
+                            )
+                        )
+                    else:
+                        result = value
             if result:
                 yield saml_meeting_user_field, result
         if fields := ",".join(missing_attributes):
@@ -467,20 +474,21 @@ class UserSaveSamlAccount(
         Gets the group ids from given group names in that meeting.
         If none of the groups exists in the meeting, the meetings default group is returned.
         """
-        groups = self.datastore.filter(
-            "group",
-            And(
-                FilterOperator("meeting_id", "=", meeting["id"]),
-                Or(
-                    FilterOperator("external_id", "=", group_name)
-                    for group_name in group_names
+        if group_names:
+            groups = self.datastore.filter(
+                "group",
+                And(
+                    FilterOperator("meeting_id", "=", meeting["id"]),
+                    Or(
+                        FilterOperator("external_id", "=", group_name)
+                        for group_name in group_names
+                    ),
                 ),
-            ),
-            ["meeting_user_ids"],
-        )
-        if len(groups) > 0:
-            return sorted(groups)
-        elif default_group_id := meeting["default_group_id"]:
+                ["meeting_user_ids"],
+            )
+            if len(groups) > 0:
+                return sorted(groups)
+        if default_group_id := meeting["default_group_id"]:
             external_meeting_id = meeting["external_id"]
             self.logger.warning(
                 f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"

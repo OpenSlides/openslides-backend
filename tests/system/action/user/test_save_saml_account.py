@@ -826,7 +826,48 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "username": "111",
             },
         )
-        self.assert_model_not_exists("meeting_user/1")
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "group_ids": [1], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": [1], "external_id": "Default"}
+        )
+        self.assert_model_not_exists("structure_level/1")
+
+    def test_create_user_mapping_empty_mappings(self) -> None:
+        self.meeting_mappers[0]["mappings"] = dict()
+        del self.meeting_mappers[1]
+        self.set_models({"organization/1": self.organization})
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["111"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "idp_group_attribute": "Delegates",
+                "kv_member_number": "KV_Könighols",
+                "kv_email": "hols@holz.de",
+                "participant_kv_number": "MG_1254",
+                "idp_kv_group_attribute": "Delegates",
+                "kv_structure": "structure2",
+                "kv_presence": "True",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "saml_id": "111",
+                "username": "111",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "group_ids": [1], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": [1], "external_id": "Default"}
+        )
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_meeting_not_exists(self) -> None:
