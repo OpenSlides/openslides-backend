@@ -17,6 +17,7 @@ from ...action import Action, original_instances
 from ...mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ...util.typing import ActionData
 from ..meeting_user.set_data import MeetingUserSetData
+from .set_present import UserSetPresentAction
 
 
 class UsernameMixin(Action):
@@ -142,10 +143,19 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def check_meeting_and_users(
         self, instance: dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        if instance.get("meeting_id") is not None:
-            self.datastore.apply_changed_model(
-                user_fqid, {"meeting_id": instance.get("meeting_id")}
-            )
+        if (meeting_id := instance.get("meeting_id")) is not None:
+            if instance.get("group_ids") == []:
+                self.execute_other_action(
+                    UserSetPresentAction,
+                    [
+                        {
+                            "id": instance["id"],
+                            "meeting_id": meeting_id,
+                            "present": False,
+                        }
+                    ],
+                )
+            self.datastore.apply_changed_model(user_fqid, {"meeting_id": meeting_id})
 
     def meeting_user_set_data(self, instance: dict[str, Any]) -> None:
         meeting_user_data = {}
