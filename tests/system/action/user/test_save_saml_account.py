@@ -964,7 +964,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_update_user_with_default_membership(self) -> None:
-        """ 
+        """
         Shows:
             * deleting all conditions of a single mapper defaults this mapper to true
             * updating without any group data in saml payload and not existing group in default inserts user in meetings default group
