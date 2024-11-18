@@ -310,7 +310,7 @@ class UserSaveSamlAccount(
                 instance["meeting_user_data"] = meeting_user_data
             else:
                 self.logger.warning(
-                    f"save_saml_account found no matching meeting mappers."
+                    "save_saml_account found no matching meeting mappers."
                 )
 
     def apply_meeting_user_data(
