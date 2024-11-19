@@ -1,19 +1,19 @@
 ## Payload
 
-```
+```js
 {
-  user_ids: Id[];
-  fields: string[]
+  user_ids: Id[], // required
+  fields: string[] // required
 }
 ```
 
 ## Returns
 
-```
+```js
 {
   user_id: Id: {
     field: str: (
-      editable: boolean // true if user can be updated or deleted, 
+      editable: boolean, // true if user can be updated or deleted, 
       message?: string // error message if an exception was caught
     ),
     ... 

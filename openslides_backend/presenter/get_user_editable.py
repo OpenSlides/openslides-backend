@@ -29,7 +29,7 @@ get_user_editable_schema = fastjsonschema.compile(
             "user_ids": id_list_schema,
             "fields": str_list_schema,
         },
-        "required": ["user_ids"],
+        "required": ["user_ids", "fields"],
         "additionalProperties": False,
     }
 )
@@ -46,7 +46,7 @@ class GetUserEditable(CreateUpdatePermissionsMixin, BasePresenter):
     permission = Permissions.User.CAN_MANAGE
 
     def get_result(self) -> Any:
-        if "fields" not in self.data or not self.data["fields"]:
+        if not self.data["fields"]:
             raise PresenterException(
                 "Need at least one field name to check editability."
             )
@@ -67,7 +67,7 @@ class GetUserEditable(CreateUpdatePermissionsMixin, BasePresenter):
             groups_editable = {}
             for field_name in one_field_per_group:
                 try:
-                    self.check_permissions({"id": user_id, field_name: ""})
+                    self.check_permissions({"id": user_id, field_name: None})
                     groups_editable[reversed_field_rights[field_name]] = (True, "")
                 except (PermissionDenied, MissingPermission, ActionException) as e:
                     groups_editable[reversed_field_rights[field_name]] = (
