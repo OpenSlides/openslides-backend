@@ -2,7 +2,7 @@
 
 ```js
 {
-    mediafile_ids: Id[];
+    mediafile_ids: Id[] // required
 }
 ```
 
@@ -15,16 +15,16 @@
     published: boolean,
     meetings_of_interest: {
       [meeting_id: Id]: {
-        name: string;
-        holds_attachments: boolean;
-        holds_logos: boolean;
-        holds_fonts: boolean;
-        holds_current_projections: boolean;
-        holds_history_projections: boolean;
-        holds_preview_projections: boolean;
+        name: string,
+        holds_attachments: boolean,
+        holds_logos: boolean,
+        holds_fonts: boolean,
+        holds_current_projections: boolean,
+        holds_history_projections: boolean,
+        holds_preview_projections: boolean
       }
     },
-    children_amount: int,
+    children_amount: int
   }
 }
 ```
