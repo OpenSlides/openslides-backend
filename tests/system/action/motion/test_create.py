@@ -4,6 +4,7 @@ from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
+from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -421,6 +422,48 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, permissions)
         if additional_data:
             self.set_models(additional_data)
+
+    def test_create_permission_agenda_allowed(self) -> None:
+        self.setup_permission_test(
+            [
+                Permissions.AgendaItem.CAN_MANAGE,
+                Permissions.Motion.CAN_CREATE,
+                Permissions.Motion.CAN_MANAGE_METADATA,
+            ]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "agenda_create": True,
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_permission_agenda_forbidden(self) -> None:
+        self.setup_permission_test(
+            [
+                Permissions.Motion.CAN_CREATE,
+                Permissions.Motion.CAN_MANAGE_METADATA,
+            ]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "agenda_create": True,
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: " in response.json["message"]
+        assert "agenda_create" in response.json["message"]
+        assert "agenda_type" in response.json["message"]
 
     def test_create_permission_missing_can_manage(self) -> None:
         self.setup_permission_test([Permissions.Motion.CAN_CREATE])
