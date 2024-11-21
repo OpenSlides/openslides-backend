@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
@@ -8,8 +9,7 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 class Migration(BaseModelMigration):
     """
-    This migration adds the user_id "-1" to all existing action_workers.
-    This is the number usually used for calls using the internal route.
+    This migration removes the presence status if the user is not part of the meeting anymore.
     """
 
     target_migration_index = 63
@@ -24,7 +24,13 @@ class Migration(BaseModelMigration):
             "user", ["is_present_in_meeting_ids", "meeting_user_ids"]
         )
 
-        def helper() -> None:
+        def collect_removals(
+            meeting_id: int,
+            user_id: int,
+            user: dict[str, Any],
+            meetings_per_present_user: dict[int, list[int]],
+            present_users_per_meeting: dict[int, list[int]],
+        ) -> None:
             if not (
                 (meeting_user_ids := user.get("meeting_user_ids", []))
                 and any(
@@ -38,26 +44,53 @@ class Migration(BaseModelMigration):
         for meeting_id, meeting in meetings.items():
             for user_id in meeting.get("present_user_ids", []):
                 user = users.get(user_id, dict())
-                helper()
+                collect_removals(
+                    meeting_id,
+                    user_id,
+                    user,
+                    meetings_per_present_user,
+                    present_users_per_meeting,
+                )
 
         for user_id, user in users.items():
             for meeting_id in user.get("is_present_in_meeting_ids", []):
-                helper()
+                collect_removals(
+                    meeting_id,
+                    user_id,
+                    user,
+                    meetings_per_present_user,
+                    present_users_per_meeting,
+                )
 
         return [
-            RequestUpdateEvent(
-                fqid_from_collection_and_id(what_collection, what_id),
-                {
-                    field: [
-                        id_
-                        for id_ in lookup.get(what_id, dict()).get(field, [])
-                        if id_ not in which_ids
-                    ]
-                },
-            )
-            for lookup, cross_lookup, what_collection, field in [
-                (meetings, present_users_per_meeting, "meeting", "present_user_ids"),
-                (users, meetings_per_present_user, "user", "is_present_in_meeting_ids"),
-            ]
-            for what_id, which_ids in cross_lookup.items()
+            *[
+                RequestUpdateEvent(
+                    fqid_from_collection_and_id("meeting", meeting_id),
+                    {
+                        "present_user_ids": [
+                            id_
+                            for id_ in meetings.get(meeting_id, dict()).get(
+                                "present_user_ids", []
+                            )
+                            if id_ not in user_ids
+                        ]
+                    },
+                )
+                for meeting_id, user_ids in present_users_per_meeting.items()
+            ],
+            *[
+                RequestUpdateEvent(
+                    fqid_from_collection_and_id("user", user_id),
+                    {
+                        "is_present_in_meeting_ids": [
+                            id_
+                            for id_ in users.get(user_id, dict()).get(
+                                "is_present_in_meeting_ids", []
+                            )
+                            if id_ not in meeting_ids
+                        ]
+                    },
+                )
+                for user_id, meeting_ids in meetings_per_present_user.items()
+            ],
         ]
