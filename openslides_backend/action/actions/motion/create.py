@@ -149,6 +149,11 @@ class MotionCreate(
         # whitelist the fields depending on the user's permissions
         whitelist = []
         forbidden_fields = set()
+        perm = Permissions.AgendaItem.CAN_MANAGE
+        if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+            whitelist = [*agenda_creation_properties.keys()]
+        elif contained := set(agenda_creation_properties.keys()).intersection(instance):
+            forbidden_fields.update(contained)
         perm = Permissions.Mediafile.CAN_SEE
         if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
             whitelist.append("attachment_mediafile_ids")
