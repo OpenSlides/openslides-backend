@@ -259,7 +259,7 @@ class TestGetUSerEditable(BasePresenterTestCase):
             },
         )
 
-    def test_with_same_meeting_can_update_manage(self) -> None:
+    def test_with_same_meeting_can_update(self) -> None:
         """
         User 5 can be edited because he is only in meetings which User 111 has can_manage of.
         User 7 can be edited because he is only in meetings which User 111 has can_update of.
@@ -327,6 +327,50 @@ class TestGetUSerEditable(BasePresenterTestCase):
             data,
             {
                 "5": {"default_password": [True, ""], "first_name": [True, ""]},
+                "7": {"default_password": [True, ""], "first_name": [True, ""]},
+            },
+        )
+
+    def test_with_single_meeting_can_update(self) -> None:
+        """
+        User 7 can be edited because he is only one meeting which User 111 has can_update of.
+        """
+        self.set_up()
+        self.create_meeting_for_two_users(7, 111, 7)
+        self.update_model("meeting/7", {"committee_id": 1})
+        self.update_model("group/9", {"permissions": ["user.can_update"]})
+        # User 111 has user.can_update group rights in meeting 7
+        # User 7 is normal user in meeting 7
+        meeting_user_to_group = {
+            7111: 9,
+            77: 7,
+        }
+        self.move_user_to_group(meeting_user_to_group)
+        self.update_model(
+            "user/7",
+            {
+                "meeting_user_ids": [77],
+                "meeting_ids": [7],
+            },
+        )
+        self.update_model(
+            "user/111",
+            {
+                "meeting_user_ids": [7111],
+                "meeting_ids": [7],
+            },
+        )
+        status_code, data = self.request(
+            "get_user_editable",
+            {
+                "user_ids": [7],
+                "fields": ["first_name", "default_password"],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            {
                 "7": {"default_password": [True, ""], "first_name": [True, ""]},
             },
         )
