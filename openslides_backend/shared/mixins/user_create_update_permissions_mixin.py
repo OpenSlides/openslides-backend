@@ -15,6 +15,7 @@ from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 from openslides_backend.shared.exceptions import (
     ActionException,
+    AnyPermission,
     MissingPermission,
     PermissionDenied,
 )
@@ -266,7 +267,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         ):
             return
 
-        missing_permissions = dict()
+        missing_permissions: dict[AnyPermission, int | set[int]] = dict()
         if self.instance_user_scope == UserScope.Organization:
             if not (
                 self.permstore.user_committees.intersection(
@@ -294,15 +295,19 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                 self.permission: self.instance_user_scope_id,
             }
-        if missing_permissions and not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
-            missing_permissions.update({
-                Permissions.User.CAN_UPDATE: {
-                    meeting_id
-                    for meeting_ids in self.instance_committee_meeting_ids.values()
-                    if meeting_ids is not None
-                    for meeting_id in meeting_ids
-                    if meeting_id is not None
-                },}
+        if missing_permissions and not self.check_for_admin_in_all_meetings(
+            instance.get("id", 0)
+        ):
+            missing_permissions.update(
+                {
+                    Permissions.User.CAN_UPDATE: {
+                        meeting_id
+                        for meeting_ids in self.instance_committee_meeting_ids.values()
+                        if meeting_ids is not None
+                        for meeting_id in meeting_ids
+                        if meeting_id is not None
+                    },
+                }
             )
             raise MissingPermission(missing_permissions)
 
@@ -377,7 +382,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         ):
             return
 
-        missing_permissions = dict()
+        missing_permissions: dict[AnyPermission, int | set[int]] = dict()
         if (
             self.instance_user_oml_permission
             or self.instance_user_scope == UserScope.Organization
@@ -418,15 +423,19 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                 self.permission: self.instance_user_scope_id,
             }
-        if missing_permissions and not self.check_for_admin_in_all_meetings(instance.get("id", 0)):
-            missing_permissions.update({
-                Permissions.User.CAN_UPDATE: {
-                    meeting_id
-                    for meeting_ids in self.instance_committee_meeting_ids.values()
-                    if meeting_ids is not None
-                    for meeting_id in meeting_ids
-                    if meeting_id is not None
-                },}
+        if missing_permissions and not self.check_for_admin_in_all_meetings(
+            instance.get("id", 0)
+        ):
+            missing_permissions.update(
+                {
+                    Permissions.User.CAN_UPDATE: {
+                        meeting_id
+                        for meeting_ids in self.instance_committee_meeting_ids.values()
+                        if meeting_ids is not None
+                        for meeting_id in meeting_ids
+                        if meeting_id is not None
+                    },
+                }
             )
             raise MissingPermission(missing_permissions)
 
