@@ -973,11 +973,61 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_meeting_manage_user(self) -> None:
-        """May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee"""
+        """
+        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee.
+        Testing various scenarios:
+        * both default group
+        * default group has user.can_update permission
+        * requesting user is in admin group
+        """
         self.permission_setup()
-        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(self.user_id, [1])
         self.set_user_groups(111, [1])
 
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+                "pronoun": "pronoun",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60 or Permission user.can_update in meeting {1}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "User111",
+                "pronoun": None,
+                "meeting_ids": [1],
+                "committee_ids": None,
+            },
+        )
+
+        self.update_model("group/1", {"permissions": ["user.can_update"]})
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_user",
+                "pronoun": "pro",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_user",
+                "pronoun": "pro",
+                "meeting_ids": [1],
+                "committee_ids": None,
+            },
+        )
+
+        self.set_user_groups(self.user_id, [2])
         response = self.request(
             "user.update",
             {
@@ -1314,8 +1364,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         """
         Test user update with various scenarios (admin in different meeting and committee no interference)
             * not in same meeting fails
+            * same meeting but requesting user not in admin or permission group fails
+            * same meeting requesting user with permission user.can_update works
             * same meeting both admin works
-            * same meeting request user is committee admin works
+            * same meeting requesting user is committee admin works
         """
         self.permission_setup()
         self.create_meeting(4)
@@ -1342,8 +1394,23 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-        self.set_user_groups(111, [2])
-        self.set_user_groups(self.user_id, [2, 5])
+        self.set_user_groups(self.user_id, [1, 5])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": None,
+            },
+        )
+
+        self.update_model("group/1", {"permissions": ["user.can_update"]})
         response = self.request(
             "user.update",
             {
@@ -1359,7 +1426,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(self.user_id, [2, 5])
         response = self.request(
             "user.update",
             {
@@ -1372,6 +1439,22 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "default_password": "newer_one",
+            },
+        )
+
+        self.set_committee_management_level([60], self.user_id)
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "newest_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "newest_one",
             },
         )
 
