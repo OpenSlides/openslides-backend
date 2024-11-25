@@ -429,7 +429,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
             response.json["message"],
         )
 
@@ -479,7 +479,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
             response.json["message"],
         )
 

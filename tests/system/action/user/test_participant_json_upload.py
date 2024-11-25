@@ -9,7 +9,6 @@ from tests.system.action.base import BaseActionTestCase
 
 class ParticipantJsonUpload(BaseActionTestCase):
     def setUp(self) -> None:
-        self.maxDiff = None
         super().setUp()
         self.set_models(
             {
