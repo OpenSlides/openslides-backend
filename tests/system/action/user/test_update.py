@@ -283,7 +283,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/22",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/1",
                 "Committee management changed",
             ],
@@ -2844,7 +2844,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
             ],
         )
@@ -2885,9 +2885,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/3",
             ],
         )
@@ -2926,6 +2926,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/1234": {
                     "username": "username_abcdefgh123",
                     "meeting_user_ids": [4444, 5555],
+                    "is_present_in_meeting_ids": [4, 5],
                 },
                 "meeting_user/4444": {
                     "meeting_id": 4,
@@ -2943,11 +2944,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [4444],
                     "committee_id": 1,
+                    "present_user_ids": [1234],
                 },
                 "meeting/5": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5555],
                     "committee_id": 1,
+                    "present_user_ids": [1234],
                 },
                 "committee/1": {"meeting_ids": [4, 5]},
                 "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
@@ -2971,6 +2974,19 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "username_abcdefgh123",
                 "meeting_user_ids": [4444, 5555],
+                "is_present_in_meeting_ids": [5],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/4",
+            {
+                "present_user_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/5",
+            {
+                "present_user_ids": [1234],
             },
         )
         self.assert_model_exists(

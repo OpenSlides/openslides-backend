@@ -2,7 +2,7 @@
 
 ```
 {
-  user_ids: Id[];
+  user_ids: Id[] // required
 }
 ```
 

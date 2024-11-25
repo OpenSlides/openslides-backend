@@ -74,13 +74,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "user/111": {
                     "username": "username_srtgb123",
                     "meeting_user_ids": [1111],
+                    "is_present_in_meeting_ids": [1],
                 },
                 "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
                     "speaker_ids": [15, 16],
                 },
-                "meeting/1": {},
+                "meeting/1": {"present_user_ids": [111]},
                 "speaker/15": {
                     "meeting_user_id": 1111,
                     "meeting_id": 1,
@@ -95,13 +96,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/111")
+        self.assert_model_deleted("user/111", {"is_present_in_meeting_ids": []})
         self.assert_model_deleted("meeting_user/1111")
         self.assert_model_exists(
             "speaker/15",
             {"meeting_user_id": None, "meeting_id": 1, "begin_time": 12345678},
         )
         self.assert_model_deleted("speaker/16")
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
 
     def test_delete_with_candidate(self) -> None:
         self.set_models(

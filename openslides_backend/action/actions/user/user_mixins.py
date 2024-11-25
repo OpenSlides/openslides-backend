@@ -146,10 +146,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def check_meeting_and_users(
         self, instance: dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        if instance.get("meeting_id") is not None:
-            self.datastore.apply_changed_model(
-                user_fqid, {"meeting_id": instance.get("meeting_id")}
-            )
+        if (meeting_id := instance.get("meeting_id")) is not None:
+            self.datastore.apply_changed_model(user_fqid, {"meeting_id": meeting_id})
 
     def meeting_user_set_data(self, instance: dict[str, Any]) -> None:
         meeting_user_data = {}
