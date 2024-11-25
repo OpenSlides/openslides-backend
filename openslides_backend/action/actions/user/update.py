@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
@@ -17,7 +20,6 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
     LimitOfUserMixin,
@@ -29,6 +31,7 @@ from .user_mixins import (
 
 @register_action("user.update")
 class UserUpdate(
+    UserMixin,
     EmailCheckMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
