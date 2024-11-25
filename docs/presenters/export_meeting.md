@@ -1,8 +1,8 @@
 # Payload
 
-```
+```js
 {
-    meeting_id: Id
+    meeting_id: Id // required
 }
 ```
 

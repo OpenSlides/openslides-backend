@@ -1,21 +1,21 @@
 # Payload
-```
+```js
 {
 }
 ```
 
 # Returns
 If okay:
-```
+```js
 {
-    ok: boolean,
+    ok: boolean
 }
 ```
 else:
-```
+```js
 {
     ok: boolean,
-    errors: string,
+    errors: string
 }
 ```
 
