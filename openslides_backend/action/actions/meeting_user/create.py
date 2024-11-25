@@ -54,24 +54,22 @@ class MeetingUserCreate(
         information = {}
         for instance in self.instances:
             instance_information = []
-            if "group_ids" in instance:
-                if len(instance["group_ids"]) == 1:
-                    instance_information.extend(
-                        [
-                            "Participant added to group {} in meeting {}",
-                            fqid_from_collection_and_id(
-                                "group", instance["group_ids"][0]
-                            ),
-                        ]
+            fqids_per_collection = {
+                collection_name: [
+                    fqid_from_collection_and_id(
+                        collection_name,
+                        _id,
                     )
-                else:
-                    instance_information.append(
-                        "Participant added to multiple groups in meeting {}",
-                    )
-            else:
-                instance_information.append(
-                    "Participant added to meeting {}",
-                )
+                    for _id in ids
+                ]
+                for collection_name in ["group", "structure_level"]
+                if (ids := instance.get(f"{collection_name}_ids"))
+            }
+            instance_information.append(
+                self.compose_history_string(list(fqids_per_collection.items()))
+            )
+            for collection_name, fqids in fqids_per_collection.items():
+                instance_information.extend(fqids)
             instance_information.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
@@ -79,3 +77,29 @@ class MeetingUserCreate(
                 instance_information
             )
         return information
+
+    def compose_history_string(
+        self, fqids_per_collection: list[tuple[str, list[str]]]
+    ) -> str:
+        """
+        Composes a string of the shape:
+        Participant added to groups {}, {} and structure levels {} in meeting {}.
+        """
+        middle_sentence_parts = [
+            " ".join(
+                [  # prefix and to collection name if it's not the first in list
+                    ("and " if collection_name != fqids_per_collection[0][0] else "")
+                    + collection_name.replace("_", " ")  # replace for human readablity
+                    + ("s" if len(fqids) != 1 else ""),  # plural s
+                    ", ".join(["{}" for _ in range(len(fqids))]),
+                ]
+            )
+            for collection_name, fqids in fqids_per_collection
+        ]
+        return " ".join(
+            [
+                "Participant added to",
+                *middle_sentence_parts,
+                ("in " if fqids_per_collection else "") + "meeting {}.",
+            ]
+        )

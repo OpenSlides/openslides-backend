@@ -153,7 +153,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/22",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/1",
                 "Committee management changed",
             ],
@@ -2354,7 +2354,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
             ],
         )
@@ -2395,9 +2395,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/3",
             ],
         )

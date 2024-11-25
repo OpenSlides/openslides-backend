@@ -72,7 +72,8 @@
                 "gender": "gender",
                 "pronoun": "pronoun",
                 "is_active": "is_active",
-                "is_physical_person": "is_person"
+                "is_physical_person": "is_person",
+                "member_number": "member_number"
               }
         }
     },
