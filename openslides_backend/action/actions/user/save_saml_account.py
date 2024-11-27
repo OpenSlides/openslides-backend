@@ -138,13 +138,13 @@ class UserSaveSamlAccount(
                 and payload_field in instance_old
                 and model_field in allowed_user_fields
             ):
-                idp_attribute = (
+                payload_value = (
                     tx[0]
                     if isinstance((tx := instance_old[payload_field]), list) and len(tx)
                     else tx
                 )
-                if idp_attribute not in (None, []):
-                    instance[model_field] = idp_attribute
+                if payload_value not in (None, []):
+                    instance[model_field] = payload_value
         self.apply_meeting_mapping(instance, instance_old)
         return super().validate_fields(instance)
 
@@ -191,13 +191,15 @@ class UserSaveSamlAccount(
         # Empty string: remove gender_id
         elif gender == "":
             instance["gender_id"] = None
-        meeting_users: dict[int, dict[str, Any]] | None = dict()
+        meeting_users = instance.pop("meeting_user_data", None)
         user_id = None
         if len(users) == 1:
             self.user = next(iter(users.values()))
             instance["id"] = (user_id := cast(int, self.user["id"]))
-            meeting_users = self.apply_meeting_user_data(instance, user_id, True)
             if meeting_users:
+                meeting_users = self.apply_meeting_user_data(
+                    instance, meeting_users, user_id, True
+                )
                 self.update_meeting_users_from_db(meeting_users, user_id)
             instance = {
                 k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
@@ -206,13 +208,13 @@ class UserSaveSamlAccount(
                 self.execute_other_action(UserUpdate, [instance])
         elif len(users) == 0:
             instance = self.set_defaults(instance)
-            meeting_users = instance.pop("meeting_user_data", None)
             response = self.execute_other_action(UserCreate, [instance])
             if response and response[0]:
                 user_id = response[0].get("id")
-            instance["meeting_user_data"] = meeting_users
-            if user_id:
-                meeting_users = self.apply_meeting_user_data(instance, user_id, False)
+            if meeting_users and user_id:
+                meeting_users = self.apply_meeting_user_data(
+                    instance, meeting_users, user_id, False
+                )
         else:
             ActionException(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
@@ -314,9 +316,13 @@ class UserSaveSamlAccount(
                 )
 
     def apply_meeting_user_data(
-        self, instance: dict[str, Any], user_id: int, is_update: bool
+        self,
+        instance: dict[str, Any],
+        meeting_user_data: dict[int, dict[str, Any]],
+        user_id: int,
+        is_update: bool,
     ) -> dict[int, dict[str, Any]] | None:
-        if not (meeting_user_data := instance.pop("meeting_user_data", None)) or not (
+        if not (
             external_meeting_ids := sorted(
                 [ext_id for ext_id in meeting_user_data.keys()]
             )
@@ -430,7 +436,7 @@ class UserSaveSamlAccount(
                 if saml_meeting_user_field == "number":
                     # Number cannot have a default.
                     if value := instance.get(idp_attribute):
-                        result = cast(str, value)
+                        result = value
                     else:
                         missing_attributes.append(idp_attribute)
                 elif not (value := instance.get(idp_attribute)):
@@ -459,6 +465,11 @@ class UserSaveSamlAccount(
                                 else True
                             )
                         )
+                    elif saml_meeting_user_field == "vote_weight":
+                        # Result is string and has 6 digits.
+                        if isinstance(value, str):
+                            value = float(value)
+                        result = f"{value:f}"
                     else:
                         result = value
             if result:

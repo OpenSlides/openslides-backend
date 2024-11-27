@@ -1,6 +1,6 @@
 ## Payload
 
-```
+```js
 {
     saml_id: string, // required
     title: string,
@@ -34,7 +34,7 @@ Extras to do on creation:
     As you can see there is no password for local login and the user can't change it.
 
 ### Meeting Mappers
-- The saml attribute mapping can have a list of 'meeting_mappers' that can be used to assign users meeting related data. (See example below.)
+- The saml attribute mapping can have a list of 'meeting_mappers' that can be used to assign users meeting related data. (See example below. A full example can be found in the [organization.update.md](organization.update.md))
     - A mapper can be given a 'name' for debugging purposes.
     - The 'external_id' maps to the meeting and is required (logged as warning if meeting does not exist). Multiple mappers can map to the same meeting.
     - If 'allow_update' is set to false, the mapper is only used if the user does not already exist. If it is not given it defaults to true.
@@ -50,7 +50,7 @@ Extras to do on creation:
 - If a structure level does not exist, it is created.
 - Vote weights need to be given as 6 digit decimal strings.
 
-```
+```js
 "meeting_mappers": [{
    "name": "Mapper-Name",
    "external_id": "M2025",

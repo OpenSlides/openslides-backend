@@ -541,7 +541,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                             "default": "not_a_group",
                         }
                     ],
-                    "vote_weight": {"attribute": "vw", "default": "1.000000"},
+                    "vote_weight": {"attribute": "vw", "default": "1.00000"},
                     "present": {"attribute": "presence", "default": "True"},
                 },
             },
@@ -569,7 +569,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                     ],
                     "vote_weight": {
                         "attribute": "kv_vw",
-                        "default": "1.000000",
+                        "default": 1.0,
                     },
                     "present": {"attribute": "kv_presence", "default": "True"},
                 },
@@ -613,6 +613,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
                 "idp_commentary": "normal data used",
+                "vw": 42
             },
         )
         self.assert_status_code(response, 200)
@@ -637,7 +638,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 1,
                 "group_ids": [2],
                 "structure_level_ids": [1],
-                "vote_weight": "1.000000",
+                "vote_weight": "42.000000",
                 "number": "MG_1254",
                 "comment": "normal data used",
             },
