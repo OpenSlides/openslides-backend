@@ -613,7 +613,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
                 "idp_commentary": "normal data used",
-                "vw": 42
+                "vw": 42,
             },
         )
         self.assert_status_code(response, 200)

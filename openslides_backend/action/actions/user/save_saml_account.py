@@ -7,6 +7,7 @@ import fastjsonschema
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+from ....models.fields import TRUE_VALUES
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
@@ -195,7 +196,7 @@ class UserSaveSamlAccount(
         user_id = None
         if len(users) == 1:
             self.user = next(iter(users.values()))
-            instance["id"] = (user_id := cast(int, self.user["id"]))
+            instance["id"] = (user_id := self.user["id"])
             if meeting_users:
                 meeting_users = self.apply_meeting_user_data(
                     instance, meeting_users, user_id, True
@@ -274,16 +275,14 @@ class UserSaveSamlAccount(
             meeting_user_data: dict[str, Any] = defaultdict(dict)
             for meeting_mapper in meeting_mappers:
                 if self.validate_meeting_mapper(instance_old, meeting_mapper):
-                    meeting_external_id = cast(str, meeting_mapper["external_id"])
+                    meeting_external_id = meeting_mapper["external_id"]
                     mapping_results = meeting_user_data[meeting_external_id]
                     allow_update: str | bool
                     if isinstance(
-                        allow_update := cast(
-                            str, meeting_mapper.get("allow_update", "True")
-                        ),
+                        allow_update := meeting_mapper.get("allow_update", True),
                         str,
                     ):
-                        allow_update = allow_update.casefold() != "False".casefold()
+                        allow_update = allow_update.lower() in TRUE_VALUES
                     result = {
                         **{
                             key: value
