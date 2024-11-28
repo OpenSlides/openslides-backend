@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import fastjsonschema
 
+from openslides_backend.shared.patterns import DECIMAL_REGEX
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....models.fields import TRUE_VALUES
@@ -283,30 +284,23 @@ class UserSaveSamlAccount(
                         str,
                     ):
                         allow_update = allow_update.lower() in TRUE_VALUES
-                    result = {
-                        **{
+                    mapping_results["for_create"] = {
+                        key: value
+                        for key, value in self.get_field_data(
+                            instance_old,
+                            mapping_results.get("for_create", dict()),
+                            meeting_mapper,
+                        )
+                    }
+                    if allow_update:
+                        mapping_results["for_update"] = {
                             key: value
                             for key, value in self.get_field_data(
                                 instance_old,
-                                mapping_results.get("for_create", dict()),
+                                mapping_results.get("for_update", dict()),
                                 meeting_mapper,
                             )
-                        },
-                    }
-                    if allow_update:
-                        mapping_results["for_create"] = result
-                        mapping_results["for_update"] = {
-                            **{
-                                key: value
-                                for key, value in self.get_field_data(
-                                    instance_old,
-                                    mapping_results.get("for_update", dict()),
-                                    meeting_mapper,
-                                )
-                            },
                         }
-                    else:
-                        mapping_results["for_create"] = result
             if meeting_user_data:
                 instance["meeting_user_data"] = meeting_user_data
             else:
@@ -465,10 +459,26 @@ class UserSaveSamlAccount(
                             )
                         )
                     elif saml_meeting_user_field == "vote_weight":
-                        # Result is string and has 6 digits.
-                        if isinstance(value, str):
-                            value = float(value)
-                        result = f"{value:f}"
+                        # Result must be string and have 6 digits after dot.
+                        if isinstance(value, int):
+                            value = f"{value:f}"
+                        elif isinstance(value, str) and re.compile(
+                            r"^[1-9]\d*\.?\d{0,6}$"
+                        ).match(value):
+                            if re.compile(r"^\d*$").match(value):
+                                value += ".000000"
+                            else:
+                                regex_condition = re.compile(DECIMAL_REGEX)
+                                while not regex_condition.match(value):
+                                    value += "0"
+                        else:
+                            mapper_name = meeting_mapper.get("name", "unnamed")
+                            saml_id = instance.get(self.saml_attr_mapping["saml_id"])
+                            self.logger.debug(
+                                f"Meeting mapper: {mapper_name} The data '{value}' send for vote_weight of user '{saml_id}' must be invalid, eg. float or badly formatted string."
+                            )
+                            continue
+                        result = value
                     else:
                         result = value
             if result:

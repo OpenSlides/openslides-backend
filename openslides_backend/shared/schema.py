@@ -26,7 +26,7 @@ required_str_schema: Schema = {
 }
 optional_str_schema: Schema = {
     "type": ["string", "null"],
-    "minLength": 0,
+    "minLength": 1,
 }
 
 base_list_schema: Schema = {
