@@ -430,6 +430,16 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             lock_meeting=True,
         )
 
+    def test_delete_with_locked_meeting_orgaadmin(self) -> None:
+        self.base_permission_test(
+            {},
+            "meeting.delete",
+            {"id": 1},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            True,
+            lock_meeting=True,
+        )
+
     def test_delete_permissions_can_manage_organization_with_locked_meeting_not_allowed(
         self,
     ) -> None:

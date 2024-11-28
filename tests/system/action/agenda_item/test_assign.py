@@ -155,3 +155,16 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             True,
             lock_meeting=True,
         )
+
+    def test_assign_permissions_with_locked_meeting_orgaadmin(self) -> None:
+        self.base_permission_test(
+            {
+                "agenda_item/7": {"meeting_id": 1},
+                "agenda_item/8": {"meeting_id": 1},
+            },
+            "agenda_item.assign",
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            True,
+            lock_meeting=True,
+        )

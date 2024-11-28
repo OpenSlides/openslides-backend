@@ -822,7 +822,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
         self.set_organization_management_level(
-            OrganizationManagementLevel.SUPERADMIN, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
         )
         self.create_meeting(4)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
@@ -842,6 +842,28 @@ class UserCreateActionTest(BaseActionTestCase):
             "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
+
+    def test_create_permission_group_B_locked_meeting_with_perm(self) -> None:
+        """Group B fields needs explicit user.can_manage permission for meeting"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.create_meeting(4)
+        self.set_user_groups(self.user_id, [5])
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+                "is_present_in_meeting_ids": [4],
+                "number": "number1",
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_permission_group_C_oml_manager(self) -> None:
         """May create group C group_ids by OML permission"""
