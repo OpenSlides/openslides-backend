@@ -5,7 +5,7 @@ from typing import Any, cast
 
 import fastjsonschema
 
-from openslides_backend.shared.patterns import DECIMAL_REGEX
+from openslides_backend.shared.patterns import DECIMAL_PATTERN
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....models.fields import TRUE_VALUES
@@ -463,13 +463,12 @@ class UserSaveSamlAccount(
                         if isinstance(value, int):
                             value = f"{value:f}"
                         elif isinstance(value, str) and re.compile(
-                            r"^[1-9]\d*\.?\d{0,6}$"
+                            r"^(\d\.|[1-9]\d*\.?)\d{0,6}$"
                         ).match(value):
                             if re.compile(r"^\d*$").match(value):
                                 value += ".000000"
                             else:
-                                regex_condition = re.compile(DECIMAL_REGEX)
-                                while not regex_condition.match(value):
+                                while not DECIMAL_PATTERN.match(value):
                                     value += "0"
                         else:
                             mapper_name = meeting_mapper.get("name", "unnamed")
