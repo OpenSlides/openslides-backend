@@ -2425,7 +2425,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "user/2": {"is_active": True, "default_password": "no_password", "username": "user2", "password": self.auth.hash("no_password")},
+                "user/2": {
+                    "is_active": True,
+                    "default_password": "no_password",
+                    "username": "user2",
+                    "password": self.auth.hash("no_password"),
+                },
                 "user/3": {"is_active": True},
             }
         )
