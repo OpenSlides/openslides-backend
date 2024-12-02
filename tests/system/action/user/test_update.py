@@ -2431,11 +2431,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "username": "user2",
                     "password": self.auth.hash("no_password"),
                 },
-                "user/3": {"is_active": True},
             }
         )
         self.set_user_groups(2, [2])
-        self.set_user_groups(3, [2])
         self.login(2)
         response = self.request(
             "user.update",
