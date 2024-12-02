@@ -144,7 +144,7 @@ class UserUpdate(
             if not user.get("is_active"):
                 self.check_limit_of_user(1)
         elif user.get("is_active"):
-            self.auth.clear_users_sessions(instance["id"]) #
+            self.auth.clear_sessions_by_user_id(instance["id"])
 
         check_gender_exists(self.datastore, instance)
         return instance

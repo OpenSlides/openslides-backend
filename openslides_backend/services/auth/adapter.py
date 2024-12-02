@@ -69,5 +69,5 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
             self.access_token, parse.unquote(self.refresh_id)
         )
 
-    def clear_users_sessions(self, user_id: int) -> None:
-        self.auth_handler.clear_users_sessions(user_id)
+    def clear_sessions_by_user_id(self, user_id: int) -> None:
+        self.auth_handler.clear_sessions_by_user_id(user_id)
