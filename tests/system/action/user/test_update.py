@@ -2421,6 +2421,36 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/4", {"is_active": True})
         self.assert_history_information("user/4", ["Set active"])
 
+    def test_update_clear_user_sessions(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "user/2": {"is_active": True, "default_password": "no_password", "username": "user2", "password": self.auth.hash("no_password")},
+                "user/3": {"is_active": True},
+            }
+        )
+        self.set_user_groups(2, [2])
+        self.set_user_groups(3, [2])
+        self.login(2)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_logged_in()
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "is_active": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"is_active": False})
+        self.assert_logged_out()
+
     def test_update_negative_default_vote_weight(self) -> None:
         self.create_model("user/111", {"username": "user111"})
         response = self.request(
