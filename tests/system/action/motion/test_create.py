@@ -80,7 +80,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "tag/56": {"name": "name_56", "meeting_id": 1},
                 "mediafile/8": {"owner_id": "meeting/1", "meeting_mediafile_ids": [80]},
                 "meeting_mediafile/80": {"meeting_id": 1, "mediafile_id": 8},
-                "meeting/1": {"mediafile_ids": [8], "meeting_mediafile_ids": [80]},
+                "meeting/1": {
+                    "mediafile_ids": [8],
+                    "meeting_mediafile_ids": [80],
+                    "motions_create_enable_additional_submitter_text": True,
+                },
                 "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
@@ -107,8 +111,36 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        motion = self.assert_model_exists(
             "motion/2", {**motion, "attachment_meeting_mediafile_ids": [80]}
+        )
+        assert motion.get("submitter_ids") is None
+
+    def test_create_additional_submitter_forbidden(self) -> None:
+        self.set_models(
+            {
+                "motion/1": {
+                    "title": "title_eJveLQIh",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {"mediafile_ids": [8], "meeting_mediafile_ids": [80]},
+            }
+        )
+
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "additional_submitter": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "This meeting doesn't allow additional_submitter to be set in creation",
+            response.json["message"],
         )
 
     def test_create_empty_data(self) -> None:

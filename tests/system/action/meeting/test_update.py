@@ -374,10 +374,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             {
                 "agenda_show_topic_navigation_on_detail_view": True,
                 "motions_hide_metadata_background": True,
+                "motions_create_enable_additional_submitter_text": True,
             }
         )
         assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
         assert meeting.get("motions_hide_metadata_background") is True
+        assert meeting.get("motions_create_enable_additional_submitter_text") is True
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
