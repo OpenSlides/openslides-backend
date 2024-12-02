@@ -140,7 +140,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "user/2",
-            ["Account created", "Participant added to meeting {}", "meeting/111"],
+            ["Account created", "Participant added to meeting {}.", "meeting/111"],
         )
 
     def test_create_comment(self) -> None:

@@ -1,23 +1,23 @@
 # Payload
-```
+```js
 {
     // optional
-    meeting_id: integer;
+    meeting_id: integer
 }
 ```
 
 # Returns
 If okay:
-```
+```js
 {
-    ok: boolean,
+    ok: boolean
 }
 ```
 else:
-```
+```js
 {
     ok: boolean,
-    errors: string,
+    errors: string
 }
 ```
 
