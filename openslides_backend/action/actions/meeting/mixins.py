@@ -32,19 +32,21 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
             and self.datastore.get(
                 fqid_from_collection_and_id("meeting", id_), ["locked_from_inside"]
             ).get("locked_from_inside")
-            and self.datastore.get(
-                fqid_from_collection_and_id("user", self.user_id),
-                ["organization_management_level"],
-            ).get("organization_management_level")
-            != OrganizationManagementLevel.SUPERADMIN
-        ):
-            if not has_perm(
+            and (
+                self.datastore.get(
+                    fqid_from_collection_and_id("user", self.user_id),
+                    ["organization_management_level"],
+                ).get("organization_management_level")
+                != OrganizationManagementLevel.SUPERADMIN
+            )
+            and not has_perm(
                 self.datastore,
                 self.user_id,
                 Permissions.Meeting.CAN_MANAGE_SETTINGS,
                 id_,
-            ):
-                raise MissingPermission({Permissions.Meeting.CAN_MANAGE_SETTINGS: id_})
+            )
+        ):
+            raise MissingPermission({Permissions.Meeting.CAN_MANAGE_SETTINGS: id_})
         if not has_committee_management_level(
             self.datastore,
             self.user_id,

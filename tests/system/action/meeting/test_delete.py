@@ -436,7 +436,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "meeting.delete",
             {"id": 1},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
