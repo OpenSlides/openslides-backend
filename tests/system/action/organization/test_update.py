@@ -150,7 +150,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
 
     def test_update_with_meeting_wrong_attr(self) -> None:
         self.saml_attr_mapping.update(
-            {"meeting_mappers": [{"external_id": "Landtag", "unkown_field": " "}]}
+            {"meeting_mappers": [{"external_id": "Landtag", "unknown_field": " "}]}
         ),
         response = self.request(
             "organization.update",
@@ -163,7 +163,79 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "data.saml_attr_mapping.meeting_mappers[0] must not contain {'unkown_field'} properties"
+            "data.saml_attr_mapping.meeting_mappers[0] must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {"external_id": "Landtag", "mappings": {"unknown_field": " "}}
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {
+                        "external_id": "Landtag",
+                        "mappings": {"vote_weight": {"unknown_field": " "}},
+                    }
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings.vote_weight must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {
+                        "external_id": "Landtag",
+                        "mappings": {"groups": [{"unknown_field": " "}]},
+                    }
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings.groups[0] must not contain {'unknown_field'} properties"
             in response.json["message"]
         )
 
