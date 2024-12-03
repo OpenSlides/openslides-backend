@@ -165,11 +165,9 @@ def add_users(
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
-        if not internal_target:
+        if not internal_target and (gender_id := user.pop("gender_id", None)):
             gender_dict = datastore.get_all("gender", ["name"], lock_result=False)
-            if user.get("gender_id"):
-                user["gender"] = gender_dict.get(user["gender_id"], {}).get("name")
-                del user["gender_id"]
+            user["gender"] = gender_dict.get(gender_id, {}).get("name")
         # limit user fields to exported objects
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),
