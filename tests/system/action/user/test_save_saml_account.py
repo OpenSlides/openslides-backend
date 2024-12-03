@@ -772,7 +772,13 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1, "vote_weight": "0.000001"}
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "group_ids": [2],
+                "meeting_id": 1,
+                "vote_weight": "0.000001",
+            },
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
