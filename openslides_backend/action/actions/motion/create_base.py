@@ -50,8 +50,8 @@ class MotionCreateBase(
             )
 
     def create_submitters(self, instance: dict[str, Any]) -> None:
-        submitter_ids = instance.pop("submitter_ids", None)
-        if not submitter_ids:
+        submitter_ids = instance.pop("submitter_ids", [])
+        if not submitter_ids and not instance.get("additional_submitter"):
             submitter_ids = [self.user_id]
         self.apply_instance(instance)
         weight = 1
