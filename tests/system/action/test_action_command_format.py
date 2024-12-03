@@ -170,12 +170,14 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "meeting/2": {
                     "name": "name2",
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "committee/1": {"name": "test_committee"},
             }
@@ -216,12 +218,14 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "meeting/2": {
                     "name": "name2",
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "committee/1": {"name": "test_committee"},
             }

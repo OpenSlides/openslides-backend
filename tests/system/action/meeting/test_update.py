@@ -1,5 +1,7 @@
 from typing import Any
 
+from openslides_backend.i18n.translator import Translator
+from openslides_backend.i18n.translator import translate as _
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
@@ -22,6 +24,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "admin_group_id": 1,
                 "projector_ids": [1],
                 "reference_projector_id": 1,
+                "language": "en",
                 **{field: [1] for field in Meeting.all_default_projectors()},
             },
             "projector/1": {
@@ -51,6 +54,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "default_group_id": 1,
                     "projector_ids": [1],
                     "reference_projector_id": 1,
+                    "language": "en",
                     **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
@@ -353,6 +357,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "start_time": 160000,
                     "end_time": 170000,
+                    "language": "en",
                 },
             }
         )
@@ -630,6 +635,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "committee_id": 1,
                     "group_ids": [11],
                     "admin_group_id": 11,
+                    "language": "en",
                 },
                 "group/11": {"meeting_id": 3, "admin_group_for_meeting_id": 3},
                 "user/4": {},
@@ -684,6 +690,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "committee_id": 1,
                     "group_ids": [11],
                     "admin_group_id": 11,
+                    "language": "en",
                 },
                 "group/11": {"meeting_id": 3, "admin_group_for_meeting_id": 3},
             }
@@ -875,6 +882,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "committee_id": 1,
                     "external_id": external_id,
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
             }
         )
@@ -1073,3 +1081,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.base_anonymous_group_in_poll_default_field_test(
             "topic_poll_default_group_ids"
         )
+
+    def test_update_enable_anonymous_check_language(self) -> None:
+        self.test_models["meeting/1"]["language"] = "de"
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "enable_anonymous": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        Translator.set_translation_language("de")
+        self.assert_model_exists("group/2", {"name": _("Public")})
