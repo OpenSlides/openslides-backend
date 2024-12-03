@@ -112,21 +112,41 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         motion = self.assert_model_exists(
-            "motion/2", {**motion, "attachment_meeting_mediafile_ids": [80]}
+            "motion/2",
+            {
+                **motion,
+                "attachment_meeting_mediafile_ids": [80],
+                "additional_submitter": "test",
+            },
         )
         assert motion.get("submitter_ids") is None
 
-    def test_create_additional_submitter_forbidden(self) -> None:
+    def test_create_normal_and_additional_submitter(self) -> None:
         self.set_models(
             {
-                "motion/1": {
-                    "title": "title_eJveLQIh",
-                    "meeting_id": 1,
+                "meeting/1": {
+                    "motions_create_enable_additional_submitter_text": True,
                 },
-                "meeting/1": {"mediafile_ids": [8], "meeting_mediafile_ids": [80]},
             }
         )
+        bob_id = self.create_user("bob", [3])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "additional_submitter": "test",
+                "submitter_ids": [bob_id],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/1", {"additional_submitter": "test", "submitter_ids": [bob_id - 1]}
+        )
 
+    def test_create_additional_submitter_forbidden(self) -> None:
         response = self.request(
             "motion.create",
             {
