@@ -106,7 +106,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     }
                     for i in ids
                 },
-                **{f"meeting_user/{i}": {"assignment_candidate_ids": [1]} for i in ids},
+                **{f"meeting_user/{i}": {"assignment_candidate_ids": [i]} for i in ids},
             }
         )
 
