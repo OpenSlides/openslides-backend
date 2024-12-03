@@ -743,6 +743,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         """
         shows:
         * matching only one mapper -> creating only one meeting user
+        * using vote weight as decimal string of the shape 0.*
         """
         response = self.request(
             "user.save_saml_account",
@@ -757,6 +758,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
+                "vw": "0.000001",
             },
         )
         self.assert_status_code(response, 200)
@@ -770,7 +772,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1}
+            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1, "vote_weight": "0.000001"}
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
@@ -780,6 +782,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             {"meeting_user_ids": [1], "name": "structure1"},
         )
         self.assert_model_not_exists("structure_level/2")
+        self.assert_model_not_exists("meeting_user/2")
 
     def test_create_user_mapping_no_mapper(self) -> None:
         del self.organization["saml_attr_mapping"]["meeting_mappers"]  # type: ignore
