@@ -143,8 +143,12 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/1", {"additional_submitter": "test", "submitter_ids": [bob_id - 1]}
+            "motion/1", {"additional_submitter": "test", "submitter_ids": [1]}
         )
+        self.assert_model_exists(
+            "motion_submitter/1", {"motion_id": 1, "meeting_user_id": 1}
+        )
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": bob_id})
 
     def test_create_additional_submitter_forbidden(self) -> None:
         response = self.request(
