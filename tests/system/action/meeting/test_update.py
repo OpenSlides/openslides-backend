@@ -564,7 +564,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_room_password": "blablabla",
             },
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
         )
 
     def test_update_with_locked_meeting_group_a(self) -> None:
@@ -591,7 +591,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "locked_from_inside": True,
             },
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -617,7 +617,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "present_user_ids": [2]},
             OrganizationManagementLevel.SUPERADMIN,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -627,7 +627,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "present_user_ids": [2]},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -637,7 +637,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "reference_projector_id": 1},
             OrganizationManagementLevel.SUPERADMIN,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -647,7 +647,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "reference_projector_id": 1},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -773,7 +773,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_room_password": "blablabla",
             },
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 

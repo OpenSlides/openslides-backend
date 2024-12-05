@@ -152,7 +152,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.SUPERADMIN,
-            True,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -165,6 +165,6 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            True,
+            fail=True,
             lock_meeting=True,
         )
