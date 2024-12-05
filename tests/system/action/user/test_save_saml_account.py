@@ -569,7 +569,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                     ],
                     "vote_weight": {
                         "attribute": "kv_vw",
-                        "default": "1.000000",
+                        "default": "1.0",
                     },
                     "present": {"attribute": "kv_presence", "default": "True"},
                 },
@@ -598,6 +598,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         Shows:
             * generally works for multiple matching mappers on different meetings
             * if default for 'groups' doesn't resolve, default group of that meeting is used
+            * vote weight accepts integers but no floats
         """
         response = self.request(
             "user.save_saml_account",
@@ -613,6 +614,8 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
                 "idp_commentary": "normal data used",
+                "vw": 42,
+                "kv_vw": 13.0,
             },
         )
         self.assert_status_code(response, 200)
@@ -637,7 +640,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 1,
                 "group_ids": [2],
                 "structure_level_ids": [1],
-                "vote_weight": "1.000000",
+                "vote_weight": "42.000000",
                 "number": "MG_1254",
                 "comment": "normal data used",
             },
@@ -650,7 +653,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 4,
                 "comment": "normal data used",
                 "structure_level_ids": [2],
-                "vote_weight": "1.000000",
+                "vote_weight": None,
                 "number": "MG_1254",
             },
         )
@@ -675,6 +678,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             * multiple entries in structure level and group lists are respected.
             * multiple values can be repeated
             * mappers can share idp data fields
+            * vote weight accepts no leading zeros but integer as string
         """
         self.meeting_mappers[1]["mappings"]["groups"] = [  # type: ignore
             {
@@ -696,6 +700,8 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
+                "vw": "002",
+                "kv_vw": "2",
             },
         )
         self.assert_status_code(response, 200)
@@ -709,10 +715,17 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 2, "group_ids": [2, 3], "meeting_id": 1}
+            "meeting_user/1",
+            {"user_id": 2, "group_ids": [2, 3], "meeting_id": 1, "vote_weight": None},
         )
         self.assert_model_exists(
-            "meeting_user/2", {"user_id": 2, "group_ids": [4, 5, 6], "meeting_id": 4}
+            "meeting_user/2",
+            {
+                "user_id": 2,
+                "group_ids": [4, 5, 6],
+                "meeting_id": 4,
+                "vote_weight": "2.000000",
+            },
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
@@ -730,6 +743,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         """
         shows:
         * matching only one mapper -> creating only one meeting user
+        * using vote weight as decimal string of the shape 0.*
         """
         response = self.request(
             "user.save_saml_account",
@@ -744,6 +758,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
                 "kv_structure": "structure2",
+                "vw": "0.000001",
             },
         )
         self.assert_status_code(response, 200)
@@ -757,7 +772,13 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1}
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "group_ids": [2],
+                "meeting_id": 1,
+                "vote_weight": "0.000001",
+            },
         )
         self.assert_model_exists(
             "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
@@ -767,6 +788,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             {"meeting_user_ids": [1], "name": "structure1"},
         )
         self.assert_model_not_exists("structure_level/2")
+        self.assert_model_not_exists("meeting_user/2")
 
     def test_create_user_mapping_no_mapper(self) -> None:
         del self.organization["saml_attr_mapping"]["meeting_mappers"]  # type: ignore
