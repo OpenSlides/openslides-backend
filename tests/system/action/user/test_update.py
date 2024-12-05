@@ -2422,36 +2422,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("user/4", ["Set active"])
 
     def test_update_clear_user_sessions(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/2": {
-                    "is_active": True,
-                    "default_password": "no_password",
-                    "username": "user2",
-                    "password": self.auth.hash("no_password"),
-                },
-            }
-        )
-        self.set_user_groups(2, [2])
-        self.login(2)
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
         response = self.request(
             "user.update",
             {
-                "id": 2,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_logged_in()
-        response = self.request(
-            "user.update",
-            {
-                "id": 2,
+                "id": self.user_id,
                 "is_active": False,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"is_active": False})
+        self.assert_model_exists(f"user/{self.user_id}", {"is_active": False})
         self.assert_logged_out()
 
     def test_update_negative_default_vote_weight(self) -> None:
@@ -2633,6 +2614,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_OML_set(self) -> None:
+        """Testing also that user is not locked out when is_active is set to True."""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
         self.create_user("dummy", [2])
@@ -2643,9 +2625,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": self.user_id,
                 "meeting_id": 1,
                 "group_ids": [1],
+                "is_active": True,
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_logged_in()
 
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(
