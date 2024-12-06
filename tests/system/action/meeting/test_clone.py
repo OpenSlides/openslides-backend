@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
     ONE_ORGANIZATION_ID,
@@ -2008,7 +2009,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 33
+        assert counter.calls == 34
 
     @performance
     def test_clone_performance(self) -> None:
@@ -2080,6 +2081,25 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 400)
         assert "Cannot clone locked meeting." in response.json["message"]
+
+    def test_permissions_oml_locked_meeting_with_can_manage_settings(self) -> None:
+        self.set_models(self.test_models)
+        bob_id = self.create_user("bob")
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "template_for_organization_id": 1,
+                },
+                ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+            }
+        )
+        self.set_group_permissions(1, [Permissions.Meeting.CAN_MANAGE_SETTINGS])
+        self.set_user_groups(1, [1])
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "admin_ids": [bob_id]}
+        )
+        self.assert_status_code(response, 200)
 
     def test_clone_require_duplicate_from_allowed(self) -> None:
         self.set_models(self.test_models_with_admin)
