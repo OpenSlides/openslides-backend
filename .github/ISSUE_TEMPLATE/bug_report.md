@@ -13,7 +13,7 @@ assignees: ''
 
 **Payload from client (handle_request)**
 
-**Response  from backend**
+**Response from backend**
 
 **Expected behavior**
 
