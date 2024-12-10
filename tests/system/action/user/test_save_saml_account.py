@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class UserBaseSamlAccount(BaseActionTestCase):
     def setUp(self) -> None:
         self.results = {
-            "saml_id": "111222333",
+            "idp_id": "111222333",
             "title": "Dr.",
             "first_name": "Max",
             "last_name": "Mustermann",
@@ -24,7 +24,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
                 "organization/1": {
                     "saml_enabled": True,
                     "saml_attr_mapping": {
-                        "saml_id": "username",
+                        "idp_id": "username",
                         "title": "title",
                         "first_name": "firstName",
                         "last_name": "lastName",
@@ -58,7 +58,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
-    def test_save_attr_no_saml_id_provided(self) -> None:
+    def test_save_attr_no_idp_id_provided(self) -> None:
         response = self.request(
             "user.save_saml_account", {"firstName": "Joe", "lastName": "Cartwright"}
         )
@@ -68,7 +68,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
-    def test_save_attr_empty_saml_id_provided(self) -> None:
+    def test_save_attr_empty_idp_id_provided(self) -> None:
         response = self.request(
             "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
         )
@@ -78,7 +78,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
-    def test_save_attr_empty_saml_id_list_provided(self) -> None:
+    def test_save_attr_empty_idp_id_list_provided(self) -> None:
         response = self.request(
             "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
         )
@@ -104,7 +104,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
                 "organization/1": {
                     "saml_enabled": True,
                     "saml_attr_mapping": {
-                        "saml_id": "username",
+                        "idp_id": "username",
                         "default_number": "default_number",
                     },
                 }

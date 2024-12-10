@@ -2,10 +2,18 @@ import binascii
 import json
 from base64 import b64decode
 from pathlib import Path
+from smtplib import SMTPAuthenticationError, SMTPSenderRefused
+from ssl import SSLCertVerificationError
 
 from authlib.jose import JWTClaims
 
 from os_authlib.message_bus import MessageBus
+
+from openslides_backend.action.actions.user.send_invitation_email import EmailErrorType
+from openslides_backend.action.mixins.send_email_mixin import EmailUtils, EmailSettings
+from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.util import fqid_from_collection_and_id
+from datastore.shared.util.key_types import id_regex
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
@@ -93,7 +101,6 @@ class ActionView(BaseView):
 
     @route("logout", method="POST", json=False)
     def backchannel_logout(self, request: Request) -> RouteResponse:
-        # topic '<logout>', field 'sessionId', value sessionId
         self.logger.debug("Received logout request")
         try:
             logout_token = request.form.get("logout_token")
@@ -101,12 +108,10 @@ class ActionView(BaseView):
                 self.logger.error("Missing logout_token")
                 raise ServerError("Missing logout_token")
 
-            # Verify and decode the logout token
             decoded_token = self.services.authentication().auth_handler.verify_logout_token(logout_token)
             if decoded_token is None:
                 return AuthenticationException("Invalid logout token")
 
-            # Extract the session ID (sid) from the token
             session_id = decoded_token.get("sid")
             if not session_id:
                 return AuthenticationException("Missing session ID (sid) in logout token")

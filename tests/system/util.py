@@ -57,8 +57,8 @@ class TestIdpAdminAdapter(IdpAdminService):
     def set_authentication(self, access_token: str, refresh_id: str) -> None:
         pass
 
-    def create_user(self, username: str, saml_id: str | None) -> str:
-        return username + f"_{saml_id}" if saml_id is not None else ""
+    def create_user(self, username: str, idp_id: str | None) -> str:
+        return username + f"_{idp_id}" if idp_id is not None else ""
 
 
 def create_action_test_application() -> OpenSlidesBackendWSGIApplication:

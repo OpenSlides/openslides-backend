@@ -1690,7 +1690,7 @@ class UserUpdateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
 
-    def test_no_perm_group_H_internal_saml_id(self) -> None:
+    def test_no_perm_group_H_internal_idp_id(self) -> None:
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -1700,12 +1700,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "saml_id": "test saml id",
+                "idp_id": "test saml id",
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field 'saml_id' can only be used in internal action calls",
+            "The field 'idp_id' can only be used in internal action calls",
             response.json["message"],
         )
 

@@ -18,7 +18,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
-from ..http.token_storage import token_storage
+from ..http.token_storage import token_storage, TokenStorageUpdate
 from ..http.auth_context import AuthContext
 
 class ActionWorkerState(str, Enum):
@@ -240,14 +240,17 @@ class ActionWorker(threading.Thread):
         with self.lock:
             self.started = True
             # set global werkzeug context
-            token_storage.access_token = self.auth_context.access_token
-            token_storage.claims = self.auth_context.claims
+            token_storage.update(TokenStorageUpdate(access_token= self.auth_context.access_token,
+                                                        claims= self.auth_context.claims))
             try:
                 self.response = self.handler.handle_request(
                     self.payload, self.auth_context, self.is_atomic, self.internal
                )
             except Exception as exception:
                 self.exception = exception
+            finally:
+                token_storage.clear()
+
 
 
 class OSGunicornThread(threading.Thread):

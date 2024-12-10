@@ -6,7 +6,7 @@
   permission_id: number,    // Id of permission scope object
   search: {
     "username": string,
-    "saml_id": string,
+    "idp_id": string,
     "first_name": string,
     "last_name": string,
     "email": string,
@@ -20,7 +20,7 @@
 {
   "id": number,
   "username": string,
-  "saml_id": string,
+  "idp_id": string,
   "first_name": string,
   "last_name": string,
   "email": string,
@@ -34,7 +34,7 @@ represents all users which matched the search entry with the given object of 6 f
 ## Logic
 
 The matching is performed independently per search entry. If a `username` is given, the other fields
-are ignored and users are only matched by `username`. If the `username` is empty, the users are only matched by `saml_id`. If the `saml_id` is empty, the users are only matched by `member_number`. If the `member_number` is also empty all other fields (`first_name`, `last_name`, `email`) must match instead.
+are ignored and users are only matched by `username`. If the `username` is empty, the users are only matched by `idp_id`. If the `idp_id` is empty, the users are only matched by `member_number`. If the `member_number` is also empty all other fields (`first_name`, `last_name`, `email`) must match instead.
 
 ## Permissions
 

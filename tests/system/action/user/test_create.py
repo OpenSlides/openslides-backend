@@ -1097,7 +1097,7 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_permission_group_H_internal_saml_id(self) -> None:
+    def test_create_permission_group_H_internal_idp_id(self) -> None:
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])  # Admin-group
 
@@ -1105,18 +1105,18 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "username",
-                "saml_id": "11111",
+                "idp_id": "11111",
                 "meeting_id": 1,
                 "group_ids": [2],
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field 'saml_id' can only be used in internal action calls",
+            "The field 'idp_id' can only be used in internal action calls",
             response.json["message"],
         )
 
-    def test_create_permission_group_H_oml_can_manage_user_saml_id(self) -> None:
+    def test_create_permission_group_H_oml_can_manage_user_idp_id(self) -> None:
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
         )
@@ -1124,7 +1124,7 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "saml_id": "11111",
+                "idp_id": "11111",
             },
         )
         self.assert_status_code(response, 200)
@@ -1132,7 +1132,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/2",
             {
                 "username": "11111",
-                "saml_id": "11111",
+                "idp_id": "11111",
                 "can_change_own_password": False,
                 "default_password": None,
             },
@@ -1461,15 +1461,15 @@ class UserCreateActionTest(BaseActionTestCase):
 
 
 class UserCreateActionTestInternal(BaseInternalActionTest):
-    def test_create_empty_saml_id_and_empty_values(self) -> None:
+    def test_create_empty_idp_id_and_empty_values(self) -> None:
         response = self.internal_request(
             "user.create",
-            {"saml_id": "  ", "username": "x"},
+            {"idp_id": "  ", "username": "x"},
         )
         self.assert_status_code(response, 400)
-        self.assertIn("This saml_id is forbidden.", response.json["message"])
+        self.assertIn("This idp_id is forbidden.", response.json["message"])
 
-    def test_create_saml_id_and_default_pasword(self) -> None:
+    def test_create_idp_id_and_default_pasword(self) -> None:
         response = self.internal_request(
             "user.create",
             {

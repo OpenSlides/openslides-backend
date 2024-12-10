@@ -187,7 +187,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         )
 
     def test_saml_user_error(self) -> None:
-        self.update_model("user/1", {"password": "pw", "saml_id": "111"})
+        self.update_model("user/1", {"password": "pw", "idp_id": "111"})
         response = self.request("user.generate_new_password", {"id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(

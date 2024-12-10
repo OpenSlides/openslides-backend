@@ -39,7 +39,7 @@ It will also cause old-format `vote_weight` values (i.e. entries with the value 
 An error is thrown if:
 - The operator is trying to merge himself into another user
 - Any of the selected users are demo- or forwarding users (i.e. `is_demo_user` or `forwarding_committee_ids` is set)
-- Any of the secondary users have a `saml_id`
+- Any of the secondary users have a `idp_id`
 - There are multiple different `member_number`s between the selected users (empty does not count)
 - There are conflicts regarding polls, i.e. two or more of the selected users...
     - are option content_objects (not counting poll_candidate_list membership) on the same poll
@@ -59,7 +59,7 @@ The primary user is updated with the information from the secondary users using 
 - `organization_management_level` is set to highest oml among the users.
 - `can_change_own_password` is set to true if it is true on any selected user.
 - relation-lists are set to the union of their content among all selected users, except the `is_present_in_meeting_ids`- and `meeting_user_ids`-relation, which are handled separately
-- login data (`saml_id`, `username`, `password`) remains untouched
+- login data (`idp_id`, `username`, `password`) remains untouched
 - If any user has a`member_number` it is used
 - The `is_present_in_meeting_ids` relation list will be expanded with all meetings
 - `meeting_user_ids` are create-merged (see "Merging of sub-collections/Create merge" and "Meeting user merge")

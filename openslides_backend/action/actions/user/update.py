@@ -69,7 +69,7 @@ class UserUpdate(
             "organization_management_level",
             "committee_management_ids",
             "is_demo_user",
-            "saml_id",
+            "idp_id",
             "member_number",
             *internal_id_fields,
         ],

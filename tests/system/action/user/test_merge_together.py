@@ -410,12 +410,12 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         self.assert_model_deleted("user/3")
 
-    def test_merge_with_saml_id(self) -> None:
+    def test_merge_with_idp_id(self) -> None:
         self.set_models(
             {
                 "user/2": {
                     "password": None,
-                    "saml_id": "user2",
+                    "idp_id": "user2",
                 },
             }
         )
@@ -432,7 +432,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "default_password": "user2",
                 "meeting_user_ids": [12, 22, 46],
                 "password": None,
-                "saml_id": "user2",
+                "idp_id": "user2",
             },
         )
         self.assert_model_deleted("user/3")

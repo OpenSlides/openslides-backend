@@ -52,7 +52,7 @@ class UserCreate(
             "committee_management_ids",
             "is_demo_user",
             "forwarding_committee_ids",
-            "saml_id",
+            "idp_id",
             "member_number",
         ],
         additional_optional_fields={

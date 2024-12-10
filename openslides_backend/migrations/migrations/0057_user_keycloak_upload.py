@@ -12,7 +12,7 @@ class Migration(BaseModelMigration):
     """
     idpAdmin: IdpAdminService
 
-    target_migration_index = 52
+    target_migration_index = 58
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
@@ -24,7 +24,8 @@ class Migration(BaseModelMigration):
                     RequestUpdateEvent(
                         fqid_from_collection_and_id("user", id_),
                         {
-                            "idp_id": idp_id
+                            "idp_id": idp_id,
+                            "saml_id": None
                         },
                     )
                 )

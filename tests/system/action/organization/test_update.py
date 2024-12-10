@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
     saml_attr_mapping: dict[str, str | dict[str, str]] = {
-        "saml_id": "username",
+        "idp_id": "username",
         "title": "title",
         "first_name": "firstName",
         "last_name": "lastName",

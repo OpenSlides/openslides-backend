@@ -54,7 +54,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"url": None},
-                "user/1": {"email": "test@ntvtn.de", "saml_id": "111"},
+                "user/1": {"email": "test@ntvtn.de", "idp_id": "111"},
             }
         )
         handler = AIOHandler()

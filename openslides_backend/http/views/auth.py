@@ -5,7 +5,7 @@ from authlib.jose import JsonWebKey
 from authlib.oauth2.rfc9068 import JWTBearerTokenValidator
 from authlib.oidc.discovery import OpenIDProviderMetadata, get_well_known_url
 from werkzeug.exceptions import Unauthorized, Forbidden
-from ..token_storage import token_storage
+from ..token_storage import token_storage, TokenStorageUpdate
 
 KEYCLOAK_DOMAIN = 'http://keycloak:8080'
 KEYCLOAK_REALM = 'os'
@@ -47,8 +47,7 @@ def token_required(f):
 
         view.logger.debug(f"Saving Token claims to thread: {threading.get_ident()}")
 
-        token_storage.claims = claims
-        token_storage.access_token = token
+        token_storage.update(TokenStorageUpdate(access_token=token, claims=claims))
 
         return f(view, request, claims, *args, **kwargs)
     return decorated_function
