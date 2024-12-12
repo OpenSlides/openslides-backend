@@ -49,10 +49,28 @@ class AssignmentUpdate(AttachmentMixin, UpdateAction):
                     ["assignment_poll_add_candidates_to_list_of_speakers"],
                 ).get("assignment_poll_add_candidates_to_list_of_speakers")
             ):
+                list_of_speakers = self.datastore.get(
+                    fqid_from_collection_and_id(
+                        "list_of_speakers", assignment["list_of_speakers_id"]
+                    ),
+                    ["speaker_ids"],
+                )
+                pre_existing_speakers_meeting_user_ids = [
+                    pre_existing_speaker["meeting_user_id"]
+                    for pre_existing_speaker in self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "speaker",
+                                list_of_speakers["speaker_ids"],
+                                ["meeting_user_id"],
+                            )
+                        ]
+                    )["speaker"].values()
+                ]
                 payloads = [
                     {
                         "list_of_speakers_id": assignment["list_of_speakers_id"],
-                        "meeting_user_id": candidate["meeting_user_id"],
+                        "meeting_user_id": meeting_user_id,
                     }
                     for candidate in self.datastore.get_many(
                         [
@@ -63,6 +81,8 @@ class AssignmentUpdate(AttachmentMixin, UpdateAction):
                             )
                         ]
                     )["assignment_candidate"].values()
+                    if (meeting_user_id := candidate["meeting_user_id"])
+                    not in pre_existing_speakers_meeting_user_ids
                 ]
                 for payload in payloads:
                     self.execute_other_action(SpeakerCreateAction, [payload])
