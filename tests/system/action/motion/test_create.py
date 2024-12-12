@@ -122,14 +122,20 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("submitter_ids") is None
 
     def test_create_normal_and_additional_submitter(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "motions_create_enable_additional_submitter_text": True,
-                },
-            }
+        """Also checks that this works with just Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE_METADATA permissions."""
+        self.update_model(
+            "meeting/1", {"motions_create_enable_additional_submitter_text": True}
         )
-        bob_id = self.create_user("bob", [3])
+        self.add_group_permissions(
+            3,
+            [
+                Permissions.Motion.CAN_CREATE,
+                Permissions.Motion.CAN_MANAGE_METADATA,
+                Permissions.User.CAN_SEE,
+            ],
+        )
+        bob_id = self.create_user("bob", group_ids=[3])
+        self.login(bob_id)
         response = self.request(
             "motion.create",
             {
@@ -150,7 +156,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": bob_id})
 
-    def test_create_additional_submitter_forbidden(self) -> None:
+    def test_create_additional_submitter_forbidden_in_meeting(self) -> None:
         response = self.request(
             "motion.create",
             {
@@ -471,13 +477,48 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def setup_permission_test(
         self, permissions: list[Permission], additional_data: dict[str, Any] = {}
-    ) -> None:
+    ) -> int:
+        """
+        Sets up a user with the given permissions in group 3 of a meeting.
+        Additional model data can be given.
+        Logs in the user and returns his id.
+        """
         user_id = self.create_user("user")
         self.login(user_id)
         self.set_user_groups(user_id, [3])
         self.set_group_permissions(3, permissions)
         if additional_data:
             self.set_models(additional_data)
+        return user_id
+
+    def test_create_no_permission_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE and
+        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
+        Also additionally for submitter_ids User.CAN_SEE.
+        """
+        user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "additional_submitter": "test",
+                "submitter_ids": [1, user_id],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage_metadata, motion.can_manage, submitter_ids with possibly needed permission(s): motion.can_manage_metadata, user.can_see, motion.can_manage"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+        )
 
     def test_create_permission_agenda_allowed(self) -> None:
         self.setup_permission_test(
@@ -612,7 +653,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action motion.create. Forbidden fields: attachment_mediafile_ids"
+            == "You are not allowed to perform action motion.create. Forbidden fields: attachment_mediafile_ids with possibly needed permission(s): mediafile.can_see, motion.can_manage"
         )
 
     def test_create_check_not_unique_number(self) -> None:
