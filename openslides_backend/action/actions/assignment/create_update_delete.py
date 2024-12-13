@@ -81,7 +81,8 @@ class AssignmentUpdate(AttachmentMixin, UpdateAction):
                             )
                         ]
                     )["assignment_candidate"].values()
-                    if candidate["meeting_user_id"] not in pre_existing_speakers_meeting_user_ids
+                    if candidate["meeting_user_id"]
+                    not in pre_existing_speakers_meeting_user_ids
                 ]
                 for payload in payloads:
                     self.execute_other_action(SpeakerCreateAction, [payload])
