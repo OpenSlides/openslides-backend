@@ -520,6 +520,68 @@ class MotionCreateActionTest(BaseActionTestCase):
             "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
         )
 
+    def test_create_no_user_can_see_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE and
+        Motion.CAN_MANAGE_METADATA, User.CAN_SEE when sending submitter_ids.
+        Also asserts that the error message contains Motion.CAN_MANAGE as possible permission.
+        """
+        user_id = self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE_METADATA]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "submitter_ids": [1, user_id],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Forbidden fields: submitter_ids with possibly needed permission(s): motion.can_manage, user.can_see"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_permission_additional_submitter_enabled(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE and
+        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
+        Also additionally for submitter_ids User.CAN_SEE.
+        """
+        user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
+        self.update_model(
+            "meeting/1", {"motions_create_enable_additional_submitter_text": True}
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "additional_submitter": "test",
+                "submitter_ids": [1, user_id],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage_metadata, motion.can_manage, submitter_ids with possibly needed permission(s): motion.can_manage_metadata, user.can_see, motion.can_manage"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+        )
+
     def test_create_permission_agenda_allowed(self) -> None:
         self.setup_permission_test(
             [

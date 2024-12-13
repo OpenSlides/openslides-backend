@@ -148,8 +148,8 @@ class MotionCreate(
                 raise MissingPermission(perm)
 
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
-        whitelist = []
-        forbidden_fields = defaultdict(list)
+        can_manage_whitelist = set()
+        forbidden_fields = defaultdict(set)
         permission_to_fields: dict[Permission, list[str]] = {
             Permissions.AgendaItem.CAN_MANAGE: list(agenda_creation_properties.keys()),
             Permissions.Mediafile.CAN_SEE: ["attachment_mediafile_ids"],
@@ -160,12 +160,17 @@ class MotionCreate(
             Permissions.User.CAN_SEE: ["submitter_ids"],
         }
         for perm, fields in permission_to_fields.items():
-            if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                whitelist.extend(fields)
-            else:
-                for field in fields:
+            has_permission = has_perm(
+                self.datastore, self.user_id, perm, instance["meeting_id"]
+            )
+            for field in fields:
+                if has_permission:
+                    if field not in forbidden_fields:
+                        can_manage_whitelist.add(field)
+                else:
                     if field in instance:
-                        forbidden_fields[field].append(perm)
+                        forbidden_fields[field].add(perm)
+                        can_manage_whitelist.discard(field)
 
         perm = Permissions.Motion.CAN_MANAGE
         if (
@@ -174,22 +179,24 @@ class MotionCreate(
             )
             == []
         ):
-            whitelist += [
-                "title",
-                "text",
-                "reason",
-                "lead_motion_id",
-                "amendment_paragraphs",
-                "category_id",
-                "workflow_id",
-                "id",
-                "meeting_id",
-            ]
+            can_manage_whitelist.update(
+                [
+                    "title",
+                    "text",
+                    "reason",
+                    "lead_motion_id",
+                    "amendment_paragraphs",
+                    "category_id",
+                    "workflow_id",
+                    "id",
+                    "meeting_id",
+                ]
+            )
             if instance.get("lead_motion_id"):
-                whitelist.remove("category_id")
+                can_manage_whitelist.discard("category_id")
             for field in instance:
-                if field not in whitelist:
-                    forbidden_fields[field].append(perm)
+                if field not in can_manage_whitelist:
+                    forbidden_fields[field].add(perm)
 
         if forbidden_fields:
             msg = f"You are not allowed to perform action {self.name}. "
