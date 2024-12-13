@@ -511,7 +511,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage_metadata, motion.can_manage, submitter_ids with possibly needed permission(s): motion.can_manage_metadata, user.can_see, motion.can_manage"
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, submitter_ids with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, user.can_see"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
@@ -573,7 +573,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage_metadata, motion.can_manage, submitter_ids with possibly needed permission(s): motion.can_manage_metadata, user.can_see, motion.can_manage"
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, submitter_ids with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, user.can_see"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")

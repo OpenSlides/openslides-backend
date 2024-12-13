@@ -200,5 +200,5 @@ class MotionCreate(
 
         if forbidden_fields:
             msg = f"You are not allowed to perform action {self.name}. "
-            msg += f"Forbidden fields: {', '.join(field + ' with possibly needed permission(s): ' + ', '.join(cast(str, perm) for perm in perms) for field, perms in forbidden_fields.items())}"
+            msg += f"Forbidden fields: {', '.join(field + ' with possibly needed permission(s): ' + ', '.join(perm for perm in sorted(cast(list[str], perms))) for field, perms in forbidden_fields.items())}"
             raise PermissionDenied(msg)
