@@ -111,9 +111,21 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_phase_to_voting(self) -> None:
-        """Also checks that a pre-existing candidate on the list of speakers works."""
         self.prepare_voting_phase_test(3)
         self.request("speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 1})
+        response = self.request(
+            "assignment.update",
+            {"id": 1, "phase": "voting"},
+        )
+        self.assert_status_code(response, 200)
+        for id_ in [1, 2, 3]:
+            self.assert_model_exists(
+                f"speaker/{id_}",
+                {"list_of_speakers_id": 1, "meeting_user_id": id_, "meeting_id": 1},
+            )
+
+    def test_update_phase_to_voting_empty_los(self) -> None:
+        self.prepare_voting_phase_test(3)
         response = self.request(
             "assignment.update",
             {"id": 1, "phase": "voting"},
