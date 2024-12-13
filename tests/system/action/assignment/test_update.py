@@ -118,6 +118,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             {"id": 1, "phase": "voting"},
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("list_of_speakers/1", {"speaker_ids": [1, 2, 3]})
         for id_ in [1, 2, 3]:
             self.assert_model_exists(
                 f"speaker/{id_}",
@@ -131,6 +132,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             {"id": 1, "phase": "voting"},
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("list_of_speakers/1", {"speaker_ids": [1, 2, 3]})
         for id_ in [1, 2, 3]:
             self.assert_model_exists(
                 f"speaker/{id_}",
