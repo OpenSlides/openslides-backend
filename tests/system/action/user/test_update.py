@@ -2421,6 +2421,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/4", {"is_active": True})
         self.assert_history_information("user/4", ["Set active"])
 
+    def test_update_clear_user_sessions(self) -> None:
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        response = self.request(
+            "user.update",
+            {
+                "id": self.user_id,
+                "is_active": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(f"user/{self.user_id}", {"is_active": False})
+        self.assert_logged_out()
+
     def test_update_negative_default_vote_weight(self) -> None:
         self.create_model("user/111", {"username": "user111"})
         response = self.request(
@@ -2600,6 +2614,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_OML_set(self) -> None:
+        """Testing also that user is not locked out when is_active is set to True."""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
         self.create_user("dummy", [2])
@@ -2610,9 +2625,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": self.user_id,
                 "meeting_id": 1,
                 "group_ids": [1],
+                "is_active": True,
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_logged_in()
 
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(

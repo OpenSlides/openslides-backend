@@ -11,6 +11,7 @@ from .set_number_mixin import SetNumberMixin
 
 
 class MotionErrorType(str, Enum):
+    ADDITIONAL_SUBMITTER = "addtional_submitter"
     UNIQUE_NUMBER = "number_unique"
     RECO_EXTENSION = "recommendation_extension"
     STATE_EXTENSION = "state_extension"
@@ -139,6 +140,16 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         if (not instance.get("reason")) and self.check_reason_required(meeting_id):
             errors.append(
                 {"type": MotionErrorType.REASON, "message": "Reason is required"}
+            )
+        if "additional_submitter" in instance and not self.datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["motions_create_enable_additional_submitter_text"],
+        ).get("motions_create_enable_additional_submitter_text"):
+            errors.append(
+                {
+                    "type": MotionErrorType.ADDITIONAL_SUBMITTER,
+                    "message": "This meeting doesn't allow additional_submitter to be set in creation",
+                }
             )
         return errors
 

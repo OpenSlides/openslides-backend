@@ -140,8 +140,11 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-        if instance.get("is_active") and not user.get("is_active"):
-            self.check_limit_of_user(1)
+        if is_active := instance.get("is_active"):
+            if not user.get("is_active"):
+                self.check_limit_of_user(1)
+        elif is_active is False and user.get("is_active"):
+            self.auth.clear_sessions_by_user_id(instance["id"])
 
         check_gender_exists(self.datastore, instance)
         return instance

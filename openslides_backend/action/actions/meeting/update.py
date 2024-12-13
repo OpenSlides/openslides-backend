@@ -4,6 +4,8 @@ from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
 )
 
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....models.models import Meeting
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -101,6 +103,7 @@ meeting_settings_keys = [
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",
+    "motions_create_enable_additional_submitter_text",
     "motions_hide_metadata_background",
     "motions_enable_recommendation_on_projector",
     "motions_show_referring_motions",
@@ -214,9 +217,15 @@ class MeetingUpdate(
         set_as_template = instance.pop("set_as_template", None)
         db_meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["id"]),
-            ["template_for_organization_id", "locked_from_inside", "admin_group_id"],
+            [
+                "template_for_organization_id",
+                "locked_from_inside",
+                "admin_group_id",
+                "language",
+            ],
             lock_result=False,
         )
+        Translator.set_translation_language(db_meeting["language"])
         lock_meeting = (
             instance.get("locked_from_inside")
             if instance.get("locked_from_inside") is not None
@@ -311,7 +320,7 @@ class MeetingUpdate(
         if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
-                [{"name": "Public", "weight": 0, "meeting_id": instance["id"]}],
+                [{"name": _("Public"), "weight": 0, "meeting_id": instance["id"]}],
             )
             instance["anonymous_group_id"] = anonymous_group_id = cast(
                 list[dict[str, Any]], group_result

@@ -23,6 +23,9 @@ from ..shared.util import (
     validate_html,
 )
 
+TRUE_VALUES = ("1", "true", "yes", "t", "y")
+FALSE_VALUES = ("0", "false", "no", "f", "n")
+
 
 class OnDelete(str, Enum):
     PROTECT = "PROTECT"
@@ -136,8 +139,6 @@ class BooleanField(Field):
         return instance[self.own_field_name] is None
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
-        TRUE_VALUES = ("1", "true", "yes", "t", "y")
-        FALSE_VALUES = ("0", "false", "no", "f", "n")
         if isinstance(value, bool):
             return value
         elif isinstance(value, str):

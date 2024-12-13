@@ -250,6 +250,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         }
 
     def test_correct_relations(self) -> None:
+        """Also asserts that the internal flag of meeting export is used for the gender"""
         self.set_models(
             {
                 "organization/1": {
@@ -340,6 +341,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
                     "organization_id": 1,
+                    "gender_id": 2,
                 },
                 "user/2": self.get_new_user(
                     "present_user",
