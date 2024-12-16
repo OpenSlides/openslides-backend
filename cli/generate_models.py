@@ -20,7 +20,7 @@ from openslides_backend.models.mixins import (
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
-SOURCE = "./global/meta/models.yml"
+SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(

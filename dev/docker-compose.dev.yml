@@ -15,7 +15,6 @@ services:
             - ../openslides_backend:/app/openslides_backend
             - ../tests:/app/tests
             - ../cli:/app/cli
-            - ../global:/app/global
             - ../scripts:/app/scripts
         environment:
             - DATASTORE_READER_HOST=datastore-reader

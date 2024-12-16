@@ -2269,7 +2269,7 @@ class MeetingImport(BaseActionTestCase):
     @performance
     def test_big_file(self) -> None:
         data = {
-            "meeting": get_initial_data_file("global/data/put_your_file.json"),
+            "meeting": get_initial_data_file("data/put_your_file.json"),
             "committee_id": 1,
         }
         with Profiler("test_meeting_import.prof"):
@@ -2642,7 +2642,7 @@ class MeetingImport(BaseActionTestCase):
 
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:
-        data_raw = get_initial_data_file("global/data/export-OS3-demo.json")
+        data_raw = get_initial_data_file("data/export-OS3-demo.json")
         data = {"committee_id": 1, "meeting": data_raw}
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
