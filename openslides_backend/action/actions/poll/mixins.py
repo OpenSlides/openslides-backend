@@ -24,20 +24,20 @@ class PollValidationMixin(Action):
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
 
-        max_votes_amount = instance.get("max_votes_amount")
-        min_votes_amount = instance.get("min_votes_amount")
-        max_votes_per_option = instance.get("max_votes_per_option")
         if poll_id := instance.get("id"):
             poll = self.datastore.get(
                 fqid_from_collection_and_id("poll", poll_id),
                 ["max_votes_amount", "min_votes_amount", "max_votes_per_option"],
             )
-        if max_votes_amount is None:
-            max_votes_amount = poll["max_votes_amount"] if poll_id else 1
-        if min_votes_amount is None:
-            min_votes_amount = poll["min_votes_amount"] if poll_id else 1
-        if max_votes_per_option is None:
-            max_votes_per_option = poll["max_votes_per_option"] if poll_id else 1
+        max_votes_amount = instance.get(
+            "max_votes_amount", poll["max_votes_amount"] if poll_id else 1
+        )
+        min_votes_amount = instance.get(
+            "min_votes_amount", poll["min_votes_amount"] if poll_id else 1
+        )
+        max_votes_per_option = instance.get(
+            "max_votes_per_option", poll["max_votes_per_option"] if poll_id else 1
+        )
 
         if max_votes_amount < max_votes_per_option:
             raise ActionException(
