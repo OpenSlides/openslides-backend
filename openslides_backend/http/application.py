@@ -57,7 +57,6 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 Path(__file__).parent
                 / ".."
                 / ".."
-                / "global"
                 / "data"
                 / f"{file_prefix}-data.json"
             )

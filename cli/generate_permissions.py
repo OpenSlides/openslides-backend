@@ -10,7 +10,7 @@ import yaml
 from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = "./global/meta/permission.yml"
+SOURCE = "./meta/permission.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
