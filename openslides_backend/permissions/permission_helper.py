@@ -31,10 +31,10 @@ def has_perm(
                 ],
                 lock_result=False,
             )
-            if (
-                user.get("organization_management_level")
-                == OrganizationManagementLevel.SUPERADMIN
-            ):
+            if user.get("organization_management_level") in [
+                OrganizationManagementLevel.SUPERADMIN,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            ]:
                 return True
 
         meeting_user = get_meeting_user(
