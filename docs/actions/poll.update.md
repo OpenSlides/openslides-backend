@@ -1,34 +1,36 @@
 ## Payload
-```
+```js
 {
 // Required
-    id: Id;
+    id: Id,
 
 // Optional, only if state == created
-    pollmethod: string;
-    min_votes_amount: number;
-    max_votes_amount: number;
-    allow_multiple_votes_per_candidate: boolean;
-    global_yes: boolean;
-    global_no: boolean;
-    global_abstain: boolean;
+    pollmethod: string,
+    min_votes_amount: number,
+    max_votes_amount: number,
+    max_votes_per_option: number,
+    allow_multiple_votes_per_candidate: boolean,
+    global_yes: boolean,
+    global_no: boolean,
+    global_abstain: boolean,
+    backend: string,
 
 // Optional, only if state == created, only for non analog types
-    entitled_group_ids: Id[];
+    entitled_group_ids: Id[],
 
 // Optional, every state
-    title: string;
-    description: string;
-    onehundred_percent_base: string;
+    title: string,
+    description: string,
+    onehundred_percent_base: string,
 
 // type==analog, every state
-    votesvalid?: number;
-    votesinvalid?: number;
-    votescast?: number;
-    publish_immediately: boolean;
+    votesvalid?: number,
+    votesinvalid?: number,
+    votescast?: number,
+    publish_immediately: boolean,
 
 // action called internally
-    entitled_users_at_stop: json;
+    entitled_users_at_stop: json
 }
 ```
 
@@ -38,6 +40,8 @@ For analog polls: If the state is created and at least one vote value is given (
 For electronic polls some fields can only be updated, if the state is *created*.
 
 The `entitled_group_ids` may not contain the meetings `anonymous_group_id`.
+
+The `max_votes_per_option` and `min_votes_amount` must be smaller or equal to `max_votes_amount` after the model had been updated.
 
 ## Permissions
 The request user needs:

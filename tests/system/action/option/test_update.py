@@ -31,6 +31,9 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "type": "analog",
                     "state": "created",
                     "pollmethod": "YNA",
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                    "min_votes_amount": 1,
                     "meeting_id": 1,
                     "option_ids": [57],
                 },
@@ -250,9 +253,6 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "data": [
                         {
                             "id": 65,
-                            "max_votes_amount": 1,
-                            "max_votes_per_option": 1,
-                            "min_votes_amount": 1,
                             "onehundred_percent_base": "YNA",
                             "pollmethod": "YNA",
                             "title": "Abstimmung",

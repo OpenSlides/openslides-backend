@@ -11,11 +11,12 @@ from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .base import base_check_onehundred_percent_base
-from .mixins import PollHistoryMixin, PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin, PollValidationMixin
 
 
 @register_action("poll.update")
 class PollUpdateAction(
+    PollValidationMixin,
     ExtendHistoryMixin,
     UpdateAction,
     PollPermissionMixin,
