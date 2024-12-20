@@ -13,7 +13,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     default_password: string;
-    gender: string;
+    gender_id: Id;
     email: string;
     default_vote_weight: decimal(6);
     pronoun: string;

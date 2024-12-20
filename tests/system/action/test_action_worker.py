@@ -107,7 +107,67 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists(
             f"motion/{count_motions}", {"title": f"test_title {count_motions}"}
         )
-        self.assert_model_exists("action_worker/1", {"state": ActionWorkerState.END})
+        self.assert_model_exists(
+            "action_worker/1", {"state": ActionWorkerState.END, "user_id": 1}
+        )
+
+    def test_internal_action_worker_not_ready_before_timeout_okay(self) -> None:
+        """action thread used, main process ends before action_worker is ready,
+        but the final result will be okay.
+        """
+        self.create_meeting(222)
+        self.set_user_groups(1, [222])
+        chat_message_ids = [i + 1 for i in range(50)]
+        self.set_models(
+            {
+                "meeting/222": {
+                    "chat_group_ids": [22],
+                    "chat_message_ids": chat_message_ids,
+                },
+                "meeting_user/1": {"chat_message_ids": chat_message_ids},
+                "chat_group/22": {
+                    "name": "blob",
+                    "chat_message_ids": chat_message_ids,
+                    "read_group_ids": [222, 223, 224],
+                    "write_group_ids": [222],
+                    "meeting_id": 222,
+                },
+                **{
+                    fqid_from_collection_and_id("chat_message", id_): {
+                        "content": f"Message {id_}",
+                        "created": 1600000000 + id_,
+                        "meeting_user_id": 1,
+                        "chat_group_id": 22,
+                        "meeting_id": 222,
+                    }
+                    for id_ in chat_message_ids
+                },
+            }
+        )
+        self.set_thread_watch_timeout(0)
+        response = self.request("chat_group.clear", {"id": 22}, internal=True)
+
+        self.assert_status_code(response, 202)
+        self.assertIn(
+            "Action (chat_group.clear) lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
+            response.json["message"],
+        )
+        self.assertFalse(
+            response.json["success"],
+            "Action worker still not finished, success must be False.",
+        )
+        self.assertEqual(
+            response.json["results"][0][0],
+            {"fqid": "action_worker/1", "name": "chat_group.clear", "written": True},
+        )
+        if action_worker := self.get_thread_by_name("action_worker"):
+            action_worker.join()
+        self.assert_model_exists("chat_group/22", {"chat_message_ids": []})
+        for id_ in chat_message_ids:
+            self.assert_model_deleted(fqid_from_collection_and_id("chat_message", id_))
+        self.assert_model_exists(
+            "action_worker/1", {"state": ActionWorkerState.END, "user_id": -1}
+        )
 
     def test_action_worker_not_ready_before_timeout_exception(self) -> None:
         """action thread used, ended after timeout"""
@@ -150,7 +210,7 @@ class ActionWorkerTest(BaseActionTestCase):
             action_worker.join()
         self.assert_model_not_exists("motion/1")
         action_worker1 = self.assert_model_exists(
-            "action_worker/1", {"state": ActionWorkerState.END}
+            "action_worker/1", {"state": ActionWorkerState.END, "user_id": 1}
         )
         self.assertFalse(action_worker1["result"]["success"])
         self.assertIn("Text is required", action_worker1["result"]["message"])
@@ -184,7 +244,6 @@ class ActionWorkerTest(BaseActionTestCase):
             "motion_block": {},
             "topic": {},
             "assignment": {},
-            "motion_statute_paragraph": {"text": "text"},
         }
 
         def thread_method(self: ActionWorkerTest, collection: str) -> None:
@@ -231,15 +290,11 @@ class ActionWorkerTest(BaseActionTestCase):
         def thread_method(self: ActionWorkerTest) -> None:
             with self.lock:
                 data = [
-                    {
-                        "title": f"title{i}",
-                        "meeting_id": 222,
-                        "text": "text",
-                    }
+                    {"prefix": f"boo{i}", "name": f"foo{i}", "meeting_id": 222}
                     for i in range(1, self.number)
                 ]
                 self.start1 = datetime.now()
-            self.request_multi("motion_statute_paragraph.create", data)
+            self.request_multi("motion_category.create", data)
             self.end1 = datetime.now()
 
         thread = Thread(target=thread_method, args=(self,))
@@ -260,6 +315,7 @@ class ActionWorkerTest(BaseActionTestCase):
                                 "id": self.new_id,
                                 "name": "test",
                                 "state": ActionWorkerState.RUNNING,
+                                "user_id": 1,
                             },
                         )
                     ],
@@ -270,7 +326,8 @@ class ActionWorkerTest(BaseActionTestCase):
             end2 = datetime.now()
         thread.join()
         self.assert_model_exists(
-            "action_worker/1", {"name": "test", "state": ActionWorkerState.RUNNING}
+            "action_worker/1",
+            {"name": "test", "state": ActionWorkerState.RUNNING, "user_id": 1},
         )
         assert (
             self.start1 < start2 and self.end1 > end2
@@ -290,6 +347,7 @@ class ActionWorkerTest(BaseActionTestCase):
                                 "id": new_id,
                                 "name": "test",
                                 "state": ActionWorkerState.RUNNING,
+                                "user_id": 1,
                             },
                         )
                     ],
@@ -299,7 +357,7 @@ class ActionWorkerTest(BaseActionTestCase):
             )
             self.assert_model_exists(
                 f"action_worker/{new_id}",
-                {"name": "test", "state": ActionWorkerState.RUNNING},
+                {"name": "test", "state": ActionWorkerState.RUNNING, "user_id": 1},
             )
 
         self.datastore.write_without_events(

@@ -118,6 +118,10 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
+
+        if isinstance(entry.get("gender"), dict):
+            entry["gender_id"] = entry.pop("gender")
+
         if "groups" not in entry:
             raise ActionException(
                 f"There is no group in the data of user '{self.get_value_from_union_str_object(entry.get('username'))}'. Is there a default group for the meeting?"
@@ -193,6 +197,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             entry, row["messages"], entry.get("groups", []), row
         )
 
+        if entry.get("gender_id"):
+            entry["gender"] = entry.pop("gender_id")
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR

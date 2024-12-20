@@ -131,6 +131,7 @@ class ActionWorkerWriting:
                                     "state": ActionWorkerState.RUNNING,
                                     "created": self.start_time,
                                     "timestamp": current_time,
+                                    "user_id": self.user_id,
                                 },
                             )
                         ],

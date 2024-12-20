@@ -36,10 +36,6 @@ class MotionCreateBase(
         if workflow_id is None:
             if instance.get("lead_motion_id"):
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
-            elif instance.get("statute_paragraph_id"):
-                workflow_id = meeting.get(
-                    "motions_default_statute_amendment_workflow_id"
-                )
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if workflow_id:
@@ -54,8 +50,8 @@ class MotionCreateBase(
             )
 
     def create_submitters(self, instance: dict[str, Any]) -> None:
-        submitter_ids = instance.pop("submitter_ids", None)
-        if not submitter_ids:
+        submitter_ids = instance.pop("submitter_ids", [])
+        if not submitter_ids and not instance.get("additional_submitter"):
             submitter_ids = [self.user_id]
         self.apply_instance(instance)
         weight = 1

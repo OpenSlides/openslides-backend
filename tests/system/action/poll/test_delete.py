@@ -33,15 +33,18 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
+                "topic/1": {"poll_ids": [111], "meeting_id": 1},
                 "poll/111": {
                     "option_ids": [42],
                     "meeting_id": 1,
                     "projection_ids": [1],
+                    "content_object_id": "topic/1",
                 },
                 "option/42": {"poll_id": 111, "meeting_id": 1},
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
+                    "topic_ids": [1],
                 },
                 "projection/1": {
                     "content_object_id": "poll/111",
@@ -64,9 +67,11 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
     def test_delete_cascading_poll_candidate_list(self) -> None:
         self.set_models(
             {
+                "topic/1": {"poll_ids": [111], "meeting_id": 1},
                 "poll/111": {
                     "option_ids": [42],
                     "meeting_id": 1,
+                    "content_object_id": "topic/1",
                 },
                 "option/42": {
                     "poll_id": 111,
@@ -77,6 +82,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                     "is_active_in_organization_id": 1,
                     "poll_candidate_list_ids": [12],
                     "poll_candidate_ids": [13],
+                    "topic_ids": [1],
                 },
                 "poll_candidate_list/12": {
                     "meeting_id": 1,
@@ -100,12 +106,14 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            {"poll/111": {"meeting_id": 1}}, "poll.delete", {"id": 111}
+            {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
+            "poll.delete",
+            {"id": 111},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            {"poll/111": {"meeting_id": 1}},
+            {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
             "poll.delete",
             {"id": 111},
             Permissions.Poll.CAN_MANAGE,
@@ -113,7 +121,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
 
     def test_delete_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {"poll/111": {"meeting_id": 1}},
+            {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
             "poll.delete",
             {"id": 111},
         )

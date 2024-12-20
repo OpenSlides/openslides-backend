@@ -2,6 +2,7 @@
 
 ```js
 {
+  // required
   permission_type: "meeting" | "committee" | "organization"
   permission_id: number,    // Id of permission scope object
   search: {
@@ -10,7 +11,7 @@
     "first_name": string,
     "last_name": string,
     "email": string,
-    "member_number": string,
+    "member_number": string
   }[]
 }
 ```
@@ -24,7 +25,7 @@
   "first_name": string,
   "last_name": string,
   "email": string,
-  "member_number": string,
+  "member_number": string
 }[][]
 ```
 A double array: The outer array has the same length as the request's `search` array and contains

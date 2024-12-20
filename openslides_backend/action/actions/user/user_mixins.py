@@ -91,6 +91,10 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "locked_out": {"type": "boolean"},
     }
 
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.assert_not_anonymous()
+        super().check_permissions(instance)
+
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "meeting_id" not in instance and any(
@@ -142,10 +146,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def check_meeting_and_users(
         self, instance: dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        if instance.get("meeting_id") is not None:
-            self.datastore.apply_changed_model(
-                user_fqid, {"meeting_id": instance.get("meeting_id")}
-            )
+        if (meeting_id := instance.get("meeting_id")) is not None:
+            self.datastore.apply_changed_model(user_fqid, {"meeting_id": meeting_id})
 
     def meeting_user_set_data(self, instance: dict[str, Any]) -> None:
         meeting_user_data = {}
@@ -272,14 +274,17 @@ class DuplicateCheckMixin(Action):
         return []
 
 
-def check_gender_helper(datastore: DatastoreService, instance: dict[str, Any]) -> None:
-    if instance.get("gender"):
-        organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
-        if organization.get("genders"):
-            if not instance["gender"] in organization["genders"]:
-                raise ActionException(
-                    f"Gender '{instance['gender']}' is not in the allowed gender list."
-                )
+def check_gender_exists(datastore: DatastoreService, instance: dict[str, Any]) -> None:
+    """raises ActionException if the gender is non existant"""
+    if gender_id := instance.get("gender_id"):
+        if not datastore.get(
+            fqid_from_collection_and_id("gender", gender_id),
+            ["id", "name"],
+            lock_result=False,
+        ):
+            raise ActionException(
+                f"GenderId '{gender_id}' is not in the allowed gender list."
+            )
 
 
 class AdminIntegrityCheckMixin(Action):

@@ -1,5 +1,31 @@
 {
-    "_migration_index": 57,
+    "_migration_index": 63,
+    "gender":{
+        "1":{
+            "id": 1,
+            "name": "male",
+            "organization_id": 1,
+            "user_ids":[1]
+        },
+        "2":{
+            "id": 2,
+            "name": "female",
+            "organization_id": 1,
+            "user_ids":[2]
+        },
+        "3":{
+            "id": 3,
+            "name": "diverse",
+            "organization_id": 1,
+            "user_ids":[3]
+        },
+        "4":{
+            "id": 4,
+            "name": "non-binary",
+            "organization_id": 1,
+            "user_ids":[]
+        }
+    },
     "organization": {
         "1": {
             "id": 1,
@@ -7,7 +33,7 @@
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
             "login_text": "Good Morning!",
             "default_language": "en",
-            "genders": ["male", "female", "diverse", "non-binary"],
+            "gender_ids": [1, 2 ,3 ,4],
             "enable_electronic_voting": true,
             "enable_chat": true,
             "reset_password_verbose_errors": true,
@@ -46,7 +72,8 @@
                 "gender": "gender",
                 "pronoun": "pronoun",
                 "is_active": "is_active",
-                "is_physical_person": "is_person"
+                "is_physical_person": "is_person",
+                "member_number": "member_number"
               }
         }
     },
@@ -60,7 +87,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758flD5BVZAZ8jLy4nYW9iomHcnkXWkfk3PgBjeiTSxjGG7+fBjMBxsaS1vIiAMxYh+K38l0gDW4wcP+i8tgoc4UBg==",
             "default_password": "admin",
             "can_change_own_password": true,
-            "gender": "male",
+            "gender_id": 1,
             "default_vote_weight": "1.000000",
             "organization_management_level": "superadmin",
             "is_present_in_meeting_ids": [
@@ -89,7 +116,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw==",
             "default_password": "a",
             "can_change_own_password": true,
-            "gender": "female",
+            "gender_id": 2,
             "default_vote_weight": "1.000000",
             "committee_ids": [
                 1
@@ -110,7 +137,7 @@
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg==",
             "default_password": "jKwSLGCk",
             "can_change_own_password": true,
-            "gender": "diverse",
+            "gender_id": 3,
             "default_vote_weight": "1.000000",
             "option_ids": [8, 11],
             "meeting_user_ids": [3],
@@ -288,7 +315,6 @@
             "list_of_speakers_present_users_only": false,
             "motions_default_workflow_id": 1,
             "motions_default_amendment_workflow_id": 1,
-            "motions_default_statute_amendment_workflow_id": 1,
             "motions_preamble": "The assembly may decide:",
             "motions_default_line_numbering": "outside",
             "motions_line_length": 85,
@@ -296,17 +322,16 @@
             "motions_enable_reason_on_projector": false,
             "motions_enable_sidebox_on_projector": false,
             "motions_enable_recommendation_on_projector": true,
+            "motions_hide_metadata_background": false,
             "motions_show_referring_motions": true,
             "motions_show_sequential_number": true,
             "motions_reason_required": false,
             "motions_recommendations_by": "ABK",
-            "motions_statute_recommendations_by": "",
             "motions_recommendation_text_mode": "diff",
             "motions_default_sorting": "number",
             "motions_number_type": "per_category",
             "motions_number_min_digits": 2,
             "motions_number_with_blank": false,
-            "motions_statutes_enabled": true,
             "motions_amendments_enabled": true,
             "motions_amendments_in_main_list": true,
             "motions_amendments_of_amendments": true,
@@ -1865,7 +1890,6 @@
             "first_state_id": 1,
             "default_workflow_meeting_id": 1,
             "default_amendment_workflow_meeting_id": 1,
-            "default_statute_amendment_workflow_meeting_id": 1,
             "meeting_id": 1
         },
         "2": {

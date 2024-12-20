@@ -6,6 +6,7 @@ Available presenters:
 - [get_forwarding_meetings](presenters/get_forwarding_meetings.md)
 - [get_meetings](presenters/get_meetings.md)
 - [get_users](presenters/get_users.md)
+- [get_user_editable](presenters/get_user_editable.md)
 - [get_user_related_models](presenters/get_user_related_models.md)
 - [get_user_scope](presenters/get_user_scope.md)
 - [search_deleted_models](presenters/search_deleted_models.md)

@@ -22,7 +22,6 @@
         [paragraph_number: number]: HTML;
     };  // JSON Field
     lead_motion_id: Id;
-    statute_paragraph_id: Id;
     reason: HTML; // is required, if special settings are set
 
 // Optional special fields, see notes below
@@ -42,41 +41,36 @@
 ## Action
 Creates a new motion.
 
-First, the type of the motion is identified by the values of `lead_motion_id`, `statute_paragraph_id`:
+The motion is an amendment to another motion if `lead_motion_id` is given. Otherwise it is a normal motion.
 
-- A normal motion: None of the fields are given.
-- An amendment: `lead_motion_id` is given.
-- A statute amendment: `statute_paragraph_id` is given.
-
-If `lead_motion_id` and `statute_paragraph_id` is given, it must result in an error. This is the logic for other fields depending on the motion type:
+This is the logic for other fields depending on the motion type:
 
 - normal motion:
   - `text` required
   -  error, if `amendment_paragraph` is given
 - amendment:
   - `text` XOR `amendment_paragraph` required
-- statute amendment:
-  - `text` required
-  -  error, if `amendment_paragraph` is given
+  -  error otherwise
 
-`reason` is independent must be given, if `meeting/motions_reason_required` is true.
+`reason` must independently of the above be given, if `meeting/motions_reason_required` is true.
 
 There are some fields that need special attention:
-- `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id`, `meeting/motions_default_amendment_workflow_id` or `meeting/motions_default_statute_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
-- `submitter_ids`: These are **user ids** and not ids of the `submitter` model. If nothing is given (`[]`), the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list.
+- `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id` or `meeting/motions_default_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
+- `additional_submitter` a text field where text-based submitter information may be entered. Cannot be set unless `meeting/motions_create_enable_additional_submitter_text` is `true`. Requires permissions `Motion.CAN_CREATE` and `Motion.CAN_MANAGE_METADATA`.
+- `submitter_ids`: These are **user ids** and not ids of the `motion_submitter` model. If nothing is given (`[]`) and the field `additional_submitter` isn't filled, the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list. Requires permissions `Motion.CAN_CREATE`, `Motion.CAN_MANAGE_METADATA` and `User.CAN_SEE`.
 - `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
-Another things to do when creating a motions:
+Other things to do when creating motions:
 - Set the field `sequential_number`: It is the `max+1` of `sequential_number` of all motions in the same meeting. If there are no other motions in this meeting (e.g. this is the first one), it gets 1.
 - Set timestamps:
   - always set `last_modified` and `created` to the current timestamp
   - if the state pointed to by `first_state_id` of the given workflow has the flag `set_workflow_timestamp` set, also set `workflow_timestamp`to the current timestamp.
 - Field `number`: Attention, it is a string, even if the field is named `number`. Note that the `number` must be unique within the meeting if it is set (so all numbers with length > 0 are unique). See the next paragraph how to get a value for `number`.
 
-### Determinate a value for `number`
+### Determine a value for `number`
 This is the procedure to determine what to set for the field `number`:
   * If `number` in the payload is a string with a length > 0, set it as the number and stop, but raise an error, if it exists.
-  * if `meeting/motions_number_type` == `"manually"` or not `motion.state.set_number`: Stop. We should not set the number automatically
+  * If `meeting/motions_number_type` == `"manually"` or not `motion.state.set_number`: stop. We should not set the number automatically
   * A _prefix_ is created:
     * If the motion is an amendment (it has a lead motion), the prefix is:
       ```
@@ -121,7 +115,7 @@ This is the procedure to determine what to set for the field `number`:
 2) Create a motion without a category. It gets the number `001`. Set `meeting/motions_number_min_digits=1`. Create a plain motion. It must get the number `2`.
 
 `meeting/motions_number_type="per_category"`, `meeting/motions_number_min_digits=3`, `meeting/motions_number_with_blank=true`, `meeting/motions_amendments_prefix="X-"`. Create a category: `{name: "A", prefix: "A"}`. Make sure the state the motions get has `set_number=true`.
-1) Create a motion in category A. It must get `A 001`. Create two amendments (motions wiuth `lead_motion_id` set to the id of `A 001`). The numbers are `A 001 X-001` and `A 001 X-002`.
+1) Create a motion in category A. It must get `A 001`. Create two amendments (motions with `lead_motion_id` set to the id of `A 001`). The numbers are `A 001 X-001` and `A 001 X-002`.
 2) Do 1) again, but with `meeting/motions_number_with_blank=false` and `meeting/motions_number_min_digits=1`. The numbers are `A1`, `A1X-1`, `A1X-2`.
 3) Do 1) again, but set `meeting/motions_number_with_blank=false` and `meeting/motions_number_min_digits=1` after creating the first lead motion. The numbers are `A 001`, `A 001X-1`, `A 001X-2`.
 4) Do 1) again. Create a new motion without an identifier and no `lead_motion_id`. It gets the number `002`.
@@ -142,7 +136,6 @@ If the request user does not have `motion.can_manage`, the fields in the payload
 - `lead_motion_id`
 - `amendment_paragraph`
 - `category_id`
-- `statute_paragraph_id`
 - `workflow_id`
 
 If `lead_motion_id` is given and `category_id` is empty, the value of `category_id` is set to the value of the lead motion.

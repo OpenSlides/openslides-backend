@@ -2,22 +2,22 @@
 ```js
 {
     // required
-    collection: string;
-    external_id: string;
-    context_id: Id;
+    collection: string,
+    external_id: string,
+    context_id: Id
 }
 ```
 ## Returns
 ```js
 {
-    id: Id;
+    id: Id
 }
 ```
 in the case one id is found.
 ```js
 {
-    id: null;
-    error: string;
+    id: null,
+    error: string
 }
 ```
 else.

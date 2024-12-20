@@ -73,7 +73,23 @@ class UserMergeTogether(BaseVoteTestCase):
                 "enable_electronic_voting": True,
                 "committee_ids": [1, 2, 3],
                 "user_ids": [2, 3, 4, 5, 6],
-                "genders": ["male", "female", "diverse", "non-binary"],
+                "gender_ids": [1, 2, 3, 4],
+            },
+            "gender/1": {
+                "name": "male",
+                "organization_id": 1,
+            },
+            "gender/2": {
+                "name": "female",
+                "organization_id": 1,
+            },
+            "gender/3": {
+                "name": "diverse",
+                "organization_id": 1,
+            },
+            "gender/4": {
+                "name": "non-binary",
+                "organization_id": 1,
             },
             "committee/1": {
                 "organization_id": 1,
@@ -87,7 +103,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
-                "motions_default_statute_amendment_workflow_id": 1,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [1, 2, 3],
@@ -140,7 +155,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 2,
                 "motions_default_amendment_workflow_id": 2,
-                "motions_default_statute_amendment_workflow_id": 2,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [4, 5, 6],
@@ -199,7 +213,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 3,
                 "motions_default_amendment_workflow_id": 3,
-                "motions_default_statute_amendment_workflow_id": 3,
                 "users_enable_vote_delegations": True,
                 "committee_id": 2,
                 "group_ids": [7, 8, 9],
@@ -252,7 +265,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 4,
                 "motions_default_amendment_workflow_id": 4,
-                "motions_default_statute_amendment_workflow_id": 4,
                 "users_enable_vote_delegations": True,
                 "committee_id": 3,
                 "group_ids": [10, 11, 12],
@@ -318,9 +330,9 @@ class UserMergeTogether(BaseVoteTestCase):
         If this test fails, it is likely because new fields have been added
         to the collections listed in the AssertionError without considering
         the necessary changes to the user merge.
-        This can be fixed by editing the collection_field_groups in the
+        This can be fixed by editing the _collection_field_groups in the
         action class if it is the 'user' collection,
-        or else in the corresponding mixin class.
+        or else in the corresponding merge mixin class in merge_mixins.py.
         """
         action = actions_map["user.merge_together"]
         merge_together = action(
@@ -519,7 +531,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "first_name": "Nick",
                     "is_active": False,
                     "can_change_own_password": True,
-                    "gender": "male",
+                    "gender_id": 1,
                     "email": "nick.everything@rob.banks",
                     "last_email_sent": 123456789,
                     "committee_management_ids": [1],
@@ -539,7 +551,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                     "is_active": True,
                     "is_physical_person": False,
-                    "gender": "female",
+                    "gender_id": 2,
                     "last_email_sent": 234567890,
                     "is_present_in_meeting_ids": [2, 3],
                     "member_number": "souperadmin",
@@ -613,7 +625,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "first_name": "Nick",
                 "is_active": False,
                 "can_change_own_password": True,
-                "gender": "male",
+                "gender_id": 1,
                 "email": "nick.everything@rob.banks",
                 "is_present_in_meeting_ids": [3, 4],
                 "committee_management_ids": [1, 3],
@@ -725,7 +737,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -743,11 +755,38 @@ class UserMergeTogether(BaseVoteTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
                 "default_vote_weight": "0.424242",
+            },
+        )
+        self.assert_model_exists(
+            "gender/2",
+            {"id": 2, "name": "female", "user_ids": [2], "organization_id": 1},
+        )
+
+    def test_gender_not_changed(self) -> None:
+        self.setup_complex_user_fields()
+        response = self.request(
+            "user.merge_together",
+            {
+                "id": 3,
+                "user_ids": [2, 4, 5, 6],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "gender_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "gender/1",
+            {
+                "user_ids": None,
             },
         )
 
@@ -764,7 +803,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -782,7 +821,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -1387,6 +1426,35 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         for id_ in range(2, 10):
             self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
+
+    def test_merge_with_assignment_candidates_in_finished_assignment(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "assignment_ids": [11],
+                    "assignment_candidate_ids": [112, 114],
+                },
+                "assignment/11": {
+                    "meeting_id": 1,
+                    "phase": "finished",
+                    "candidate_ids": [112, 114],
+                },
+                "assignment_candidate/112": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 12,
+                },
+                "assignment_candidate/114": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 14,
+                },
+                "meeting_user/12": {"assignment_candidate_ids": [112]},
+                "meeting_user/14": {"assignment_candidate_ids": [114]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
 
     def test_merge_with_motion_working_group_speakers(self) -> None:
         self.base_assignment_or_motion_model_test(

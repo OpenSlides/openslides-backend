@@ -55,7 +55,13 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
 
     def clear_all_sessions(self) -> None:
         """
-        Clears all sessions of the user.
+        Clears all sessions of the requesting user.
 
         Authentication data must be set beforehand via set_authentication.
+        """
+
+    def clear_sessions_by_user_id(self, user_id: int) -> None:
+        """
+        Clears all sessions of the given user.
+        Use with caution as the auth-service uses its internal route for this.
         """
