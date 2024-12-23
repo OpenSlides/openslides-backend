@@ -29,7 +29,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "username", "type": "string", "is_object": True},
         {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string"},
-        {"property": "saml_id", "type": "string", "is_object": True},
         {"property": "member_number", "type": "string", "is_object": True},
     ]
     skip_archived_meeting_check = True
@@ -63,7 +62,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "default_password",
                                 "is_active",
                                 "is_physical_person",
-                                "saml_id",
                                 "member_number",
                             ),
                             **additional_user_fields,

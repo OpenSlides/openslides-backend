@@ -78,6 +78,9 @@ class _User(str, Permission, Enum):
     CAN_SEE_SENSITIVE_DATA = "user.can_see_sensitive_data"
     CAN_UPDATE = "user.can_update"
 
+class _System(str, Permission, Enum):
+    CAN_LOGIN = "user.can_login"
+    CAN_LOGOUT = "user.can_logout"
 
 class Permissions:
     AgendaItem = _AgendaItem
@@ -91,7 +94,7 @@ class Permissions:
     Projector = _Projector
     Tag = _Tag
     User = _User
-
+    System = _System
 
 # Holds the corresponding parent for each permission.
 permission_parents: dict[Permission, list[Permission]] = {

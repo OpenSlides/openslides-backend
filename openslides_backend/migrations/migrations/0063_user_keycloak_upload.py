@@ -12,7 +12,10 @@ class Migration(BaseModelMigration):
     """
     idpAdmin: IdpAdminService
 
-    target_migration_index = 58
+    target_migration_index = 64
+
+    def __init__(self, idpAdmin: IdpAdminService) -> None:
+        self.idpAdmin = idpAdmin
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

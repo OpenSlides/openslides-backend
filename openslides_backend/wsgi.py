@@ -13,7 +13,6 @@ from .services.vote.adapter import VoteAdapter
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import View, WSGIApplication
 
-
 class OpenSlidesBackendServices(containers.DeclarativeContainer):
     """
     Services required by OpenSlidesBackendWSGIApplication.

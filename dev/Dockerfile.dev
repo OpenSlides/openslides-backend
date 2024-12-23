@@ -1,12 +1,8 @@
-FROM python:3.10.13-slim-bookworm
+FROM python:3.10.13-slim-bookworm as base
 
 RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev libmagic1
 
 WORKDIR /app
-
-COPY requirements/ requirements/
-ARG REQUIREMENTS_FILE=requirements_development.txt
-RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
 
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .
@@ -42,3 +38,17 @@ ENV DEFAULT_FROM_EMAIL noreply@example.com
 STOPSIGNAL SIGKILL
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec python -m debugpy --listen 0.0.0.0:5678 openslides_backend
+
+FROM base AS development
+
+COPY requirements/ requirements/
+ARG REQUIREMENTS_FILE=requirements_development.txt
+RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
+
+FROM base AS development-fullstack
+
+COPY --from=pipauth / /pip-auth
+COPY --from=datastore / /openslides-datastore-service
+COPY requirements/ requirements/
+ARG REQUIREMENTS_FILE=requirements_development.txt
+RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE

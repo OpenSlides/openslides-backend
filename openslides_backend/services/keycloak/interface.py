@@ -1,10 +1,12 @@
 from abc import abstractmethod
 from typing import Any, Protocol
 
+from datastore.shared.di import service_interface
 from ..shared.authenticated_service import AuthenticatedServiceInterface
 from ...models.models import User
 
 
+@service_interface
 class IdpAdminService(AuthenticatedServiceInterface, Protocol):
     """
     Interface of a idp admin service.
