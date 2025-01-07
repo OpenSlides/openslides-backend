@@ -71,9 +71,58 @@ class OrganizationUpdate(
                 },
                 "conditions": {
                     "type": ["array", "null"],
-                    "max_length": 256,
-                },  # , "items": {"object"}
-                "mappings": {"type": ["object", "array"], "max_length": 256},
+                    "items": {
+                        "type": ["object", "null"],
+                        "properties": {
+                            **{
+                                field: {**optional_str_schema, "max_length": 256}
+                                for field in ("attribute", "condition")
+                            },
+                        },
+                    },
+                },
+                "mappings": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        **{
+                            mapping_field: {
+                                "type": ["object", "null"],
+                                "properties": {
+                                    field: {**optional_str_schema, "max_length": 256}
+                                    for field in ("attribute", "default")
+                                },
+                                "additionalProperties": False,
+                            }
+                            for mapping_field in [
+                                "number",
+                                "comment",
+                                "vote_weight",
+                                "present",
+                            ]
+                        },
+                        **{
+                            mapping_field: {
+                                "type": ["array", "null"],
+                                "items": {
+                                    "type": ["object", "null"],
+                                    "properties": {
+                                        field: {
+                                            **optional_str_schema,
+                                            "max_length": 256,
+                                        }
+                                        for field in ("attribute", "default")
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            }
+                            for mapping_field in [
+                                "groups",
+                                "structure_levels",
+                            ]
+                        },
+                    },
+                    "additionalProperties": False,
+                },
             },
             "required": ["external_id"],
             "additionalProperties": False,
