@@ -28,7 +28,7 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
     )
     datastore = providers.Factory(ExtendedDatastoreAdapter, engine, logging, env)
     vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
-    idp_admin = providers.Singleton(KeycloakAdminAdapter, config.keycloak_url, logging)
+    idp_admin = providers.Singleton(KeycloakAdminAdapter)
 
 
 class OpenSlidesBackendWSGI(containers.DeclarativeContainer):

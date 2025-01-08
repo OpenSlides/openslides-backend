@@ -1,6 +1,7 @@
 import base64
 import json
 from os import environ
+import logging
 
 import requests
 from keycloak import KeycloakAdmin
@@ -36,19 +37,28 @@ class CustomKeycloakAdmin(KeycloakAdmin):
         else:
             raise Exception(f"Fehler: {response.status_code}, {response.text}")
 
+@service_as_singleton
 class KeycloakAdminAdapter(IdpAdminService, AuthenticatedService):
     """
     Adapter to connect keycloak.
     """
+    keycloak_admin_obj = None
 
-    def __init__(self, keycloak_url: str, logging: LoggingModule) -> None:
+    def __init__(self) -> None:
+        keycloak_url = environ.get("OPENSLIDES_KEYCLOAK_URL")
         self.url = keycloak_url
-        self.logger = logging.getLogger(__name__) if logging else None
+        self.logger = logging.getLogger(__name__)
 
     def create_keycloak_admin(self):
         access_token = token_storage.access_token
         keycloak_realm_name = environ.get("OPENSLIDES_AUTH_REALM")
+        print(f"Creating Keycloak admin with realm: {keycloak_realm_name} on {self.url}")
         return CustomKeycloakAdmin(server_url=self.url, token=access_token, realm_name=keycloak_realm_name)
+
+    def keycloak_admin(self):
+        if self.keycloak_admin_obj is None:
+            self.keycloak_admin_obj = self.create_keycloak_admin()
+        return self.keycloak_admin_obj
 
     def create_user(self, username: str, password_hash: str, saml_id: str | None) -> str:
         '''
@@ -70,11 +80,12 @@ class KeycloakAdminAdapter(IdpAdminService, AuthenticatedService):
         if not self.is_sha512_hash(password_hash) and not self.is_argon2_hash(password_hash):
             raise ValueError("The password hash is not a valid hash.")
         if self.is_sha512_hash(password_hash):
-            algorithm = "sha512"
             secret_data = {
                 "value": password_hash
             }
-            credential_data = {}
+            credential_data = {
+                "algorithm": "sha512"
+            }
         else:
             # example value: $argon2id$v=19$m=65536,t=3,p=4$ag1cK0W8DxJ6VnUlOdgRKQ$wi/8MnuLaOWZVhO/7p4N+XWgnh6S2qTnrDylY+Z/tQc
             hash_data = self.parse_argon2_hash(password_hash)
@@ -96,11 +107,13 @@ class KeycloakAdminAdapter(IdpAdminService, AuthenticatedService):
                 }
 
             }
-        keycloak_admin = self.create_keycloak_admin()
-        existing_users = keycloak_admin.get_users({"username": username})
-        user_id = existing_users[0]['id'] if existing_users else  keycloak_admin.create_user({"username": username})
+        print(f"Creating user {username} with password hash {password_hash}")
+        keycloak_admin = self.keycloak_admin()
+        existing_user_id = keycloak_admin.get_user_id(username)
+        user_id = existing_user_id if existing_user_id else keycloak_admin.create_user({"username": username})
         keycloak_admin.set_user_password_hash(user_id, secret_data, credential_data)
         if saml_id:
+            print(f"Setting saml_id {saml_id} for user {user_id}")
             keycloak_admin.update_user({"id": user_id, "attributes": {"saml_id": saml_id}})
         return user_id
 
@@ -152,15 +165,12 @@ class MigrationKeycloakAdminAdapter(KeycloakAdminAdapter):
     """
     Adapter to connect keycloak getting admin credentials from environment variables.
     """
-
-    def __init__(self) -> None:
-        keycloak_url = environ.get("OPENSLIDES_KEYCLOAK_URL")
-        super().__init__(keycloak_url, None)
-
     def create_keycloak_admin(self):
         keycloak_realm_name = environ.get("OPENSLIDES_AUTH_REALM")
         keycloak_admin_username = environ.get("OPENSLIDES_KEYCLOAK_ADMIN_USERNAME")
         keycloak_admin_password = environ.get("OPENSLIDES_KEYCLOAK_ADMIN_PASSWORD")
         print(f"Creating Keycloak admin with realm: {keycloak_realm_name}, username: {keycloak_admin_username} on {self.url}, password: {keycloak_admin_password}")
-        return CustomKeycloakAdmin(server_url="http://keycloak:8080/idp/", username=keycloak_admin_username, password=keycloak_admin_password, realm_name="master")
-        # return CustomKeycloakAdmin(server_url=self.url, username=keycloak_admin_username, password=keycloak_admin_password, realm_name=keycloak_realm_name)
+        admin = CustomKeycloakAdmin(server_url="http://keycloak:8080/idp/", username="admin",
+                                    password="admin", realm_name="master", client_id="admin-cli", verify=False)
+        # admin.connection.realm_name = keycloak_realm_name
+        return admin
