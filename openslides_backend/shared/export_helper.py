@@ -200,10 +200,13 @@ def remove_meta_fields(res: dict[str, Any]) -> dict[str, Any]:
 
 def get_relation_fields() -> Iterable[RelationListField]:
     for field in Meeting().get_relation_fields():
-        if (
-            isinstance(field, RelationListField)
-            and field.on_delete == OnDelete.CASCADE
-            and field.get_own_field_name().endswith("_ids")
+        if isinstance(field, RelationListField) and (
+            (
+                field.on_delete == OnDelete.CASCADE
+                and field.get_own_field_name().endswith("_ids")
+            )
+            or field.get_own_field_name()
+            in ["poll_candidate_list_ids", "poll_candidate_ids"]
         ):
             yield field
 
