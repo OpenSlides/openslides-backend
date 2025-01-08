@@ -20,6 +20,8 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
+NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candidate_ids"]
+
 
 def export_meeting(
     datastore: DatastoreService, meeting_id: int, internal_target: bool = False
@@ -205,8 +207,7 @@ def get_relation_fields() -> Iterable[RelationListField]:
                 field.on_delete == OnDelete.CASCADE
                 and field.get_own_field_name().endswith("_ids")
             )
-            or field.get_own_field_name()
-            in ["poll_candidate_list_ids", "poll_candidate_ids"]
+            or field.get_own_field_name() in NON_CASCADING_MEETING_RELATION_LISTS
         ):
             yield field
 
