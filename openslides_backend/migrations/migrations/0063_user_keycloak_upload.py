@@ -23,14 +23,14 @@ class Migration(BaseModelMigration):
         for id_, model in db_models.items():
             if not "kc_id" in model and model.get('username') != 'admin':
                 print(f"Creating user {model.get('username')} in keycloak...")
-                idp_id = self.idpAdmin.create_user(model.get("username"), model.get("password"), model.get("saml_id"))
-                events.append(
-                    RequestUpdateEvent(
-                        fqid_from_collection_and_id("user", id_),
-                        {
-                            "idp_id": idp_id,
-                            "saml_id": None
-                        },
-                    )
-                )
+                # idp_id = self.idpAdmin.create_user(model.get("username"), model.get("password"), model.get("saml_id"))
+                # events.append(
+                #     RequestUpdateEvent(
+                #         fqid_from_collection_and_id("user", id_),
+                #         {
+                #             "idp_id": idp_id,
+                #             "saml_id": None
+                #         },
+                #     )
+                # )
         return events

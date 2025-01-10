@@ -47,6 +47,13 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == ANONYMOUS_USER
 
+    def verify_authorization_token(self, user_id: int, token: str) -> bool:
+        try:
+            found_user_id, _ = self.auth_handler.verify_authorization_token(token)
+        except (AuthenticateException, AuthorizationException) as e:
+            raise AuthenticationException(e.message)
+        return user_id == found_user_id
+
     def clear_all_sessions(self) -> None:
         self.auth_handler.clear_all_sessions(
             self.access_token, parse.unquote(self.refresh_id)
