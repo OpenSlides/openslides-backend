@@ -1,6 +1,8 @@
 from collections import defaultdict
+from typing import Dict, List
 
-from openslides_backend.shared.patterns import Collection, Field, FullQualifiedId
+from openslides_backend.shared.typing import Collection, Field, Fqid
+
 
 # Postgres only supports 1664 columns per query, so choose a number below that
 MAX_UNIQUE_FIELDS_PER_QUERY = 1000
@@ -12,13 +14,13 @@ class MappedFields:
     `needs_whole_model`, all other fields have to be set by the user.
     """
 
-    per_fqid: dict[FullQualifiedId, list[Field]]
-    unique_fields: list[Field]
-    collections: list[Collection]
-    fqids: list[FullQualifiedId]
+    per_fqid: Dict[Fqid, List[Field]]
+    unique_fields: List[Field]
+    collections: List[Collection]
+    fqids: List[Fqid]
     needs_whole_model: bool
 
-    def __init__(self, mapped_fields: list[Field] = []) -> None:
+    def __init__(self, mapped_fields: List[Field] = []) -> None:
         self.per_fqid = defaultdict(list)
         self.unique_fields = mapped_fields
         self.collections = []

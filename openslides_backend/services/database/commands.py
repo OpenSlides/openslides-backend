@@ -114,6 +114,16 @@ class WriteWithoutEvents(Write):
     """
 
 
+class TruncateDb(Command):
+    """
+    TruncateDb command. Does not need data.
+    """
+
+    @property
+    def data(self) -> None:
+        pass
+
+
 class GetEverything(Command):
     """
     GetEverything command. Does not need data.

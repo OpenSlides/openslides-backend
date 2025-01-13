@@ -1,48 +1,45 @@
 import copy
 import threading
 from collections import defaultdict
+from typing import Dict, List, Set, Tuple
 
-from openslides_backend.datastore.shared.di import service_as_factory
-from openslides_backend.datastore.shared.postgresql_backend import retry_on_db_failure
-from openslides_backend.datastore.shared.services import (
-    EnvironmentService,
-    ReadDatabase,
-)
-from openslides_backend.datastore.shared.util import DatastoreNotEmpty, logger
+from openslides_backend.shared.typing import JSON, Field, Fqid
 from openslides_backend.shared.otel import make_span
-from openslides_backend.shared.patterns import META_DELETED, Field, FullQualifiedId
-from openslides_backend.shared.typing import JSON
 
-from .database import Database
-from .write_request import BaseRequestEvent, RequestDeleteEvent, WriteRequest
+from .write_request import BaseRequestEvent, WriteRequest
 
 
-@service_as_factory
-class WriterService:
+class DatabaseWriter:
     _lock = threading.Lock()
 
-    database: Database
-    read_database: ReadDatabase
-    env: EnvironmentService
+#    database: Database
 
-    @retry_on_db_failure
+#    @retry_on_db_failure
     def write(
         self,
-        write_requests: list[WriteRequest],
+        write_requests: List[WriteRequest],
+        log_all_modified_fields: bool = True,
     ) -> None:
-        with make_span(self.env, "write request"):
+ #       with make_span("write request"):
             self.write_requests = write_requests
 
             with self._lock:
+                self.position_to_modified_models = {}
                 with self.database.get_context():
                     for write_request in self.write_requests:
-                        self.write_with_database_context(write_request)
+                        position, modified_models = self.write_with_database_context(
+                            write_request
+                        )
+                        self.position_to_modified_models[position] = modified_models
+
+                # Only propagate updates to redis after the transaction has finished
+                self.propagate_updates_to_redis(log_all_modified_fields)
 
             self.print_stats()
             self.print_summary()
 
     def print_stats(self) -> None:
-        stats: dict[str, int] = defaultdict(int)
+        stats: Dict[str, int] = defaultdict(int)
         for write_request in self.write_requests:
             for event in write_request.events:
                 stats[self.get_request_name(event)] += 1
@@ -50,7 +47,7 @@ class WriterService:
         logger.info(f"Events executed ({stats_string})")
 
     def print_summary(self) -> None:
-        summary: dict[str, set[str]] = defaultdict(set)  # event type <-> set[fqid]
+        summary: Dict[str, Set[str]] = defaultdict(set)  # event type <-> set[fqid]
         for write_request in self.write_requests:
             for event in write_request.events:
                 summary[self.get_request_name(event)].add(event.fqid)
@@ -65,8 +62,8 @@ class WriterService:
 
     def write_with_database_context(
         self, write_request: WriteRequest
-    ) -> tuple[int, dict[FullQualifiedId, dict[Field, JSON]]]:
-        with make_span(self.env, "write with database context"):
+    ) -> Tuple[int, Dict[Fqid, Dict[Field, JSON]]]:
+        with make_span("write with database context"):
             # get migration index
             if write_request.migration_index is None:
                 migration_index = self.read_database.get_current_migration_index()
@@ -76,6 +73,9 @@ class WriterService:
                         f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
                     )
                 migration_index = write_request.migration_index
+
+            # Check locked_fields -> Possible LockedError
+            self.occ_locker.assert_locked_fields(write_request)
 
             # Insert db events with position data
             information = (
@@ -91,8 +91,8 @@ class WriterService:
             return position, modified_fqfields
 
     @retry_on_db_failure
-    def reserve_ids(self, collection: str, amount: int) -> list[int]:
-        with make_span(self.env, "reserve ids"):
+    def reserve_ids(self, collection: str, amount: int) -> List[int]:
+        with make_span("reserve ids"):
             with self.database.get_context():
                 ids = self.database.reserve_next_ids(collection, amount)
                 logger.info(f"{len(ids)} ids reserved")
@@ -105,6 +105,12 @@ class WriterService:
             logger.info("History information deleted")
 
     @retry_on_db_failure
+    def truncate_db(self) -> None:
+        with self.database.get_context():
+            self.database.truncate_db()
+            logger.info("Database truncated")
+
+    @retry_on_db_failure
     def write_without_events(
         self,
         write_request: WriteRequest,
@@ -115,12 +121,15 @@ class WriterService:
         the models-table only, because there is no history
         needed and after the action is finished and notified,
         isn't needed anymore.
+        There is no position available or needed,
+        for redis notifying the 0 is used therefore.
         """
         self.write_requests = [write_request]
 
-        with make_span(self.env, "write action worker"):
+        with make_span("write action worker"):
+            self.position_to_modified_models = {}
             if isinstance(write_request.events[0], RequestDeleteEvent):
-                fqids_to_delete: list[FullQualifiedId] = []
+                fqids_to_delete: List[Fqid] = []
                 for event in write_request.events:
                     fqids_to_delete.append(event.fqid)
                 with self.database.get_context():
@@ -133,6 +142,15 @@ class WriterService:
                         self.database.write_model_updates_without_events(
                             {event.fqid: fields_with_delete}
                         )
+                self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
+                self.propagate_updates_to_redis(False)
 
         self.print_stats()
         self.print_summary()
+
+    def propagate_updates_to_redis(self, log_all_modified_fields: bool) -> None:
+        with make_span("push events onto redis messaging-bus"):
+            self.messaging.handle_events(
+                self.position_to_modified_models,
+                log_all_modified_fields=log_all_modified_fields,
+            )
