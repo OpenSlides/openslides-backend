@@ -27,6 +27,7 @@ If the group is the meetings anonymous group, the name may not be changed and th
 - meeting.can_see_livestream,
 - motion.can_see,
 - motion.can_see_internal,
+- poll.can_see_progress,
 - projector.can_see,
 - user.can_see,
 - user.can_see_sensitive_data
