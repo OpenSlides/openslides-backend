@@ -59,6 +59,7 @@ class _Motion(str, Permission, Enum):
 
 class _Poll(str, Permission, Enum):
     CAN_MANAGE = "poll.can_manage"
+    CAN_SEE_PROGRESS = "poll.can_see_progress"
 
 
 class _Projector(str, Permission, Enum):
@@ -140,6 +141,7 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Motion.CAN_MANAGE: [],
     _Motion.CAN_SUPPORT: [],
     _Motion.CAN_SEE_ORIGIN: [],
+    _Poll.CAN_SEE_PROGRESS: [_Poll.CAN_MANAGE],
     _Poll.CAN_MANAGE: [],
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
