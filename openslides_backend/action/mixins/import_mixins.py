@@ -15,7 +15,7 @@ from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
-from ...shared.interfaces.services import DatastoreService
+from ...shared.interfaces.services import Database
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ...shared.schema import required_id_schema
@@ -57,7 +57,7 @@ class ResultType(Enum):
 class Lookup:
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         collection: str,
         name_entries: list[tuple[SearchFieldType, dict[str, Any]]],
         field: SearchFieldType = "name",

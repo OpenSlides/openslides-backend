@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, Field
-from ...services.datastore.interface import DatastoreService
+from ...services.database.interface import Database
 from ...shared.patterns import (
     FullQualifiedField,
     collection_from_fqfield,
@@ -22,11 +22,11 @@ from .typing import (
 
 
 class RelationManager:
-    datastore: DatastoreService
+    datastore: Database
 
     relation_field_updates: RelationUpdates
 
-    def __init__(self, datastore: DatastoreService) -> None:
+    def __init__(self, datastore: Database) -> None:
         self.datastore = datastore
         self.relation_field_updates = {}
 

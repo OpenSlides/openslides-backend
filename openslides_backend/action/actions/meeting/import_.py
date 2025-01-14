@@ -22,7 +22,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.permissions.permission_helper import (
     has_organization_management_level,
 )
-from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType

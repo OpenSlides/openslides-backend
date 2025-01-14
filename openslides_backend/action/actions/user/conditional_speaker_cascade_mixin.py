@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.filters import And, FilterOperator
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction

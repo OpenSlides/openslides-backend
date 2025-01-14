@@ -6,7 +6,6 @@ from openslides_backend.datastore.reader.services import (
     register_services as register_reader_services,
 )
 from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.datastore.writer.core import (
     RequestUpdateEvent,
     Writer,
@@ -54,7 +53,7 @@ def read_collection(collection: str, fields: list[str]) -> Any:
     with reader.get_database_context():
         response = reader.get_all(
             GetAllRequest(
-                collection, ["id", *fields], DeletedModelsBehaviour.NO_DELETED
+                collection, ["id", *fields]
             )
         )
     return response.items()

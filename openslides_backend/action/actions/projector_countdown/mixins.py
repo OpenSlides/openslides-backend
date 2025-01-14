@@ -5,7 +5,7 @@ from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
 )
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction

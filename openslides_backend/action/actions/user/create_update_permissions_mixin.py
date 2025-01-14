@@ -11,8 +11,8 @@ from openslides_backend.permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions, permission_parents
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.interface import Database
 from openslides_backend.shared.exceptions import (
     ActionException,
     MissingPermission,
@@ -32,7 +32,7 @@ class PermissionVarStore:
 
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         user_id: int,
         manage_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
@@ -530,7 +530,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         self,
         permstore: PermissionVarStore,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,

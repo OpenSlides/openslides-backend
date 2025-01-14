@@ -5,7 +5,7 @@ from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
-from openslides_backend.database.db_connection_handling import get_new_os_conn
+from openslides_backend.services.database.db_connection_handling import get_new_os_conn
 
 from ..shared.exceptions import (
     ActionException,
