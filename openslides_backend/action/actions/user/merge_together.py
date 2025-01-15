@@ -94,9 +94,6 @@ class UserMergeTogether(
                     "email",
                     "default_vote_weight",
                 ],
-                "highest": [
-                    "can_change_own_password",
-                ],
                 "error": [
                     "is_demo_user",
                     "forwarding_committee_ids",
@@ -118,6 +115,7 @@ class UserMergeTogether(
                     "organization_management_level",
                     "saml_id",  # error if set on secondary users, otherwise ignore the field
                     "member_number",
+                    "can_change_own_password",  # ignore on secondary users if primary has a saml_id, else highest
                 ],
             },
         )
@@ -589,6 +587,19 @@ class UserMergeTogether(
                     self.check_equality(
                         collection, into_, ranked_others, into_["id"], field
                     )
+                    return None
+                case "can_change_own_password":
+                    if into_.get("saml_id"):
+                        return None
+                    if len(
+                        comp_data := [
+                            date
+                            for model in [into_, *ranked_others]
+                            if (date := model.get("can_change_own_password"))
+                            is not None
+                        ]
+                    ):
+                        return any(comp_data)
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations

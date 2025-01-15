@@ -57,7 +57,7 @@ An error is thrown if:
 ### Functionality
 The primary user is updated with the information from the secondary users using the following rules:
 - `organization_management_level` is set to highest oml among the users.
-- `can_change_own_password` is set to true if it is true on any selected user.
+- `can_change_own_password` is set to true if it is true on any selected user, unless the primary user has a `saml_id`, in which case it is ignored.
 - relation-lists are set to the union of their content among all selected users, except the `is_present_in_meeting_ids`- and `meeting_user_ids`-relation, which are handled separately
 - login data (`saml_id`, `username`, `password`) remains untouched
 - If any user has a`member_number` it is used
