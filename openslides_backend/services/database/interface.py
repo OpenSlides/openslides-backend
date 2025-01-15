@@ -21,9 +21,9 @@ class Database(Protocol):
     """
     Database defines the interface to the database.
     """
-    
+
     changed_models: ModelMap
-    
+
     @abstractmethod
     def get_database_context(self) -> ContextManager[None]: ...
 
