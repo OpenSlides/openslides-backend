@@ -1,10 +1,10 @@
 import copy
 import threading
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple
 
-from openslides_backend.shared.typing import JSON, Field, Fqid
 from openslides_backend.shared.otel import make_span
+from openslides_backend.shared.patterns import Field, FullQualifiedId
+from openslides_backend.shared.typing import JSON
 
 from .write_request import BaseRequestEvent, WriteRequest
 
@@ -12,34 +12,34 @@ from .write_request import BaseRequestEvent, WriteRequest
 class DatabaseWriter:
     _lock = threading.Lock()
 
-#    database: Database
+    #    database: Database
 
-#    @retry_on_db_failure
+    #    @retry_on_db_failure
     def write(
         self,
-        write_requests: List[WriteRequest],
+        write_requests: list[WriteRequest],
         log_all_modified_fields: bool = True,
     ) -> None:
- #       with make_span("write request"):
-            self.write_requests = write_requests
+        #       with make_span("write request"):
+        self.write_requests = write_requests
 
-            with self._lock:
-                self.position_to_modified_models = {}
-                with self.database.get_context():
-                    for write_request in self.write_requests:
-                        position, modified_models = self.write_with_database_context(
-                            write_request
-                        )
-                        self.position_to_modified_models[position] = modified_models
+        with self._lock:
+            self.position_to_modified_models = {}
+            with self.database.get_context():
+                for write_request in self.write_requests:
+                    position, modified_models = self.write_with_database_context(
+                        write_request
+                    )
+                    self.position_to_modified_models[position] = modified_models
 
-                # Only propagate updates to redis after the transaction has finished
-                self.propagate_updates_to_redis(log_all_modified_fields)
+            # Only propagate updates to redis after the transaction has finished
+            self.propagate_updates_to_redis(log_all_modified_fields)
 
-            self.print_stats()
-            self.print_summary()
+        self.print_stats()
+        self.print_summary()
 
     def print_stats(self) -> None:
-        stats: Dict[str, int] = defaultdict(int)
+        stats: dict[str, int] = defaultdict(int)
         for write_request in self.write_requests:
             for event in write_request.events:
                 stats[self.get_request_name(event)] += 1
@@ -47,7 +47,7 @@ class DatabaseWriter:
         logger.info(f"Events executed ({stats_string})")
 
     def print_summary(self) -> None:
-        summary: Dict[str, Set[str]] = defaultdict(set)  # event type <-> set[fqid]
+        summary: dict[str, set[str]] = defaultdict(set)  # event type <-> set[fqid]
         for write_request in self.write_requests:
             for event in write_request.events:
                 summary[self.get_request_name(event)].add(event.fqid)
@@ -62,7 +62,7 @@ class DatabaseWriter:
 
     def write_with_database_context(
         self, write_request: WriteRequest
-    ) -> Tuple[int, Dict[Fqid, Dict[Field, JSON]]]:
+    ) -> tuple[int, dict[FullQualifiedId, dict[Field, JSON]]]:
         with make_span("write with database context"):
             # get migration index
             if write_request.migration_index is None:
@@ -91,7 +91,7 @@ class DatabaseWriter:
             return position, modified_fqfields
 
     @retry_on_db_failure
-    def reserve_ids(self, collection: str, amount: int) -> List[int]:
+    def reserve_ids(self, collection: str, amount: int) -> list[int]:
         with make_span("reserve ids"):
             with self.database.get_context():
                 ids = self.database.reserve_next_ids(collection, amount)
@@ -129,7 +129,7 @@ class DatabaseWriter:
         with make_span("write action worker"):
             self.position_to_modified_models = {}
             if isinstance(write_request.events[0], RequestDeleteEvent):
-                fqids_to_delete: List[Fqid] = []
+                fqids_to_delete: list[FullQualifiedId] = []
                 for event in write_request.events:
                     fqids_to_delete.append(event.fqid)
                 with self.database.get_context():

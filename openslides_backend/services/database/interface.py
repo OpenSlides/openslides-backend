@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from typing import Any, ContextManager, Protocol, Union
 
 from ...shared.filters import Filter
-from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap

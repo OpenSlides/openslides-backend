@@ -27,15 +27,11 @@ check_database_schema = fastjsonschema.compile(
 )
 
 
-def check_meetings(
-    datastore: Database, meeting_id: int | None
-) -> dict[int, str]:
+def check_meetings(datastore: Database, meeting_id: int | None) -> dict[int, str]:
     if meeting_id:
         meeting_ids = [meeting_id]
     else:
-        meetings = datastore.get_all(
-            "meeting", ["id"]
-        ).values()
+        meetings = datastore.get_all("meeting", ["id"]).values()
         meeting_ids = [meeting["id"] for meeting in meetings]
 
     errors: dict[int, str] = {}

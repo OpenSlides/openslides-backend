@@ -1,12 +1,11 @@
-from typing import List, Optional, Tuple
 
-#from datastore.shared.services.read_database import (
+# from datastore.shared.services.read_database import (
 #    AggregateFilterQueryFieldsParameters,
 #    BaseFilterQueryFieldsParameters,
 #    CountFilterQueryFieldsParameters,
 #    MappedFieldsFilterQueryFieldsParameters,
-#)
-#from datastore.shared.util import (
+# )
+# from datastore.shared.util import (
 #    KEYSEPARATOR,
 #    And,
 #    BadCodingError,
@@ -16,9 +15,8 @@ from typing import List, Optional, Tuple
 #    InvalidFormat,
 #    Not,
 #    Or,
-#)
+# )
 from mapped_fields import MappedFields
-
 
 # extend if neccessary. first is always the default (should be int)
 # min/max functions support the following:
@@ -31,7 +29,7 @@ VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 class SqlQueryHelper:
     def build_select_from_mapped_fields(
         self, mapped_fields: MappedFields
-    ) -> Tuple[str, List[str]]:
+    ) -> tuple[str, list[str]]:
         if mapped_fields.needs_whole_model:
             # at least one collection needs all fields, so we just select data and
             # calculate the mapped_fields later
@@ -45,58 +43,64 @@ class SqlQueryHelper:
     def build_filter_query(
         self,
         collection: str,
-#        filter: Filter,
-#        fields_params: Optional[BaseFilterQueryFieldsParameters] = None,
+        #        filter: Filter,
+        #        fields_params: Optional[BaseFilterQueryFieldsParameters] = None,
         select_fqid: bool = False,
-    ) -> None: #-> Tuple[str, List[str], List[str]]:
+    ) -> None:  # -> Tuple[str, List[str], List[str]]:
         return None
-#        arguments: List[str] = []
-#        sql_parameters: List[str] = []
-#        filter_str = self.build_filter_str(filter, arguments)
-#
-#        arguments = [collection + KEYSEPARATOR + "%"] + arguments
-#
-#        if isinstance(fields_params, MappedFieldsFilterQueryFieldsParameters):
-#            fields, mapped_field_args = self.build_select_from_mapped_fields(
-#                fields_params.mapped_fields
-#            )
-#            arguments = mapped_field_args + arguments
-#            sql_parameters = fields_params.mapped_fields.unique_fields
-#        else:
-#            if isinstance(fields_params, CountFilterQueryFieldsParameters):
-#                fields = "count(*)"
-#            elif isinstance(fields_params, AggregateFilterQueryFieldsParameters):
-#                if fields_params.function not in VALID_AGGREGATE_FUNCTIONS:
-#                    raise BadCodingError(
-#                        "Invalid aggregate function: %s" % fields_params.function
-#                    )
-#                if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
-#                    raise BadCodingError("Invalid cast type: %s" % fields_params.type)
-#
-#                fields = f"{fields_params.function}((data->>%s)::{fields_params.type})"
-#                arguments = [fields_params.field] + arguments
-#            else:
-#                raise BadCodingError(
-#                    f"Invalid fields_params for build_filter_query: {fields_params}"
-#                )
-#            fields += f" AS {fields_params.function},\
-#                        (SELECT MAX(position) FROM positions) AS position"
-#
-#        if select_fqid:
-#            fields = f"fqid as __fqid__, {fields}"
-#
-#        query = f"select {fields} from models where fqid like %s and ({filter_str})"
-#        return (
-#            query,
-#            arguments,
-#            sql_parameters,
-#        )
-#
+
+    #        arguments: List[str] = []
+    #        sql_parameters: List[str] = []
+    #        filter_str = self.build_filter_str(filter, arguments)
+    #
+    #        arguments = [collection + KEYSEPARATOR + "%"] + arguments
+    #
+    #        if isinstance(fields_params, MappedFieldsFilterQueryFieldsParameters):
+    #            fields, mapped_field_args = self.build_select_from_mapped_fields(
+    #                fields_params.mapped_fields
+    #            )
+    #            arguments = mapped_field_args + arguments
+    #            sql_parameters = fields_params.mapped_fields.unique_fields
+    #        else:
+    #            if isinstance(fields_params, CountFilterQueryFieldsParameters):
+    #                fields = "count(*)"
+    #            elif isinstance(fields_params, AggregateFilterQueryFieldsParameters):
+    #                if fields_params.function not in VALID_AGGREGATE_FUNCTIONS:
+    #                    raise BadCodingError(
+    #                        "Invalid aggregate function: %s" % fields_params.function
+    #                    )
+    #                if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
+    #                    raise BadCodingError("Invalid cast type: %s" % fields_params.type)
+    #
+    #                fields = f"{fields_params.function}((data->>%s)::{fields_params.type})"
+    #                arguments = [fields_params.field] + arguments
+    #            else:
+    #                raise BadCodingError(
+    #                    f"Invalid fields_params for build_filter_query: {fields_params}"
+    #                )
+    #            fields += f" AS {fields_params.function},\
+    #                        (SELECT MAX(position) FROM positions) AS position"
+    #
+    #        if select_fqid:
+    #            fields = f"fqid as __fqid__, {fields}"
+    #
+    #        query = f"select {fields} from models where fqid like %s and ({filter_str})"
+    #        return (
+    #            query,
+    #            arguments,
+    #            sql_parameters,
+    #        )
+    #
     def build_filter_str(
-#        self, filter: Filter, arguments: List[str], table_alias=""
-        self, filter: str, arguments: List[str], table_alias=""
+        #        self, filter: Filter, arguments: List[str], table_alias=""
+        self,
+        filter: str,
+        arguments: list[str],
+        table_alias="",
     ) -> str:
         return ""
+
+
 #        if isinstance(filter, Not):
 #            filter_str = self.build_filter_str(
 #                filter.not_filter, arguments, table_alias

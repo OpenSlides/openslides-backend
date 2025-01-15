@@ -3,13 +3,19 @@ from typing import Any
 from unittest.mock import _patch
 
 import pytest
-from openslides_backend.database.db_connection_handling import (
-    env, get_current_os_conn_pool, get_new_os_conn)
 from psycopg import Connection
+
+from openslides_backend.database.db_connection_handling import (
+    env,
+    get_current_os_conn_pool,
+    get_new_os_conn,
+)
 from tests.mock_auth_login import auth_http_adapter_patch, login_patch
 
-from .conftest_helper import (generate_remove_all_test_functions,
-                              generate_sql_for_test_initiation)
+from .conftest_helper import (
+    generate_remove_all_test_functions,
+    generate_sql_for_test_initiation,
+)
 
 openslides_db = env.DATABASE_NAME
 database_user = env.DATABASE_USER

@@ -7,31 +7,34 @@ from unittest.mock import MagicMock, _patch
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
-from openslides_backend.datastore.reader.services import register_services
+
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.services import ShutdownService
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-from openslides_backend.http.application import \
-    OpenSlidesBackendWSGIApplication
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
-from openslides_backend.services.datastore.with_database_context import \
-    with_database_context
+from openslides_backend.services.datastore.with_database_context import (
+    with_database_context,
+)
 from openslides_backend.shared.env import Environment
-from openslides_backend.shared.exceptions import (ActionException,
-                                                  DatastoreException)
+from openslides_backend.shared.exceptions import ActionException, DatastoreException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import (FullQualifiedId,
-                                                collection_from_fqid,
-                                                id_from_fqid,
-                                                is_reserved_field)
-from openslides_backend.shared.util import (EXAMPLE_DATA_FILE,
-                                            ONE_ORGANIZATION_FQID,
-                                            ONE_ORGANIZATION_ID,
-                                            get_initial_data_file)
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    collection_from_fqid,
+    id_from_fqid,
+    is_reserved_field,
+)
+from openslides_backend.shared.util import (
+    EXAMPLE_DATA_FILE,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    get_initial_data_file,
+)
 from tests.util import AuthData, Client, Response
 
 from .util import TestVoteService
@@ -60,7 +63,7 @@ class BaseSystemTestCase(TestCase):
     init_with_login: bool = True
 
     def setUp(self) -> None:
-        #register_services()
+        # register_services()
         self.app = self.get_application()
         self.logger = cast(MagicMock, self.app.logger)
         self.services = self.app.services

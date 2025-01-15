@@ -1,25 +1,12 @@
-import builtins
-from collections import defaultdict
-from typing import Literal
 
 from ...shared.exceptions import DatabaseException
-from ...shared.filters import And, Filter, FilterOperator
+from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
-from ...shared.patterns import (
-    Collection,
-    FullQualifiedId,
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-    id_from_fqid,
-)
+from ...shared.patterns import Collection, FullQualifiedId, id_from_fqid
 from ...shared.typing import ModelMap
 from ..database.commands import GetManyRequest
-from ..database.interface import (
-    Database,
-    MappedFieldsPerFqid,
-    PartialModel,
-)
+from ..database.interface import Database, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
 MODEL_FIELD_NUMERIC_SQL = r"\(data->%s\)::numeric"
@@ -100,7 +87,7 @@ class ExtendedDatabase(Database):
                 # TODO Implement me!
                 return {}
         except DatabaseException:
-                raise
+            raise
 
         return result
 
@@ -148,7 +135,6 @@ class ExtendedDatabase(Database):
         # TODO Implement me!
         return None
 
-
     def max(
         self,
         collection: Collection,
@@ -171,17 +157,17 @@ class ExtendedDatabase(Database):
         # TODO Implement me! If necessary?
         return None
 
-#    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
-#        self.logger.debug(
-#            f"Start RESERVE_IDS request to datastore with the following data: "
-#            f"Collection: {collection}, Amount: {amount}"
-#        )
-#        response = self.retrieve(command)
-#        return response.get("ids")
+    #    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+    #        self.logger.debug(
+    #            f"Start RESERVE_IDS request to datastore with the following data: "
+    #            f"Collection: {collection}, Amount: {amount}"
+    #        )
+    #        response = self.retrieve(command)
+    #        return response.get("ids")
 
-#    def reserve_id(self, collection: Collection) -> int:
-#        return self.reserve_ids(collection=collection, amount=1)[0]
-#
+    #    def reserve_id(self, collection: Collection) -> int:
+    #        return self.reserve_ids(collection=collection, amount=1)[0]
+    #
     def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None:
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]

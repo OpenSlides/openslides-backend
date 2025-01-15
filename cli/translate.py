@@ -51,11 +51,7 @@ possible_languages = Organization().default_language.constraints["enum"]
 def read_collection(collection: str, fields: list[str]) -> Any:
     reader: Reader = injector.get(Reader)
     with reader.get_database_context():
-        response = reader.get_all(
-            GetAllRequest(
-                collection, ["id", *fields]
-            )
-        )
+        response = reader.get_all(GetAllRequest(collection, ["id", *fields]))
     return response.items()
 
 
