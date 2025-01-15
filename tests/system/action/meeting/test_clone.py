@@ -2149,10 +2149,6 @@ class MeetingClone(BaseActionTestCase):
         self.create_user("Louie", [3])
         self.set_models(
             {
-                "user/4": {
-                    "organization_id": 1,
-                    "poll_candidate_ids": [3],
-                },
                 "user/2": {
                     "organization_id": 1,
                     "poll_candidate_ids": [1],
@@ -2160,6 +2156,10 @@ class MeetingClone(BaseActionTestCase):
                 "user/3": {
                     "organization_id": 1,
                     "poll_candidate_ids": [2],
+                },
+                "user/4": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [3],
                 },
                 "organization/1": {
                     "user_ids": [1, 2, 3, 4],
