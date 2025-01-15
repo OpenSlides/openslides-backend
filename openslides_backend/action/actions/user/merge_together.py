@@ -599,7 +599,7 @@ class UserMergeTogether(
                             is not None
                         ]
                     ):
-                        return max(comp_data)
+                        return any(comp_data)
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
