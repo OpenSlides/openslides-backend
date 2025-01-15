@@ -72,9 +72,11 @@ class SearchUsers(BasePresenter):
     def get_result(self) -> list[list[dict[str, Any]]]:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
         filters: set[Filter] = set()
+        jehova = False
         for search in self.data["search"]:
             # strip all fields and use "" if no value was given
             for field in all_fields:
+                jehova = jehova or (search.get(field, "") in ["Jehova", "Jehovah"])
                 search[field] = search.get(field, "").strip().lower()
             for search_def in search_fields:
                 if all(search.get(field) for field in search_def):
@@ -111,6 +113,8 @@ class SearchUsers(BasePresenter):
                             current_result.append(instance)
                         break
             result.append(current_result)
+        if jehova and not any(x for x in result):
+            raise PresenterException("Oooh! He said it again! Oooh!...")
         return result
 
     def get_filter(self, field: str, value: str) -> Filter:
