@@ -104,12 +104,162 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         )
         self.set_user_groups(1, [3])
         self.create_user("mandy", [3])
+        self.create_user("andy", [3])
+        self.create_user("sandy", [3])
+        self.set_models(
+            {
+                "meeting_user/11": {"vote_delegations_from_ids": [13, 14]},
+                "meeting_user/13": {"vote_delegated_to_id": 11},
+                "meeting_user/14": {"vote_delegated_to_id": 11},
+            }
+        )
         response = self.request(
             "user.update_self",
-            {"meeting_id": 1, "vote_delegated_to_id": 12},
+            {
+                "meeting_id": 1,
+                "vote_delegated_to_id": 12,
+                "vote_delegations_from_ids": [],
+            },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": 12})
+        self.assert_model_exists(
+            "meeting_user/11",
+            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": []},
+        )
+
+    def test_update_foreign_delegation_error(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.create_user("mandy", [3])
+        self.create_user("andy", [3])
+        self.create_user("sandy", [3])
+        self.set_models(
+            {
+                "meeting_user/11": {"vote_delegations_from_ids": [13, 14]},
+                "meeting_user/13": {"vote_delegated_to_id": 11},
+                "meeting_user/14": {"vote_delegated_to_id": 11},
+            }
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "meeting_id": 1,
+                "vote_delegations_from_ids": [12, 13, 14],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can't add delegations from other people with user.update_self."
+            in response.json["message"]
+        )
+
+    def test_update_reverse_delegation(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.create_user("mandy", [3])
+        self.set_models(
+            {
+                "meeting_user/11": {"vote_delegations_from_ids": [12]},
+                "meeting_user/12": {"vote_delegated_to_id": 11},
+            }
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "meeting_id": 1,
+                "vote_delegated_to_id": 12,
+                "vote_delegations_from_ids": [],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/11",
+            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": []},
+        )
+
+    def test_update_remove_delegation(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.create_user("mandy", [3])
+        self.create_user("andy", [3])
+        self.set_models(
+            {
+                "meeting_user/11": {"vote_delegations_from_ids": [12, 13]},
+                "meeting_user/12": {"vote_delegated_to_id": 11},
+                "meeting_user/13": {"vote_delegated_to_id": 11},
+            }
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "meeting_id": 1,
+                "vote_delegations_from_ids": [12],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/11",
+            {"vote_delegations_from_ids": [12]},
+        )
+
+    def test_update_remove_delegation_2(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.create_user("mandy", [3])
+        self.set_models(
+            {
+                "meeting_user/11": {"vote_delegated_to_id": 12},
+                "meeting_user/12": {"vote_delegations_from_ids": [11]},
+            }
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "meeting_id": 1,
+                "vote_delegated_to_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/11",
+            {"vote_delegated_to_id": None},
+        )
 
     def test_update_delegation_without_meeting_id(self) -> None:
         self.create_meeting()
