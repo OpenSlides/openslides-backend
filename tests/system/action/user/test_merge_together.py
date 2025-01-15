@@ -2532,8 +2532,11 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_no_meetings(self) -> None:
         self.create_user("user7")
+        self.set_models({"user/7": {"can_change_own_password": True}})
         response = self.request("user.merge_together", {"id": 6, "user_ids": [7]})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/6", {"can_change_own_password": True})
+        self.assert_model_deleted("user/7")
 
     def test_merge_only_update_meeting_users(self) -> None:
         response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})
