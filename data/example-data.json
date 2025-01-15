@@ -1557,7 +1557,7 @@
             "recommendation_label": "Acceptance",
             "css_class": "green",
             "set_number": true,
-            "merge_amendment_into_final": "undefined",
+            "merge_amendment_into_final": "do_merge",
             "previous_state_ids": [
                 1
             ],
@@ -1579,7 +1579,7 @@
             "recommendation_label": "Rejection",
             "css_class": "red",
             "set_number": true,
-            "merge_amendment_into_final": "undefined",
+            "merge_amendment_into_final": "do_not_merge",
             "previous_state_ids": [
                 1
             ],
