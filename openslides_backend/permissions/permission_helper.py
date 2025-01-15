@@ -206,6 +206,7 @@ anonymous_perms_whitelist: set[Permission] = {
     Permissions.Projector.CAN_SEE,
     Permissions.User.CAN_SEE,
     Permissions.User.CAN_SEE_SENSITIVE_DATA,
+    Permissions.Poll.CAN_SEE_PROGRESS,
 }
 
 
