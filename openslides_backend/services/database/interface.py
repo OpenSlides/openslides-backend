@@ -5,6 +5,7 @@ from typing import Any, ContextManager, Protocol, Union
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.typing import ModelMap
 from .commands import GetManyRequest
 
 PartialModel = dict[str, Any]
@@ -20,9 +21,16 @@ class Database(Protocol):
     """
     Database defines the interface to the database.
     """
-
+    
+    changed_models: ModelMap
+    
     @abstractmethod
     def get_database_context(self) -> ContextManager[None]: ...
+
+    @abstractmethod
+    def apply_changed_model(
+        self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
+    ) -> None: ...
 
     @abstractmethod
     def get(
@@ -31,6 +39,8 @@ class Database(Protocol):
         mapped_fields: list[str],
         position: int | None = None,
         lock_result: LockResult = True,
+        use_changed_models: bool = True,
+        raise_exception: bool = True,
     ) -> PartialModel: ...
 
     @abstractmethod
@@ -39,6 +49,7 @@ class Database(Protocol):
         get_many_requests: list[GetManyRequest],
         position: int | None = None,
         lock_result: LockResult = True,
+        use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...
 
     @abstractmethod
@@ -56,6 +67,7 @@ class Database(Protocol):
         filter: Filter,
         mapped_fields: list[str],
         lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> dict[int, PartialModel]: ...
 
     @abstractmethod
@@ -64,6 +76,7 @@ class Database(Protocol):
         collection: Collection,
         filter: Filter,
         lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> bool: ...
 
     @abstractmethod
@@ -72,6 +85,7 @@ class Database(Protocol):
         collection: Collection,
         filter: Filter,
         lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> int: ...
 
     @abstractmethod
@@ -81,6 +95,7 @@ class Database(Protocol):
         filter: Filter,
         field: str,
         lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> int | None: ...
 
     @abstractmethod
@@ -90,6 +105,7 @@ class Database(Protocol):
         filter: Filter,
         field: str,
         lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> int | None: ...
 
     @abstractmethod
