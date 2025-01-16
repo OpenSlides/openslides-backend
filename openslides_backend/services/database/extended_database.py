@@ -1,4 +1,3 @@
-
 from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env

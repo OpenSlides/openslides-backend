@@ -362,7 +362,6 @@ class BaseImportAction(BaseImportJsonUploadAction):
                             )
                         ],
                         user_id=self.user_id,
-                        locked_fields={},
                     )
                 )
 
@@ -425,7 +424,6 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                     )
                 ],
                 user_id=self.user_id,
-                locked_fields={},
             )
         )
 

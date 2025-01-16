@@ -6,7 +6,6 @@ from openslides_backend.shared.typing import HistoryInformation
 
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import VoteServiceException
-from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import (
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
@@ -39,29 +38,6 @@ class PollPermissionMixin(Action):
 
 
 class StopControl(CountdownControl, Action):
-    def build_write_request(self) -> WriteRequest | None:
-        """
-        Reduce locked fields
-        """
-        self.datastore.locked_fields = {
-            k: v
-            for k, v in self.datastore.locked_fields.items()
-            if collectionfield_and_fqid_from_fqfield(k)[0]
-            not in (
-                "meeting_user/user_id",
-                "meeting_user/vote_delegated_to_id",
-                "poll/pollmethod",
-                "poll/global_option_id",
-                "poll/meeting_id",
-                "poll/content_object_id",
-                "meeting/users_enable_vote_weight",
-                "meeting/poll_couple_countdown",
-                "meeting/poll_countdown_id",
-                "option/meeting_id",
-            )
-        }
-        return super().build_write_request()
-
     def on_stop(self, instance: dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),

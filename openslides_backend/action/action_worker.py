@@ -134,7 +134,6 @@ class ActionWorkerWriting:
                             )
                         ],
                         user_id=self.user_id,
-                        locked_fields={},
                     )
                 )
                 self.datastore.get(
@@ -162,7 +161,6 @@ class ActionWorkerWriting:
                         )
                     ],
                     user_id=self.user_id,
-                    locked_fields={},
                 )
             )
             self.logger.debug(
@@ -211,7 +209,6 @@ class ActionWorkerWriting:
                         )
                     ],
                     user_id=self.user_id,
-                    locked_fields={},
                 )
             )
 
