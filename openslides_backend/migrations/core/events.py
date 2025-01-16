@@ -1,8 +1,8 @@
 import json
 from typing import Any
 
+from openslides_backend.services.database.event_types import EVENT_TYPE
 from openslides_backend.datastore.shared.postgresql_backend import (
-    EVENT_TYPE,
     ListUpdatesDict,
 )
 from openslides_backend.datastore.shared.util import (

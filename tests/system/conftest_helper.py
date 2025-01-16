@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from openslides_backend.database.db_connection_handling import env
+from openslides_backend.services.database.db_connection_handling import env
 
 openslides_db = env.DATABASE_NAME
 

@@ -2,7 +2,7 @@ import json
 
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.flask_frontend import ERROR_CODES
-from openslides_backend.datastore.shared.postgresql_backend import EVENT_TYPE
+from openslides_backend.services.database.event_types import EVENT_TYPE
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.patterns import (
     META_DELETED,

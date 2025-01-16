@@ -5,7 +5,7 @@ from unittest.mock import _patch
 import pytest
 from psycopg import Connection
 
-from openslides_backend.database.db_connection_handling import (
+from openslides_backend.services.database.db_connection_handling import (
     env,
     get_current_os_conn_pool,
     get_new_os_conn,

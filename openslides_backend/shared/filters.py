@@ -4,10 +4,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias, Union
 
-from openslides_backend.datastore.shared.util.self_validating_dataclass import (
-    SelfValidatingDataclass,
-)
-from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.patterns import FIELD_PATTERN, Field
 
 filter_definitions_schema = {
     "filter": {
@@ -108,10 +105,14 @@ class _ListFilterBase(_FilterBase, ABC):
 
 
 @dataclass
-class FilterOperator(_FilterBase, SelfValidatingDataclass):
+class FilterOperator(_FilterBase):
     field: Field
     operator: Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
     value: Any
+
+    def __post_init__(self):
+        if self.field and isinstance(self.field, str) and FIELD_PATTERN.match(self.field):
+            raise Exception(f"Filter field {self.field} does not comply with field format.")
 
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}

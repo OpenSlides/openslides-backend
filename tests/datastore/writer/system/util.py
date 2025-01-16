@@ -5,7 +5,7 @@ from openslides_backend.datastore.shared.postgresql_backend import (
     ALL_TABLES,
     ConnectionHandler,
 )
-from openslides_backend.datastore.shared.postgresql_backend.sql_event_types import (
+from openslides_backend.services.database.event_types import (
     EVENT_TYPE,
 )
 from openslides_backend.datastore.shared.services import ReadDatabase

@@ -10,11 +10,10 @@ from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.services import ShutdownService
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.database.interface import Database
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
@@ -46,7 +45,7 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    datastore: DatastoreService
+    datastore: Database
     vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
@@ -267,7 +266,6 @@ class BaseSystemTestCase(TestCase):
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=False,
             use_changed_models=False,
         )

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from openslides_backend.database.db_connection_handling import get_new_os_conn
+from openslides_backend.services.database.db_connection_handling import get_new_os_conn
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ALL_TABLES
 

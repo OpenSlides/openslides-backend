@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
-from openslides_backend.datastore.shared.postgresql_backend import EVENT_TYPE
+from openslides_backend.services.database.event_types import EVENT_TYPE
 from tests.datastore.util import assert_success_response
 
 

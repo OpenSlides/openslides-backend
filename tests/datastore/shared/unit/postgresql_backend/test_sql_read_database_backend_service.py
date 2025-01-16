@@ -3,8 +3,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.postgresql_backend import (
+from openslides_backend.services.database.event_types import (
     EVENT_TYPE,
+)
+from openslides_backend.datastore.shared.postgresql_backend import (
     ConnectionHandler,
 )
 from openslides_backend.datastore.shared.postgresql_backend.connection_handler import (

@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.typing import DeletedModel
 
@@ -114,25 +113,6 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             ["f"],
         )
         assert result == {
-            2: {"f": 1},
-        }
-        self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
-
-    def test_use_changed_models_deleted_all_models(self) -> None:
-        self.set_additional_models(
-            {
-                "test/1": DeletedModel(),
-            }
-        )
-        result = self.adapter.filter(
-            self.collection,
-            FilterOperator("a", "=", 2),
-            ["f"],
-            DeletedModelsBehaviour.ALL_MODELS,
-        )
-        assert result == {
-            1: {"f": 1},
             2: {"f": 1},
         }
         self.filter_mock.assert_called()
