@@ -247,11 +247,34 @@ class UpdatePollTestCase(BasePollTestCase):
     def test_update_max_votes_per_option(self) -> None:
         response = self.request(
             "poll.update",
-            {"max_votes_per_option": 5, "id": 1},
+            {"max_votes_per_option": 5, "max_votes_amount": 5, "id": 1},
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("max_votes_per_option"), 5)
+        self.assert_model_exists("poll/1", {"max_votes_per_option": 5})
+
+    def test_max_votes_per_option_smaller_max_votes_amount(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"max_votes_per_option": 5, "max_votes_amount": 1, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The maximum votes per option cannot be higher than the maximum amount of votes in total."
+        )
+        self.assert_model_exists("poll/1", {"max_votes_per_option": 1})
+
+    def test_max_votes_amount_smaller_min(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"min_votes_amount": 5, "max_votes_amount": 1, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The minimum amount of votes cannot be higher than the maximum amount of votes."
+        )
+        self.assert_model_exists("poll/1", {"min_votes_amount": 1})
 
     def test_update_negative_fields(self) -> None:
         for field in ("max_votes_per_option", "max_votes_amount", "min_votes_amount"):
@@ -292,6 +315,7 @@ class UpdatePollTestCase(BasePollTestCase):
                 "global_no": True,
                 "global_abstain": False,
                 "max_votes_per_option": 2,
+                "max_votes_amount": 2,
             },
         )
         self.assert_status_code(response, 200)

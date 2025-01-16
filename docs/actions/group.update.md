@@ -12,7 +12,7 @@
 ```
 
 ## Action
-Updates the group. Permissions are restricted to the following enum: https://github.com/OpenSlides/openslides-backend/blob/fae36a0b055bbaa463da4768343080c285fe8178/global/meta/models.yml#L1621-L1656
+Updates the group. Permissions are restricted to the group.permissions enum inside https://github.com/OpenSlides/openslides-meta/blob/main/models.yml.
 
 If the group is the meetings anonymous group, the name may not be changed and the permissions have to be in the following whitelist:
 - agenda_item.can_see,
@@ -27,6 +27,7 @@ If the group is the meetings anonymous group, the name may not be changed and th
 - meeting.can_see_livestream,
 - motion.can_see,
 - motion.can_see_internal,
+- poll.can_see_progress,
 - projector.can_see,
 - user.can_see,
 - user.can_see_sensitive_data

@@ -3,6 +3,7 @@ from typing import Any, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
@@ -2157,3 +2158,145 @@ class MeetingClone(BaseActionTestCase):
             response.json["message"]
             == "Cannot clone meeting to a different committee if it is a non-template meeting."
         )
+
+    def test_clone_with_list_election(self) -> None:
+        self.create_meeting()
+        self.set_user_groups(1, [2])
+        self.create_user("Huey", [3])
+        self.create_user("Dewey", [3])
+        self.create_user("Louie", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [1],
+                },
+                "user/3": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [2],
+                },
+                "user/4": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [3],
+                },
+                "organization/1": {
+                    "user_ids": [1, 2, 3, 4],
+                },
+                "motion_workflow/1": {
+                    "name": "Workflow",
+                    "sequential_number": 1,
+                    "default_amendment_workflow_meeting_id": 1,
+                },
+                "motion_state/1": {
+                    "name": "State",
+                    "weight": 1,
+                },
+                "projector/1": {
+                    "name": "default",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "sequential_number": 1,
+                    **{
+                        key: 1 for key in MeetingModelMixin.reverse_default_projectors()
+                    },
+                },
+                "list_of_speakers/1": {
+                    "id": 1,
+                    "closed": False,
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "sequential_number": 1,
+                },
+                "meeting/1": {
+                    "id": 1,
+                    "name": "Duckburg town government",
+                    "poll_ids": [1],
+                    "option_ids": [1, 2],
+                    "projector_ids": [1],
+                    "assignment_ids": [1],
+                    "poll_candidate_ids": [1, 2, 3],
+                    "list_of_speakers_ids": [1],
+                    "reference_projector_id": 1,
+                    "poll_candidate_list_ids": [1],
+                    **{key: [1] for key in MeetingModelMixin.all_default_projectors()},
+                    "motions_default_amendment_workflow_id": 1,
+                },
+                "assignment/1": {
+                    "id": 1,
+                    "phase": "search",
+                    "title": "Duckburg town council",
+                    "poll_ids": [1],
+                    "meeting_id": 1,
+                    "open_posts": 0,
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 1,
+                },
+                "poll_candidate/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate/2": {
+                    "id": 2,
+                    "weight": 2,
+                    "user_id": 3,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate/3": {
+                    "id": 3,
+                    "weight": 3,
+                    "user_id": 4,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate_list/1": {
+                    "id": 1,
+                    "option_id": 1,
+                    "meeting_id": 1,
+                    "poll_candidate_ids": [1, 2, 3],
+                },
+                "option/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "poll_id": 1,
+                    "meeting_id": 1,
+                    "content_object_id": "poll_candidate_list/1",
+                },
+                "option/2": {
+                    "id": 2,
+                    "text": "global option",
+                    "weight": 1,
+                    "meeting_id": 1,
+                    "used_as_global_option_in_poll_id": 1,
+                },
+                "poll/1": {
+                    "id": 1,
+                    "type": "pseudoanonymous",
+                    "state": "created",
+                    "title": "First election",
+                    "backend": "fast",
+                    "global_no": False,
+                    "votescast": "0.000000",
+                    "global_yes": False,
+                    "meeting_id": 1,
+                    "option_ids": [1],
+                    "pollmethod": "YNA",
+                    "votesvalid": "0.000000",
+                    "votesinvalid": "0.000000",
+                    "global_abstain": False,
+                    "global_option_id": 2,
+                    "max_votes_amount": 1,
+                    "min_votes_amount": 1,
+                    "content_object_id": "assignment/1",
+                    "sequential_number": 1,
+                    "is_pseudoanonymized": True,
+                    "max_votes_per_option": 1,
+                    "onehundred_percent_base": "disabled",
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
