@@ -2,9 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 
-from openslides_backend.services.database.event_types import (
-    EVENT_TYPE,
-)
+from openslides_backend.services.database.event_types import EVENT_TYPE
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import JSON
 

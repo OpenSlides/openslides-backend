@@ -3,7 +3,6 @@ import json
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.flask_frontend.errors import ERROR_CODES
 from openslides_backend.services.database.event_types import EVENT_TYPE
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from tests.datastore.reader.system.util import setup_data
 from tests.datastore.util import assert_error_response, assert_success_response
 
@@ -35,7 +34,7 @@ def test_get_no_deleted_success(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, {FQID: data})
     response = json_client.post(
         Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.NO_DELETED},
+        {"fqid": FQID},
     )
     assert_success_response(response)
     assert response.json == data
@@ -45,54 +44,7 @@ def test_get_no_deleted_fail(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, {FQID: data}, True)
     response = json_client.post(
         Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.NO_DELETED},
-    )
-    assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
-
-
-def test_get_only_deleted_success(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, {FQID: data}, True)
-    response = json_client.post(
-        Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
-    )
-    assert_success_response(response)
-    assert response.json == data
-
-
-def test_get_only_deleted_fail(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, {FQID: data})
-    response = json_client.post(
-        Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
-    )
-    assert_error_response(response, ERROR_CODES.MODEL_NOT_DELETED)
-
-
-def test_get_all_models_not_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, {FQID: data})
-    response = json_client.post(
-        Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
-    )
-    assert_success_response(response)
-    assert response.json == data
-
-
-def test_get_all_models_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, {FQID: data}, True)
-    response = json_client.post(
-        Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
-    )
-    assert_success_response(response)
-    assert response.json == data
-
-
-def test_get_all_models_no_model(json_client, db_connection, db_cur):
-    response = json_client.post(
-        Route.GET.URL,
-        {"fqid": FQID, "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
+        {"fqid": FQID},
     )
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
 
@@ -169,19 +121,6 @@ def test_position_deleted(json_client, db_connection, db_cur):
     db_connection.commit()
     response = json_client.post(Route.GET.URL, {"fqid": FQID, "position": 3})
     assert_error_response(response, ERROR_CODES.MODEL_DOES_NOT_EXIST)
-
-
-def test_position_not_deleted(json_client, db_connection, db_cur):
-    setup_events_data(db_connection, db_cur)
-    response = json_client.post(
-        Route.GET.URL,
-        {
-            "fqid": FQID,
-            "position": 1,
-            "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED,
-        },
-    )
-    assert_error_response(response, ERROR_CODES.MODEL_NOT_DELETED)
 
 
 def test_position_mapped_fields(json_client, db_connection, db_cur):

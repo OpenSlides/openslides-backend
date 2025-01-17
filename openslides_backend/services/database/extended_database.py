@@ -2,6 +2,7 @@ from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId, id_from_fqid
 from ...shared.typing import ModelMap
 from ..database.commands import GetManyRequest

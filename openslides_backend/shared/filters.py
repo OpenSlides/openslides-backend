@@ -111,8 +111,14 @@ class FilterOperator(_FilterBase):
     value: Any
 
     def __post_init__(self):
-        if self.field and isinstance(self.field, str) and FIELD_PATTERN.match(self.field):
-            raise Exception(f"Filter field {self.field} does not comply with field format.")
+        if (
+            self.field
+            and isinstance(self.field, str)
+            and FIELD_PATTERN.match(self.field)
+        ):
+            raise Exception(
+                f"Filter field {self.field} does not comply with field format."
+            )
 
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}

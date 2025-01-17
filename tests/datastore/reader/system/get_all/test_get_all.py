@@ -2,7 +2,6 @@ import json
 
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.flask_frontend import ERROR_CODES
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from tests.datastore import assert_error_response
 from tests.datastore.util import assert_success_response
 
@@ -46,26 +45,6 @@ def test_deleted(json_client, db_connection, db_cur):
     response = json_client.post(Route.GET_ALL.URL, {"collection": "a"})
     assert_success_response(response)
     assert response.json == {"1": data["a/1"]}
-
-
-def test_only_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, 2)
-    response = json_client.post(
-        Route.GET_ALL.URL,
-        {"collection": "a", "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
-    )
-    assert_success_response(response)
-    assert response.json == {"2": data["a/2"]}
-
-
-def test_deleted_all_models(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, 2)
-    response = json_client.post(
-        Route.GET_ALL.URL,
-        {"collection": "a", "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
-    )
-    assert_success_response(response)
-    assert response.json == {"1": data["a/1"], "2": data["a/2"]}
 
 
 def test_mapped_fields(json_client, db_connection, db_cur):

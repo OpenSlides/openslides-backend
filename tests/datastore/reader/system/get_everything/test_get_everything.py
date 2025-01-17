@@ -6,7 +6,6 @@ from openslides_backend.datastore.shared.services import EnvironmentService
 from openslides_backend.datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
 )
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.patterns import id_from_fqid
 from tests.datastore.util import assert_success_response
 
@@ -54,29 +53,6 @@ def test_simple(json_client, db_connection, db_cur):
     assert_success_response(response)
     assert response.json == {
         "a": {"1": get_data_with_id("a/1")},
-        "b": {"1": get_data_with_id("b/1")},
-    }
-
-
-def test_only_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
-    response = json_client.post(
-        Route.GET_EVERYTHING.URL,
-        {"get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED},
-    )
-    assert_success_response(response)
-    assert response.json == {"a": {"2": get_data_with_id("a/2")}}
-
-
-def test_deleted_all_models(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
-    response = json_client.post(
-        Route.GET_EVERYTHING.URL,
-        {"get_deleted_models": DeletedModelsBehaviour.ALL_MODELS},
-    )
-    assert_success_response(response)
-    assert response.json == {
-        "a": {"1": get_data_with_id("a/1"), "2": get_data_with_id("a/2")},
         "b": {"1": get_data_with_id("b/1")},
     }
 

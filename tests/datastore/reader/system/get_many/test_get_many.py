@@ -3,7 +3,6 @@ import json
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.flask_frontend import ERROR_CODES
 from openslides_backend.services.database.event_types import EVENT_TYPE
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.patterns import (
     META_DELETED,
     META_POSITION,
@@ -111,28 +110,6 @@ def test_only_invalid_fqids(json_client, db_connection, db_cur):
 def test_no_deleted(json_client, db_connection, db_cur):
     setup_data(db_connection, db_cur, True)
     response = json_client.post(Route.GET_MANY.URL, default_request)
-    assert_success_response(response)
-    assert response.json == {"a": {}, "b": {}}
-
-
-def test_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur, True)
-    request = {
-        "requests": default_request_parts,
-        "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED,
-    }
-    response = json_client.post(Route.GET_MANY.URL, request)
-    assert_success_response(response)
-    assert response.json == data_as_deleted
-
-
-def test_deleted_not_deleted(json_client, db_connection, db_cur):
-    setup_data(db_connection, db_cur)
-    request = {
-        "requests": default_request_parts,
-        "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED,
-    }
-    response = json_client.post(Route.GET_MANY.URL, request)
     assert_success_response(response)
     assert response.json == {"a": {}, "b": {}}
 
@@ -339,34 +316,6 @@ def test_position_deleted(json_client, db_connection, db_cur):
                 "common_field": 0,
                 "meta_position": 2,
                 "meta_deleted": False,
-            },
-        },
-    }
-
-
-def test_position_not_deleted(json_client, db_connection, db_cur):
-    setup_events_data(db_connection, db_cur)
-    db_cur.execute(
-        "insert into events (position, fqid, type, weight) values (3, %s, %s, 3)",
-        ["b/1", EVENT_TYPE.DELETE],
-    )
-    db_connection.commit()
-    request = {
-        "requests": default_request_parts,
-        "position": 3,
-        "get_deleted_models": DeletedModelsBehaviour.ONLY_DELETED,
-    }
-    response = json_client.post(Route.GET_MANY.URL, request)
-    assert response.json == {
-        "a": {},
-        "b": {
-            "1": {
-                "field_4": "data",
-                "field_5": 42,
-                "field_6": [1, 2, 3],
-                "common_field": 0,
-                "meta_position": 3,
-                "meta_deleted": True,
             },
         },
     }

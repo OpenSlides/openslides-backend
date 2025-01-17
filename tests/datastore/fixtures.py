@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from openslides_backend.services.database.db_connection_handling import get_new_os_conn
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ALL_TABLES
+from openslides_backend.services.database.db_connection_handling import get_new_os_conn
 
 
 def get_env(name):
@@ -18,7 +18,7 @@ def drop_db_definitions(cur):
 
 
 def get_db_schema_definition():
-    with open("openslides_backend/datastore/shared/postgresql_backend/schema.sql") as f:
+    with open("openslides_backend/services/database/schema.sql") as f:
         return f.read()
 
 

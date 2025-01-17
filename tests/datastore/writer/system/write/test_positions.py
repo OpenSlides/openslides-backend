@@ -5,7 +5,6 @@ import pytest
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.datastore.writer.flask_frontend.routes import WRITE_URL
 from tests.datastore.util import assert_response_code
 
