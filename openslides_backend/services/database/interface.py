@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, ContextManager, Protocol, Union
+from typing import ContextManager, Protocol
+
+from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
@@ -8,13 +10,20 @@ from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
 
-PartialModel = dict[str, Any]
-
-
-LockResult = Union[bool, list[str]]
-
-
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
+
+ALL_TABLES = (
+    "positions",
+    "events",
+    "id_sequences",
+    "collectionfields",
+    "events_to_collectionfields",
+    "models",
+    "migration_keyframes",
+    "migration_keyframe_models",
+    "migration_events",
+    "migration_positions",
+)
 
 
 class Database(Protocol):
@@ -37,7 +46,6 @@ class Database(Protocol):
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
         raise_exception: bool = True,
@@ -47,7 +55,6 @@ class Database(Protocol):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...

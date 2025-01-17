@@ -1,11 +1,12 @@
 from collections.abc import Generator
 from typing import Any
-from unittest.mock import _patch
+from unittest.mock import MagicMock, _patch
 
 import pytest
-from psycopg import Connection
+from psycopg import Connection, Cursor
 
-from openslides_backend.database.db_connection_handling import (
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.database.postgresql.db_connection_handling import (
     env,
     get_current_os_conn_pool,
     os_conn_pool,
@@ -19,6 +20,11 @@ from .conftest_helper import (
 
 openslides_db = env.DATABASE_NAME
 database_user = env.DATABASE_USER
+
+
+@pytest.fixture(autouse=True)
+def reader() -> ExtendedDatabase:
+    return ExtendedDatabase(MagicMock(), MagicMock())
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -69,3 +75,10 @@ def db_connection() -> Generator[Connection, None, None]:
         yield conn
         with conn.cursor() as curs:
             curs.execute("SELECT truncate_testdata_tables()")
+
+
+@pytest.fixture(autouse=True)
+def db_cur() -> Generator[Cursor, None, None]:
+    with os_conn_pool.connection() as conn:
+        with conn.cursor() as curs:
+            yield curs

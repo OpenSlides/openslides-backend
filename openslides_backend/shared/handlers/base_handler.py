@@ -16,3 +16,4 @@ class BaseHandler:
 
         # Now initialize datastore instance.
         self.datastore = services.datastore()
+        self.database = services.database()

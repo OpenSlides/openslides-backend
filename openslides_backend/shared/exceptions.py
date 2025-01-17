@@ -89,9 +89,36 @@ class ServiceException(View400Exception):
 
 
 class DatabaseException(ServiceException):
-    pass
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
 
 
+class InvalidFormat(DatabaseException):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+
+class ModelDoesNotExist(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        self.fqid = fqid
+
+
+class ModelLocked(DatabaseException):
+    def __init__(self, keys: str) -> None:
+        self.keys = keys
+
+
+class InvalidDatastoreState(DatabaseException):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+
+class DatastoreNotEmpty(DatabaseException):
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+
+# TODO delete
 class DatastoreException(ServiceException):
     pass
 
