@@ -7,6 +7,7 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
+from openslides_backend.shared.interfaces.collection_field_lock import CollectionFieldLock
 
 PartialModel = dict[str, Any]
 
@@ -23,6 +24,7 @@ class Database(Protocol):
     """
 
     changed_models: ModelMap
+    locked_fields: dict[str, CollectionFieldLock]
 
     @abstractmethod
     def get_database_context(self) -> ContextManager[None]: ...
@@ -130,7 +132,7 @@ class Database(Protocol):
     def is_deleted(self, fqid: FullQualifiedId) -> bool: ...
 
     @abstractmethod
-    def reset(self) -> None: ...
+    def reset(self, hard: bool = True) -> None: ...
 
     @abstractmethod
     def get_everything(self) -> dict[Collection, dict[int, PartialModel]]: ...

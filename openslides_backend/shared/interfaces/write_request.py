@@ -15,6 +15,7 @@ class WriteRequest:
     events: list[Event]
     information: HistoryInformation | None = None
     user_id: int | None = None
+    locked_fields: dict[str, CollectionFieldLock] = field(default_factory=dict)
 
 
 @dataclass

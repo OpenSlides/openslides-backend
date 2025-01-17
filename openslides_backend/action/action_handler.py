@@ -262,6 +262,12 @@ class ActionHandler(BaseHandler):
             if write_request:
                 action.validate_write_request(write_request)
 
+                # add locked_fields to request
+                write_request.locked_fields = self.datastore.locked_fields
+                # reset locked fields, but not changed models - these might be needed
+                # by another action
+                self.datastore.reset(hard=False)
+
             # add on_success routine
             if on_success := action.get_on_success(action_data):
                 self.on_success.append(on_success)
