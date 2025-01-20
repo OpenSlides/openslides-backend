@@ -1,23 +1,23 @@
 import sys
 from typing import Any
 
-from openslides_backend.datastore.reader.core import GetAllRequest, GetRequest, Reader
-from openslides_backend.datastore.reader.services import (
-    register_services as register_reader_services,
-)
-from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.writer.core import (
-    RequestUpdateEvent,
-    Writer,
-)
-from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.datastore.writer.services import (
-    register_services as register_writer_services,
-)
+# from openslides_backend.datastore.reader.core import GetAllRequest, GetRequest, Reader
+# from openslides_backend.datastore.reader.services import (
+#     register_services as register_reader_services,
+# )
+# from openslides_backend.datastore.shared.di import injector
+# from openslides_backend.datastore.writer.core import (
+#     RequestUpdateEvent,
+#     Writer,
+# )
+# from openslides_backend.shared.interfaces.write_request import WriteRequest
+# from openslides_backend.datastore.writer.services import (
+#     register_services as register_writer_services,
+# )
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.models.models import Organization
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.interfaces.write_request import RequestUpdateEvent
 
 collection_to_fields_map = {
     "organization": [
@@ -49,9 +49,14 @@ possible_languages = Organization().default_language.constraints["enum"]
 
 
 def read_collection(collection: str, fields: list[str]) -> Any:
-    reader: Reader = injector.get(Reader)
-    with reader.get_database_context():
-        response = reader.get_all(GetAllRequest(collection, ["id", *fields]))
+    # TODO: Use the new reader, then un-comment the code
+
+    # reader: Reader = injector.get(Reader)
+    # with reader.get_database_context():
+    #     response = reader.get_all(GetAllRequest(collection, ["id", *fields]))
+    
+    response = {} # TODO: Delete this later
+    
     return response.items()
 
 
@@ -63,9 +68,14 @@ def check_language(language: str) -> None:
 
 
 def check_organization_language() -> None:
-    reader: Reader = injector.get(Reader)
-    with reader.get_database_context():
-        response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
+    # TODO: Use the new reader, then un-comment the code
+
+    # reader: Reader = injector.get(Reader)
+    # with reader.get_database_context():
+    #     response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
+    
+    response = {"default_language": "en"}  # TODO: Delete this later
+    
     if response["default_language"] != "en":
         print("Cannot translate from source languages other than `en`.")
         print_help()
@@ -87,8 +97,6 @@ def main() -> None:
     check_language(language)
     Translator.set_translation_language(language)
 
-    register_reader_services()
-    register_writer_services()
     check_organization_language()
 
     # translate and generate events
@@ -116,9 +124,13 @@ def main() -> None:
 
     # write events into the datastore
     if events:
-        write_request = WriteRequest(events, None, 0, {})  # type: ignore
-        writer: Writer = injector.get(Writer)
-        writer.write([write_request])
+        # TODO: Use the new writer, then un-comment the code
+
+        # write_request = WriteRequest(events, None, 0, {})  # type: ignore
+        # writer: Writer = injector.get(Writer)
+        # writer.write([write_request])
+
+        pass  # TODO: Delete this later
 
 
 if __name__ == "__main__":
