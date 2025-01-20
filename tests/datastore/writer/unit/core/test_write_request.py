@@ -14,8 +14,8 @@ from openslides_backend.datastore.writer.core import (
     RequestDeleteEvent,
     RequestRestoreEvent,
     RequestUpdateEvent,
-    WriteRequest,
 )
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.datastore.writer.core.write_request import (
     assert_no_special_field,
 )

@@ -14,8 +14,8 @@ from openslides_backend.datastore.writer.core import (
     RequestCreateEvent,
     RequestDeleteEvent,
     Writer,
-    WriteRequest,
 )
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.datastore.writer.core.writer_service import WriterService
 from tests.datastore import reset_di  # noqa
 

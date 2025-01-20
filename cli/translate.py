@@ -9,8 +9,8 @@ from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.writer.core import (
     RequestUpdateEvent,
     Writer,
-    WriteRequest,
 )
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.datastore.writer.services import (
     register_services as register_writer_services,
 )
