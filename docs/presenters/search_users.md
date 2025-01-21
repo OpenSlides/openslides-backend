@@ -10,6 +10,7 @@
     "first_name": string,
     "last_name": string,
     "email": string,
+    "member_number": string,
   }[]
 }
 ```
@@ -23,6 +24,7 @@
   "first_name": string,
   "last_name": string,
   "email": string,
+  "member_number": string,
 }[][]
 ```
 A double array: The outer array has the same length as the request's `search` array and contains
@@ -32,7 +34,7 @@ represents all users which matched the search entry with the given object of 6 f
 ## Logic
 
 The matching is performed independently per search entry. If a `username` is given, the other fields
-are ignored and users are only matched by `username`. If the `username` is empty, the users are only matched by `saml_id`. If the `saml_id` is also empty all other fields (`first_name`, `last_name`, `email`) must match instead.
+are ignored and users are only matched by `username`. If the `username` is empty, the users are only matched by `saml_id`. If the `saml_id` is empty, the users are only matched by `member_number`. If the `member_number` is also empty all other fields (`first_name`, `last_name`, `email`) must match instead.
 
 ## Permissions
 

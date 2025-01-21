@@ -53,6 +53,7 @@ class _Motion(str, Permission, Enum):
     CAN_MANAGE_POLLS = "motion.can_manage_polls"
     CAN_SEE = "motion.can_see"
     CAN_SEE_INTERNAL = "motion.can_see_internal"
+    CAN_SEE_ORIGIN = "motion.can_see_origin"
     CAN_SUPPORT = "motion.can_support"
 
 
@@ -128,6 +129,7 @@ permission_parents: dict[Permission, list[Permission]] = {
         _Motion.CAN_CREATE_AMENDMENTS,
         _Motion.CAN_FORWARD,
         _Motion.CAN_SUPPORT,
+        _Motion.CAN_SEE_ORIGIN,
     ],
     _Motion.CAN_MANAGE_METADATA: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE_POLLS: [_Motion.CAN_MANAGE],
@@ -137,6 +139,7 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Motion.CAN_FORWARD: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE: [],
     _Motion.CAN_SUPPORT: [],
+    _Motion.CAN_SEE_ORIGIN: [],
     _Poll.CAN_MANAGE: [],
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],

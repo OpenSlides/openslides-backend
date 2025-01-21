@@ -111,6 +111,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
+            "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": False,
@@ -317,6 +318,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_ids": [1, 2, 3, 4, 5, 6],
                     "present_user_ids": [2],
                     "mediafile_ids": [1, 2],
+                    "meeting_mediafile_ids": [1, 2],
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
@@ -459,14 +461,18 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_clock": True,
                     **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
-                "mediafile/1": {
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
+                "mediafile/2": {"owner_id": "meeting/1", "meeting_mediafile_ids": [2]},
+                "meeting_mediafile/1": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
                     "is_public": True,
-                    "owner_id": "meeting/1",
                     "used_as_logo_web_header_in_meeting_id": 1,
                 },
-                "mediafile/2": {
+                "meeting_mediafile/2": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
                     "is_public": True,
-                    "owner_id": "meeting/1",
                     "used_as_font_bold_in_meeting_id": 1,
                 },
                 "motion/1": {

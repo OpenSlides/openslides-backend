@@ -7,7 +7,7 @@ from openslides_backend.database.db_connection_handling import os_conn_pool
 
 # ENV Variables
 EXAMPLE_DATA_PATH = "global/data/example-data.json"
-TEST_MODULE_PATH = "openslides_backend.migrations.migrations_reldb.0054_init_reldb"
+TEST_MODULE_PATH = "openslides_backend.migrations.migrations_reldb.0056_init_reldb"
 
 # VARIABLE DECLARATION
 

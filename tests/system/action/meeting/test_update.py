@@ -29,6 +29,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
+            "group/1": {
+                "admin_group_for_meeting_id": 1,
+                "default_group_for_meeting_id": 1,
+                "meeting_id": 1,
+            },
         }
 
     def basic_test(
@@ -682,6 +687,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
             }
         )
+        self.create_user("bob_admin", [1])
         response = self.request(
             "meeting.update",
             {
@@ -706,6 +712,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
+        self.set_user_groups(1, [1])
         response = self.request(
             "meeting.update",
             {
@@ -747,6 +754,27 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert (
             response.json["message"]
             == "A meeting cannot be set as a template by a committee manager if duplicate from is required."
+        )
+
+    def test_update_set_as_template_false_template_error(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "set_as_template": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can only remove meeting template status if it has at least one administrator."
+            in response.json["message"]
         )
 
     def test_update_check_jitsi_domain_1(self) -> None:

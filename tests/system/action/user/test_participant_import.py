@@ -58,9 +58,15 @@ class ParticipantImport(BaseActionTestCase):
                     "group_ids": [1],
                     "structure_level_ids": [1],
                     "committee_id": 1,
+                    "admin_group_id": 2,
                 },
                 "committee/1": {"meeting_ids": [1], "organization_id": 1},
                 "group/1": {"name": "group1", "meeting_id": 1},
+                "group/2": {
+                    "name": "group2",
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
                 "structure_level/1": {"name": "level", "meeting_id": 1},
             }
         )
@@ -632,6 +638,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_password": "",
                 "can_change_own_password": False,
                 "meeting_user_ids": [35],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(
@@ -654,6 +662,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_vote_weight": "1.000000",
                 "can_change_own_password": False,
                 "meeting_user_ids": [36],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(
@@ -674,6 +684,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "last_name": "Baez7",
                 "can_change_own_password": True,
                 "meeting_user_ids": [37],
+                "is_physical_person": True,
+                "is_active": True,
             },
         )
         self.assert_model_exists(
@@ -782,13 +794,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     def test_json_upload_update_multiple_users_all_error(self) -> None:
         self.json_upload_multiple_users()
         self.request("user.delete", {"id": 2})
-        self.request("user.update", {"id": 3, "meeting_id": 1, "group_ids": [1]})
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         self.set_models(
             {
                 "group/1": {"admin_group_for_meeting_id": 1},
-                "group/2": {"admin_group_for_meeting_id": None},
+                "group/2": {
+                    "admin_group_for_meeting_id": None,
+                    "meeting_user_ids": None,
+                },
                 "group/7": {"name": "changed"},
+                "meeting_user/31": {"group_ids": [1]},
             }
         )
         self.request_multi("group.delete", [{"id": 2}, {"id": 3}])
@@ -1287,6 +1302,62 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "member_number": "mem_nr",
             },
         )
+
+    def test_json_upload_remove_last_admin_add_a_new_one(self) -> None:
+        self.json_upload_remove_last_admin_add_a_new_one()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+        row = response.json["results"][0][0]["rows"][1]
+        assert row["state"] == ImportState.NEW
+        assert row["messages"] == []
+
+    def test_json_upload_remove_admin_group(self) -> None:
+        self.json_upload_remove_admin_group_normal()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+
+    def test_json_upload_remove_last_admin_in_template(self) -> None:
+        self.json_upload_remove_last_admin_in_template()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+
+    def test_json_upload_remove_admin_group_error(self) -> None:
+        self.json_upload_remove_admin_group_normal()
+        self.set_models(
+            {
+                "meeting_user/2": {"group_ids": [3]},
+                "group/2": {"meeting_user_ids": [1]},
+                "group/3": {"meeting_user_ids": [2]},
+            }
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Cannot remove last member of admin group"]
+
+    def test_json_upload_remove_last_admin_in_ex_template_error(self) -> None:
+        self.json_upload_remove_last_admin_in_template()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": None},
+                "organization/1": {"template_meeting_ids": None},
+            }
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Cannot remove last member of admin group"]
 
     def test_json_upload_permission_as_locked_out(self) -> None:
         self.json_upload_dont_recognize_empty_name_and_email()

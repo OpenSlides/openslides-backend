@@ -69,6 +69,9 @@ class Organization(Model):
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
     )
+    published_mediafile_ids = fields.RelationListField(
+        to={"mediafile": "published_to_meetings_in_organization_id"}, is_view_field=True
+    )
     user_ids = fields.RelationListField(
         to={"user": "organization_id"}, is_view_field=True, is_primary=True
     )
@@ -98,7 +101,7 @@ class User(Model):
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
-    is_active = fields.BooleanField()
+    is_active = fields.BooleanField(default=True)
     is_physical_person = fields.BooleanField(default=True)
     password = fields.CharField()
     default_password = fields.CharField()
@@ -630,6 +633,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
+    motion_poll_default_method = fields.CharField(default="YNA")
     motion_poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
@@ -825,6 +829,11 @@ class Meeting(Model, MeetingModelMixin):
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
     )
+    meeting_mediafile_ids = fields.RelationListField(
+        to={"meeting_mediafile": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
     mediafile_ids = fields.RelationListField(
         to={"mediafile": "owner_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -937,52 +946,52 @@ class Meeting(Model, MeetingModelMixin):
         is_view_field=True,
     )
     logo_projector_main_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_projector_main_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_projector_main_in_meeting_id"}
     )
     logo_projector_header_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_projector_header_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_projector_header_in_meeting_id"}
     )
     logo_web_header_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_web_header_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_web_header_in_meeting_id"}
     )
     logo_pdf_header_l_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_header_l_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_pdf_header_l_in_meeting_id"}
     )
     logo_pdf_header_r_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_header_r_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_pdf_header_r_in_meeting_id"}
     )
     logo_pdf_footer_l_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_footer_l_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_pdf_footer_l_in_meeting_id"}
     )
     logo_pdf_footer_r_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_footer_r_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_pdf_footer_r_in_meeting_id"}
     )
     logo_pdf_ballot_paper_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_ballot_paper_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_logo_pdf_ballot_paper_in_meeting_id"}
     )
     font_regular_id = fields.RelationField(
-        to={"mediafile": "used_as_font_regular_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_regular_in_meeting_id"}
     )
     font_italic_id = fields.RelationField(
-        to={"mediafile": "used_as_font_italic_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_italic_in_meeting_id"}
     )
     font_bold_id = fields.RelationField(
-        to={"mediafile": "used_as_font_bold_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_bold_in_meeting_id"}
     )
     font_bold_italic_id = fields.RelationField(
-        to={"mediafile": "used_as_font_bold_italic_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_bold_italic_in_meeting_id"}
     )
     font_monospace_id = fields.RelationField(
-        to={"mediafile": "used_as_font_monospace_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_monospace_in_meeting_id"}
     )
     font_chyron_speaker_name_id = fields.RelationField(
-        to={"mediafile": "used_as_font_chyron_speaker_name_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_chyron_speaker_name_in_meeting_id"}
     )
     font_projector_h1_id = fields.RelationField(
-        to={"mediafile": "used_as_font_projector_h1_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_projector_h1_in_meeting_id"}
     )
     font_projector_h2_id = fields.RelationField(
-        to={"mediafile": "used_as_font_projector_h2_in_meeting_id"}
+        to={"meeting_mediafile": "used_as_font_projector_h2_in_meeting_id"}
     )
     committee_id = fields.RelationField(
         to={"committee": "meeting_ids"}, required=True, constant=True
@@ -1177,6 +1186,7 @@ class Group(Model):
                 "motion.can_manage_polls",
                 "motion.can_see",
                 "motion.can_see_internal",
+                "motion.can_see_origin",
                 "motion.can_support",
                 "poll.can_manage",
                 "projector.can_manage",
@@ -1218,28 +1228,28 @@ class Group(Model):
         on_delete=fields.OnDelete.PROTECT,
         is_view_field=True,
     )
-    mediafile_access_group_ids = fields.RelationListField(
-        to={"mediafile": "access_group_ids"},
+    meeting_mediafile_access_group_ids = fields.RelationListField(
+        to={"meeting_mediafile": "access_group_ids"},
         is_view_field=True,
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_mediafile_access_group_ids_mediafile",
+            "nm_group_mmagi_meeting_mediafile",
             "group_id",
-            "mediafile_id",
+            "meeting_mediafile_id",
             [],
         ),
     )
-    mediafile_inherited_access_group_ids = fields.RelationListField(
-        to={"mediafile": "inherited_access_group_ids"},
+    meeting_mediafile_inherited_access_group_ids = fields.RelationListField(
+        to={"meeting_mediafile": "inherited_access_group_ids"},
         is_view_field=True,
         is_primary=True,
         read_only=True,
         constraints={"description": "Calculated field."},
         write_fields=(
-            "nm_group_mediafile_inherited_access_group_ids_mediafile",
+            "nm_group_mmiagi_meeting_mediafile",
             "group_id",
-            "mediafile_id",
+            "meeting_mediafile_id",
             [],
         ),
     )
@@ -1445,7 +1455,7 @@ class ListOfSpeakers(Model):
             "motion_block": "list_of_speakers_id",
             "assignment": "list_of_speakers_id",
             "topic": "list_of_speakers_id",
-            "mediafile": "list_of_speakers_id",
+            "meeting_mediafile": "list_of_speakers_id",
         },
         required=True,
         constant=True,
@@ -1599,15 +1609,15 @@ class Topic(Model):
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
-    attachment_ids = fields.RelationListField(
-        to={"mediafile": "attachment_ids"},
+    attachment_meeting_mediafile_ids = fields.RelationListField(
+        to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_topic_attachment_ids",
+            "gm_topic_attachment_meeting_mediafile_ids",
             "topic_id",
-            "attachment_id",
-            ["attachment_id_mediafile_id"],
+            "attachment_meeting_mediafile_id",
+            ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
         ),
     )
     agenda_item_id = fields.RelationField(
@@ -1865,15 +1875,15 @@ class Motion(Model):
         equal_fields="meeting_id",
         write_fields=("gm_motion_tag_ids", "motion_id", "tag_id", ["tag_id_tag_id"]),
     )
-    attachment_ids = fields.RelationListField(
-        to={"mediafile": "attachment_ids"},
+    attachment_meeting_mediafile_ids = fields.RelationListField(
+        to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_attachment_ids",
+            "gm_motion_attachment_meeting_mediafile_ids",
             "motion_id",
-            "attachment_id",
-            ["attachment_id_mediafile_id"],
+            "attachment_meeting_mediafile_id",
+            ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
         ),
     )
     projection_ids = fields.RelationListField(
@@ -2520,15 +2530,15 @@ class Assignment(Model):
             ["tag_id_tag_id"],
         ),
     )
-    attachment_ids = fields.RelationListField(
-        to={"mediafile": "attachment_ids"},
+    attachment_meeting_mediafile_ids = fields.RelationListField(
+        to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_assignment_attachment_ids",
+            "gm_assignment_attachment_meeting_mediafile_ids",
             "assignment_id",
-            "attachment_id",
-            ["attachment_id_mediafile_id"],
+            "attachment_meeting_mediafile_id",
+            ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
         ),
     )
     projection_ids = fields.RelationListField(
@@ -2624,41 +2634,67 @@ class Mediafile(Model):
     mimetype = fields.CharField()
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
-    is_public = fields.BooleanField(
-        required=True,
-        read_only=True,
-        constraints={
-            "description": "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
-        },
-    )
     token = fields.CharField()
-    inherited_access_group_ids = fields.RelationListField(
-        to={"group": "mediafile_inherited_access_group_ids"},
-        is_view_field=True,
-        read_only=True,
-        constraints={"description": "Calculated field."},
-        write_fields=(
-            "nm_group_mediafile_inherited_access_group_ids_mediafile",
-            "mediafile_id",
-            "group_id",
-            [],
-        ),
-    )
-    access_group_ids = fields.RelationListField(
-        to={"group": "mediafile_access_group_ids"},
-        is_view_field=True,
-        write_fields=(
-            "nm_group_mediafile_access_group_ids_mediafile",
-            "mediafile_id",
-            "group_id",
-            [],
-        ),
+    published_to_meetings_in_organization_id = fields.RelationField(
+        to={"organization": "published_mediafile_ids"}
     )
     parent_id = fields.RelationField(
         to={"mediafile": "child_ids"}, equal_fields="owner_id"
     )
     child_ids = fields.RelationListField(
         to={"mediafile": "parent_id"}, is_view_field=True, equal_fields="owner_id"
+    )
+    owner_id = fields.GenericRelationField(
+        to={"organization": "mediafile_ids", "meeting": "mediafile_ids"},
+        required=True,
+        constant=True,
+    )
+    meeting_mediafile_ids = fields.RelationListField(
+        to={"meeting_mediafile": "mediafile_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+
+
+class MeetingMediafile(Model):
+    collection = "meeting_mediafile"
+    verbose_name = "meeting mediafile"
+
+    id = fields.IntegerField(constant=True)
+    mediafile_id = fields.RelationField(
+        to={"mediafile": "meeting_mediafile_ids"}, required=True
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "meeting_mediafile_ids"}, required=True
+    )
+    is_public = fields.BooleanField(
+        required=True,
+        constraints={
+            "description": "Calculated in actions. Used to discern whether the (meeting-)mediafile can be seen by everyone, because, in the case of inherited_access_group_ids == [], it would otherwise not be clear. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
+        },
+    )
+    inherited_access_group_ids = fields.RelationListField(
+        to={"group": "meeting_mediafile_inherited_access_group_ids"},
+        is_view_field=True,
+        constraints={
+            "description": "Calculated in actions. Shows what access group permissions are actually relevant. Calculated as the intersection of this meeting_mediafiles access_group_ids and the related mediafiles potential parent mediafiles inherited_access_group_ids. If the parent has no meeting_mediafile for this meeting, its inherited access group is assumed to be the meetings admin group. If there is no parent, the inherited_access_group_ids is equal to the access_group_ids. If the access_group_ids are empty, the interpretations is that every group has access rights, therefore the parent inherited_access_group_ids are used as-is."
+        },
+        write_fields=(
+            "nm_group_mmiagi_meeting_mediafile",
+            "meeting_mediafile_id",
+            "group_id",
+            [],
+        ),
+    )
+    access_group_ids = fields.RelationListField(
+        to={"group": "meeting_mediafile_access_group_ids"},
+        is_view_field=True,
+        write_fields=(
+            "nm_group_mmagi_meeting_mediafile",
+            "meeting_mediafile_id",
+            "group_id",
+            [],
+        ),
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
@@ -2672,15 +2708,15 @@ class Mediafile(Model):
     )
     attachment_ids = fields.GenericRelationListField(
         to={
-            "motion": "attachment_ids",
-            "topic": "attachment_ids",
-            "assignment": "attachment_ids",
+            "motion": "attachment_meeting_mediafile_ids",
+            "topic": "attachment_meeting_mediafile_ids",
+            "assignment": "attachment_meeting_mediafile_ids",
         },
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "gm_mediafile_attachment_ids",
-            "mediafile_id",
+            "gm_meeting_mediafile_attachment_ids",
+            "meeting_mediafile_id",
             "attachment_id",
             [
                 "attachment_id_motion_id",
@@ -2688,11 +2724,6 @@ class Mediafile(Model):
                 "attachment_id_assignment_id",
             ],
         ),
-    )
-    owner_id = fields.GenericRelationField(
-        to={"organization": "mediafile_ids", "meeting": "mediafile_ids"},
-        required=True,
-        constant=True,
     )
     used_as_logo_projector_main_in_meeting_id = fields.RelationField(
         to={"meeting": "logo_projector_main_id"}, is_view_field=True
@@ -2875,7 +2906,7 @@ class Projection(Model):
             "assignment": "projection_ids",
             "motion_block": "projection_ids",
             "list_of_speakers": "projection_ids",
-            "mediafile": "projection_ids",
+            "meeting_mediafile": "projection_ids",
             "motion": "projection_ids",
             "meeting": "projection_ids",
         },
@@ -2982,7 +3013,7 @@ class ChatMessage(Model):
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "chat_message_ids"}, required=True, constant=True
+        to={"meeting_user": "chat_message_ids"}, constant=True
     )
     chat_group_id = fields.RelationField(
         to={"chat_group": "chat_message_ids"}, required=True, constant=True

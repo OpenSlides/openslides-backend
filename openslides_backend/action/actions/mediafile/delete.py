@@ -17,6 +17,7 @@ class MediafileDelete(MediafileMixin, DeleteAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
     permission = Permissions.Mediafile.CAN_MANAGE
+    is_delete_action = True
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
