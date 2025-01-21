@@ -115,7 +115,7 @@ The internal types will be created by the backend service from the CSV-strings
 - **boolean** for `True` use one of "True", "true", "T", "t", "Yes", "yes", "Y", "y" or "1", for `False` one of "False", "false", "F", "f", "No", "no", "N", "n" or "0"
 - **integer** Use something like "1234" without fraction
 - **number** means a `,` (comma) or `.` (point) separated value like `3123,45` or `3123.45`, but not `3.123,45` or `3,123.45`
-- **decimal** A floating point number with exactly 6 digits, e.g. `1.500000`
+- **decimal** A decimal number with exactly 6 digits after the decimal seperator dot, e.g. `1.500000`
 - **date** Use a string in Isoformat "YYYY-MM-DD", for example "2023-04-26"  
 
 ## Import_Preview to store the data to import in database
