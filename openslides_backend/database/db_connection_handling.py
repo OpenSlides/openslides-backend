@@ -35,7 +35,7 @@ def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
     return os_conn_pool
 
 
-os_conn_pool = create_os_conn_pool(open=False)
+os_conn_pool = create_os_conn_pool(open=True)
 
 
 def get_current_os_conn_pool() -> psycopg_pool.ConnectionPool:
