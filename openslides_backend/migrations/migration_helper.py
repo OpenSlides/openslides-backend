@@ -6,7 +6,7 @@ from openslides_backend.database.db_connection_handling import os_conn_pool
 
 # relative path to the migrations
 MIGRATIONS_RELATIVE_DIRECTORY_PATH = ""
-LAST_NON_REL_MIGRATION = 53
+LAST_NON_REL_MIGRATION = 55
 
 
 class MigrationHelper:
