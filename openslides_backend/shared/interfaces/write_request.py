@@ -32,11 +32,9 @@ class WriteRequestWithMigrationIndex(WriteRequest):
 ListUpdatesDict = dict[Field, list[Union[str, int]]]
 
 
-ListFieldsData = TypedDict(
-    "ListFieldsData",
-    {"add": ListUpdatesDict, "remove": ListUpdatesDict},
-    total=False,
-)
+class ListFieldsData(TypedDict, total=False):
+    add: ListUpdatesDict
+    remove: ListUpdatesDict
 
 
 @dataclass
