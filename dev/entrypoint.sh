@@ -9,8 +9,10 @@ printf "\nOpenslides Database:\n"
 python cli/create_schema.py
 printf "\n"
 
-printf "\nMigrations:\n"
-python openslides_backend/migrations/migrate.py finalize
-printf "\n"
+# printf "\nMigrations:\n"
+# python openslides_backend/migrations/migrate.py finalize
+# printf "\n"
 
 exec "$@"
+
+# TODO: Fix this script
