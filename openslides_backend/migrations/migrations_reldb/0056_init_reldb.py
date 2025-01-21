@@ -320,4 +320,6 @@ def data_manipulation() -> None:
             # 7) END TRANSACTION
         # 8) Exit cursor
     # 9) Exit connection
+
+
 # END OF FUNCTION
