@@ -95,6 +95,7 @@ class ExtendedDatabase(Database):
         self,
         get_many_requests: list[GetManyRequest],
         position: int | None = None,
+        use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
         # TODO implement me!
         return {}

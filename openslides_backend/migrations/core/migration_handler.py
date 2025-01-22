@@ -6,13 +6,6 @@ from openslides_backend.datastore.shared.di import service_as_factory, service_i
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
 from openslides_backend.datastore.shared.util import InvalidDatastoreState
-from openslides_backend.migrations.core.base_migrations.base_event_migration import (
-    BaseEventMigration,
-)
-from openslides_backend.migrations.core.migraters import (
-    EventMigraterImplementationMemory,
-    ModelMigraterImplementationMemory,
-)
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     META_DELETED,
@@ -23,7 +16,6 @@ from openslides_backend.shared.typing import Model
 
 from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
-from .migraters.migrater import EventMigrater, ModelMigrater
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
 from .migration_logger import MigrationLogger
 
@@ -79,8 +71,6 @@ class MigrationHandler(Protocol):
 class MigrationHandlerImplementation(MigrationHandler):
     read_database: ReadDatabase
     connection: ConnectionHandler
-    event_migrater: EventMigrater
-    model_migrater: ModelMigrater
     logger: MigrationLogger
     target_migration_index: int
     last_event_migration_target_index: int
@@ -104,39 +94,16 @@ class MigrationHandlerImplementation(MigrationHandler):
                     + f"target_migration_index {migration.target_migration_index}, "
                     + f"expected migration index {i+2}"
                 )
-            if isinstance(migration, BaseEventMigration):
-                if (
-                    self.last_event_migration_target_index
-                    < migration.target_migration_index - 1
-                ):
-                    raise MigrationSetupException(
-                        f"All migrations with target_migration_index > {self.last_event_migration_target_index} "
-                        + f"must be model migrations. Invalid event migration: {migration.name}."
-                    )
-                self.last_event_migration_target_index = (
-                    migration.target_migration_index
-                )
             self.migrations_by_target_migration_index[
                 migration.target_migration_index
             ] = migration
         self.target_migration_index = len(_migrations) + 1
-
-        self.event_migrater.init(
-            self.last_event_migration_target_index,
-            self.migrations_by_target_migration_index,
-        )
-        self.model_migrater.init(
-            self.target_migration_index,
-            self.migrations_by_target_migration_index,
-        )
 
     def migrate(self) -> None:
         self.logger.info("Running migrations.")
         if self.run_checks():
             return
         state = self.get_migration_state()
-        if state == MigrationState.MIGRATION_REQUIRED:
-            self.event_migrater.migrate()
         if state != MigrationState.NO_MIGRATION_REQUIRED:
             self.logger.info("Done. Finalizing is still needed.")
 
@@ -262,8 +229,6 @@ class MigrationHandlerImplementation(MigrationHandler):
         state = self.get_migration_state()
         if state == MigrationState.NO_MIGRATION_REQUIRED:
             return
-        elif state == MigrationState.MIGRATION_REQUIRED:
-            self.event_migrater.migrate()
 
         with self.connection.get_connection_context():
             current_mi = self.read_database.get_current_migration_index()
@@ -293,7 +258,6 @@ class MigrationHandlerImplementation(MigrationHandler):
             self._clean_migration_data()
 
         if self.last_event_migration_target_index < self.target_migration_index:
-            self.model_migrater.migrate()
             self.delete_collectionfield_aux_tables()
             with self.connection.get_connection_context():
                 self._update_migration_index()
@@ -442,9 +406,6 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     All migrations are made in-memory only for the import of meetings.
     """
 
-    event_migrater: EventMigraterImplementationMemory
-    model_migrater: ModelMigraterImplementationMemory
-
     def set_import_data(
         self, models: dict[FullQualifiedId, Model], start_migration_index: int
     ) -> None:
@@ -452,9 +413,6 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
             model[META_DELETED] = False
         self.models = models
         self.start_migration_index = start_migration_index
-        indices = (self.last_event_migration_target_index, start_migration_index)
-        self.event_migrater.start_migration_index = min(indices)
-        self.model_migrater.start_migration_index = max(indices)
 
     def finalize(self) -> None:
         if (
@@ -467,11 +425,6 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
                 + f"current backend migration index: {self.target_migration_index}"
             )
         self.logger.info("Finalize in memory migrations.")
-        for migrater in (self.event_migrater, self.model_migrater):
-            if migrater.start_migration_index < migrater.target_migration_index:
-                migrater.models = self.models
-                migrater.migrate()
-                self.models = migrater.get_migrated_models()
         self.logger.info("Finalize in memory migrations ready.")
 
     def get_migrated_models(self) -> dict[FullQualifiedId, Model]:

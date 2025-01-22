@@ -7,12 +7,6 @@ from openslides_backend.datastore.shared.postgresql_backend import ConnectionHan
 from openslides_backend.datastore.shared.services import ReadDatabase
 from openslides_backend.datastore.writer.core import Database
 from openslides_backend.migrations import MigrationHandler, MigrationSetupException
-from openslides_backend.migrations.core.migraters import (
-    EventMigrater,
-    EventMigraterImplementation,
-    ModelMigrater,
-    ModelMigraterImplementation,
-)
 from openslides_backend.migrations.core.migration_handler import (
     MigrationHandlerImplementation,
 )
@@ -33,8 +27,6 @@ def migration_handler(reset_di):  # noqa
     injector.register_as_singleton(Database, MagicMock)
     injector.register_as_singleton(MigrationReader, MagicMock)
     injector.register_as_singleton(MigrationLogger, MigrationLoggerImplementation)
-    injector.register_as_singleton(EventMigrater, EventMigraterImplementation)
-    injector.register_as_singleton(ModelMigrater, ModelMigraterImplementation)
     injector.register_as_singleton(MigrationHandler, MigrationHandlerImplementation)
     yield injector.get(MigrationHandler)
 

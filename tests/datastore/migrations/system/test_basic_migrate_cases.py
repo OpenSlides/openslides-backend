@@ -1,8 +1,6 @@
 import pytest
 
-from openslides_backend.datastore.shared.di import injector
 from openslides_backend.migrations import MismatchingMigrationIndicesException
-from openslides_backend.migrations.core.migraters.migrater import EventMigrater
 
 from ..util import LogMock, get_noop_event_migration
 
@@ -78,19 +76,7 @@ def test_migration_index_not_initialized(
     write,
     migration_handler,
 ):
-    write({"type": "create", "fqid": "a/1", "fields": {}})
-    # DS MI is -1
-
-    migrater = injector.get(EventMigrater)
-    migrater.init(2, {2: get_noop_event_migration(2)()})
-
-    with pytest.raises(MismatchingMigrationIndicesException) as e:
-        migrater.migrate()
-
-    assert (
-        str(e.value)
-        == "Datastore has an invalid migration index: MI of positions table=-1; MI of migrations_position table=1"
-    )
+    pass
 
 
 def test_raising_migration_index(
