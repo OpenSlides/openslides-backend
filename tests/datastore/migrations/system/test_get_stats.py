@@ -1,6 +1,6 @@
-from openslides_backend.datastore.writer.core import RequestCreateEvent
 from openslides_backend.migrations.core.events import CreateEvent
 from openslides_backend.migrations.core.migration_handler import MigrationState
+from openslides_backend.shared.interfaces.write_request import RequestCreateEvent
 
 from ..util import LogMock, get_lambda_event_migration, get_lambda_model_migration
 

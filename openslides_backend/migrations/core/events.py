@@ -114,20 +114,12 @@ class DeleteEvent(BaseEvent):
         super().__init__(fqid, None)
 
 
-class RestoreEvent(BaseEvent):
-    type = EVENT_TYPE.RESTORE
-
-    def __init__(self, fqid: FullQualifiedId, data: Any = None) -> None:
-        super().__init__(fqid, None)
-
-
 EVENT_TYPE_TRANSLATION = {
     EVENT_TYPE.CREATE: CreateEvent,
     EVENT_TYPE.UPDATE: UpdateEvent,
     EVENT_TYPE.DELETE_FIELDS: DeleteFieldsEvent,
     EVENT_TYPE.LIST_FIELDS: ListUpdateEvent,
     EVENT_TYPE.DELETE: DeleteEvent,
-    EVENT_TYPE.RESTORE: RestoreEvent,
 }
 
 

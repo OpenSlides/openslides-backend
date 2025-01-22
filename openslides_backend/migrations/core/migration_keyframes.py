@@ -27,7 +27,6 @@ from .events import (
     DeleteEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
-    RestoreEvent,
     UpdateEvent,
 )
 
@@ -184,14 +183,6 @@ class MigrationKeyframeModifier(MigrationKeyframeAccessor):
 
                 db_model.data[META_DELETED] = True
                 db_model.deleted = True
-                self._update_model(event.fqid, db_model)
-
-            elif isinstance(event, RestoreEvent):
-                if not db_model.deleted:
-                    raise BadEventException(f"Model {event.fqid} is not deleted")
-
-                db_model.data[META_DELETED] = False
-                db_model.deleted = False
                 self._update_model(event.fqid, db_model)
 
             else:

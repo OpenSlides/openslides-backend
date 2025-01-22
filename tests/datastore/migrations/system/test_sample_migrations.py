@@ -5,7 +5,6 @@ from openslides_backend.migrations import (
     DeleteFieldsEvent,
     ListUpdateEvent,
     RenameFieldMigration,
-    RestoreEvent,
     UpdateEvent,
 )
 from openslides_backend.shared.patterns import (
@@ -214,9 +213,7 @@ def test_access_field_after_rename(
         ) -> list[BaseEvent] | None:
             events = super().migrate_event(event)
 
-            if not isinstance(event, CreateEvent) and not isinstance(
-                event, RestoreEvent
-            ):
+            if not isinstance(event, CreateEvent):
                 old = self.old_accessor.get_model("a/1")
                 new = self.new_accessor.get_model("a/1")
                 assert "f" in old

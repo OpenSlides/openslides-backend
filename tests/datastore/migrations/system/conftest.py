@@ -7,7 +7,6 @@ from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ShutdownService
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.datastore.writer.flask_frontend import (
     FlaskFrontend as WriterFlaskFrontend,
 )
@@ -86,7 +85,6 @@ def read_model(reader):
     def _read_model(fqid, position=None):
         payload = {
             "fqid": fqid,
-            "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS,
         }
         if position is not None:
             payload["position"] = position
@@ -118,7 +116,6 @@ def exists_model(reader):
     def _exists_model(fqid, position=None):
         payload = {
             "fqid": fqid,
-            "get_deleted_models": DeletedModelsBehaviour.ALL_MODELS,
         }
         if position is not None:
             payload["position"] = position

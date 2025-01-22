@@ -16,10 +16,7 @@ from openslides_backend.datastore.shared.services import ReadDatabase
 from openslides_backend.datastore.shared.services.shutdown_service import (
     ShutdownService,
 )
-from openslides_backend.datastore.shared.util import (
-    DeletedModelsBehaviour,
-    ModelDoesNotExist,
-)
+from openslides_backend.datastore.shared.util import ModelDoesNotExist
 from openslides_backend.datastore.writer.flask_frontend.json_handlers import (
     WriteHandler,
 )
@@ -137,7 +134,6 @@ def read_model():
             request = GetRequest(
                 fqid=fqid,
                 position=position,
-                get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             )
             return reader.get(request)
 

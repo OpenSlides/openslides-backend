@@ -6,7 +6,6 @@ from openslides_backend.migrations import (
     DeleteEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
-    RestoreEvent,
     UpdateEvent,
 )
 from openslides_backend.migrations.core.events import to_event
@@ -345,44 +344,4 @@ class TestDelete:
             )
         )
         with pytest.raises(BadEventException, match="Model a/1 is deleted"):
-            migration_handler.migrate()
-
-
-class TestRestore:
-    def test_fqid(self, migration_handler, write, set_migration_index_to_1):
-        write({"type": "create", "fqid": "a/1", "fields": {"f": [1]}})
-        write({"type": "delete", "fqid": "a/1"})
-        write({"type": "restore", "fqid": "a/1"})
-        set_migration_index_to_1()
-        migration_handler.register_migrations(
-            get_lambda_event_migration(
-                lambda e: [RestoreEvent("xyz")] if e.type == "restore" else [e]
-            )
-        )
-        with pytest.raises(BadEventException, match="xyz"):
-            migration_handler.migrate()
-
-    def test_restore_without_create(
-        self, migration_handler, write, set_migration_index_to_1
-    ):
-        write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
-        set_migration_index_to_1()
-        migration_handler.register_migrations(
-            get_lambda_event_migration(lambda _: [RestoreEvent("a/1")])
-        )
-        with pytest.raises(BadEventException, match="Model a/1 does not exist"):
-            migration_handler.migrate()
-
-    def test_restore_without_delete(
-        self, migration_handler, write, set_migration_index_to_1
-    ):
-        write({"type": "create", "fqid": "a/1", "fields": {"f": 1}})
-        write({"type": "create", "fqid": "a/2", "fields": {"f": 1}})
-        set_migration_index_to_1()
-        migration_handler.register_migrations(
-            get_lambda_event_migration(
-                lambda e: [RestoreEvent("a/1")] if e.fqid == "a/2" else [e]
-            )
-        )
-        with pytest.raises(BadEventException, match="Model a/1 is not deleted"):
             migration_handler.migrate()

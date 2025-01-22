@@ -1,10 +1,10 @@
-from openslides_backend.datastore.writer.core import RequestCreateEvent
 from openslides_backend.datastore.writer.core.write_request import RequestUpdateEvent
 from openslides_backend.migrations.core.base_migrations.base_model_migration import (
     BaseModelMigration,
 )
 from openslides_backend.migrations.core.events import CreateEvent
 from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.interfaces.write_request import RequestCreateEvent
 from openslides_backend.shared.patterns import META_DELETED, META_POSITION
 from tests.datastore.migrations.util import (
     LogMock,

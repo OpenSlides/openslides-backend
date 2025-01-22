@@ -11,7 +11,6 @@ from .core.events import (
     DeleteEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
-    RestoreEvent,
     UpdateEvent,
 )
 from .core.exceptions import (

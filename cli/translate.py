@@ -16,8 +16,8 @@ from typing import Any
 # )
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.models.models import Organization
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.interfaces.write_request import RequestUpdateEvent
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 collection_to_fields_map = {
     "organization": [
@@ -54,9 +54,9 @@ def read_collection(collection: str, fields: list[str]) -> Any:
     # reader: Reader = injector.get(Reader)
     # with reader.get_database_context():
     #     response = reader.get_all(GetAllRequest(collection, ["id", *fields]))
-    
-    response = {} # TODO: Delete this later
-    
+
+    response = {}  # TODO: Delete this later
+
     return response.items()
 
 
@@ -73,9 +73,9 @@ def check_organization_language() -> None:
     # reader: Reader = injector.get(Reader)
     # with reader.get_database_context():
     #     response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
-    
+
     response = {"default_language": "en"}  # TODO: Delete this later
-    
+
     if response["default_language"] != "en":
         print("Cannot translate from source languages other than `en`.")
         print_help()

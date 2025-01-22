@@ -6,7 +6,7 @@
 def main() -> None:
     # TODO: Does this code need a replacement?
     # Otherwise this file can be deleted and all calls of it removed.
-    
+
     # create_schema()
     pass
 

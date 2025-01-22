@@ -1,6 +1,5 @@
 import pytest
 
-from openslides_backend.datastore.writer.core.write_request import RequestUpdateEvent
 from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
@@ -15,6 +14,7 @@ from openslides_backend.migrations.core.migration_handler import (
     MigrationHandlerImplementationMemory,
 )
 from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.interfaces.write_request import RequestUpdateEvent
 from openslides_backend.shared.patterns import META_DELETED
 from tests.datastore.migrations.util import (
     get_lambda_event_migration,

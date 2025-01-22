@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Union, TypedDict
+from typing import TypedDict, Union
 
-from openslides_backend.shared.typing import JSON, HistoryInformation
 from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.typing import JSON, HistoryInformation
 
 from .collection_field_lock import CollectionFieldLock
 from .event import Event
@@ -38,7 +38,7 @@ class ListFieldsData(TypedDict, total=False):
 
 
 @dataclass
-class BaseRequestEvent():
+class BaseRequestEvent:
     fqid: str
 
 
@@ -54,8 +54,4 @@ class RequestUpdateEvent(BaseRequestEvent):
 
 
 class RequestDeleteEvent(BaseRequestEvent):
-    pass
-
-
-class RequestRestoreEvent(BaseRequestEvent):
     pass

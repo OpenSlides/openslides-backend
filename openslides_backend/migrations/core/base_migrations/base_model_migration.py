@@ -1,4 +1,4 @@
-from openslides_backend.datastore.writer.core import BaseRequestEvent
+from openslides_backend.shared.interfaces.write_request import BaseRequestEvent
 
 from ..migration_reader import MigrationReader
 from .base_migration import BaseMigration

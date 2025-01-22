@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock
 
-from openslides_backend.datastore.writer.core import BaseRequestEvent
 from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     BaseModelMigration,
 )
+from openslides_backend.shared.interfaces.write_request import BaseRequestEvent
 
 
 class DummyEventMigration(BaseEventMigration):
