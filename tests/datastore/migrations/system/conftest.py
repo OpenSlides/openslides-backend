@@ -15,14 +15,7 @@ from openslides_backend.migrations import MigrationHandler
 from openslides_backend.migrations import setup as migration_setup
 from openslides_backend.migrations.core.migration_reader import MigrationReader
 from tests.datastore import (  # noqa
-    db_connection,
-    db_cur,
-    json_client,
     make_json_client,
-    reset_db_data,
-    reset_db_schema,
-    reset_di,
-    setup_db_connection,
 )
 from tests.datastore.migrations.util import LogMock
 from tests.datastore.util import assert_response_code, assert_success_response

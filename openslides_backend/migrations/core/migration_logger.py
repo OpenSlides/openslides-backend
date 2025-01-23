@@ -1,15 +1,9 @@
 from collections.abc import Callable
 from typing import Protocol
 
-from openslides_backend.datastore.shared.di import (
-    service_as_singleton,
-    service_interface,
-)
-
 PrintFunction = Callable[..., None]
 
 
-@service_interface
 class MigrationLogger(Protocol):
     def set_verbose(self, verbose: bool) -> None:
         """
@@ -32,7 +26,6 @@ class MigrationLogger(Protocol):
         """
 
 
-@service_as_singleton
 class MigrationLoggerImplementation:
     def __init__(self) -> None:
         self.verbose: bool = False

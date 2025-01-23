@@ -6,12 +6,10 @@ from openslides_backend.migrations import (
     BaseMigration,
     MigrationException,
     MigrationHandler,
-    MigrationHandlerImplementationMemory,
+    MigrationHandlerImplementation,
     PrintFunction,
-    setup,
 )
-from openslides_backend.shared.patterns import FullQualifiedId
-from openslides_backend.shared.typing import Model
+from openslides_backend.wsgi import OpenSlidesBackendServices
 
 
 class BadMigrationModule(MigrationException):
@@ -30,10 +28,12 @@ class MigrationWrapper:
         self,
         verbose: bool = False,
         print_fn: PrintFunction = print,
-        memory_only: bool = False,
     ) -> None:
+        services = OpenSlidesBackendServices()
         migrations = MigrationWrapper.load_migrations()
-        self.handler = setup(verbose, print_fn, memory_only)
+        self.handler = MigrationHandlerImplementation(services, verbose, print_fn)
+        # TODO: There used to be code here that setup some dependency injections
+        # The former initialization of the migration handler did as well.
         self.handler.register_migrations(*migrations)
 
     @staticmethod
@@ -83,20 +83,3 @@ class MigrationWrapper:
             self.handler.print_stats()
         else:
             raise InvalidMigrationCommand(command)
-
-
-class MigrationWrapperMemory(MigrationWrapper):
-    handler: MigrationHandlerImplementationMemory
-
-    def __init__(self) -> None:
-        super().__init__(verbose=True, memory_only=True)
-
-    def set_import_data(
-        self,
-        models: dict[FullQualifiedId, Model],
-        start_migration_index: int,
-    ) -> None:
-        self.handler.set_import_data(models, start_migration_index)
-
-    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
-        return self.handler.get_migrated_models()

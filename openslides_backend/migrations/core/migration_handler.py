@@ -2,22 +2,18 @@ from enum import Enum
 from textwrap import dedent
 from typing import Any, Protocol
 
-from openslides_backend.datastore.shared.di import service_as_factory, service_interface
-from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
-from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.util import InvalidDatastoreState
-from openslides_backend.shared.patterns import (
-    KEYSEPARATOR,
-    META_DELETED,
-    FullQualifiedId,
-    strip_reserved_fields,
-)
-from openslides_backend.shared.typing import Model
+from dependency_injector import providers
 
+from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
+from openslides_backend.datastore.shared.util import InvalidDatastoreState
+from openslides_backend.services.database.interface import Database
+from openslides_backend.shared.patterns import KEYSEPARATOR
+
+from ...shared.interfaces.services import Services
 from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
 from .migration_keyframes import DatabaseMigrationKeyframeModifier
-from .migration_logger import MigrationLogger
+from .migration_logger import MigrationLogger, PrintFunction
 
 
 class MigrationState(str, Enum):
@@ -26,7 +22,6 @@ class MigrationState(str, Enum):
     MIGRATION_REQUIRED = "migration_required"
 
 
-@service_interface
 class MigrationHandler(Protocol):
     def register_migrations(self, *migrations: type[BaseMigration]) -> None:
         """
@@ -67,15 +62,20 @@ class MigrationHandler(Protocol):
         """
 
 
-@service_as_factory
 class MigrationHandlerImplementation(MigrationHandler):
-    read_database: ReadDatabase
+    read_database: Database
     connection: ConnectionHandler
     logger: MigrationLogger
     target_migration_index: int
     last_event_migration_target_index: int
 
-    def __init__(self) -> None:
+    def __init__(
+        self, services: Services, logger_verbose: bool, logger_print_fn: PrintFunction
+    ) -> None:
+        self.read_database = services.datastore()
+        self.logger = providers.Singleton(MigrationLogger)
+        self.logger.set_verbose(logger_verbose)
+        self.logger.set_print_fn(logger_print_fn)
         self.migrations_by_target_migration_index: dict[int, BaseMigration] = {}
         self.target_migration_index = 1
         self.last_event_migration_target_index = 1
@@ -399,35 +399,3 @@ class MigrationHandlerImplementation(MigrationHandler):
             """
             )
         )
-
-
-class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
-    """
-    All migrations are made in-memory only for the import of meetings.
-    """
-
-    def set_import_data(
-        self, models: dict[FullQualifiedId, Model], start_migration_index: int
-    ) -> None:
-        for model in models.values():
-            model[META_DELETED] = False
-        self.models = models
-        self.start_migration_index = start_migration_index
-
-    def finalize(self) -> None:
-        if (
-            self.start_migration_index < 1
-            or self.start_migration_index > self.target_migration_index
-        ):
-            raise MismatchingMigrationIndicesException(
-                "The migration index of import data is invalid: "
-                + f"Given migration index of import data: {self.start_migration_index}, "
-                + f"current backend migration index: {self.target_migration_index}"
-            )
-        self.logger.info("Finalize in memory migrations.")
-        self.logger.info("Finalize in memory migrations ready.")
-
-    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
-        for model in self.models.values():
-            strip_reserved_fields(model)
-        return self.models

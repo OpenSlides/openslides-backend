@@ -6,7 +6,6 @@ from openslides_backend.datastore.shared.util import BadCodingError
 from openslides_backend.migrations import BaseEvent
 from openslides_backend.migrations.core.migration_keyframes import (
     DatabaseMigrationKeyframeModifier,
-    InitialMigrationKeyframeModifier,
     MigrationKeyframeModifier,
 )
 
@@ -21,11 +20,6 @@ def test_bad_event():
     modifier._fetch_model = MagicMock()  # type: ignore
     with pytest.raises(BadCodingError):
         modifier.apply_event(MyEvent("a/1", {}))
-
-
-def test_initial_keyframe_modifier_position():
-    with pytest.raises(BadCodingError):
-        InitialMigrationKeyframeModifier(MagicMock(), 1, MagicMock(), MagicMock())
 
 
 def test_database_keyframe_modifier_position():

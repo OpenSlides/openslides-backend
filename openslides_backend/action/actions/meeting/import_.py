@@ -1,12 +1,11 @@
 import re
 import time
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
-from openslides_backend.migrations.migration_wrapper import MigrationWrapperMemory
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -148,7 +147,7 @@ class MeetingImport(
         self.check_locked(instance)
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
-        instance = self.migrate_data(instance)
+        self.check_data_migration_index(instance)
         self.unset_committee_and_orga_relation(instance)
         return instance
 
@@ -688,13 +687,9 @@ class MeetingImport(
             result["number_of_merged_users"] = self.number_of_merged_users
         return result
 
-    def migrate_data(self, instance: dict[str, Any]) -> dict[str, Any]:
+    def check_data_migration_index(self, instance: dict[str, Any]) -> None:
         """
-        1. Check for valid migration index
-        2. Build models map from data and prepend organization and committee
-        3. Do the migrations
-        4. Get the migrated models from migration wrapper
-        5. Change the mapping back to collection->id->model
+        Check for valid migration index.
         """
         start_migration_index = instance["meeting"].pop("_migration_index")
         backend_migration_index = get_backend_migration_index()
@@ -703,57 +698,6 @@ class MeetingImport(
                 f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"
             )
         if backend_migration_index > start_migration_index:
-            migration_wrapper = MigrationWrapperMemory()
-
-            # fetch necessary data
-            organization = self.datastore.get(
-                ONE_ORGANIZATION_FQID,
-                [
-                    "id",
-                    "committee_ids",
-                    "active_meeting_ids",
-                    "archived_meeting_ids",
-                    "template_meeting_ids",
-                    "organization_tag_ids",
-                ],
-                lock_result=False,
+            raise ActionException(
+                f"Your data migration index '{start_migration_index}' is lower than the migration index of this backend '{backend_migration_index}'! Please, use a more recent file!"
             )
-            committee_fqid = fqid_from_collection_and_id(
-                "committee", instance["committee_id"]
-            )
-            committee = self.datastore.get(
-                committee_fqid,
-                ["id", "meeting_ids"],
-                lock_result=False,
-            )
-
-            # Build import models. Use OrderedDict to ensure that organization and committee are
-            # available for the migration
-            models = OrderedDict(
-                [
-                    (ONE_ORGANIZATION_FQID, organization),
-                    (committee_fqid, committee),
-                ]
-            )
-            models.update(
-                (fqid_from_collection_and_id(collection, id), model)
-                for collection, models in instance["meeting"].items()
-                for id, model in models.items()
-            )
-            migration_wrapper.set_import_data(
-                models,
-                start_migration_index,
-            )
-
-            # finalize and read back migrated models
-            migration_wrapper.execute_command("finalize")
-            migrated_models = migration_wrapper.get_migrated_models()
-
-            instance["meeting"] = defaultdict(dict)
-            for fqid, model in migrated_models.items():
-                collection, id = collection_and_id_from_fqid(fqid)
-                if collection not in ("organization", "committee", "theme"):
-                    instance["meeting"][collection][str(id)] = model
-
-        instance["meeting"]["_migration_index"] = backend_migration_index
-        return instance

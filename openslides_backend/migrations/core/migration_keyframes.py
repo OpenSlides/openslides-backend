@@ -1,6 +1,5 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
 
 from openslides_backend.datastore.shared.postgresql_backend import (
     ConnectionHandler,
@@ -206,85 +205,6 @@ class MigrationKeyframeModifier(MigrationKeyframeAccessor):
         """Takes this keyframe and move all data to the next position. Do not use
         this keyframe afterwards!"""
         raise NotImplementedError()
-
-
-class InitialMigrationKeyframeModifier(MigrationKeyframeModifier):
-    """
-    This class represents an empty keyframe. This is used for "position 0" which
-    is the empty datastore. Moving to the next position (`move_to_next_position`)
-    stores the current content into the database.
-    """
-
-    def __init__(
-        self,
-        connection: ConnectionHandler,
-        position: Position,
-        migration_index: int,
-        next_position: Position,
-    ):
-        if position != 0:
-            raise BadCodingError()
-
-        super().__init__(connection, position, migration_index, next_position)
-        self.models: dict[FullQualifiedId, Model] = {}
-        self.deleted: dict[FullQualifiedId, bool] = {}
-        self.collection_ids: dict[Collection, set[Id]] = defaultdict(set)
-
-    def get_all_ids_for_collection(self, collection: Collection) -> set[Id]:
-        return self.collection_ids[collection]
-
-    def _fetch_model(self, fqid: FullQualifiedId) -> RawKeyframeModel | None:
-        if fqid not in self.models:
-            return None
-        return RawKeyframeModel(deleted=self.deleted[fqid], data=self.models[fqid])
-
-    def _create_model(self, fqid: FullQualifiedId, model: Model) -> None:
-        self.models[fqid] = model
-        self.deleted[fqid] = False
-        collection, id = collection_and_id_from_fqid(fqid)
-        self.collection_ids[collection].add(id)
-
-    def _update_model(self, fqid: FullQualifiedId, model: RawKeyframeModel) -> None:
-        self.models[fqid] = model.data
-        self.deleted[fqid] = model.deleted
-        collection, id = collection_and_id_from_fqid(fqid)
-        if model.deleted:
-            self.collection_ids[collection].remove(id)
-        else:
-            self.collection_ids[collection].add(id)
-
-    def move_to_next_position(self) -> None:
-        new_position = self.get_next_position()
-        # 1. Check, if there already exists a keyframe. If so, do nothing.
-        if self.keyframe_exists(new_position, self.migration_index):
-            return
-
-        # 2. Create a new keyframe
-        new_keyframe_id = self.connection.query_single_value(
-            "insert into migration_keyframes (position, migration_index) values (%s, %s) returning id",
-            [new_position, self.migration_index],
-        )
-
-        # 3. Copy all data into the migration_keyframe_models table
-        # Note: We do not paginate the insertion, since we can expect, that the
-        # first position of the database does not contain too many entries.
-        if self.models:
-            query = "insert into migration_keyframe_models (keyframe_id, fqid, data, deleted) values"
-            values = ""
-            arguments: list[Any] = []
-            for fqid, model in self.models.items():
-                values += " (%s, %s, %s, %s),"
-                arguments.extend(
-                    (
-                        new_keyframe_id,
-                        fqid,
-                        self.connection.to_json(model),
-                        self.deleted[fqid],
-                    )
-                )
-            query += "".join(values)
-            query = query[:-1]  # remove last colon
-            self.connection.execute(query, arguments)
 
 
 class DatabaseMigrationKeyframeModifier(MigrationKeyframeModifier):
