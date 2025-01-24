@@ -2,11 +2,13 @@ import copy
 import threading
 from collections import defaultdict
 
+from openslides_backend.shared.interfaces.write_request import (
+    BaseRequestEvent,
+    WriteRequest,
+)
 from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import Field, FullQualifiedId
 from openslides_backend.shared.typing import JSON
-
-from openslides_backend.shared.interfaces.write_request import BaseRequestEvent, WriteRequest
 
 
 class DatabaseWriter:
