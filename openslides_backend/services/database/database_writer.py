@@ -6,15 +6,15 @@ from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import Field, FullQualifiedId
 from openslides_backend.shared.typing import JSON
 
-from .write_request import BaseRequestEvent, WriteRequest
+from openslides_backend.shared.interfaces.write_request import BaseRequestEvent, WriteRequest
 
 
 class DatabaseWriter:
     _lock = threading.Lock()
 
-    #    database: Database
+    database: Database
 
-    #    @retry_on_db_failure
+    @retry_on_db_failure
     def write(
         self,
         write_requests: list[WriteRequest],

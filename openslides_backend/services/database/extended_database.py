@@ -1,3 +1,10 @@
+from collections.abc import Sequence
+from typing import ContextManager
+
+from openslides_backend.shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+)
+
 from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
@@ -6,7 +13,7 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId, id_from_fqid
 from ...shared.typing import ModelMap
 from ..database.commands import GetManyRequest
-from ..database.interface import Database, PartialModel
+from ..database.interface import Database, LockResult, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
 MODEL_FIELD_NUMERIC_SQL = r"\(data->%s\)::numeric"
@@ -50,10 +57,13 @@ class ExtendedDatabase(Database):
     """
 
     changed_models: ModelMap
+    locked_fields: dict[str, CollectionFieldLock]
 
     def __init__(self, logging: LoggingModule, env: Env) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
+
+    def get_database_context(self) -> ContextManager[None]: ...
 
     def apply_changed_model(
         self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
@@ -73,7 +83,9 @@ class ExtendedDatabase(Database):
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
+        lock_result: LockResult = True,
+        use_changed_models: bool = True,
+        raise_exception: bool = True,
     ) -> PartialModel:
         """
         Get the given model.
@@ -94,17 +106,26 @@ class ExtendedDatabase(Database):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
+        lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]:
         # TODO implement me!
         return {}
+
+    def get_all(
+        self,
+        collection: Collection,
+        mapped_fields: list[str],
+        lock_result: bool = True,
+    ) -> dict[int, PartialModel]: ...
 
     def filter(
         self,
         collection: Collection,
         filter: Filter,
         mapped_fields: list[str],
+        lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> dict[int, PartialModel]:
         # TODO Implement me!
         return {}
@@ -113,6 +134,8 @@ class ExtendedDatabase(Database):
         self,
         collection: Collection,
         filter: Filter,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
     ) -> bool:
         # TODO Implement me!
         return False
@@ -121,6 +144,7 @@ class ExtendedDatabase(Database):
         self,
         collection: Collection,
         filter: Filter,
+        lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int:
         # TODO Implement me!
@@ -131,6 +155,7 @@ class ExtendedDatabase(Database):
         collection: Collection,
         filter: Filter,
         field: str,
+        lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
         # TODO Implement me!
@@ -141,6 +166,7 @@ class ExtendedDatabase(Database):
         collection: Collection,
         filter: Filter,
         field: str,
+        lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
         # TODO Implement me!
@@ -158,41 +184,52 @@ class ExtendedDatabase(Database):
         # TODO Implement me! If necessary?
         return None
 
-    #    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
-    #        self.logger.debug(
-    #            f"Start RESERVE_IDS request to datastore with the following data: "
-    #            f"Collection: {collection}, Amount: {amount}"
-    #        )
-    #        response = self.retrieve(command)
-    #        return response.get("ids")
+    def history_information(self, fqids: list[str]) -> dict[str, list[dict]]: ...
 
-    #    def reserve_id(self, collection: Collection) -> int:
-    #        return self.reserve_ids(collection=collection, amount=1)[0]
-    #
+    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+        return []
+        # self.logger.debug(
+        #     f"Start RESERVE_IDS request to datastore with the following data: "
+        #     f"Collection: {collection}, Amount: {amount}"
+        # )
+        # response = self.retrieve(command)
+        # return response.get("ids")
+
+    def reserve_id(self, collection: Collection) -> int:
+        return 0
+
+    #   return self.reserve_ids(collection=collection, amount=1)[0]
+
     def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None:
-        if isinstance(write_requests, WriteRequest):
-            write_requests = [write_requests]
-        command = commands.Write(write_requests=write_requests)
-        self.logger.debug(
-            f"Start WRITE request to datastore with the following data: "
-            f"Write request: {write_requests}"
-        )
-        self.retrieve(command)
+        pass
+        # if isinstance(write_requests, WriteRequest):
+        #     write_requests = [write_requests]
+        # command = commands.Write(write_requests=write_requests)
+        # self.logger.debug(
+        #     f"Start WRITE request to datastore with the following data: "
+        #     f"Write request: {write_requests}"
+        # )
+        # self.retrieve(command)
 
     def write_without_events(self, write_request: WriteRequest) -> None:
-        command = commands.WriteWithoutEvents(write_requests=[write_request])
-        self.logger.debug(
-            f"Start WRITE_WITHOUT_EVENTS request to datastore with the following data: "
-            f"Write request: {write_request}"
-        )
-        self.retrieve(command)
+        pass
+        # command = commands.WriteWithoutEvents(write_requests=[write_request])
+        # self.logger.debug(
+        #     f"Start WRITE_WITHOUT_EVENTS request to datastore with the following data: "
+        #     f"Write request: {write_request}"
+        # )
+        # self.retrieve(command)
+
+    def truncate_db(self) -> None: ...
 
     def get_everything(self) -> dict[Collection, dict[int, PartialModel]]:
-        command = commands.GetEverything()
-        self.logger.debug("Get Everything from datastore.")
-        return self.retrieve(command)
+        return {}
+        # command = commands.GetEverything()
+        # self.logger.debug("Get Everything from datastore.")
+        # return self.retrieve(command)
 
     def delete_history_information(self) -> None:
-        command = commands.DeleteHistoryInformation()
-        self.logger.debug("Delete history information send to datastore.")
-        self.retrieve(command)
+        pass
+        # command = commands.DeleteHistoryInformation()
+        # self.logger.debug("Delete history information send to datastore.")
+        # self.retrieve(command)

@@ -1,15 +1,12 @@
 import pkgutil
+from collections.abc import Callable
 from importlib import import_module
 from typing import Any
 
-from openslides_backend.migrations import (
-    BaseMigration,
-    MigrationException,
-    MigrationHandler,
-    MigrationHandlerImplementation,
-    PrintFunction,
-)
+from openslides_backend.migrations import BaseMigration, MigrationException
 from openslides_backend.wsgi import OpenSlidesBackendServices
+
+PrintFunction = Callable[..., None]
 
 
 class BadMigrationModule(MigrationException):
@@ -22,7 +19,6 @@ class InvalidMigrationCommand(MigrationException):
 
 
 class MigrationWrapper:
-    handler: MigrationHandler
 
     def __init__(
         self,
@@ -31,10 +27,8 @@ class MigrationWrapper:
     ) -> None:
         services = OpenSlidesBackendServices()
         migrations = MigrationWrapper.load_migrations()
-        self.handler = MigrationHandlerImplementation(services, verbose, print_fn)
         # TODO: There used to be code here that setup some dependency injections
         # The former initialization of the migration handler did as well.
-        self.handler.register_migrations(*migrations)
 
     @staticmethod
     def load_migrations(
@@ -71,15 +65,17 @@ class MigrationWrapper:
         return migration_classes
 
     def execute_command(self, command: str) -> Any:
-        if command == "migrate":
-            self.handler.migrate()
-        elif command == "finalize":
-            self.handler.finalize()
-        elif command == "reset":
-            self.handler.reset()
-        elif command == "clear-collectionfield-tables":
-            self.handler.delete_collectionfield_aux_tables()
-        elif command == "stats":
-            self.handler.print_stats()
-        else:
-            raise InvalidMigrationCommand(command)
+        pass
+
+    #     if command == "migrate":
+    #         self.handler.migrate()
+    #     elif command == "finalize":
+    #         self.handler.finalize()
+    #     elif command == "reset":
+    #         self.handler.reset()
+    #     elif command == "clear-collectionfield-tables":
+    #         self.handler.delete_collectionfield_aux_tables()
+    #     elif command == "stats":
+    #         self.handler.print_stats()
+    #     else:
+    #         raise InvalidMigrationCommand(command)

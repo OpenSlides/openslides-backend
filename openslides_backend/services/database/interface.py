@@ -42,7 +42,6 @@ class Database(Protocol):
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
         raise_exception: bool = True,
@@ -52,7 +51,6 @@ class Database(Protocol):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...
