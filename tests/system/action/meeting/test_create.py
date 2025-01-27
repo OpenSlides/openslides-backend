@@ -467,6 +467,24 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
+    def test_create_without_admin_ids_and_permissions_oml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "committee_management_ids": [],
+                }
+            }
+        )
+        meeting = self.basic_test({})
+        admin_group_id = meeting.get("admin_group_id")
+        assert meeting.get("user_ids") == [1]
+        self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 1, "group_ids": [admin_group_id]},
+        )
+
     def test_create_limit_of_meetings_reached(self) -> None:
         self.set_models(
             {

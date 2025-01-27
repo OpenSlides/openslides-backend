@@ -3624,3 +3624,21 @@ class UserUpdateActionTest(BaseActionTestCase):
             "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
+
+    def test_add_participant_as_orga_admin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_user_groups(self.user_id, [])
+        response = self.request(
+            "user.update",
+            {"id": 111, "meeting_id": 1, "group_ids": [3]},
+        )
+
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/111")
+        assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
+        )

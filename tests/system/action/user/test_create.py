@@ -1210,6 +1210,24 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_participant_as_orga_admin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_user_groups(self.user_id, [])
+        response = self.request(
+            "user.create",
+            {"username": "username3", "meeting_id": 1, "group_ids": [3]},
+        )
+
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/3", {"username": "username3"})
+        assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
+        )
+
     def test_create_forbidden_username(self) -> None:
         response = self.request(
             "user.create",
