@@ -78,6 +78,7 @@
     motions_enable_reason_on_projector: boolean;
     motions_enable_sidebox_on_projector: boolean;
     motions_enable_recommendation_on_projector: boolean;
+    motions_create_enable_additional_submitter_text:boolean;
     motions_show_referring_motions: boolean;
     motions_show_sequential_number: boolean;
     motions_recommendations_by: string;

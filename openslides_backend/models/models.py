@@ -486,6 +486,7 @@ class Meeting(Model, MeetingModelMixin):
     motions_hide_metadata_background = fields.BooleanField(default=False)
     motions_show_referring_motions = fields.BooleanField(default=True)
     motions_show_sequential_number = fields.BooleanField(default=True)
+    motions_create_enable_additional_submitter_text = fields.BooleanField()
     motions_recommendations_by = fields.CharField()
     motions_block_slide_columns = fields.IntegerField(constraints={"minimum": 1})
     motions_recommendation_text_mode = fields.CharField(
@@ -983,6 +984,7 @@ class Group(Model):
                 "motion.can_see_origin",
                 "motion.can_support",
                 "poll.can_manage",
+                "poll.can_see_progress",
                 "projector.can_manage",
                 "projector.can_see",
                 "tag.can_manage",
