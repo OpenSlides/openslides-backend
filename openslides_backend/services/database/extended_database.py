@@ -101,7 +101,7 @@ class ExtendedDatabase(Database):
         except DatabaseException:
             raise
 
-        return result
+        # return result
 
     def get_many(
         self,

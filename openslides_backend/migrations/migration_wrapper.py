@@ -4,7 +4,6 @@ from importlib import import_module
 from typing import Any
 
 from openslides_backend.migrations import BaseMigration, MigrationException
-from openslides_backend.wsgi import OpenSlidesBackendServices
 
 PrintFunction = Callable[..., None]
 
@@ -25,8 +24,7 @@ class MigrationWrapper:
         verbose: bool = False,
         print_fn: PrintFunction = print,
     ) -> None:
-        services = OpenSlidesBackendServices()
-        migrations = MigrationWrapper.load_migrations()
+        MigrationWrapper.load_migrations()
         # TODO: There used to be code here that setup some dependency injections
         # The former initialization of the migration handler did as well.
 

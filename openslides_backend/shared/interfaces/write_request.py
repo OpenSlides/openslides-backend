@@ -50,7 +50,11 @@ class RequestCreateEvent(BaseRequestEvent):
 @dataclass
 class RequestUpdateEvent(BaseRequestEvent):
     fields: dict[str, JSON]
-    list_fields: ListFieldsData = {}
+    list_fields: ListFieldsData
+
+    def __post_init__(self):
+        if self.list_fields is None:
+            self.list_fields = {}
 
 
 class RequestDeleteEvent(BaseRequestEvent):
