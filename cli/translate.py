@@ -55,7 +55,7 @@ def read_collection(collection: str, fields: list[str]) -> Any:
     # with reader.get_database_context():
     #     response = reader.get_all(GetAllRequest(collection, ["id", *fields]))
 
-    response = {}  # TODO: Delete this later
+    response: dict[str, Any] = {}  # TODO: Delete this later
 
     return response.items()
 

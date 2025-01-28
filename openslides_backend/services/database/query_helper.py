@@ -15,7 +15,7 @@
 #    Not,
 #    Or,
 # )
-from mapped_fields import MappedFields
+from .mapped_fields import MappedFields
 
 # extend if neccessary. first is always the default (should be int)
 # min/max functions support the following:
@@ -95,7 +95,7 @@ class SqlQueryHelper:
         self,
         filter: str,
         arguments: list[str],
-        table_alias="",
+        table_alias: str = "",
     ) -> str:
         return ""
 

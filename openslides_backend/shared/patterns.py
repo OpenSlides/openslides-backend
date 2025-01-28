@@ -216,11 +216,11 @@ def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
 
 
 class InvalidFormat(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         self.msg = msg
 
 
-def assert_string(key):
+def assert_string(key: Any) -> None:
     if not isinstance(key, str):
         raise InvalidFormat(
             f"The key `{key}` has type {type(key)}, but string is expected"
@@ -228,7 +228,7 @@ def assert_string(key):
 
 
 class InvalidKeyFormat(InvalidFormat):
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         super().__init__(f"The key '{key}' is no fqid, fqfield or collectionkey")
 
 
@@ -238,7 +238,7 @@ class KEY_TYPE:
     COLLECTIONFIELD = 3
 
 
-def get_key_type(key):
+def get_key_type(key: Any) -> Any:
     assert_string(key)
 
     if FQID_PATTERN.match(key):
@@ -251,37 +251,37 @@ def get_key_type(key):
     raise InvalidKeyFormat(key)
 
 
-def assert_is_fqid(key):
+def assert_is_fqid(key: Any) -> None:
     assert_string(key)
     if not FQID_PATTERN.match(key):
         raise InvalidKeyFormat(key)
 
 
-def assert_is_fqfield(key):
+def assert_is_fqfield(key: Any) -> None:
     assert_string(key)
     if not FQFIELD_PATTERN.match(key):
         raise InvalidKeyFormat(key)
 
 
-def assert_is_collectionfield(key):
+def assert_is_collectionfield(key: Any) -> None:
     assert_string(key)
     if not COLLECTIONFIELD_PATTERN.match(key):
         raise InvalidKeyFormat(key)
 
 
-def assert_is_collection(key):
+def assert_is_collection(key: Any) -> None:
     assert_string(key)
     if not COLLECTION_PATTERN.match(key):
         raise InvalidKeyFormat(key)
 
 
-def assert_is_id(key):
+def assert_is_id(key: Any) -> None:
     assert_string(key)
     if not ID_PATTERN.match(key):
         raise InvalidKeyFormat(key)
 
 
-def assert_is_field(key):
+def assert_is_field(key: Any) -> None:
     assert_string(key)
     if not FIELD_PATTERN.match(key):
         raise InvalidKeyFormat(key)

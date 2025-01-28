@@ -34,7 +34,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
 
         self.adapter = ExtendedDatabase(MagicMock(), MagicMock())
 
-        # TODO: Re-implement whatever this did?
+        # TODO: Make this work again?
         # patcher = patch(
         #     "openslides_backend.services.datastore.extended_adapter.filter_models",
         #     side_effect=filter_models,

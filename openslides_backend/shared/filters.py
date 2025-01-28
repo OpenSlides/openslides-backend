@@ -110,7 +110,7 @@ class FilterOperator(_FilterBase):
     operator: Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
     value: Any
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if (
             self.field
             and isinstance(self.field, str)

@@ -47,14 +47,14 @@ class RequestCreateEvent(BaseRequestEvent):
     fields: dict[str, JSON]
 
 
+def emptyListFieldsDataFactory() -> ListFieldsData:
+    return {}
+
+
 @dataclass
 class RequestUpdateEvent(BaseRequestEvent):
     fields: dict[str, JSON]
-    list_fields: ListFieldsData
-
-    def __post_init__(self):
-        if self.list_fields is None:
-            self.list_fields = {}
+    list_fields: ListFieldsData = field(default_factory=emptyListFieldsDataFactory)
 
 
 class RequestDeleteEvent(BaseRequestEvent):

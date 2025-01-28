@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from types import TracebackType
 from typing import ContextManager
 
 from openslides_backend.shared.interfaces.collection_field_lock import (
@@ -63,7 +64,25 @@ class ExtendedDatabase(Database):
         self.env = env
         self.logger = logging.getLogger(__name__)
 
-    def get_database_context(self) -> ContextManager[None]: ...
+    def get_database_context(self) -> ContextManager[None]:
+        # TODO: implement me!
+        class TempCM:
+            def __init__(self) -> None:
+                pass
+
+            def __enter__(self) -> None:
+                pass
+
+            def __exit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc_value: BaseException | None,
+                traceback: TracebackType | None,
+                /,
+            ) -> None:
+                pass
+
+        return TempCM()
 
     def apply_changed_model(
         self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
@@ -117,7 +136,9 @@ class ExtendedDatabase(Database):
         collection: Collection,
         mapped_fields: list[str],
         lock_result: bool = True,
-    ) -> dict[int, PartialModel]: ...
+    ) -> dict[int, PartialModel]:
+        # TODO: implement me!
+        return {}
 
     def filter(
         self,
@@ -184,7 +205,9 @@ class ExtendedDatabase(Database):
         # TODO Implement me! If necessary?
         return None
 
-    def history_information(self, fqids: list[str]) -> dict[str, list[dict]]: ...
+    def history_information(self, fqids: list[str]) -> dict[str, list[dict]]:
+        # TODO Implement me!
+        return {}
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         return []
