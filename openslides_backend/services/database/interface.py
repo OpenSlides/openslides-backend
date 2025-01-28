@@ -2,6 +2,10 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, ContextManager, Protocol, Union
 
+from openslides_backend.shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+)
+
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
@@ -23,6 +27,7 @@ class Database(Protocol):
     """
 
     changed_models: ModelMap
+    locked_fields: dict[str, CollectionFieldLock]
 
     @abstractmethod
     def get_database_context(self) -> ContextManager[None]: ...
@@ -37,7 +42,6 @@ class Database(Protocol):
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
         raise_exception: bool = True,
@@ -47,7 +51,6 @@ class Database(Protocol):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...

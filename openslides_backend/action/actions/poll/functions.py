@@ -1,13 +1,13 @@
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
-from ....services.datastore.interface import DatastoreService
+from ....services.database.interface import Database
 from ....shared.exceptions import MissingPermission
 from ....shared.patterns import KEYSEPARATOR
 
 
 def check_poll_or_option_perms(
     content_object_id: str,
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     meeting_id: int,
 ) -> None:

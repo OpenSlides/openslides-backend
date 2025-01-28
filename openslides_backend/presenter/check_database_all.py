@@ -8,7 +8,7 @@ from openslides_backend.shared.patterns import is_reserved_field
 from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.interface import DatastoreService
+from ..services.database.interface import Database
 from ..shared.exceptions import PermissionDenied
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -25,7 +25,7 @@ check_database_schema = fastjsonschema.compile(
 )
 
 
-def check_everything(datastore: DatastoreService) -> None:
+def check_everything(datastore: Database) -> None:
     result = datastore.get_everything()
     data: dict[str, Any] = {
         collection: {

@@ -4,7 +4,7 @@ from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import VoteServiceException
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import (

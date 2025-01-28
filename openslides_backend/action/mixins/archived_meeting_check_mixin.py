@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ...models import fields
 from ...models.base import model_registry
-from ...services.datastore.commands import GetManyRequest
+from ...services.database.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ..action import Action
 

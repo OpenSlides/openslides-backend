@@ -1,5 +1,3 @@
-from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -226,14 +224,6 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
 
 
 class UserUpdateSamlAccount(UserBaseSamlAccount):
-    connection_handler = injector.get(ConnectionHandler)
-
-    @classmethod
-    def get_current_db_position(cls) -> int:
-        with cls.connection_handler.get_connection_context():
-            with cls.connection_handler.get_current_connection().cursor() as cursor:
-                cursor.execute("select max(position) from positions;")
-                return cursor.fetchone()["max"]
 
     def test_update_saml_account_correct(self) -> None:
         self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
@@ -309,7 +299,6 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         }
 
         self.set_models({"user/78": user_data})
-        old_position = self.get_current_db_position()
         response = self.request(
             "user.save_saml_account",
             {
@@ -326,8 +315,6 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/78", user_data)
-        new_position = self.get_current_db_position()
-        assert new_position == old_position
 
     def test_create_saml_account_all_fields_mixed_changes(self) -> None:
         self.set_models(

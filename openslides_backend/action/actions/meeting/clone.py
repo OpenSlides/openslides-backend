@@ -9,7 +9,7 @@ from openslides_backend.models.checker import (
     external_motion_fields,
 )
 from openslides_backend.models.models import Meeting, MeetingUser
-from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id

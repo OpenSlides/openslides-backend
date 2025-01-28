@@ -11,7 +11,7 @@ from gunicorn.workers.gthread import ThreadWorker
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-from ..services.datastore.interface import DatastoreService
+from ..services.database.interface import Database
 from ..shared.exceptions import ActionException, DatastoreException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
@@ -99,7 +99,7 @@ class ActionWorkerWriting:
         user_id: int,
         logging: LoggingModule,
         action_names: str,
-        datastore: DatastoreService,
+        datastore: Database,
     ) -> None:
         self.user_id = user_id
         self.start_time = round(time())

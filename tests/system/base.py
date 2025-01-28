@@ -8,15 +8,11 @@ from unittest.mock import MagicMock, _patch
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 
-from openslides_backend.datastore.reader.services import register_services
-from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.services import ShutdownService
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.interface import DatastoreService
-from openslides_backend.services.datastore.with_database_context import (
+from openslides_backend.services.database.interface import Database
+from openslides_backend.services.database.with_database_context import (
     with_database_context,
 )
 from openslides_backend.shared.env import Environment
@@ -47,7 +43,7 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    datastore: DatastoreService
+    datastore: Database
     vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
@@ -64,7 +60,7 @@ class BaseSystemTestCase(TestCase):
     init_with_login: bool = True
 
     def setUp(self) -> None:
-        register_services()
+        # register_services()
         self.app = self.get_application()
         self.logger = cast(MagicMock, self.app.logger)
         self.services = self.app.services
@@ -122,7 +118,11 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-        injector.get(ShutdownService).shutdown()
+
+        # TODO: Does something equivalent to this old code
+        #  need to be done here?
+        # injector.get(ShutdownService).shutdown()
+
         super().tearDown()
 
     @staticmethod
@@ -268,7 +268,6 @@ class BaseSystemTestCase(TestCase):
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=False,
             use_changed_models=False,
         )

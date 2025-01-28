@@ -16,8 +16,8 @@ from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.with_database_context import (
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.with_database_context import (
     with_database_context,
 )
 from openslides_backend.shared.exceptions import AuthenticationException

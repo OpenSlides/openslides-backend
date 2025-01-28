@@ -1,5 +1,5 @@
 from ....models.models import Poll
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action

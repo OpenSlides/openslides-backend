@@ -6,7 +6,7 @@ from fastjsonschema import JsonSchemaException
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
-from ..services.datastore.interface import DatastoreService
+from ..services.database.interface import Database
 from ..shared.exceptions import PresenterException
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -24,7 +24,7 @@ class BasePresenter(BaseServiceProvider):
         self,
         data: Any,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         logging: LoggingModule,
         user_id: int,
     ):

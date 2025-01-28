@@ -2,7 +2,7 @@ from typing import Any
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id

@@ -3,11 +3,9 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from openslides_backend.datastore.shared.postgresql_backend import filter_models
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.extended_adapter import (
-    ExtendedDatastoreAdapter,
-)
+# from openslides_backend.datastore.shared.postgresql_backend import filter_models
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.shared.patterns import Collection
 from openslides_backend.shared.typing import DeletedModel
 
@@ -34,14 +32,15 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
                 lambda *args, **kwargs: self.db_method_return_value
             )
 
-        self.adapter = ExtendedDatastoreAdapter(MagicMock(), MagicMock(), MagicMock())
+        self.adapter = ExtendedDatabase(MagicMock(), MagicMock())
 
-        patcher = patch(
-            "openslides_backend.services.datastore.extended_adapter.filter_models",
-            side_effect=filter_models,
-        )
-        self.add_filter_mock = patcher.start()
-        self.addCleanup(patcher.stop)
+        # TODO: Make this work again?
+        # patcher = patch(
+        #     "openslides_backend.services.datastore.extended_adapter.filter_models",
+        #     side_effect=filter_models,
+        # )
+        # self.add_filter_mock = patcher.start()
+        # self.addCleanup(patcher.stop)
 
         self.add_get_many_mock = self.add_mock_to_method(
             "_get_many_from_changed_models"

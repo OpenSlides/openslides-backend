@@ -2,7 +2,7 @@ import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 
 pytest_thread_local = threading.local()
@@ -11,16 +11,16 @@ pytest_thread_local = threading.local()
 @contextmanager
 def monkeypatch_datastore_adapter_write() -> Iterator[None]:
     """
-    Use a patched DatastoreAdapter.write in this context,
+    Use a patched ExtendedDatabase.write in this context,
     which wraps the write with an optional lock from pytest_thread_local.testlock
     """
-    DatastoreAdapter.write_original = DatastoreAdapter.write  # type: ignore
-    DatastoreAdapter.write = write  # type: ignore
+    ExtendedDatabase.write_original = ExtendedDatabase.write  # type: ignore
+    ExtendedDatabase.write = write  # type: ignore
     try:
         yield
     finally:
-        DatastoreAdapter.write = DatastoreAdapter.write_original  # type: ignore
-        delattr(DatastoreAdapter, "write_original")
+        ExtendedDatabase.write = ExtendedDatabase.write_original  # type: ignore
+        delattr(ExtendedDatabase, "write_original")
 
 
 def write(self, write_request: WriteRequest) -> None:  # type: ignore
