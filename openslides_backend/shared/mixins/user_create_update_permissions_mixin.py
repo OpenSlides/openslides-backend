@@ -3,7 +3,6 @@ from collections.abc import Callable
 from functools import reduce
 from typing import Any, cast
 
-from openslides_backend.action.action import Action
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.management_levels import (
@@ -13,8 +12,10 @@ from openslides_backend.permissions.management_levels import (
 from openslides_backend.permissions.permissions import Permissions, permission_parents
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.shared.base_service_provider import BaseServiceProvider
 from openslides_backend.shared.exceptions import (
     ActionException,
+    AnyPermission,
     MissingPermission,
     PermissionDenied,
 )
@@ -23,8 +24,6 @@ from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
-
-from .user_mixins import UserMixin
 
 
 class PermissionVarStore:
@@ -171,9 +170,10 @@ class PermissionVarStore:
         return user_meetings
 
 
-class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
+class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
     permstore: PermissionVarStore
     permission: Permission
+    internal: bool
 
     field_rights: dict[str, list] = {
         "A": [
@@ -203,7 +203,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             "is_present",  # participant import
         ],
         "C": ["meeting_id", "group_ids"],
-        "D": ["committee_ids", "committee_management_ids"],
+        "D": ["committee_management_ids"],
         "E": ["organization_management_level"],
         "F": ["default_password"],
         "G": ["is_demo_user"],
@@ -213,10 +213,12 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     def check_permissions(self, instance: dict[str, Any]) -> None:
         """
         Checks the permissions on a per field and user.scope base, details see
-        https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
+        https://github.com/OpenSlides/OpenSlides/wiki/Users
+        https://github.com/OpenSlides/OpenSlides/wiki/Permission-System
+        https://github.com/OpenSlides/OpenSlides/wiki/Restrictions-Overview
         The fields groups and their necessary permissions are also documented there.
+        Returns true if permissions are given.
         """
-        self.assert_not_anonymous()
 
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(
@@ -224,12 +226,12 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
-        # store scope, id and OML-permission for requested user
+        # store scope, scope id, OML-permission and committee ids including the the respective meetings for requested user
         (
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
-            self.instance_committee_ids,
+            self.instance_committee_meeting_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
@@ -244,40 +246,38 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 lock_result=False,
             ).get("locked_from_inside", False)
 
-        # Ordered by supposed velocity advantages. Changing order can only effect the sequence of detected errors for tests
+        # Ordered by supposed speed advantages. Changing order can only effect the sequence of detected errors for tests
         self.check_group_H(actual_group_fields["H"])
         self.check_group_E(actual_group_fields["E"], instance)
         self.check_group_D(actual_group_fields["D"], instance)
         self.check_group_C(actual_group_fields["C"], instance, locked_from_inside)
         self.check_group_B(actual_group_fields["B"], instance, locked_from_inside)
-        self.check_group_A(actual_group_fields["A"])
-        self.check_group_F(actual_group_fields["F"])
+        self.check_group_A(actual_group_fields["A"], instance)
+        self.check_group_F(actual_group_fields["F"], instance)
         self.check_group_G(actual_group_fields["G"])
 
-    def check_group_A(
-        self,
-        fields: list[str],
-    ) -> None:
+    def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group A: Depending on scope of user to act on"""
         if (
-            self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN
-            or not fields
+            not fields
             or self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
 
+        missing_permissions: dict[AnyPermission, int | set[int]] = dict()
         if self.instance_user_scope == UserScope.Organization:
-            if self.permstore.user_committees.intersection(self.instance_committee_ids):
-                return
-            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
-        if self.instance_user_scope == UserScope.Committee:
-            if self.instance_user_scope_id not in self.permstore.user_committees:
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                    }
+            if not (
+                self.permstore.user_committees.intersection(
+                    self.instance_committee_meeting_ids
                 )
+            ):
+                missing_permissions = {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
+        elif self.instance_user_scope == UserScope.Committee:
+            if self.instance_user_scope_id not in self.permstore.user_committees:
+                missing_permissions = {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                }
         elif (
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
@@ -287,13 +287,26 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 ["committee_id"],
                 lock_result=False,
             )
-            raise MissingPermission(
+            missing_permissions = {
+                OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                self.permission: self.instance_user_scope_id,
+            }
+        if missing_permissions and not self.check_for_admin_in_all_meetings(
+            instance.get("id", 0)
+        ):
+            missing_permissions.update(
                 {
-                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    self.permission: self.instance_user_scope_id,
+                    Permissions.User.CAN_UPDATE: {
+                        meeting_id
+                        for meeting_ids in self.instance_committee_meeting_ids.values()
+                        if meeting_ids is not None
+                        for meeting_id in meeting_ids
+                        if meeting_id is not None
+                    },
                 }
             )
+            raise MissingPermission(missing_permissions)
 
     def check_group_B(
         self, fields: list[str], instance: dict[str, Any], locked_from_inside: bool
@@ -357,10 +370,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())}."
                 )
 
-    def check_group_F(
-        self,
-        fields: list[str],
-    ) -> None:
+    def check_group_F(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
         if (
@@ -369,6 +379,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         ):
             return
 
+        missing_permissions: dict[AnyPermission, int | set[int]] = dict()
         if (
             self.instance_user_oml_permission
             or self.instance_user_scope == UserScope.Organization
@@ -379,25 +390,22 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 )
             else:
                 if self.permstore.user_committees.intersection(
-                    self.instance_committee_ids
+                    self.instance_committee_meeting_ids
                 ):
                     return
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
             if expected_oml_permission > self.permstore.user_oml:
-                raise MissingPermission({expected_oml_permission: 1})
+                missing_permissions = {expected_oml_permission: 1}
             else:
                 return
-        else:
-            if self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
-                return
-        if self.instance_user_scope == UserScope.Committee:
+        elif self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
+            return
+        elif self.instance_user_scope == UserScope.Committee:
             if self.instance_user_scope_id not in self.permstore.user_committees:
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                    }
-                )
+                missing_permissions = {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                }
         elif (
             self.instance_user_scope_id not in self.permstore.user_committees_meetings
             and self.instance_user_scope_id not in self.permstore.user_meetings
@@ -407,13 +415,26 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 ["committee_id"],
                 lock_result=False,
             )
-            raise MissingPermission(
+            missing_permissions = {
+                OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                self.permission: self.instance_user_scope_id,
+            }
+        if missing_permissions and not self.check_for_admin_in_all_meetings(
+            instance.get("id", 0)
+        ):
+            missing_permissions.update(
                 {
-                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    self.permission: self.instance_user_scope_id,
+                    Permissions.User.CAN_UPDATE: {
+                        meeting_id
+                        for meeting_ids in self.instance_committee_meeting_ids.values()
+                        if meeting_ids is not None
+                        for meeting_id in meeting_ids
+                        if meeting_id is not None
+                    },
                 }
             )
+            raise MissingPermission(missing_permissions)
 
     def check_group_G(self, fields: list[str]) -> None:
         """Group G: OML SUPERADMIN necessary"""
@@ -472,8 +493,9 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         """
         Returns a dictionary with an entry for each field group A-E with
         a list of fields from payload instance.
-        The field groups A-F refer to https://github.com/OpenSlides/OpenSlides/wiki/user.create
-        or user.update
+        The field groups A-F refer to https://github.com/OpenSlides/openslides-meta/blob/main/models.yml
+        or https://github.com/OpenSlides/openslides-backend/blob/main/docs/actions/user.create.md
+        or https://github.com/OpenSlides/openslides-backend/blob/main/docs/actions/user.update.md
         """
         act_grouping: dict[str, list[str]] = defaultdict(list)
         for key, _ in instance.items():
@@ -516,7 +538,9 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         any other group B field.
         """
         meetings: set[int] = set(instance.get("is_present_in_meeting_ids", []))
-        meetings.add(cast(int, instance.get("meeting_id")))
+        meeting_id = cast(int, instance.get("meeting_id"))
+        if meeting_id:
+            meetings.add(meeting_id)
         return meetings
 
 
@@ -525,6 +549,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
     def __init__(
         self,
+        user_id: int,
         permstore: PermissionVarStore,
         services: Services,
         datastore: DatastoreService,
@@ -535,14 +560,11 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
         self.permstore = permstore
+        self.user_id = user_id
         super().__init__(
             services,
             datastore,
-            relation_manager,
             logging,
-            env,
-            skip_archived_meeting_check,
-            use_meeting_ids_for_archived_meeting_check,
         )
 
     def get_failing_fields(self, instance: dict[str, Any]) -> list[str]:
@@ -567,7 +589,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
-            self.instance_committee_ids,
+            self.instance_committee_meeting_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         instance_meeting_id = instance.get("meeting_id")
@@ -595,8 +617,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                 instance,
                 locked_from_inside,
             ),
-            (self.check_group_A, actual_group_fields["A"], None, None),
-            (self.check_group_F, actual_group_fields["F"], None, None),
+            (self.check_group_A, actual_group_fields["A"], instance, None),
+            (self.check_group_F, actual_group_fields["F"], instance, None),
             (self.check_group_G, actual_group_fields["G"], None, None),
         ]:
             try:

@@ -34,9 +34,11 @@ class MeetingUserDelete(ConditionalSpeakerCascadeMixinHelper, DeleteAction):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting_user = self.datastore.get(
-            fqid_from_collection_and_id("meeting_user", instance["id"]), ["speaker_ids"]
+            fqid_from_collection_and_id("meeting_user", instance["id"]),
+            ["speaker_ids", "user_id", "meeting_id"],
         )
         speaker_ids = meeting_user.get("speaker_ids", [])
         self.conditionally_delete_speakers(speaker_ids)
+        self.remove_presence(meeting_user["user_id"], meeting_user["meeting_id"])
 
         return super().update_instance(instance)

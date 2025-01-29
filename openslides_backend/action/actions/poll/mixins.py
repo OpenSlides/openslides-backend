@@ -5,7 +5,7 @@ from typing import Any
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import VoteServiceException
+from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import (
     collection_from_fqid,
@@ -18,6 +18,35 @@ from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 from .functions import check_poll_or_option_perms
+
+
+class PollValidationMixin(Action):
+    def validate_instance(self, instance: dict[str, Any]) -> None:
+        super().validate_instance(instance)
+
+        if poll_id := instance.get("id"):
+            poll = self.datastore.get(
+                fqid_from_collection_and_id("poll", poll_id),
+                ["max_votes_amount", "min_votes_amount", "max_votes_per_option"],
+            )
+        max_votes_amount = instance.get(
+            "max_votes_amount", poll["max_votes_amount"] if poll_id else 1
+        )
+        min_votes_amount = instance.get(
+            "min_votes_amount", poll["min_votes_amount"] if poll_id else 1
+        )
+        max_votes_per_option = instance.get(
+            "max_votes_per_option", poll["max_votes_per_option"] if poll_id else 1
+        )
+
+        if max_votes_amount < max_votes_per_option:
+            raise ActionException(
+                "The maximum votes per option cannot be higher than the maximum amount of votes in total."
+            )
+        if max_votes_amount < min_votes_amount:
+            raise ActionException(
+                "The minimum amount of votes cannot be higher than the maximum amount of votes."
+            )
 
 
 class PollPermissionMixin(Action):
@@ -33,6 +62,8 @@ class PollPermissionMixin(Action):
             )
             content_object_id = poll.get("content_object_id", "")
             meeting_id = poll["meeting_id"]
+        if not content_object_id:
+            raise ActionException("No 'content_object_id' was given")
         check_poll_or_option_perms(
             content_object_id, self.datastore, self.user_id, meeting_id
         )
