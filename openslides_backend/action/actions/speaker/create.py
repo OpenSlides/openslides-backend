@@ -294,7 +294,7 @@ class SpeakerCreateAction(
                 user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
                 if meeting_id not in user.get("is_present_in_meeting_ids", ()):
                     raise ActionException(
-                        "Only present users can be on the lists of speakers."
+                        "Only present users can be on the list of speakers."
                     )
 
             if not meeting.get("list_of_speakers_allow_multiple_speakers"):

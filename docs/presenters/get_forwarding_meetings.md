@@ -1,19 +1,19 @@
 # Payload
 
-```
+```js
 {
-    meeting_id: Id
+    meeting_id: Id // required
 }
 ```
 
 # Returns
 
-```
+```js
 [
     {
-        id: Id
-        name: string
-        default_meeting_id: Id
+        id: Id,
+        name: string,
+        default_meeting_id: Id,
         meeting: [{id: Id, name: string, start_time:timestamp|null, end_time:timestamp|null}, ...]
     },
     ...

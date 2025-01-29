@@ -16,7 +16,18 @@ class MeetingUserDelete(BaseActionTestCase):
     def test_delete_with_speaker(self) -> None:
         self.set_models(
             {
-                "meeting/10": {"is_active_in_organization_id": 1},
+                "meeting/10": {
+                    "is_active_in_organization_id": 1,
+                    "present_user_ids": [1],
+                },
+                "meeting/101": {
+                    "is_active_in_organization_id": 1,
+                    "present_user_ids": [1],
+                },
+                "user/1": {
+                    "is_present_in_meeting_ids": [10, 101],
+                    "meeting_user_ids": [5],
+                },
                 "meeting_user/5": {
                     "user_id": 1,
                     "meeting_id": 10,
@@ -38,6 +49,11 @@ class MeetingUserDelete(BaseActionTestCase):
         self.assert_model_deleted("meeting_user/5")
         self.assert_model_deleted("speaker/1")
         self.assert_model_exists("speaker/2", {"meeting_id": 10, "begin_time": 123456})
+        self.assert_model_exists(
+            "user/1", {"is_present_in_meeting_ids": [101], "meeting_user_ids": []}
+        )
+        self.assert_model_exists("meeting/10", {"present_user_ids": []})
+        self.assert_model_exists("meeting/101", {"present_user_ids": [1]})
 
     def test_delete_with_chat_message(self) -> None:
         self.set_models(

@@ -177,6 +177,9 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "motions_default_workflow_id": base,
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
+                    "language": "en",
+                    "motion_state_ids": [base],
+                    "motion_workflow_ids": [base],
                 },
                 f"group/{base}": {
                     "meeting_id": base,

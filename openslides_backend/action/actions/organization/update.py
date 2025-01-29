@@ -60,13 +60,73 @@ class OrganizationUpdate(
         field: {**optional_str_schema, "max_length": 256}
         for field in allowed_user_fields
     }
-    saml_props["meeting"] = {
-        "type": ["object", "null"],
-        "properties": {
-            field: {**optional_str_schema, "max_length": 256}
-            for field in ("external_id", "external_group_id")
+    saml_props["meeting_mappers"] = {
+        "type": ["array", "null"],
+        "items": {
+            "type": "object",
+            "properties": {
+                **{
+                    field: {**optional_str_schema, "max_length": 256}
+                    for field in ("external_id", "name", "allow_update")
+                },
+                "conditions": {
+                    "type": ["array", "null"],
+                    "items": {
+                        "type": ["object", "null"],
+                        "properties": {
+                            **{
+                                field: {**optional_str_schema, "max_length": 256}
+                                for field in ("attribute", "condition")
+                            },
+                        },
+                    },
+                },
+                "mappings": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        **{
+                            mapping_field: {
+                                "type": ["object", "null"],
+                                "properties": {
+                                    field: {**optional_str_schema, "max_length": 256}
+                                    for field in ("attribute", "default")
+                                },
+                                "additionalProperties": False,
+                            }
+                            for mapping_field in [
+                                "number",
+                                "comment",
+                                "vote_weight",
+                                "present",
+                            ]
+                        },
+                        **{
+                            mapping_field: {
+                                "type": ["array", "null"],
+                                "items": {
+                                    "type": ["object", "null"],
+                                    "properties": {
+                                        field: {
+                                            **optional_str_schema,
+                                            "max_length": 256,
+                                        }
+                                        for field in ("attribute", "default")
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            }
+                            for mapping_field in [
+                                "groups",
+                                "structure_levels",
+                            ]
+                        },
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "required": ["external_id"],
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
     }
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,

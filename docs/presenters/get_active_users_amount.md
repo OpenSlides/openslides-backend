@@ -6,7 +6,7 @@ Nothing
 
 ```js
 {
-    active_users_amount: Number;
+    active_users_amount: Number
 }
 ```
 

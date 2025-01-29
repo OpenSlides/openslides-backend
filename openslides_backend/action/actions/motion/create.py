@@ -1,4 +1,5 @@
-from typing import Any
+from collections import defaultdict
+from typing import Any, cast
 
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
@@ -146,14 +147,30 @@ class MotionCreate(
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
-        # whitelist the fields depending on the user's permissions
-        whitelist = []
-        forbidden_fields = set()
-        perm = Permissions.Mediafile.CAN_SEE
-        if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            whitelist.append("attachment_mediafile_ids")
-        elif "attachment_mediafile_ids" in instance:
-            forbidden_fields.add("attachment_mediafile_ids")
+        # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
+        can_manage_whitelist = set()
+        forbidden_fields = defaultdict(set)
+        permission_to_fields: dict[Permission, list[str]] = {
+            Permissions.AgendaItem.CAN_MANAGE: list(agenda_creation_properties.keys()),
+            Permissions.Mediafile.CAN_SEE: ["attachment_mediafile_ids"],
+            Permissions.Motion.CAN_MANAGE_METADATA: [
+                "additional_submitter",
+                "submitter_ids",
+            ],
+            Permissions.User.CAN_SEE: ["submitter_ids"],
+        }
+        for perm, fields in permission_to_fields.items():
+            has_permission = has_perm(
+                self.datastore, self.user_id, perm, instance["meeting_id"]
+            )
+            for field in fields:
+                if has_permission:
+                    if field not in forbidden_fields:
+                        can_manage_whitelist.add(field)
+                else:
+                    if field in instance:
+                        forbidden_fields[field].add(perm)
+                        can_manage_whitelist.discard(field)
 
         perm = Permissions.Motion.CAN_MANAGE
         if (
@@ -162,24 +179,26 @@ class MotionCreate(
             )
             == []
         ):
-            whitelist += [
-                "title",
-                "text",
-                "reason",
-                "lead_motion_id",
-                "amendment_paragraphs",
-                "category_id",
-                "workflow_id",
-                "id",
-                "meeting_id",
-            ]
+            can_manage_whitelist.update(
+                [
+                    "title",
+                    "text",
+                    "reason",
+                    "lead_motion_id",
+                    "amendment_paragraphs",
+                    "category_id",
+                    "workflow_id",
+                    "id",
+                    "meeting_id",
+                ]
+            )
             if instance.get("lead_motion_id"):
-                whitelist.remove("category_id")
+                can_manage_whitelist.discard("category_id")
             for field in instance:
-                if field not in whitelist:
-                    forbidden_fields.add(field)
+                if field not in can_manage_whitelist:
+                    forbidden_fields[field].add(perm)
 
         if forbidden_fields:
             msg = f"You are not allowed to perform action {self.name}. "
-            msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
+            msg += f"Forbidden fields: {', '.join(field + ' with possibly needed permission(s): ' + ', '.join(perm for perm in sorted(cast(list[str], perms))) for field, perms in forbidden_fields.items())}"
             raise PermissionDenied(msg)

@@ -74,8 +74,8 @@ ALLOWED_STYLES = [
     "word-wrap",
 ]
 
-INITIAL_DATA_FILE = "global/data/initial-data.json"
-EXAMPLE_DATA_FILE = "global/data/example-data.json"
+INITIAL_DATA_FILE = "data/initial-data.json"
+EXAMPLE_DATA_FILE = "data/example-data.json"
 ONE_ORGANIZATION_ID = 1
 ONE_ORGANIZATION_FQID = fqid_from_collection_and_id("organization", ONE_ORGANIZATION_ID)
 

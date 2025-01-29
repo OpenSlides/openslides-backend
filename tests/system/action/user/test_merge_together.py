@@ -450,6 +450,35 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_deleted("user/3")
         self.assert_model_deleted("user/4")
 
+    def test_merge_with_saml_id_with_password_change_rights(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "password": None,
+                    "saml_id": "user2",
+                },
+                "user/3": {"can_change_own_password": True},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "is_active": True,
+                "username": "user2",
+                "meeting_ids": [1, 2, 3],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+                "default_password": "user2",
+                "meeting_user_ids": [12, 22, 46],
+                "password": None,
+                "saml_id": "user2",
+            },
+        )
+        self.assert_model_deleted("user/3")
+        self.assert_model_deleted("user/4")
+
     def test_merge_with_saml_id_error(self) -> None:
         self.set_models(
             {
@@ -2489,8 +2518,11 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_no_meetings(self) -> None:
         self.create_user("user7")
+        self.set_models({"user/7": {"can_change_own_password": True}})
         response = self.request("user.merge_together", {"id": 6, "user_ids": [7]})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/6", {"can_change_own_password": True})
+        self.assert_model_deleted("user/7")
 
     def test_merge_only_update_meeting_users(self) -> None:
         response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})
