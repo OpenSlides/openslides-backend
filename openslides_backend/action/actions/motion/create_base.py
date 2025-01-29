@@ -75,10 +75,7 @@ class MotionCreateBase(
         )
 
     def set_created_last_modified_and_number(self, instance: dict[str, Any]) -> None:
-        timestamp = round(time.time())
-        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
-        instance["last_modified"] = timestamp
-        instance["created"] = timestamp
+        self.set_created_last_modified(instance)
         self.set_number(
             instance,
             instance["meeting_id"],
@@ -86,3 +83,9 @@ class MotionCreateBase(
             instance.get("lead_motion_id"),
             instance.get("category_id"),
         )
+
+    def set_created_last_modified(self, instance: dict[str, Any]) -> None:
+        timestamp = round(time.time())
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
+        instance["last_modified"] = timestamp
+        instance["created"] = timestamp
