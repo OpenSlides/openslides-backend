@@ -289,7 +289,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"property": "username", "type": "string", "is_object": True},
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string", "is_object": True},
-                {"property": "idp_id", "type": "string", "is_object": True},
+                {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "member_number", "type": "string", "is_object": True},
                 {
                     "property": "structure_level",

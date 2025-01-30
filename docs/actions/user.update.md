@@ -48,7 +48,7 @@
     is_demo_user: boolean;
 
 // Group H
-    idp_id: string;
+    saml_id: string;
 
 // only internal
     is_present_in_meeting_ids: Id[];
@@ -79,8 +79,8 @@ If the user was the last member of the meetings admin group and he happens to be
 
 ## Permissions
 If the OML of the request user is lower than the OML of the user to update, only meeting-specific fields (groups B and C) are allowed to be changed. If any other fields are present in the payload, the request must fail.
-If the user to be updated has a `idp_id`, the fields `can_change_own_password` and
-`default_password` may not be set, because the user is a SingleSignOn user. If the idp_id will be set, the fields `default_password` and `password` will be set empty and `can_change_own_password` will be set to `False`.
+If the user to be updated has a `saml_id`, the fields `can_change_own_password` and
+`default_password` may not be set, because the user is a SingleSignOn user. If the saml_id will be set, the fields `default_password` and `password` will be set empty and `can_change_own_password` will be set to `False`.
 
 Group A:
 

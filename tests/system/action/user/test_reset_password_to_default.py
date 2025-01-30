@@ -193,8 +193,8 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
             response.json["message"],
         )
 
-    def test_reset_password_to_default_idp_id_error(self) -> None:
-        self.update_model("user/111", {"idp_id": "111"})
+    def test_reset_password_to_default_saml_id_error(self) -> None:
+        self.update_model("user/111", {"saml_id": "111"})
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 400)
         self.assertIn(

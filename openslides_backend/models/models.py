@@ -84,7 +84,7 @@ class User(Model):
     id = fields.IntegerField(required=True, constant=True)
     username = fields.CharField(required=True)
     member_number = fields.CharField()
-    idp_id = fields.CharField(
+    saml_id = fields.CharField(
         constraints={
             "minLength": 1,
             "description": "unique-key from IdP for SAML login",
@@ -940,6 +940,7 @@ class StructureLevel(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "structure_level_ids"}, required=True
     )
+
 
 class Group(Model):
     collection = "group"

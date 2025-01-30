@@ -14,28 +14,6 @@ KEYCLOAK_REALM = 'os'
 ISSUER = f"{KEYCLOAK_DOMAIN}/realms/{KEYCLOAK_REALM}"
 CERTS_URI = f"{KEYCLOAK_DOMAIN}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 
-class MyBearerTokenValidator(JWTBearerTokenValidator):
-    # Cache the JWKS keys to avoid fetching them repeatedly
-    jwk_set = None
-
-    def get_jwks(self):
-        if self.jwk_set is None:
-            # oidc_configuration = OpenIDProviderMetadata(requests.get(get_well_known_url(ISSUER, True)).json())
-            # jwks_uri = oidc_configuration.get('jwks_uri')
-            response = requests.get(CERTS_URI)
-            response.raise_for_status()
-            jwks_keys = response.json()
-            self.jwk_set = JsonWebKey.import_key_set(jwks_keys)
-        return self.jwk_set
-
-    # def verify_token(self, token):
-    #     try:
-    #         claims = jwt.decode(token, key=self.get_jwks_key_set())
-    #         claims.validate()
-    #         return claims
-    #     except Exception as e:
-    #         return None
-
 def token_required(f):
     def decorated_function(view, request, *args, **kwargs):
         auth_header = request.headers.get('Authentication') or request.headers.get('Authorization')

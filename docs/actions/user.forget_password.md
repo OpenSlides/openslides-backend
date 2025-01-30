@@ -32,4 +32,4 @@ For completeness your username: <username>
 
 ## Permission
 
-None, but action raises action error, if idp_id of user is set
+None, but action raises action error, if saml_id of user is set

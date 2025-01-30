@@ -21,7 +21,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0057_user_keycloak_upload")
+    finalize("0063_user_keycloak_upload")
 
     assert_model(
         "user/1",

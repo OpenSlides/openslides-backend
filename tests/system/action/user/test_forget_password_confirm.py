@@ -74,8 +74,8 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         model = self.get_model("user/2")
         self.assertTrue(self.auth.is_equal("new", model["password"]))
 
-    def test_forget_password_confirm_idp_id_error(self) -> None:
-        self.set_models({"user/1": {"idp_id": "111"}})
+    def test_forget_password_confirm_saml_id_error(self) -> None:
+        self.set_models({"user/1": {"saml_id": "111"}})
         response = self.request(
             "user.forget_password_confirm",
             {

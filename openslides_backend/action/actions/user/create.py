@@ -18,6 +18,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
+from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
@@ -27,6 +28,7 @@ class UserCreate(
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
+    SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
@@ -55,7 +57,7 @@ class UserCreate(
             "committee_management_ids",
             "is_demo_user",
             "forwarding_committee_ids",
-            "idp_id",
+            "saml_id",
             "member_number",
         ],
         additional_optional_fields={
@@ -73,8 +75,6 @@ class UserCreate(
 
         if instance.get("is_active"):
             self.check_limit_of_user(1)
-
-        idp_id = instance.get("idp_id")
         saml_id = instance.get("saml_id")
         if not instance.get("username"):
             if saml_id:

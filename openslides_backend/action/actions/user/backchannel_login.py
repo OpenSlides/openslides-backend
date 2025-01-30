@@ -10,6 +10,7 @@ from ....models.models import User
 from ....permissions.management_levels import SystemManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.interfaces.event import Event
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import schema_version
 
 
@@ -26,9 +27,9 @@ class UserBackchannelLogin(Action):
         "title": "User login hook schema",
         "type": "object",
         "properties": {
-            "idp_id": {"type": "string"}
+            "os_uid": {"type": "integer"}
         },
-        "required": ["idp_id"],
+        "required": ["os_uid"],
         "additionalProperties": False
     }
 
@@ -40,12 +41,11 @@ class UserBackchannelLogin(Action):
         return instance
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        idp_id = instance.get("idp_id")
-        user = self.datastore.filter(self.model.collection, FilterOperator("idp_id", "=", idp_id), ["id"])
-        if len(user) != 1:
-            raise ActionException(f"User with idp_id {idp_id} not found.")
+        os_uid = instance.get("os_uid")
+        user = self.datastore.get(fqid_from_collection_and_id(self.model.collection, os_uid), ["id"])
+        if not user:
+            raise ActionException(f"User with id {os_uid} not found.")
         instance["last_login"] = int(time.time())
-        user = next(iter(user.values()))
         instance["id"] = user["id"]
         return instance
 

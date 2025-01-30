@@ -16,7 +16,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "first_name": "first2",
             "last_name": "last2",
             "username": "user2",
-            "idp_id": None,
+            "saml_id": None,
             "member_number": None,
         }
         self.user3 = {

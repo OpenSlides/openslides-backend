@@ -70,8 +70,8 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_set_password_idp_id_error(self) -> None:
-        self.update_model("user/1", {"idp_id": "111", "can_change_own_password": True})
+    def test_set_password_saml_id_error(self) -> None:
+        self.update_model("user/1", {"saml_id": "111", "can_change_own_password": True})
         response = self.request(
             "user.set_password_self", {"old_password": "old", "new_password": "new"}
         )

@@ -185,20 +185,20 @@ class ParticipantImport(BaseActionTestCase):
             },
         )
 
-    def test_import_idp_id_error_new_and_idp_id_exists(self) -> None:
-        """Set idp_id 'testsaml' to user 1, add the import user 1 will be
+    def test_import_saml_id_error_new_and_saml_id_exists(self) -> None:
+        """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
         self.import_preview1_data["result"]["rows"][0]["data"]["username"] = {
             "value": "testuser",
             "info": ImportState.NEW,
         }
-        self.import_preview1_data["result"]["rows"][0]["data"]["idp_id"] = {
+        self.import_preview1_data["result"]["rows"][0]["data"]["saml_id"] = {
             "value": "testsaml",
             "info": ImportState.NEW,
         }
         self.set_models(
             {
-                "user/1": {"idp_id": "testsaml"},
+                "user/1": {"saml_id": "testsaml"},
                 "import_preview/1": self.import_preview1_data,
             }
         )
@@ -207,11 +207,11 @@ class ParticipantImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: idp_id 'testsaml' found in different id (1 instead of None)"
+            "Error: saml_id 'testsaml' found in different id (1 instead of None)"
         ]
 
     def test_import_gender_warning(self) -> None:
-        """Set idp_id 'testsaml' to user 1, add the import user 1 will be
+        """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
         self.import_preview1_data["result"]["rows"][0]["data"]["gender"] = {
             "value": "notAGender",
@@ -361,7 +361,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         )
 
     def test_upload_import_with_generated_usernames_okay(self) -> None:
-        self.json_upload_idp_id_new()
+        self.json_upload_saml_id_new()
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

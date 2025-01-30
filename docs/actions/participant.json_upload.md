@@ -24,7 +24,7 @@ The types noted below are the internal types after conversion in the backend. Se
           comment: string,  // info: done or remove (missing field permission)
           is_present: boolean,  // info: done or remove (missing field permission)
           groups: string[],  // info per item: done, warning, generated
-          idp_id: string,  // unique idp_id, info: new, warning, error, done or remove (missing field permission)
+          saml_id: string,  // unique saml_id, info: new, warning, error, done or remove (missing field permission)
           locked_out: boolean,     // info: done, error or remove (missing field permission)
      }[],
 }
@@ -92,7 +92,7 @@ The `structure_level` will have to be matched to an existing structure level, if
 otherwise a new one has to be created.
 
 ## Permission
-Permissions are analogue to `user.create` and `user.update`. The `idp_id` can be used in import, because user.create/.update will be used internal.
+Permissions are analogue to `user.create` and `user.update`. The `saml_id` can be used in import, because user.create/.update will be used internal.
 
 In case of an update, remove fields from the payload that don't change the content compared to database to avoid unnecessary
 permission errors. Don't forget the special permissions for `default_password` on `user.update`.

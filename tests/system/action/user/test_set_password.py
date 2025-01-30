@@ -289,8 +289,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_idp_id_error(self) -> None:
-        self.create_model("user/2", {"password": "pw", "idp_id": "111"})
+    def test_saml_id_error(self) -> None:
+        self.create_model("user/2", {"password": "pw", "saml_id": "111"})
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )

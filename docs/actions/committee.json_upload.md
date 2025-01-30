@@ -74,7 +74,7 @@ The data, enriched with building some field values and a first new column "state
 
 ### User matching
 
-The users given in `managers` and `meeting_admins` will be matched only by username. The `idp_id` will not be used for the search.
+The users given in `managers` and `meeting_admins` will be matched only by username. The `saml_id` will not be used for the search.
 
 ## Permission
 

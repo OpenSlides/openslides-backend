@@ -11,7 +11,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         dict[str, str | ListOfDicts | dict[str, str | dict[str, str] | ListOfDicts]]
     ]
     saml_attr_mapping: dict[str, str | MeetingMappers] = {
-        "idp_id": "username",
+        "saml_id": "username",
         "title": "title",
         "first_name": "firstName",
         "last_name": "lastName",

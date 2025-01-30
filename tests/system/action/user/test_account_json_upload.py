@@ -145,7 +145,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "username", "type": "string", "is_object": True},
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string"},
-                {"property": "idp_id", "type": "string", "is_object": True},
+                {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "member_number", "type": "string", "is_object": True},
                 {
                     "property": "default_vote_weight",
@@ -181,7 +181,7 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "user/3": {
                     "username": "test",
-                    "idp_id": "12345",
+                    "saml_id": "12345",
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "max@mustermann.org",
@@ -193,7 +193,7 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "data": [
                     {"username": "test"},
-                    {"idp_id": "12345"},
+                    {"saml_id": "12345"},
                     {
                         "first_name": "Max",
                         "last_name": "Mustermann",
@@ -220,7 +220,7 @@ class AccountJsonUpload(BaseActionTestCase):
                     "The account with id 3 was found multiple times by different search criteria.",
                 ],
                 "data": {
-                    "idp_id": {"value": "12345", "info": ImportState.DONE},
+                    "saml_id": {"value": "12345", "info": ImportState.DONE},
                     "id": 3,
                     "username": {"value": "test", "info": "done", "id": 3},
                 },

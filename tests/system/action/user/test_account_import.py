@@ -103,7 +103,7 @@ class AccountJsonImport(BaseActionTestCase):
                                         "info": ImportState.DONE,
                                         "id": 2,
                                     },
-                                    "idp_id": {
+                                    "saml_id": {
                                         "value": "12345",
                                         "info": ImportState.DONE,
                                     },
@@ -261,12 +261,12 @@ class AccountJsonImport(BaseActionTestCase):
             }
         }
 
-    def test_import_with_idp_id(self) -> None:
+    def test_import_with_saml_id(self) -> None:
         self.set_models(
             self.get_import_preview_data(
                 7,
                 ImportState.NEW,
-                {"idp_id": {"value": "testsaml", "info": ImportState.NEW}},
+                {"saml_id": {"value": "testsaml", "info": ImportState.NEW}},
             )
         )
         response = self.request("account.import", {"id": 7, "import": True})
@@ -276,7 +276,7 @@ class AccountJsonImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_import_idp_id_error_new_and_idp_id_exists(self) -> None:
+    def test_import_saml_id_error_new_and_saml_id_exists(self) -> None:
         """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
         self.set_models(
