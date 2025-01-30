@@ -554,6 +554,12 @@ class Meeting(Model, MeetingModelMixin):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    motion_poll_projection_name_order_first = fields.CharField(
+        required=True,
+        default="last_name",
+        constraints={"enum": ["first_name", "last_name"]},
+    )
+    motion_poll_projection_max_columns = fields.IntegerField(required=True, default=6)
     poll_candidate_list_ids = fields.RelationListField(
         to={"poll_candidate_list": "meeting_id"}
     )

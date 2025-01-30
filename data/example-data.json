@@ -1,5 +1,5 @@
 {
-    "_migration_index": 63,
+    "_migration_index": 64,
     "gender":{
         "1":{
             "id": 1,
@@ -353,6 +353,8 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
+            "motion_poll_projection_name_order_first": "last_name",
+            "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_enable_vote_delegations": true,
