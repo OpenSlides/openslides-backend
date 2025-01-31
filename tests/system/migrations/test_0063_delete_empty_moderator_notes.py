@@ -15,7 +15,7 @@ def generate_agenda_item_data(
             "fields": {
                 "id": base,
                 "content_object_id": co_fqid,
-                **({"moderator_notes": note} if note else {}),
+                **({"moderator_notes": note} if note is not None else {}),
             },
         },
         {
@@ -54,3 +54,34 @@ def test_migration_everything(write, finalize, assert_model):
             fqid_from_collection_and_id("agenda_item", base),
             {"id": base, "content_object_id": co_fqid},
         )
+
+
+def test_migration_deleted(write, finalize, assert_model):
+    agenda_item_fqid = fqid_from_collection_and_id("agenda_item", 1)
+    topic_fqid = fqid_from_collection_and_id("topic", 11)
+    data = generate_agenda_item_data("topic", 1, "")
+    data.extend(
+        [
+            {
+                "type": "delete",
+                "fqid": agenda_item_fqid,
+            },
+            {
+                "type": "delete",
+                "fqid": topic_fqid,
+            },
+        ]
+    )
+    write(*data)
+
+    finalize("0063_delete_empty_moderator_notes")
+
+    assert_model(
+        agenda_item_fqid,
+        {
+            "id": 1,
+            "content_object_id": topic_fqid,
+            "moderator_notes": "",
+            "meta_deleted": True,
+        },
+    )
