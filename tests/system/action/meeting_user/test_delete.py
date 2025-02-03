@@ -87,16 +87,11 @@ class MeetingUserDelete(BaseActionTestCase):
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting_user/5")
-        self.assert_model_exists(
-            "motion_editor/1", {"meeting_id": 10, "meeting_user_id": None}
-        )
-        self.assert_model_exists(
-            "motion_working_group_speaker/2",
-            {"meeting_id": 10, "meeting_user_id": None},
-        )
+        self.assert_model_deleted("motion_editor/1")
+        self.assert_model_deleted("motion_working_group_speaker/2")
         self.assert_model_exists(
             "meeting/10",
-            {"motion_editor_ids": [1], "motion_working_group_speaker_ids": [2]},
+            {"motion_editor_ids": [], "motion_working_group_speaker_ids": []},
         )
 
     def test_delete_with_chat_message(self) -> None:
