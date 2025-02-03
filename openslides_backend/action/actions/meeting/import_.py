@@ -222,11 +222,15 @@ class MeetingImport(
             mode="external",
             repair=True,
             fields_to_remove={
+                "meeting": [
+                    "forwarded_motion_ids",
+                ],
                 "motion": [
                     "origin_id",
                     "derived_motion_ids",
                     "all_origin_ids",
                     "all_derived_motion_ids",
+                    "origin_meeting_id",
                 ],
                 "user": [
                     "password",
