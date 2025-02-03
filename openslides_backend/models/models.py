@@ -1522,9 +1522,7 @@ class MotionEditor(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_editor_ids"}, required=True
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_editor_ids"})
     motion_id = fields.RelationField(
         to={"motion": "editor_ids"},
         required=True,
@@ -1543,7 +1541,7 @@ class MotionWorkingGroupSpeaker(Model):
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_working_group_speaker_ids"}, required=True
+        to={"meeting_user": "motion_working_group_speaker_ids"}
     )
     motion_id = fields.RelationField(
         to={"motion": "working_group_speaker_ids"},
