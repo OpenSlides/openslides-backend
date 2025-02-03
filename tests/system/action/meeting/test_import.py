@@ -1537,9 +1537,10 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["forwarded_motion_ids"] = [12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        motion = self.assert_model_exists("motion/2", {"meeting_id": 2})
-        assert motion.get("all_origin_ids") is None
-        assert motion.get("origin_meeting_id") is None
+        self.assert_model_exists(
+            "motion/2",
+            {"meeting_id": 2, "all_origin_ids": None, "origin_meeting_id": None},
+        )
 
     def test_missing_required_field(self) -> None:
         request_data = self.create_request_data(
