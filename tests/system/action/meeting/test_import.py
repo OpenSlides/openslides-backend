@@ -1448,6 +1448,10 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_motion_all_origin_ids(self) -> None:
+        """
+        This case is unrealistic, since usually you can't forward to the same meeting.
+        We should test it regardless, since json-files can be edited.
+        """
         request_data = self.create_request_data(
             {
                 "motion": {
@@ -1494,10 +1498,48 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1, 2]
         response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert (
-            "Motion all_origin_ids and all_derived_motion_ids should be empty."
-            in response.json["message"]
+        self.assert_status_code(response, 200)
+        motion = self.assert_model_exists("motion/2", {"meeting_id": 2})
+        assert motion.get("all_origin_ids") is None
+        motion = self.assert_model_exists("motion/3", {"meeting_id": 2})
+        assert motion.get("all_derived_motion_ids") is None
+
+    def test_foreign_motion_all_origin_ids(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": {
+                    "2": self.get_motion_data(
+                        2,
+                        {
+                            "all_origin_ids": [1],
+                            "list_of_speakers_id": 2,
+                            "state_id": 1,
+                            "origin_meeting_id": 3,
+                        },
+                    ),
+                },
+                "list_of_speakers": {
+                    "2": {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/2",
+                        "closed": False,
+                        "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [2]
+        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [2]
+        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [2]
+        request_data["meeting"]["meeting"]["1"]["forwarded_motion_ids"] = [12, 13]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {"meeting_id": 2, "all_origin_ids": None, "origin_meeting_id": None},
         )
 
     def test_missing_required_field(self) -> None:
