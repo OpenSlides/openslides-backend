@@ -1452,11 +1452,9 @@ class UserMergeTogether(BaseVoteTestCase):
     def base_deep_copy_create_motion_test(
         self, sub_collection: str, back_relation: CollectionField
     ) -> None:
-        self.set_models(
-            self.get_deep_create_base_data("motion_submitter", "submitter_ids")
-        )
+        self.set_models(self.get_deep_create_base_data(sub_collection, back_relation))
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_deep_create_base_test(response, "motion_submitter", "submitter_ids")
+        self.assert_deep_create_base_test(response, sub_collection, back_relation)
 
     def get_deep_create_base_data(
         self, sub_collection: str, back_relation: CollectionField

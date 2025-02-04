@@ -108,7 +108,7 @@ This is usually necessary in cases where the relation is set to cascade-delete
 Equivalence is determined via `meeting_id`: All meeting_users with the same `meeting_id` are grouped together.
 
 The primary model is updated/re-created with the information from the secondary models using the following rules:
-- `assignment_candidate_ids` are update-merged
+- `assignment_candidate_ids` is update-merged
 - `motion_editor_ids`, `motion_submitter_ids`, `motion_working_group_speaker_ids`, `personal_note_ids` and `speaker_ids` are create-merged
 - other relation-lists are set to the union of their content among all selected users
 - `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
