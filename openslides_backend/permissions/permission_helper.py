@@ -182,7 +182,7 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         lock_result=False,
     )
     if not meeting.get("locked_from_inside") and has_organization_management_level(
-        datastore, user_id, OrganizationManagementLevel.SUPERADMIN
+        datastore, user_id, OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     ):
         return True
 

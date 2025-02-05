@@ -487,8 +487,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "enable_anonymous": True},
         )
-        self.assert_status_code(response, 403)
-        assert "Missing permission:" in response.json["message"]
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {"enable_anonymous": True},
+        )
 
     def test_update_group_d_permissions(self) -> None:
         self.create_meeting()
