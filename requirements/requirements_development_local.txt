@@ -1,5 +1,5 @@
 -r https://raw.githubusercontent.com/OpenSlides/openslides-datastore-service/${DATASTORE_COMMIT_HASH}/requirements/requirements-general.txt
--r https://raw.githubusercontent.com/OpenSlides/openslides-auth-service/${AUTH_COMMIT_HASH}/auth/libraries/pip-auth/requirements.txt
+-r https://raw.githubusercontent.com/OpenSlides/openslides-auth-service/${AUTH_COMMIT_HASH}/libraries/pip-auth/requirements.txt
 -r partial/requirements_local_services.txt
 -r partial/requirements_production.txt
 -r partial/requirements_development.txt

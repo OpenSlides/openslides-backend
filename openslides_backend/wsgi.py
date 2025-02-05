@@ -7,6 +7,7 @@ from .http.views import ActionView, PresenterView
 from .services.auth.adapter import AuthenticationHTTPAdapter
 from .services.datastore.extended_adapter import ExtendedDatastoreAdapter
 from .services.datastore.http_engine import HTTPEngine
+from .services.keycloak.adapter import KeycloakAdminAdapter
 from .services.media.adapter import MediaServiceAdapter
 from .services.vote.adapter import VoteAdapter
 from .shared.interfaces.logging import LoggingModule
@@ -28,6 +29,7 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
     )
     datastore = providers.Factory(ExtendedDatastoreAdapter, engine, logging, env)
     vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
+    idp_admin = providers.Singleton(KeycloakAdminAdapter)
 
 
 class OpenSlidesBackendWSGI(containers.DeclarativeContainer):

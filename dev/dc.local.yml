@@ -7,7 +7,7 @@ services:
                 - REQUIREMENTS_FILE=requirements_development_local.txt
         volumes:
             - ../../openslides-datastore-service/:/datastore-service
-            - ../../openslides-auth-service/auth/libraries/pip-auth/:/authlib
+            - ../../openslides-auth-service/libraries/pip-auth/:/authlib
         environment:
             - PYTHONPATH=/app:/datastore-service:/authlib
             - MYPYPATH=/app:/datastore-service:/authlib
@@ -34,6 +34,3 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
-    auth:
-        build:
-            context: ../../openslides-auth-service

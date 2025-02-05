@@ -16,7 +16,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         logger = Mock()
         config = Mock()
         handler = ActionHandler(config, self.services, logger)
-        handler.user_id = 1
+        handler.auth_context = 1
         handler.internal = False
         return handler
 

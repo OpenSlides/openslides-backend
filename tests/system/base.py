@@ -16,6 +16,7 @@ from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
+from openslides_backend.services.keycloak.interface import IdpAdminService
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import ActionException, DatastoreException
 from openslides_backend.shared.filters import FilterOperator
@@ -46,6 +47,7 @@ class BaseSystemTestCase(TestCase):
     datastore: DatastoreService
     vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
+    idp_admin: IdpAdminService
     client: Client
     anon_client: Client
 
@@ -65,6 +67,7 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+        self.idp_admin = self.services.idp_admin()
         self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()

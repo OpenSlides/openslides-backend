@@ -11,7 +11,7 @@ from ..models.base import Model, model_registry
 from ..models.fields import BaseRelationField
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganizationManagementLevel,
+    OrganizationManagementLevel, SystemManagementLevel,
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
@@ -85,7 +85,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     is_singular: bool = False
     action_type: ActionType = ActionType.PUBLIC
-    permission: Permission | OrganizationManagementLevel | None = None
+    permission: Permission | OrganizationManagementLevel | SystemManagementLevel | None = None
     permission_model: Model | None = None
     permission_id: str | None = None
     skip_archived_meeting_check: bool = False
@@ -197,8 +197,12 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service or using internal check.
         """
+        print("check_permissions " + str(self.permission))
         if self.permission:
-            if isinstance(self.permission, OrganizationManagementLevel):
+            if isinstance(self.permission, SystemManagementLevel):
+                if self.user_id == -1:
+                    return
+            elif isinstance(self.permission, OrganizationManagementLevel):
                 if has_organization_management_level(
                     self.datastore,
                     self.user_id,
@@ -228,6 +232,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         """Do not allow changing any data in an archived meeting"""
+        print("check_for_archived_meeting " + str(self.skip_archived_meeting_check))
         if self.skip_archived_meeting_check:
             return
         try:

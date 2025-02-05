@@ -2,15 +2,18 @@ from collections.abc import Iterable
 from unittest.mock import MagicMock
 
 import pytest
+from authlib.jose import JWTClaims
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.util.register import register_action
 from openslides_backend.action.util.typing import ActionData, ActionResults, Payload
+from openslides_backend.http.auth_context import AuthContext
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.typing import Schema
 
+AUTH_CONTEXT = AuthContext(-1, "")
 
 class BaseTestAction(Action):
     def perform(
@@ -72,7 +75,7 @@ def test_success_actions(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "success_action", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT)
     assert response["success"] is True
     assert response["results"] == [[], []]
 
@@ -82,7 +85,7 @@ def test_success_actions_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "success_action", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, False)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT, False)
     assert response["success"] is True
     assert response["results"] == [[], []]
 
@@ -92,7 +95,7 @@ def test_success_actions_with_result(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "action_with_result", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT)
     assert response["success"] is True
     assert response["results"] == [[], [{"id": 1}, {"id": 42}]]
 
@@ -102,7 +105,7 @@ def test_success_actions_with_result_atomic(action_handler: ActionHandler) -> No
         {"action": "success_action", "data": [{}, {}]},
         {"action": "action_with_result", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, False)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT, False)
     assert response["success"] is True
     assert response["results"] == [[], [{"id": 1}, {"id": 42}]]
 
@@ -113,7 +116,7 @@ def test_with_error(action_handler: ActionHandler) -> None:
         {"action": "error_action", "data": [{}, {}]},
     ]
     with pytest.raises(ActionException) as e:
-        action_handler.handle_request(payload, 0)
+        action_handler.handle_request(payload, AUTH_CONTEXT)
     assert e.value.action_error_index == 1
     assert getattr(e.value, "action_data_error_index", None) is None
 
@@ -123,7 +126,7 @@ def test_with_error_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "error_action", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, False)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT, False)
     assert response["success"] is True
     assert response["results"] == [[], {"success": False, "message": ""}]
 
@@ -134,7 +137,7 @@ def test_with_error_with_index(action_handler: ActionHandler) -> None:
         {"action": "error_action_with_index", "data": [{}, {}]},
     ]
     with pytest.raises(ActionException) as e:
-        action_handler.handle_request(payload, 0)
+        action_handler.handle_request(payload, AUTH_CONTEXT)
     assert e.value.action_error_index == 1
     assert e.value.action_data_error_index == 2
 
@@ -144,7 +147,7 @@ def test_with_error_with_index_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "error_action_with_index", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, False)
+    response = action_handler.handle_request(payload, AUTH_CONTEXT, False)
     assert response["success"] is True
     assert response["results"] == [
         [],

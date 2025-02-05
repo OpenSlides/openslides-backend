@@ -19,4 +19,5 @@ from . import (  # noqa
     toggle_presence_by_number,
     update,
     update_self,
+    backchannel_login
 )

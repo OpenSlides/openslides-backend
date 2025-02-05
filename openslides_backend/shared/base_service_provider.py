@@ -1,5 +1,6 @@
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.keycloak.interface import IdpAdminService
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.interfaces.logging import Logger, LoggingModule
@@ -16,6 +17,7 @@ class BaseServiceProvider:
     auth: AuthenticationService
     media: MediaService
     vote: VoteService
+    idp_admin: IdpAdminService
 
     logging: LoggingModule
     logger: Logger
@@ -32,5 +34,6 @@ class BaseServiceProvider:
         self.auth = services.authentication()
         self.media = services.media()
         self.vote_service = services.vote()
+        self.idp_admin = services.idp_admin()
         self.datastore = datastore
         self.logging = logging

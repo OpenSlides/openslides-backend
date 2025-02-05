@@ -144,5 +144,12 @@ run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
 build-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
 
+build-dev-fullstack:
+	DOCKER_BUILDKIT=1 docker build --file=dev/Dockerfile.dev . \
+        --build-arg=REQUIREMENTS_FILE=requirements_development_fullstack.txt \
+		--build-context pipauth=../openslides-auth-service/libraries/pip-auth \
+		--build-context datastore=../openslides-datastore-service \
+		--tag=openslides-backend-dev-fullstack
+
 rebuild-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
+	docker build --file=dev/Dockerfile.dev . --target development --tag=openslides-backend-dev --no-cache

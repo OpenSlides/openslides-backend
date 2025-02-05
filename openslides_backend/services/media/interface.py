@@ -16,14 +16,6 @@ class MediaService(Protocol):
         ...
 
     @abstractmethod
-    def upload_resource(self, file: str, id: int, mimetype: str) -> None:
-        """
-        Throws a MediaServiceException, if there is a ConnectionError or
-        any Error reported from MediaService-Request
-        """
-        ...
-
-    @abstractmethod
     def duplicate_mediafile(self, source_id: int, target_id: int) -> None:
         """
         Throws a MediaServiceException, if there is a ConnectionError or

@@ -1,7 +1,19 @@
 import binascii
+import json
 from base64 import b64decode
 from pathlib import Path
+from smtplib import SMTPAuthenticationError, SMTPSenderRefused
+from ssl import SSLCertVerificationError
 
+from authlib.jose import JWTClaims
+
+from os_authlib.message_bus import MessageBus
+
+from openslides_backend.action.actions.user.send_invitation_email import EmailErrorType
+from openslides_backend.action.mixins.send_email_mixin import EmailUtils, EmailSettings
+from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.util import fqid_from_collection_and_id
+from datastore.shared.util.key_types import id_regex
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
@@ -14,9 +26,9 @@ from ...shared.interfaces.wsgi import RouteResponse
 from ..http_exceptions import Unauthorized
 from ..request import Request
 from .base_view import BaseView, route
+from .auth import token_required
 
 INTERNAL_AUTHORIZATION_HEADER = "Authorization"
-
 
 VERSION_PATH = Path(__file__).parent / ".." / ".." / "version.txt"
 
@@ -27,16 +39,19 @@ class ActionView(BaseView):
     ActionHandler after retrieving request user id.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message_bus = MessageBus()
+
     @route(["handle_request", "handle_separately"])
-    def action_route(self, request: Request) -> RouteResponse:
+    @token_required
+    def action_route(self, request: Request, claims: JWTClaims) -> RouteResponse:
         self.logger.debug("Start dispatching action request.")
 
         assert_migration_index()
 
         # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(
-            request.headers, request.cookies
-        )
+        user_id, access_token = self.get_uid(claims), claims.get("access_token")
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
             request.headers.get(AUTHENTICATION_HEADER, ""),
@@ -51,6 +66,11 @@ class ActionView(BaseView):
             request.json, user_id, is_atomic, handler
         )
         return response, access_token
+
+    def get_uid(self, claims):
+        if not claims.get("os_uid"):
+             return -1
+        return int(claims.get("os_uid"))
 
     @route("handle_request", internal=True)
     def internal_action_route(self, request: Request) -> RouteResponse:
@@ -83,6 +103,30 @@ class ActionView(BaseView):
     @route("info", method="GET", json=False)
     def info_route(self, request: Request) -> RouteResponse:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+
+    @route("logout", method="POST", json=False)
+    def backchannel_logout(self, request: Request) -> RouteResponse:
+        self.logger.debug("Received logout request")
+        try:
+            logout_token = request.form.get("logout_token")
+            if not logout_token:
+                self.logger.error("Missing logout_token")
+                raise ServerError("Missing logout_token")
+
+            decoded_token = self.services.authentication().auth_handler.verify_logout_token(logout_token)
+            if decoded_token is None:
+                return AuthenticationException("Invalid logout token")
+
+            session_id = decoded_token.get("sid")
+            if not session_id:
+                return AuthenticationException("Missing session ID (sid) in logout token")
+
+            self.logger.debug(f"Session ID to terminate: {session_id}")
+            self.message_bus.redis.xadd("logout",  {"sessionId": session_id})
+
+            return { "success": True }, None
+        except json.JSONDecodeError:
+            return ServerError("Invalid JSON payload", status=400)
 
     @route("version", method="GET", json=False)
     def version_route(self, _: Request) -> RouteResponse:

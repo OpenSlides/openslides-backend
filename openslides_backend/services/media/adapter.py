@@ -1,11 +1,13 @@
+import threading
 from typing import Any
 
 import requests
 
+from os_authlib import AUTHORIZATION_HEADER, AUTHENTICATION_HEADER
 from ...shared.exceptions import MediaServiceException
 from ...shared.interfaces.logging import LoggingModule
 from .interface import MediaService
-
+from ...http.views.auth import token_storage
 
 class MediaServiceAdapter(MediaService):
     """
@@ -41,7 +43,8 @@ class MediaServiceAdapter(MediaService):
         self, url: str, payload: dict[str, Any], description: str
     ) -> None:
         try:
-            response = requests.post(url, json=payload)
+            self.logger.debug(f"Getting access token from : {threading.get_ident()} -> {token_storage.access_token}")
+            response = requests.post(url, json=payload, headers={'Authorization': f'Bearer {token_storage.access_token}'})
         except requests.exceptions.ConnectionError as e:
             msg = f"Connect to mediaservice failed. {e}"
             self.logger.debug(description + msg)

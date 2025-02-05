@@ -9,7 +9,7 @@ from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
 
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from ..shared.patterns import fqid_from_collection_and_id
 
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import ActionException, DatastoreException
@@ -18,7 +18,8 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
-
+from ..http.token_storage import token_storage, TokenStorageUpdate
+from ..http.auth_context import AuthContext
 
 class ActionWorkerState(str, Enum):
     RUNNING = "running"
@@ -44,7 +45,7 @@ def handle_action_in_worker_thread(
     )
     action_worker_thread = ActionWorker(
         payload,
-        user_id,
+        AuthContext(user_id, token_storage.access_token, token_storage.claims),
         is_atomic,
         handler,
         lock,
@@ -221,7 +222,7 @@ class ActionWorker(threading.Thread):
     def __init__(
         self,
         payload: Payload,
-        user_id: int,
+        auth_context: AuthContext,
         is_atomic: bool,
         handler: ActionHandler,
         lock: threading.Lock,
@@ -230,7 +231,7 @@ class ActionWorker(threading.Thread):
         super().__init__(name="action_worker")
         self.handler = handler
         self.payload = payload
-        self.user_id = user_id
+        self.auth_context = auth_context
         self.is_atomic = is_atomic
         self.lock = lock
         self.internal = internal
@@ -239,12 +240,18 @@ class ActionWorker(threading.Thread):
     def run(self):  # type: ignore
         with self.lock:
             self.started = True
+            # set global werkzeug context
+            token_storage.update(TokenStorageUpdate(access_token= self.auth_context.access_token,
+                                                        claims= self.auth_context.claims))
             try:
                 self.response = self.handler.handle_request(
-                    self.payload, self.user_id, self.is_atomic, self.internal
-                )
+                    self.payload, self.auth_context, self.is_atomic, self.internal
+               )
             except Exception as exception:
                 self.exception = exception
+            finally:
+                token_storage.clear()
+
 
 
 class OSGunicornThread(threading.Thread):

@@ -58,3 +58,8 @@ class CommitteeManagementLevel(CompareRightLevel):
 
     def get_base_model(self) -> str:
         return "committee"
+
+class SystemManagementLevel:
+
+    def __init__(self, permission: str):
+        self.permission = permission
