@@ -3633,7 +3633,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [])
         response = self.request(
             "user.update",
-            {"id": 111, "meeting_id": 1, "group_ids": [3]},
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [3],
+                "vote_delegations_from_ids": [],
+            },
         )
 
         self.assert_status_code(response, 200)

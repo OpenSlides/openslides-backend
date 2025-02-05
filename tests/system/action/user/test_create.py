@@ -1218,7 +1218,17 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [])
         response = self.request(
             "user.create",
-            {"username": "username3", "meeting_id": 1, "group_ids": [3]},
+            {
+                "first_name": "",
+                "last_name": "",
+                "is_active": True,
+                "is_physical_person": True,
+                "email": "",
+                "username": "username3",
+                "meeting_id": 1,
+                "group_ids": [3],
+                "vote_delegations_from_ids": [],
+            },
         )
 
         self.assert_status_code(response, 200)
