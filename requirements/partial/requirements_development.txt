@@ -4,7 +4,7 @@ black==25.1.0
 debugpy==1.8.12
 flake8==7.1.1
 isort==6.0.0
-mypy==1.14.1
+mypy==1.15.0
 pip-check==2.9
 pytest==8.3.4
 pytest-cov==6.0.0
