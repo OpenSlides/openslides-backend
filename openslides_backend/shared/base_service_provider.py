@@ -1,5 +1,7 @@
-from openslides_backend.database.db_connection_handling import get_current_os_conn_pool
 from openslides_backend.services.auth.interface import AuthenticationService
+from openslides_backend.services.database.postgres.db_connection_handling import (
+    get_current_os_conn_pool,
+)
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.interface import VoteService
