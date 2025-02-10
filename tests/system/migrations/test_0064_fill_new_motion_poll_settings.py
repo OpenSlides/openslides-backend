@@ -42,7 +42,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0063_fill_new_motion_poll_settings")
+    finalize("0064_fill_new_motion_poll_settings")
 
     assert_model(
         "meeting/1",

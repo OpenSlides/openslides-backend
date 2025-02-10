@@ -9,7 +9,7 @@ class Migration(BaseModelMigration):
     for the new projector color fields "chyron_background_color_2" and "chyron_font_color_2".
     """
 
-    target_migration_index = 64
+    target_migration_index = 65
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
