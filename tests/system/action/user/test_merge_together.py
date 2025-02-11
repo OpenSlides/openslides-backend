@@ -11,6 +11,7 @@ from openslides_backend.shared.patterns import (
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.poll.test_vote import BaseVoteTestCase
+from tests.util import Response
 
 
 class UserMergeTogether(BaseVoteTestCase):
@@ -1112,7 +1113,7 @@ class UserMergeTogether(BaseVoteTestCase):
         def build_expected_user_dates(
             voted_present_user_delegated_merged: list[
                 tuple[bool, bool, int, int | None, int | None, int | None]
-            ]
+            ],
         ) -> list[dict[str, Any]]:
             return [
                 {
@@ -1329,7 +1330,7 @@ class UserMergeTogether(BaseVoteTestCase):
         }
 
         wherein None is used instead of the data tuple if the model is
-        supposed to have been deleteded
+        supposed to have been deleted
         """
         for meeting_id, expected_sub_models in expected.items():
             self.assert_model_exists(
@@ -1448,6 +1449,84 @@ class UserMergeTogether(BaseVoteTestCase):
             collection, sub_collection, back_relation, expected
         )
 
+    def base_deep_copy_create_motion_test(
+        self, sub_collection: str, back_relation: CollectionField
+    ) -> None:
+        self.set_models(self.get_deep_create_base_data(sub_collection, back_relation))
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_deep_create_base_test(response, sub_collection, back_relation)
+
+    def get_deep_create_base_data(
+        self, sub_collection: str, back_relation: CollectionField
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {}
+        self.add_assignment_or_motion_models_for_meetings(
+            data,
+            "motion",
+            sub_collection,
+            back_relation,
+            {
+                1: [
+                    [12, 15],
+                    [15, 14],
+                    [14, 12],
+                    [12, 14, 15],
+                    [14, 12, 15],
+                    [15, 14, 12],
+                ],
+                2: [[24, 22, 23]],
+                3: [[34], [33]],
+                4: [[45]],
+            },
+        )
+        return data
+
+    def assert_deep_create_base_test(
+        self,
+        response: Response,
+        sub_collection: str,
+        back_relation: CollectionField,
+    ) -> None:
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
+            1: {
+                1: (1, 12, 1),
+                2: (1, 15, 2),
+                3: (2, 15, 1),
+                4: None,
+                5: None,
+                6: (3, 12, 1),
+                7: (4, 12, 1),
+                8: None,
+                9: (4, 15, 3),
+                10: None,
+                11: (5, 12, 1),
+                12: (5, 15, 3),
+                13: (6, 15, 1),
+                14: None,
+                15: (6, 12, 2),
+                22: (2, 12, 2),  # created to replace 4
+            },
+            2: {
+                16: None,
+                17: (7, 22, 1),
+                18: None,
+            },
+            3: {
+                19: None,
+                20: None,
+                23: (9, 46, 1),  # created to replace 20
+                24: (8, 46, 1),  # created to replace 19
+            },
+            4: {
+                21: (10, 45, 1),
+            },
+        }
+        self.assert_assignment_or_motion_model_test_was_correct(
+            "motion", sub_collection, back_relation, expected
+        )
+
     def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
         self.assert_history_information(
@@ -1486,37 +1565,19 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
 
     def test_merge_with_motion_working_group_speakers(self) -> None:
-        self.base_assignment_or_motion_model_test(
-            "motion", "motion_working_group_speaker"
+        self.base_deep_copy_create_motion_test(
+            "motion_working_group_speaker", "working_group_speaker_ids"
         )
 
     def test_merge_with_motion_editor(self) -> None:
-        self.base_assignment_or_motion_model_test("motion", "motion_editor")
+        self.base_deep_copy_create_motion_test("motion_editor", "editor_ids")
 
     def test_merge_with_motion_submitters_and_supporters(
         self,
     ) -> None:
-        data: dict[str, Any] = {}
-        self.add_assignment_or_motion_models_for_meetings(
-            data,
-            "motion",
-            "motion_submitter",
-            "submitter_ids",
-            {
-                1: [
-                    [12, 15],
-                    [15, 14],
-                    [14, 12],
-                    [12, 14, 15],
-                    [14, 12, 15],
-                    [15, 14, 12],
-                ],
-                2: [[24, 22, 23]],
-                3: [[34], [33]],
-                4: [[45]],
-            },
+        self.set_models(
+            self.get_deep_create_base_data("motion_submitter", "submitter_ids")
         )
-        self.set_models(data)
         supporter_ids_per_motion: dict[int, list[int]] = {
             # meeting/1
             1: [14],
@@ -1557,45 +1618,7 @@ class UserMergeTogether(BaseVoteTestCase):
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_status_code(response, 200)
-        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
-            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
-            1: {
-                1: (1, 12, 1),
-                2: (1, 15, 2),
-                3: (2, 15, 1),
-                4: None,
-                5: None,
-                6: (3, 12, 1),
-                7: (4, 12, 1),
-                8: None,
-                9: (4, 15, 3),
-                10: None,
-                11: (5, 12, 1),
-                12: (5, 15, 3),
-                13: (6, 15, 1),
-                14: None,
-                15: (6, 12, 2),
-                22: (2, 12, 2),  # created to replace 4
-            },
-            2: {
-                16: None,
-                17: (7, 22, 1),
-                18: None,
-            },
-            3: {
-                19: None,
-                20: None,
-                23: (9, 46, 1),  # created to replace 20
-                24: (8, 46, 1),  # created to replace 19
-            },
-            4: {
-                21: (10, 45, 1),
-            },
-        }
-        self.assert_assignment_or_motion_model_test_was_correct(
-            "motion", "motion_submitter", "submitter_ids", expected
-        )
+        self.assert_deep_create_base_test(response, "motion_submitter", "submitter_ids")
 
         def get_motions(*m_user_ids: int) -> list[int]:
             return list(
