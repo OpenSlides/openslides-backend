@@ -56,6 +56,8 @@ class VotePollBaseTestClass(BasePollTestCase):
                     "votescast": "0.000000",
                     "backend": "fast",
                     **self.get_poll_data(),
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
             }
         )
