@@ -79,6 +79,48 @@ class MeetingUserHistoryMixin(Action):
                         fqid_from_collection_and_id("meeting", meeting_id)
                     )
                 instance_information.extend(group_information)
+            if "vote_delegated_to_id" in instance:
+                if instance["vote_delegated_to_id"]:
+                    user_id = self.datastore.get(
+                        fqid_from_collection_and_id(
+                            "meeting_user", instance["vote_delegated_to_id"]
+                        ),
+                        ["user_id"],
+                        use_changed_models=True,
+                    )["user_id"]
+                    instance_information.extend(
+                        [
+                            "Vote delegated to {} in meeting {}",
+                            fqid_from_collection_and_id("user", user_id),
+                            fqid_from_collection_and_id("meeting", meeting_id),
+                        ]
+                    )
+                else:
+                    instance_information.extend(
+                        [
+                            "Vote delegation canceled in meeting {}",
+                            fqid_from_collection_and_id("meeting", meeting_id),
+                        ]
+                    )
+            if "vote_delegations_from_ids" in instance:
+                new_delegations = set(instance.get("vote_delegations_from_ids", []))
+                old_delegations = set(db_instance.get("vote_delegations_from_ids", []))
+                added = new_delegations.difference(old_delegations)
+                removed = old_delegations.difference(new_delegations)
+                if added:
+                    instance_information.extend(
+                        [
+                            "Proxy voting rights received in meeting {}",
+                            fqid_from_collection_and_id("meeting", meeting_id),
+                        ]
+                    )
+                if removed:
+                    instance_information.extend(
+                        [
+                            "Proxy voting rights removed in meeting {}",
+                            fqid_from_collection_and_id("meeting", meeting_id),
+                        ]
+                    )
 
             if instance_information:
                 information[fqid_from_collection_and_id("user", user_id)] = (
