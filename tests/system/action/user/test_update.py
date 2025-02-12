@@ -285,8 +285,17 @@ class UserUpdateActionTest(BaseActionTestCase):
             [
                 "Participant added to meeting {}.",
                 "meeting/1",
+                "Participant added to group {} and structure level {} in meeting {}.",
+                "group/11",
+                "structure_level/31",
+                "meeting/1",
+                "Proxy voting rights received in meeting {}",
+                "meeting/1",
                 "Committee management changed",
             ],
+        )
+        self.assert_history_information(
+            "user/23", ["Vote delegated to {} in meeting {}", "user/22", "meeting/1"]
         )
 
     def test_update_set_and_reset_vote_forwarded(self) -> None:
