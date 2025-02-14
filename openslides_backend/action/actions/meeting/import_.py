@@ -163,7 +163,7 @@ class MeetingImport(
         if len(instance["meeting"]["meeting"]) != 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
 
-    def check_unique(self, instance) -> None:
+    def check_unique(self, instance: dict[str, Any]) -> None:
         if instance.get("external_id"):
             self.check_unique_in_context(
                 "external_id",
