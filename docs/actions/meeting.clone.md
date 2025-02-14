@@ -11,6 +11,7 @@
   location: str;
   organization_tag_ids: List[Id];
   name: str;
+  external_id: str; // to prevent duplicate external ids 
   user_ids: Id[];
   admin_ids: Id[];
   set_as_template: boolean;  // default False

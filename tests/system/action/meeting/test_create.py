@@ -549,14 +549,22 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"committee_id": 1, "external_id": external_id},
-                "committee/1": {"name": "test committee", "organization_id": 1},
+                "committee/1": {
+                    "name": "committee with preexisting meeting",
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                },
+                "committee/2": {
+                    "name": "committee for new meeting",
+                    "organization_id": 1,
+                },
             }
         )
         response = self.request(
             "meeting.create",
             {
                 "name": "meeting2",
-                "committee_id": 1,
+                "committee_id": 2,
                 "language": "en",
                 "external_id": external_id,
                 "admin_ids": [1],
@@ -564,9 +572,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
             response.json["message"],
         )
+        self.assert_model_not_exists("meeting/2")
 
     def test_create_external_id_empty_special_case(self) -> None:
         external_id = ""

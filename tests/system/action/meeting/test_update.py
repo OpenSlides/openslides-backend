@@ -860,7 +860,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"committee_id": 1, "external_id": external_id},
-                "meeting/2": {"committee_id": 1},
+                "meeting/2": {"committee_id": 2},
+                "committee/1": {
+                    "name": "irrelevant name",
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                },
+                "committee/2": {
+                    "name": "irrelevant name",
+                    "organization_id": 1,
+                    "meeting_ids": [2],
+                },
             }
         )
         response = self.request(
@@ -872,9 +882,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
             response.json["message"],
         )
+        self.assert_model_exists("meeting/2", {"external_id": None, "committee_id": 2})
 
     def test_update_external_id_self(self) -> None:
         external_id = "external"

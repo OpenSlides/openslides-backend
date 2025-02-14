@@ -100,6 +100,8 @@ class MeetingImport(
             e.message = msg + " " + e.message
             raise e
         instance = self.base_update_instance(instance)
+        for meeting in instance["meeting"]["meeting"].values():
+            self.check_unique(meeting)
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
@@ -160,6 +162,15 @@ class MeetingImport(
     def check_one_meeting(self, instance: dict[str, Any]) -> None:
         if len(instance["meeting"]["meeting"]) != 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
+
+    def check_unique(self, instance) -> None:
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+                instance["id"],
+            )
 
     def check_locked(self, instance: dict[str, Any]) -> None:
         if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
