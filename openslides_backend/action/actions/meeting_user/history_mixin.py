@@ -16,7 +16,9 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         yield from super().create_events(instance)
-        meeting_user_ids: list[int] = instance.get("vote_delegations_from_ids", [])
+        meeting_user_ids: list[int] = instance.get(
+            "vote_delegations_from_ids", []
+        ).copy()
         if muser_id := instance.get("vote_delegated_to_id"):
             meeting_user_ids.append(muser_id)
         if meeting_user_ids:
@@ -124,14 +126,14 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
             instance_information.append(tuple(group_information))
         if "vote_delegated_to_id" in instance:
-            if old_to_user_id := self.datastore.get(
-                fqid_from_collection_and_id(
-                    "meeting_user", instance["vote_delegated_to_id"]
-                ),
-                ["user_id"],
-                use_changed_models=False,
-                raise_exception=False,
-            ).get("user_id"):
+            if (old_to_muser_id := db_instance.get("vote_delegated_to_id")) and (
+                old_to_user_id := self.datastore.get(
+                    fqid_from_collection_and_id("meeting_user", old_to_muser_id),
+                    ["user_id"],
+                    use_changed_models=False,
+                    raise_exception=False,
+                ).get("user_id")
+            ):
                 self.add_entries_to_history_information(
                     information,
                     [
