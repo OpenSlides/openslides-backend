@@ -106,6 +106,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
+            "motion_poll_projection_name_order_first": "last_name",
+            "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
             "users_enable_vote_delegations": True,
