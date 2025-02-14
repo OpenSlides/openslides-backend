@@ -576,7 +576,6 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_mappers": self.meeting_mappers,
             },
         }
-        # self.organization["saml_attr_mapping"]["meeting_mappers"] = self.meeting_mappers  # type: ignore
         self.create_meeting()
         self.create_meeting(4)
         self.set_models(
