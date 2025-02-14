@@ -294,7 +294,7 @@ class UserSaveSamlAccount(
         Validates the meeting mapper to be complete. Returns False if not.
         Interprets everything as a string. F.e. "True", "4", "[False, 42, 'Text']" and so on.
         Returns True if the mapper matches its criteria on instances values or no conditions were given.
-        Returns False on None or empty string.
+        Returns False on falsy values. F.e. 0, None, empty string.
         """
         if not meeting_mapper.get("external_id"):
             return False
@@ -449,17 +449,7 @@ class UserSaveSamlAccount(
                         else:
                             result = value
                     elif saml_meeting_user_field == "present":
-                        result = BooleanField.validate(BooleanField(), value)
-                        # Result is int or bool. int will later be interpreted as bool.
-                        # (
-                        #     value
-                        #     if not isinstance(value, str)
-                        #     else (
-                        #         False
-                        #         if value.casefold() == "false".casefold()
-                        #         else True
-                        #     )
-                        # )
+                        result = BooleanField().validate(value)
                     elif saml_meeting_user_field == "vote_weight":
                         # Result must be string and have 6 digits after dot.
                         if isinstance(value, int):
