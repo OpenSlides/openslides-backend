@@ -19,11 +19,11 @@ from ...util.typing import ActionData
 from ..assignment_candidate.delete import AssignmentCandidateDelete
 from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
-from ..motion_editor.delete import MotionEditorDeleteAction
+from ..motion_editor.create import MotionEditorCreateAction
 from ..motion_editor.update import MotionEditorUpdateAction
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
-from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
+from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreateAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
@@ -351,11 +351,11 @@ class UserMergeTogether(
                 },
                 "motion_editor": {
                     "update": MotionEditorUpdateAction,
-                    "delete": MotionEditorDeleteAction,
+                    "create": MotionEditorCreateAction,
                 },
                 "motion_working_group_speaker": {
                     "update": MotionWorkingGroupSpeakerUpdateAction,
-                    "delete": MotionWorkingGroupSpeakerDeleteAction,
+                    "create": MotionWorkingGroupSpeakerCreateAction,
                 },
             }
 

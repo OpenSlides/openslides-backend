@@ -169,10 +169,13 @@ class MeetingUser(Model):
         to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
     )
     motion_editor_ids = fields.RelationListField(
-        to={"motion_editor": "meeting_user_id"}, equal_fields="meeting_id"
+        to={"motion_editor": "meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     motion_working_group_speaker_ids = fields.RelationListField(
         to={"motion_working_group_speaker": "meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     motion_submitter_ids = fields.RelationListField(
@@ -550,6 +553,12 @@ class Meeting(Model, MeetingModelMixin):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    motion_poll_projection_name_order_first = fields.CharField(
+        required=True,
+        default="last_name",
+        constraints={"enum": ["first_name", "last_name"]},
+    )
+    motion_poll_projection_max_columns = fields.IntegerField(required=True, default=6)
     poll_candidate_list_ids = fields.RelationListField(
         to={"poll_candidate_list": "meeting_id"}
     )

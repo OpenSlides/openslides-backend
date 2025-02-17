@@ -8,7 +8,7 @@ class Migration(BaseModelMigration):
     This migration removes the forwarding user relation
     """
 
-    target_migration_index = 64
+    target_migration_index = 66
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

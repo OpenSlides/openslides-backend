@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "luisa-beerboom"
     groups:
        opentelemetry-dependencies:
           patterns:
@@ -27,4 +27,4 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "luisa-beerboom"

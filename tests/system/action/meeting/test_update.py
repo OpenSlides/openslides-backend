@@ -113,6 +113,27 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("users_forbid_delegator_as_submitter")
         assert not meeting.get("users_forbid_delegator_in_list_of_speakers")
 
+    def test_update_motion_poll_projection(self) -> None:
+        self.basic_test(
+            {
+                "motion_poll_projection_name_order_first": "first_name",
+                "motion_poll_projection_max_columns": 5,
+            }
+        )
+
+    def test_update_motion_poll_projection_invalid_data_error(self) -> None:
+        meeting, response = self.basic_test(
+            {
+                "motion_poll_projection_name_order_first": "best_name",
+            },
+            False,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.motion_poll_projection_name_order_first must be one of ['first_name', 'last_name']"
+            in response.json["message"]
+        )
+
     def test_update_broken_email(self) -> None:
         meeting, response = self.basic_test({"users_email_replyto": "broken@@"}, False)
         self.assert_status_code(response, 400)

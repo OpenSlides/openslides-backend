@@ -135,6 +135,8 @@ meeting_settings_keys = [
     "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
+    "motion_poll_projection_name_order_first",
+    "motion_poll_projection_max_columns",
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_enable_vote_delegations",
