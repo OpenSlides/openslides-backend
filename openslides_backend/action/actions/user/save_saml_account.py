@@ -301,9 +301,14 @@ class UserSaveSamlAccount(
         if not (mapper_conditions := meeting_mapper.get("conditions")):
             return True
         return all(
-            (
-                (instance_value := instance.get(mapper_condition.get("attribute")))
-                and regex_condition.search(str(instance_value))
+            (instance_values := instance.get(mapper_condition.get("attribute")))
+            and (
+                regex_condition.search(str(instance_values))
+                if not isinstance(instance_values, list)
+                else any(
+                    regex_condition.search(str(instance_value))
+                    for instance_value in instance_values
+                )
             )
             for mapper_condition in mapper_conditions
             if (regex_condition := re.compile(mapper_condition.get("condition")))

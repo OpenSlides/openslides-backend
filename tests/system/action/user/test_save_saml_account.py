@@ -821,12 +821,23 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("structure_level/1")
 
     def test_create_user_condition_non_string_condition_attribute(self) -> None:
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0]["conditions"][  # type: ignore
-            1
-        ] = {
-            "attribute": "eery_number",
-            "condition": "5",
-        }
+        """Shows that the condition check works with numbers and lists and list entries are checked individually."""
+        self.organization["saml_attr_mapping"]["meeting_mappers"][0]["conditions"] = [  # type: ignore
+            {
+                "attribute": "membership-list",
+                "condition": "Del.*Admin",
+            }
+        ]
+        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [  # type: ignore
+            {
+                "attribute": "eery_number",
+                "condition": "5",
+            },
+            {
+                "attribute": "membership-list",
+                "condition": "Delegates",
+            },
+        ]
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -838,6 +849,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "idp_group_attribute": "Delegates",
                 "kv_member_number": "KV_Könighols",
                 "eery_number": 5,
+                "membership-list": ["Delegates", "Admin"],
                 "kv_email": "hols@holz.de",
                 "participant_kv_number": "MG_1254",
                 "idp_kv_group_attribute": "Delegates",
@@ -846,55 +858,41 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_status_code(response, 200)
-        self.app.logger.warning.assert_called_with(  # type: ignore
-            "save_saml_account found no group in meeting 'Kreistag' for ['not_a_group'], but used default_group of meeting"
-        )
         self.assert_model_exists(
             "user/2",
             {
                 "saml_id": "111",
                 "username": "111",
                 "email": "holzi@holz.de",
-                "meeting_user_ids": [1, 2],
-                "meeting_ids": [1, 4],
-                "is_present_in_meeting_ids": [1, 4],
+                "meeting_user_ids": [1],
+                "meeting_ids": [4],
+                "is_present_in_meeting_ids": [4],
             },
         )
         self.assert_model_exists(
             "meeting_user/1",
             {
                 "user_id": 2,
-                "meeting_id": 1,
-                "group_ids": [2],
+                "meeting_id": 4,
+                "group_ids": [4],
                 "structure_level_ids": [1],
                 "vote_weight": "1.000000",
                 "number": "MG_1254",
                 "comment": "Vote weight, groups and structure levels set via SSO.",
             },
         )
+        self.assert_model_not_exists("meeting_user/2")
         self.assert_model_exists(
-            "meeting_user/2",
-            {
-                "user_id": 2,
-                "group_ids": [4],
-                "meeting_id": 4,
-                "comment": "Vote weight, groups and structure levels set via SSO.",
-                "structure_level_ids": [2],
-                "vote_weight": "1.000000",
-                "number": "MG_1254",
-            },
+            "group/2", {"meeting_user_ids": None, "external_id": "Delegates"}
         )
         self.assert_model_exists(
-            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+            "group/4", {"meeting_user_ids": [1], "external_id": "Default"}
         )
         self.assert_model_exists(
             "structure_level/1",
-            {"meeting_user_ids": [1], "name": "structure1"},
+            {"meeting_user_ids": [1], "name": "structure2"},
         )
-        self.assert_model_exists(
-            "structure_level/2",
-            {"meeting_user_ids": [2], "name": "structure2"},
-        )
+        self.assert_model_not_exists("structure_level/2")
 
     def test_create_user_mapping_no_mapping(self) -> None:
         del self.meeting_mappers[0]["mappings"]
