@@ -100,8 +100,7 @@ class MeetingImport(
             e.message = msg + " " + e.message
             raise e
         instance = self.base_update_instance(instance)
-        for meeting in instance["meeting"]["meeting"].values():
-            self.check_unique(meeting)
+        self.check_unique(next(iter(instance["meeting"]["meeting"].values())))
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
