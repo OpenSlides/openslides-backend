@@ -16,11 +16,27 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         yield from super().create_events(instance)
+        db_instance = self.datastore.get(
+            fqid_from_collection_and_id("meeting_user", instance["id"]),
+            ["vote_delegated_to_id", "vote_delegations_from_ids"],
+            use_changed_models=False,
+            raise_exception=False,
+        )
         meeting_user_ids: list[int] = instance.get(
             "vote_delegations_from_ids", []
         ).copy()
+        if meeting_user_ids:
+            meeting_user_ids.extend(
+                set(db_instance.get("vote_delegations_from_ids", [])).difference(
+                    meeting_user_ids
+                )
+            )
         if muser_id := instance.get("vote_delegated_to_id"):
             meeting_user_ids.append(muser_id)
+        if "vote_delegated_to_id" in instance and db_instance.get(
+            "vote_delegated_to_id"
+        ):
+            meeting_user_ids.append(db_instance["vote_delegated_to_id"])
         if meeting_user_ids:
             user_ids: set[int] = {
                 muser["user_id"]
@@ -126,13 +142,17 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 )
             instance_information.append(tuple(group_information))
         if "vote_delegated_to_id" in instance:
-            if (old_to_muser_id := db_instance.get("vote_delegated_to_id")) and (
-                old_to_user_id := self.datastore.get(
-                    fqid_from_collection_and_id("meeting_user", old_to_muser_id),
-                    ["user_id"],
-                    use_changed_models=False,
-                    raise_exception=False,
-                ).get("user_id")
+            if (
+                (old_to_muser_id := db_instance.get("vote_delegated_to_id"))
+                and old_to_muser_id != instance["vote_delegated_to_id"]
+                and (
+                    old_to_user_id := self.datastore.get(
+                        fqid_from_collection_and_id("meeting_user", old_to_muser_id),
+                        ["user_id"],
+                        use_changed_models=False,
+                        raise_exception=False,
+                    ).get("user_id")
+                )
             ):
                 self.add_entries_to_history_information(
                     information,
@@ -167,7 +187,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                             fqid_from_collection_and_id("meeting", meeting_id),
                         )
                     ],
-                    for_user_id=user_id,
+                    for_user_id=to_user_id,
                 )
             else:
                 instance_information.append(

@@ -197,3 +197,135 @@ class MeetingUserSetData(BaseActionTestCase):
             "Cannot add explicit users to a meetings anonymous group",
             response.json["message"],
         )
+
+    def test_set_data_delegate_vote(self) -> None:
+        self.create_meeting()
+        bob_id = self.create_user("bob", [3])
+        alice_id = self.create_user("alice", [3])
+        response = self.request(
+            "meeting_user.set_data",
+            {"id": alice_id - 1, "vote_delegated_to_id": bob_id - 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"meeting_user/{alice_id - 1}",
+            {"user_id": alice_id, "vote_delegated_to_id": bob_id - 1},
+        )
+        self.assert_model_exists(
+            f"meeting_user/{bob_id - 1}",
+            {"user_id": bob_id, "vote_delegations_from_ids": [alice_id - 1]},
+        )
+        self.assert_history_information(
+            f"user/{bob_id}",
+            [
+                "Proxy voting rights received in meeting {}",
+                "meeting/1",
+            ],
+        )
+        self.assert_history_information(
+            f"user/{alice_id}",
+            ["Vote delegated to {} in meeting {}", f"user/{bob_id}", "meeting/1"],
+        )
+
+    def test_set_data_receive_delegated_vote(self) -> None:
+        self.create_meeting()
+        bob_id = self.create_user("bob", [3])
+        alice_id = self.create_user("alice", [3])
+        response = self.request(
+            "meeting_user.set_data",
+            {"id": alice_id - 1, "vote_delegations_from_ids": [bob_id - 1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"meeting_user/{alice_id - 1}",
+            {"user_id": alice_id, "vote_delegations_from_ids": [bob_id - 1]},
+        )
+        self.assert_history_information(
+            f"user/{bob_id}",
+            ["Vote delegated to {} in meeting {}", f"user/{alice_id}", "meeting/1"],
+        )
+        self.assert_history_information(
+            f"user/{alice_id}",
+            [
+                "Proxy voting rights received in meeting {}",
+                "meeting/1",
+            ],
+        )
+
+    def test_set_data_re_delegate_vote(self) -> None:
+        self.create_meeting()
+        bob_id = self.create_user("bob", [3])
+        alice_id = self.create_user("alice", [3])
+        tom_id = self.create_user("tom", [3])
+        self.set_models(
+            {
+                f"meeting_user/{alice_id-1}": {"vote_delegated_to_id": tom_id - 1},
+                f"meeting_user/{tom_id-1}": {
+                    "vote_delegations_from_ids": [alice_id - 1]
+                },
+            }
+        )
+        response = self.request(
+            "meeting_user.set_data",
+            {"id": alice_id - 1, "vote_delegated_to_id": bob_id - 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"meeting_user/{alice_id - 1}",
+            {"user_id": alice_id, "vote_delegated_to_id": bob_id - 1},
+        )
+        self.assert_history_information(
+            f"user/{bob_id}",
+            [
+                "Proxy voting rights received in meeting {}",
+                "meeting/1",
+            ],
+        )
+        self.assert_history_information(
+            f"user/{alice_id}",
+            ["Vote delegated to {} in meeting {}", f"user/{bob_id}", "meeting/1"],
+        )
+        self.assert_history_information(
+            f"user/{tom_id}",
+            ["Proxy voting rights removed in meeting {}", "meeting/1"],
+        )
+
+    def test_set_data_re_delegate_received_votes(self) -> None:
+        self.create_meeting()
+        bob_id = self.create_user("bob", [3])
+        alice_id = self.create_user("alice", [3])
+        tom_id = self.create_user("tom", [3])
+        self.set_models(
+            {
+                f"meeting_user/{alice_id-1}": {
+                    "vote_delegations_from_ids": [tom_id - 1]
+                },
+                f"meeting_user/{tom_id-1}": {"vote_delegated_to_id": alice_id - 1},
+            }
+        )
+        response = self.request(
+            "meeting_user.set_data",
+            {"id": alice_id - 1, "vote_delegations_from_ids": [bob_id - 1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"meeting_user/{alice_id - 1}",
+            {"user_id": alice_id, "vote_delegations_from_ids": [bob_id - 1]},
+        )
+        self.assert_history_information(
+            f"user/{bob_id}",
+            ["Vote delegated to {} in meeting {}", f"user/{alice_id}", "meeting/1"],
+        )
+        self.assert_history_information(
+            f"user/{alice_id}",
+            [
+                "Proxy voting rights received in meeting {}",
+                "meeting/1",
+                "Proxy voting rights removed in meeting {}",
+                "meeting/1",
+            ],
+        )
+        self.assert_history_information(
+            f"user/{tom_id}",
+            ["Vote delegation canceled in meeting {}", "meeting/1"],
+        )
