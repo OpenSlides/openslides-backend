@@ -221,11 +221,15 @@ class MeetingImport(
             mode="external",
             repair=True,
             fields_to_remove={
+                "meeting": [
+                    "forwarded_motion_ids",
+                ],
                 "motion": [
                     "origin_id",
                     "derived_motion_ids",
-                    "all_origin_id",
+                    "all_origin_ids",
                     "all_derived_motion_ids",
+                    "origin_meeting_id",
                 ],
                 "user": [
                     "password",
@@ -241,12 +245,6 @@ class MeetingImport(
         except CheckException as ce:
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
-
-        for entry in meeting_json.get("motion", {}).values():
-            if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
-                raise ActionException(
-                    "Motion all_origin_ids and all_derived_motion_ids should be empty."
-                )
 
         self.check_limit_of_meetings()
         self.update_meeting_and_users(instance)
