@@ -127,6 +127,7 @@ class MeetingClone(MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
