@@ -8,7 +8,7 @@ from openslides_backend.migrations.core.migration_reader import (
 )
 from openslides_backend.shared.filters import FilterOperator
 
-model = {"id": 1, "f": 1, "g": "test"}
+model = {"id": 1, "f": 1, "g": "test", "sub_dict": {"sub_list": []}}
 
 
 def check_migration_reader(migration_reader: MigrationReader):
