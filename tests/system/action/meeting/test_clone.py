@@ -615,12 +615,14 @@ class MeetingClone(BaseActionTestCase):
                 "committee_id": 2,
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": None,
+                "template_for_organization_id": None,
+            },
         )
-        self.assert_model_not_exists("meeting/2")
 
     def test_clone_with_recommendation_extension(self) -> None:
         self.set_models(self.test_models_with_admin)
