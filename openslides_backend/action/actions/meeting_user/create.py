@@ -76,30 +76,6 @@ class MeetingUserCreate(
             information[fqid_from_collection_and_id("user", instance["user_id"])] = (
                 instance_information
             )
-            if "vote_delegated_to_id" in instance and instance["vote_delegated_to_id"]:
-                user_id = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        "meeting_user", instance["vote_delegated_to_id"]
-                    ),
-                    ["user_id"],
-                    use_changed_models=True,
-                )["user_id"]
-                instance_information.extend(
-                    [
-                        "Vote delegated to {} in meeting {}",
-                        fqid_from_collection_and_id("user", user_id),
-                        fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-                    ]
-                )
-            if "vote_delegations_from_ids" in instance and instance.get(
-                "vote_delegations_from_ids", []
-            ):
-                instance_information.extend(
-                    [
-                        "Proxy voting rights received in meeting {}",
-                        fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-                    ]
-                )
         return information
 
     def compose_history_string(
