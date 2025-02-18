@@ -1,4 +1,4 @@
-FROM python:3.10.15-slim-bookworm
+FROM python:3.10.16-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y curl ncat git mime-support gcc libc-dev libpq-dev libmagic1
