@@ -208,10 +208,8 @@ class MeetingUpdate(
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                "The external_id of the meeting is not unique in the committee scope.",
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
                 instance["id"],
-                "committee_id",
-                self.get_committee_id(instance["id"]),
             )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
