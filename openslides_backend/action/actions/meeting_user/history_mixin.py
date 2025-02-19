@@ -46,7 +46,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                                 added,
                                 ["user_id", "vote_delegated_to_id"],
                             )
-                        ]
+                        ],
+                        use_changed_models=False,
                     )["meeting_user"].values()
                     if date.get("vote_delegated_to_id")
                 ]
@@ -175,6 +176,12 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     ).get("user_id")
                 )
             ):
+                instance_information.append(
+                    (
+                        "Vote delegation canceled in meeting {}",
+                        fqid_from_collection_and_id("meeting", meeting_id),
+                    )
+                )
                 self.add_entries_to_history_information(
                     information,
                     [
@@ -210,13 +217,6 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     ],
                     for_user_id=to_user_id,
                 )
-            else:
-                instance_information.append(
-                    (
-                        "Vote delegation canceled in meeting {}",
-                        fqid_from_collection_and_id("meeting", meeting_id),
-                    )
-                )
         if "vote_delegations_from_ids" in instance:
             new_delegations = set(instance.get("vote_delegations_from_ids", []))
             old_delegations = set(db_instance.get("vote_delegations_from_ids", []))
@@ -247,10 +247,11 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         [
                             GetManyRequest(
                                 "meeting_user",
-                                list(removed),
+                                list(added),
                                 ["vote_delegated_to_id", "user_id"],
                             )
-                        ]
+                        ],
+                        use_changed_models=False,
                     )["meeting_user"].values()
                     if date.get("vote_delegated_to_id")
                 ]
@@ -364,6 +365,45 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),
                 )
             )
+            db_added = [
+                date
+                for date in self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "meeting_user",
+                            list(instance["vote_delegations_from_ids"]),
+                            ["vote_delegated_to_id", "user_id"],
+                        )
+                    ],
+                    use_changed_models=False,
+                )["meeting_user"].values()
+                if date.get("vote_delegated_to_id")
+            ]
+            for date in db_added:
+                self.add_entries_to_history_information(
+                    information,
+                    [
+                        (
+                            "Vote delegation canceled in meeting {}",
+                            fqid_from_collection_and_id(
+                                "meeting", db_instance["meeting_id"]
+                            ),
+                        )
+                    ],
+                    for_user_id=date["user_id"],
+                )
+                self.add_entries_to_history_information(
+                    information,
+                    [
+                        (
+                            "Proxy voting rights removed in meeting {}",
+                            fqid_from_collection_and_id(
+                                "meeting", db_instance["meeting_id"]
+                            ),
+                        )
+                    ],
+                    for_meeting_user_id=date["vote_delegated_to_id"],
+                )
             for muser_id in instance["vote_delegations_from_ids"]:
                 self.add_entries_to_history_information(
                     information,
