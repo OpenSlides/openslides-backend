@@ -16,7 +16,7 @@
     user_ids: Id[];
     admin_ids: Id[];
     set_as_template: boolean;
-    external_id: string;
+    external_id: string; // unique in org
 }
 ```
 

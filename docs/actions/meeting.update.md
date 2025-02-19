@@ -173,7 +173,7 @@
     default_projector_poll_ids: Ids;
 
 // Group D
-    external_id: string;
+    external_id: string; // unique in org
     enable_anonymous: boolean
     custom_translations: JSON;
 
