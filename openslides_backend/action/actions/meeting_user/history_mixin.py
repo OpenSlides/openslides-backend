@@ -21,6 +21,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             ["vote_delegated_to_id", "vote_delegations_from_ids"],
             use_changed_models=False,
             raise_exception=False,
+            lock_result=False,
         )
         meeting_user_ids: list[int] = instance.get(
             "vote_delegations_from_ids", []
@@ -48,6 +49,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                             )
                         ],
                         use_changed_models=False,
+                        lock_result=False,
                     )["meeting_user"].values()
                     if date.get("vote_delegated_to_id")
                 ]
@@ -63,7 +65,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_ids: set[int] = {
                 muser["user_id"]
                 for muser in self.datastore.get_many(
-                    [GetManyRequest("meeting_user", meeting_user_ids, ["user_id"])]
+                    [GetManyRequest("meeting_user", meeting_user_ids, ["user_id"])],
+                    lock_result=False,
                 )
                 .get("meeting_user", {})
                 .values()
@@ -87,6 +90,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 list(instance.keys()) + ["user_id", "meeting_id"],
                 use_changed_models=False,
                 raise_exception=False,
+                lock_result=False,
             )
             if not db_instance:
                 self.add_created_meeting_user_history_information(instance, information)
@@ -137,6 +141,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", meeting_id),
                 ["default_group_id"],
+                lock_result=False,
             )
             added.discard(meeting.get("default_group_id"))
             removed.discard(meeting.get("default_group_id"))
@@ -173,6 +178,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         ["user_id"],
                         use_changed_models=False,
                         raise_exception=False,
+                        lock_result=False,
                     ).get("user_id")
                 )
             ):
@@ -199,6 +205,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     ),
                     ["user_id"],
                     use_changed_models=True,
+                    lock_result=False,
                 )["user_id"]
                 instance_information.append(
                     (
@@ -252,6 +259,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                             )
                         ],
                         use_changed_models=False,
+                        lock_result=False,
                     )["meeting_user"].values()
                     if date.get("vote_delegated_to_id")
                 ]
@@ -305,6 +313,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id", "meeting_id"],
+            lock_result=False,
         )
         instance_information: list[tuple[str, ...]] = []
         fqids_per_collection = {
@@ -336,6 +345,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 ),
                 ["user_id"],
                 use_changed_models=True,
+                lock_result=False,
             )["user_id"]
             instance_information.append(
                 (
@@ -376,6 +386,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         )
                     ],
                     use_changed_models=False,
+                    lock_result=False,
                 )["meeting_user"].values()
                 if date.get("vote_delegated_to_id")
             ]
@@ -436,6 +447,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             user_id = self.datastore.get(
                 fqid_from_collection_and_id("meeting_user", for_meeting_user_id),
                 ["user_id"],
+                lock_result=False,
             )["user_id"]
         else:
             user_id = for_user_id
