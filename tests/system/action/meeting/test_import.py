@@ -32,6 +32,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting/1": {
                     "committee_id": 1,
                     "group_ids": [1],
+                    "external_id": "ext_id",
                     "is_active_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "group/1": {"meeting_id": 1, "name": "group1_m1"},
@@ -1563,6 +1564,16 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "motion/1/list_of_speakers_id: Field required but empty."
+            in response.json["message"]
+        )
+
+    def test_duplicate_external_id(self) -> None:
+        request_data = self.create_request_data({})
+        request_data["meeting"]["meeting"]["1"]["external_id"] = "ext_id"
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request."
             in response.json["message"]
         )
 
