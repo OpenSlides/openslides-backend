@@ -90,11 +90,6 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
             == meeting_ids
         )
 
-        # if not self.success:
-        #     raise ActionException(
-        #         f"Didn't find a group with groupname {group_name} in any meeting."
-        #     )
-
         # fill the instance for the update
         for meeting_id in success_update:
             meeting_user = meeting_to_meeting_user[meeting_id]
