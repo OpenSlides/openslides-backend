@@ -307,7 +307,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     information,
                     [
                         (
-                            "Proxy voting rights removed in meeting {}",
+                            "Proxy voting rights for {} removed in meeting {}",
+                            fqid_from_collection_and_id("user", user_id),
                             fqid_from_collection_and_id("meeting", meeting_id),
                         )
                     ],
@@ -333,7 +334,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                     information,
                     [
                         (
-                            "Proxy voting rights received in meeting {}",
+                            "Proxy voting rights for {} received in meeting {}",
+                            fqid_from_collection_and_id("user", user_id),
                             fqid_from_collection_and_id("meeting", meeting_id),
                         )
                     ],
@@ -345,9 +347,22 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             added = new_delegations.difference(old_delegations)
             removed = old_delegations.difference(new_delegations)
             if removed:
+                removed_user_ids = [
+                    str(m_user["user_id"])
+                    for m_user in self.datastore.get_many(
+                        [GetManyRequest("meeting_user", list(removed), ["user_id"])]
+                    )["meeting_user"].values()
+                ]
+                insertion_string = ", ".join(["{}" for i in removed_user_ids])
                 instance_information.append(
                     (
-                        "Proxy voting rights removed in meeting {}",
+                        "Proxy voting rights for "
+                        + insertion_string
+                        + " removed in meeting {}",
+                        *[
+                            fqid_from_collection_and_id("user", id_)
+                            for id_ in removed_user_ids
+                        ],
                         fqid_from_collection_and_id("meeting", meeting_id),
                     )
                 )
@@ -393,15 +408,29 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                         information,
                         [
                             (
-                                "Proxy voting rights removed in meeting {}",
+                                "Proxy voting rights for {} removed in meeting {}",
+                                fqid_from_collection_and_id("user", date["user_id"]),
                                 fqid_from_collection_and_id("meeting", meeting_id),
                             )
                         ],
                         for_meeting_user_id=date["vote_delegated_to_id"],
                     )
+                added_user_ids = [
+                    str(m_user["user_id"])
+                    for m_user in self.datastore.get_many(
+                        [GetManyRequest("meeting_user", list(added), ["user_id"])]
+                    )["meeting_user"].values()
+                ]
+                insertion_string = ", ".join(["{}" for i in added_user_ids])
                 instance_information.append(
                     (
-                        "Proxy voting rights received in meeting {}",
+                        "Proxy voting rights for "
+                        + insertion_string
+                        + " received in meeting {}",
+                        *[
+                            fqid_from_collection_and_id("user", id_)
+                            for id_ in added_user_ids
+                        ],
                         fqid_from_collection_and_id("meeting", meeting_id),
                     )
                 )

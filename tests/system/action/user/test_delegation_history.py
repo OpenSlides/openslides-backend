@@ -12,6 +12,18 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         self.colin_id = self.create_user("colin", [3])
         self.next_user_id = self.colin_id + 1
 
+    def setup_delegation(self) -> None:
+        self.set_models(
+            {
+                f"meeting_user/{self.alice_id-1}": {
+                    "vote_delegated_to_id": self.colin_id - 1
+                },
+                f"meeting_user/{self.colin_id-1}": {
+                    "vote_delegations_from_ids": [self.alice_id - 1]
+                },
+            }
+        )
+
     def make_request(self, instance: dict[str, Any], id_: int | None = None) -> None:
         if "meeting_id" not in instance:
             instance["meeting_id"] = 1
@@ -32,7 +44,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
             f"user/{to_id}",
             [
                 *prepend_to,
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{from_id}",
                 "meeting/1",
             ],
         )
@@ -42,6 +55,35 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 *prepend_from,
                 "Vote delegated to {} in meeting {}",
                 f"user/{to_id}",
+                "meeting/1",
+            ],
+        )
+
+    def assert_alice_redelegated_to(self, who_id: int, prepend: list[str] = []) -> None:
+        self.assert_history_information(
+            f"user/{who_id}",
+            [
+                *prepend,
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{self.alice_id}",
+                "meeting/1",
+            ],
+        )
+        self.assert_history_information(
+            f"user/{self.alice_id}",
+            [
+                "Vote delegation canceled in meeting {}",
+                "meeting/1",
+                "Vote delegated to {} in meeting {}",
+                f"user/{who_id}",
+                "meeting/1",
+            ],
+        )
+        self.assert_history_information(
+            f"user/{self.colin_id}",
+            [
+                "Proxy voting rights for {} removed in meeting {}",
+                f"user/{self.alice_id}",
                 "meeting/1",
             ],
         )
@@ -78,42 +120,6 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "Participant added to meeting {}.",
                 "meeting/1",
             ],
-        )
-
-    def setup_delegation(self) -> None:
-        self.set_models(
-            {
-                f"meeting_user/{self.alice_id-1}": {
-                    "vote_delegated_to_id": self.colin_id - 1
-                },
-                f"meeting_user/{self.colin_id-1}": {
-                    "vote_delegations_from_ids": [self.alice_id - 1]
-                },
-            }
-        )
-
-    def assert_alice_redelegated_to(self, who_id: int, prepend: list[str] = []) -> None:
-        self.assert_history_information(
-            f"user/{who_id}",
-            [
-                *prepend,
-                "Proxy voting rights received in meeting {}",
-                "meeting/1",
-            ],
-        )
-        self.assert_history_information(
-            f"user/{self.alice_id}",
-            [
-                "Vote delegation canceled in meeting {}",
-                "meeting/1",
-                "Vote delegated to {} in meeting {}",
-                f"user/{who_id}",
-                "meeting/1",
-            ],
-        )
-        self.assert_history_information(
-            f"user/{self.colin_id}",
-            ["Proxy voting rights removed in meeting {}", "meeting/1"],
         )
 
     def test_update_re_delegate_vote(self) -> None:
@@ -156,9 +162,11 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{self.colin_id}",
             [
-                "Proxy voting rights removed in meeting {}",
+                "Proxy voting rights for {} removed in meeting {}",
+                f"user/{self.alice_id}",
                 "meeting/1",
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{self.bob_id}",
                 "meeting/1",
             ],
         )
@@ -176,7 +184,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{self.bob_id}",
             [
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{self.colin_id}",
                 "meeting/1",
             ],
         )
@@ -186,7 +195,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "Vote delegated to {} in meeting {}",
                 f"user/{self.bob_id}",
                 "meeting/1",
-                "Proxy voting rights removed in meeting {}",
+                "Proxy voting rights for {} removed in meeting {}",
+                f"user/{self.alice_id}",
                 "meeting/1",
             ],
         )
@@ -214,14 +224,19 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         )
         self.assert_history_information(
             f"user/{self.colin_id}",
-            ["Proxy voting rights removed in meeting {}", "meeting/1"],
+            [
+                "Proxy voting rights for {} removed in meeting {}",
+                f"user/{self.alice_id}",
+                "meeting/1",
+            ],
         )
         self.assert_history_information(
             f"user/{self.alice_id}",
             [
                 "Vote delegation canceled in meeting {}",
                 "meeting/1",
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{self.bob_id}",
                 "meeting/1",
             ],
         )
@@ -279,7 +294,14 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         )
         self.assert_history_information(
             f"user/{self.colin_id}",
-            ["Proxy voting rights received in meeting {}", "meeting/1"],
+            [
+                "Proxy voting rights for {}, {}, {}, {} received in meeting {}",
+                *[
+                    f"user/{id_}"
+                    for id_ in [self.bob_id, debra_id, eric_id, fredric_id]
+                ],
+                "meeting/1",
+            ],
         )
         for id_ in [self.bob_id, debra_id, eric_id, fredric_id]:
             self.assert_history_information(
@@ -314,7 +336,17 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
                 "Account created",
                 "Participant added to meeting {}.",
                 "meeting/1",
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {}, {}, {}, {}, {} received in meeting {}",
+                *[
+                    f"user/{id_}"
+                    for id_ in [
+                        self.alice_id,
+                        self.bob_id,
+                        self.colin_id,
+                        eric_id,
+                        fredric_id,
+                    ]
+                ],
                 "meeting/1",
             ],
         )
@@ -340,7 +372,8 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
             [
                 "Participant added to meeting {}.",
                 "meeting/1",
-                "Proxy voting rights received in meeting {}",
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{self.alice_id}",
                 "meeting/1",
             ],
         )
@@ -350,7 +383,11 @@ class UserActionDelegationHistoryTest(BaseActionTestCase):
         self.make_request({"vote_delegated_to_id": self.alice_id - 1}, debra_id)
         self.assert_history_information(
             f"user/{self.alice_id}",
-            ["Proxy voting rights received in meeting {}", "meeting/1"],
+            [
+                "Proxy voting rights for {} received in meeting {}",
+                f"user/{debra_id}",
+                "meeting/1",
+            ],
         )
         self.assert_history_information(
             f"user/{debra_id}",
