@@ -162,7 +162,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test(
-            {"reference_projector_id": 2, "default_projector_topic_ids": [2]}
+            {
+                "reference_projector_id": 2,
+                "default_projector_topic_ids": [2],
+                "default_projector_current_los_ids": [1, 2],
+            }
         )
         self.assert_model_exists(
             "meeting/1",
@@ -170,6 +174,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "reference_projector_id": 2,
                 "default_projector_topic_ids": [2],
                 "default_projector_motion_ids": [1],
+                "default_projector_current_los_ids": [1, 2],
             },
         )
         self.assert_model_exists(
@@ -178,6 +183,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": None,
                 "used_as_default_projector_for_topic_in_meeting_id": None,
                 "used_as_default_projector_for_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
             },
         )
         self.assert_model_exists(
@@ -186,6 +192,44 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 "used_as_default_projector_for_topic_in_meeting_id": 1,
                 "used_as_default_projector_for_motion_in_meeting_id": None,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
+            },
+        )
+
+    def test_update_projector_related_fields2(self) -> None:
+        self.test_update_projector_related_fields()
+        self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "default_projector_current_los_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "reference_projector_id": 2,
+                "default_projector_topic_ids": [2],
+                "default_projector_motion_ids": [1],
+                "default_projector_current_los_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_reference_projector_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_current_los_in_meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "used_as_reference_projector_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
             },
         )
 
