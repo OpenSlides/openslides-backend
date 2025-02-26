@@ -220,9 +220,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         Returns true if permissions are given.
         """
 
-        if "forwarding_committee_ids" in instance:
-            raise PermissionDenied("forwarding_committee_ids is not allowed.")
-
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(
                 self.datastore, self.user_id, self.permission
