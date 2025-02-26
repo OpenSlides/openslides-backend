@@ -8,7 +8,7 @@ import fastjsonschema
 from openslides_backend.shared.patterns import DECIMAL_PATTERN
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....models.fields import TRUE_VALUES
+from ....models.fields import TRUE_VALUES, BooleanField
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
@@ -245,27 +245,6 @@ class UserSaveSamlAccount(
         instance["username"] = self.generate_usernames([instance.get("saml_id", "")])[0]
         return instance
 
-    def validate_meeting_mapper(
-        self, instance: dict[str, Any], meeting_mapper: dict[str, Any]
-    ) -> bool:
-        """
-        Validates the meeting mapper to be complete. Returns False if not.
-        Returns True if the mapper matches its criteria on instances values or no conditions were given.
-        Instances values can not be None or empty string.
-        """
-        if not meeting_mapper.get("external_id"):
-            return False
-        if not (mapper_conditions := meeting_mapper.get("conditions")):
-            return True
-        return all(
-            (
-                (instance_value := instance.get(mapper_condition.get("attribute")))
-                and regex_condition.search(instance_value)
-            )
-            for mapper_condition in mapper_conditions
-            if (regex_condition := re.compile(mapper_condition.get("condition")))
-        )
-
     def apply_meeting_mapping(
         self, instance: dict[str, Any], instance_old: dict[str, Any]
     ) -> None:
@@ -307,6 +286,33 @@ class UserSaveSamlAccount(
                 self.logger.warning(
                     "save_saml_account found no matching meeting mappers."
                 )
+
+    def validate_meeting_mapper(
+        self, instance: dict[str, Any], meeting_mapper: dict[str, Any]
+    ) -> bool:
+        """
+        Validates the meeting mapper to be complete. Returns False if not.
+        Interprets everything as a string. F.e. "True", "4", "[False, 42, 'Text']" and so on.
+        Returns True if the mapper matches its criteria on instances values or no conditions were given.
+        Returns False on falsy values. F.e. 0, None, empty string.
+        """
+        if not meeting_mapper.get("external_id"):
+            return False
+        if not (mapper_conditions := meeting_mapper.get("conditions")):
+            return True
+        return all(
+            (instance_values := instance.get(mapper_condition.get("attribute")))
+            and (
+                regex_condition.search(str(instance_values))
+                if not isinstance(instance_values, list)
+                else any(
+                    regex_condition.search(str(instance_value))
+                    for instance_value in instance_values
+                )
+            )
+            for mapper_condition in mapper_conditions
+            if (regex_condition := re.compile(mapper_condition.get("condition")))
+        )
 
     def apply_meeting_user_data(
         self,
@@ -448,16 +454,7 @@ class UserSaveSamlAccount(
                         else:
                             result = value
                     elif saml_meeting_user_field == "present":
-                        # Result is int or bool. int will later be interpreted as bool.
-                        result = (
-                            value
-                            if not isinstance(value, str)
-                            else (
-                                False
-                                if value.casefold() == "false".casefold()
-                                else True
-                            )
-                        )
+                        result = BooleanField().validate(value)
                     elif saml_meeting_user_field == "vote_weight":
                         # Result must be string and have 6 digits after dot.
                         if isinstance(value, int):

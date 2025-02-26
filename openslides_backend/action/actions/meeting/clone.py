@@ -127,6 +127,7 @@ class MeetingClone(MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
@@ -189,7 +190,6 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        meeting = self.get_meeting_from_json(meeting_json)
         meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
         if additional_user_ids:
