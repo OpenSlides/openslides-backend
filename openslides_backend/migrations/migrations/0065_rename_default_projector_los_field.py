@@ -58,7 +58,7 @@ class Migration(BaseModelMigration):
                 meeting_id = projector[
                     "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"
                 ]
-            else: # use shortened name delivered by postgre
+            else:  # use shortened name delivered by postgre
                 meeting_id = projector[
                     "used_as_default_projector_for_current_list_of_speakers_in_meeti"
                 ]
