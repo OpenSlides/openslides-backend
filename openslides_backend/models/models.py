@@ -876,10 +876,8 @@ class Meeting(Model, MeetingModelMixin):
         },
         required=True,
     )
-    default_projector_current_list_of_speakers_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"
-        },
+    default_projector_current_los_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_current_los_in_meeting_id"},
         required=True,
     )
     default_projector_motion_ids = fields.RelationListField(
@@ -2297,10 +2295,8 @@ class Projector(Model):
     used_as_default_projector_for_list_of_speakers_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_list_of_speakers_ids"}
     )
-    used_as_default_projector_for_current_list_of_speakers_in_meeting_id = (
-        fields.RelationField(
-            to={"meeting": "default_projector_current_list_of_speakers_ids"}
-        )
+    used_as_default_projector_for_current_los_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_current_los_ids"}
     )
     used_as_default_projector_for_motion_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_motion_ids"}

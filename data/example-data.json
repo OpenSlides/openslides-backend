@@ -1,5 +1,5 @@
 {
-    "_migration_index": 65,
+    "_migration_index": 66,
     "gender":{
         "1":{
             "id": 1,
@@ -604,7 +604,7 @@
             "default_projector_agenda_item_list_ids": [1],
             "default_projector_topic_ids": [1],
             "default_projector_list_of_speakers_ids": [2],
-            "default_projector_current_list_of_speakers_ids": [2],
+            "default_projector_current_los_ids": [2],
             "default_projector_motion_ids": [1],
             "default_projector_amendment_ids": [1],
             "default_projector_motion_block_ids": [1],
@@ -2451,7 +2451,7 @@
             "show_clock": true,
             "sequential_number": 2,
             "used_as_default_projector_for_list_of_speakers_in_meeting_id": 1,
-            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id": 1,
+            "used_as_default_projector_for_current_los_in_meeting_id": 1,
             "meeting_id": 1
         }
     },
@@ -2480,7 +2480,7 @@
             "current_projector_id": 1,
             "content_object_id": "meeting/1",
             "stable": true,
-            "type": "current_list_of_speakers",
+            "type": "current_los",
             "weight": 1,
             "meeting_id": 1
         },

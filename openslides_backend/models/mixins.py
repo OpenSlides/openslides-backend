@@ -8,7 +8,7 @@ DEFAULT_PROJECTOR_OPTIONS = (
     "agenda_item_list",
     "topic",
     "list_of_speakers",
-    "current_list_of_speakers",
+    "current_los",
     "motion",
     "amendment",
     "motion_block",
