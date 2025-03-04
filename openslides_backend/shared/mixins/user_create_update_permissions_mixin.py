@@ -316,7 +316,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
     ) -> None:
         """Check Group B meeting fields: Only meeting.permissions for each meeting"""
         if (
-            self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN
+            self.permstore.user_oml
+            < OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
             or locked_from_inside
         ) and fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
