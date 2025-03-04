@@ -77,29 +77,3 @@ class MeetingUserCreate(
                 instance_information
             )
         return information
-
-    def compose_history_string(
-        self, fqids_per_collection: list[tuple[str, list[str]]]
-    ) -> str:
-        """
-        Composes a string of the shape:
-        Participant added to groups {}, {} and structure levels {} in meeting {}.
-        """
-        middle_sentence_parts = [
-            " ".join(
-                [  # prefix and to collection name if it's not the first in list
-                    ("and " if collection_name != fqids_per_collection[0][0] else "")
-                    + collection_name.replace("_", " ")  # replace for human readablity
-                    + ("s" if len(fqids) != 1 else ""),  # plural s
-                    ", ".join(["{}" for _ in range(len(fqids))]),
-                ]
-            )
-            for collection_name, fqids in fqids_per_collection
-        ]
-        return " ".join(
-            [
-                "Participant added to",
-                *middle_sentence_parts,
-                ("in " if fqids_per_collection else "") + "meeting {}.",
-            ]
-        )

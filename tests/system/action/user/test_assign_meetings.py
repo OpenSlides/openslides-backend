@@ -303,12 +303,46 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_group_not_found(self) -> None:
         self.set_models(
             {
+                "group/1": {"name": "Test", "meeting_id": 1},
+                "meeting/1": {
+                    "name": "Find Test",
+                    "group_ids": [1],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "default_group_id": 1,
+                },
+                "user/2": {},
+                "committee/2": {"meeting_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 2,
+                "meeting_ids": [1],
+                "group_name": "Broken",
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["succeeded"] == []
+        assert response.json["results"][0][0]["standard_group"] == [1]
+        assert response.json["results"][0][0]["nothing"] == []
+        self.assert_model_exists(
+            "user/2",
+            {"meeting_ids": [1], "meeting_user_ids": [1]},
+        )
+        self.assert_model_exists("group/1", {"meeting_user_ids": [1]})
+
+    def test_assign_meetings_group_not_found_2(self) -> None:
+        self.set_models(
+            {
                 "group/1": {"name": "Test", "meeting_id": 1, "meeting_user_ids": [2]},
                 "meeting/1": {
                     "name": "Find Test",
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "default_group_id": 1,
                 },
                 "user/2": {
                     "meeting_user_ids": [2],
@@ -321,16 +355,15 @@ class UserAssignMeetings(BaseActionTestCase):
         response = self.request(
             "user.assign_meetings",
             {
-                "id": 1,
+                "id": 2,
                 "meeting_ids": [1],
                 "group_name": "Broken",
             },
         )
-        self.assert_status_code(response, 400)
-        assert (
-            "Didn't find a group with groupname Broken in any meeting."
-            in response.json["message"]
-        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["succeeded"] == []
+        assert response.json["results"][0][0]["standard_group"] == []
+        assert response.json["results"][0][0]["nothing"] == [1]
 
     def test_assign_meetings_no_permissions(self) -> None:
         self.set_models(

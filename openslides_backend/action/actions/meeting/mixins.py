@@ -19,10 +19,8 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                "The external_id of the meeting is not unique in the committee scope.",
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
                 None,
-                "committee_id",
-                self.get_committee_id(instance),
             )
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

@@ -30,7 +30,8 @@ class MeetingClone(BaseActionTestCase):
                 "color": "#eeeeee",
                 "organization_id": 1,
             },
-            "committee/1": {"organization_id": 1},
+            "committee/1": {"organization_id": 1, "meeting_ids": [1]},
+            "committee/2": {"organization_id": 1},
             "meeting/1": {
                 "template_for_organization_id": 1,
                 "committee_id": 1,
@@ -576,23 +577,52 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
-    def test_clone_with_duplicate_external_id(self) -> None:
-        self.test_models["meeting/1"][
+    def test_clone_with_differing_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
             "template_for_organization_id"
         ] = ONE_ORGANIZATION_ID
-        self.test_models["meeting/1"]["external_id"] = "external_id"
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        new_ext_id = external_id + "_something"
         response = self.request(
             "meeting.clone",
             {
                 "meeting_id": 1,
-                "external_id": "external_id",
+                "committee_id": 2,
+                "external_id": new_ext_id,
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": new_ext_id,
+                "template_for_organization_id": None,
+            },
+        )
+
+    def test_clone_with_duplicate_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "committee_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": None,
+                "template_for_organization_id": None,
+            },
         )
 
     def test_clone_with_recommendation_extension(self) -> None:
