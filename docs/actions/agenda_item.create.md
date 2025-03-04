@@ -5,14 +5,13 @@
   content_object_id: Fqid
 
 // Optional
-    item_number: string;
-    parent_id: Id;
-    comment: string;
-    closed: boolean;
-    type: number;
-    duration: number; // in seconds
-    weight: number;
-    tag_ids: Id[];
+  item_number: string;
+  parent_id: Id;
+  comment: string;
+  type: number;
+  duration: number; // in seconds
+  weight: number;
+  tag_ids: Id[];
 }
 ```
 
