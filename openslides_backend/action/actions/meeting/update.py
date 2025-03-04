@@ -135,6 +135,8 @@ meeting_settings_keys = [
     "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
+    "motion_poll_projection_name_order_first",
+    "motion_poll_projection_max_columns",
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_enable_vote_delegations",
@@ -206,10 +208,8 @@ class MeetingUpdate(
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                "The external_id of the meeting is not unique in the committee scope.",
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
                 instance["id"],
-                "committee_id",
-                self.get_committee_id(instance["id"]),
             )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

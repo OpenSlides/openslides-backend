@@ -38,8 +38,12 @@ Extras to do on creation:
     - A mapper can be given a 'name' for debugging purposes.
     - The 'external_id' maps to the meeting and is required (logged as warning if meeting does not exist). Multiple mappers can map to the same meeting.
     - If 'allow_update' is set to false, the mapper is only used if the user does not already exist. If it is not given it defaults to true.
-    - Mappers are only used if every condition in the list of 'conditions' resolves to true. For this the value for 'attribute' in the payload data has to be a string and match the string or regex given in 'condition'. If no condition is given this defaults to true.
-    - The actual mappings are objects or lists of objects of attribute-default pairs (exception: number, which only has the option of an attribute). 
+    - Mappers are only used if every condition in the list of 'conditions' resolves to true. For this 
+        - the value for 'attribute' in the payload data has to match the string or regex given in 'condition'. 
+        - if no condition is given this defaults to true. 
+        - lists in the SAML data are checked item by item if any of them matches. 
+        - if the data is not a string, then it will be cast to a string for this purpose. F.e. "True", "4" and so on.
+    - The actual mappings are objects or lists of objects of attribute-default pairs (exception: 'number', which only has the option of an attribute). 
         - The attribute refers to the payloads data.
         - A default value can be given in case the payloads attribute does not exist or contains no data. (Logged as debug)
         - Groups and structure levels are given as a list of attribute-default pairs.

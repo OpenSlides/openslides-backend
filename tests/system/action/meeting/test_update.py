@@ -113,6 +113,27 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("users_forbid_delegator_as_submitter")
         assert not meeting.get("users_forbid_delegator_in_list_of_speakers")
 
+    def test_update_motion_poll_projection(self) -> None:
+        self.basic_test(
+            {
+                "motion_poll_projection_name_order_first": "first_name",
+                "motion_poll_projection_max_columns": 5,
+            }
+        )
+
+    def test_update_motion_poll_projection_invalid_data_error(self) -> None:
+        meeting, response = self.basic_test(
+            {
+                "motion_poll_projection_name_order_first": "best_name",
+            },
+            False,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.motion_poll_projection_name_order_first must be one of ['first_name', 'last_name']"
+            in response.json["message"]
+        )
+
     def test_update_broken_email(self) -> None:
         meeting, response = self.basic_test({"users_email_replyto": "broken@@"}, False)
         self.assert_status_code(response, 400)
@@ -860,7 +881,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"committee_id": 1, "external_id": external_id},
-                "meeting/2": {"committee_id": 1},
+                "meeting/2": {"committee_id": 2},
+                "committee/1": {
+                    "name": "irrelevant name",
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                },
+                "committee/2": {
+                    "name": "irrelevant name",
+                    "organization_id": 1,
+                    "meeting_ids": [2],
+                },
             }
         )
         response = self.request(
@@ -872,9 +903,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
             response.json["message"],
         )
+        self.assert_model_exists("meeting/2", {"external_id": None, "committee_id": 2})
 
     def test_update_external_id_self(self) -> None:
         external_id = "external"

@@ -18,8 +18,6 @@
     assignment_candidate_ids: Id[];
     projection_ids: Id[];
     chat_message_ids: Id[];
-    vote_delegated_to_id: Id;
-    vote_delegations_from_ids: Id[];
     locked_out: boolean;
 
 // Group B
@@ -31,7 +29,7 @@
 ```
 
 ## Action
-The action creates a meeting_user item. `vote_delegated_to_id` and `vote_delegations_from_ids` have special checks, see user checks.
+The action creates a meeting_user item.
 If `locked_out` is set, it checks against the present `user.can_manage` and all admin statuses and throws an error if any are present.
 
 Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.

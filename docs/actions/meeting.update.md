@@ -106,6 +106,8 @@
     motion_poll_default_method: string;
     motion_poll_default_100_percent_base: string;
     motion_poll_default_group_ids: Id[];
+    motion_poll_projection_name_order_first: string;
+    motion_poll_projection_max_columns: number;
 
     users_sort_by: string;
     users_enable_presence_view: boolean;
@@ -171,7 +173,7 @@
     default_projector_poll_ids: Ids;
 
 // Group D
-    external_id: string;
+    external_id: string; // unique in org
     enable_anonymous: boolean
     custom_translations: JSON;
 
