@@ -237,6 +237,7 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [meeting_user.create](actions/meeting_user.create.md)
 - [meeting_user.update](actions/meeting_user.update.md)
 - [meeting_user.delete](actions/meeting_user.delete.md)
+- [meeting_user.set_data](actions/meeting_user.set_data.md)
 - [account.json_upload](actions/account.json_upload.md)
 - [account.import](actions/account.import.md)
 - [participant.json_upload](actions/participant.json_upload.md)
