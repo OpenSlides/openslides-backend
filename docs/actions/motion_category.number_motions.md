@@ -4,13 +4,18 @@
 ```
 
 ## Actions
-`motion_category.number_motions` is called with the id of the _main category_ to number all motions. Categories itself build a tree with the `motion_category/parent_id`/`motion_category/children_ids` and `motion_category/weight` fields. We are going to number all motions in all *affected categories*. The set of affected categories includes the main category and all categories in the tree of categories below it. These motions are called _affected motions_, since they will all be renamed. All affected motions are numbered in the order of `motion/category_weight`.
+`motion_category.number_motions` is called with the id of the _main category_ to number all motions. Categories itself build a tree with the `motion_category/parent_id`/`motion_category/children_ids` and `motion_category/weight` fields. All motions in all *affected categories* are numbered. The set of affected categories includes the main category and all categories in the tree of categories below it. These motions are called _affected motions_, since they are all renamed. All affected motions are numbered in the order of `motion/category_weight`.
 
-First thing to do is a precheck regarding *amendments* (A motion which has a lead motion; relation `motion/lead_motion_id`). For each affected motion it is checked if it is an amendment and if so, that the lead motion is also an affected motion. If this is not true for each affected motion, an error must be returned. [This is the original error message](https://github.com/OpenSlides/OpenSlides/blob/stable/3.4.x/server/openslides/motions/numbering.py#L168).
+### Amendments
+For each affected motion it is checked if it is an amendment (A motion which has a lead motion; relation `motion/lead_motion_id`) and if so, if the lead motion is also an affected motion. If this is not true for each affected motion, an error is returned. [This is the original error message](https://github.com/OpenSlides/OpenSlides/blob/stable/3.4.x/server/openslides/motions/numbering.py#L168).
 
-Next, we need to handle motion category prefixes. The prefix is optional, so it can be empty. The prefix is going to be a part of the `motion/number`. We want to have the following: If a prefix of an affected category is empty, it should get the prefix from the parent. This stops when reaching the main category, e.g. if it has no prefix, each child that does not have prefixes will also not get a prefix (this is intended). Also the prefixes of the categories do not change, this is just for numbering. So it might be good to create a dictionary `prefixes`, which maps a calculated prefix to each category. E.g. if you have this (linear) tree (syntax: `<id>: <prefix>`): `1: "A"` -> `2: ""` -> `3: "B"`, this would be the mapping: `{1: "A", 2: "A", 3: "B"}`. Another example: `1: "A"` -> `2: ""` -> `3: "B"` where the main category is 2 (1 is not an affected category!), this would be the mapping: `{2: "", 3: "B"}`.
+### Category prefix
+The prefix is optional, so it can be empty. 
+If a prefix of an affected category is empty, it gets the prefix from the parent. This stops when reaching the main category, e.g. if it has no prefix, each child that does not have prefixes also doesn't get a prefix (this is intended). Also the prefixes of the categories do not change, this is just for numbering.
+If a prefix is found, it will be prepended to the number.
 
-Now onto the new `number` values to generate. Remember that `motion/number` is a string. We have multiple counters for the actual numbervalue (the actual integer), named `number_value` (see similarities to [motion.create](motion.create.md)),  beginning at 1. For all non-amendments, there is one single counter, named _main counter_. There is also a counter for every amendment's lead motion, so the amendments of one lead motion can be numbered. For every affected motion, do:
+### Number
+`motion/number` is a string. There multiple counters for the actual number value (the actual integer), named `number_value` (see similarities to [motion.create](motion.create.md)),  beginning at 1. For all non-amendments, there is one single counter, named _main counter_. There is also a counter for every amendment's lead motion, so the amendments of one lead motion can be numbered. For every affected motion, do:
 
 - If the motion is not an amendment, the `number` consists of three parts `ABC`:
   - `A`: the prefix form `prefixes` of the category of the motion
@@ -23,9 +28,7 @@ Now onto the new `number` values to generate. Remember that `motion/number` is a
   - `D`: `" "` if `meeting/motions_number_with_blank` is set, else `""`
   - `E`: Take the value of the counter for the lead motion of the motion. Fill it with leading zeros until the `meeting/motions_number_min_digits` number of digits is reached. Increase the counter.
 
-Check new numbers: if there is a non-affected motion in the meeting which has one of the fresh calculated numbers, [return a nice error](https://github.com/OpenSlides/OpenSlides/blob/stable/3.4.x/server/openslides/motions/numbering.py#L230). This ensures that all numbers are unique.
-
-At last, set all new numbers.
+If there is a non-affected motion in the meeting which has one of the freshly calculated numbers, [it returns an error](https://github.com/OpenSlides/OpenSlides/blob/stable/3.4.x/server/openslides/motions/numbering.py#L230). This ensures that all numbers are unique.
 
 ### One rather complete example
 Category tree (Syntax: `(<prefix>) <Name> <ID>`, empty parenthesis, if the category does not have a prefix):
