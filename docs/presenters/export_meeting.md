@@ -11,7 +11,7 @@
 ```
 JSON with export
 ```
-The users genders are exported as their names not ids.
+The users genders are exported as their names, not ids.
 
 # Logic
 The presenter exports the meeting, the collections which belong to the meeting and users of the meeting. It uses the meeting.user_id for that. And it excludes the organization tags and the committee.
