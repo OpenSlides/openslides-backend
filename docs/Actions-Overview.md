@@ -141,19 +141,19 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [personal_note.update](actions/personal_note.update.md)
 
 ## Projector and Projection
-- [projector.create](projection.md#projectorcreate)
-- [projector.update](projection.md#projectorupdate)
-- [projector.delete](projection.md#projectordelete)
-- [projector.control_view](projection.md#projectorcontrol_view)
-- [projector.project](projection.md#project-something-projectorproject)
-- [projector.toggle](projection.md#toggle-projections-projectortoggle)
-- [projection.update_options](projection.md#change-projection-options-projectionupdate_options)
-- [projection.delete](projection.md#unproject-without-history-projectiondelete)
-- [projector.next](projection.md#projectornext)
-- [projector.previous](projection.md#projectorprevious)
-- [projector.add_to_preview](projection.md#projectoradd_to_preview)
-- [projector.project_preview](projection.md#projectorproject_preview)
-- [projector.sort_preview](projection.md#projectorsort_preview)
+- [projector.create](actions/projector.create.md)
+- [projector.update](actions/projector.update.md)
+- [projector.delete](actions/projector.delete.md)
+- [projector.control_view](actions/projector.control_view.md)
+- [projector.project](actions/projector.project.md)
+- [projector.toggle](actions/projector.toggle.md)
+- [projection.update_options](actions/projector.update_options.md)
+- [projection.delete](actions/projector.delete.md)
+- [projector.next](actions/projector.next.md)
+- [projector.previous](actions/projector.previous.md)
+- [projector.add_to_preview](actions/projector.add_to_preview.md)
+- [projector.project_preview](actions/projector.project_preview.md)
+- [projector.sort_preview](actions/projector.sort_preview.md)
 
 ## Projector content objects
 

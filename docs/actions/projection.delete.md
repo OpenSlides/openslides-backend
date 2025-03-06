@@ -5,9 +5,7 @@
 
 ## Action
 Deletes the given projection.
-Fails if
-- the projection has no `current_projector_id` and
-- the projection has no `preview_projector_id`
+It is only allowed to do so for projections with the `current_projector_id` or `preview_projector_id` relation set.
 
 ## Permissions
 The request user needs `projector.can_manage`
