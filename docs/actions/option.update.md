@@ -12,7 +12,7 @@
 ```
 
 ## Action
-It is only allowed for analog polls. Updating this option changes the associated `vote` objects for `Y`, `N` and `A` to the given values.
+This action is only allowed for analog polls. Updating this option changes the associated `vote` objects for `Y`, `N` and `A` to the given values.
 
 If the poll's state is *created* and at least one vote value is given (`Y`, `N` or `A`), the state must be set to *finished*. if additionally `publish_immediately` is given, the state must be set to *published*.
 
