@@ -19,6 +19,7 @@
     merge_amendment_into_final: number;
     show_recommendation_extension_field: boolean;
     first_state_of_workflow_id: Id;
+    weight: number;
 }
 ```
 
