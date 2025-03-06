@@ -8,7 +8,6 @@ Payload:
 }
 ```
 
-## Action
-
-Internal action to delete a poll candidate with the given id.
+## Internal action
+Deletes a poll candidate with the given id.
     
