@@ -1,20 +1,25 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, ContextManager, Protocol, Union
+from typing import Protocol
+
+from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.patterns import Collection, FullQualifiedId, Id
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
 
-PartialModel = dict[str, Any]
-
-
-LockResult = Union[bool, list[str]]
-
-
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
+
+# Max lengths of the important key parts:
+# collection: 32
+# id: 16
+# field: 207
+# -> collection + id + field = 255
+COLLECTION_MAX_LEN = 32
+FQID_MAX_LEN = 48  # collection + id
+COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 
 class Database(Protocol):
@@ -23,9 +28,6 @@ class Database(Protocol):
     """
 
     changed_models: ModelMap
-
-    @abstractmethod
-    def get_database_context(self) -> ContextManager[None]: ...
 
     @abstractmethod
     def apply_changed_model(
@@ -37,7 +39,6 @@ class Database(Protocol):
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
         raise_exception: bool = True,
@@ -47,7 +48,6 @@ class Database(Protocol):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...
@@ -118,7 +118,7 @@ class Database(Protocol):
     def reserve_id(self, collection: Collection) -> int: ...
 
     @abstractmethod
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None: ...
+    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> list[Id]: ...
 
     @abstractmethod
     def write_without_events(self, write_request: WriteRequest) -> None: ...

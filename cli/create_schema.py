@@ -1,6 +1,4 @@
-from openslides_backend.datastore.shared.postgresql_backend.create_schema import (
-    create_schema,
-)
+from openslides_backend.services.postgresql.create_schema import create_schema
 
 
 def main() -> None:

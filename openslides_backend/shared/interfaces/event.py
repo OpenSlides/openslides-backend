@@ -29,6 +29,7 @@ class Event(TypedDict):
     """
 
     type: EventType
-    fqid: FullQualifiedId
     fields: NotRequired[dict[str, Any]]
     list_fields: NotRequired[ListFields]
+    fqid: FullQualifiedId
+    collection: str
