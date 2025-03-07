@@ -12,7 +12,7 @@
 ```
 
 ## Action
-Updates the chat group. Only enabled, if `organization/enable_chat` **and** `meeting/enable_chat` is true. The name of a chat group is unique.
+Updates the chat group. Only enabled, if `organization/enable_chat` **and** `meeting/enable_chat` is true. The name of the chat group must be unique in the meeting.
 
 The `write_group_ids` may not contain the meetings `anonymous_group_id`.
 

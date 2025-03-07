@@ -16,7 +16,8 @@ Payload
 ```
 
 ## Action
-All `meeting/agenda_item_ids` must be given. Sorts the agenda items with the `agenda_item/parent_id` and `agenda_item/weight` fields.
+Sorts the agenda items with the `agenda_item/parent_id` and `agenda_item/weight` fields.
+Raises an error if the given tree doesn't include all items in `meeting/agenda_item_ids`.
 
 
 ## Permissions

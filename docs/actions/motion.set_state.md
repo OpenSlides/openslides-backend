@@ -9,7 +9,7 @@
 ## Action
 The `state_id` must be a next or previous state as the current motions state, except if the request user has `motion.can_manage_metadata`, in which case all states of the same workflow are valid.
 
-The field `workflow_timestamp` must be set to the current timestamp if it is currently empty and the
+The field `workflow_timestamp` is set to the current timestamp if it is currently empty and the
 new state has the `set_workflow_timestamp` flag.
 
 The field `number` is potentially updated from the motion. This procedure diverges slightly from the [motion.create](motion.create.md) one, but is essentially equal. Diverging steps are marked with CHANGED/NEW. This is the procedure to determine what to set for the field `number`:

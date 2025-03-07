@@ -27,14 +27,14 @@ class MotionStateUpdateAction(UpdateAction):
             "allow_support",
             "allow_create_poll",
             "allow_submitter_edit",
+            "allow_motion_forwarding",
             "set_number",
+            "set_workflow_timestamp",
             "show_state_extension_field",
-            "merge_amendment_into_final",
             "show_recommendation_extension_field",
+            "merge_amendment_into_final",
             "next_state_ids",
             "previous_state_ids",
-            "set_workflow_timestamp",
-            "allow_motion_forwarding",
             "submitter_withdraw_state_id",
         ]
     )

@@ -42,6 +42,11 @@
     export_pdf_pagenumber_alignment: string;
     export_pdf_fontsize: number;
     export_pdf_pagesize: string;
+    export_pdf_line_height: float;
+    export_pdf_page_margin_left: number;
+    export_pdf_page_margin_top: number;
+    export_pdf_page_margin_right: number;
+    export_pdf_page_margin_bottom: number;
 
     agenda_show_subtitles: boolean;
     agenda_enable_numbering: boolean;
@@ -50,6 +55,7 @@
     agenda_item_creation: string;
     agenda_new_items_default_visibility: string;
     agenda_show_internal_items_on_projector: boolean;
+    agenda_show_topic_navigation_on_detail_view: boolean;
 
     list_of_speakers_amount_last_on_projector: number;
     list_of_speakers_amount_next_on_projector: number;
@@ -57,7 +63,10 @@
     list_of_speakers_show_amount_of_speakers_on_slide: boolean;
     list_of_speakers_present_users_only: boolean;
     list_of_speakers_show_first_contribution: boolean;
+    list_of_speakers_hide_contribution_count: boolean;
+    list_of_speakers_allow_multiple_speakers: boolean;
     list_of_speakers_enable_point_of_order_speakers: boolean;
+    list_of_speakers_can_create_point_of_order_for_others: boolean;
     list_of_speakers_enable_point_of_order_categories: boolean;
     list_of_speakers_closing_disables_point_of_order: boolean;
     list_of_speakers_enable_pro_contra_speech: boolean;
@@ -79,6 +88,8 @@
     motions_enable_sidebox_on_projector: boolean;
     motions_enable_recommendation_on_projector: boolean;
     motions_create_enable_additional_submitter_text:boolean;
+    motions_hide_metadata_background: boolean;
+    motions_enable_recommendation_on_projector: boolean;
     motions_show_referring_motions: boolean;
     motions_show_sequential_number: boolean;
     motions_recommendations_by: string;
@@ -95,6 +106,8 @@
     motions_amendments_text_mode: string;
     motions_amendments_multiple_paragraphs: boolean;
     motions_supporters_min_amount: number;
+    motions_enable_editor: boolean;
+    motions_enable_working_group_speaker: boolean;
     motions_export_title: string;
     motions_export_preamble: string;
     motions_export_submitter_recommendation: boolean;
@@ -104,19 +117,18 @@
     motion_poll_ballot_paper_number: number;
     motion_poll_default_type: string;
     motion_poll_default_method: string;
-    motion_poll_default_100_percent_base: string;
+    motion_poll_default_onehundred_percent_base: string;
     motion_poll_default_group_ids: Id[];
+    motion_poll_default_backend: string;
     motion_poll_projection_name_order_first: string;
     motion_poll_projection_max_columns: number;
 
-    users_sort_by: string;
     users_enable_presence_view: boolean;
     users_enable_vote_weight: boolean;
     users_enable_vote_delegations: boolean;
     users_allow_self_set_present: boolean;
     users_pdf_welcometitle: string;
     users_pdf_welcometext: string;
-    users_pdf_url: string;
     users_pdf_wlan_ssid: string;
     users_pdf_wlan_password: string;
     users_pdf_wlan_encryption: string;
@@ -139,18 +151,13 @@
     assignment_poll_sort_poll_result_by_votes: boolean;
     assignment_poll_default_type: string;
     assignment_poll_default_method: string;
-    assignment_poll_default_100_percent_base: string;
+    assignment_poll_default_onehundred_percent_base: string;
     assignment_poll_default_group_ids: Id[];
+    assignment_poll_default_backend: string;
 
     topic_poll_default_group_ids: Id[];
 
-    poll_ballot_paper_selection: string;
-    poll_ballot_paper_number: number;
-    poll_sort_poll_result_by_votes: boolean;
-    poll_default_type: string;
-    poll_default_method: string;
-    poll_default_100_percent_base: string;
-    poll_default_group_ids: Id[];
+    poll_default_backend: string;
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;

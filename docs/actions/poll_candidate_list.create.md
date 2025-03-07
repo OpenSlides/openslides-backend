@@ -13,5 +13,5 @@ Payload:
 }
 ```
 
-## Action
-Internal action. It creates poll candidates for the entries and creates a `poll_candidate_list`. 
+## Internal action
+Creates poll candidates for the entries and creates a `poll_candidate_list`. 
