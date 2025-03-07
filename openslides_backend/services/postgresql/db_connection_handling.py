@@ -1,6 +1,6 @@
-import contextlib
 import os
 from collections.abc import Callable
+from contextlib import _GeneratorContextManager
 
 from psycopg import Connection, IsolationLevel, OperationalError, connect, rows
 from psycopg_pool import ConnectionPool
@@ -10,6 +10,19 @@ from openslides_backend.shared.exceptions import DatabaseException
 
 env = Environment(os.environ)
 conn_string_without_db = f"host='{env.DATABASE_HOST}' port='{env.DATABASE_PORT}' user='{env.DATABASE_USER}' password='{env.PGPASSWORD}' "
+
+
+class ConnectionContext:
+    def __init__(self, context_manager: _GeneratorContextManager) -> None:
+        self.connection_context = context_manager
+
+    def __enter__(self) -> Connection:
+        self.connection = self.connection_context.__enter__()
+        self.connection.autocommit = False
+        return self.connection
+
+    def __exit__(self, exception, exception_value, traceback) -> None:  # type:ignore
+        self.connection_context.__exit__(exception, exception_value, traceback)
 
 
 def create_os_conn_pool(open: bool = True) -> ConnectionPool:
@@ -49,9 +62,9 @@ def get_current_os_conn_pool() -> ConnectionPool:
     return os_conn_pool
 
 
-def get_current_os_conn() -> contextlib._GeneratorContextManager[Connection]:
+def get_new_os_conn() -> ConnectionContext:
     os_conn_pool = get_current_os_conn_pool()
-    return os_conn_pool.connection()
+    return ConnectionContext(os_conn_pool.connection())
 
 
 def get_unpooled_db_connection(

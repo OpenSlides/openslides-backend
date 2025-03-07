@@ -1,29 +1,25 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import ContextManager, Protocol
+from typing import Protocol
 
 from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.patterns import Collection, FullQualifiedId, Id
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
 
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
 
-ALL_TABLES = (
-    "positions",
-    "events",
-    "id_sequences",
-    "collectionfields",
-    "events_to_collectionfields",
-    "models",
-    "migration_keyframes",
-    "migration_keyframe_models",
-    "migration_events",
-    "migration_positions",
-)
+# Max lengths of the important key parts:
+# collection: 32
+# id: 16
+# field: 207
+# -> collection + id + field = 255
+COLLECTION_MAX_LEN = 32
+FQID_MAX_LEN = 48  # collection + id
+COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 
 class Database(Protocol):
@@ -32,9 +28,6 @@ class Database(Protocol):
     """
 
     changed_models: ModelMap
-
-    @abstractmethod
-    def get_database_context(self) -> ContextManager[None]: ...
 
     @abstractmethod
     def apply_changed_model(
@@ -125,7 +118,7 @@ class Database(Protocol):
     def reserve_id(self, collection: Collection) -> int: ...
 
     @abstractmethod
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None: ...
+    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> list[Id]: ...
 
     @abstractmethod
     def write_without_events(self, write_request: WriteRequest) -> None: ...

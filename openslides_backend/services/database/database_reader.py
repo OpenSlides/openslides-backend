@@ -1,5 +1,6 @@
-from typing import Any, ContextManager
+from typing import Any
 
+from psycopg import Connection
 from psycopg.errors import UndefinedColumn, UndefinedTable
 
 from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
@@ -13,22 +14,25 @@ from openslides_backend.shared.patterns import (
 )
 from openslides_backend.shared.typing import HistoryInformation, LockResult, Model
 
+from ...shared.interfaces.env import Env
+from ...shared.interfaces.logging import LoggingModule
 from ..database.commands import GetManyRequest
 from .mapped_fields import MappedFields
-from .postgresql.db_connection_handling import get_current_os_conn
 from .query_helper import SqlQueryHelper
+
+# from ..postgresql.pg_connection_handler import ConnectionContext
 
 
 class DatabaseReader:
 
     query_helper = SqlQueryHelper()
 
-    def __init__(self) -> None:
-        with get_current_os_conn() as db_connection:
-            self.connection = db_connection
-
-    def get_database_context(self) -> ContextManager[None]:
-        return self.connection
+    def __init__(
+        self, connection: Connection, logging: LoggingModule, env: Env
+    ) -> None:
+        self.env = env
+        self.logger = logging.getLogger(__name__)
+        self.connection = connection
 
     def get_many(
         self,
@@ -69,10 +73,12 @@ class DatabaseReader:
             query = (
                 f"""SELECT {mapped_fields_str} FROM {collection}_t WHERE id = ANY(%s)"""
             )
-
+            if lock_result:
+                query += " FOR UPDATE"
             try:
-                cur = self.connection.cursor()
-                db_result = cur.execute(query, [list(ids)]).fetchall()
+                with self.connection.cursor() as curs:
+                    db_result = curs.execute(query, (ids,)).fetchall()
+                # self.connection.commit()
             except UndefinedColumn as e:
                 raise InvalidFormat(f"A field does not exist in model table: {e}")
             except UndefinedTable as e:
@@ -177,6 +183,7 @@ class DatabaseReader:
         collection: Collection,
         collection_result_part: dict[int, Any],
     ) -> None:
+        """Composes the result so that exactly the required fields are returned."""
         # result_map = {}
         for row in db_result:
             id_ = row["id"]

@@ -103,6 +103,11 @@ class ModelDoesNotExist(DatabaseException):
         self.fqid = fqid
 
 
+class ModelExists(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        self.fqid = fqid
+
+
 class ModelLocked(DatabaseException):
     def __init__(self, keys: str) -> None:
         self.keys = keys

@@ -1,13 +1,18 @@
 from decimal import Decimal
+from unittest.mock import MagicMock
 
 import pytest
-from psycopg import Connection, Cursor
+from psycopg import Connection
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
     InvalidFormat,
+    ModelDoesNotExist,
 )
 from tests.database.reader.system.util import setup_data
 
@@ -51,88 +56,89 @@ standard_response = {
 }
 
 
-def test_simple(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    response = reader.get(FQID)
+def test_simple(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get(FQID)
     assert response == standard_response
 
 
-def test_no_model(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    response = reader.get("motion/111")
-    assert response == {}
+def test_no_model(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(ModelDoesNotExist) as e_info:
+            extended_database.get("motion/111")
+    assert "motion/111" in e_info.value.fqid
 
 
-def test_no_collection(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get("doesntexist/1")
+def test_no_collection(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get("doesntexist/1")
     assert "The collection does not exist in the database" in e_info.value.msg
 
 
-def test_mapped_fields(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    response = reader.get(FQID, ["id", "username"])
+def test_mapped_fields(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get(FQID, ["id", "username"])
     assert response == {
         "id": ID,
         "username": "data",
     }
 
 
-def test_too_many_mapped_fields(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
+def test_too_many_mapped_fields(db_connection: Connection) -> None:
     """The reader should return just all fields."""
-    setup_data(db_connection, db_cur, data)
+    setup_data(db_connection, data)
     fields = [f"field_{i}" for i in range(2000)]
-    response = reader.get(FQID, fields)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get(FQID, fields)
     assert response == standard_response
 
 
-def test_mapped_fields_not_exists(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get(FQID, ["field_that_doesnt_exist"])
+def test_mapped_fields_not_exists(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get(FQID, ["field_that_doesnt_exist"])
     assert "A field does not exist in model table: " in e_info.value.msg
 
 
-def test_invalid_fqid(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get("not valid")
+def test_invalid_fqid(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get("not valid")
     assert "Invalid fqid format. list index out of range" == e_info.value.msg
 
 
-def test_invalid_mapped_fields(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    with pytest.raises(DatabaseException) as e_info:
-        reader.get(FQID, ["not valid"])
+def test_invalid_mapped_fields(db_connection: Connection) -> None:
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(DatabaseException) as e_info:
+            extended_database.get(FQID, ["not valid"])
     assert "Invalid fields: ['not valid']" == e_info.value.msg
 
 
-def test_invalid_mapped_fields2(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
+def test_invalid_mapped_fields2(db_connection: Connection) -> None:
     """This should never happen as per the type annotations, but you never know."""
-    with pytest.raises(DatabaseException) as e_info:
-        reader.get(FQID, [None])  # type: ignore
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(DatabaseException) as e_info:
+            extended_database.get(FQID, [None])  # type: ignore
     assert "Invalid fields: [None]" in e_info.value.msg
 
 
-def test_none(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
+def test_none(db_connection: Connection) -> None:
     """This should never happen as per the type annotations, but you never know."""
-    with pytest.raises(BadCodingException) as e_info:
-        reader.get(None)  # type: ignore
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(BadCodingException) as e_info:
+            extended_database.get(None)  # type: ignore
     assert "No fqid. Offer at least one fqid." == e_info.value.message

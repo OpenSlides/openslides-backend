@@ -1,10 +1,14 @@
 from decimal import Decimal
+from unittest.mock import MagicMock
 
 import pytest
-from psycopg import Connection, Cursor
+from psycopg import Connection
 
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.exceptions import InvalidFormat
 from tests.database.reader.system.util import setup_data
 
@@ -94,23 +98,23 @@ full_response = {
 }
 
 
-def test_simple(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    response = reader.get_many(full_request, use_changed_models=False)
+def test_simple(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(full_request, use_changed_models=False)
     assert response == full_response
 
 
-def test_invalid_fqids(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_invalid_fqids(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("user", [1]),
         GetManyRequest("committee", [1, 4]),
     ]
-    response = reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(request, use_changed_models=False)
     assert response == {
         "user": {
             1: {
@@ -152,35 +156,35 @@ def test_invalid_fqids(
     }
 
 
-def test_only_invalid_fqids(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_only_invalid_fqids(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("user", [2]),
         GetManyRequest("committee", [3, 4]),
     ]
-    response = reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(request, use_changed_models=False)
     assert response == {"user": {}, "committee": {}}
 
 
-def test_mapped_fields(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    response = reader.get_many(default_request, use_changed_models=False)
+def test_mapped_fields(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(default_request, use_changed_models=False)
     assert response == default_response
 
 
-def test_partial_mapped_fields(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_partial_mapped_fields(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("user", [1], ["username"]),
         GetManyRequest("committee", [2, 1]),
     ]
-    response = reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(request, use_changed_models=False)
     assert response == {
         "user": {1: {"id": 1, "username": "data"}},
         "committee": {
@@ -206,29 +210,29 @@ def test_partial_mapped_fields(
     }
 
 
-def test_same_collection(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_same_collection(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("committee", [1], ["name"]),
         GetManyRequest("committee", [2], ["name"]),
     ]
-    response = reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(request, use_changed_models=False)
     assert response == {
         "committee": {1: {"id": 1, "name": "23"}, 2: {"id": 2, "name": "42"}},
     }
 
 
-def test_same_model(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_same_model(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("committee", [1], ["name"]),
         GetManyRequest("committee", [1], ["forwarding_user_id"]),
     ]
-    response = reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(request, use_changed_models=False)
     assert response == {
         "committee": {
             1: {"id": 1, "name": "23", "forwarding_user_id": 1},
@@ -236,50 +240,50 @@ def test_same_model(
     }
 
 
-def test_field_not_exists(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
+def test_field_not_exists(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
     request = [
         GetManyRequest("committee", [1], ["does_not_exist"]),
     ]
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get_many(request, use_changed_models=False)
     assert "A field does not exist in model table: column " in e_info.value.msg
     assert "does_not_exist" in e_info.value.msg
 
 
-def test_negative_id(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
+def test_negative_id(db_connection: Connection) -> None:
     request = [
         GetManyRequest("committee", [-1], ["name"]),
         GetManyRequest("committee", [1], ["forwarding_user_id"]),
     ]
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get_many(request, use_changed_models=False)
     assert "Id must be positive." in e_info.value.msg
 
 
-def test_invalid_collection(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
+def test_invalid_collection(db_connection: Connection) -> None:
     request = [
         GetManyRequest("committeee", [1], ["name"]),
         GetManyRequest("committee", [1], ["forwarding_user_id"]),
     ]
-    with pytest.raises(InvalidFormat) as e_info:
-        reader.get_many(request, use_changed_models=False)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database.get_many(request, use_changed_models=False)
     assert "The collection does not exist in the database: relation" in e_info.value.msg
     assert "committeee_t" in e_info.value.msg
 
 
-def test_use_changed_models_missing_field(
-    db_connection: Connection, db_cur: Cursor, reader: ExtendedDatabase
-) -> None:
-    setup_data(db_connection, db_cur, data)
-    reader.changed_models["committee/1"].update({"name": "3"})
-    response = reader.get_many(default_request, use_changed_models=True)
+def test_use_changed_models_missing_field(db_connection: Connection) -> None:
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.changed_models["committee/1"].update({"name": "3"})
+        response = extended_database.get_many(default_request, use_changed_models=True)
     assert response == {
         "user": {1: {"id": 1, "username": "data"}},
         "committee": {

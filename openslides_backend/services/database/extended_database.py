@@ -1,13 +1,23 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import Any, ContextManager
+from typing import Any
 
+from psycopg import Connection
+
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import OrganizationField
+from openslides_backend.services.database.interface import FQID_MAX_LEN
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
 )
 from openslides_backend.shared.typing import LockResult, PartialModel
 
-from ...shared.exceptions import BadCodingException, DatabaseException, InvalidFormat
+from ...shared.exceptions import (
+    BadCodingException,
+    DatabaseException,
+    InvalidFormat,
+    ModelDoesNotExist,
+)
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
@@ -17,6 +27,7 @@ from ...shared.patterns import (
     FullQualifiedId,
     Id,
     collection_and_id_from_fqid,
+    collection_from_fqid,
     fqid_from_collection_and_id,
     id_from_fqid,
 )
@@ -24,6 +35,7 @@ from ...shared.typing import DeletedModel, ModelMap
 from ..database.commands import GetManyRequest
 from ..database.interface import Database
 from .database_reader import DatabaseReader
+from .database_writer import DatabaseWriter
 
 # from openslides_backend.shared.patterns import (
 #     Collection,
@@ -73,16 +85,15 @@ class ExtendedDatabase(Database):
     changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
 
-    def __init__(self, logging: LoggingModule, env: Env) -> None:
+    def __init__(
+        self, connection: Connection, logging: LoggingModule, env: Env
+    ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
         self.changed_models: dict[str, dict[str, Any]] = defaultdict(dict)
-        self.database_reader = DatabaseReader()
-        # self.database_writer = DatabaseWriter()
-
-    def get_database_context(self) -> ContextManager[None]:
-        # TODO what are the requirements?
-        return self.database_reader.get_database_context()
+        self.connection = connection
+        self.database_reader = DatabaseReader(self.connection, logging, env)
+        self.database_writer = DatabaseWriter(self.connection, logging, env)
 
     def apply_changed_model(
         self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
@@ -157,7 +168,9 @@ class ExtendedDatabase(Database):
                     .get(id_)
                 )
                 if not result:
-                    return {}
+                    raise ModelDoesNotExist(
+                        fqid_from_collection_and_id(collection, id_)
+                    )
         except DatabaseException as e:
             if raise_exception:
                 raise e
@@ -328,37 +341,71 @@ class ExtendedDatabase(Database):
         return {}
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
-        return []
-        # self.logger.debug(
-        #     f"Start RESERVE_IDS request to datastore with the following data: "
-        #     f"Collection: {collection}, Amount: {amount}"
-        # )
+        self.logger.debug(
+            f"Start to reserve ids with the following data: "
+            f"Collection: {collection}, Amount: {amount}"
+        )
+        return self.database_writer.reserve_ids(collection, amount)
         # response = self.retrieve(command)
         # return response.get("ids")
 
     def reserve_id(self, collection: Collection) -> int:
-        return 0
+        return self.reserve_ids(collection=collection, amount=1)[0]
 
-    #   return self.reserve_ids(collection=collection, amount=1)[0]
+    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> list[Id]:
+        if isinstance(write_requests, WriteRequest):
+            write_requests = [write_requests]
 
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None:
-        pass
-        # if isinstance(write_requests, WriteRequest):
-        #     write_requests = [write_requests]
+        # prefetch all needed data to reduce the amount of queries
+        # This is needed for updating required fields with old data
+        # TODO use database function? Query only required fields?
+        ids_per_collection: dict[str, set[Id]] = defaultdict(set)
+        for write_request in write_requests:
+            events = write_request.events
+            for event in events:
+                if not event.get("fqid"):
+                    continue
+                if len(event["fqid"]) > FQID_MAX_LEN:
+                    raise InvalidFormat(
+                        f"fqid {event['fqid']} is too long (max: {FQID_MAX_LEN})"
+                    )
+                collection = collection_from_fqid(events[0]["fqid"])
+                ids_per_collection[collection].add(id_from_fqid(event["fqid"]))
+
+        models = {
+            collection: self.database_reader.get_many(
+                [
+                    GetManyRequest(
+                        collection,
+                        list(ids),
+                        [
+                            field.own_field_name
+                            for field in model_registry[
+                                collection
+                            ]().get_required_fields()
+                            if not isinstance(field, OrganizationField)
+                        ],
+                    )
+                ]
+            ).get(collection, dict())
+            for collection, ids in ids_per_collection.items()
+        }
+
+        ids = self.database_writer.write(write_requests, models)
+        self.logger.debug(
+            f"Start WRITE request to database with the following data: "
+            f"Write request: {write_requests}"
+        )
+        return ids
         # command = commands.Write(write_requests=write_requests)
-        # self.logger.debug(
-        #     f"Start WRITE request to datastore with the following data: "
-        #     f"Write request: {write_requests}"
-        # )
         # self.retrieve(command)
 
     def write_without_events(self, write_request: WriteRequest) -> None:
-        pass
+        self.logger.debug(
+            f"Start WRITE_WITHOUT_EVENTS request to database with the following data: "
+            f"Write request: {write_request}"
+        )
         # command = commands.WriteWithoutEvents(write_requests=[write_request])
-        # self.logger.debug(
-        #     f"Start WRITE_WITHOUT_EVENTS request to datastore with the following data: "
-        #     f"Write request: {write_request}"
-        # )
         # self.retrieve(command)
 
     def truncate_db(self) -> None: ...
