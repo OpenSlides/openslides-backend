@@ -17,6 +17,6 @@ types-babel==2.11.0.15
 types-beautifulsoup4==4.12.0.20250204
 types-bleach==6.2.0.20241123
 types-PyYAML==6.0.12.20241230
-types-requests==2.32.0.20250301
+types-requests==2.32.0.20250306
 types-simplejson==3.20.0.20250218
 types-Pygments==2.19.0.20250219
