@@ -100,6 +100,8 @@ meeting_settings_keys = [
     "motions_default_line_numbering",
     "motions_line_length",
     "motions_reason_required",
+    "motions_origin_motion_toggle_default",
+    "motions_enable_origin_motion_display",
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",

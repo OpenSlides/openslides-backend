@@ -478,6 +478,8 @@ class Meeting(Model, MeetingModelMixin):
     )
     motions_line_length = fields.IntegerField(default=85, constraints={"minimum": 40})
     motions_reason_required = fields.BooleanField(default=False)
+    motions_origin_motion_toggle_default = fields.BooleanField(default=False)
+    motions_enable_origin_motion_display = fields.BooleanField(default=False)
     motions_enable_text_on_projector = fields.BooleanField(default=True)
     motions_enable_reason_on_projector = fields.BooleanField(default=False)
     motions_enable_sidebox_on_projector = fields.BooleanField(default=False)
