@@ -126,6 +126,8 @@ class MeetingImport(BaseActionTestCase):
                         "motions_default_line_numbering": "none",
                         "motions_line_length": 90,
                         "motions_reason_required": False,
+                        "motions_origin_motion_toggle_default": True,
+                        "motions_enable_origin_motion_display": True,
                         "motions_enable_text_on_projector": True,
                         "motions_enable_reason_on_projector": True,
                         "motions_enable_sidebox_on_projector": True,

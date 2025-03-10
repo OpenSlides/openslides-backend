@@ -87,6 +87,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motions_default_line_numbering": "outside",
             "motions_line_length": 85,
             "motions_reason_required": False,
+            "motions_origin_motion_toggle_default": False,
+            "motions_enable_origin_motion_display": False,
             "motions_enable_text_on_projector": False,
             "motions_enable_reason_on_projector": False,
             "motions_enable_sidebox_on_projector": False,

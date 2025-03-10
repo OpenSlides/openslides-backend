@@ -1184,6 +1184,8 @@ class MeetingClone(BaseActionTestCase):
             "motions_default_line_numbering": "inline",
             "motions_line_length": 42,
             "motions_reason_required": True,
+            "motions_origin_motion_toggle_default": True,
+            "motions_enable_origin_motion_display": True,
             "motions_enable_text_on_projector": True,
             "motions_enable_reason_on_projector": True,
             "motions_enable_sidebox_on_projector": True,
