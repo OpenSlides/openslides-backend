@@ -9,6 +9,8 @@ from openslides_backend.models.checker import (
     external_motion_fields,
 )
 from openslides_backend.models.models import Meeting, MeetingUser
+from openslides_backend.permissions.permission_helper import has_perm
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
@@ -109,7 +111,12 @@ class MeetingClone(MeetingImport):
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
 
-        if meeting.get("locked_from_inside"):
+        if meeting.get("locked_from_inside") and not has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
+            instance["meeting_id"],
+        ):
             raise ActionException("Cannot clone locked meeting.")
 
         if committee_id := instance.get("committee_id"):
@@ -127,6 +134,7 @@ class MeetingClone(MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
@@ -189,7 +197,6 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        meeting = self.get_meeting_from_json(meeting_json)
         meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
         if additional_user_ids:

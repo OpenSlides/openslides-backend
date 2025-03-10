@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
     ONE_ORGANIZATION_ID,
@@ -29,7 +30,8 @@ class MeetingClone(BaseActionTestCase):
                 "color": "#eeeeee",
                 "organization_id": 1,
             },
-            "committee/1": {"organization_id": 1},
+            "committee/1": {"organization_id": 1, "meeting_ids": [1]},
+            "committee/2": {"organization_id": 1},
             "meeting/1": {
                 "template_for_organization_id": 1,
                 "committee_id": 1,
@@ -575,23 +577,52 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
-    def test_clone_with_duplicate_external_id(self) -> None:
-        self.test_models["meeting/1"][
+    def test_clone_with_differing_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
             "template_for_organization_id"
         ] = ONE_ORGANIZATION_ID
-        self.test_models["meeting/1"]["external_id"] = "external_id"
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        new_ext_id = external_id + "_something"
         response = self.request(
             "meeting.clone",
             {
                 "meeting_id": 1,
-                "external_id": "external_id",
+                "committee_id": 2,
+                "external_id": new_ext_id,
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": new_ext_id,
+                "template_for_organization_id": None,
+            },
+        )
+
+    def test_clone_with_duplicate_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "committee_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": None,
+                "template_for_organization_id": None,
+            },
         )
 
     def test_clone_with_recommendation_extension(self) -> None:
@@ -2027,7 +2058,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 33
+        assert counter.calls == 34
 
     @performance
     def test_clone_performance(self) -> None:
@@ -2099,6 +2130,25 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 400)
         assert "Cannot clone locked meeting." in response.json["message"]
+
+    def test_permissions_oml_locked_meeting_with_can_manage_settings(self) -> None:
+        self.set_models(self.test_models)
+        bob_id = self.create_user("bob")
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "template_for_organization_id": 1,
+                },
+                ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+            }
+        )
+        self.set_group_permissions(1, [Permissions.Meeting.CAN_MANAGE_SETTINGS])
+        self.set_user_groups(1, [1])
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "admin_ids": [bob_id]}
+        )
+        self.assert_status_code(response, 200)
 
     def test_clone_require_duplicate_from_allowed(self) -> None:
         self.set_models(self.test_models_with_admin)

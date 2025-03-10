@@ -1,7 +1,11 @@
 from typing import Any, cast
 
-from ....permissions.management_levels import CommitteeManagementLevel
-from ....permissions.permission_helper import has_committee_management_level
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ....permissions.permission_helper import has_committee_management_level, has_perm
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
@@ -15,14 +19,32 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                "The external_id of the meeting is not unique in the committee scope.",
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
                 None,
-                "committee_id",
-                self.get_committee_id(instance),
             )
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         committee_id = self.get_committee_id(instance)
+        if (
+            (id_ := (instance.get("id") or instance.get("meeting_id")))
+            and self.datastore.get(
+                fqid_from_collection_and_id("meeting", id_), ["locked_from_inside"]
+            ).get("locked_from_inside")
+            and (
+                self.datastore.get(
+                    fqid_from_collection_and_id("user", self.user_id),
+                    ["organization_management_level"],
+                ).get("organization_management_level")
+                != OrganizationManagementLevel.SUPERADMIN
+            )
+            and not has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.Meeting.CAN_MANAGE_SETTINGS,
+                id_,
+            )
+        ):
+            raise MissingPermission({Permissions.Meeting.CAN_MANAGE_SETTINGS: id_})
         if not has_committee_management_level(
             self.datastore,
             self.user_id,

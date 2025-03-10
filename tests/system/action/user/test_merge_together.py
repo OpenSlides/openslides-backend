@@ -1113,7 +1113,7 @@ class UserMergeTogether(BaseVoteTestCase):
         def build_expected_user_dates(
             voted_present_user_delegated_merged: list[
                 tuple[bool, bool, int, int | None, int | None, int | None]
-            ]
+            ],
         ) -> list[dict[str, Any]]:
             return [
                 {

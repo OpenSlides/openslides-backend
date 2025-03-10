@@ -76,6 +76,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 "topic_poll_default_group_ids": [4],
+                "motion_poll_projection_name_order_first": "last_name",
+                "motion_poll_projection_max_columns": 6,
                 **{field: [1] for field in Meeting.all_default_projectors()},
             },
         )
@@ -467,6 +469,24 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
+    def test_create_without_admin_ids_and_permissions_oml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "committee_management_ids": [],
+                }
+            }
+        )
+        meeting = self.basic_test({})
+        admin_group_id = meeting.get("admin_group_id")
+        assert meeting.get("user_ids") == [1]
+        self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 1, "group_ids": [admin_group_id]},
+        )
+
     def test_create_limit_of_meetings_reached(self) -> None:
         self.set_models(
             {
@@ -549,14 +569,22 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"committee_id": 1, "external_id": external_id},
-                "committee/1": {"name": "test committee", "organization_id": 1},
+                "committee/1": {
+                    "name": "committee with preexisting meeting",
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                },
+                "committee/2": {
+                    "name": "committee for new meeting",
+                    "organization_id": 1,
+                },
             }
         )
         response = self.request(
             "meeting.create",
             {
                 "name": "meeting2",
-                "committee_id": 1,
+                "committee_id": 2,
                 "language": "en",
                 "external_id": external_id,
                 "admin_ids": [1],
@@ -564,9 +592,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
             response.json["message"],
         )
+        self.assert_model_not_exists("meeting/2")
 
     def test_create_external_id_empty_special_case(self) -> None:
         external_id = ""
