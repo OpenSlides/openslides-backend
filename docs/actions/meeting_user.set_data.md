@@ -24,4 +24,4 @@
 
 ```
 ## Internal action
-Sets the data for a meeting_user identified either by a `id` or a `user_id`-`meeting_id` pair. If the latter is the case and there is no meeting_user with that combination, a new one is created.
+Sets the data for a meeting user identified either by an `id` or a `user_id`-`meeting_id` pair. If the latter is the case and there is no meeting user with that combination, a new one is created.
