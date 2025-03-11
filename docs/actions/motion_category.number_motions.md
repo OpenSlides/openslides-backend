@@ -3,7 +3,7 @@
 { id: Id; }
 ```
 
-## Actions
+## Action
 `motion_category.number_motions` is called with the id of the _main category_ to number all motions. Categories itself build a tree with the `motion_category/parent_id`/`motion_category/children_ids` and `motion_category/weight` fields. All motions in all *affected categories* are numbered. The set of affected categories includes the main category and all categories in the tree of categories below it. These motions are called _affected motions_, since they are all renamed. All affected motions are numbered in the order of `motion/category_weight`.
 
 ### Amendments
