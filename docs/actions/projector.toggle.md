@@ -18,7 +18,7 @@ In contrast to `projector.project` this action does not affect all projectors of
 
 All projectors and content objects must belong to the same meeting given with `meeting_id` in the payload. For each projector:
 - If there is a current equal projection: Removes the equal projection. If it was not stable, put it into the history.
-- If there is not current equal projection: Creates a new current projection. It it is unstable, move all unstable projections to the history and set the projector scroll to 0.
+- If there is no current equal projection: Creates a new current projection. If it is unstable, move all unstable projections to the history and set the projector scroll to 0.
 
 
 ## Permissions
