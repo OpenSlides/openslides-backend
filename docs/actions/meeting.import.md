@@ -21,7 +21,7 @@ Imports one meeting from a file. The file must only contain exactly one meeting.
   - Imported usernames are checked for uniqueness and adjusted in case of collisions.
   - All previously set user passwords are replaced
 - Genders are only updated or imported if a new user needs to be created. Updated users retain their pre-existing gender.
-- Meeting external_ids can not exist in other meetings, if they do, an exception is raised.
+- If `external_id` of an imported meeting exists in other meetings, an exception is raised.
 - All references to other meetings and their models (like `motion/all_origin_ids` for example) are removed
 
 
