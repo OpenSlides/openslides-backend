@@ -38,7 +38,12 @@ If they aren't given and `set_as_template` is not true, there will be an error.
 
 The field `is_active_in_organization_id` is set to the organization_id.
 
-If a meeting is created, `motion_poll_default_type` is `pseudoanonymous`, `motion_poll_default_method` is `YNA`,  `assignment_poll_default_type` is `pseudoanonymous`, `assignment_poll_default_method` is `Y` and `assignment_poll_default_group_ids`, `motion_poll_default_group_ids` and `topic_poll_default_group_ids` have the Delegates group.
+If a meeting is created, 
+* `motion_poll_default_type` is `pseudoanonymous`
+* `motion_poll_default_method` is `YNA`
+* `assignment_poll_default_type` is `pseudoanonymous`
+* `assignment_poll_default_method` is `Y` 
+* `assignment_poll_default_group_ids`, `motion_poll_default_group_ids` and `topic_poll_default_group_ids` have the Delegates group.
 
 If `set_as_template` is given, `template_for_organization_id` is set to `1`.
 
