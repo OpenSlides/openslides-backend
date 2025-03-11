@@ -15,7 +15,7 @@ If a prefix of an affected category is empty, it gets the prefix from the parent
 If a prefix is found, it will be prepended to the number.
 
 ### Number
-`motion/number` is a string. There multiple counters for the actual number value (the actual integer), named `number_value` (see similarities to [motion.create](motion.create.md)),  beginning at 1. For all non-amendments, there is one single counter, named _main counter_. There is also a counter for every amendment's lead motion, so the amendments of one lead motion can be numbered. For every affected motion, do:
+`motion/number` is a string. There are multiple counters for the actual number value (the actual integer), named `number_value` (see similarities to [motion.create](motion.create.md)),  beginning at 1. For all non-amendments, there is one single counter, named `main_counter`. There is also a counter for every amendment's lead motion, so the amendments of one lead motion can be numbered. For every affected motion, do:
 
 - If the motion is not an amendment, the `number` consists of three parts `ABC`:
   - `A`: the prefix form `prefixes` of the category of the motion
