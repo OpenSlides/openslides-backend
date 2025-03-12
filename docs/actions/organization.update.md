@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
@@ -40,7 +40,7 @@
 Updates the organization.
 Checks if the theme_id is one of the theme_ids.
 This is an example of the saml_attr_mapping, where you can see the mappable fields.
-```js
+```json
 {
    "email": "email",
    "title": "title",

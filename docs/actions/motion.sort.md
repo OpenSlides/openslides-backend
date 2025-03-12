@@ -1,6 +1,6 @@
 ## Payload
 A helper-interface:
-```
+```js
 Interface TreeIdNode {
     id: Id;
     children?: TreeIdNode[];
@@ -8,7 +8,7 @@ Interface TreeIdNode {
 ```
 
 Payload:
-```
+```js
 {
     meeting_id: Id;
     tree: TreeIdNode[]; // recursive tree of ids.

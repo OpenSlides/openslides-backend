@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     title: string;
     internal: boolean;

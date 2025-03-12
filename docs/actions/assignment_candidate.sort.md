@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     assignment_id: Id;
     candidate_ids: Id[];

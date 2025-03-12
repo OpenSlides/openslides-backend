@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     // required
     ids: Id[], // you can toggle on multiple projectors

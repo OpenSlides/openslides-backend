@@ -1,6 +1,6 @@
 ## Payload
 
-```
+```js
 {
    // Required
    user_id: Id;

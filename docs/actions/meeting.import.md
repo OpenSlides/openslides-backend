@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
   committee_id: Id;
   meeting: File; // JSON file with Object<MeetingImportData>

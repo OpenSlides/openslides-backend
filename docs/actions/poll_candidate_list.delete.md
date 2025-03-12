@@ -1,7 +1,7 @@
 ## Payload
 
 Payload:
-```
+```js
 {
     // Required
     id: Id;

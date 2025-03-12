@@ -1,6 +1,6 @@
 ## Payload 
 Includes workflow_timestamp from Issue2112
-```
+```js
 {
 // Required
     id: Id;

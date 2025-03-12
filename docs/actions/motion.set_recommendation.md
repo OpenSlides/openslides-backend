@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     id: Id;
     recommendation_id: Id;

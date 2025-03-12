@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {meeting_id: Id}
 ```
 

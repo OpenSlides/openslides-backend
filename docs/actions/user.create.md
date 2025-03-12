@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Optional
 // Group A
@@ -75,7 +75,7 @@ Append a number starting at 1 to the username (append with a space). Check if th
 
 ### Return value
 
-```
+```js
 {
     id: Id;
     meeting_user_id?: Id; // only if `meeting_id` was present in the payload

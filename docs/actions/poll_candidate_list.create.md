@@ -1,7 +1,7 @@
 ## Payload
 
 Payload:
-```
+```js
 {
     // Required
     option_id: Id,

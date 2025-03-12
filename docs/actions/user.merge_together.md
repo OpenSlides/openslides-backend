@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id // The primary user the others will be merged into
