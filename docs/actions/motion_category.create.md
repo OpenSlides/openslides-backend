@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     name: string;
@@ -12,7 +12,7 @@
 ```
 
 ## Action
-Creates a new category. The category must be sorted as the last child under the parent.
+Creates a new category. The category is sorted as the last child under the parent.
 
 ## Permissions
 The request user needs `motion.can_manage`.

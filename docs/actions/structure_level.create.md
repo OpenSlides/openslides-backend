@@ -2,7 +2,11 @@
 
 ```js
 {
-    name: string; // required
+    // required
+    name: string;
+    meeting_id: Id;
+    
+    // optional
     color: color;
     default_time: number;
 }
