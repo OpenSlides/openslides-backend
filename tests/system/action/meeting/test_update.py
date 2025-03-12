@@ -162,7 +162,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test(
-            {"reference_projector_id": 2, "default_projector_topic_ids": [2]}
+            {
+                "reference_projector_id": 2,
+                "default_projector_topic_ids": [2],
+                "default_projector_current_los_ids": [1, 2],
+            }
         )
         self.assert_model_exists(
             "meeting/1",
@@ -170,6 +174,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "reference_projector_id": 2,
                 "default_projector_topic_ids": [2],
                 "default_projector_motion_ids": [1],
+                "default_projector_current_los_ids": [1, 2],
             },
         )
         self.assert_model_exists(
@@ -178,6 +183,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": None,
                 "used_as_default_projector_for_topic_in_meeting_id": None,
                 "used_as_default_projector_for_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
             },
         )
         self.assert_model_exists(
@@ -186,6 +192,44 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 "used_as_default_projector_for_topic_in_meeting_id": 1,
                 "used_as_default_projector_for_motion_in_meeting_id": None,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
+            },
+        )
+
+    def test_update_projector_related_fields2(self) -> None:
+        self.test_update_projector_related_fields()
+        self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "default_projector_current_los_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "reference_projector_id": 2,
+                "default_projector_topic_ids": [2],
+                "default_projector_motion_ids": [1],
+                "default_projector_current_los_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_reference_projector_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_current_los_in_meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "used_as_reference_projector_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
             },
         )
 
@@ -424,6 +468,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
 
+    def test_update_group_a_orga_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "welcome_title": "Hallo"},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        )
+
     def test_update_group_b_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "present_user_ids": [2]}
@@ -445,9 +497,25 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             Permissions.User.CAN_UPDATE,
         )
 
+    def test_update_group_b_permissions_3(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        )
+
     def test_update_group_c_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "reference_projector_id": 1}
+        )
+
+    def test_update_group_c_orga_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "reference_projector_id": 1},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
 
     def test_update_group_c_permissions(self) -> None:
@@ -470,6 +538,25 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "Missing permission:" in response.json["message"]
+
+    def test_update_group_d_orga_permissions(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "enable_anonymous": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {"enable_anonymous": True},
+        )
 
     def test_update_group_d_permissions(self) -> None:
         self.create_meeting()
@@ -541,6 +628,20 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.SUPERADMIN,
         )
 
+    def test_update_group_f_permissions_organadmin(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            fail=True,
+        )
+
     def test_update_with_locked_meeting_group_a(self) -> None:
         self.base_permission_test(
             self.test_models,
@@ -555,13 +656,53 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             lock_meeting=True,
         )
 
+    def test_update_with_locked_meeting_group_a_orgaadmin(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "welcome_title": "Hallo",
+                "locked_from_inside": True,
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            fail=True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_a_orgaadmin_with_perms(self) -> None:
+        self.test_models["group/3"] = {
+            "permissions": [Permissions.Meeting.CAN_MANAGE_SETTINGS]
+        }
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "welcome_title": "Hallo",
+                "locked_from_inside": True,
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            lock_meeting=True,
+        )
+
     def test_update_with_locked_meeting_group_b(self) -> None:
         self.base_permission_test(
             self.test_models,
             "meeting.update",
             {"id": 1, "present_user_ids": [2]},
             OrganizationManagementLevel.SUPERADMIN,
-            True,
+            fail=True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_b_orgaadmin(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -571,7 +712,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "reference_projector_id": 1},
             OrganizationManagementLevel.SUPERADMIN,
-            True,
+            fail=True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_c_orgaadmin(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "reference_projector_id": 1},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            fail=True,
             lock_meeting=True,
         )
 
@@ -608,6 +759,50 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_with_locked_meeting_group_d_orgaadmin(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_models(self.test_models)
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        self.set_user_groups(self.user_id, [3])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Missing permission: Not admin of this meeting",
+            response.json["message"],
+        )
+
+    def test_update_with_locked_meeting_group_d_admin_and_superadmin(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_models(self.test_models)
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        self.set_user_groups(self.user_id, [1])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_update_with_locked_meeting_group_e(self) -> None:
         self.set_models(self.test_models)
         self.base_permission_test(
@@ -615,6 +810,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "organization_tag_ids": [1]},
             OrganizationManagementLevel.SUPERADMIN,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_e_orgaadmin(self) -> None:
+        self.set_models(self.test_models)
+        self.base_permission_test(
+            {"organization_tag/1": {}},
+            "meeting.update",
+            {"id": 1, "organization_tag_ids": [1]},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             lock_meeting=True,
         )
 
@@ -629,6 +834,21 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_room_password": "blablabla",
             },
             OrganizationManagementLevel.SUPERADMIN,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_f_orgaadmin(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            fail=True,
             lock_meeting=True,
         )
 

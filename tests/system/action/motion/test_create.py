@@ -6,6 +6,7 @@ from openslides_backend.action.mixins.delegation_based_restriction_mixin import 
 )
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.base_classes import Permission
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -900,3 +901,37 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+
+    def base_assign_external_self_test(self, oml: OrganizationManagementLevel) -> None:
+        bob_id = self.create_user("bob", organization_management_level=oml)
+        self.login(bob_id)
+        response = self.request_multi(
+            "motion.create",
+            [
+                {
+                    "title": "Submitter is me",
+                    "meeting_id": 1,
+                    "text": "test",
+                },
+                {
+                    "title": "Submitter is me 2",
+                    "meeting_id": 1,
+                    "text": "test 2",
+                    "submitter_ids": [bob_id],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": bob_id, "motion_submitter_ids": [1, 2]}
+        )
+        self.assert_model_exists("motion_submitter/1", {"motion_id": 1})
+        self.assert_model_exists("motion_submitter/2", {"motion_id": 2})
+
+    def test_create_assign_self_with_external_superadmin(self) -> None:
+        self.base_assign_external_self_test(OrganizationManagementLevel.SUPERADMIN)
+
+    def test_create_assign_self_with_external_orga_admin(self) -> None:
+        self.base_assign_external_self_test(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )

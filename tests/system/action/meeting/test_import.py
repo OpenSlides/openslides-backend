@@ -449,6 +449,16 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
+    def replace_migrated_projector_fields(self, data: dict[str, Any]) -> None:
+        data["meeting"]["meeting"]["1"][
+            "default_projector_current_list_of_speakers_ids"
+        ] = data["meeting"]["meeting"]["1"].pop("default_projector_current_los_ids")
+        data["meeting"]["projector"]["1"][
+            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"
+        ] = data["meeting"]["projector"]["1"].pop(
+            "used_as_default_projector_for_current_los_in_meeting_id"
+        )
+
     def test_no_meeting_collection(self) -> None:
         response = self.request(
             "meeting.import",
@@ -2209,6 +2219,7 @@ class MeetingImport(BaseActionTestCase):
         data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
         data["meeting"]["user"]["1"]["gender"] = "male"
         data["meeting"]["_migration_index"] = 35
+        self.replace_migrated_projector_fields(data)
         assert (
             data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"]
             == []
@@ -2263,6 +2274,7 @@ class MeetingImport(BaseActionTestCase):
             "assignment_poll_default_100_percent_base"
         ] = "YN"
         data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
+        self.replace_migrated_projector_fields(data)
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
@@ -2647,6 +2659,7 @@ class MeetingImport(BaseActionTestCase):
             "default_statute_amendment_workflow_meeting_id"
         ] = 1
         data["meeting"]["_migration_index"] = 55
+        self.replace_migrated_projector_fields(data)
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("motion_workflow/2")

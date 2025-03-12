@@ -50,7 +50,7 @@ def build_motion_meeting_user_create_action(
             ) and not has_organization_management_level(
                 self.datastore,
                 meeting_user["user_id"],
-                OrganizationManagementLevel.SUPERADMIN,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             ):
                 assert_belongs_to_meeting(
                     self.datastore,
