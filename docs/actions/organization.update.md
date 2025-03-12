@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
@@ -25,6 +25,8 @@
     enable_anonymous: boolean;
     reset_password_verbose_errors: boolean;
     limit_of_meetings: int;
+    limit_of_users: int:
+    url: string;
     saml_enabled: boolean;
     saml_login_button_text: string;
     saml_attr_mapping: JSON;
@@ -36,9 +38,9 @@
 
 ## Action
 Updates the organization.
-It has to be checked that the theme_id has to be one of the theme_ids.
+Checks if the theme_id is one of the theme_ids.
 This is an example of the saml_attr_mapping, where you can see the mappable fields.
-```js
+```json
 {
    "email": "email",
    "title": "title",

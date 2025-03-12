@@ -24,7 +24,7 @@ or `{ok: False}` on errors
 # Logic
 
 If the user does not have `motion.can_forward` in the given meeting, an error is returned. 
-If the given meeting is archived or there is no committee, an exception will be thrown and an error is returned.
+If the given meeting is archived or there is no committee, an exception is thrown and an error is returned.
 
 The relation `meeting/committee_id` -> `committee/forward_to_committee_ids` is followed. A list is returned. Every committee in `committee/forward_to_committee_ids` generates one entry:
 

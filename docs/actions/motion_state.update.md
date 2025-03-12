@@ -1,25 +1,27 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
 
 // Optional
     name: string
+    weight: number;
     recommendation_label: string;
+    is_internal: boolean;
     css_class: string;
     restrictions: string[];
     allow_support: boolean;
     allow_create_poll: boolean;
     allow_submitter_edit: boolean;
     allow_motion_forwarding: boolean;
-    set_workflow_timestamp: boolean;
     set_number: boolean;
+    set_workflow_timestamp: boolean;
     show_state_extension_field: boolean;
-    merge_amendment_into_final: number;
     show_recommendation_extension_field: boolean;
-    weight: number;
+    merge_amendment_into_final: number;
 
+    submitter_withdraw_state_id: Id;
     next_state_ids: Id[];
     previous_state_ids: Id[];
 }

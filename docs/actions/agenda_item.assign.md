@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     ids: Id[];
     parent_id: Id | null;
@@ -8,9 +8,9 @@
 ```
 
 ## Action
-All agenda items with `ids` should be added as children to `parent_id`. If `parent_id` is null, they are added to the root layer. The keys `weight` and `level` have to be adjusted, too, so they are "sorted" under the parent. It must be ensured, that the children of the assigned agenda items are also adjusted.
+Sets the agenda item referenced by `parent_id` as the parent of the agenda items referenced by `ids`. If `parent_id` is null, the items are added to the root layer. The keys `weight` and `level` are adjusted, to assure the items are "sorted" under the parent. The children of the assigned agenda items are also adjusted.
 
-Attention: With this operation it must be ensured, that no cycles are formed.
+The action will raise an error, if cycles would be formed.
 
 ## Permissions
 The request user needs `agenda_item.can_manage`.

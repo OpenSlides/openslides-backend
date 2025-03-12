@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Optional
     username: string;

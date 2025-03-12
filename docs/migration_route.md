@@ -21,9 +21,11 @@ enum MigrationState {
 
 {
     "success": true,
-    "status"?: MigrationState,
-    "output"?: str,
-    "exception"?: str
+
+    // Optional
+    "status": MigrationState,
+    "output": str,
+    "exception": str
 }
 ```
 `output` always contains the full output of the migration command up to this point. `exception` contains the thrown exception, if any, which can only be the case if the command is finished (meaning `status != "migration_running"`). After issuing a migration command, it is waited a short period of time for the thread to finish, so the status can be all of these things for any command (e.g. after calling `migrate`, the returned status can be either `MIGRATION_RUNNING` if the migrations did not finish directly or `FINALIZATION_REQUIRED` if the migration is already done).

@@ -50,15 +50,15 @@ The fields `forward_to_committee`, `organization_tags`, `managers`, `meeting_adm
 The row state can be one of `new`, `done` or `error`. If it's `error`, no import should be possible.
 
 The statistics part of the result:
-```
-total: int
-created: int
-updated: int
-error: int
-warning: int
-meetings_created: int
-meetings_cloned: int
-organization_tags_created: int
+```js
+  total: int
+  created: int
+  updated: int
+  error: int
+  warning: int
+  meetings_created: int
+  meetings_cloned: int
+  organization_tags_created: int
 ```
 Rows with error state will not add onto the `meetings_created`, `meetings_cloned` and `organization_tags_created` statistic fields.
 See [common description](preface_special_imports.md#general-format-of-the-result-send-to-the-client-for-preview).
