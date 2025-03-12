@@ -14,7 +14,7 @@
   user_id: Id: {
     field: str: (
       editable: boolean, // true if user can be updated or deleted, 
-      message?: string // error message if an exception was caught
+      message: string // error message if an exception was caught, not filled if there's no exception
     ),
     ... 
   },

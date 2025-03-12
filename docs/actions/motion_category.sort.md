@@ -4,7 +4,8 @@ A helper-interface:
 ```js
 Interface TreeIdNode {
     id: Id;
-    children?: TreeIdNode[];
+    // Optional
+    children: TreeIdNode[];
 }
 ```
 

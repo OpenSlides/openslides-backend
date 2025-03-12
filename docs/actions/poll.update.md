@@ -22,10 +22,10 @@
     description: string,
     onehundred_percent_base: string,
 
-// type==analog, every state
-    votesvalid?: number,
-    votesinvalid?: number,
-    votescast?: number,
+// Optional, type==analog, every state
+    votesvalid: number,
+    votesinvalid: number,
+    votescast: number,
     publish_immediately: boolean,
 
 // action called internally

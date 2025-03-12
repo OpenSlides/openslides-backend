@@ -8,10 +8,10 @@ Interface Option {
     content_object_id: Fqid, // must be one of  user or motion.
     poll_candidate_user_ids: [user_ids], // sorted list of user ids for candidate list election
 
-    // Only for type==analog, optional votes can be given
-    Y?: decimal(6), // Y, YN, YNA mode
-    N?: decimal(6), // N, YN, YNA mode
-    A?: decimal(6)  // YNA mode
+    // Optionally and only for type==analog, votes can be given
+    Y: decimal(6), // Y, YN, YNA mode
+    N: decimal(6), // N, YN, YNA mode
+    A: decimal(6)  // YNA mode
 }
 ```
 
@@ -44,13 +44,13 @@ Payload:
 // Only for type==analog
     publish_immediately: boolean,
 
-// Only for type==analog, optional votes can be given
-    votesvalid?: decimal(6),
-    votesinvalid?: decimal(6),
-    votescast?: decimal(6),
-    amount_global_yes?: decimal(6),
-    amount_global_no?: decimal(6),
-    amount_global_abstain?: decimal(6)
+// Optionally and only for type==analog, votes can be given
+    votesvalid: decimal(6),
+    votesinvalid: decimal(6),
+    votescast: decimal(6),
+    amount_global_yes: decimal(6),
+    amount_global_no: decimal(6),
+    amount_global_abstain: decimal(6)
 }
 ```
 

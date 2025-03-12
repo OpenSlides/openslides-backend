@@ -2,12 +2,12 @@
 
 ```js
 {
-    // optional
+    sort_criteria: string[], // can contain ["username", "first_name", "last_name"],
+    // Optional
     start_index: number,
     entries: number,
-    sort_criteria: string[], // can contain ["username", "first_name", "last_name"],
     reverse: boolean,
-    filter?: string
+    filter: string
 }
 ```
 
