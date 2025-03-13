@@ -8,7 +8,7 @@
 
 ## Action
 
-Increase the time of all structure levels by increasing
+Increases the time of all structure levels by increasing
 `additional_time` as well as `remaining_time` by the amount that the given structure level is
 negative. It is only allowed if the given structure level is not currently active, i.e.,
 `current_start_time` must be `None`, and if `meeting/list_of_speakers_default_structure_level_time > 0`.

@@ -20,8 +20,8 @@ else:
 ```
 
 # Logic
-Go thru the database.
-Run the checker.
+Runs the checker.
+Goes through the database.
 If okay, it returns `{"ok": True}` else it returns `{"ok": False, "errors": <errors>}`.
 
 # Permissions
