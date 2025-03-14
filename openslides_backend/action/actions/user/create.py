@@ -59,6 +59,8 @@ class UserCreate(
             "forwarding_committee_ids",
             "saml_id",
             "member_number",
+            "guest",
+            "home_committee_id",
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
@@ -100,6 +102,10 @@ class UserCreate(
             self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
+        if instance.get("guest") and instance.get("home_committee_id"):
+            raise ActionException(
+                "Cannot set guest to true and set a home committee at the same time."
+            )
         return instance
 
     def create_action_result_element(
