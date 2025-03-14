@@ -550,7 +550,7 @@ class UserMergeTogether(BaseVoteTestCase):
     def setup_complex_user_fields(self) -> None:
         self.set_models(
             {
-                "committee/1": {"manager_ids": [2, 5]},
+                "committee/1": {"manager_ids": [2, 5], "native_user_ids": [2]},
                 "committee/3": {"manager_ids": [5]},
                 "meeting/2": {"present_user_ids": [4], "locked_from_inside": True},
                 "meeting/3": {"present_user_ids": [3, 4]},
@@ -565,6 +565,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "email": "nick.everything@rob.banks",
                     "last_email_sent": 123456789,
                     "committee_management_ids": [1],
+                    "home_committee_id": 1,
                 },
                 "user/3": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -576,6 +577,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "default_vote_weight": "1.234567",
                     "last_login": 987654321,
                     "is_present_in_meeting_ids": [3],
+                    "guest": True,
                 },
                 "user/4": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
@@ -585,6 +587,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "last_email_sent": 234567890,
                     "is_present_in_meeting_ids": [2, 3],
                     "member_number": "souperadmin",
+                    "guest": False,
                 },
                 "user/5": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -660,11 +663,13 @@ class UserMergeTogether(BaseVoteTestCase):
                 "is_present_in_meeting_ids": [3, 4],
                 "committee_management_ids": [1, 3],
                 "last_email_sent": 123456789,
+                "home_committee_id": 1,
                 "title": None,
                 "last_name": None,
                 "default_vote_weight": None,
                 "member_number": None,
                 "is_physical_person": None,
+                "guest": None,
             },
         )
         for id_ in range(3, 7):
@@ -809,9 +814,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
-            {
-                "gender_id": None,
-            },
+            {"gender_id": None, "guest": True, "home_committee_id": None},
         )
         self.assert_model_exists(
             "gender/1",
@@ -819,6 +822,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "user_ids": None,
             },
         )
+        self.assert_model_exists("committee/1", {"native_user_ids": []})
 
     def test_with_custom_fields_simple(self) -> None:
         response = self.request(
