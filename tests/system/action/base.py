@@ -161,6 +161,50 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.datastore.reset()
         return result
 
+    def create_committee(
+        self, committee_id: int = 1, parent_id: int | None = None
+    ) -> None:
+        committee_fqid = f"committee/{committee_id}"
+        data: dict[str, dict[str, Any]] = {
+            committee_fqid: {
+                "organization_id": 1,
+                "name": f"Commitee{committee_id}",
+            }
+        }
+        if parent_id:
+            parent_fqid = f"committee/{parent_id}"
+            parent = self.datastore.get(
+                parent_fqid,
+                ["all_parent_ids", "all_child_ids", "child_ids"],
+                lock_result=False,
+            )
+            data[parent_fqid] = {
+                "child_ids": [*parent.get("child_ids", []), committee_id],
+                "all_child_ids": [*parent.get("all_child_ids", []), committee_id],
+            }
+            data[committee_fqid]["parent_id"] = parent_id
+            data[committee_fqid]["all_parent_ids"] = [
+                *parent.get("all_parent_ids", []),
+                parent_id,
+            ]
+            if grandparent_ids := parent.get("all_parent_ids", []):
+                grandparents = self.datastore.get_many(
+                    [GetManyRequest("committee", grandparent_ids, ["all_child_ids"])],
+                    lock_result=False,
+                ).get("committee", {})
+                data.update(
+                    {
+                        f"committee/{id_}": {
+                            "all_child_ids": [
+                                *grandparents.get(id_, {}).get("all_child_ids", []),
+                                committee_id,
+                            ]
+                        }
+                        for id_ in grandparent_ids
+                    }
+                )
+        self.set_models(data)
+
     def create_meeting(self, base: int = 1) -> None:
         """
         Creates meeting with id 1, committee 60 and groups with ids 1, 2, 3 by default.

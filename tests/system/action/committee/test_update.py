@@ -646,10 +646,27 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
+        self.set_organization_management_level(None)
         response = self.request(
             "committee.update",
             {
                 "id": 1,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_parent_committee_admin(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
