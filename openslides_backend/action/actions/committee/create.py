@@ -37,12 +37,12 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        if "parent_id" in instance:
+        if parent_id := instance.get("parent_id"):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                instance["parent_id"],
+                parent_id,
             ):
                 raise MissingPermission(
                     {

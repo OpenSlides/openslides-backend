@@ -161,6 +161,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.datastore.reset()
         return result
 
+    @with_database_context
     def create_committee(
         self, committee_id: int = 1, parent_id: int | None = None
     ) -> None:
@@ -177,6 +178,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 parent_fqid,
                 ["all_parent_ids", "all_child_ids", "child_ids"],
                 lock_result=False,
+                use_changed_models=False,
             )
             data[parent_fqid] = {
                 "child_ids": [*parent.get("child_ids", []), committee_id],
@@ -191,6 +193,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 grandparents = self.datastore.get_many(
                     [GetManyRequest("committee", grandparent_ids, ["all_child_ids"])],
                     lock_result=False,
+                    use_changed_models=False,
                 ).get("committee", {})
                 data.update(
                     {
