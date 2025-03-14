@@ -9,6 +9,9 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
+from openslides_backend.permissions.permission_helper import (
+    has_committee_management_level,
+)
 from openslides_backend.permissions.permissions import Permissions, permission_parents
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import DatastoreService
@@ -189,6 +192,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             "email",
             "default_vote_weight",
             "member_number",
+            "guest",
         ],
         "B": [
             "number",
@@ -208,6 +212,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "F": ["default_password"],
         "G": ["is_demo_user"],
         "H": ["saml_id"],
+        "I": ["home_committee_id"],
     }
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -258,6 +263,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         self.check_group_A(actual_group_fields["A"], instance)
         self.check_group_F(actual_group_fields["F"], instance)
         self.check_group_G(actual_group_fields["G"])
+        self.check_group_I(actual_group_fields["I"], instance)
 
     def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group A: Depending on scope of user to act on"""
@@ -473,6 +479,37 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             if self.name == "user.create":
                 msg += f" or with {OrganizationManagementLevel.CAN_MANAGE_USERS} permission"
             raise ActionException(msg)
+
+    def check_group_I(self, fields: list[str], instance: dict[str, Any]) -> None:
+        """Check Group I committee-related fields: OML or CML level both for setting and unsetting"""
+        if (
+            fields
+            and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            db_instance = (
+                {}
+                if "id" not in instance
+                else self.datastore.get(
+                    fqid_from_collection_and_id("user", instance["id"]),
+                    fields,
+                    lock_result=False,
+                )
+            )
+            for field in fields:
+                committee_ids: list[int] = []
+                for payload in [instance, db_instance]:
+                    if field in payload:
+                        committee_ids.append(payload[field])
+                for committee_id in committee_ids:
+                    if has_committee_management_level(
+                        self.datastore,
+                        self.user_id,
+                        CommitteeManagementLevel.CAN_MANAGE,
+                        committee_id,
+                    ):
+                        raise MissingPermission(
+                            {CommitteeManagementLevel.CAN_MANAGE: committee_id}
+                        )
 
     def _check_for_higher_OML(
         self,

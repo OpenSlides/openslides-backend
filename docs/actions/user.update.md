@@ -18,6 +18,7 @@
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
+    guest: boolean;
 
 // Group B
     number: string;
@@ -50,6 +51,9 @@
 // Group H
     saml_id: string;
 
+// Group I
+    home_committee_id: Id;
+
 // only internal
     is_present_in_meeting_ids: Id[];
     option_ids: Id[];
@@ -70,6 +74,11 @@ Updates a user.
 * The `member_number` must be unique within all users.
 * Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
+* `guest` can't be true if `home_committee_id` is set.
+    * When setting `home_committee_id`, `guest` will be set to `false`.
+    * When setting `guest` to `true`, if the user already has a home committee:
+        * If the user has Group I permissions, automatically set `home_committee_id` to none
+        * Else raise an exception.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
@@ -115,6 +124,10 @@ The request user needs the permissions under the rules of user_scope, see [Permi
 Group G:
 
 The request user needs the OML `superadmin`.
+
+Group I:
+
+Group D permissions for any committee that is set, group D permissions for any committee that is removed.
 
 Group H:
 
