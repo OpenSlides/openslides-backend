@@ -95,19 +95,40 @@ class PermissionVarStore:
         """
         user_committees = set(self.user.get("committee_management_ids") or [])
         if user_committees:
-            committees_d = (
+            committees_d = list(
                 self.datastore.get_many(
                     [
                         GetManyRequest(
                             "committee",
                             list(user_committees),
-                            ["meeting_ids"],
+                            ["meeting_ids", "all_child_ids"],
                         )
                     ]
                 )
                 .get("committee", {})
                 .values()
             )
+            child_ids = {
+                child_id
+                for committee in committees_d
+                for child_id in committee.get("all_child_ids", [])
+                if child_id not in user_committees
+            }
+            user_committees.update(child_ids)
+            if len(child_ids):
+                committees_d.extend(
+                    self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "committee",
+                                list(child_ids),
+                                ["meeting_ids"],
+                            )
+                        ]
+                    )
+                    .get("committee", {})
+                    .values()
+                )
             user_meetings = reduce(
                 lambda i1, i2: i1 | i2,
                 [
@@ -192,7 +213,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             "email",
             "default_vote_weight",
             "member_number",
-            "guest",
         ],
         "B": [
             "number",
@@ -212,7 +232,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "F": ["default_password"],
         "G": ["is_demo_user"],
         "H": ["saml_id"],
-        "I": ["home_committee_id"],
+        "I": ["home_committee_id", "guest"],
     }
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -491,25 +511,26 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 if "id" not in instance
                 else self.datastore.get(
                     fqid_from_collection_and_id("user", instance["id"]),
-                    fields,
+                    ["home_committee_id"],
                     lock_result=False,
                 )
             )
-            for field in fields:
-                committee_ids: list[int] = []
-                for payload in [instance, db_instance]:
-                    if field in payload:
-                        committee_ids.append(payload[field])
-                for committee_id in committee_ids:
-                    if has_committee_management_level(
-                        self.datastore,
-                        self.user_id,
-                        CommitteeManagementLevel.CAN_MANAGE,
-                        committee_id,
-                    ):
-                        raise MissingPermission(
-                            {CommitteeManagementLevel.CAN_MANAGE: committee_id}
-                        )
+            committee_ids: list[int] = []
+            for payload in [instance, db_instance]:
+                if "home_committee_id" in payload:
+                    committee_ids.append(payload["home_committee_id"])
+            if not committee_ids:
+                self.check_group_A(fields, instance)
+            for committee_id in committee_ids:
+                if not has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    committee_id,
+                ):
+                    raise MissingPermission(
+                        {CommitteeManagementLevel.CAN_MANAGE: committee_id}
+                    )
 
     def _check_for_higher_OML(
         self,

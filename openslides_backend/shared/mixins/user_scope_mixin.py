@@ -46,6 +46,7 @@ class UserScopeMixin(BaseServiceProvider):
         """
         meeting_ids: set[int] = set()
         committees_manager: set[int] = set()
+        home_committee_id: int | None
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
@@ -54,6 +55,7 @@ class UserScopeMixin(BaseServiceProvider):
                 set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
+            home_committee_id = id_or_instance.get("home_committee_id")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -61,12 +63,15 @@ class UserScopeMixin(BaseServiceProvider):
                     "meeting_ids",
                     "organization_management_level",
                     "committee_management_ids",
+                    "home_committee_id",
                 ],
                 lock_result=False,
             )
             meeting_ids.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
+            home_committee_id = user.get("home_committee_id")
+
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -90,7 +95,14 @@ class UserScopeMixin(BaseServiceProvider):
             if committee not in committee_meetings.keys():
                 committee_meetings[committee] = None
 
-        if len(meetings_committee) == 1 and len(committees) == 1:
+        if home_committee_id:
+            return (
+                UserScope.Committee,
+                home_committee_id,
+                oml_right,
+                committee_meetings,
+            )
+        elif len(meetings_committee) == 1 and len(committees) == 1:
             return (
                 UserScope.Meeting,
                 next(iter(meetings_committee)),

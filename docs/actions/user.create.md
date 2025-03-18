@@ -15,7 +15,6 @@
     email: string;
     member_number: string;
     default_vote_weight: decimal(6);
-    guest: boolean;
 
 // Group B
     number: string;
@@ -51,6 +50,7 @@
 
 // Group I
     home_committee_id: Id;
+    guest: boolean;
 
 // Only internal
     forwarding_committee_ids
@@ -130,4 +130,4 @@ Group H fields are only allowed in internal requests or, exclusive for user.crea
 
 Group I:
 
-Group D permissions for any committee that is set, group D permissions for any committee that is removed.
+CML `can_manage` for the current `home_committee_id`, CML `can_manage` for the new `home_committee_id`. If there is neither an old, nor a new `home_committee_id`, but there are fields, treat it as group A.

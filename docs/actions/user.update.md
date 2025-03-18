@@ -18,7 +18,6 @@
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
-    guest: boolean;
 
 // Group B
     number: string;
@@ -53,6 +52,7 @@
 
 // Group I
     home_committee_id: Id;
+    guest: boolean;
 
 // only internal
     is_present_in_meeting_ids: Id[];
@@ -127,7 +127,7 @@ The request user needs the OML `superadmin`.
 
 Group I:
 
-Group D permissions for any committee that is set, group D permissions for any committee that is removed.
+CML `can_manage` for the current `home_committee_id`, CML `can_manage` for the new `home_committee_id`. If there is neither an old, nor a new `home_committee_id`, but there are fields, treat it as group A.
 
 Group H:
 
