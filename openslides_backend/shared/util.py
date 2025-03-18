@@ -142,7 +142,7 @@ ALLOWED_ATTRIBUTES_ALL = {
     "valign",
     "value",
     "vspace",
-    "width"
+    "width",
 }
 
 ALLOWED_ATTRIBUTES = {
@@ -151,7 +151,7 @@ ALLOWED_ATTRIBUTES = {
     "img": ["longdesc", "src"],
     "div": ["itemscope", "itemtype"],
     "iframe": ["src", "frameborder"],
-    "video": ["autoplay", "controls", "loop", "muted", "poster", "preload", "src"]
+    "video": ["autoplay", "controls", "loop", "muted", "poster", "preload", "src"],
 }
 
 INITIAL_DATA_FILE = "data/initial-data.json"
