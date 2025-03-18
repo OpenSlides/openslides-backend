@@ -3421,6 +3421,24 @@ class UserUpdateActionTest(BaseActionTestCase):
             "account", 1, other_data={"committee_management_ids": [63]}
         )
 
+    def test_update_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(
+            "account", 1, other_data={"committee_management_ids": [63]}
+        )
+
+    def test_update_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 60})
+
+    def test_update_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 63})
+
+    def test_update_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 63})
+
     def test_update_locked_out_superadmin_error(self) -> None:
         self.assert_lock_out_user(
             "account",
@@ -3443,6 +3461,16 @@ class UserUpdateActionTest(BaseActionTestCase):
             1,
             other_data={"committee_management_ids": [60]},
             errormsg="Cannot set user 10 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"committee_management_ids": [59]},
+            errormsg="Cannot set user 10 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
         )
 
     def test_update_locked_out_meeting_admin_error(self) -> None:
@@ -3530,6 +3558,29 @@ class UserUpdateActionTest(BaseActionTestCase):
             lock_out=None,
             lock_before=True,
             errormsg="Cannot set user 9 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_parent_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [59]},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Cannot set user 9 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_child_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(60)
+        self.create_committee(61, parent_id=60)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [61]},
+            lock_out=None,
+            lock_before=True,
         )
 
     def test_update_meeting_admin_on_locked_out_user_error(self) -> None:

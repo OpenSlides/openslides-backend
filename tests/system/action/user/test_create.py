@@ -1478,6 +1478,22 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_locked_out_user_foreign_cml_allowed(self) -> None:
         self.assert_lock_out_user(1, {"committee_management_ids": [63]})
 
+    def test_create_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 60})
+
+    def test_create_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
+
+    def test_create_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
+
     def test_create_locked_out_user_superadmin_error(self) -> None:
         self.assert_lock_out_user(
             1,
@@ -1496,7 +1512,16 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             1,
             {"committee_management_ids": [60]},
-            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            1,
+            {"committee_management_ids": [59]},
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
         )
 
     def test_create_locked_out_user_meeting_admin_error(self) -> None:
