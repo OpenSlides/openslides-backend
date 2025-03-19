@@ -25,7 +25,7 @@ Returns dictionary with `"succeeded": [meeting_ids], "standard_group": [meeting_
 Will raise an error if some of the selected meetings are locked from the inside via the `locked_from_inside` setting.
 
 ## Permissions
-The request user needs OML `can_manage_users`
+The request user needs CML `can_manage` rights in all meetings committees.
 
 explanation: Usually the field `group_ids` can be changed also with committee- or meeting-rights for
 all related objects, see [user.update#permissions](user.update.md#permissions), field group C. Currently the client allows
