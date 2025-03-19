@@ -115,7 +115,7 @@ def has_committee_management_level(
     expected_level: CommitteeManagementLevel,
     committee_id: int,
 ) -> bool:
-    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
+    """Checks whether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
         cml_fields = ["committee_management_ids"]
         user = datastore.get(
@@ -129,7 +129,13 @@ def has_committee_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
-        if committee_id in user.get("committee_management_ids", []):
+        if committee_id in user.get("committee_management_ids", []) or any(
+            parent_id in user.get("committee_management_ids", [])
+            for parent_id in datastore.get(
+                fqid_from_collection_and_id("committee", committee_id),
+                ["all_parent_ids"],
+            ).get("all_parent_ids", [])
+        ):
             return True
     return False
 

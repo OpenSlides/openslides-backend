@@ -3421,6 +3421,24 @@ class UserUpdateActionTest(BaseActionTestCase):
             "account", 1, other_data={"committee_management_ids": [63]}
         )
 
+    def test_update_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(
+            "account", 1, other_data={"committee_management_ids": [63]}
+        )
+
+    def test_update_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 60})
+
+    def test_update_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 63})
+
+    def test_update_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user("account", 1, other_data={"home_committee_id": 63})
+
     def test_update_locked_out_superadmin_error(self) -> None:
         self.assert_lock_out_user(
             "account",
@@ -3443,6 +3461,16 @@ class UserUpdateActionTest(BaseActionTestCase):
             1,
             other_data={"committee_management_ids": [60]},
             errormsg="Cannot set user 10 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"committee_management_ids": [59]},
+            errormsg="Cannot set user 10 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
         )
 
     def test_update_locked_out_meeting_admin_error(self) -> None:
@@ -3532,6 +3560,29 @@ class UserUpdateActionTest(BaseActionTestCase):
             errormsg="Cannot set user 9 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
         )
 
+    def test_update_parent_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [59]},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Cannot set user 9 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_child_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(60)
+        self.create_committee(61, parent_id=60)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [61]},
+            lock_out=None,
+            lock_before=True,
+        )
+
     def test_update_meeting_admin_on_locked_out_user_error(self) -> None:
         self.assert_lock_out_user(
             "participant1",
@@ -3602,7 +3653,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             lock_out=False,
         )
 
-    def test_create_permission_as_locked_out(self) -> None:
+    def test_update_permission_as_locked_out(self) -> None:
         self.permission_setup()
         self.create_meeting(base=4)
         meeting_user_ids = self.set_user_groups(self.user_id, [3, 6])  # Admin-groups
@@ -3656,4 +3707,186 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
         self.assert_model_exists(
             f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
+        )
+
+    def test_update_with_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_user("dracula")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "dracula", "home_committee_id": 3}
+        )
+
+    def test_update_with_home_committee_cml(self) -> None:
+        self.create_committee(3)
+        self.create_user("mina")
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "mina", "home_committee_id": 3, "guest": False}
+        )
+
+    def test_update_with_guest_true(self) -> None:
+        self.create_user("jonathan")
+        response = self.request(
+            "user.update",
+            {"id": 2, "guest": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jonathan", "guest": True})
+
+    def test_update_with_guest_false(self) -> None:
+        self.create_user("jack")
+        response = self.request(
+            "user.update",
+            {"id": 2, "guest": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jack", "guest": False})
+
+    def test_update_with_with_home_committee_and_guest_true(self) -> None:
+        self.create_committee(3)
+        self.create_user("renfield")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "guest": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set guest to true and set a home committee at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_and_guest_false(self) -> None:
+        """Also tests for parent CML"""
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_user("vanHelsing")
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "guest": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "vanHelsing", "home_committee_id": 3, "guest": False}
+        )
+
+    def test_update_with_home_committee_wrong_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy")
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_no_perm(self) -> None:
+        self.create_committee(3)
+        self.create_user("arthur")
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_update_set_home_committee_on_participant(self) -> None:
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([60])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"guest": True}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 60,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": 60, "guest": False}
+        )
+
+    def test_update_set_home_committee_on_different_committee_participant(self) -> None:
+        self.create_committee()
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 1,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_update_set_home_committee_to_null_on_participant(self) -> None:
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([60])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"home_committee_id": 60}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": None, "guest": None}
+        )
+
+    def test_update_set_home_committee_to_null_on_account(self) -> None:
+        self.create_committee()
+        self.create_user("bob")
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"home_committee_id": 1}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": None, "guest": None}
         )
