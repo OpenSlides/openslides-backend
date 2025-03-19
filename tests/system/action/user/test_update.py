@@ -3731,7 +3731,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"id": 2, "home_committee_id": 3},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+        self.assert_model_exists(
+            "user/2", {"username": "mina", "home_committee_id": 3, "guest": False}
+        )
 
     def test_update_with_guest_true(self) -> None:
         self.create_user("jonathan")
@@ -3814,4 +3816,77 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
             response.json["message"],
+        )
+
+    def test_update_set_home_committee_on_participant(self) -> None:
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([60])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"guest": True}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 60,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": 60, "guest": False}
+        )
+
+    def test_update_set_home_committee_on_different_committee_participant(self) -> None:
+        self.create_committee()
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 1,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_update_set_home_committee_to_null_on_participant(self) -> None:
+        self.create_meeting()
+        self.create_user("bob", [3])
+        self.set_committee_management_level([60])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"home_committee_id": 60}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": None, "guest": None}
+        )
+
+    def test_update_set_home_committee_to_null_on_account(self) -> None:
+        self.create_committee()
+        self.create_user("bob")
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        self.set_models({"user/2": {"home_committee_id": 1}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "bob", "home_committee_id": None, "guest": None}
         )

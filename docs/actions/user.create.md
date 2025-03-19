@@ -130,4 +130,4 @@ Group H fields are only allowed in internal requests or, exclusive for user.crea
 
 Group I:
 
-CML `can_manage` for the current `home_committee_id`, CML `can_manage` for the new `home_committee_id`. If there is neither an old, nor a new `home_committee_id`, but there are fields, treat it as group A.
+CML `can_manage` for the current `home_committee_id`, CML `can_manage` for a new `home_committee_id`. If there is no old `home_committee_id`, but there are fields, treat it as group A.

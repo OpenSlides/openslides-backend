@@ -515,12 +515,12 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                     lock_result=False,
                 )
             )
+            if not db_instance.get("home_committee_id"):
+                self.check_group_A(fields, instance)
             committee_ids: list[int] = []
             for payload in [instance, db_instance]:
-                if "home_committee_id" in payload:
+                if payload.get("home_committee_id"):
                     committee_ids.append(payload["home_committee_id"])
-            if not committee_ids:
-                self.check_group_A(fields, instance)
             for committee_id in committee_ids:
                 if not has_committee_management_level(
                     self.datastore,
