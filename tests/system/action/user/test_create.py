@@ -1014,6 +1014,29 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_permission_group_C_parent_cml_locked_meeting(self) -> None:
+        """May not create group C group_ids in locked meetings as a committee manager"""
+        self.permission_setup()
+        self.create_meeting(4)
+        self.create_committee()
+        self.create_committee(63, parent_id=1)
+        self.set_committee_management_level([1], self.user_id)
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs Permission user.can_manage for meeting 4",
+            response.json["message"],
+        )
+
     def test_create_permission_group_D_permission_with_OML(self) -> None:
         """May create Group D committee fields with OML level permission for more than one committee"""
         self.permission_setup()
