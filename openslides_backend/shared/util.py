@@ -74,6 +74,86 @@ ALLOWED_STYLES = [
     "word-wrap",
 ]
 
+ALLOWED_ATTRIBUTES_ALL = {
+    "abbr",
+    "accept",
+    "accept-charset",
+    "accesskey",
+    "action",
+    "align",
+    "alt",
+    "axis",
+    "border",
+    "cellpadding",
+    "cellspacing",
+    "char",
+    "charoff",
+    "charset",
+    "checked",
+    "clear",
+    "color",
+    "cols",
+    "colspan",
+    "colwidth",
+    "compact",
+    "coords",
+    "datetime",
+    "dir",
+    "disabled",
+    "enctype",
+    "for",
+    "frame",
+    "headers",
+    "height",
+    "hreflang",
+    "hspace",
+    "id",
+    "ismap",
+    "itemprop",
+    "label",
+    "lang",
+    "maxlength",
+    "media",
+    "method",
+    "multiple",
+    "name",
+    "nohref",
+    "noshade",
+    "nowrap",
+    "open",
+    "prompt",
+    "readonly",
+    "rev",
+    "rows",
+    "rowspan",
+    "rules",
+    "scope",
+    "selected",
+    "shape",
+    "size",
+    "span",
+    "start",
+    "style",
+    "summary",
+    "tabindex",
+    "title",
+    "type",
+    "usemap",
+    "valign",
+    "value",
+    "vspace",
+    "width",
+}
+
+ALLOWED_ATTRIBUTES = {
+    "a": ["href", "target", "rel"],
+    "blockquote": ["cite"],
+    "img": ["longdesc", "src"],
+    "div": ["itemscope", "itemtype"],
+    "iframe": ["src", "frameborder"],
+    "video": ["autoplay", "controls", "loop", "muted", "poster", "preload", "src"],
+}
+
 INITIAL_DATA_FILE = "data/initial-data.json"
 EXAMPLE_DATA_FILE = "data/example-data.json"
 ONE_ORGANIZATION_ID = 1
@@ -85,24 +165,21 @@ def validate_html(
     allowed_tags: set[str] = ALLOWED_HTML_TAGS_STRICT,
     allowed_styles: list[str] = ALLOWED_STYLES,
 ) -> str:
-    def allow_all_except_some_iframe_attrs(tag: str, name: str, value: str) -> bool:
-        if tag == "iframe" and name in (
-            "allow",
-            "allowfullscreen",
-            "allowpaymentrequest",
-            "csp",
-            "fetchpriority",
-            "sandbox",
-            "referrerpolicy",
-        ):
-            return False
-        return True
+    def check_attr_allowed(tag: str, name: str, value: str) -> bool:
+        if name.startswith("data-"):
+            return True
+        if name in ALLOWED_ATTRIBUTES_ALL:
+            return True
+        if tag in ALLOWED_ATTRIBUTES and name in ALLOWED_ATTRIBUTES[tag]:
+            return True
+
+        return False
 
     html = html.replace("\t", "")
     cleaned_html = bleach.clean(
         html,
         tags=allowed_tags,
-        attributes=allow_all_except_some_iframe_attrs,
+        attributes=check_attr_allowed,
         css_sanitizer=CSSSanitizer(allowed_css_properties=allowed_styles),
     )
     return cleaned_html.replace(
