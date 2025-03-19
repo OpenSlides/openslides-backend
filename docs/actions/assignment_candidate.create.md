@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // required
     assignment_id: Id;

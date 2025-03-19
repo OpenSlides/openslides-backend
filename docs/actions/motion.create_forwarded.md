@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     meeting_id: Id;
@@ -19,15 +19,15 @@
 ## Action
 Creates a new motion. This action is very similar to [motion.create](motion.create.md) but very restricted in it's inputs.
 
-`origin_id` is an id of another motion (potentially not from this meeting!) referred to as the _origin motion_. The given motion is forwarded from the meeting of the _origin motion_ (A) to the given meeting (by `meeting_id` in the payload) (B). It must be checked, that `B/committee_id` is included in `A/committee_id -> committee/forward_to_committee_ids`.
+`origin_id` is an id of another motion (potentially not from this meeting!) referred to as the _origin motion_. The given motion is forwarded from the meeting of the _origin motion_ (A) to the given meeting (by `meeting_id` in the payload) (B). Checks, that `B/committee_id` is included in `A/committee_id -> committee/forward_to_committee_ids`.
 
 The motion is created with all special rules for [motion.create](motion.create.md): The state/workflow and
-timestamps must be set, a list of speakers must be created, and so on. There is one little catch: If
+timestamps are set, a list of speakers is created, and so on. There is one catch: If
 the given meeting has `meeting/motions_reason_required` set, it is ok for `reason` to be empty.
 
-The original motion must be updated as well (this is done by the automatic relation handling):
-* The unique `id` of the newly created motion has to be linked to the _origin motion_s `derived_motion_ids` field.
-  * Deleting the newly created motion has to ensure that the corresponding entry was removed from the _origin motion_s `derived_motion_ids` field
+The original motion is updated as well (this is done by the automatic relation handling):
+* The unique `id` of the newly created motion is linked to the _origin motion_s `derived_motion_ids` field.
+  * While deleting the newly created motion it is ensured that the corresponding entry is removed from the _origin motion_s `derived_motion_ids` field
 
 The optional flags `use_original_submitter` and `use_original_number` will cause the original submitters and original numbers to be used in the new motion respectively. In case of the submitters, the action will generate the full name of the submitters and write the entire list of them and the value of the origin motions `additional_submitter` comma separated into the new motions `additional_submitter` field. If `use_original_submitter` is false the name of the origin motions committee will be written into the `additional_submitter` field instead
 
@@ -40,8 +40,8 @@ If `with_change_recommendations` is set to True, all change recommendations of t
 
 ### Forwarding tree fields
 
-* `all_origin_ids` of the newly created motion must be set to `all_origin_ids` of the origin motion plus the given `origin_id`. It is important that the id is appended at the end of the list, since the order of this field represents the order of the tree in case a motion of the tree is deleted.
-* The id of the newly created motion must be added to the `all_derived_motion_ids` field of all motions in the `all_origin_ids` field of this motion. Order is not important here.
+* `all_origin_ids` of the newly created motion are set to `all_origin_ids` of the origin motion plus the given `origin_id`. The id is appended at the end of the list, since the order of this field represents the order of the tree in case a motion of the tree is deleted.
+* The id of the newly created motion is added to the `all_derived_motion_ids` field of all motions in the `all_origin_ids` field of this motion. Order is not important here.
 
 ### State needs to allow forwarding
 

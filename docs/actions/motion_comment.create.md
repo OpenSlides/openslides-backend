@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     comment: HTML;
