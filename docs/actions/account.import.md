@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // required
   id: Id; // action worker id

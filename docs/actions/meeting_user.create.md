@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     user_id: Id;
@@ -8,16 +8,9 @@
 // Optional
 // Group A
     number: string;
-    structure_level: string;
+    structure_level_ids: string;
     vote_weight: decimal;
     comment: HTML;
-    personal_note_ids: Id[];
-    speaker_ids: Id[];
-    supported_motion_ids: Id[];
-    submitted_motion_ids: Id[];
-    assignment_candidate_ids: Id[];
-    projection_ids: Id[];
-    chat_message_ids: Id[];
     locked_out: boolean;
 
 // Group B

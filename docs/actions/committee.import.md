@@ -12,7 +12,7 @@ If `import` is `true`, check again for duplicates and import all *okay* entries 
 
 If `import` is `false` or if the import was successful, remove the action worker.
 ## Payload
-```
+```js
 {
 // required
   id: Id; // action worker id
