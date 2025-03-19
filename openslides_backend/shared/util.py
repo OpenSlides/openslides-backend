@@ -166,7 +166,9 @@ def validate_html(
     allowed_styles: list[str] = ALLOWED_STYLES,
 ) -> str:
     def check_attr_allowed(tag: str, name: str, value: str) -> bool:
-        if name in ALLOWED_ATTRIBUTES:
+        if name.startswith('data-'):
+            return True
+        if name in ALLOWED_ATTRIBUTES_ALL:
             return True
         if tag in ALLOWED_ATTRIBUTES and name in ALLOWED_ATTRIBUTES[tag]:
             return True
