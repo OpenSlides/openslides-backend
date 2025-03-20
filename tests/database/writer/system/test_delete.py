@@ -35,6 +35,7 @@ def test_delete_model_does_not_exist(db_connection: Connection) -> None:
     data[0]["events"] = [{"type": EventType.Delete, "fqid": fqid}]
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        with pytest.raises(ModelDoesNotExist):
+        with pytest.raises(ModelDoesNotExist) as e_info:
             extended_database.write(create_write_requests(data))
+    assert e_info.value.fqid == "user/1"
     assert_no_model(fqid)

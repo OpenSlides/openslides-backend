@@ -5,7 +5,7 @@ from typing import Any
 from psycopg import Connection
 
 from openslides_backend.models.base import model_registry
-from openslides_backend.models.fields import OrganizationField
+from openslides_backend.models.fields import ArrayField, Field, OrganizationField
 from openslides_backend.services.database.interface import FQID_MAX_LEN
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
@@ -20,6 +20,7 @@ from ...shared.exceptions import (
 )
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
+from ...shared.interfaces.event import EventType
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
@@ -27,7 +28,6 @@ from ...shared.patterns import (
     FullQualifiedId,
     Id,
     collection_and_id_from_fqid,
-    collection_from_fqid,
     fqid_from_collection_and_id,
     id_from_fqid,
 )
@@ -37,14 +37,6 @@ from ..database.interface import Database
 from .database_reader import DatabaseReader
 from .database_writer import DatabaseWriter
 
-# from openslides_backend.shared.patterns import (
-#     Collection,
-#     Field,
-#     FullQualifiedId,
-#     Id,
-#     Position,
-#     collection_and_id_from_fqid,
-# )
 MappedFieldsPerCollectionAndId = dict[str, dict[Id, list[str]]]
 
 
@@ -357,20 +349,39 @@ class ExtendedDatabase(Database):
             write_requests = [write_requests]
 
         # prefetch all needed data to reduce the amount of queries
-        # This is needed for updating required fields with old data
+        # This is needed for updating required fields with old data and updating list fields
         # TODO use database function? Query only required fields?
-        ids_per_collection: dict[str, set[Id]] = defaultdict(set)
+        ids_per_collection: dict[Collection, set[Id]] = defaultdict(set)
         for write_request in write_requests:
             events = write_request.events
             for event in events:
-                if not event.get("fqid"):
-                    continue
-                if len(event["fqid"]) > FQID_MAX_LEN:
+                if fqid := event.get("fqid"):
+                    if len(fqid) > FQID_MAX_LEN:
+                        raise InvalidFormat(
+                            f"fqid {fqid} is too long (max: {FQID_MAX_LEN})"
+                        )
+                    collection, id_ = collection_and_id_from_fqid(fqid)
+                    ids_per_collection[collection].add(id_)
+                elif event.get("collection"):
+                    collection = event["collection"]
+                else:
                     raise InvalidFormat(
-                        f"fqid {event['fqid']} is too long (max: {FQID_MAX_LEN})"
+                        "Request must contain either fqid or collection."
                     )
-                collection = collection_from_fqid(events[0]["fqid"])
-                ids_per_collection[collection].add(id_from_fqid(event["fqid"]))
+                if event["type"] == EventType.Update and not (
+                    event.get("fields") or (event.get("list_fields"))
+                ):
+                    raise InvalidFormat("No fields given.")
+                if list_fields := event.get("list_fields", dict()):
+                    for add_or_remove in list_fields.values():
+                        for field_name in add_or_remove:
+                            field: Field = model_registry[collection]().get_field(
+                                field_name
+                            )
+                            if not isinstance(field, ArrayField):
+                                raise InvalidFormat(
+                                    f"'{field_name}' used for 'list_fields' 'remove' or 'add' is no array in database."
+                                )
 
         models = {
             collection: self.database_reader.get_many(
@@ -383,7 +394,10 @@ class ExtendedDatabase(Database):
                             for field in model_registry[
                                 collection
                             ]().get_required_fields()
-                            if not isinstance(field, OrganizationField)
+                            if not (
+                                field.is_view_field
+                                or isinstance(field, OrganizationField)
+                            )
                         ],
                     )
                 ]

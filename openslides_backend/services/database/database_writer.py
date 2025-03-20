@@ -1,10 +1,14 @@
-import copy
 import threading
 from collections import defaultdict
-from textwrap import dedent
 
-from psycopg import Connection
-from psycopg.errors import GeneratedAlways, NotNullViolation
+from psycopg import Connection, sql
+from psycopg.errors import (
+    CheckViolation,
+    GeneratedAlways,
+    NotNullViolation,
+    UndefinedColumn,
+    UndefinedTable,
+)
 
 from openslides_backend.services.database.interface import (
     COLLECTION_MAX_LEN,
@@ -17,7 +21,7 @@ from openslides_backend.shared.exceptions import (
     ModelExists,
     ModelLocked,
 )
-from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import (
@@ -33,7 +37,6 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.typing import JSON, Model
 
 from ...shared.interfaces.env import Env
-from ...shared.interfaces.event import Event
 from ...shared.interfaces.logging import LoggingModule
 from .database_reader import DatabaseReader, GetManyRequest
 from .event_types import EVENT_TYPE
@@ -103,7 +106,7 @@ class DatabaseWriter:
         self.print_stats()
         self.print_summary()
         # TODO if returning the id is all then this can be done at the bottom of call stack without generating fqids.
-        return [model["id"] for model in modified_models.values()]
+        return [model["id"] for model in modified_models.values()]  # type: ignore
 
     def print_stats(self) -> None:
         pass
@@ -133,19 +136,83 @@ class DatabaseWriter:
         self, models_per_collection: dict[Collection, dict[int, Model]]
     ) -> dict[FullQualifiedId, dict[Field, JSON]]:
         result = dict()
+
+        def get_array_type(
+            determining_list: list[int] | list[str],
+            affected_list: list[int] | list[str],
+        ) -> str:
+            if all(isinstance(x, int) for x in determining_list):
+                if affected_list:
+                    return ""
+                else:
+                    return "::int2[]"
+            elif all(isinstance(x, str) for x in determining_list):
+                return "::text[]"
+            else:
+                raise ValueError("Only pure integer or string lists are supported.")
+
         for collection, models in models_per_collection.items():
             for model in models.values():
-                statement = dedent(
-                    f"""\
-                    INSERT INTO {collection}_t ({', '.join(field for field in model)})
-                    VALUES ({', '.join('%s' for _ in range(len(model)))})
-                    ON CONFLICT (id) DO UPDATE
-                    SET {', '.join(field + ' = EXCLUDED.' + field for field in model)}
+                add_dict = model.pop("add", dict())
+                remove_dict = model.pop("remove", dict())
+                table_name = collection + "_t"
+
+                statement = sql.SQL(
+                    """
+                    INSERT INTO {table_name} ({columns})
+                    VALUES ({values})
+                    ON CONFLICT (id) DO UPDATE SET
+                    """
+                ).format(
+                    table_name=sql.Identifier(table_name),
+                    columns=sql.SQL(", ").join(map(sql.Identifier, model)),
+                    values=sql.SQL(", ").join(value for value in model.values()),
+                )
+                statement += sql.SQL(", ").join(
+                    sql.SQL("""{field} = EXCLUDED.{field}""").format(
+                        field=sql.Identifier(field)
+                    )
+                    for field in model
+                )
+
+                if joined_dict := add_dict | remove_dict:
+                    statement += sql.SQL(", ")
+                    statement += sql.SQL(", ").join(
+                        sql.SQL(
+                            """
+                            {field} = ARRAY(
+                                SELECT DISTINCT elem FROM (
+                                    SELECT unnest({table_name}.{field}) AS elem
+                                    EXCEPT
+                                    SELECT unnest({values_remove}{array_type_remove})
+                                    UNION
+                                    SELECT unnest({values_add}{array_type_add})
+                                ) AS result
+                            )"""
+                        ).format(
+                            field=sql.Identifier(field),
+                            table_name=sql.Identifier(table_name),
+                            array_type_add=sql.SQL(
+                                get_array_type(joined_list, add_dict.get(field, []))
+                            ),
+                            array_type_remove=sql.SQL(
+                                get_array_type(joined_list, remove_dict.get(field, []))
+                            ),
+                            values_add=sql.Literal(add_dict.get(field, [])),
+                            values_remove=sql.Literal(remove_dict.get(field, [])),
+                        )
+                        for field, joined_list in joined_dict.items()
+                    )
+
+                statement += sql.SQL(
+                    """
                     RETURNING id;"""
                 )
+
                 try:
                     with self.connection.cursor() as curs:
-                        curs.execute(statement, [value for value in model.values()])
+                        # print(statement.as_string(curs), flush=True)
+                        curs.execute(statement)
                         id_ = curs.fetchone().get("id")  # type:ignore
                 except NotNullViolation as e:
                     raise BadCodingException(f"Missing fields. Ooops! {e}")
@@ -153,7 +220,19 @@ class DatabaseWriter:
                     raise BadCodingException(
                         f"Used a field that must only be generated by the database: {e}"
                     )
+                except UndefinedColumn as e:
+                    column = e.args[0].split('"')[1]
+                    raise InvalidFormat(
+                        f"Field '{column}' does not exist in collection '{collection}': {e}"
+                    )
+                except UndefinedTable as e:
+                    raise InvalidFormat(
+                        f"Collection '{collection}' does not exist in the database: {e}"
+                    )
+                except CheckViolation as e:
+                    raise e
                 except Exception as e:
+                    raise e
                     raise ModelLocked(
                         f"Model ... is locked on fields .... {e}\
                         This is not the end. There will be more next episode. To be continued."
@@ -193,7 +272,8 @@ class DatabaseWriter:
 
                 if (
                     event["type"] != EventType.Delete
-                    and (event_id := event["fields"].get("id"))
+                    and (fields := event.get("fields"))
+                    and (event_id := fields.get("id"))
                     and id_ != event_id
                 ):
                     raise BadCodingException(
@@ -216,12 +296,26 @@ class DatabaseWriter:
                     #     max_id_per_collection.get(collection, 0), id_ + 1
                     # )
                 # self.apply_event_to_models(db_event, models)
-                if event["type"] == EventType.Update and "id" not in event["fields"]:
-                    event["fields"]["id"] = id_
-                if id_ in models[collection]:
-                    models[collection][id_].update(event["fields"])
-                else:
-                    models[collection][id_] = event["fields"]
+                if fields:
+                    if event["type"] == EventType.Update and "id" not in fields:
+                        fields["id"] = id_
+                    if id_ in models[collection]:
+                        models[collection][id_].update(fields)
+                    else:
+                        models[collection][id_] = fields
+                if (list_fields := event["list_fields"]) and event[
+                    "type"
+                ] == EventType.Update:
+                    if "add" in models[collection][id_]:
+                        models[collection][id_]["add"].update(list_fields["add"])
+                    else:
+                        models[collection][id_]["add"] = list_fields.get("add", dict())
+                    if "remove" in models[collection][id_]:
+                        models[collection][id_]["remove"].update(list_fields["remove"])
+                    else:
+                        models[collection][id_]["remove"] = list_fields.get(
+                            "remove", dict()
+                        )
             else:
                 if (collection := event["collection"]) in models:
                     models[collection][no_id] = event["fields"]
@@ -270,17 +364,6 @@ class DatabaseWriter:
                         f"Collection length must be between 1 and {COLLECTION_MAX_LEN}"
                     )
 
-                # statement = f"""SELECT setval('{collection}_t_id_seq', {amount})"""
-
-                # statement = dedent(
-                #     f"""\
-                #     insert into {collection}_t_id_seq (last_value, log_cnt, is_called) values (%s, %s, %s)
-                #     on conflict(last_value) do update
-                #     set last_value={collection}_t_id_seq.last_value + excluded.last_value - 1 returning last_value;"""
-                # )
-                # arguments = [collection, amount + 1]
-                # new_max_id = self.connection.query_single_value(statement, arguments)
-
                 # TODO better option to read is_called and last_value?
                 curs.execute(f"""SELECT nextval('{collection}_t_id_seq')""")
                 # TODO is there a possibility of failure f.e. empty return value?
@@ -308,62 +391,62 @@ class DatabaseWriter:
         #     self.database_reader.truncate_db()
         # logger.info("Database truncated")
 
-    # # @retry_on_db_failure
-    def write_without_events(
-        self,
-        write_request: WriteRequest,
-    ) -> None:
-        """
-        # TODO can this all be done by the regular write now since we don't store events and positions?
-        Writes or updates an action_worker- or
-        import_preview-object.
-        The record will be written to
-        the models-table only, because there is no history
-        needed and after the action is finished and notified,
-        isn't needed anymore.
-        There is no position available or needed,
-        for redis notifying the 0 is used therefore.
-        """
-        self.write_requests = [write_request]
+    # # # @retry_on_db_failure
+    # def write_without_events(
+    #     self,
+    #     write_request: WriteRequest,
+    # ) -> None:
+    #     """
+    #     # TODO can this all be done by the regular write now since we don't store events and positions?
+    #     Writes or updates an action_worker- or
+    #     import_preview-object.
+    #     The record will be written to
+    #     the models-table only, because there is no history
+    #     needed and after the action is finished and notified,
+    #     isn't needed anymore.
+    #     There is no position available or needed,
+    #     for redis notifying the 0 is used therefore.
+    #     """
+    #     self.write_requests = [write_request]
 
-        with make_span("write action worker"):
-            if isinstance(write_request.events[0], EventType.Delete):
-                fqids_to_delete: list[FullQualifiedId] = []
-                for event in write_request.events:
-                    fqids_to_delete.append(event.fqid)
-                self.write_model_deletes_without_events(fqids_to_delete)
-            else:
-                for event in write_request.events:
-                    fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
-                    self.write_model_updates_without_events(
-                        {event.fqid: fields_with_delete}
-                    )
+    #     with make_span("write action worker"):
+    #         if isinstance(write_request.events[0], EventType.Delete):
+    #             fqids_to_delete: list[FullQualifiedId] = []
+    #             for event in write_request.events:
+    #                 fqids_to_delete.append(event.fqid)
+    #             self.write_model_deletes_without_events(fqids_to_delete)
+    #         else:
+    #             for event in write_request.events:
+    #                 fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
+    #                 self.write_model_updates_without_events(
+    #                     {event.fqid: fields_with_delete}
+    #                 )
 
-        self.print_stats()
-        self.print_summary()
+    #     self.print_stats()
+    #     self.print_summary()
 
-        # self.write_requests = [write_request]
+    # self.write_requests = [write_request]
 
-        # with make_span("write action worker"):
-        #     self.position_to_modified_models = {}
-        #     if isinstance(write_request.events[0], RequestDeleteEvent):
-        #         fqids_to_delete: list[FullQualifiedId] = []
-        #         for event in write_request.events:
-        #             fqids_to_delete.append(event.fqid)
-        #         with self.database.get_context():
-        #             self.database.write_model_deletes_without_events(fqids_to_delete)
-        #     else:
-        #         with self.database.get_context():
-        #             for event in write_request.events:
-        #         fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
-        #         fields_with_delete.update({META_DELETED: False})
-        #         self.database.write_model_updates_without_events(
-        #             {event.fqid: fields_with_delete}
-        #         )
-        #         self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
+    # with make_span("write action worker"):
+    #     self.position_to_modified_models = {}
+    #     if isinstance(write_request.events[0], RequestDeleteEvent):
+    #         fqids_to_delete: list[FullQualifiedId] = []
+    #         for event in write_request.events:
+    #             fqids_to_delete.append(event.fqid)
+    #         with self.database.get_context():
+    #             self.database.write_model_deletes_without_events(fqids_to_delete)
+    #     else:
+    #         with self.database.get_context():
+    #             for event in write_request.events:
+    #         fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
+    #         fields_with_delete.update({META_DELETED: False})
+    #         self.database.write_model_updates_without_events(
+    #             {event.fqid: fields_with_delete}
+    #         )
+    #         self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
 
-        # self.print_stats()
-        # self.print_summary()
+    # self.print_stats()
+    # self.print_summary()
 
     def write_model_deletes(self, ids_per_collection: dict[str, set[Id]]) -> None:
         """Physically delete of action_workers or import_previews"""

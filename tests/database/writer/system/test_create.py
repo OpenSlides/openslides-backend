@@ -15,11 +15,6 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
     id_from_fqid,
 )
-# from openslides_backend.datastore.shared.di import injector
-# from openslides_backend.datastore.shared.flask_frontend import ERROR_CODES
-# from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
-# from openslides_backend.datastore.writer.flask_frontend.routes import WRITE_URL
-# from tests.datastore.util import assert_error_response, assert_response_code
 from tests.database.writer.system.util import (
     assert_db_entries,
     assert_model,
@@ -37,12 +32,9 @@ def base_test_create_model(
         for event in request_data["events"]:
             if fqid := event.get("fqid"):
                 event["fields"]["id"] = id_from_fqid(fqid)
-                assert_model(fqid, event["fields"])
             else:
-                assert_model(
-                    fqid_from_collection_and_id(event["collection"], 1),
-                    event["fields"],
-                )
+                fqid = fqid_from_collection_and_id(event["collection"], 1)
+            assert_model(fqid, event["fields"])
 
 
 def test_create_simple(db_connection: Connection) -> None:
@@ -51,8 +43,6 @@ def test_create_simple(db_connection: Connection) -> None:
 
 def test_create_collection(db_connection: Connection) -> None:
     data = get_data()
-    # fqid = event["fqid"]
-    # event["fqid"] = None
     event = data[0]["events"][0]
     event["collection"] = collection_from_fqid(event.pop("fqid"))
     base_test_create_model(db_connection, data)
@@ -62,12 +52,15 @@ def test_create_twice(db_connection: Connection) -> None:
     data = get_data()
     data.append(data[0])
 
-    with pytest.raises(ModelExists) as e_info:
-        with get_new_os_conn() as conn:
-            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        with pytest.raises(ModelExists) as e_info:
             extended_database.write(create_write_requests(data))
     assert "user/1" == e_info.value.fqid
     assert_db_entries(db_connection.cursor(), 1)
+
+
+# TODO really create first, even though it is twice the same in one function call?
 
 
 def test_update_twice(db_connection: Connection) -> None:

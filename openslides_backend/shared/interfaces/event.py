@@ -31,5 +31,5 @@ class Event(TypedDict):
     type: EventType
     fields: NotRequired[dict[str, Any]]
     list_fields: NotRequired[ListFields]
-    fqid: FullQualifiedId
-    collection: str
+    fqid: NotRequired[FullQualifiedId]
+    collection: NotRequired[str]

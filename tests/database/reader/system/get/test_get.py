@@ -77,7 +77,9 @@ def test_no_collection(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get("doesntexist/1")
-    assert "The collection does not exist in the database" in e_info.value.msg
+    assert (
+        "Collection 'doesntexist' does not exist in the database:" in e_info.value.msg
+    )
 
 
 def test_mapped_fields(db_connection: Connection) -> None:
@@ -106,8 +108,11 @@ def test_mapped_fields_not_exists(db_connection: Connection) -> None:
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
-            extended_database.get(FQID, ["field_that_doesnt_exist"])
-    assert "A field does not exist in model table: " in e_info.value.msg
+            extended_database.get(FQID, ["that_doesnt_exist"])
+    assert (
+        "Field 'that_doesnt_exist' does not exist in collection 'user': column"
+        in e_info.value.msg
+    )
 
 
 def test_invalid_fqid(db_connection: Connection) -> None:

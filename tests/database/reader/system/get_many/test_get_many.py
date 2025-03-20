@@ -249,7 +249,10 @@ def test_field_not_exists(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
-    assert "A field does not exist in model table: column " in e_info.value.msg
+    assert (
+        "Field 'does_not_exist' does not exist in collection 'committee': column "
+        in e_info.value.msg
+    )
     assert "does_not_exist" in e_info.value.msg
 
 
@@ -274,7 +277,10 @@ def test_invalid_collection(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
-    assert "The collection does not exist in the database: relation" in e_info.value.msg
+    assert (
+        "Collection 'committeee' does not exist in the database: relation"
+        in e_info.value.msg
+    )
     assert "committeee_t" in e_info.value.msg
 
 

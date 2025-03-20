@@ -44,7 +44,6 @@ class DatabaseReader:
             for get_many_request in get_many_requests
         }
 
-        # TODO create one transaction from db
         for get_many_request in get_many_requests:
             if not (collection := get_many_request.collection):
                 raise DatabaseException(
@@ -78,12 +77,15 @@ class DatabaseReader:
             try:
                 with self.connection.cursor() as curs:
                     db_result = curs.execute(query, (ids,)).fetchall()
-                # self.connection.commit()
             except UndefinedColumn as e:
-                raise InvalidFormat(f"A field does not exist in model table: {e}")
+                column = e.args[0].split('"')[1]
+                raise InvalidFormat(
+                    f"Field '{column}' does not exist in collection '{collection}': {e}"
+                )
+                # raise InvalidFormat(f"A field does not exist in model table: {e}")
             except UndefinedTable as e:
                 raise InvalidFormat(
-                    f"The collection does not exist in the database: {e}"
+                    f"Collection '{collection}' does not exist in the database: {e}"
                 )
             except Exception as e:
                 raise DatabaseException(f"Unexpected error reading from database: {e}")
@@ -129,7 +131,7 @@ class DatabaseReader:
         #            collection, id = collection_and_id_from_fqid(row["__fqid__"])
         #            model = row["data"]
         #            model["id"] = id
-        #            data[collection][id] = model
+        #            data[collection][id] = modelpython -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest tests/system/
         #
         return {}
 

@@ -15,12 +15,19 @@ from tests.database.writer.system.util import create_model, get_data
 
 
 @pytest.fixture(autouse=True)
-def write_at_least_something_on_teardown(db_connection: Connection) -> Generator:
+def reset_ids_on_teardown(db_connection: Connection) -> Generator:
     yield "Halt until test finishes."
     data = get_data()
-    event = data[0]["events"][0]
-    event["collection"] = collection_from_fqid(event.pop("fqid"))
-    create_model(data)
+    for request in data:
+        for event in request["events"]:
+            if fqid := event.get("fqid"):
+                table_name = collection_from_fqid(fqid) + "_t"
+            else:
+                table_name = event["collection"] + "_t"
+            with db_connection.cursor() as curs:
+                curs.execute(
+                    "INSERT INTO truncate_tables (tablename) VALUES(%s)", (table_name,)
+                )
 
 
 def test_single(db_connection: Connection) -> None:

@@ -50,36 +50,13 @@ def assert_no_db_entry(db_cur: Cursor) -> None:
 
 
 def assert_db_entries(db_cur: Cursor, amount: int) -> None:
-    db_cur.execute("select count(*) from truncate_tables")
-    assert db_cur.fetchone().get("count") == amount  # type:ignore
-
-
-# def assert_modified_fields(
-#     redis_connection,
-#     fields_per_fqid: dict[FullQualifiedId, list[Field]],
-#     meta_deleted=True,
-# ):
-#     modified_fields: Set[str] = set()
-#     for fqid, fields in fields_per_fqid.items():
-#         modified_fields.update(
-#             fqfield_from_fqid_and_field(fqid, field) for field in fields
-#         )
-#         if meta_deleted:
-#             modified_fields.add(fqfield_from_fqid_and_field(fqid, META_DELETED))
-#         modified_fields.add(fqfield_from_fqid_and_field(fqid, META_POSITION))
-
-#     assert modified_fields == get_redis_modified_fields(redis_connection)
-
-
-# def get_redis_modified_fields(redis_connection):
-#     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 1
-#     response = redis_connection.xread({MODIFIED_FIELDS_TOPIC: 0}, count=1)
-#     data = response[0][1][0][1]  # wtf?
-#     return set(fqfield.decode("utf-8") for fqfield in data[::2])
-
-
-# def assert_no_modified_fields(redis_connection):
-#     assert redis_connection.xlen(MODIFIED_FIELDS_TOPIC) == 0
+    table_names = db_cur.execute("SELECT tablename FROM truncate_tables").fetchall()
+    sum_ = 0
+    for table_name in table_names:
+        if table := table_name.get("tablename"):
+            if count := db_cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone():
+                sum_ += count.get("count", 0)
+    assert sum_ == amount
 
 
 def get_data(data_part: dict[str, Any] = dict()) -> list[dict[str, Any]]:
@@ -106,6 +83,7 @@ def create_write_requests(data: list[dict[str, Any]]) -> list[WriteRequest]:
                     fqid=event.get("fqid"),
                     collection=event.get("collection"),
                     fields=event.get("fields"),
+                    list_fields=event.get("list_fields"),
                 )
                 for event in request_data["events"]
             ],
