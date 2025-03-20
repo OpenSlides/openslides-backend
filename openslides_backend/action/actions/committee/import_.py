@@ -42,6 +42,9 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
             self.validate_entry(row)
 
         if self.import_state != ImportState.ERROR:
+            for row in self.rows:
+                if row["data"].get("parent_id", {}).get("info") == ImportState.WARNING:
+                    del row["data"]["parent_id"]
             rows = self.flatten_copied_object_fields(self.handle_relation_fields)
             self.create_models(rows)
 
