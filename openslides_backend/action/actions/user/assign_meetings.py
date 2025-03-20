@@ -1,8 +1,14 @@
 from typing import Any
 
 from ....models.models import User
-from ....permissions.management_levels import CommitteeManagementLevel, OrganizationManagementLevel
-from ....permissions.permission_helper import has_committee_management_level, has_organization_management_level
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ....permissions.permission_helper import (
+    has_committee_management_level,
+    has_organization_management_level,
+)
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator
@@ -36,12 +42,36 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
     use_meeting_ids_for_archived_meeting_check = True
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        if (not has_organization_management_level(self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS)) and (meeting_ids := instance.get("meeting_ids")):
-            meetings = self.datastore.get_many([GetManyRequest("meeting", meeting_ids, ["committee_id"])], lock_result=False)["meeting"]
-            committee_ids = {meeting["committee_id"] for meeting in meetings.values() if meeting.get("committee_id")}
-            committee_ids = {committee_id for committee_id in committee_ids if not has_committee_management_level(self.datastore, self.user_id, CommitteeManagementLevel.CAN_MANAGE, committee_id)}
+        if (
+            not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_USERS,
+            )
+        ) and (meeting_ids := instance.get("meeting_ids")):
+            meetings = self.datastore.get_many(
+                [GetManyRequest("meeting", meeting_ids, ["committee_id"])],
+                lock_result=False,
+            )["meeting"]
+            committee_ids = {
+                meeting["committee_id"]
+                for meeting in meetings.values()
+                if meeting.get("committee_id")
+            }
+            committee_ids = {
+                committee_id
+                for committee_id in committee_ids
+                if not has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    committee_id,
+                )
+            }
             if committee_ids:
-                raise MissingPermission({CommitteeManagementLevel.CAN_MANAGE: committee_ids})
+                raise MissingPermission(
+                    {CommitteeManagementLevel.CAN_MANAGE: committee_ids}
+                )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.check_meetings(instance)

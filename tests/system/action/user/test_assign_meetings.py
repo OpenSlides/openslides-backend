@@ -368,7 +368,7 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_no_permissions(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1,2]},
+                "committee/1": {"meeting_ids": [1, 2]},
                 "committee/2": {"meeting_ids": [3]},
                 "group/1": {"name": "Test", "meeting_id": 1},
                 "group/2": {"name": "Default Group", "meeting_id": 2},
@@ -377,19 +377,19 @@ class UserAssignMeetings(BaseActionTestCase):
                     "name": "Find Test",
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
                 "meeting/2": {
                     "name": "No Test and Not in Meeting",
                     "group_ids": [2],
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
                 "meeting/3": {
                     "name": "No Test and in Meeting",
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
-                    "committee_id": 2
+                    "committee_id": 2,
                 },
                 "user/1": {
                     "organization_management_level": None,
@@ -413,7 +413,7 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_some_permissions(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1,2]},
+                "committee/1": {"meeting_ids": [1, 2]},
                 "committee/2": {"meeting_ids": [3]},
                 "group/1": {"name": "Test", "meeting_id": 1},
                 "group/2": {"name": "Default Group", "meeting_id": 2},
@@ -426,25 +426,25 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 4
+                    "default_group_id": 4,
                 },
                 "meeting/2": {
                     "name": "No Test and Not in Meeting",
                     "group_ids": [2],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 5
+                    "default_group_id": 5,
                 },
                 "meeting/3": {
                     "name": "No Test and in Meeting",
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
-                    "default_group_id": 6
+                    "default_group_id": 6,
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [1]
+                    "committee_management_ids": [1],
                 },
             }
         )
@@ -465,7 +465,7 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_all_cml_permissions(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1,2]},
+                "committee/1": {"meeting_ids": [1, 2]},
                 "committee/2": {"meeting_ids": [3]},
                 "group/1": {"name": "Test", "meeting_id": 1},
                 "group/2": {"name": "Default Group", "meeting_id": 2},
@@ -478,25 +478,25 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 4
+                    "default_group_id": 4,
                 },
                 "meeting/2": {
                     "name": "No Test and Not in Meeting",
                     "group_ids": [2],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 5
+                    "default_group_id": 5,
                 },
                 "meeting/3": {
                     "name": "No Test and in Meeting",
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
-                    "default_group_id": 6
+                    "default_group_id": 6,
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [1, 2]
+                    "committee_management_ids": [1, 2],
                 },
             }
         )
@@ -513,7 +513,7 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_oml_permission(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1,2]},
+                "committee/1": {"meeting_ids": [1, 2]},
                 "committee/2": {"meeting_ids": [3]},
                 "group/1": {"name": "Test", "meeting_id": 1},
                 "group/2": {"name": "Default Group", "meeting_id": 2},
@@ -526,21 +526,21 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 4
+                    "default_group_id": 4,
                 },
                 "meeting/2": {
                     "name": "No Test and Not in Meeting",
                     "group_ids": [2],
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
-                    "default_group_id": 5
+                    "default_group_id": 5,
                 },
                 "meeting/3": {
                     "name": "No Test and in Meeting",
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
-                    "default_group_id": 6
+                    "default_group_id": 6,
                 },
                 "user/1": {
                     "organization_management_level": "can_manage_users",
@@ -563,22 +563,18 @@ class UserAssignMeetings(BaseActionTestCase):
                 "group/1": {"name": "Test", "meeting_id": 1},
                 "group/2": {"name": "Default Group", "meeting_id": 2},
                 "group/3": {"name": "In Meeting", "meeting_id": 3},
-                "meeting/1": {
-                    "name": "Archived",
-                    "group_ids": [1],
-                    "committee_id": 1
-                },
+                "meeting/1": {"name": "Archived", "group_ids": [1], "committee_id": 1},
                 "meeting/2": {
                     "name": "No Test and Not in Meeting",
                     "group_ids": [2],
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
                 "meeting/3": {
                     "name": "No Test and in Meeting",
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
             }
         )
