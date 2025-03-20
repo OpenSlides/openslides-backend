@@ -70,74 +70,66 @@ def test_create_update_action_worker(db_connection: Connection) -> None:
         extended_database.write(create_write_requests(data))
     assert_model("action_worker/1", event["fields"])
 
+# TODO these following 4 tests seem obsolete. Delete? Delete whole test file? I guess yes.
+# def test_create_action_worker_not_single_event(db_connection: Connection) -> None:
+#     data = get_data()
+#     data[0]["events"].append(
+#         {
+#             "type": EventType.Create,
+#             "fqid": "action_worker/2",
+#             "fields": {
+#                 "id": 2,
+#                 "name": "motion.create",
+#                 "state": "running",
+#                 "created": datetime.fromtimestamp(1658489433, timezone.utc),
+#                 "timestamp": datetime.fromtimestamp(1658489434, timezone.utc),
+#             },
+#         }
+#     )
 
-def test_create_action_worker_not_single_event(db_connection: Connection) -> None:
-    data = get_data()
-    data[0]["events"].append(
-        {
-            "type": EventType.Create,
-            "fqid": "action_worker/2",
-            "fields": {
-                "id": 2,
-                "name": "motion.create",
-                "state": "running",
-                "created": datetime.fromtimestamp(1658489433, timezone.utc),
-                "timestamp": datetime.fromtimestamp(1658489434, timezone.utc),
-            },
-        }
-    )
-
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        with pytest.raises(InvalidFormat) as e_info:
-            extended_database.write(create_write_requests(data))
-    assert e_info.value.msg == "write_without_events may contain only 1 event!"
-
-
-def test_create_action_worker_data_not_in_list_format(
-    db_connection: Connection,
-) -> None:
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        with pytest.raises(InvalidFormat) as e_info:
-            extended_database.write(create_write_requests(get_data())[0])
-    assert e_info.value.msg == "write_without_events data internally must be a list!"
-
-    # data_single = data[0]
-    # response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data_single)
-    # assert_response_code(response, 400)
-    # assert (
-    #     response.json["error"]["msg"]
-    #     == "write_without_events data internally must be a list!"
-    # )
+#     with get_new_os_conn() as conn:
+#         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+#         with pytest.raises(InvalidFormat) as e_info:
+#             extended_database.write(create_write_requests(data))
+#     assert e_info.value.msg == "write_without_events may contain only 1 event!"
 
 
-def test_create_action_worker_wrong_collection(db_connection: Connection) -> None:
-    data = get_data()
-    data[0]["events"][0]["fqid"] = "topic/1"
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        with pytest.raises(InvalidFormat) as e_info:
-            extended_database.write(create_write_requests(data))
-    assert (
-        e_info.value.msg
-        == "Collection for write_without_events must be action_worker or import_preview"
-    )
+# def test_create_action_worker_data_not_in_list_format(
+#     db_connection: Connection,
+# ) -> None:
+#     with get_new_os_conn() as conn:
+#         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+#         with pytest.raises(InvalidFormat) as e_info:
+#             extended_database.write(create_write_requests(get_data())[0])
+#     assert e_info.value.msg == "write_without_events data internally must be a list!"
 
 
-def test_delete_action_worker_wrong_collection(db_connection: Connection) -> None:
-    data = get_data()
-    data[0]["events"] = [{"type": EventType.Delete, "fqid": "topic/1"}]
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        with pytest.raises(InvalidFormat) as e_info:
-            extended_database.write(create_write_requests(data))
-    assert (
-        e_info.value.msg
-        == "Collection for write_without_events must be action_worker or import_preview"
-    )
+# def test_create_action_worker_wrong_collection(db_connection: Connection) -> None:
+#     data = get_data()
+#     data[0]["events"][0]["fqid"] = "topic/1"
+#     with get_new_os_conn() as conn:
+#         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+#         with pytest.raises(InvalidFormat) as e_info:
+#             extended_database.write(create_write_requests(data))
+#     assert (
+#         e_info.value.msg
+#         == "Collection for write_without_events must be action_worker or import_preview"
+#     )
 
 
+# def test_delete_action_worker_wrong_collection(db_connection: Connection) -> None:
+#     data = get_data()
+#     data[0]["events"] = [{"type": EventType.Delete, "fqid": "topic/1"}]
+#     with get_new_os_conn() as conn:
+#         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+#         with pytest.raises(InvalidFormat) as e_info:
+#             extended_database.write(create_write_requests(data))
+#     assert (
+#         e_info.value.msg
+#         == "Collection for write_without_events must be action_worker or import_preview"
+#     )
+
+# TODO this test originally used direct inserts for creation as the datastore would fail on two events
 def test_delete_action_worker_with_2_events(db_connection: Connection) -> None:
     data = get_data()
     data[0]["events"].append(

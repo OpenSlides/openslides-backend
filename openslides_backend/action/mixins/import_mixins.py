@@ -351,7 +351,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
                 store_id = instance["id"]
                 if self.import_state == ImportState.ERROR:
                     continue
-                self.datastore.write_without_events(
+                self.datastore.write(
                     WriteRequest(
                         events=[
                             Event(
@@ -409,7 +409,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
-        self.datastore.write_without_events(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(
