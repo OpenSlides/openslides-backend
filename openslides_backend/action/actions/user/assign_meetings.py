@@ -53,11 +53,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
                 [GetManyRequest("meeting", meeting_ids, ["committee_id"])],
                 lock_result=False,
             )["meeting"]
-            committee_ids = {
-                meeting["committee_id"]
-                for meeting in meetings.values()
-                if meeting.get("committee_id")
-            }
+            committee_ids = {meeting["committee_id"] for meeting in meetings.values()}
             committee_ids = {
                 committee_id
                 for committee_id in committee_ids
