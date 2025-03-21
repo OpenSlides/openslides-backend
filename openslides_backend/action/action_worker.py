@@ -78,7 +78,9 @@ def handle_action_in_worker_thread(
         logger.error(msg)
         raise ActionException(msg)
 
-    message = action_worker_writing.initial_action_worker_write()
+    with get_new_os_conn() as conn:
+        extended_db = ExtendedDatabase(conn, self.logger, env)
+        message = action_worker_writing.initial_action_worker_write(extended_db)
     return ActionsResponse(
         status_code=HTTPStatus.ACCEPTED.value,
         success=False,
@@ -111,40 +113,38 @@ class ActionWorkerWriting:
         self.fqid: str = "Still not set"
         self.written: bool = False
 
-    def initial_action_worker_write(self) -> str:
+    def initial_action_worker_write(self, extended_db: ExtendedDatabase) -> str:
         current_time = round(time())
-        with get_new_os_conn() as conn:
-            extended_db = ExtendedDatabase(conn, self.logger, env)
-            if not self.new_id:
-                self.new_id = extended_db.reserve_id(collection="action_worker")
-                self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
-            try:
-                extended_db.write(
-                    WriteRequest(
-                        events=[
-                            Event(
-                                type=EventType.Create,
-                                fqid=self.fqid,
-                                fields={
-                                    "id": self.new_id,
-                                    "name": self.action_names,
-                                    "state": ActionWorkerState.RUNNING,
-                                    "created": self.start_time,
-                                    "timestamp": current_time,
-                                },
-                            )
-                        ],
-                        user_id=self.user_id,
-                        locked_fields={},
-                    )
+        if not self.new_id:
+            self.new_id = extended_db.reserve_id(collection="action_worker")
+            self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
+        try:
+            extended_db.write(
+                WriteRequest(
+                    events=[
+                        Event(
+                            type=EventType.Create,
+                            fqid=self.fqid,
+                            fields={
+                                "id": self.new_id,
+                                "name": self.action_names,
+                                "state": ActionWorkerState.RUNNING,
+                                "created": self.start_time,
+                                "timestamp": current_time,
+                            },
+                        )
+                    ],
+                    user_id=self.user_id,
+                    locked_fields={},
                 )
-                extended_db.get(
-                    self.fqid, [], lock_result=False, use_changed_models=False
-                )
-                message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
-                self.written = True
-            except DatastoreException as e:
-                message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
+            )
+            extended_db.get(
+                self.fqid, [], lock_result=False, use_changed_models=False
+            )
+            message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
+            self.written = True
+        except DatastoreException as e:
+            message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
         self.logger.info(f"action_worker: {message}")
         return message
 
@@ -169,52 +169,50 @@ class ActionWorkerWriting:
             f"running action_worker '{self.fqid} {self.action_names}': {current_time}"
         )
 
-    def final_action_worker_write(self, action_worker_thread: "ActionWorker") -> None:
+    def final_action_worker_write(self, extended_db: ExtendedDatabase, action_worker_thread: "ActionWorker") -> None:
         current_time = round(time())
-        with get_new_os_conn() as conn:
-            extended_db = ExtendedDatabase(conn, self.logger, env)
-            state = ActionWorkerState.END
-            if hasattr(action_worker_thread, "exception"):
-                if isinstance(action_worker_thread.exception, ActionException):
-                    exception = action_worker_thread.exception
-                else:
-                    exception = ActionException(str(action_worker_thread.exception))
-                response = exception.get_json()
-                self.logger.error(
-                    f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
-                )
-            elif hasattr(action_worker_thread, "response"):
-                response = action_worker_thread.response
-                self.logger.info(
-                    f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
-                )
+        state = ActionWorkerState.END
+        if hasattr(action_worker_thread, "exception"):
+            if isinstance(action_worker_thread.exception, ActionException):
+                exception = action_worker_thread.exception
             else:
-                exception = ActionException(
-                    "action_worker aborted without any specific message"
-                )
-                state = ActionWorkerState.ABORTED
-                response = exception.get_json()
-                self.logger.error(
-                    f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
-                )
-
-            extended_db.write(
-                WriteRequest(
-                    events=[
-                        Event(
-                            type=EventType.Update,
-                            fqid=self.fqid,
-                            fields={
-                                "state": state,
-                                "timestamp": current_time,
-                                "result": response,
-                            },
-                        )
-                    ],
-                    user_id=self.user_id,
-                    locked_fields={},
-                )
+                exception = ActionException(str(action_worker_thread.exception))
+            response = exception.get_json()
+            self.logger.error(
+                f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
             )
+        elif hasattr(action_worker_thread, "response"):
+            response = action_worker_thread.response
+            self.logger.info(
+                f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
+            )
+        else:
+            exception = ActionException(
+                "action_worker aborted without any specific message"
+            )
+            state = ActionWorkerState.ABORTED
+            response = exception.get_json()
+            self.logger.error(
+                f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
+            )
+
+        extended_db.write(
+            WriteRequest(
+                events=[
+                    Event(
+                        type=EventType.Update,
+                        fqid=self.fqid,
+                        fields={
+                            "state": state,
+                            "timestamp": current_time,
+                            "result": response,
+                        },
+                    )
+                ],
+                user_id=self.user_id,
+                locked_fields={},
+            )
+        )
 
 
 class ActionWorker(threading.Thread):
@@ -276,21 +274,20 @@ def gunicorn_post_request(
         action_worker_writing = curr_thread.action_worker_writing
         lock = action_worker.lock
 
-        # TODO this could be calling multiple ways passing conn, extended_db or nothing or no context from here at all.
         with get_new_os_conn() as conn:
             extended_db = ExtendedDatabase(conn, logging, env)
             while True:
                 worker.tmp.notify()
                 if action_worker_writing.written:
                     if lock.acquire(timeout=10):
-                        action_worker_writing.final_action_worker_write(action_worker)
+                        action_worker_writing.final_action_worker_write(extended_db, action_worker)
                         lock.release()
                         break
                     else:
                         action_worker_writing.continue_action_worker_write(extended_db)
-                        conn.commit()
                 else:
                     action_worker_writing.initial_action_worker_write()
+                conn.commit()
     except Exception as e:
         logger = logging.getLogger(__name__)
         msg = f"gunicorn_post_request:{str(e)}"
