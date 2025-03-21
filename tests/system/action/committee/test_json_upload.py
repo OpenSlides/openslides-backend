@@ -76,6 +76,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                     "is_list": True,
                 },
                 {"property": "meeting_template", "type": "string", "is_object": True},
+                {"property": "parent", "type": "string", "is_object": True},
             ],
             "statistics": [
                 {"name": "total", "value": 1},
@@ -120,12 +121,12 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response, 0) == {
             "state": ImportState.ERROR,
-            "messages": ["Found multiple committees with the same name."],
+            "messages": ["Error: Found multiple committees with the same name."],
             "data": {"name": {"value": "n1", "info": ImportState.ERROR}},
         }
         assert self.get_row(response, 1) == {
             "state": ImportState.ERROR,
-            "messages": ["Found multiple committees with the same name."],
+            "messages": ["Error: Found multiple committees with the same name."],
             "data": {"name": {"value": "n1", "info": ImportState.ERROR}},
         }
 
@@ -137,12 +138,12 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response, 0) == {
             "state": ImportState.ERROR,
-            "messages": ["Found multiple committees with the same name."],
+            "messages": ["Error: Found multiple committees with the same name."],
             "data": {"name": {"value": "n1", "info": ImportState.ERROR}},
         }
         assert self.get_row(response, 1) == {
             "state": ImportState.ERROR,
-            "messages": ["Found multiple committees with the same name."],
+            "messages": ["Error: Found multiple committees with the same name."],
             "data": {"name": {"value": "n1", "info": ImportState.ERROR}},
         }
 
@@ -154,7 +155,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
-            "messages": ["Found multiple committees with the same name."],
+            "messages": ["Error: Found multiple committees with the same name."],
             "data": {"name": {"value": "test", "info": ImportState.ERROR}},
         }
 
@@ -442,7 +443,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
-            "messages": ["A meeting with this name and dates already exists."],
+            "messages": ["Error: A meeting with this name and dates already exists."],
             "data": {
                 "id": 1,
                 "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
@@ -479,7 +480,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response, 0) == {
             "state": ImportState.ERROR,
             "messages": [
-                "Only one of start_time and end_time is not allowed.",
+                "Error: Only one of start_time and end_time is not allowed.",
             ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
@@ -493,7 +494,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response, 1) == {
             "state": ImportState.ERROR,
             "messages": [
-                "Only one of start_time and end_time is not allowed.",
+                "Error: Only one of start_time and end_time is not allowed.",
             ],
             "data": {
                 "name": {"value": "test2", "info": ImportState.NEW},
@@ -542,7 +543,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
             "messages": [
-                "start_time must be before end_time.",
+                "Error: start_time must be before end_time.",
             ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
@@ -712,6 +713,327 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             {"data": [{"name": "test"}]},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
+
+    def create_committees_for_parent_tests(self) -> None:
+        self.create_committee(name="National council")
+        self.create_committee(2, name="Regional council")
+        self.create_committee(3, parent_id=2, name="County council")
+        self.create_committee(4, parent_id=3, name="District council")
+
+    def test_json_upload_parent_not_found(self) -> None:
+        self.create_committees_for_parent_tests()
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "National conference",
+                        "parent": "National",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "National conference",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "National",
+                },
+            },
+            "messages": [
+                "Error: Parent committee not found.",
+            ],
+            "state": ImportState.ERROR,
+        }
+
+    def test_json_upload_parent_multiple_found(self) -> None:
+        self.create_committees_for_parent_tests()
+        self.create_committee(5, name="National council")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "National conference",
+                        "parent": "National council",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "National conference",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "National council",
+                },
+            },
+            "messages": [
+                "Error: Found multiple committees with the same name as the parent.",
+            ],
+            "state": ImportState.ERROR,
+        }
+
+    def test_json_upload_parent_circle(self) -> None:
+        self.create_committees_for_parent_tests()
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "National conference",
+                        "parent": "National council",
+                    },
+                    {
+                        "name": "Parliamentary committee",
+                        "parent": "Landscaping committee",
+                    },
+                    {
+                        "name": "Financing committee",
+                        "parent": "Parliamentary committee",
+                    },
+                    {
+                        "name": "Landscaping committee",
+                        "parent": "Financing committee",
+                    },
+                    {
+                        "name": "Pond building committee",
+                        "parent": "Landscaping committee",
+                    },
+                    {"name": "Unrelated committee"},
+                    {
+                        "name": "Unrelated child committee",
+                        "parent": "Unrelated committee",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "National conference",
+                },
+                "parent": {
+                    "id": 1,
+                    "info": ImportState.DONE,
+                    "value": 1,
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Parliamentary committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Landscaping committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy"
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Financing committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Parliamentary committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy"
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Landscaping committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Financing committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy"
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 4) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Pond building committee",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "Landscaping committee",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 5) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Unrelated committee",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 6) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Unrelated child committee",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "Unrelated committee",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+
+    def test_json_upload_multiple_circles(self) -> None:
+        self.create_committees_for_parent_tests()
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "Parliamentary committee",
+                        "parent": "Landscaping committee",
+                    },
+                    {
+                        "name": "Financing committee",
+                        "parent": "Parliamentary committee",
+                    },
+                    {
+                        "name": "Landscaping committee",
+                        "parent": "Financing committee",
+                    },
+                    {
+                        "name": "Unrelated committee",
+                        "parent": "Unrelated child committee",
+                    },
+                    {
+                        "name": "Unrelated child committee",
+                        "parent": "Unrelated committee",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Parliamentary committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Landscaping committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Financing committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Parliamentary committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Landscaping committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Financing committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Unrelated committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Unrelated child committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 4) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Unrelated child committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Unrelated committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
 
 
 class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
@@ -915,3 +1237,195 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             },
         }
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
+
+    def json_upload_with_parents(self) -> None:
+        self.create_committee(name="one")
+        self.create_committee(2, name="two")
+        self.create_committee(3, name="three")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "one"},
+                    {
+                        "name": "two",
+                        "parent": "five",
+                    },
+                    {
+                        "name": "three",
+                        "parent": "two",
+                    },
+                    {
+                        "name": "nine",
+                        "parent": "eight",
+                    },
+                    {
+                        "name": "four",
+                    },
+                    {
+                        "name": "five",
+                    },
+                    {
+                        "name": "six",
+                        "parent": "five",
+                    },
+                    {
+                        "name": "seven",
+                        "parent": "five",
+                    },
+                    {
+                        "name": "eight",
+                        "parent": "seven",
+                    },
+                    {
+                        "name": "ten",
+                        "parent": "two",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        self.assert_parents_test_result(response)
+
+    def assert_parents_test_result(self, response: Response) -> None:
+        assert self.get_row(response) == {
+            "data": {
+                "id": 1,
+                "name": {
+                    "id": 1,
+                    "info": ImportState.DONE,
+                    "value": "one",
+                },
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "id": 2,
+                "name": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "two",
+                },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
+            },
+            "messages": [
+                "The parent field will be skipped, because parent can not be updated for an existing committee.",
+            ],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "id": 3,
+                "name": {
+                    "id": 3,
+                    "info": ImportState.DONE,
+                    "value": "three",
+                },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
+            },
+            "messages": [
+                "The parent field will be skipped, because parent can not be updated "
+                "for an existing committee.",
+            ],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "nine",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "eight",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 4) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "four",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 5) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "five",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 6) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "six",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "five",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 7) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "seven",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "five",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 8) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "eight",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "seven",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 9) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "ten",
+                },
+                "parent": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "two",
+                },
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }

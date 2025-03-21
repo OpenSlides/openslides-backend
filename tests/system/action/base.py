@@ -163,13 +163,18 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     @with_database_context
     def create_committee(
-        self, committee_id: int = 1, parent_id: int | None = None
+        self,
+        committee_id: int = 1,
+        parent_id: int | None = None,
+        name: str | None = None,
     ) -> None:
+        if not name:
+            name = f"Committee{committee_id}"
         committee_fqid = f"committee/{committee_id}"
         data: dict[str, dict[str, Any]] = {
             committee_fqid: {
                 "organization_id": 1,
-                "name": f"Commitee{committee_id}",
+                "name": name,
             }
         }
         if parent_id:

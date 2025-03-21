@@ -831,3 +831,57 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert preview_row["state"] == "error"
         self.assert_model_not_exists("committee/1")
         self.assert_model_not_exists("meeting/1")
+
+    def test_json_upload_with_parents(self) -> None:
+        self.json_upload_with_parents()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_parents_test_result(response)
+        expected_structure: dict[
+            int,
+            tuple[
+                str, int | None, list[int] | None, list[int] | None, list[int] | None
+            ],
+        ] = {
+            1: ("one", None, None, None, None),
+            2: ("two", None, [6], None, [6]),
+            3: ("three", None, None, None, None),
+            4: ("four", None, None, None, None),
+            5: ("five", None, [7, 8], None, [7, 8, 9, 10]),
+            6: ("ten", 2, None, [2], None),
+            7: ("six", 5, None, [5], None),
+            8: ("seven", 5, [9], [5], [9, 10]),
+            9: ("eight", 8, [10], [5, 8], [10]),
+            10: ("nine", 9, None, [5, 8, 9], None),
+        }
+        for id_, (
+            name,
+            parent,
+            child_ids,
+            all_parent_ids,
+            all_child_ids,
+        ) in expected_structure.items():
+            self.assert_model_exists(
+                f"committee/{id_}",
+                {
+                    "name": name,
+                    "parent_id": parent,
+                    "child_ids": child_ids,
+                    "all_parent_ids": all_parent_ids,
+                    "all_child_ids": all_child_ids,
+                },
+            )
+
+    def test_json_upload_parent_changed_name(self) -> None:
+        # TODO
+        self.json_upload_with_parents()
+
+    def test_json_upload_committee_with_new_committee_name_created(self) -> None:
+        # TODO
+        self.json_upload_with_parents()
+
+    def test_json_upload_parent_deleted(self) -> None:
+        # TODO
+        self.json_upload_with_parents()
+
+    # TODO: Think of more edge cases

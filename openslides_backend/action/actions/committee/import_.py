@@ -5,7 +5,11 @@ from openslides_backend.action.actions.meeting.create import MeetingCreate
 from openslides_backend.action.actions.organization_tag.create import (
     OrganizationTagCreate,
 )
-from openslides_backend.action.util.typing import ActionData, ActionResults
+from openslides_backend.action.util.typing import (
+    ActionData,
+    ActionResultElement,
+    ActionResults,
+)
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
@@ -53,6 +57,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     def validate_entry(self, row: ImportRow) -> None:
         self.validate_with_lookup(row, self.committee_lookup)
         self.validate_field(row, self.meeting_map, "meeting_template", False)
+        self.validate_field(row, self.committee_map, "parent", False)
         self.validate_field(row, self.committee_map, "forward_to_committees")
         self.validate_field(row, self.user_map, "managers")
         self.validate_field(row, self.user_map, "meeting_admins")
@@ -83,9 +88,47 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                 entry.pop("meeting_template")
             else:
                 entry["meeting_template"] = template["id"]
+        if parent := entry.get("parent"):
+            if parent["value"] in ["", None]:
+                entry.pop("parent")
+            else:
+                entry["parent"] = parent["value"]
+                if parent_id := parent.get("id"):
+                    entry["parent_id"] = parent_id
         return entry
 
+    def sort_by_parents(self, rows: list[ImportRow]) -> list[ImportRow]:
+        name_to_ind = {row["data"]["name"]: ind for ind, row in enumerate(rows)}
+        tree_root: dict[int, dict[str, Any]] = {
+            ind: {"row": row, "parent": row["data"].get("parent"), "children": []}
+            for ind, row in enumerate(rows)
+        }
+        tree_branches: dict[int, dict[str, Any]] = {}
+        for ind in range(len(rows)):
+            if (parent_name := tree_root[ind]["parent"]) and isinstance(
+                parent_ind := name_to_ind.get(parent_name), int
+            ):
+                tree_branches[ind] = tree_root[ind]
+                del tree_root[ind]
+                if parent_ind in tree_root:
+                    tree_root[parent_ind]["children"].append(ind)
+                else:
+                    tree_branches[parent_ind]["children"].append(ind)
+        sorted_amount = len(tree_root)
+        sorted_list: list[ImportRow] = [val["row"] for val in tree_root.values()]
+        children: list[int] = [
+            child for val in tree_root.values() for child in val["children"]
+        ]
+        while children:
+            sorted_list.extend([tree_branches[ind]["row"] for ind in children])
+            sorted_amount += len(children)
+            children = [
+                child for ind in children for child in tree_branches[ind]["children"]
+            ]
+        return sorted_list
+
     def create_models(self, rows: list[ImportRow]) -> None:
+        rows = self.sort_by_parents(rows)
         # create tags & update row data
         create_tag_data: list[dict[str, Any]] = []
         for row in rows:
@@ -106,16 +149,35 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
 
         # create missing committees & update row data
         create_committee_data: list[dict[str, Any]] = []
+        create_results: list[ActionResultElement | None] = []
         for row in rows:
             entry = row["data"]
             if "id" not in entry:
-                create_committee_data.append(
-                    {"name": entry["name"], "organization_id": ONE_ORGANIZATION_ID}
-                )
+                date = {"name": entry["name"], "organization_id": ONE_ORGANIZATION_ID}
+                if parent_id := entry.pop("parent_id", None):
+                    entry.pop("parent")
+                    date["parent_id"] = parent_id
+                elif parent := entry.pop("parent", None):
+                    date["parent_id"] = next(
+                        payload["id"]
+                        for payload in create_committee_data
+                        if payload["name"] == parent
+                    )
+                result = self.execute_other_action(CommitteeCreate, [date])
+                if result:
+                    result_list = list(result)
+                    result_element = result_list[0]
+                    create_results.extend(result_list)
+                    if result_element:
+                        date.update(result_element)
+                create_committee_data.append(date)
         if create_committee_data:
-            results = self.execute_other_action(CommitteeCreate, create_committee_data)
             self.update_rows_from_results(
-                rows, create_committee_data, results, "forward_to_committees", True
+                rows,
+                create_committee_data,
+                create_results,
+                "forward_to_committees",
+                True,
             )
 
         # rename relation fields
@@ -227,7 +289,10 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     [
                         id
                         for row in self.rows
-                        for committee in row["data"].get("forward_to_committees", [])
+                        for committee in [
+                            row["data"].get("parent", {}),
+                            *row["data"].get("forward_to_committees", []),
+                        ]
                         if (id := committee.get("id"))
                     ],
                     ["name"],

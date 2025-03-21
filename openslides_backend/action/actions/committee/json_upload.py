@@ -32,7 +32,7 @@ class CommitteeJsonUpload(
                 "items": {
                     "type": "object",
                     "properties": {
-                        **model.get_properties("name", "description", "parent_id"),
+                        **model.get_properties("name", "description"),
                         "forward_to_committees": str_list_schema,
                         "organization_tags": str_list_schema,
                         "managers": str_list_schema,
@@ -44,6 +44,7 @@ class CommitteeJsonUpload(
                         },
                         "meeting_admins": str_list_schema,
                         "meeting_template": {"type": "string"},
+                        "parent": {"type": "string"},
                     },
                     "required": ["name"],
                     "additionalProperties": False,
@@ -84,7 +85,7 @@ class CommitteeJsonUpload(
             "is_list": True,
         },
         {"property": "meeting_template", "type": "string", "is_object": True},
-        {"property": "parent_id", "type": "string", "is_object": True},
+        {"property": "parent", "type": "string", "is_object": True},
     ]
     import_name = "committee"
 
@@ -129,39 +130,37 @@ class CommitteeJsonUpload(
             }
             messages.append("Error: Found multiple committees with the same name.")
 
-        if parent := entry.get("parent_id"):
+        if parent := entry.get("parent"):
             if "id" in entry:
-                entry["parent_id"] = {
-                    "value": parent,
+                entry["parent"] = {
+                    "value": "",
                     "info": ImportState.WARNING,
                 }
                 messages.append(
-                    "The parent_id field will be skipped, because parent_id can not be updated for an existing committee."
+                    "The parent field will be skipped, because parent can not be updated for an existing committee."
                 )
             else:
-                result = self.parent_committee_lookup.check_duplicate(parent)
+                result = self.committee_lookup.check_duplicate(parent)
                 if result == ResultType.FOUND_ID:
-                    parent_id = self.parent_committee_lookup.get_field_by_name(
-                        parent, "id"
-                    )
-                    entry["parent_id"] = {
+                    parent_id = self.committee_lookup.get_field_by_name(parent, "id")
+                    entry["parent"] = {
                         "value": parent,
                         "info": ImportState.DONE,
                         "id": parent_id,
                     }
                 elif result == ResultType.NOT_FOUND:
                     if parent in self.names:
-                        entry["parent_id"] = {"value": parent, "info": ImportState.NEW}
+                        entry["parent"] = {"value": parent, "info": ImportState.NEW}
                     else:
                         row_state = ImportState.ERROR
-                        entry["parent_id"] = {
+                        entry["parent"] = {
                             "value": parent,
                             "info": ImportState.ERROR,
                         }
                         messages.append("Error: Parent committee not found.")
                 elif result == ResultType.FOUND_MORE_IDS:
                     row_state = ImportState.ERROR
-                    entry["parent_id"] = {
+                    entry["parent"] = {
                         "value": parent,
                         "info": ImportState.ERROR,
                     }
@@ -194,7 +193,7 @@ class CommitteeJsonUpload(
                     {},
                 )
             except ActionException as e:
-                messages.append(e.message)
+                messages.append("Error: " + e.message)
                 row_state = ImportState.ERROR
 
         self.validate_with_lookup(entry, "managers", self.username_lookup, messages)
@@ -275,7 +274,7 @@ class CommitteeJsonUpload(
                         for field in ("start_time", "end_time")
                     ):
                         row["messages"].append(
-                            "A meeting with this name and dates already exists."
+                            "Error: A meeting with this name and dates already exists."
                         )
                         row["state"] = ImportState.ERROR
                         break
@@ -312,26 +311,24 @@ class CommitteeJsonUpload(
             self.check_admin_groups_for_meeting(row)
 
     def check_parents_for_circles(self) -> None:
-        # search for circles among the parent_ids of new rows. Update rows do not need to be considered as it isn't possible to update a parent_id.
+        """
+        Search for circles among the parents of new rows.
+        Update rows do not need to be considered as it isn't possible to update a parent.
+        """
         new_relations: dict[str, str] = {
-            row["data"]["name"]["value"]: row["data"]["parent_id"]["value"]
+            row["data"]["name"]["value"]: row["data"]["parent"]["value"]
             for row in self.rows
             if "id" not in row
-            and row["data"].get("parent_id", {}).get("info") == ImportState.NEW
+            and row["data"].get("parent", {}).get("info") == ImportState.NEW
         }
         names = set(new_relations.keys())
         encircled: set[str] = set()
         free: set[str] = set()
         circles: set[str] = set()
         while names:
-            name = names.pop()[0]
+            name = names.pop()
             relation_parents: list[str] = []
-            while (
-                (parent := new_relations.get(name))
-                and name
-                and name not in relation_parents
-                and name not in encircled
-            ):
+            while parent := new_relations.get(name):
                 if name in encircled:
                     encircled.update(relation_parents)
                     break
@@ -346,16 +343,16 @@ class CommitteeJsonUpload(
                 relation_parents.append(name)
                 name = parent
             names.difference_update(relation_parents)
-        encircled = {name for circle in circles for name in circle}
+        encircled = {circle for circle in circles}
         for row in self.rows:
             if row["data"]["name"]["value"] in encircled:
-                row["data"]["parent_id"] = {
-                    "value": row["data"]["parent_id"]["value"],
+                row["data"]["parent"] = {
+                    "value": row["data"]["parent"]["value"],
                     "info": ImportState.ERROR,
                 }
                 row["state"] = ImportState.ERROR
                 row["messages"].append(
-                    "Error: Parent ids of new entries are forming circles, please rework the hierarchy"
+                    "Error: The parents are forming circles, please rework the hierarchy"
                 )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
@@ -435,13 +432,15 @@ class CommitteeJsonUpload(
         committee_tuples: list[tuple[str | tuple[str, ...], dict[str, Any]]] = []
         usernames: set[str] = set()
         organization_tags: set[str] = set()
-        forward_committees: set[str] = set()
+        other_committees: set[str] = set()
 
         for entry in data:
             committee_names.add(entry["name"])
             committee_tuples.append((entry["name"], entry))
             if forwards := entry.get("forward_to_committees"):
-                forward_committees.update(forwards)
+                other_committees.update(forwards)
+            if parent := entry.get("parent"):
+                other_committees.add(parent)
             if managers := entry.get("managers"):
                 usernames.update(managers)
             if admins := entry.get("meeting_admins"):
@@ -453,18 +452,7 @@ class CommitteeJsonUpload(
             self.datastore,
             "committee",
             committee_tuples
-            + [
-                (name, {}) for name in forward_committees if name not in committee_names
-            ],
-        )
-        self.parent_committee_lookup = Lookup(
-            self.datastore,
-            "committee",
-            committee_tuples
-            + [
-                (name, {}) for name in forward_committees if name not in committee_names
-            ],
-            field="parent_id",
+            + [(name, {}) for name in other_committees if name not in committee_names],
         )
         self.username_lookup = Lookup(
             self.datastore, "user", [(name, {}) for name in usernames], field="username"
