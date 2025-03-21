@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from openslides_backend.database.db_connection_handling import env
+from openslides_backend.services.postgresql.db_connection_handling import env
 
 openslides_db = env.DATABASE_NAME
 
@@ -36,7 +36,7 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
             tablename varchar(256) UNIQUE
         );
 
-        CREATE FUNCTION store_table_names() RETURNS TRIGGER AS $$
+        CREATE OR REPLACE FUNCTION store_table_names() RETURNS TRIGGER AS $$
         DECLARE composed_name varchar;
         BEGIN
             composed_name = TG_TABLE_SCHEMA || '.' || TG_TABLE_NAME;
@@ -47,15 +47,17 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
 
         {generate_trigger_sql_code(tablenames)}
 
-        CREATE FUNCTION truncate_testdata_tables() RETURNS void AS $$
+        CREATE OR REPLACE FUNCTION truncate_testdata_tables() RETURNS void AS $$
         BEGIN
-            -- RAISE NOTICE '%',
-            EXECUTE
-            (SELECT 'TRUNCATE TABLE '
-                || string_agg(tablename, ', ')
-                || ' RESTART IDENTITY CASCADE'
-            FROM   truncate_tables
-            );
+            IF (SELECT EXISTS (SELECT * FROM truncate_tables))
+            THEN
+                EXECUTE
+                    (SELECT 'TRUNCATE TABLE '
+                    || string_agg(tablename, ', ')
+                    || ' RESTART IDENTITY CASCADE'
+                    FROM   truncate_tables);
+            END IF;
+            TRUNCATE TABLE truncate_tables RESTART IDENTITY CASCADE;
         END;
         $$ LANGUAGE plpgsql;
         """
