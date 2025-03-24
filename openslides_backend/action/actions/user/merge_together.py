@@ -98,7 +98,6 @@ class UserMergeTogether(
                 ],
                 "error": [
                     "is_demo_user",
-                    "forwarding_committee_ids",
                 ],
                 "merge": [
                     "committee_ids",

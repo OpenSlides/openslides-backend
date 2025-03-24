@@ -1,5 +1,5 @@
 {
-    "_migration_index": 66,
+    "_migration_index": 67,
     "gender":{
         "1":{
             "id": 1,
@@ -318,6 +318,8 @@
             "motions_preamble": "The assembly may decide:",
             "motions_default_line_numbering": "outside",
             "motions_line_length": 85,
+            "motions_origin_motion_toggle_default": false,
+            "motions_enable_origin_motion_display": true,
             "motions_enable_text_on_projector": true,
             "motions_enable_reason_on_projector": false,
             "motions_enable_sidebox_on_projector": false,
