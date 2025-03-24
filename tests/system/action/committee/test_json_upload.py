@@ -1238,6 +1238,33 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
         }
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
 
+    def json_upload_with_parent(self) -> None:
+        self.create_committee(name="one")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "two",
+                        "parent": "one",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "two",
+                },
+                "parent": {"info": ImportState.DONE, "value": "one", "id": 1},
+            },
+            "messages": [],
+            "state": ImportState.NEW,
+        }
+
     def json_upload_with_parents(self) -> None:
         self.create_committee(name="one")
         self.create_committee(2, name="two")

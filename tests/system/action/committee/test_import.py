@@ -873,8 +873,64 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             )
 
     def test_json_upload_parent_changed_name(self) -> None:
-        # TODO
         self.json_upload_with_parents()
+        self.set_models({"committee/2": {"name": "Committee two"}})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response, 1) == {
+            "data": {
+                "id": 2,
+                "name": {
+                    "id": 2,
+                    "info": ImportState.ERROR,
+                    "value": "two",
+                },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
+            },
+            "messages": [
+                "The parent field will be skipped, because parent can not be updated for an existing committee.",
+                "Error: committee 2 not found anymore for updating committee 'two'.",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 9) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "ten",
+                },
+                "parent": {
+                    "id": 2,
+                    "info": ImportState.WARNING,
+                    "value": "two",
+                },
+            },
+            "messages": ["Expected model '2 two' changed its name to 'Committee two'."],
+            "state": ImportState.NEW,
+        }
+
+    def test_json_upload_parent_changed_name_2(self) -> None:
+        self.json_upload_with_parent()
+        self.set_models({"committee/1": {"name": "Committee one"}})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "two",
+                },
+                "parent": {"info": ImportState.WARNING, "value": "one", "id": 1},
+            },
+            "messages": ["Expected model '1 one' changed its name to 'Committee one'."],
+            "state": ImportState.NEW,
+        }
+        self.assert_model_exists("committee/2", {"name": "two", "parent_id": 1})
 
     def test_json_upload_committee_with_new_committee_name_created(self) -> None:
         # TODO
