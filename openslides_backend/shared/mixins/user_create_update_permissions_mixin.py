@@ -501,7 +501,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         """Check Group I committee-related fields: OML or CML level both for setting and unsetting"""
         if (
             fields
-            and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
+            and self.permstore.user_oml
+            < OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         ):
             db_instance = (
                 {}
@@ -514,20 +515,21 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             )
             committee_ids: list[int] = []
             for payload in [instance, db_instance]:
-                if "home_committee_id" in payload:
+                if payload.get("home_committee_id"):
                     committee_ids.append(payload["home_committee_id"])
-            if not committee_ids:
-                self.check_group_A(fields, instance)
-            for committee_id in committee_ids:
+            if forbidden_committees := {
+                committee_id
+                for committee_id in committee_ids
                 if not has_committee_management_level(
                     self.datastore,
                     self.user_id,
                     CommitteeManagementLevel.CAN_MANAGE,
                     committee_id,
-                ):
-                    raise MissingPermission(
-                        {CommitteeManagementLevel.CAN_MANAGE: committee_id}
-                    )
+                )
+            }:
+                raise MissingPermission(
+                    {CommitteeManagementLevel.CAN_MANAGE: forbidden_committees}
+                )
 
     def _check_for_higher_OML(
         self,

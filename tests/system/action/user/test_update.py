@@ -3795,7 +3795,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
             response.json["message"],
         )
 
@@ -3812,6 +3812,158 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 3",
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_user("dracula")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "dracula", "home_committee_id": 3}
+        )
+
+    def test_update_overwrite_home_committee_both_cml(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("mina", home_committee_id=2)
+        self.set_committee_management_level([2, 3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_both_parent_cml(self) -> None:
+        self.create_committee(1)
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=1)
+        self.create_user("mina", home_committee_id=2)
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_wrong_CML(self) -> None:
+        self.create_committee(1)
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=1)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {1, 3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_old_home_committee_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=2)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_new_home_committee_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=2)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {2}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_no_perm(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {2, 3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_OML_orga(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_OML_users(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {2, 3}",
             response.json["message"],
         )

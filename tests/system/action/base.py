@@ -335,6 +335,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         username: str,
         group_ids: list[int] = [],
         organization_management_level: OrganizationManagementLevel | None = None,
+        home_committee_id: int | None = None,
     ) -> int:
         """
         Create a user with the given username, groups and organization management level.
@@ -350,8 +351,25 @@ class BaseActionTestCase(BaseSystemTestCase):
                 ),
             }
         )
+        if home_committee_id:
+            self.set_home_committee(id, home_committee_id)
         self.set_user_groups(id, group_ids)
         return id
+
+    @with_database_context
+    def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
+        home_fqid = f"committee/{home_committee_id}"
+        committee = self.datastore.get(
+            home_fqid, ["native_user_ids"], lock_result=False
+        )
+        self.set_models(
+            {
+                f"user/{user_id}": {"home_committee_id": home_committee_id},
+                home_fqid: {
+                    "native_user_ids": [*committee.get("native_user_ids", []), user_id]
+                },
+            }
+        )
 
     def _get_user_data(
         self,
