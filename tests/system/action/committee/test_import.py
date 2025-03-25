@@ -933,11 +933,31 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         self.assert_model_exists("committee/2", {"name": "two", "parent_id": 1})
 
     def test_json_upload_committee_with_new_committee_name_created(self) -> None:
-        # TODO
         self.json_upload_with_parents()
+        self.create_committee(4, name="ten")
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert self.get_row(response, 9) == {
+            "data": {
+                "name": {
+                    "info": ImportState.ERROR,
+                    "value": "ten",
+                },
+                "parent": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "two",
+                },
+            },
+            "messages": ["Error: row state expected to be 'done', but it is 'new'."],
+            "state": ImportState.ERROR,
+        }
+        self.assert_model_not_exists("committee/5")
 
     def test_json_upload_parent_deleted(self) -> None:
-        # TODO
-        self.json_upload_with_parents()
-
-    # TODO: Think of more edge cases
+        self.json_upload_with_parent()
+        response = self.request("committee.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 400)
+        assert "Model 'committee/1' does not exist." in response.json["message"]
