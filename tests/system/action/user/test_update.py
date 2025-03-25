@@ -3967,3 +3967,22 @@ class UserUpdateActionTest(BaseActionTestCase):
             "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {2, 3}",
             response.json["message"],
         )
+
+    def test_update_overwrite_home_committee_as_meeting_admin(self) -> None:
+        self.create_committee(3)
+        self.create_meeting()
+        self.create_user("arthur", group_ids=[1], home_committee_id=60)
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {3, 60}",
+            response.json["message"],
+        )
