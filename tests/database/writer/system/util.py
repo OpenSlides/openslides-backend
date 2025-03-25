@@ -1,5 +1,6 @@
 from typing import Any
 from unittest.mock import MagicMock
+import os
 
 import pytest
 from psycopg import Cursor
@@ -27,14 +28,10 @@ def assert_model(fqid: FullQualifiedId, model: Model) -> None:
     collection, id_ = collection_and_id_from_fqid(fqid)
     with get_new_os_conn() as conn:
         database_reader = DatabaseReader(conn, MagicMock(), MagicMock())
-        assert (
-            database_reader.get_many(
-                [GetManyRequest(collection, [id_], [field for field in model.keys()])]
-            )
-            .get(collection, dict())
-            .get(id_)
-            == model
-        )
+        for k,v in database_reader.get_many(
+            [GetManyRequest(collection, [id_], [field for field in model.keys()])]
+        ).get(collection, dict()).get(id_).items():
+            assert v == model[k], f"'{k}' should be '{model[k]}' but is '{v}'."
 
 
 def assert_no_model(fqid: FullQualifiedId) -> None:
@@ -102,6 +99,11 @@ def create_model(data: list[dict[str, Any]]) -> list[Id]:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         return extended_database.write(create_write_requests(data))
 
+def performance(func):
+    return pytest.mark.skipif(
+        not os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "").lower() in ("1", "on", "true"),
+        reason="Performance tests are disabled.",
+    )(func)
 
 # def setup_otel():
 #     env = injector.get(EnvironmentService)

@@ -137,25 +137,49 @@ class DatabaseWriter:
     ) -> dict[FullQualifiedId, dict[Field, JSON]]:
         result = dict()
 
-        def get_array_type(
+        def get_array_with_type(
             determining_list: list[int] | list[str],
             affected_list: list[int] | list[str],
-        ) -> str:
-            if all(isinstance(x, int) for x in determining_list):
+        ) -> sql.Composable:
+            if all(isinstance(element, int) for element in determining_list):
                 if affected_list:
-                    return ""
+                    return sql.Literal(affected_list)
                 else:
-                    return "::int2[]"
-            elif all(isinstance(x, str) for x in determining_list):
-                return "::text[]"
+                    return sql.Literal(affected_list) + sql.SQL("::int2[]")
+            elif all(isinstance(element, str) for element in determining_list):
+                return sql.Literal(affected_list) + sql.SQL("::text[]")
             else:
                 raise ValueError("Only pure integer or string lists are supported.")
 
         for collection, models in models_per_collection.items():
             for model in models.values():
+                table_name = collection + "_t"
                 add_dict = model.pop("add", dict())
                 remove_dict = model.pop("remove", dict())
-                table_name = collection + "_t"
+                joined_dict = add_dict | remove_dict
+                all_field_names_dict = [*[k for k in model if k not in joined_dict], *joined_dict]
+                values = [v for k, v in model.items() if k not in joined_dict]
+                for field, joined_list in joined_dict.items():
+                    values.append(
+                        sql.SQL(
+                            """ARRAY(
+                                SELECT unnest({base_array}
+                                EXCEPT
+                                SELECT unnest({values_remove})
+                                UNION
+                                SELECT unnest({values_add})
+                                ORDER BY list_element
+                            )"""
+                        ).format(
+                            base_array=(
+                                get_array_with_type(joined_list, model.get(field)) + sql.SQL(") AS list_element")
+                                if model.get(field)
+                                else sql.Identifier(table_name) + sql.SQL(".") + sql.Identifier(field) + sql.SQL(") AS list_element FROM ") + sql.Identifier(table_name)
+                            ),
+                            values_add=get_array_with_type(joined_list, add_dict.get(field, [])),
+                            values_remove=get_array_with_type(joined_list, remove_dict.get(field, [])),
+                        )
+                    )
 
                 statement = sql.SQL(
                     """
@@ -165,44 +189,15 @@ class DatabaseWriter:
                     """
                 ).format(
                     table_name=sql.Identifier(table_name),
-                    columns=sql.SQL(", ").join(map(sql.Identifier, model)),
-                    values=sql.SQL(", ").join(value for value in model.values()),
+                    columns=sql.SQL(", ").join(map(sql.Identifier, all_field_names_dict)),
+                    values=sql.SQL(", ").join(values),
                 )
                 statement += sql.SQL(", ").join(
                     sql.SQL("""{field} = EXCLUDED.{field}""").format(
                         field=sql.Identifier(field)
                     )
-                    for field in model
+                    for field in all_field_names_dict
                 )
-
-                if joined_dict := add_dict | remove_dict:
-                    statement += sql.SQL(", ")
-                    statement += sql.SQL(", ").join(
-                        sql.SQL(
-                            """
-                            {field} = ARRAY(
-                                SELECT DISTINCT elem FROM (
-                                    SELECT unnest({table_name}.{field}) AS elem
-                                    EXCEPT
-                                    SELECT unnest({values_remove}{array_type_remove})
-                                    UNION
-                                    SELECT unnest({values_add}{array_type_add})
-                                ) AS result
-                            )"""
-                        ).format(
-                            field=sql.Identifier(field),
-                            table_name=sql.Identifier(table_name),
-                            array_type_add=sql.SQL(
-                                get_array_type(joined_list, add_dict.get(field, []))
-                            ),
-                            array_type_remove=sql.SQL(
-                                get_array_type(joined_list, remove_dict.get(field, []))
-                            ),
-                            values_add=sql.Literal(add_dict.get(field, [])),
-                            values_remove=sql.Literal(remove_dict.get(field, [])),
-                        )
-                        for field, joined_list in joined_dict.items()
-                    )
 
                 statement += sql.SQL(
                     """
@@ -247,7 +242,7 @@ class DatabaseWriter:
         self,
         events: list[Event],
         user_id: int | None,  # TODO is None okay?
-        models: dict[str, dict[Id, Model]],
+        models: dict[Collection, dict[Id, Model]],
     ) -> dict[FullQualifiedId, dict[Field, JSON]]:
         if not events:
             raise BadCodingException("Events are needed.")
@@ -264,12 +259,12 @@ class DatabaseWriter:
         # not much since this should be more streamlined/ updateEvent?
         # db_events = self.event_translator.translate(event, models)
         no_id = 0
-
         ids_to_delete = defaultdict(set)
         for event in events:
             if fqid := event.get("fqid"):
                 collection, id_ = collection_and_id_from_fqid(fqid)
 
+                # fqid and event_payload.id must match
                 if (
                     event["type"] != EventType.Delete
                     and (fields := event.get("fields"))
@@ -279,6 +274,8 @@ class DatabaseWriter:
                     raise BadCodingException(
                         f"Fqid '{fqid}' and id '{event_id}' are mismatching."
                     )
+
+                # id must exist(Update, Delete) or not(Create) in models
                 if event["type"] == EventType.Create:
                     if id_ in models.get(collection, {}):
                         raise ModelExists(fqid)
@@ -288,14 +285,11 @@ class DatabaseWriter:
                             fqid_from_collection_and_id(collection, id_)
                         )
 
+                # build models_to_write from event data
                 if event["type"] == EventType.Delete:
                     ids_to_delete[collection].add(id_)
                     del models[collection][id_]
                     continue
-                    # max_id_per_collection[collection] = max(
-                    #     max_id_per_collection.get(collection, 0), id_ + 1
-                    # )
-                # self.apply_event_to_models(db_event, models)
                 if fields:
                     if event["type"] == EventType.Update and "id" not in fields:
                         fields["id"] = id_

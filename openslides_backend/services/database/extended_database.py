@@ -12,7 +12,7 @@ from openslides_backend.shared.interfaces.collection_field_lock import (
 )
 from openslides_backend.shared.typing import LockResult, PartialModel
 
-from ...shared.exceptions import (
+from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
     InvalidFormat,
@@ -352,9 +352,9 @@ class ExtendedDatabase(Database):
         # This is needed for updating required fields with old data and updating list fields
         # TODO use database function? Query only required fields?
         ids_per_collection: dict[Collection, set[Id]] = defaultdict(set)
+        delete_models = []
         for write_request in write_requests:
-            events = write_request.events
-            for event in events:
+            for event in write_request.events:
                 if fqid := event.get("fqid"):
                     if len(fqid) > FQID_MAX_LEN:
                         raise InvalidFormat(
@@ -368,13 +368,16 @@ class ExtendedDatabase(Database):
                     raise InvalidFormat(
                         "Request must contain either fqid or collection."
                     )
-                if event["type"] == EventType.Update and not (
-                    event.get("fields") or (event.get("list_fields"))
-                ):
-                    raise InvalidFormat("No fields given.")
+                if event["type"] == EventType.Delete:
+                    delete_models.append(event["fqid"])
+                if event["type"] == EventType.Update:
+                    if not (event.get("fields") or (event.get("list_fields"))):
+                        raise InvalidFormat("No fields given.")
+                    if event["fqid"] in delete_models:
+                        raise ModelDoesNotExist(event['fqid'])
                 if list_fields := event.get("list_fields", dict()):
-                    for add_or_remove in list_fields.values():
-                        for field_name in add_or_remove:
+                    for add_or_remove_dict in list_fields.values():
+                        for field_name in add_or_remove_dict:
                             field: Field = model_registry[collection]().get_field(
                                 field_name
                             )

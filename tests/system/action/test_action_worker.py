@@ -54,7 +54,7 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_not_exists("action_worker/1")
 
     def test_action_worker_ready_before_timeout_exception(self) -> None:
-        """action thread used, but ended in time with exeception"""
+        """action thread used, but ended in time with exception"""
         response = self.request(
             "motion.create",
             {
