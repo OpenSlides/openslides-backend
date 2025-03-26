@@ -1,3 +1,7 @@
+from math import floor
+from time import time
+
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -100,3 +104,113 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 2})
         self.assert_status_code(response, 400)
         self.assertIn("Model 'meeting/2' does not exist.", response.json["message"])
+
+    def test_archive_meeting_with_inactive_speakers(self) -> None:
+        now = floor(time())
+        self.set_models(
+            {
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "speaker_ids": [1, 2],
+                },
+                "speaker/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "begin_time": now - 200,
+                    "end_time": now - 100,
+                },
+                "speaker/2": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_archive_meeting_with_inactive_polls(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                },
+                "poll/2": {
+                    "state": Poll.STATE_FINISHED,
+                    "meeting_id": 1,
+                },
+                "poll/3": {
+                    "state": Poll.STATE_PUBLISHED,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_archive_meeting_with_active_speaker(self) -> None:
+        self.set_models(
+            {
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "speaker_ids": [1],
+                },
+                "speaker/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "begin_time": floor(time()) - 100,
+                },
+            }
+        )
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "Cannot archieve meeting with active speaker."
+        )
+
+    def test_archive_meeting_with_active_poll(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {
+                    "title": "Poll 1",
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot archieve meeting with active polls (Poll 1)."
+        )
+
+    def test_archive_meeting_with_active_speaker_and_polls(self) -> None:
+        self.set_models(
+            {
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                },
+                "speaker/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "begin_time": floor(time()) - 100,
+                },
+                "poll/1": {
+                    "title": "Poll 1",
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                },
+                "poll/2": {
+                    "title": "Poll 2",
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot archieve meeting with active speaker and polls (Poll 1, Poll 2)."
+        )
