@@ -125,10 +125,10 @@ Group G:
 
 The request user needs the OML `superadmin`.
 
-Group I:
-
-CML `can_manage` for the new `home_committee_id` if there is one and CML `can_manage` for the old `home_committee_id` if there is one.
-
 Group H:
 
 Group H fields are only allowed in internal requests
+
+Group I:
+
+CML `can_manage` for the new `home_committee_id` if there is one and CML `can_manage` for the old `home_committee_id` if there is one.

@@ -3986,3 +3986,667 @@ class UserUpdateActionTest(BaseActionTestCase):
             "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {3, 60}",
             response.json["message"],
         )
+
+
+class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
+    committeePerms: set[int] = set()
+    meetingPerms: set[int] = set()
+    ownOml: OrganizationManagementLevel | None = None
+    userOml: OrganizationManagementLevel | None = None
+    lock_meeting_1: bool = False
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.lowerOml = self.userOml and (not self.ownOml or self.ownOml < self.userOml)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_user(
+            "Bob", organization_management_level=self.userOml, home_committee_id=60
+        )
+        self.set_organization_management_level(self.ownOml)
+        if self.committeePerms:
+            self.set_committee_management_level(committee_ids=list(self.committeePerms))
+        if self.meetingPerms:
+            self.set_user_groups(1, [id_ + 1 for id_ in self.meetingPerms])
+        if self.lock_meeting_1:
+            self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+    def update_with_home_committee_group_A(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "username": "BobTheBuilder",
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"username": "BobTheBuilder"})
+
+    def update_with_home_committee_group_B(self) -> None:
+        m_user_ids = self.set_user_groups(2, [1])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "meeting_id": 1,
+                "number": "No.1",
+            },
+        )
+        no_low_level_perms = (
+            1 not in self.meetingPerms and 60 not in self.committeePerms
+        )
+        if self.lock_meeting_1 and 1 not in self.meetingPerms:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif no_low_level_perms and not self.ownOml:
+            # Fails in group C check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif (
+            no_low_level_perms
+            and self.ownOml == OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            # Fails in group B check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: Permission user.can_update in meeting 1",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"meeting_user/{m_user_ids[0]}", {"number": "No.1"}
+            )
+
+    def update_with_home_committee_group_B_other_committee_meeting(self) -> None:
+        m_user_ids = self.set_user_groups(2, [4])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "meeting_id": 4,
+                "number": "No.1",
+            },
+        )
+        no_low_level_perms = (
+            4 not in self.meetingPerms and 63 not in self.committeePerms
+        )
+        if no_low_level_perms and not self.ownOml:
+            # Fails in group C check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
+                response.json["message"],
+            )
+        elif (
+            no_low_level_perms
+            and self.ownOml == OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            # Fails in group B check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: Permission user.can_update in meeting 4",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"meeting_user/{m_user_ids[0]}", {"number": "No.1"}
+            )
+
+    def update_with_home_committee_group_C(self) -> None:
+        self.set_user_groups(2, [1])
+        response = self.request(
+            "user.update",
+            {"id": 2, "meeting_id": 1, "group_ids": [1]},
+        )
+        if self.lock_meeting_1 and 1 not in self.meetingPerms:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif (
+            1 not in self.meetingPerms
+            and 60 not in self.committeePerms
+            and not self.ownOml
+        ):
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            meeting_users = [
+                self.get_model(f"meeting_user/{id_}")
+                for id_ in self.get_model("user/2")["meeting_user_ids"]
+            ]
+            assert (
+                meeting_user := meeting_users[
+                    [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
+                ]
+            )
+            assert meeting_user.get("meeting_id") == 1
+            assert meeting_user.get("group_ids") == [1]
+
+    def update_with_home_committee_group_D(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "committee_management_ids": [60],
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"committee_management_ids": [60]})
+
+    def update_with_home_committee_group_D_other_committee(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "committee_management_ids": [63],
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 63 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 63",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"committee_management_ids": [63]})
+
+    def update_with_home_committee_group_E(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "Your organization management level is not high enough to set a Level of can_manage_users",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                "user/2",
+                {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+            )
+
+    def update_with_home_committee_group_F(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "default_password": "defP",
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"default_password": "defP"})
+
+    def update_with_home_committee_group_G(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "is_demo_user": True,
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif not self.ownOml or self.ownOml < OrganizationManagementLevel.SUPERADMIN:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing OrganizationManagementLevel: superadmin",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"is_demo_user": True})
+
+
+class UserUpdateHomeCommitteePermissionTestNoPermissions(
+    UserUpdateHomeCommitteePermissionTest
+):
+    def test_update_with_home_committee_group_A_no_perm(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_no_perm(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_no_perm(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_no_perm(self) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteePermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+
+    def test_update_with_home_committee_group_A_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_F_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteePermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+
+    def test_update_with_home_committee_group_A_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_E_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsForeignCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {63}
+
+    def test_update_with_home_committee_group_A_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_F_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteePermissionTestAsUserAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+    )
+
+    def test_update_with_home_committee_group_A_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_E_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsOrgaAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+
+    def test_update_with_home_committee_group_C_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_other_committee_as_orga_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_E_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsSuperadmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = OrganizationManagementLevel.SUPERADMIN
+
+    def test_update_with_home_committee_group_E_as_superadmin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_superadmin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_superadmin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsLowerOml(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+    userOml: OrganizationManagementLevel | None = OrganizationManagementLevel.SUPERADMIN
+
+    def test_update_with_home_committee_group_A_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_C_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_E_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_user_groups(2, [4])
+
+    def test_update_with_home_committee_old_orga_scope_group_B_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_other_committee_meeting_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_old_orga_scope_group_C_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_old_orga_scope_group_F_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_user_groups(2, [4])
+
+    def test_update_with_home_committee_old_orga_scope_group_A_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_other_committee_meeting_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_old_orga_scope_group_C_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_old_orga_scope_group_D_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_old_orga_scope_group_D_other_committee_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_old_orga_scope_group_F_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsUserManager(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+    )
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsOrgaAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_orga_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_orga_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()

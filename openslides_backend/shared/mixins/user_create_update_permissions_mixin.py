@@ -344,7 +344,14 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             or locked_from_inside
         ) and fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
-            if diff := meeting_ids - self.permstore.user_meetings:
+            if diff := meeting_ids - (
+                self.permstore.user_meetings
+                if locked_from_inside
+                else {
+                    *self.permstore.user_meetings,
+                    *self.permstore.user_committees_meetings,
+                }
+            ):
                 raise MissingPermission(
                     {self.permission: meeting_id for meeting_id in diff}
                 )

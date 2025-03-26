@@ -16,26 +16,25 @@ def has_perm(
 ) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        ["anonymous_group_id", "enable_anonymous", "locked_from_inside"],
+        [
+            "anonymous_group_id",
+            "enable_anonymous",
+            "locked_from_inside",
+            "committee_id",
+        ],
         lock_result=False,
     )
     not_locked_from_editing = not meeting.get("locked_from_inside")
     # anonymous cannot be fetched from db
     if user_id > 0:
-        # superadmins have all permissions if the meeting isn't locked from the inside
-        if not_locked_from_editing:
-            user = datastore.get(
-                fqid_from_collection_and_id("user", user_id),
-                [
-                    "organization_management_level",
-                ],
-                lock_result=False,
-            )
-            if user.get("organization_management_level") in [
-                OrganizationManagementLevel.SUPERADMIN,
-                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            ]:
-                return True
+        # committeeadmins, orgaadmins and superadmins have all permissions if the meeting isn't locked from the inside
+        if not_locked_from_editing and has_committee_management_level(
+            datastore,
+            user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            meeting["committee_id"],
+        ):
+            return True
 
         meeting_user = get_meeting_user(
             datastore, meeting_id, user_id, ["group_ids", "locked_out"]
