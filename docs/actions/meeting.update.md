@@ -83,6 +83,8 @@
     motions_default_line_numbering: string;
     motions_line_length: number;
     motions_reason_required: boolean;
+    motions_origin_motion_toggle_default: boolean;
+    motions_enable_origin_motion_display: boolean;
     motions_enable_text_on_projector: boolean;
     motions_enable_reason_on_projector: boolean;
     motions_enable_sidebox_on_projector: boolean;

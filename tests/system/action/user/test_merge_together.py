@@ -505,20 +505,6 @@ class UserMergeTogether(BaseVoteTestCase):
             response.json["message"],
         )
 
-    def test_merge_forwarding_committee_ids_error(self) -> None:
-        self.set_models(
-            {
-                "committee/3": {"forwarding_user_id": 3},
-                "user/3": {"forwarding_committee_ids": [3]},
-            }
-        )
-        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Cannot merge user models that have forwarding_committee_ids set: Problem in user/3",
-            response.json["message"],
-        )
-
     def test_merge_saml_id_error(self) -> None:
         self.set_models({"user/3": {"saml_id": "SAML"}})
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})

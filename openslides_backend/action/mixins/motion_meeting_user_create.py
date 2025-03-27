@@ -18,7 +18,7 @@ from ..util.default_schema import DefaultSchema
 
 
 def build_motion_meeting_user_create_action(
-    ModelClass: type[Model],
+    ModelClass: type[Model], ignore_meeting_if_internal: bool = False
 ) -> type[CreateAction]:
     class BaseMotionMeetingUserCreateAction(
         WeightMixin, CreateActionWithInferredMeetingMixin, CreateAction
@@ -45,7 +45,9 @@ def build_motion_meeting_user_create_action(
                 ),
                 ["user_id"],
             )
-            if not has_organization_management_level(
+            if not (
+                ignore_meeting_if_internal and self.internal
+            ) and not has_organization_management_level(
                 self.datastore,
                 meeting_user["user_id"],
                 OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
