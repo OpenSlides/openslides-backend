@@ -1,13 +1,14 @@
 import threading
-from collections import defaultdict
 
 from psycopg import Connection, sql
 from psycopg.errors import (
     CheckViolation,
     GeneratedAlways,
     NotNullViolation,
+    SyntaxError,
     UndefinedColumn,
     UndefinedTable,
+    UniqueViolation,
 )
 
 from openslides_backend.services.database.interface import (
@@ -26,7 +27,6 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import (
     Collection,
-    Field,
     FullQualifiedId,
     Id,
     collection_and_id_from_fqid,
@@ -61,12 +61,12 @@ class DatabaseWriter:
     def write(
         self,
         write_requests: list[WriteRequest],
-        models: dict[Collection, dict[Id, Model]],
         # log_all_modified_fields: bool = True,
-    ) -> list[Id]:
+    ) -> list[FullQualifiedId]:
         #       with make_span("write request"):
         self.write_requests = write_requests
 
+        modified_models = set()
         with self._lock:
             for write_request in self.write_requests:
                 #         modified_models = self.write_with_database_context(
@@ -89,16 +89,12 @@ class DatabaseWriter:
                     # Check locked_fields -> Possible LockedError
                     # self.occ_locker.assert_locked_fields(write_request)
 
-                    # Insert db events
-                    # information = (
-                    #     write_request.information if write_request.information else None
-                    # )
-                    modified_models = self.write_events(
-                        write_request.events,
-                        # migration_index,
-                        # information,
-                        write_request.user_id,
-                        models,
+                    modified_models.update(
+                        self.write_events(
+                            write_request.events,
+                            write_request.user_id,
+                            # models,
+                        )
                     )
 
                     # return modified_fqfields
@@ -106,7 +102,7 @@ class DatabaseWriter:
         self.print_stats()
         self.print_summary()
         # TODO if returning the id is all then this can be done at the bottom of call stack without generating fqids.
-        return [model["id"] for model in modified_models.values()]  # type: ignore
+        return list(modified_models)  # type: ignore
 
     def print_stats(self) -> None:
         pass
@@ -132,134 +128,15 @@ class DatabaseWriter:
     def get_request_name(self, event: WriteRequest) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
-    def write_model_updates(
-        self, models_per_collection: dict[Collection, dict[int, Model]]
-    ) -> dict[FullQualifiedId, dict[Field, JSON]]:
-        result = dict()
-
-        def get_array_with_type(
-            determining_list: list[int] | list[str],
-            affected_list: list[int] | list[str],
-        ) -> sql.Composable:
-            if all(isinstance(element, int) for element in determining_list):
-                if affected_list:
-                    return sql.Literal(affected_list)
-                else:
-                    return sql.Literal(affected_list) + sql.SQL("::int2[]")
-            elif all(isinstance(element, str) for element in determining_list):
-                return sql.Literal(affected_list) + sql.SQL("::text[]")
-            else:
-                raise ValueError("Only pure integer or string lists are supported.")
-
-        for collection, models in models_per_collection.items():
-            for model in models.values():
-                table_name = collection + "_t"
-                add_dict = model.pop("add", dict())
-                remove_dict = model.pop("remove", dict())
-                joined_dict = add_dict | remove_dict
-                all_field_names_dict = [*[k for k in model if k not in joined_dict], *joined_dict]
-                values = [v for k, v in model.items() if k not in joined_dict]
-                for field, joined_list in joined_dict.items():
-                    values.append(
-                        sql.SQL(
-                            """ARRAY(
-                                SELECT unnest({base_array}
-                                EXCEPT
-                                SELECT unnest({values_remove})
-                                UNION
-                                SELECT unnest({values_add})
-                                ORDER BY list_element
-                            )"""
-                        ).format(
-                            base_array=(
-                                get_array_with_type(joined_list, model.get(field)) + sql.SQL(") AS list_element")
-                                if model.get(field)
-                                else sql.Identifier(table_name) + sql.SQL(".") + sql.Identifier(field) + sql.SQL(") AS list_element FROM ") + sql.Identifier(table_name)
-                            ),
-                            values_add=get_array_with_type(joined_list, add_dict.get(field, [])),
-                            values_remove=get_array_with_type(joined_list, remove_dict.get(field, [])),
-                        )
-                    )
-
-                statement = sql.SQL(
-                    """
-                    INSERT INTO {table_name} ({columns})
-                    VALUES ({values})
-                    ON CONFLICT (id) DO UPDATE SET
-                    """
-                ).format(
-                    table_name=sql.Identifier(table_name),
-                    columns=sql.SQL(", ").join(map(sql.Identifier, all_field_names_dict)),
-                    values=sql.SQL(", ").join(values),
-                )
-                statement += sql.SQL(", ").join(
-                    sql.SQL("""{field} = EXCLUDED.{field}""").format(
-                        field=sql.Identifier(field)
-                    )
-                    for field in all_field_names_dict
-                )
-
-                statement += sql.SQL(
-                    """
-                    RETURNING id;"""
-                )
-
-                try:
-                    with self.connection.cursor() as curs:
-                        # print(statement.as_string(curs), flush=True)
-                        curs.execute(statement)
-                        id_ = curs.fetchone().get("id")  # type:ignore
-                except NotNullViolation as e:
-                    raise BadCodingException(f"Missing fields. Ooops! {e}")
-                except GeneratedAlways as e:
-                    raise BadCodingException(
-                        f"Used a field that must only be generated by the database: {e}"
-                    )
-                except UndefinedColumn as e:
-                    column = e.args[0].split('"')[1]
-                    raise InvalidFormat(
-                        f"Field '{column}' does not exist in collection '{collection}': {e}"
-                    )
-                except UndefinedTable as e:
-                    raise InvalidFormat(
-                        f"Collection '{collection}' does not exist in the database: {e}"
-                    )
-                except CheckViolation as e:
-                    raise e
-                except Exception as e:
-                    raise e
-                    raise ModelLocked(
-                        f"Model ... is locked on fields .... {e}\
-                        This is not the end. There will be more next episode. To be continued."
-                    )
-
-                if "id" not in model:
-                    model["id"] = id_
-                result[fqid_from_collection_and_id(collection, id_)] = model
-        return result
-
     def write_events(
         self,
         events: list[Event],
         user_id: int | None,  # TODO is None okay?
-        models: dict[Collection, dict[Id, Model]],
-    ) -> dict[FullQualifiedId, dict[Field, JSON]]:
+    ) -> list[FullQualifiedId]:
         if not events:
             raise BadCodingException("Events are needed.")
 
-        # TODO isn't the max id handled by the database?
-        # save max id per collection to update the id_sequences if needed
-        # max_id_per_collection: dict[Collection, int] = {}
-
-        # moved to extended database
-        # models = self.get_models_from_database(events)
-
-        # the event translator also handles the validation of the event preconditions
-        # TODO decide on basis of type how to validate and what else to do probably
-        # not much since this should be more streamlined/ updateEvent?
-        # db_events = self.event_translator.translate(event, models)
-        no_id = 0
-        ids_to_delete = defaultdict(set)
+        models_created_or_updated = set()
         for event in events:
             if fqid := event.get("fqid"):
                 collection, id_ = collection_and_id_from_fqid(fqid)
@@ -274,55 +151,188 @@ class DatabaseWriter:
                     raise BadCodingException(
                         f"Fqid '{fqid}' and id '{event_id}' are mismatching."
                     )
-
-                # id must exist(Update, Delete) or not(Create) in models
-                if event["type"] == EventType.Create:
-                    if id_ in models.get(collection, {}):
-                        raise ModelExists(fqid)
-                else:
-                    if id_ not in models.get(collection, {}):
-                        raise ModelDoesNotExist(
-                            fqid_from_collection_and_id(collection, id_)
-                        )
-
-                # build models_to_write from event data
-                if event["type"] == EventType.Delete:
-                    ids_to_delete[collection].add(id_)
-                    del models[collection][id_]
-                    continue
-                if fields:
-                    if event["type"] == EventType.Update and "id" not in fields:
-                        fields["id"] = id_
-                    if id_ in models[collection]:
-                        models[collection][id_].update(fields)
-                    else:
-                        models[collection][id_] = fields
-                if (list_fields := event["list_fields"]) and event[
-                    "type"
-                ] == EventType.Update:
-                    if "add" in models[collection][id_]:
-                        models[collection][id_]["add"].update(list_fields["add"])
-                    else:
-                        models[collection][id_]["add"] = list_fields.get("add", dict())
-                    if "remove" in models[collection][id_]:
-                        models[collection][id_]["remove"].update(list_fields["remove"])
-                    else:
-                        models[collection][id_]["remove"] = list_fields.get(
-                            "remove", dict()
-                        )
             else:
-                if (collection := event["collection"]) in models:
-                    models[collection][no_id] = event["fields"]
-                else:
-                    models[collection] = {no_id: event["fields"]}
-                no_id -= 1
-        self.write_model_deletes(ids_to_delete)
-        if models:
-            return self.write_model_updates(models)
-        else:
-            return dict()
+                collection = event["collection"]
 
-        # return models # TODO transform to fqid
+            if event["type"] == EventType.Create:
+                models_created_or_updated.add(self.insert_model(event, collection))
+            if event["type"] == EventType.Update:
+                models_created_or_updated.add(self.update_model(event, collection))
+            if event["type"] == EventType.Delete:
+                models_created_or_updated.discard(self.delete_model(event))
+
+        return list(models_created_or_updated)
+
+    def insert_model(self, event: Event, collection: Collection) -> FullQualifiedId:
+        fields = event["fields"]
+        statement = sql.SQL(
+            """
+            INSERT INTO {table_name} ({columns})
+            VALUES ({values})
+            """
+        ).format(
+            table_name=sql.Identifier(f"{collection}_t"),
+            columns=sql.SQL(", ").join(map(sql.Identifier, fields)),
+            values=sql.SQL(", ").join(fields.values()),
+        )
+        return self.execute_sql(statement, collection, fields.get("id"))
+
+    def delete_model(self, event: Event) -> FullQualifiedId:
+        collection, id_ = collection_and_id_from_fqid(event["fqid"])
+        statement = sql.SQL(
+            """
+            DELETE FROM {table_name} WHERE id = {id}
+            """
+        ).format(id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t"))
+        return self.execute_sql(statement, collection, id_)
+
+    def update_model(self, event: Event, collection: Collection) -> FullQualifiedId:
+        table_name = f"{collection}_t"
+        statement = sql.SQL(
+            """
+            UPDATE {table_name} SET
+            """
+        ).format(
+            table_name=sql.Identifier(table_name),
+        )
+
+        set_dict = event["fields"]  # id always exists for updates
+        if list_fields := event.get("list_fields"):
+            add_dict = list_fields.get("add", dict())
+            remove_dict = list_fields.get("remove", dict())
+            joined_type_dict = {
+                field_name: type(value_list[0])
+                for dictionary in [add_dict, remove_dict]
+                for field_name, value_list in dictionary.items()
+                if value_list
+            }
+        else:
+            joined_type_dict = dict()
+
+        statement += sql.SQL(", ").join(
+            sql.SQL("""{field} = {value}""").format(
+                field=sql.Identifier(field_name),
+                value=sql.Literal(value),
+            )
+            for field_name, value in set_dict.items()
+            if field_name not in joined_type_dict
+        )
+
+        values = {
+            field_name: sql.SQL(
+                """ARRAY(
+                SELECT unnest({base_array}
+                EXCEPT
+                SELECT unnest({values_remove})
+                UNION
+                SELECT unnest({values_add})
+                ORDER BY list_element
+            )"""
+            ).format(
+                base_array=(
+                    self.get_array_with_type(list_type, set_dict[field_name])
+                    + sql.SQL(") AS list_element")
+                    if set_dict.get(field_name)
+                    else sql.Identifier(table_name)
+                    + sql.SQL(".")
+                    + sql.Identifier(field_name)
+                    + sql.SQL(") AS list_element FROM ")
+                    + sql.Identifier(table_name)
+                ),
+                values_add=self.get_array_with_type(
+                    list_type, add_dict.get(field_name, [])
+                ),
+                values_remove=self.get_array_with_type(
+                    list_type, remove_dict.get(field_name, [])
+                ),
+            )
+            for field_name, list_type in joined_type_dict.items()
+        }
+
+        if values and any(k for k in set_dict if k not in joined_type_dict):
+            statement += sql.SQL(", ")
+        statement += sql.SQL(", ").join(
+            sql.SQL(
+                """
+            {field} = {values}"""
+            ).format(
+                field=sql.Identifier(field),
+                values=value,
+            )
+            for field, value in values.items()
+        )
+        statement += sql.SQL(
+            """
+            WHERE id = {id}
+            """
+        ).format(id=set_dict["id"])
+        return self.execute_sql(statement, collection, set_dict["id"])
+
+    def execute_sql(
+        self, statement: sql.Composable, collection: Collection, target_id: Id | None
+    ) -> FullQualifiedId:
+        statement += sql.SQL("""RETURNING id;""")
+
+        try:
+            with self.connection.cursor() as curs:
+                # print(statement.as_string(curs), flush=True)
+                curs.execute(statement)
+                if curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
+                    assert target_id  # we will never reach here with delete or update events being None on id
+                    raise ModelDoesNotExist(
+                        fqid_from_collection_and_id(collection, target_id)
+                    )
+                id_ = curs.fetchone().get("id")  # type: ignore
+        except UniqueViolation as e:
+            if "duplicate key value violates unique constraint" in e.args[0]:
+                raise ModelExists(
+                    fqid_from_collection_and_id(collection, target_id or id_)
+                )
+        except NotNullViolation as e:
+            raise BadCodingException(f"Missing fields. Ooops! {e}")
+        except GeneratedAlways as e:
+            raise BadCodingException(
+                f"Used a field that must only be generated by the database: {e}"
+            )
+        except UndefinedColumn as e:
+            column = e.args[0].split('"')[1]
+            raise InvalidFormat(
+                f"Field '{column}' does not exist in collection '{collection}': {e}"
+            )
+        except UndefinedTable as e:
+            raise InvalidFormat(
+                f"Collection '{collection}' does not exist in the database: {e}"
+            )
+        except CheckViolation as e:
+            raise e
+        except SyntaxError as e:
+            if 'syntax error at or near "WHERE"' in e.args[0]:
+                raise ModelDoesNotExist(fqid_from_collection_and_id(collection, id_))
+            else:
+                raise e
+        except Exception as e:
+            raise e
+            raise ModelLocked(
+                f"Model ... is locked on fields .... {e}\
+                This is not the end. There will be more next episode. To be continued."
+            )
+
+        return fqid_from_collection_and_id(collection, id_)
+
+    def get_array_with_type(
+        self,
+        list_type: type,
+        affected_list: list[int] | list[str],
+    ) -> sql.Composable:
+        if list_type == int:
+            if affected_list:
+                return sql.Literal(affected_list)
+            else:
+                return sql.Literal(affected_list) + sql.SQL("::int2[]")
+        elif list_type == str:
+            return sql.Literal(affected_list) + sql.SQL("::text[]")
+        else:
+            raise ValueError("Only integer or string lists are supported.")
 
     def get_models_from_database(
         self, events: list[Event]

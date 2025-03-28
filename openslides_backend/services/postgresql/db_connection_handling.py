@@ -19,6 +19,7 @@ class ConnectionContext:
     def __enter__(self) -> Connection:
         self.connection = self.connection_context.__enter__()
         self.connection.autocommit = False
+        self.connection.set_isolation_level(IsolationLevel.REPEATABLE_READ)
         return self.connection
 
     def __exit__(self, exception, exception_value, traceback) -> None:  # type:ignore

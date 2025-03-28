@@ -79,7 +79,7 @@ def handle_action_in_worker_thread(
         raise ActionException(msg)
 
     with get_new_os_conn() as conn:
-        extended_db = ExtendedDatabase(conn, self.logger, env)
+        extended_db = ExtendedDatabase(conn, handler.logging, env)
         message = action_worker_writing.initial_action_worker_write(extended_db)
     return ActionsResponse(
         status_code=HTTPStatus.ACCEPTED.value,
@@ -138,9 +138,7 @@ class ActionWorkerWriting:
                     locked_fields={},
                 )
             )
-            extended_db.get(
-                self.fqid, [], lock_result=False, use_changed_models=False
-            )
+            extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
             message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
             self.written = True
         except DatastoreException as e:
@@ -169,7 +167,9 @@ class ActionWorkerWriting:
             f"running action_worker '{self.fqid} {self.action_names}': {current_time}"
         )
 
-    def final_action_worker_write(self, extended_db: ExtendedDatabase, action_worker_thread: "ActionWorker") -> None:
+    def final_action_worker_write(
+        self, extended_db: ExtendedDatabase, action_worker_thread: "ActionWorker"
+    ) -> None:
         current_time = round(time())
         state = ActionWorkerState.END
         if hasattr(action_worker_thread, "exception"):
@@ -280,13 +280,15 @@ def gunicorn_post_request(
                 worker.tmp.notify()
                 if action_worker_writing.written:
                     if lock.acquire(timeout=10):
-                        action_worker_writing.final_action_worker_write(extended_db, action_worker)
+                        action_worker_writing.final_action_worker_write(
+                            extended_db, action_worker
+                        )
                         lock.release()
                         break
                     else:
                         action_worker_writing.continue_action_worker_write(extended_db)
                 else:
-                    action_worker_writing.initial_action_worker_write()
+                    action_worker_writing.initial_action_worker_write(extended_db)
                 conn.commit()
     except Exception as e:
         logger = logging.getLogger(__name__)

@@ -81,7 +81,6 @@ def get_group_base_data() -> list[dict[str, Any]]:
     ]
 
 
-# TODO Test list add and remove at the same time also with setting as normal field
 def test_update() -> None:
     data = get_data()
     id_ = create_model(data)[0]
@@ -97,6 +96,30 @@ def test_update() -> None:
         extended_database.write(create_write_requests(data))
     field_data["id"] = id_
     assert_model(f"user/{id_}", field_data)
+
+
+def test_update_twice() -> None:
+    data = get_data()
+    create_model(data)
+    data[0]["events"] = [
+        {
+            "type": EventType.Update,
+            "fqid": "user/1",
+            "fields": {"username": "None", "first_name": None},
+        },
+        {
+            "type": EventType.Update,
+            "fqid": "user/1",
+            "fields": {"username": "Some", "last_name": "1"},
+        },
+    ]
+
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(
+        "user/1", {"id": 1, "username": "Some", "first_name": None, "last_name": "1"}
+    )
 
 
 def test_single_field_delete_on_null() -> None:
@@ -142,19 +165,6 @@ def test_update_non_existing_2(db_connection: Connection) -> None:
             extended_database.write(create_write_requests(data))
     assert e_info.value.fqid == "user/1"
     assert_no_db_entry(db_connection.cursor())
-
-
-# def test_update_meta_field() -> None:
-#     data = get_data()
-#     data[0]["events"][0] = {
-#         "type": EventType.Update,
-#         "fqid": f"user/{id_}",
-#         "fields": {"meta_something": "test"},
-#     }
-#     response = json_client.post(WRITE_URL, data)
-#     assert_error_response(response, ERROR_CODES.INVALID_FORMAT)
-#     assert_no_db_entry(db_cur)
-#     assert_no_modified_fields(redis_connection)
 
 
 def test_list_update_add_empty_1() -> None:
@@ -406,6 +416,22 @@ def test_list_update_add_remove_same_field() -> None:
     data[0]["events"][0] = {
         "type": EventType.Update,
         "fqid": f"user/{id_}",
+        "list_fields": {"add": {"meeting_ids": [2]}, "remove": {"meeting_ids": [1]}},
+    }
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [2]})
+
+
+def test_list_update_add_remove_same_field_2() -> None:
+    data = get_data()
+    id_ = create_model(data)[0]
+
+    data[0]["events"][0] = {
+        "type": EventType.Update,
+        "fqid": f"user/{id_}",
+        "fields": {"meeting_ids": [1]},
         "list_fields": {"add": {"meeting_ids": [2]}, "remove": {"meeting_ids": [1]}},
     }
     with get_new_os_conn() as conn:

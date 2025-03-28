@@ -5,19 +5,19 @@ from typing import Any
 from psycopg import Connection
 
 from openslides_backend.models.base import model_registry
-from openslides_backend.models.fields import ArrayField, Field, OrganizationField
+from openslides_backend.models.fields import ArrayField, Field
 from openslides_backend.services.database.interface import FQID_MAX_LEN
-from openslides_backend.shared.interfaces.collection_field_lock import (
-    CollectionFieldLock,
-)
-from openslides_backend.shared.typing import LockResult, PartialModel
-
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
     InvalidFormat,
     ModelDoesNotExist,
 )
+from openslides_backend.shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+)
+from openslides_backend.shared.typing import LockResult, PartialModel
+
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.event import EventType
@@ -338,21 +338,17 @@ class ExtendedDatabase(Database):
             f"Collection: {collection}, Amount: {amount}"
         )
         return self.database_writer.reserve_ids(collection, amount)
-        # response = self.retrieve(command)
-        # return response.get("ids")
 
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> list[Id]:
+    def write(
+        self, write_requests: list[WriteRequest] | WriteRequest
+    ) -> list[FullQualifiedId]:
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]
 
-        # prefetch all needed data to reduce the amount of queries
-        # This is needed for updating required fields with old data and updating list fields
-        # TODO use database function? Query only required fields?
-        ids_per_collection: dict[Collection, set[Id]] = defaultdict(set)
-        delete_models = []
+        # prefetch changed models? TODO
         for write_request in write_requests:
             for event in write_request.events:
                 if fqid := event.get("fqid"):
@@ -361,20 +357,23 @@ class ExtendedDatabase(Database):
                             f"fqid {fqid} is too long (max: {FQID_MAX_LEN})"
                         )
                     collection, id_ = collection_and_id_from_fqid(fqid)
-                    ids_per_collection[collection].add(id_)
-                elif event.get("collection"):
-                    collection = event["collection"]
+                    if event["type"] != EventType.Delete:
+                        if event.get("fields"):
+                            event["fields"]["id"] = id_
+                        else:
+                            event["fields"] = {"id": id_}
+                elif event["type"] == EventType.Create:
+                    if event.get("collection"):
+                        collection = event["collection"]
+                    else:
+                        raise InvalidFormat(
+                            "Event must contain either fqid or collection."
+                        )
                 else:
-                    raise InvalidFormat(
-                        "Request must contain either fqid or collection."
-                    )
-                if event["type"] == EventType.Delete:
-                    delete_models.append(event["fqid"])
+                    raise InvalidFormat("Event must contain fqid.")
                 if event["type"] == EventType.Update:
                     if not (event.get("fields") or (event.get("list_fields"))):
                         raise InvalidFormat("No fields given.")
-                    if event["fqid"] in delete_models:
-                        raise ModelDoesNotExist(event['fqid'])
                 if list_fields := event.get("list_fields", dict()):
                     for add_or_remove_dict in list_fields.values():
                         for field_name in add_or_remove_dict:
@@ -386,44 +385,12 @@ class ExtendedDatabase(Database):
                                     f"'{field_name}' used for 'list_fields' 'remove' or 'add' is no array in database."
                                 )
 
-        models = {
-            collection: self.database_reader.get_many(
-                [
-                    GetManyRequest(
-                        collection,
-                        list(ids),
-                        [
-                            field.own_field_name
-                            for field in model_registry[
-                                collection
-                            ]().get_required_fields()
-                            if not (
-                                field.is_view_field
-                                or isinstance(field, OrganizationField)
-                            )
-                        ],
-                    )
-                ]
-            ).get(collection, dict())
-            for collection, ids in ids_per_collection.items()
-        }
-
-        ids = self.database_writer.write(write_requests, models)
+        fqids = self.database_writer.write(write_requests)
         self.logger.debug(
             f"Start WRITE request to database with the following data: "
             f"Write request: {write_requests}"
         )
-        return ids
-        # command = commands.Write(write_requests=write_requests)
-        # self.retrieve(command)
-
-    def write_without_events(self, write_request: WriteRequest) -> None:
-        self.logger.debug(
-            f"Start WRITE_WITHOUT_EVENTS request to database with the following data: "
-            f"Write request: {write_request}"
-        )
-        # command = commands.WriteWithoutEvents(write_requests=[write_request])
-        # self.retrieve(command)
+        return fqids
 
     def truncate_db(self) -> None: ...
 

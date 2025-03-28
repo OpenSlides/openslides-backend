@@ -22,6 +22,10 @@ class ListFields(TypedDict):
     add: NotRequired[ListFieldsDict]
     remove: NotRequired[ListFieldsDict]
 
+    def __iter__(self) -> ListFieldsDict:
+        yield self.add
+        yield self.remove
+
 
 class Event(TypedDict):
     """

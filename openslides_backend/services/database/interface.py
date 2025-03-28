@@ -6,7 +6,7 @@ from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId, Id
+from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
 
@@ -118,10 +118,9 @@ class Database(Protocol):
     def reserve_id(self, collection: Collection) -> int: ...
 
     @abstractmethod
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> list[Id]: ...
-
-    @abstractmethod
-    def write_without_events(self, write_request: WriteRequest) -> None: ...
+    def write(
+        self, write_requests: list[WriteRequest] | WriteRequest
+    ) -> list[FullQualifiedId]: ...
 
     @abstractmethod
     def truncate_db(self) -> None: ...

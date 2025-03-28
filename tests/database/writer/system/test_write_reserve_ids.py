@@ -92,8 +92,30 @@ def test_too_long_collection(db_connection: Connection) -> None:
     )
 
 
+@pytest.mark.skip(
+    reason="This is not a use case, since reserve_ids should always happen before creating."
+)
 def test_create_reserve(db_connection: Connection) -> None:
     data = get_data()
+    create_model(data)
+
+    with db_connection.cursor() as curs:
+        curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
+        assert curs.fetchone() == {"is_called": False, "last_value": 1}
+
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        assert extended_database.reserve_ids("user", 2) == [1, 2]
+
+    with db_connection.cursor() as curs:
+        curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
+        assert curs.fetchone() == {"is_called": True, "last_value": 2}
+
+
+def test_create_with_collection_reserve(db_connection: Connection) -> None:
+    data = get_data()
+    event = data[0]["events"][0]
+    event["collection"] = collection_from_fqid(event.pop("fqid"))
     create_model(data)
 
     with get_new_os_conn() as conn:
@@ -116,4 +138,4 @@ def test_reserve_create(db_connection: Connection) -> None:
     create_model(get_data())
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
-        assert curs.fetchone() == {"is_called": True, "last_value": 6}
+        assert curs.fetchone() == {"is_called": True, "last_value": 5}

@@ -91,7 +91,7 @@ class DatabaseReader:
                 raise DatabaseException(f"Unexpected error reading from database: {e}")
 
             self.insert_models_into_result(
-                db_result, mapped_fields, collection, result[collection]
+                db_result, mapped_fields, collection, result[collection]  # type: ignore
             )
             # result[collection].update(self.build_models_from_result(db_result, mapped_fields, collection))
         return result
