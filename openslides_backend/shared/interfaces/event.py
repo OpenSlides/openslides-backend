@@ -22,6 +22,10 @@ class ListFields(TypedDict):
     add: NotRequired[ListFieldsDict]
     remove: NotRequired[ListFieldsDict]
 
+    def __iter__(self) -> ListFieldsDict:
+        yield self.add
+        yield self.remove
+
 
 class Event(TypedDict):
     """
@@ -29,6 +33,7 @@ class Event(TypedDict):
     """
 
     type: EventType
-    fqid: FullQualifiedId
     fields: NotRequired[dict[str, Any]]
     list_fields: NotRequired[ListFields]
+    fqid: NotRequired[FullQualifiedId]
+    collection: NotRequired[str]
