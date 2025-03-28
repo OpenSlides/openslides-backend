@@ -17,7 +17,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_fjwnq8d8tje8",
                     "meeting_id": 1,
@@ -46,7 +46,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create_as_new_first_state(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_fjwnq8d8tje8",
                     "meeting_id": 1,
@@ -82,7 +82,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create_as_new_first_state_of_second_workflow(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_42",
                     "meeting_id": 1,
@@ -128,7 +128,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create_enum_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_fjwnq8d8tje8",
                     "meeting_id": 1,
@@ -157,7 +157,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create_auto_weight(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_fjwnq8d8tje8",
                     "meeting_id": 1,
@@ -186,7 +186,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_create_manual_weight(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/42": {
                     "name": "test_name_fjwnq8d8tje8",
                     "meeting_id": 1,

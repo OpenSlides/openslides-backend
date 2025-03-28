@@ -7,11 +7,9 @@ from .base_poll_test import BasePollTestCase
 class PollAnonymize(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                },
                 "poll/1": {
                     "option_ids": [1],
                     "global_option_id": 2,

@@ -9,10 +9,10 @@ from tests.system.action.base import BaseActionTestCase
 class SpeakerUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_enable_pro_contra_speech": True,
-                "is_active_in_organization_id": 1,
                 "meeting_user_ids": [7],
                 "speaker_ids": [890],
             },

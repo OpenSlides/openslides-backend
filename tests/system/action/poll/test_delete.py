@@ -7,11 +7,11 @@ from .poll_test_mixin import PollTestMixin
 
 class PollDeleteTest(PollTestMixin, BasePollTestCase):
     def test_delete_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "poll/111": {"meeting_id": 1, "content_object_id": "motion/1"},
                 "motion/1": {"meeting_id": 1, "poll_ids": [111]},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.delete", {"id": 111})
@@ -20,10 +20,10 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         self.assert_history_information("motion/1", ["Voting deleted"])
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "poll/112": {"meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.delete", {"id": 111})
@@ -31,6 +31,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists("poll/112")
 
     def test_delete_correct_cascading(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"poll_ids": [111], "meeting_id": 1},
@@ -42,7 +43,6 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                 },
                 "option/42": {"poll_id": 111, "meeting_id": 1},
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                     "topic_ids": [1],
                 },
@@ -65,6 +65,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_cascading_poll_candidate_list(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"poll_ids": [111], "meeting_id": 1},
@@ -79,7 +80,6 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                     "content_object_id": "poll_candidate_list/12",
                 },
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "poll_candidate_list_ids": [12],
                     "poll_candidate_ids": [13],
                     "topic_ids": [1],
