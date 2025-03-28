@@ -23,12 +23,10 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema()
 
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        running_processes = []
 
-        messages = []
-
-        active_speaker_exists = self.datastore.exists(
+        active_speakers_exist = self.datastore.exists(
             "speaker",
             And(
                 FilterOperator("meeting_id", "=", instance["id"]),
@@ -37,26 +35,24 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
             ),
             lock_result=False,
         )
-        active_polls = self.datastore.filter(
+        active_polls_exist = self.datastore.exists(
             "poll",
             And(
                 FilterOperator("meeting_id", "=", instance["id"]),
                 FilterOperator("state", "=", "started"),
             ),
-            ["title"],
             lock_result=False,
         )
 
-        if active_speaker_exists:
-            messages.append("speakers")
-        if len(active_polls):
-            messages.append("polls")
-        if len(messages):
+        if active_speakers_exist:
+            running_processes.append("speakers")
+        if active_polls_exist:
+            running_processes.append("polls")
+        if len(running_processes):
             raise ActionException(
-                f"Cannot archieve meeting with active {' and '.join(messages)}."
+                f"Cannot archive meeting with active {' and '.join(running_processes)}."
             )
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["is_active_in_organization_id"] = None
         instance["is_archived_in_organization_id"] = 1
         return instance
