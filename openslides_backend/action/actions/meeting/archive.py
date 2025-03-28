@@ -48,11 +48,9 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
         )
 
         if active_speaker_exists:
-            messages.append("speaker")
+            messages.append("speakers")
         if len(active_polls):
-            messages.append(
-                f"polls ({', '.join([model['title'] for model in active_polls.values()])})"
-            )
+            messages.append("polls")
         if len(messages):
             raise ActionException(
                 f"Cannot archieve meeting with active {' and '.join(messages)}."

@@ -165,14 +165,13 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
         assert (
-            response.json["message"] == "Cannot archieve meeting with active speaker."
+            response.json["message"] == "Cannot archive meeting with active speakers."
         )
 
     def test_archive_meeting_with_active_poll(self) -> None:
         self.set_models(
             {
                 "poll/1": {
-                    "title": "Poll 1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                 },
@@ -180,10 +179,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         )
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "Cannot archieve meeting with active polls (Poll 1)."
-        )
+        assert response.json["message"] == "Cannot archive meeting with active polls."
 
     def test_archive_meeting_with_active_speaker_and_polls(self) -> None:
         self.set_models(
@@ -197,12 +193,10 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "begin_time": floor(time()) - 100,
                 },
                 "poll/1": {
-                    "title": "Poll 1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                 },
                 "poll/2": {
-                    "title": "Poll 2",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                 },
@@ -212,5 +206,5 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "Cannot archieve meeting with active speaker and polls (Poll 1, Poll 2)."
+            == "Cannot archive meeting with active speakers and polls."
         )
