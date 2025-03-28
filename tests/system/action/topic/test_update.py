@@ -13,9 +13,9 @@ class TopicUpdateTest(BaseActionTestCase):
         }
 
     def test_update_simple(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"title": "test", "meeting_id": 1},
             }
         )
@@ -28,9 +28,9 @@ class TopicUpdateTest(BaseActionTestCase):
         self.assertEqual(topic.get("text"), "text")
 
     def test_update_with_attachment(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"title": "test", "meeting_id": 1},
                 "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
@@ -56,9 +56,9 @@ class TopicUpdateTest(BaseActionTestCase):
         )
 
     def test_update_text_with_iframe(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"title": "test", "meeting_id": 1},
             }
         )

@@ -16,10 +16,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
+            "committee/1": {"meeting_ids": [1]},
             "meeting/1": {
                 "name": "name_asdewqasd",
                 "is_active_in_organization_id": 1,
                 "meeting_user_ids": [7],
+                "committee_id": 1,
             },
             "user/7": {
                 "username": "test_username1",
@@ -222,9 +224,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_2_speakers_in_1_action(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "list_of_speakers/23": {"meeting_id": 1},
                 "user/2": {"username": "another user"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 1},
@@ -245,11 +247,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_2_speakers_in_2_actions(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
-                "meeting/7844": {
-                    "is_active_in_organization_id": 1,
-                },
                 "user/7": {"meeting_ids": [7844]},
                 "user/8": {"meeting_ids": [7844]},
                 "user/9": {"meeting_ids": [7844]},
@@ -291,6 +291,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_user_present(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
@@ -358,6 +359,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_standard_speaker_in_only_talker_list(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
@@ -392,6 +394,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
     def test_create_standard_speaker_at_the_end_of_filled_list(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
@@ -467,8 +470,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_not_in_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1, 2]},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "user/7": {"meeting_ids": [1]},
                 "meeting_user/17": {"meeting_id": 1, "user_id": 7},
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
@@ -669,11 +673,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_category_weights_with_ranks(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_asdewqasd",
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_enable_point_of_order_categories": True,
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "point_of_order_category_ids": [2, 3, 5],
@@ -763,11 +766,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("speaker/5", {"weight": 2})
 
     def test_create_category_key_error_problem(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_asdewqasd",
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_enable_point_of_order_categories": True,
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "point_of_order_category_ids": [2, 3, 5],

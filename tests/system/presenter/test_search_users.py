@@ -459,7 +459,8 @@ class TestSearchUsers(BasePresenterTestCase):
     def test_permission_meeting_ok(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+                "committee/1": {"meeting_ids": [1]},
                 "group/1": {
                     "meeting_user_ids": [1],
                     "meeting_id": 1,
@@ -494,6 +495,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+                "committee/1": {"meeting_ids": [1]},
             }
         )
         self.update_model("user/1", {"organization_management_level": None})
@@ -517,6 +519,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+                "committee/1": {"meeting_ids": [1]},
             }
         )
         self.update_model(
@@ -609,6 +612,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+                "committee/1": {"meeting_ids": [1]},
             }
         )
         self.update_model(

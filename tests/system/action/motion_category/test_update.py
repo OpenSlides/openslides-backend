@@ -7,6 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySystemTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion/89": {"meeting_id": 1},
             "motion_category/111": {
@@ -19,10 +20,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_correct_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion/89": {"meeting_id": 222},
                 "motion_category/111": {
                     "name": "name_srtgb123",
@@ -51,7 +48,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_delete_prefix(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
@@ -73,10 +69,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
@@ -94,7 +86,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_non_unique_prefix(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "bla",

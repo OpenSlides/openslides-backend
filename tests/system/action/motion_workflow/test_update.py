@@ -6,7 +6,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/10": {"is_active_in_organization_id": 1},
+                "meeting/10": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 10},
             }
         )
@@ -21,7 +21,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/10": {"is_active_in_organization_id": 1},
+                "meeting/10": {"is_active_in_organization_id": 1, "committee_id": 1},
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 10},
             }
         )
