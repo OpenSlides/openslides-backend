@@ -3742,6 +3742,18 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "jonathan", "guest": True})
 
+    def test_update_with_guest_true_unsets_home_committee(self) -> None:
+        self.create_committee()
+        self.create_user("jonathan", home_committee_id=1)
+        response = self.request(
+            "user.update",
+            {"id": 2, "guest": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "jonathan", "guest": True, "home_committee_id": None}
+        )
+
     def test_update_with_guest_false(self) -> None:
         self.create_user("jack")
         response = self.request(
@@ -3750,6 +3762,18 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "jack", "guest": False})
+
+    def test_update_with_guest_false_doesnt_unset_home_committee(self) -> None:
+        self.create_committee()
+        self.create_user("jack", home_committee_id=1)
+        response = self.request(
+            "user.update",
+            {"id": 2, "guest": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "jack", "guest": False, "home_committee_id": 1}
+        )
 
     def test_update_with_with_home_committee_and_guest_true(self) -> None:
         self.create_committee(3)
@@ -3987,9 +4011,30 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_add_user_to_meeting_and_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_meeting()
+        self.create_user("arthur")
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [2])
+        self.set_committee_management_level([3])
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "meeting_id": 1, "group_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        meeting_user_ids = self.assert_model_exists("user/2", {"home_committee_id": 3})[
+            "meeting_user_ids"
+        ]
+        assert len(meeting_user_ids) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [1]}
+        )
+
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     committeePerms: set[int] = set()
+    baseCommitteePerms: set[int] = set()
     meetingPerms: set[int] = set()
     ownOml: OrganizationManagementLevel | None = None
     userOml: OrganizationManagementLevel | None = None
@@ -3998,14 +4043,18 @@ class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.lowerOml = self.userOml and (not self.ownOml or self.ownOml < self.userOml)
+        if not self.baseCommitteePerms:
+            self.baseCommitteePerms = self.committeePerms
         self.create_meeting()
         self.create_meeting(4)
         self.create_user(
             "Bob", organization_management_level=self.userOml, home_committee_id=60
         )
         self.set_organization_management_level(self.ownOml)
-        if self.committeePerms:
-            self.set_committee_management_level(committee_ids=list(self.committeePerms))
+        if self.baseCommitteePerms:
+            self.set_committee_management_level(
+                committee_ids=list(self.baseCommitteePerms)
+            )
         if self.meetingPerms:
             self.set_user_groups(1, [id_ + 1 for id_ in self.meetingPerms])
         if self.lock_meeting_1:
@@ -4278,14 +4327,6 @@ class UserUpdateHomeCommitteePermissionTestNoPermissions(
     def test_update_with_home_committee_group_B_no_perm(self) -> None:
         self.update_with_home_committee_group_B()
 
-    def test_update_with_home_committee_group_B_other_committee_meeting_no_perm(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_B_other_committee_meeting()
-
-    def test_update_with_home_committee_group_C_no_perm(self) -> None:
-        self.update_with_home_committee_group_C()
-
 
 class UserUpdateHomeCommitteePermissionTestAsMeetingAdmin(
     UserUpdateHomeCommitteePermissionTest
@@ -4305,14 +4346,6 @@ class UserUpdateHomeCommitteePermissionTestAsMeetingAdmin(
 
     def test_update_with_home_committee_group_C_as_meeting_admin(self) -> None:
         self.update_with_home_committee_group_C()
-
-    def test_update_with_home_committee_group_D_as_meeting_admin(self) -> None:
-        self.update_with_home_committee_group_D()
-
-    def test_update_with_home_committee_group_D_other_committee_as_meeting_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_D_other_committee()
 
     def test_update_with_home_committee_group_F_as_meeting_admin(self) -> None:
         self.update_with_home_committee_group_F()
@@ -4431,9 +4464,6 @@ class UserUpdateHomeCommitteePermissionTestAsUserAdmin(
     def test_update_with_home_committee_group_F_as_user_admin(self) -> None:
         self.update_with_home_committee_group_F()
 
-    def test_update_with_home_committee_group_G_as_user_admin(self) -> None:
-        self.update_with_home_committee_group_G()
-
 
 class UserUpdateHomeCommitteePermissionTestAsOrgaAdmin(
     UserUpdateHomeCommitteePermissionTest
@@ -4441,14 +4471,6 @@ class UserUpdateHomeCommitteePermissionTestAsOrgaAdmin(
     ownOml: OrganizationManagementLevel | None = (
         OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     )
-
-    def test_update_with_home_committee_group_C_as_orga_admin(self) -> None:
-        self.update_with_home_committee_group_C()
-
-    def test_update_with_home_committee_group_D_other_committee_as_orga_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_D_other_committee()
 
     def test_update_with_home_committee_group_E_as_orga_admin(self) -> None:
         self.update_with_home_committee_group_E()
@@ -4464,9 +4486,6 @@ class UserUpdateHomeCommitteePermissionTestAsSuperadmin(
     UserUpdateHomeCommitteePermissionTest
 ):
     ownOml: OrganizationManagementLevel | None = OrganizationManagementLevel.SUPERADMIN
-
-    def test_update_with_home_committee_group_E_as_superadmin(self) -> None:
-        self.update_with_home_committee_group_E()
 
     def test_update_with_home_committee_group_F_as_superadmin(self) -> None:
         self.update_with_home_committee_group_F()
@@ -4650,3 +4669,36 @@ class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsOrgaAdmin(
         self,
     ) -> None:
         self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteePermissionTestAsParentCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    baseCommitteePerms: set[int] = {50}
+    committeePerms: set[int] = {50, 60}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_committee(50)
+        self.create_committee(60, parent_id=50)
+
+    def test_update_with_home_committee_group_A_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_C_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_E_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_G()
