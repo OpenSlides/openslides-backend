@@ -35,7 +35,10 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
                     fqid_from_collection_and_id("user", self.user_id),
                     ["organization_management_level"],
                 ).get("organization_management_level")
-                != OrganizationManagementLevel.SUPERADMIN
+                not in (
+                    OrganizationManagementLevel.SUPERADMIN,
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                )
             )
             and not has_perm(
                 self.datastore,
