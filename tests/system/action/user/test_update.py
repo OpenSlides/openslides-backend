@@ -4031,6 +4031,310 @@ class UserUpdateActionTest(BaseActionTestCase):
             f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [1]}
         )
 
+    def test_update_committee_membership_calculation_with_home_committee(self) -> None:
+        self.create_meeting()  # and committee 60
+        self.create_committee(61)
+        self.create_committee(62)
+        self.create_meeting(4)  # and committee 63
+        self.create_committee(64)
+        self.create_committee(65)
+        self.create_meeting(7)  # and committee 66
+        testcases: list[
+            tuple[
+                str,  # caseName
+                list[int] | None,  # meetingMember
+                int | None,  # homeCommittee
+                list[int] | None,  # committee_management_ids
+                int | None,  # updateMeeting
+                list[int] | None,  # update group_ids
+                int | None,  # joinCommittee, 0 is leave
+                list[int] | None,  # update committee_management_ids
+                list[int],  # expected
+            ]
+        ] = [
+            ("acctJoinMeeting", None, None, None, 1, [1], None, None, [60]),
+            ("acctJoinCommittee", None, None, None, None, None, 60, None, [60]),
+            ("acctBecomeAdmin", None, None, None, None, None, None, [60], [60]),
+            ("acctJoinMeetingNCommittee", None, None, None, 1, [1], 60, None, [60]),
+            (
+                "acctJoinCommitteeNBecomeAdmin",
+                None,
+                None,
+                None,
+                None,
+                None,
+                60,
+                [60],
+                [60],
+            ),
+            ("acctJoinMeetingNBecomeAdmin", None, None, None, 1, [1], None, [60], [60]),
+            ("acctAll", None, None, None, 1, [1], 60, [60], [60]),
+            (
+                "acctAllDifferent",
+                None,
+                None,
+                None,
+                1,
+                [1],
+                61,
+                [62, 64],
+                [60, 61, 62, 64],
+            ),
+            # participants
+            ("ptcpJoinMeeting", [7], None, None, 1, [1], None, None, [60, 66]),
+            ("ptcpJoinCommittee", [7], None, None, None, None, 60, None, [60, 66]),
+            ("ptcpBecomeAdmin", [7], None, None, None, None, None, [60], [60, 66]),
+            (
+                "ptcpJoinMeetingNCommittee",
+                [4, 7],
+                None,
+                None,
+                1,
+                [1],
+                60,
+                None,
+                [60, 63, 66],
+            ),
+            (
+                "ptcpJoinCommitteeNBecomeAdmin",
+                [7],
+                None,
+                None,
+                None,
+                None,
+                60,
+                [60],
+                [60, 66],
+            ),
+            (
+                "ptcpJoinMeetingNBecomeAdmin",
+                [7],
+                None,
+                None,
+                1,
+                [1],
+                None,
+                [60],
+                [60, 66],
+            ),
+            ("ptcpAll", [7], None, None, 1, [1], 60, [60], [60, 66]),
+            (
+                "ptcpAllDifferent",
+                [4, 7],
+                None,
+                None,
+                1,
+                [1],
+                61,
+                [62, 63, 64],
+                [60, 61, 62, 63, 64, 66],
+            ),
+            ("ptcpLeave", [7], None, None, 7, None, None, None, []),
+            ("ptcpLeaveJoinSameCommittee", [7], None, None, 7, None, 66, None, [66]),
+            ("ptcpLeaveJoinOtherCommittee", [7], None, None, 7, None, 60, None, [60]),
+            ("ptcpLeaveBecomeAdmin", [1], None, None, 1, None, None, [60], [60]),
+            # native user
+            ("ntusJoinMeeting", None, 60, None, 1, [1], None, None, [60]),
+            ("ntusJoinCommittee", None, 60, None, None, None, 62, None, [62]),
+            ("ntusBecomeAdmin", None, 60, None, None, None, None, [60], [60]),
+            ("ntusJoinMeetingNCommittee", None, 60, None, 1, [1], 62, None, [60, 62]),
+            (
+                "ntusJoinCommitteeNBecomeAdmin",
+                None,
+                64,
+                None,
+                None,
+                None,
+                60,
+                [60],
+                [60],
+            ),
+            ("ntusJoinMeetingNBecomeAdmin", None, 60, None, 1, [1], None, [60], [60]),
+            ("ntusAll", None, 66, None, 1, [1], 60, [60], [60]),
+            (
+                "ntusAllDifferent",
+                None,
+                60,
+                None,
+                1,
+                [1],
+                61,
+                [62, 63, 64],
+                [60, 61, 62, 63, 64],
+            ),
+            ("ntusSwitch", None, 60, None, None, None, 61, None, [61]),
+            ("ntusLeave", None, 60, None, None, None, 0, None, []),
+            (
+                "ntusLeaveJoinSameCommitteeMeeting",
+                None,
+                60,
+                None,
+                1,
+                [2],
+                0,
+                None,
+                [60],
+            ),
+            ("ntusLeaveBecomeAdmin", None, 60, None, None, None, 0, [60], [60]),
+            ("ntusLeaveBecomeOtherAdmin", None, 60, None, None, None, 0, [65], [65]),
+            # committee admin
+            ("cmadJoinMeeting", None, None, [60], 4, [4], None, None, [60, 63]),
+            ("cmadJoinCommittee", None, None, [60], None, None, 60, None, [60]),
+            ("cmadBecomeAdmin", None, None, [60], None, None, None, [60, 63], [60, 63]),
+            (
+                "cmadJoinMeetingNCommittee",
+                None,
+                None,
+                [60],
+                4,
+                [5],
+                62,
+                None,
+                [60, 62, 63],
+            ),
+            (
+                "cmadJoinCommitteeNBecomeAdmin",
+                None,
+                None,
+                [60],
+                None,
+                None,
+                61,
+                [60, 66],
+                [60, 61, 66],
+            ),
+            (
+                "cmadJoinMeetingNBecomeAdmin",
+                None,
+                None,
+                [60],
+                4,
+                [4],
+                None,
+                [60, 61, 62, 63],
+                [60, 61, 62, 63],
+            ),
+            ("cmadAll", None, None, [60], 1, [1], 60, [60, 61], [60, 61]),
+            (
+                "cmadAllDifferent",
+                None,
+                None,
+                [66],
+                4,
+                [4],
+                61,
+                [60, 62],
+                [60, 61, 62, 63],
+            ),
+            ("cmadSwitch", None, None, [60], None, None, None, [65], [65]),
+            ("cmadRmOne", None, None, [60, 61], None, None, None, [61], [61]),
+            ("cmadRmAll", None, None, [60, 61], None, None, None, [], []),
+            (
+                "cmadRmJoinSameCommitteeMeeting",
+                None,
+                None,
+                [60],
+                1,
+                [2],
+                None,
+                [],
+                [60],
+            ),
+            ("cmadRmJoinSameCommittee", None, None, [60], None, None, 60, [], [60]),
+            ("cmadRmJoinOtherCommittee", None, None, [60], None, None, 61, [], [61]),
+            # all
+            ("all", [1], 61, [62], 4, [6], 64, [65, 66], [60, 63, 64, 65, 66]),
+        ]
+        payloads: list[dict[str, Any]] = []
+        meeting_to_user_ids: dict[int, list[int]] = {i: [] for i in range(1, 8, 3)}
+        committee_to_native_user_ids: dict[int, list[int]] = {
+            i: [] for i in range(60, 67)
+        }
+        committee_to_manager_ids: dict[int, list[int]] = {i: [] for i in range(60, 67)}
+        committee_to_user_ids: dict[int, set[int]] = {i: set() for i in range(60, 67)}
+        committee_to_expected_user_ids: dict[int, list[int]] = {
+            i: [] for i in range(60, 67)
+        }
+        data: dict[str, dict[str, Any]] = {}
+        for testcase in testcases:
+            i = self.create_user(testcase[0])
+            committee_ids: set[int] = set()
+            date: dict[str, Any] = {}
+            if meeting_ids := testcase[1]:
+                date["meeting_ids"] = meeting_ids
+                date["meeting_user_ids"] = [m_id * 100 + i for m_id in meeting_ids]
+                for m_id in meeting_ids:
+                    data[f"meeting_user/{m_id* 100 + i}"] = {
+                        "user_id": 1,
+                        "meeting_id": m_id,
+                        "group_ids": [m_id],
+                    }
+                    meeting_to_user_ids[m_id].append(i)
+                    committee_ids.add(m_id + 59)
+                    committee_to_user_ids[m_id + 59].add(i)
+            if home_committee_id := testcase[2]:
+                date["home_committee_id"] = home_committee_id
+                committee_ids.add(home_committee_id)
+                committee_to_native_user_ids[home_committee_id].append(i)
+                committee_to_user_ids[home_committee_id].add(i)
+            if committee_management_ids := testcase[3]:
+                date["committee_management_ids"] = committee_management_ids
+                committee_ids.update(committee_management_ids)
+                for c_id in committee_management_ids:
+                    committee_to_manager_ids[c_id].append(i)
+                    committee_to_user_ids[c_id].add(i)
+            date["committee_ids"] = sorted(list(committee_ids))
+            data[f"user/{i}"] = date
+            payload: dict[str, Any] = {"id": i}
+            if meeting_id := testcase[4]:
+                payload["meeting_id"] = meeting_id
+                payload["group_ids"] = testcase[5] or []
+            if home_committee_id := testcase[6]:
+                payload["home_committee_id"] = home_committee_id
+            elif home_committee_id == 0:
+                payload["home_committee_id"] = None
+            if committee_management_ids := testcase[7]:
+                payload["committee_management_ids"] = committee_management_ids
+            payloads.append(payload)
+            for c_id in testcase[8]:
+                committee_to_expected_user_ids[c_id].append(i)
+        data.update(
+            {
+                **{
+                    f"meeting/{id_}": {
+                        "user_ids": user_ids,
+                        "meeting_user_ids": [id_ * 100 + u_id for u_id in user_ids],
+                    }
+                    for id_, user_ids in meeting_to_user_ids.items()
+                },
+                **{
+                    f"group/{id_}": {
+                        "meeting_user_ids": [id_ * 100 + u_id for u_id in user_ids],
+                    }
+                    for id_, user_ids in meeting_to_user_ids.items()
+                },
+                **{
+                    f"committee/{id_}": {
+                        "user_ids": sorted(list(user_ids)),
+                        "native_user_ids": committee_to_native_user_ids[id_],
+                        "manager_ids": committee_to_manager_ids[id_],
+                    }
+                    for id_, user_ids in committee_to_user_ids.items()
+                },
+            }
+        )
+        self.set_models(data)
+
+        response = self.request_multi("user.update", payloads)
+
+        self.assert_status_code(response, 200)
+        for i, ids in committee_to_expected_user_ids.items():
+            comm = sorted(self.get_model(f"committee/{i}").get("user_ids", []))
+            assert comm == ids
+        for i, testcase in enumerate(testcases, 2):
+            user = sorted(self.get_model(f"user/{i}").get("committee_ids", []))
+            assert user == testcase[8]
+
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     committeePerms: set[int] = set()

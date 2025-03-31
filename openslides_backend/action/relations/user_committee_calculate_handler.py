@@ -18,16 +18,19 @@ from .typing import ListUpdateElement, RelationUpdates
 
 class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     """
-    CalculatedFieldHandler to fill the user.committee_ids and the related committee.user_ids
-    by catching modifications of MeetingUser.group_ids and User.committee_management_ids.
-    A user belongs to a committee, if he is member of a meeting in the committee via group or
-    he has rights on CommitteeManagementLevel.
-    Problem: The changes come from 2 different collections, both could add or remove user/committee_relations.
-    This method will calculate additions and removals by comparing the instances of datastore.changed_models and
-    the stored db-content.
+    CalculatedFieldHandler to fill the user.committee_ids and the related
+    committee.user_ids by catching modifications of MeetingUser.group_ids,
+    User.home_committee_id and User.committee_management_ids.
+    A user belongs to a committee, if he is member of a meeting in the
+    committee via group or he has rights on CommitteeManagementLevel.
+    Problem: The changes come from 2 different collections, both could add or
+    remove user/committee_relations.
+    This method will calculate additions and removals by comparing the
+    instances of datastore.changed_models and the stored db-content.
     Calculates per user on
     1. user.committee_managment_ids, if changed
-    2. MeetingUser.group_ids of all changes
+    2. user.home_committee_id, if changed
+    3. MeetingUser.group_ids of all changes
     """
 
     def process_field(
