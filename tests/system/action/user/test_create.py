@@ -1563,7 +1563,44 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "dracula", "home_committee_id": 3}
+            "user/2",
+            {"username": "dracula", "home_committee_id": 3, "committee_ids": [3]},
+        )
+
+    def test_create_with_all_committee_fields(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4)
+        self.create_committee(5)
+        self.create_committee(6, parent_id=5)
+        self.create_meeting()
+        response = self.request(
+            "user.create",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_user_ids": [1],
+                "committee_ids": [3, 4, 6, 60],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
         )
 
     def test_create_with_home_committee_cml(self) -> None:
@@ -1575,7 +1612,9 @@ class UserCreateActionTest(BaseActionTestCase):
             {"username": "mina", "home_committee_id": 3},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+        self.assert_model_exists(
+            "user/2", {"username": "mina", "home_committee_id": 3, "committee_ids": [3]}
+        )
 
     def test_create_with_guest_true(self) -> None:
         response = self.request(
@@ -1617,7 +1656,13 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "vanHelsing", "home_committee_id": 3, "guest": False}
+            "user/2",
+            {
+                "username": "vanHelsing",
+                "home_committee_id": 3,
+                "guest": False,
+                "committee_ids": [3],
+            },
         )
 
     def test_create_with_home_committee_wrong_CML(self) -> None:

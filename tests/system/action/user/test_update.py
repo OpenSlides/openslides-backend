@@ -4031,7 +4031,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [1]}
         )
 
-    def test_update_committee_membership_calculation_with_home_committee(self) -> None:
+    def test_update_committee_membership_calculation_with_home_committee(
+        self,
+    ) -> None:
         self.create_meeting()  # and committee 60
         self.create_committee(61)
         self.create_committee(62)
@@ -4039,211 +4041,351 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_committee(64)
         self.create_committee(65)
         self.create_meeting(7)  # and committee 66
-        testcases: list[
-            tuple[
-                str,  # caseName
-                list[int] | None,  # meetingMember
-                int | None,  # homeCommittee
-                list[int] | None,  # committee_management_ids
-                int | None,  # updateMeeting
-                list[int] | None,  # update group_ids
-                int | None,  # joinCommittee, 0 is leave
-                list[int] | None,  # update committee_management_ids
-                list[int],  # expected
-            ]
-        ] = [
-            ("acctJoinMeeting", None, None, None, 1, [1], None, None, [60]),
-            ("acctJoinCommittee", None, None, None, None, None, 60, None, [60]),
-            ("acctBecomeAdmin", None, None, None, None, None, None, [60], [60]),
-            ("acctJoinMeetingNCommittee", None, None, None, 1, [1], 60, None, [60]),
-            (
-                "acctJoinCommitteeNBecomeAdmin",
-                None,
-                None,
-                None,
-                None,
-                None,
-                60,
-                [60],
-                [60],
-            ),
-            ("acctJoinMeetingNBecomeAdmin", None, None, None, 1, [1], None, [60], [60]),
-            ("acctAll", None, None, None, 1, [1], 60, [60], [60]),
-            (
-                "acctAllDifferent",
-                None,
-                None,
-                None,
-                1,
-                [1],
-                61,
-                [62, 64],
-                [60, 61, 62, 64],
-            ),
-            # participants
-            ("ptcpJoinMeeting", [7], None, None, 1, [1], None, None, [60, 66]),
-            ("ptcpJoinCommittee", [7], None, None, None, None, 60, None, [60, 66]),
-            ("ptcpBecomeAdmin", [7], None, None, None, None, None, [60], [60, 66]),
-            (
-                "ptcpJoinMeetingNCommittee",
-                [4, 7],
-                None,
-                None,
-                1,
-                [1],
-                60,
-                None,
-                [60, 63, 66],
-            ),
-            (
-                "ptcpJoinCommitteeNBecomeAdmin",
-                [7],
-                None,
-                None,
-                None,
-                None,
-                60,
-                [60],
-                [60, 66],
-            ),
-            (
-                "ptcpJoinMeetingNBecomeAdmin",
-                [7],
-                None,
-                None,
-                1,
-                [1],
-                None,
-                [60],
-                [60, 66],
-            ),
-            ("ptcpAll", [7], None, None, 1, [1], 60, [60], [60, 66]),
-            (
-                "ptcpAllDifferent",
-                [4, 7],
-                None,
-                None,
-                1,
-                [1],
-                61,
-                [62, 63, 64],
-                [60, 61, 62, 63, 64, 66],
-            ),
-            ("ptcpLeave", [7], None, None, 7, None, None, None, []),
-            ("ptcpLeaveJoinSameCommittee", [7], None, None, 7, None, 66, None, [66]),
-            ("ptcpLeaveJoinOtherCommittee", [7], None, None, 7, None, 60, None, [60]),
-            ("ptcpLeaveBecomeAdmin", [1], None, None, 1, None, None, [60], [60]),
-            # native user
-            ("ntusJoinMeeting", None, 60, None, 1, [1], None, None, [60]),
-            ("ntusJoinCommittee", None, 60, None, None, None, 62, None, [62]),
-            ("ntusBecomeAdmin", None, 60, None, None, None, None, [60], [60]),
-            ("ntusJoinMeetingNCommittee", None, 60, None, 1, [1], 62, None, [60, 62]),
-            (
-                "ntusJoinCommitteeNBecomeAdmin",
-                None,
-                64,
-                None,
-                None,
-                None,
-                60,
-                [60],
-                [60],
-            ),
-            ("ntusJoinMeetingNBecomeAdmin", None, 60, None, 1, [1], None, [60], [60]),
-            ("ntusAll", None, 66, None, 1, [1], 60, [60], [60]),
-            (
-                "ntusAllDifferent",
-                None,
-                60,
-                None,
-                1,
-                [1],
-                61,
-                [62, 63, 64],
-                [60, 61, 62, 63, 64],
-            ),
-            ("ntusSwitch", None, 60, None, None, None, 61, None, [61]),
-            ("ntusLeave", None, 60, None, None, None, 0, None, []),
-            (
-                "ntusLeaveJoinSameCommitteeMeeting",
-                None,
-                60,
-                None,
-                1,
-                [2],
-                0,
-                None,
-                [60],
-            ),
-            ("ntusLeaveBecomeAdmin", None, 60, None, None, None, 0, [60], [60]),
-            ("ntusLeaveBecomeOtherAdmin", None, 60, None, None, None, 0, [65], [65]),
-            # committee admin
-            ("cmadJoinMeeting", None, None, [60], 4, [4], None, None, [60, 63]),
-            ("cmadJoinCommittee", None, None, [60], None, None, 60, None, [60]),
-            ("cmadBecomeAdmin", None, None, [60], None, None, None, [60, 63], [60, 63]),
-            (
-                "cmadJoinMeetingNCommittee",
-                None,
-                None,
-                [60],
-                4,
-                [5],
-                62,
-                None,
-                [60, 62, 63],
-            ),
-            (
-                "cmadJoinCommitteeNBecomeAdmin",
-                None,
-                None,
-                [60],
-                None,
-                None,
-                61,
-                [60, 66],
-                [60, 61, 66],
-            ),
-            (
-                "cmadJoinMeetingNBecomeAdmin",
-                None,
-                None,
-                [60],
-                4,
-                [4],
-                None,
-                [60, 61, 62, 63],
-                [60, 61, 62, 63],
-            ),
-            ("cmadAll", None, None, [60], 1, [1], 60, [60, 61], [60, 61]),
-            (
-                "cmadAllDifferent",
-                None,
-                None,
-                [66],
-                4,
-                [4],
-                61,
-                [60, 62],
-                [60, 61, 62, 63],
-            ),
-            ("cmadSwitch", None, None, [60], None, None, None, [65], [65]),
-            ("cmadRmOne", None, None, [60, 61], None, None, None, [61], [61]),
-            ("cmadRmAll", None, None, [60, 61], None, None, None, [], []),
-            (
-                "cmadRmJoinSameCommitteeMeeting",
-                None,
-                None,
-                [60],
-                1,
-                [2],
-                None,
-                [],
-                [60],
-            ),
-            ("cmadRmJoinSameCommittee", None, None, [60], None, None, 60, [], [60]),
-            ("cmadRmJoinOtherCommittee", None, None, [60], None, None, 61, [], [61]),
-            # all
-            ("all", [1], 61, [62], 4, [6], 64, [65, 66], [60, 63, 64, 65, 66]),
+        testcases: list[dict[str, Any]] = [
+            {
+                "name": "acctJoinMeeting",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinCommittee",
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctBecomeAdmin",
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinMeetingNCommittee",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinCommitteeNBecomeAdmin",
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinMeetingNBecomeAdmin",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctAll",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctAllDifferent",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 64],
+                "expected_committees": [60, 61, 62, 64],
+            },
+            {
+                "name": "ptcpJoinMeeting",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinCommittee",
+                "meeting_ids": [7],
+                "payload_hc_id": 60,
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinMeetingNCommittee",
+                "meeting_ids": [4, 7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "expected_committees": [60, 63, 66],
+            },
+            {
+                "name": "ptcpJoinCommitteeNBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinMeetingNBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpAll",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpAllDifferent",
+                "meeting_ids": [4, 7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 63, 64],
+                "expected_committees": [60, 61, 62, 63, 64, 66],
+            },
+            {
+                "name": "ptcpLeave",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "expected_committees": [],
+            },
+            {
+                "name": "ptcpLeaveJoinSameCommittee",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "payload_hc_id": 66,
+                "expected_committees": [66],
+            },
+            {
+                "name": "ptcpLeaveJoinOtherCommittee",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "ptcpLeaveBecomeAdmin",
+                "meeting_ids": [1],
+                "payload_m_id": 1,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeeting",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinCommittee",
+                "home_committee_id": 60,
+                "payload_hc_id": 62,
+                "expected_committees": [62],
+            },
+            {
+                "name": "ntusBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeetingNCommittee",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 62,
+                "expected_committees": [60, 62],
+            },
+            {
+                "name": "ntusJoinCommitteeNBecomeAdmin",
+                "home_committee_id": 64,
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeetingNBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusAll",
+                "home_committee_id": 66,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusAllDifferent",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 63, 64],
+                "expected_committees": [60, 61, 62, 63, 64],
+            },
+            {
+                "name": "ntusSwitch",
+                "home_committee_id": 60,
+                "payload_hc_id": 61,
+                "expected_committees": [61],
+            },
+            {
+                "name": "ntusLeave",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "expected_committees": [],
+            },
+            {
+                "name": "ntusLeaveJoinSameCommitteeMeeting",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [2],
+                "payload_hc_id": 0,
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusLeaveBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusLeaveBecomeOtherAdmin",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "payload_cm_ids": [65],
+                "expected_committees": [65],
+            },
+            {
+                "name": "cmadJoinMeeting",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "expected_committees": [60, 63],
+            },
+            {
+                "name": "cmadJoinCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_cm_ids": [60, 63],
+                "expected_committees": [60, 63],
+            },
+            {
+                "name": "cmadJoinMeetingNCommittee",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [5],
+                "payload_hc_id": 62,
+                "expected_committees": [60, 62, 63],
+            },
+            {
+                "name": "cmadJoinCommitteeNBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [60, 66],
+                "expected_committees": [60, 61, 66],
+            },
+            {
+                "name": "cmadJoinMeetingNBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "payload_cm_ids": [60, 61, 62, 63],
+                "expected_committees": [60, 61, 62, 63],
+            },
+            {
+                "name": "cmadAll",
+                "committee_management_ids": [60],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60, 61],
+                "expected_committees": [60, 61],
+            },
+            {
+                "name": "cmadAllDifferent",
+                "committee_management_ids": [66],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [60, 62],
+                "expected_committees": [60, 61, 62, 63],
+            },
+            {
+                "name": "cmadSwitch",
+                "committee_management_ids": [60],
+                "payload_cm_ids": [65],
+                "expected_committees": [65],
+            },
+            {
+                "name": "cmadRmOne",
+                "committee_management_ids": [60, 61],
+                "payload_cm_ids": [61],
+                "expected_committees": [61],
+            },
+            {
+                "name": "cmadRmAll",
+                "committee_management_ids": [60, 61],
+                "payload_cm_ids": [],
+                "expected_committees": [],
+            },
+            {
+                "name": "cmadRmJoinSameCommitteeMeeting",
+                "committee_management_ids": [60],
+                "payload_m_id": 1,
+                "payload_group_ids": [2],
+                "payload_cm_ids": [],
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadRmJoinSameCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [],
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadRmJoinOtherCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [],
+                "expected_committees": [61],
+            },
+            {
+                "name": "all",
+                "meeting_ids": [1],
+                "home_committee_id": 61,
+                "committee_management_ids": [62],
+                "payload_m_id": 4,
+                "payload_group_ids": [6],
+                "payload_hc_id": 64,
+                "payload_cm_ids": [65, 66],
+                "expected_committees": [60, 63, 64, 65, 66],
+            },
         ]
         payloads: list[dict[str, Any]] = []
         meeting_to_user_ids: dict[int, list[int]] = {i: [] for i in range(1, 8, 3)}
@@ -4257,27 +4399,27 @@ class UserUpdateActionTest(BaseActionTestCase):
         }
         data: dict[str, dict[str, Any]] = {}
         for testcase in testcases:
-            i = self.create_user(testcase[0])
+            i = self.create_user(testcase["name"])
             committee_ids: set[int] = set()
             date: dict[str, Any] = {}
-            if meeting_ids := testcase[1]:
+            if meeting_ids := testcase.get("meeting_ids"):
                 date["meeting_ids"] = meeting_ids
                 date["meeting_user_ids"] = [m_id * 100 + i for m_id in meeting_ids]
                 for m_id in meeting_ids:
                     data[f"meeting_user/{m_id* 100 + i}"] = {
-                        "user_id": 1,
+                        "user_id": i,
                         "meeting_id": m_id,
                         "group_ids": [m_id],
                     }
                     meeting_to_user_ids[m_id].append(i)
                     committee_ids.add(m_id + 59)
                     committee_to_user_ids[m_id + 59].add(i)
-            if home_committee_id := testcase[2]:
+            if home_committee_id := testcase.get("home_committee_id"):
                 date["home_committee_id"] = home_committee_id
                 committee_ids.add(home_committee_id)
                 committee_to_native_user_ids[home_committee_id].append(i)
                 committee_to_user_ids[home_committee_id].add(i)
-            if committee_management_ids := testcase[3]:
+            if committee_management_ids := testcase.get("committee_management_ids"):
                 date["committee_management_ids"] = committee_management_ids
                 committee_ids.update(committee_management_ids)
                 for c_id in committee_management_ids:
@@ -4286,17 +4428,17 @@ class UserUpdateActionTest(BaseActionTestCase):
             date["committee_ids"] = sorted(list(committee_ids))
             data[f"user/{i}"] = date
             payload: dict[str, Any] = {"id": i}
-            if meeting_id := testcase[4]:
+            if meeting_id := testcase.get("payload_m_id"):
                 payload["meeting_id"] = meeting_id
-                payload["group_ids"] = testcase[5] or []
-            if home_committee_id := testcase[6]:
+                payload["group_ids"] = testcase.get("payload_group_ids", [])
+            if home_committee_id := testcase.get("payload_hc_id"):
                 payload["home_committee_id"] = home_committee_id
             elif home_committee_id == 0:
                 payload["home_committee_id"] = None
-            if committee_management_ids := testcase[7]:
+            if (committee_management_ids := testcase.get("payload_cm_ids")) is not None:
                 payload["committee_management_ids"] = committee_management_ids
             payloads.append(payload)
-            for c_id in testcase[8]:
+            for c_id in testcase["expected_committees"]:
                 committee_to_expected_user_ids[c_id].append(i)
         data.update(
             {
@@ -4333,7 +4475,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             assert comm == ids
         for i, testcase in enumerate(testcases, 2):
             user = sorted(self.get_model(f"user/{i}").get("committee_ids", []))
-            assert user == testcase[8]
+            assert user == testcase["expected_committees"]
 
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
