@@ -440,6 +440,9 @@ class TestSearchUsers(BasePresenterTestCase):
 
     def test_permission_committee_error(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
+        self.set_models({
+            "committee/1": {"name": "committee 1"}
+        })
         status_code, data = self.request(
             "search_users",
             {
@@ -540,34 +543,6 @@ class TestSearchUsers(BasePresenterTestCase):
             },
         )
         self.assertEqual(status_code, 200)
-
-    def test_permission_meeting_via_committee_with_database_error(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": None,
-                "committee_management_ids": [1],
-            },
-        )
-        status_code, data = self.request(
-            "search_users",
-            {
-                "permission_type": UserScope.Meeting.value,
-                "permission_id": 1,
-                "search": [
-                    {"username": "user2"},
-                ],
-            },
-        )
-        self.assertEqual(status_code, 400)
-        self.assertIn(
-            "Error in database: Meeting 1 has no valid committee_id!", data["message"]
-        )
 
     @performance
     def test_search_performance(self) -> None:
