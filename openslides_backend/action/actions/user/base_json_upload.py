@@ -31,6 +31,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "pronoun", "type": "string"},
         {"property": "saml_id", "type": "string", "is_object": True},
         {"property": "member_number", "type": "string", "is_object": True},
+        {"property": "home_committee", "type": "string", "is_object": True},
+        {"property": "guest", "type": "boolean", "is_object": True},
     ]
     skip_archived_meeting_check = True
     row_state: ImportState
@@ -39,6 +41,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
     member_number_lookup: Lookup
+    committee_lookup: Lookup
 
     @classmethod
     def get_schema(
@@ -379,6 +382,72 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 self.row_state = ImportState.ERROR
                 messages.append(f"Error: '{email}' is not a valid email address.")
 
+        # TODO: Permission checks! Also test this stuff and see if it functions as intended
+        if home_committee := entry.get("home_committee"):
+            if "id" in entry:
+                entry["home_committee"] = {
+                    "value": "",
+                    "info": ImportState.WARNING,
+                }
+                messages.append(
+                    "Cannot set home committee when updating a user. The field will be skipped."
+                )
+            else:
+                result = self.committee_lookup.check_duplicate(home_committee)
+                if result == ResultType.FOUND_ID:
+                    home_committee_id = self.committee_lookup.get_field_by_name(
+                        home_committee, "id"
+                    )
+                    entry["home_committee"] = {
+                        "value": home_committee,
+                        "info": ImportState.DONE,
+                        "id": home_committee_id,
+                    }
+                elif result == ResultType.NOT_FOUND:
+                    self.row_state = ImportState.ERROR
+                    entry["home_committee"] = {
+                        "value": home_committee,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append("Error: Home committee not found.")
+                elif result == ResultType.FOUND_MORE_IDS:
+                    self.row_state = ImportState.ERROR
+                    entry["home_committee"] = {
+                        "value": home_committee,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(
+                        "Error: Found multiple committees with the same name as the home committee."
+                    )
+            if guest := entry.get("guest"):
+                if guest is True:
+                    self.row_state = ImportState.ERROR
+                    entry["guest"] = {
+                        "value": guest,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(
+                        "Error: Users with home_committees cannot be guests."
+                    )
+                else:
+                    entry["guest"] = {
+                        "value": guest,
+                        "info": ImportState.DONE,
+                    }
+        elif guest := entry.get("guest"):
+            entry["guest"] = {
+                "value": guest,
+                "info": ImportState.DONE,
+            }
+            if guest is True:
+                entry["home_committee"] = {
+                    "value": "",
+                    "info": ImportState.WARNING,
+                }
+                messages.append(
+                    "Since guest is set to true, any home_committee that was set will be emptied."
+                )
+
         return {"state": self.row_state, "messages": messages, "data": entry}
 
     def create_usernames(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -510,6 +579,16 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         ):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
+        self.committee_lookup = Lookup(
+            self.datastore,
+            "committee",
+            [
+                (home_committee, {})
+                for entry in data
+                if (home_committee := entry.get("home_committee"))
+            ],
+            mapped_fields=["username", "saml_id", "default_password"],
+        )
 
     def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:
         for entry in data:

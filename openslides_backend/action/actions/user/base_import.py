@@ -1,5 +1,7 @@
 from typing import Any, cast
 
+from openslides_backend.services.datastore.commands import GetManyRequest
+
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
 from .create import UserCreate
@@ -46,6 +48,9 @@ class BaseUserImport(BaseImportAction):
                 entry[relation_field] = [
                     id_ for instance in instances if (id_ := instance.get("id"))
                 ]
+        if "home_committee" in entry and (instance := entry.pop("home_committee")):
+            if home_committee_id := instance.get("id"):
+                entry["home_committee_id"] = home_committee_id
 
         # set fields empty/False if saml_id will be set
         field_values = (
@@ -132,6 +137,7 @@ class BaseUserImport(BaseImportAction):
             )
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
+        self.validate_field(row, self.committee_map, "home_committee", False)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
 
@@ -176,3 +182,21 @@ class BaseUserImport(BaseImportAction):
                 "can_change_own_password",
             ],
         )
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "committee",
+                    [
+                        id
+                        for row in self.rows
+                        if (id := row["data"].get("home_committee", {}).get("id"))
+                    ],
+                    ["name"],
+                ),
+            ],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        self.committee_map = {
+            k: v["name"] for k, v in result.get("committee", {}).items()
+        }
