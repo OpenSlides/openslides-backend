@@ -830,7 +830,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "parent": {
                     "id": 1,
                     "info": ImportState.DONE,
-                    "value": 1,
+                    "value": "National council",
                 },
             },
             "messages": [],

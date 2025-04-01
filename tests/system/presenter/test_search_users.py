@@ -440,9 +440,7 @@ class TestSearchUsers(BasePresenterTestCase):
 
     def test_permission_committee_error(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
-        self.set_models({
-            "committee/1": {"name": "committee 1"}
-        })
+        self.set_models({"committee/1": {"name": "committee 1"}})
         status_code, data = self.request(
             "search_users",
             {

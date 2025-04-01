@@ -29,7 +29,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
                 "motion_state/77": {
                     "meeting_id": 222,
@@ -57,7 +57,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
-                    "committee_id": 1
+                    "committee_id": 1,
                 },
                 "motion_state/77": {
                     "meeting_id": 222,
