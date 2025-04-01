@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -435,8 +436,24 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "meeting.delete",
             {"id": 1},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            fail=False,
+            fail=True,
             lock_meeting=True,
+        )
+
+    def test_delete_permissions_can_manage_organization_with_locked_meeting_not_allowed(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_organization"},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.delete. Missing permission: Permission meeting.can_manage_settings in meeting 1",
+            response.json["message"],
         )
 
     def test_delete_permissions_can_manage_organization_with_locked_meeting(
@@ -448,6 +465,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "meeting/1": {"locked_from_inside": True},
             }
         )
+        self.set_group_permissions(11, [Permissions.Meeting.CAN_MANAGE_SETTINGS])
+        self.set_user_groups(1, [11])
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
