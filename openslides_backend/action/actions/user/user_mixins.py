@@ -90,6 +90,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
         "locked_out": {"type": "boolean"},
     }
+    skip_archived_meeting_checks = True
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         self.assert_not_anonymous()
