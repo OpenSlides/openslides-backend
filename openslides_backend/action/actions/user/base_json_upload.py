@@ -2,6 +2,8 @@ from collections import defaultdict
 from typing import Any, cast
 
 from ....models.models import User
+from ....permissions.management_levels import CommitteeManagementLevel
+from ....permissions.permission_helper import has_committee_management_level
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
@@ -382,71 +384,99 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 self.row_state = ImportState.ERROR
                 messages.append(f"Error: '{email}' is not a valid email address.")
 
-        # TODO: Permission checks! Also test this stuff and see if it functions as intended
+        if id_ and (
+            old_home_committee_id := self.datastore.get(
+                fqid_from_collection_and_id("user", id_), ["home_committee_id"]
+            ).get("home_committee_id")
+        ):
+            old_hc_permission = has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                old_home_committee_id,
+            )
+        else:
+            old_hc_permission = True
         if home_committee := entry.get("home_committee"):
-            if "id" in entry:
-                entry["home_committee"] = {
-                    "value": "",
-                    "info": ImportState.WARNING,
-                }
-                messages.append(
-                    "Cannot set home committee when updating a user. The field will be skipped."
+            result = self.committee_lookup.check_duplicate(home_committee)
+            if result == ResultType.FOUND_ID:
+                home_committee_id: int = cast(
+                    int, self.committee_lookup.get_field_by_name(home_committee, "id")
                 )
-            else:
-                result = self.committee_lookup.check_duplicate(home_committee)
-                if result == ResultType.FOUND_ID:
-                    home_committee_id = self.committee_lookup.get_field_by_name(
-                        home_committee, "id"
-                    )
+                if old_hc_permission and has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    home_committee_id,
+                ):
                     entry["home_committee"] = {
                         "value": home_committee,
                         "info": ImportState.DONE,
                         "id": home_committee_id,
                     }
-                elif result == ResultType.NOT_FOUND:
-                    self.row_state = ImportState.ERROR
-                    entry["home_committee"] = {
-                        "value": home_committee,
-                        "info": ImportState.ERROR,
-                    }
-                    messages.append("Error: Home committee not found.")
-                elif result == ResultType.FOUND_MORE_IDS:
-                    self.row_state = ImportState.ERROR
-                    entry["home_committee"] = {
-                        "value": home_committee,
-                        "info": ImportState.ERROR,
-                    }
-                    messages.append(
-                        "Error: Found multiple committees with the same name as the home committee."
-                    )
-            if guest := entry.get("guest"):
-                if guest is True:
-                    self.row_state = ImportState.ERROR
-                    entry["guest"] = {
-                        "value": guest,
-                        "info": ImportState.ERROR,
-                    }
-                    messages.append(
-                        "Error: Users with home_committees cannot be guests."
-                    )
                 else:
+                    entry["home_committee"] = {
+                        "value": home_committee,
+                        "info": ImportState.REMOVE,
+                        "id": home_committee_id,
+                    }
+                    messages.append(
+                        "Home committee will be skipped due to missing permissions in either new or former home committee."
+                    )
+            elif result == ResultType.NOT_FOUND:
+                self.row_state = ImportState.ERROR
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.ERROR,
+                }
+                messages.append("Error: Home committee not found.")
+            elif result == ResultType.FOUND_MORE_IDS:
+                self.row_state = ImportState.ERROR
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.ERROR,
+                }
+                messages.append(
+                    "Error: Found multiple committees with the same name as the home committee."
+                )
+            if (guest := entry.get("guest")) is True:
+                self.row_state = ImportState.ERROR
+                entry["guest"] = {"value": guest, "info": ImportState.ERROR}
+                messages.append(
+                    "Error: Cannot set guest to true while setting home committee."
+                )
+            elif guest is False:
+                entry["guest"] = {"value": False, "info": ImportState.DONE}
+            else:
+                entry["guest"] = {"value": False, "info": ImportState.GENERATED}
+        elif guest := entry.get("guest"):
+            if guest is True:
+                if old_hc_permission:
                     entry["guest"] = {
                         "value": guest,
                         "info": ImportState.DONE,
                     }
-        elif guest := entry.get("guest"):
-            entry["guest"] = {
-                "value": guest,
-                "info": ImportState.DONE,
-            }
-            if guest is True:
-                entry["home_committee"] = {
-                    "value": "",
-                    "info": ImportState.WARNING,
+                    entry["home_committee"] = {
+                        "value": "",
+                        "info": ImportState.GENERATED,
+                    }
+                    messages.append(
+                        "Since guest is set to true, any home_committee that was set will be emptied."
+                    )
+                else:
+                    self.row_state = ImportState.ERROR
+                    entry["guest"] = {
+                        "value": guest,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(
+                        "Error: Cannot set guest to true: Unsufficient rights for unsetting the home committee."
+                    )
+            else:
+                entry["guest"] = {
+                    "value": guest,
+                    "info": ImportState.DONE,
                 }
-                messages.append(
-                    "Since guest is set to true, any home_committee that was set will be emptied."
-                )
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 

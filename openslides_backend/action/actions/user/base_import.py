@@ -2,6 +2,9 @@ from typing import Any, cast
 
 from openslides_backend.services.datastore.commands import GetManyRequest
 
+from ....permissions.management_levels import CommitteeManagementLevel
+from ....permissions.permission_helper import has_committee_management_level
+from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
 from .create import UserCreate
@@ -48,7 +51,11 @@ class BaseUserImport(BaseImportAction):
                 entry[relation_field] = [
                     id_ for instance in instances if (id_ := instance.get("id"))
                 ]
-        if "home_committee" in entry and (instance := entry.pop("home_committee")):
+        if (
+            "home_committee" in entry
+            and entry["home_committee"]["info"] != ImportState.REMOVE
+            and (instance := entry.pop("home_committee"))
+        ):
             if home_committee_id := instance.get("id"):
                 entry["home_committee_id"] = home_committee_id
 
@@ -138,6 +145,60 @@ class BaseUserImport(BaseImportAction):
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         self.validate_field(row, self.committee_map, "home_committee", False)
+        if (row["data"].get("id")) and (
+            old_home_committee_id := self.datastore.get(
+                fqid_from_collection_and_id("user", (row["data"]["id"])),
+                ["home_committee_id"],
+                raise_exception=False,
+            ).get("home_committee_id")
+        ):
+            old_hc_permission = has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                old_home_committee_id,
+            )
+        else:
+            old_hc_permission = True
+        if (
+            (
+                home_committee_id := (
+                    home_committee := row["data"].get("home_committee", {})
+                ).get("id")
+            )
+            and home_committee["info"] == ImportState.DONE
+            and (
+                not old_hc_permission
+                or not has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    home_committee_id,
+                )
+            )
+        ):
+            row["data"]["home_committee"] = {
+                "id": home_committee["id"],
+                "value": home_committee["value"],
+                "info": ImportState.ERROR,
+            }
+            row["state"] = ImportState.ERROR
+            row["messages"].append(
+                "Error: No longer permitted to change the home committee."
+            )
+        if (
+            not old_hc_permission
+            and (guest := row["data"].get("guest", {}).get("value")) is True
+        ):
+            row["data"]["guest"] = {
+                "value": guest,
+                "info": ImportState.ERROR,
+            }
+            row["state"] = ImportState.ERROR
+            row["messages"].append(
+                "Error: No longer permitted to set guest to true: Unsufficient rights for unsetting the home committee."
+            )
+
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
 
