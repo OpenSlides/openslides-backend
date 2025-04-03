@@ -35,10 +35,7 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
                     fqid_from_collection_and_id("user", self.user_id),
                     ["organization_management_level"],
                 ).get("organization_management_level")
-                not in (
-                    OrganizationManagementLevel.SUPERADMIN,
-                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-                )
+                != OrganizationManagementLevel.SUPERADMIN
             )
             and not has_perm(
                 self.datastore,
@@ -47,7 +44,8 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
                 id_,
             )
         ):
-            raise MissingPermission({Permissions.Meeting.CAN_MANAGE_SETTINGS: id_})
+            action_name = self.action_name or "perform this action on the"
+            raise ActionException(f"Cannot {action_name} locked meeting.")
         if not has_committee_management_level(
             self.datastore,
             self.user_id,
