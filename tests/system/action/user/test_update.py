@@ -982,6 +982,67 @@ class UserUpdateActionTest(BaseActionTestCase):
         user111 = self.get_model("user/111")
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
+    def test_perm_group_A_meeting_manage_user_with_only_archived_meeting_no_permission(
+        self,
+    ) -> None:
+        """
+        May not update group A fields on meeting scope. User belongs to 1 archived meeting without being part of a committee.
+        """
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(111, [1])
+        self.set_models(
+            {
+                "group/2": {"permissions": [Permissions.User.CAN_UPDATE]},
+                "user/111": {"committee_ids": [60], "meeting_ids": [1]},
+                "meeting/1": {"is_active_in_organization_id": None},
+            },
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+
+    def test_perm_group_A_cml_manage_user_with_only_archived_meeting(
+        self,
+    ) -> None:
+        """May update group A fields on committee scope. User belongs to 1 archived meeting in 1 committee"""
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(111, [1])
+        self.set_models(
+            {
+                "user/111": {"committee_ids": [60], "meeting_ids": [1]},
+                "meeting/1": {"is_active_in_organization_id": None},
+            },
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "meeting_ids": [1],
+                "committee_ids": [60],
+            },
+        )
+
     def test_perm_group_A_meeting_manage_user(self) -> None:
         """
         May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee.
