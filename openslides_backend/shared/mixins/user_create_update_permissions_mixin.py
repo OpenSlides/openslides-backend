@@ -250,8 +250,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 lock_result=False,
             ).get("locked_from_inside", False)
 
-        if hasattr(self, "check_for_archived_meeting_in_meeting_scope"):
-            self.check_for_archived_meeting_in_meeting_scope(instance)
+        self.check_for_archived_meeting_in_meeting_scope(instance)
 
         # Ordered by supposed speed advantages. Changing order can only effect the sequence of detected errors for tests
         self.check_group_H(actual_group_fields["H"])
@@ -268,6 +267,9 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
     ) -> None:
         """Run check_for_archived_meeting only for users with meeting scope and request user with meeting permissions"""
 
+        if not hasattr(self, "check_for_archived_meeting"):
+            return
+
         if self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
             return
 
@@ -280,7 +282,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         ):
             return
 
-        self.skip_archived_meeting_checks = False
+        self.skip_archived_meeting_checks: bool = False
         self.check_for_archived_meeting(instance)
 
     def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:

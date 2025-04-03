@@ -77,14 +77,15 @@ class UserScopeMixin(BaseServiceProvider):
             ]
         ).get("meeting", {})
 
+        meetings_committee: dict[int, int]
         if exclude_archived:
-            meetings_committee: dict[int, int] = {
+            meetings_committee = {
                 meeting_id: meeting_data["committee_id"]
                 for meeting_id, meeting_data in result.items()
                 if (meeting_data.get("is_active_in_organization_id"))
             }
         else:
-            meetings_committee: dict[int, int] = {
+            meetings_committee = {
                 meeting_id: meeting_data["committee_id"]
                 for meeting_id, meeting_data in result.items()
             }
