@@ -70,9 +70,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "is_physical_person",
                                 "saml_id",
                                 "member_number",
+                                "guest",
                             ),
                             **additional_user_fields,
                             "gender": {"type": "string"},
+                            "home_committee": {"type": "string"},
                         },
                         "additionalProperties": False,
                     },
@@ -439,17 +441,24 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 messages.append(
                     "Error: Found multiple committees with the same name as the home committee."
                 )
-            if (guest := entry.get("guest")) is True:
+            if (guest := entry.get("guest")) is False:
+                entry["guest"] = {"value": False, "info": ImportState.DONE}
+            elif guest and entry["home_committee"]["info"] != ImportState.REMOVE:
                 self.row_state = ImportState.ERROR
                 entry["guest"] = {"value": guest, "info": ImportState.ERROR}
                 messages.append(
                     "Error: Cannot set guest to true while setting home committee."
                 )
-            elif guest is False:
-                entry["guest"] = {"value": False, "info": ImportState.DONE}
-            else:
+            elif guest and not old_hc_permission:
+                entry["guest"] = {"value": guest, "info": ImportState.REMOVE}
+                messages.append(
+                    "Cannot set guest to true: Insufficient rights for unsetting the home committee."
+                )
+            elif guest:
+                entry["guest"] = {"value": guest, "info": ImportState.DONE}
+            elif entry["home_committee"]["info"] != ImportState.REMOVE:
                 entry["guest"] = {"value": False, "info": ImportState.GENERATED}
-        elif guest := entry.get("guest"):
+        elif (guest := entry.get("guest")) is not None:
             if guest is True:
                 if old_hc_permission:
                     entry["guest"] = {
@@ -461,16 +470,15 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                         "info": ImportState.GENERATED,
                     }
                     messages.append(
-                        "Since guest is set to true, any home_committee that was set will be emptied."
+                        "Since guest is set to true, any home_committee that was set will be removed."
                     )
                 else:
-                    self.row_state = ImportState.ERROR
                     entry["guest"] = {
                         "value": guest,
-                        "info": ImportState.ERROR,
+                        "info": ImportState.REMOVE,
                     }
                     messages.append(
-                        "Error: Cannot set guest to true: Unsufficient rights for unsetting the home committee."
+                        "Cannot set guest to true: Insufficient rights for unsetting the home committee."
                     )
             else:
                 entry["guest"] = {

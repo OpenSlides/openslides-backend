@@ -993,3 +993,163 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "member_number": "M3MNUM",
             },
         )
+
+    def test_json_upload_set_home_committee(self) -> None:
+        self.json_upload_set_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false(self) -> None:
+        self.json_upload_set_home_committee_and_guest_false()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_home_committee(self) -> None:
+        self.json_upload_update_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 2,
+                "guest": False,
+                "first_name": "alice",
+            },
+        )
+
+    def test_json_upload_set_guest_to_true(self) -> None:
+        self.json_upload_set_guest_to_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee(self) -> None:
+        self.json_upload_update_guest_true_without_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_with_home_committee(self) -> None:
+        self.json_upload_update_guest_true_with_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": None, "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_with_home_committee(self) -> None:
+        self.json_upload_update_guest_false_with_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_true_without_home_committee_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_set_home_committee_no_perms(self) -> None:
+        self.json_upload_set_home_committee_no_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+            },
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false_no_perms(self) -> None:
+        self.json_upload_set_home_committee_and_guest_false_no_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_update_home_committee_no_perms_old(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+            },
+        )
+
+    def test_json_upload_update_home_committee_no_perms_both(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False, new_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )
+
+    def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_guest_false_no_perms_new()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_set_home_committee_without_permission_and_set_guest_to_true(
+        self,
+    ) -> None:
+        self.json_upload_set_home_committee_without_permission_and_set_guest_to_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )

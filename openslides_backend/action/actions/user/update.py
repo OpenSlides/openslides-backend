@@ -86,6 +86,19 @@ class UserUpdate(
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
 
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+        if instance.get("guest"):
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]),
+                mapped_fields=[
+                    "home_committee_id",
+                ],
+                lock_result=False,
+            )
+            if user.get("home_committee_id"):
+                self.check_group_I(["home_committee_id"], user)
+
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if not self.internal and any(
@@ -114,8 +127,6 @@ class UserUpdate(
             ],
         )
         if instance.get("guest"):
-            if user.get("home_committee_id"):
-                self.check_group_I(["home_committee_id"], user)
             if home_committee_id:
                 raise ActionException(
                     "Cannot set guest to true and set a home committee at the same time."

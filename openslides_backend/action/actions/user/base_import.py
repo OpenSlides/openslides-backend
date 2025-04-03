@@ -189,6 +189,7 @@ class BaseUserImport(BaseImportAction):
         if (
             not old_hc_permission
             and (guest := row["data"].get("guest", {}).get("value")) is True
+            and row["data"].get("guest", {}).get("info") == ImportState.DONE
         ):
             row["data"]["guest"] = {
                 "value": guest,
@@ -196,7 +197,7 @@ class BaseUserImport(BaseImportAction):
             }
             row["state"] = ImportState.ERROR
             row["messages"].append(
-                "Error: No longer permitted to set guest to true: Unsufficient rights for unsetting the home committee."
+                "Error: No longer permitted to set guest to true: Insufficient rights for unsetting the home committee."
             )
 
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:

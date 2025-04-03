@@ -1517,5 +1517,43 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: Cannot lock user out of meeting 1 as he is manager of the meetings committee"
+            "Error: Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents"
         ]
+
+    def test_json_upload_set_home_committee(self) -> None:
+        self.json_upload_set_home_committee()
+        # TODO: Finish
+
+    def test_json_upload_update_home_committee_and_guest_false(self) -> None:
+        self.json_upload_update_home_committee_and_guest_false()
+        # TODO: Finish
+
+    def test_json_upload_update_guest_true_without_home_committee(self) -> None:
+        self.json_upload_update_guest_true_without_home_committee()
+        # TODO: Finish
+
+    def test_json_upload_update_guest_true_with_home_committee(self) -> None:
+        self.json_upload_update_guest_true_with_home_committee()
+        # TODO: Finish
+
+    def test_json_upload_update_guest_true_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_true_without_home_committee_perms()
+        # TODO: Finish
+
+    def test_json_upload_set_home_committee_no_perms(self) -> None:
+        self.json_upload_set_home_committee_no_perms()
+        # TODO: Finish
+
+    def test_json_upload_update_home_committee_no_perms_new(self) -> None:
+        self.json_upload_update_home_committee(new_perm=False)
+        # TODO: Finish
+
+    def test_json_upload_update_home_committee_no_perms_both(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False, new_perm=False)
+        # TODO: Finish
+
+    def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_guest_false_no_perms_new()
+        # TODO: Finish
