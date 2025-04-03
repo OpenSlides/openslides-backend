@@ -34,7 +34,7 @@ class UserScopeMixin(BaseServiceProvider):
     name: str
 
     def get_user_scope(
-        self, id_or_instance: int | dict[str, Any]
+        self, id_or_instance: int | dict[str, Any], exclude_archived: bool = True
     ) -> tuple[UserScope, int, str, dict[int, Any]]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
@@ -77,11 +77,18 @@ class UserScopeMixin(BaseServiceProvider):
             ]
         ).get("meeting", {})
 
-        meetings_committee: dict[int, int] = {
-            meeting_id: meeting_data["committee_id"]
-            for meeting_id, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        }
+        if exclude_archived:
+            meetings_committee: dict[int, int] = {
+                meeting_id: meeting_data["committee_id"]
+                for meeting_id, meeting_data in result.items()
+                if (meeting_data.get("is_active_in_organization_id"))
+            }
+        else:
+            meetings_committee: dict[int, int] = {
+                meeting_id: meeting_data["committee_id"]
+                for meeting_id, meeting_data in result.items()
+            }
+
         committees = committees_manager | set(meetings_committee.values())
         committee_meetings: dict[int, Any] = defaultdict(list)
         for meeting, committee in meetings_committee.items():

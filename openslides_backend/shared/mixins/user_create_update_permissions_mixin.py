@@ -225,6 +225,10 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 self.datastore, self.user_id, self.permission
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
+        exclude_archived = not (
+            self.permstore.user.get("organization_management_level")
+            or self.permstore.user_committees
+        )
 
         # store scope, scope id, OML-permission and committee ids including the the respective meetings for requested user
         (
@@ -232,7 +236,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
             self.instance_committee_meeting_ids,
-        ) = self.get_user_scope(instance.get("id") or instance)
+        ) = self.get_user_scope((instance.get("id") or instance), exclude_archived)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
             self._check_for_higher_OML(actual_group_fields, instance)
