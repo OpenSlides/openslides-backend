@@ -399,7 +399,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         {
                             "state": ImportState.DONE,
                             "messages": [
-                                "Following fields were removed from payload, because the user has no permissions to change them: username, gender_id, default_password"
+                                "Account is added to the meeting, but changes to the following field(s) are not possible: username, gender_id, default_password"
                             ],
                             "data": {
                                 "username": {
@@ -643,7 +643,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: 'Jim.Knopf@@Lummer.land' is not a valid email address.",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, email",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, email",
         ]
         assert row["data"] == {
             "id": 2,
@@ -1884,7 +1884,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
@@ -1958,7 +1958,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Following fields were removed from payload, because the user has no permissions to change them: member_number, first_name, email, username, saml_id, default_password",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: member_number, first_name, email, username, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
