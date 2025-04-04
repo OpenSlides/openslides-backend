@@ -15,7 +15,7 @@
     id: Id,
     user_oml: String, // one of "superadmin", "can_manage_organization", "can_manage_users", ""
     committee_ids: Id[] // Ids of all committees the user is part of
-    user_in_archived_meetings_only: Bool // True if total number of meeting_ids for user is more than 1 and number of active meetings is 1
+    user_in_archived_meetings_only: Bool // True if total number of meeting_ids for user is more than 0 and number of active meetings is 0
   },
   ...
 }
