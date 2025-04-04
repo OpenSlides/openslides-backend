@@ -86,9 +86,9 @@ class UserScopeMixin(BaseServiceProvider):
             if meeting_data.get("is_active_in_organization_id"):
                 active_meetings_committee.update(item)
 
-        def get_committee_meetings_and_commitees(
-            meetings_committee,
-        ) -> tuple[list[int], dict[int, Any]]:
+        def get_committee_meetings_and_committees(
+            meetings_committee: dict[int, int],
+        ) -> tuple[dict[int, Any], set[int | Any]]:
             committees = committees_manager | set(meetings_committee.values())
             committee_meetings: dict[int, Any] = defaultdict(list)
             for meeting, committee in meetings_committee.items():
@@ -98,11 +98,11 @@ class UserScopeMixin(BaseServiceProvider):
                     committee_meetings[committee] = None
             return committee_meetings, committees
 
-        committee_meetings, committees = get_committee_meetings_and_commitees(
+        committee_meetings, committees = get_committee_meetings_and_committees(
             meetings_committee
         )
         active_committee_meetings, active_committees = (
-            get_committee_meetings_and_commitees(active_meetings_committee)
+            get_committee_meetings_and_committees(active_meetings_committee)
         )
 
         user_in_archived_meetings_only = (
@@ -234,9 +234,9 @@ class UserScopeMixin(BaseServiceProvider):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: [
-                            ci for ci in committees_to_meetings.keys()
-                        ],
+                        CommitteeManagementLevel.CAN_MANAGE: set(
+                            [ci for ci in committees_to_meetings.keys()]
+                        ),
                     }
                 )
 
