@@ -44,8 +44,13 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
                 id_,
             )
         ):
-            action_name = self.action_name or "perform this action on the"
-            raise ActionException(f"Cannot {action_name} locked meeting.")
+            if hasattr(self, "action_name"):
+                raise ActionException(f"Cannot {self.action_name} locked meeting.")
+            else:
+                raise ActionException(
+                    "Cannot perform this action for the locked meeting."
+                )
+
         if not has_committee_management_level(
             self.datastore,
             self.user_id,
