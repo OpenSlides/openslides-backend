@@ -98,9 +98,12 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             )
 
         # validate structure level
-        _, structure_level_objects = self.validate_with_lookup(
-            entry, "structure_level", messages, True
-        )
+        if "structure_level" in entry:
+            _, structure_level_objects = self.validate_with_lookup(
+                entry, "structure_level", messages, True
+            )
+        else:
+            structure_level_objects = []
 
         payload_index = entry.pop("payload_index", None)
         # swapping needed for get_failing_fields and setting import states not to fail
@@ -110,7 +113,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             entry["home_committee_id"] = entry.pop("home_committee")
         failing_fields = self.permission_check.get_failing_fields(entry)
         entry.pop("group_ids")
-        entry.pop("structure_level_ids")
+        entry.pop("structure_level_ids", None)
         entry.pop("meeting_id")
 
         if not entry.get("id"):

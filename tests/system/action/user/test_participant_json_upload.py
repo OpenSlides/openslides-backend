@@ -3026,7 +3026,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == []
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id

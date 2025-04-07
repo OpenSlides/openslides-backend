@@ -128,6 +128,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             )
         groups = entry.pop("groups", None)
         structure_levels = entry.pop("structure_level", None)
+        home_committee = entry.pop("home_committee", None)
         entry["group_ids"] = [
             group_id for group in groups if (group_id := group.get("id"))
         ]
@@ -137,6 +138,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 for structure_level in structure_levels
                 if (structure_level_id := structure_level.get("id"))
             ]
+        if home_committee and (home_committee_id := home_committee.get("id")):
+            entry["home_committee_id"] = home_committee_id
 
         failing_fields = self.permission_check.get_failing_fields(entry)
         failing_fields_jsonupload = {
@@ -145,7 +148,11 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             if isinstance(entry[field], dict)
             and entry[field]["info"] == ImportState.REMOVE
         }
-        if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
+        if less_ff := list(
+            failing_fields_jsonupload
+            - set(failing_fields)
+            - {"home_committee", "guest"}
+        ):
             less_ff.sort()
             row["messages"].append(
                 f"In contrast to preview you may import field(s) '{', '.join(less_ff)}'"
@@ -162,9 +169,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 entry[field]["info"] = ImportState.ERROR
         entry.pop("group_ids")
         entry.pop("structure_level_ids", None)
+        entry.pop("home_committee_id", None)
         entry["groups"] = groups
         if structure_levels:
             entry["structure_level"] = structure_levels
+        if home_committee:
+            entry["home_committee"] = home_committee
 
         for field in ("groups", "structure_level"):
             valid = False

@@ -188,6 +188,7 @@ class BaseUserImport(BaseImportAction):
             )
         if (
             not old_hc_permission
+            and row["data"].get("guest", {}).get("value") != ImportState.REMOVE
             and (guest := row["data"].get("guest", {}).get("value")) is True
             and row["data"].get("guest", {}).get("info") == ImportState.DONE
         ):

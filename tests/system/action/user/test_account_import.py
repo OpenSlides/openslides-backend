@@ -1078,7 +1078,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
-            {"id": 2, "username": "Alice", "first_name": "alice"},
+            {"id": 2, "username": "Alice", "first_name": "alice", "guest": None},
         )
 
     def test_json_upload_update_guest_false_without_home_committee_perms(self) -> None:

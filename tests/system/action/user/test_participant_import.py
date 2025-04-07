@@ -1522,38 +1522,130 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_set_home_committee(self) -> None:
         self.json_upload_set_home_committee()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "home_committee_id": 1,
+                "guest": False,
+            },
+        )
 
     def test_json_upload_update_home_committee_and_guest_false(self) -> None:
         self.json_upload_update_home_committee_and_guest_false()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "home_committee_id": 1,
+                "guest": False,
+            },
+        )
 
     def test_json_upload_update_guest_true_without_home_committee(self) -> None:
         self.json_upload_update_guest_true_without_home_committee()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "meeting_user_ids": [1], "username": "Alice", "guest": True},
+        )
 
     def test_json_upload_update_guest_true_with_home_committee(self) -> None:
         self.json_upload_update_guest_true_with_home_committee()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "home_committee_id": None,
+                "guest": True,
+            },
+        )
 
     def test_json_upload_update_guest_true_without_home_committee_perms(self) -> None:
         self.json_upload_update_guest_true_without_home_committee_perms()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "first_name": "alice",
+                "guest": None,
+            },
+        )
 
     def test_json_upload_set_home_committee_no_perms(self) -> None:
         self.json_upload_set_home_committee_no_perms()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "home_committee_id": None,
+            },
+        )
 
     def test_json_upload_update_home_committee_no_perms_new(self) -> None:
         self.json_upload_update_home_committee(new_perm=False)
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "first_name": "alice",
+                "home_committee_id": 1,
+            },
+        )
 
     def test_json_upload_update_home_committee_no_perms_both(self) -> None:
         self.json_upload_update_home_committee(old_perm=False, new_perm=False)
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "first_name": "alice",
+                "home_committee_id": 1,
+            },
+        )
 
     def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
         self,
     ) -> None:
         self.json_upload_update_home_committee_and_guest_false_no_perms_new()
-        # TODO: Finish
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "guest": False,
+                "home_committee_id": 1,
+            },
+        )
