@@ -1120,6 +1120,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             {
                 "id": 2,
                 "username": "Alice",
+                "home_committee_id": 1,
             },
         )
 
