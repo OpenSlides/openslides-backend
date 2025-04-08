@@ -126,8 +126,36 @@ def test_update_performance() -> None:
         for i in range(1, MODEL_COUNT + 1)
     ]
     with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
+        with TestPerformance(conn) as performance:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(create_write_requests(data))
+
+    print("\nCreate:\n")
+    print(f"{performance['total_time']} seconds")
+    print(f"requests: {performance['requests_count']}")
+    print(
+        f"read time: {performance['read_time']}, write time: {performance['write_time']}"
+    )
+
+    data[0]["events"] = [
+        {
+            "type": EventType.Update,
+            "fqid": f"user/{i}",
+            "fields": {"first_name": "None", "last_name": "None"},
+        }
+        for i in range(1, MODEL_COUNT + 1)
+    ]
+    with get_new_os_conn() as conn:
+        with TestPerformance(conn) as performance:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(create_write_requests(data))
+
+    print("\nUpdate simple:\n")
+    print(f"{performance['total_time']} seconds")
+    print(f"requests: {performance['requests_count']}")
+    print(
+        f"read time: {performance['read_time']}, write time: {performance['write_time']}"
+    )
 
     data[0]["events"] = [
         {
@@ -147,6 +175,7 @@ def test_update_performance() -> None:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(create_write_requests(data))
 
+    print("\nUpdate lists:\n")
     print(f"{performance['total_time']} seconds")
     print(f"requests: {performance['requests_count']}")
     print(
