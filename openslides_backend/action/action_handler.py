@@ -198,7 +198,7 @@ class ActionHandler(BaseHandler):
         relation_manager = RelationManager(self.datastore)
         action_name_list = []
         for i, element in enumerate(payload):
-            with make_span(self.env, f"parse action: { element['action'] }"):
+            with make_span(self.env, f"parse action: {element['action']}"):
                 action_name = element["action"]
                 if (action := actions_map.get(action_name)) and action.is_singular:
                     if action_name in action_name_list:

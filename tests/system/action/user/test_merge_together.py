@@ -1842,7 +1842,7 @@ class UserMergeTogether(BaseActionTestCase):
             for meeting_id in range(1, 4)
         }
         structure_level_data: dict[str, dict[str, Any]] = {
-            f"structure_level/{(s_level_id := (meeting_id -1)*2 + s_level_index)}": {
+            f"structure_level/{(s_level_id := (meeting_id - 1)*2 + s_level_index)}": {
                 "id": s_level_id,
                 "name": name,
                 "meeting_user_ids": meeting_user_ids,
