@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,14 +13,14 @@ from openslides_backend.shared.exceptions import (
     InvalidFormat,
     ModelDoesNotExist,
 )
-from tests.database.reader.system.util import setup_data
+from tests.database.reader.system.util import setup_data, standard_responses
 
 ID = 1
 COLLECTION = "user"
 FQID = f"{COLLECTION}/{ID}"
 data = {
     COLLECTION: {
-        str(ID): {
+        ID: {
             "id": ID,
             "username": "data",
             "default_vote_weight": "42.000000",
@@ -30,30 +29,7 @@ data = {
         },
     },
 }
-standard_response = {
-    "id": ID,
-    "username": "data",
-    "member_number": None,
-    "saml_id": None,
-    "pronoun": None,
-    "title": None,
-    "first_name": None,
-    "last_name": None,
-    "is_active": True,
-    "is_physical_person": True,
-    "password": None,
-    "default_password": None,
-    "can_change_own_password": True,
-    "gender": None,
-    "email": None,
-    "default_vote_weight": Decimal("42"),
-    "last_email_sent": None,
-    "is_demo_user": True,
-    "last_login": None,
-    "organization_management_level": None,
-    "meeting_ids": [1, 2, 3],
-    "organization_id": 1,
-}
+standard_response = standard_responses["user"][ID]
 
 
 def test_simple(db_connection: Connection) -> None:

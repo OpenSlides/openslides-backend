@@ -70,7 +70,6 @@ def get_group_base_data() -> list[dict[str, Any]]:
                         "language": "it",
                         "motions_default_workflow_id": 1,
                         "motions_default_amendment_workflow_id": 1,
-                        "motions_default_statute_amendment_workflow_id": 1,
                         "committee_id": 1,
                         "reference_projector_id": 1,
                         "default_group_id": 1,
