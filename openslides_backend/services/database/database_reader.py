@@ -1,6 +1,6 @@
 from typing import Any
 
-from psycopg import Connection
+from psycopg import Connection, sql
 from psycopg.errors import UndefinedColumn, UndefinedTable
 
 from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
@@ -69,11 +69,14 @@ class DatabaseReader:
                 mapped_fields_str,
                 _,  # mapped_field_args,
             ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
-            query = (
-                f"""SELECT {mapped_fields_str} FROM {collection}_t WHERE id = ANY(%s)"""
+            query = sql.SQL(
+                """SELECT {mapped_fields_str} FROM {collection} WHERE id = ANY(%s)"""
+            ).format(
+                mapped_fields_str=sql.SQL(mapped_fields_str),
+                collection=sql.Identifier(collection),
             )
             if lock_result:
-                query += " FOR UPDATE"
+                query += sql.SQL(" FOR UPDATE")
             try:
                 with self.connection.cursor() as curs:
                     db_result = curs.execute(query, (ids,)).fetchall()
