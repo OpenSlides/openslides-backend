@@ -118,7 +118,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 failing_fields.remove("member_number")
         if failing_fields:
             messages.append(
-                f"Following fields were removed from payload, because the user has no permissions to change them: {', '.join(failing_fields)}"
+                f"Account is added to the meeting, but changes to the following field(s) are not possible: {', '.join(failing_fields)}"
             )
         field_to_fail = (
             set(entry.keys()) & self.permission_check.get_all_checked_fields()
