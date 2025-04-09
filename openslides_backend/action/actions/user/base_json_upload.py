@@ -405,26 +405,26 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 home_committee_id: int = cast(
                     int, self.committee_lookup.get_field_by_name(home_committee, "id")
                 )
-                if old_hc_permission and has_committee_management_level(
-                    self.datastore,
-                    self.user_id,
-                    CommitteeManagementLevel.CAN_MANAGE,
-                    home_committee_id,
-                ):
-                    entry["home_committee"] = {
-                        "value": home_committee,
-                        "info": ImportState.DONE,
-                        "id": home_committee_id,
-                    }
-                else:
-                    entry["home_committee"] = {
-                        "value": home_committee,
-                        "info": ImportState.REMOVE,
-                        "id": home_committee_id,
-                    }
-                    messages.append(
-                        "Home committee will be skipped due to missing permissions in either new or former home committee."
-                    )
+                # if old_hc_permission and has_committee_management_level(
+                #     self.datastore,
+                #     self.user_id,
+                #     CommitteeManagementLevel.CAN_MANAGE,
+                #     home_committee_id,
+                # ):
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.DONE,
+                    "id": home_committee_id,
+                }
+                # else:
+                #     entry["home_committee"] = {
+                #         "value": home_committee,
+                #         "info": ImportState.REMOVE,
+                #         "id": home_committee_id,
+                #     }
+                #     messages.append(
+                #         "Home committee will be skipped due to missing permissions in either new or former home committee."
+                #     )
             elif result == ResultType.NOT_FOUND:
                 self.row_state = ImportState.ERROR
                 entry["home_committee"] = {
@@ -460,26 +460,26 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["guest"] = {"value": False, "info": ImportState.GENERATED}
         elif (guest := entry.get("guest")) is not None:
             if guest is True:
-                if old_hc_permission:
-                    entry["guest"] = {
-                        "value": guest,
-                        "info": ImportState.DONE,
-                    }
-                    entry["home_committee"] = {
-                        "value": "",
-                        "info": ImportState.GENERATED,
-                    }
-                    messages.append(
-                        "Since guest is set to true, any home_committee that was set will be removed."
-                    )
-                else:
-                    entry["guest"] = {
-                        "value": guest,
-                        "info": ImportState.REMOVE,
-                    }
-                    messages.append(
-                        "Cannot set guest to true: Insufficient rights for unsetting the home committee."
-                    )
+                # if old_hc_permission:
+                entry["guest"] = {
+                    "value": guest,
+                    "info": ImportState.DONE,
+                }
+                entry["home_committee"] = {
+                    "value": None,
+                    "info": ImportState.GENERATED,
+                }
+                messages.append(
+                    "If guest is set to true, any home_committee that was set will be removed."
+                )
+                # else:
+                #     entry["guest"] = {
+                #         "value": guest,
+                #         "info": ImportState.REMOVE,
+                #     }
+                #     messages.append(
+                #         "Cannot set guest to true: Insufficient rights for unsetting the home committee."
+                #     )
             else:
                 entry["guest"] = {
                     "value": guest,

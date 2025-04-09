@@ -2218,7 +2218,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Since guest is set to true, any home_committee that was set will be removed."
+            "If guest is set to true, any home_committee that was set will be removed."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["username"] == {"info": ImportState.DONE, "value": "Alice"}
@@ -2239,7 +2239,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Since guest is set to true, any home_committee that was set will be removed."
+            "If guest is set to true, any home_committee that was set will be removed."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -2291,7 +2291,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Since guest is set to true, any home_committee that was set will be removed."
+            "If guest is set to true, any home_committee that was set will be removed."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id

@@ -109,8 +109,13 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         # swapping needed for get_failing_fields and setting import states not to fail
         if entry.get("gender"):
             entry["gender_id"] = entry.pop("gender")
-        if entry.get("home_committee"):
-            entry["home_committee_id"] = entry.pop("home_committee")
+        if home_committee := entry.pop("home_committee", None):
+            if (home_committee_id := home_committee.get("id")) or home_committee[
+                "value"
+            ] == None:
+                entry["home_committee_id"] = home_committee_id
+        if guest := entry.pop("guest", None):
+            entry["guest"] = guest["value"]
         failing_fields = self.permission_check.get_failing_fields(entry)
         entry.pop("group_ids")
         entry.pop("structure_level_ids", None)
@@ -128,16 +133,30 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         field_to_fail = (
             set(entry.keys()) & self.permission_check.get_all_checked_fields()
         )
+        if home_committee:
+            entry["home_committee"] = home_committee
+            entry.pop("home_committee_id", None)
+        if guest:
+            entry["guest"] = guest
         for field in field_to_fail:
+            actual_field = (
+                field[:-3] if field not in entry and field.endswith("_id") else field
+            )
             if field in failing_fields:
-                if isinstance(entry[field], dict):
-                    if entry[field]["info"] != ImportState.ERROR:
-                        entry[field]["info"] = ImportState.REMOVE
+                if isinstance(entry[actual_field], dict):
+                    if entry[actual_field]["info"] != ImportState.ERROR:
+                        entry[actual_field]["info"] = ImportState.REMOVE
                 else:
-                    entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.REMOVE,
+                    }
             else:
-                if not isinstance(entry[field], dict):
-                    entry[field] = {"value": entry[field], "info": ImportState.DONE}
+                if not isinstance(entry[actual_field], dict):
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.DONE,
+                    }
 
         # validate locking
         self.validate_locked_out_status(entry, messages, group_objects, results)
@@ -162,8 +181,6 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             entry["payload_index"] = payload_index
         if entry.get("gender_id"):
             entry["gender"] = entry.pop("gender_id")
-        if entry.get("home_committee_id"):
-            entry["home_committee"] = entry.pop("home_committee_id")
 
         return results
 

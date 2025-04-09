@@ -2986,7 +2986,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             assert import_preview["result"]["rows"][0]["messages"] == []
         else:
             assert import_preview["result"]["rows"][0]["messages"] == [
-                "Home committee will be skipped due to missing permissions in either new or former home committee."
+                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee_id, guest"
             ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3001,14 +3001,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "value": "Home",
                 "id": 2,
             }
-            assert data["guest"] == {"info": ImportState.GENERATED, "value": False}
         else:
             assert data["home_committee"] == {
                 "info": ImportState.REMOVE,
                 "value": "Home",
                 "id": 2,
             }
-            assert "guest" not in data
+        assert data["guest"] == {"info": ImportState.REMOVE, "value": False}
 
     def json_upload_update_home_committee_and_guest_false(self) -> None:
         self.create_committee(1, name="Home")
@@ -3057,7 +3056,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Since guest is set to true, any home_committee that was set will be removed."
+            "If guest is set to true, any home_committee that was set will be removed."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3066,7 +3065,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.DONE,
             "value": "Alice",
         }
-        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": ""}
+        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": None}
         assert data["guest"] == {"info": ImportState.DONE, "value": True}
 
     def json_upload_update_guest_true_with_home_committee(self) -> None:
@@ -3085,7 +3084,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Since guest is set to true, any home_committee that was set will be removed."
+            "If guest is set to true, any home_committee that was set will be removed."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3094,7 +3093,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Alice",
             "id": alice_id,
         }
-        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": ""}
+        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": None}
         assert data["guest"] == {"info": ImportState.DONE, "value": True}
 
     def json_upload_update_guest_true_without_home_committee_perms(self) -> None:
@@ -3116,7 +3115,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Cannot set guest to true: Insufficient rights for unsetting the home committee."
+            "If guest is set to true, any home_committee that was set will be removed.",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee_id, guest",
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3126,7 +3126,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "id": alice_id,
         }
         assert data["guest"] == {"info": ImportState.REMOVE, "value": True}
-        assert "home_committee" not in data
+        assert data["home_committee"] == {"info": ImportState.REMOVE, "value": None}
 
     def json_upload_set_home_committee_no_perms(self) -> None:
         self.create_committee(1, name="Home")
@@ -3146,7 +3146,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Home committee will be skipped due to missing permissions in either new or former home committee."
+            "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee_id, guest"
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["username"] == {"info": ImportState.DONE, "value": "Alice"}
@@ -3155,7 +3155,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Home",
             "id": 1,
         }
-        assert "guest" not in data
+        assert data["guest"] == {"info": ImportState.REMOVE, "value": False}
 
     def json_upload_update_home_committee_and_guest_false_no_perms_new(self) -> None:
         self.create_committee(1, name="Old home")
@@ -3178,7 +3178,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Home committee will be skipped due to missing permissions in either new or former home committee."
+            "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee_id, guest"
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3192,4 +3192,4 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Home",
             "id": 2,
         }
-        assert data["guest"] == {"info": ImportState.DONE, "value": False}
+        assert data["guest"] == {"info": ImportState.REMOVE, "value": False}

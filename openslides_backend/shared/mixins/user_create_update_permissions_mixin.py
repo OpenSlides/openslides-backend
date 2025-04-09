@@ -232,7 +232,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "F": ["default_password"],
         "G": ["is_demo_user"],
         "H": ["saml_id"],
-        "I": ["home_committee_id", "guest"],
+        "I": ["home_committee_id"],
+        "J": ["guest"],
     }
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -281,6 +282,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         self.check_group_F(actual_group_fields["F"], instance)
         self.check_group_G(actual_group_fields["G"])
         self.check_group_I(actual_group_fields["I"], instance)
+        self.check_group_J(actual_group_fields["J"], instance)
 
     def check_group_A(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group A: Depending on scope of user to act on"""
@@ -504,7 +506,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 msg += f" or with {OrganizationManagementLevel.CAN_MANAGE_USERS} permission"
             raise ActionException(msg)
 
-    def check_group_I(self, fields: list[str], instance: dict[str, Any]) -> None:
+    def check_group_I(self, fields: list[str], instance: dict[str, Any]) -> list[int]:
         """Check Group I committee-related fields: OML or CML level both for setting and unsetting"""
         if (
             fields
@@ -537,6 +539,14 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 raise MissingPermission(
                     {CommitteeManagementLevel.CAN_MANAGE: forbidden_committees}
                 )
+            return committee_ids
+        return []
+
+    def check_group_J(self, fields: list[str], instance: dict[str, Any]) -> None:
+        if fields:
+            committee_ids = self.check_group_I(fields, instance)
+            if not committee_ids and any(instance[field] is False for field in fields):
+                self.check_group_A(fields, instance)
 
     def _check_for_higher_OML(
         self,
@@ -688,6 +698,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             (self.check_group_A, actual_group_fields["A"], instance, None),
             (self.check_group_F, actual_group_fields["F"], instance, None),
             (self.check_group_G, actual_group_fields["G"], None, None),
+            (self.check_group_I, actual_group_fields["I"], instance, None),
+            (self.check_group_J, actual_group_fields["J"], instance, None),
         ]:
             try:
                 if inst_param is None:
@@ -706,6 +718,6 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
     def get_all_checked_fields(self) -> set[str]:
         all_fields = set()
-        for letter in "ABDEFGH":
+        for letter in "ABDEFGHIJ":
             all_fields.update(self.field_rights[letter])
         return all_fields

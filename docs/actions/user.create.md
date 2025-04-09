@@ -52,6 +52,9 @@
 // Group I
     home_committee_id: Id;
 
+// Group J
+    guest: boolean;
+
 // Only internal
     forwarding_committee_ids
 }
@@ -131,3 +134,7 @@ Group H fields are only allowed in internal requests or, exclusive for user.crea
 Group I:
 
 CML `can_manage` for the new `home_committee_id` if there is one and CML `can_manage` for the old `home_committee_id` if there is one.
+
+Group J:
+
+Group I permissions if new value is `true`, otherwise or if there is no home committee (old or new) Group A Permissions

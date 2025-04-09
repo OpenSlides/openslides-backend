@@ -18,7 +18,6 @@
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
-    guest: boolean;
 
 // Group B
     number: string;
@@ -53,6 +52,9 @@
 
 // Group I
     home_committee_id: Id;
+
+// Group J
+    guest: boolean;
 
 // only internal
     is_present_in_meeting_ids: Id[];
@@ -132,3 +134,7 @@ Group H fields are only allowed in internal requests
 Group I:
 
 CML `can_manage` for the new `home_committee_id` if there is one and CML `can_manage` for the old `home_committee_id` if there is one.
+
+Group J:
+
+Group I permissions and if there is no home committee (old or new) Group A Permissions

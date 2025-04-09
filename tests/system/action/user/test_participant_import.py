@@ -1645,7 +1645,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "id": 2,
                 "meeting_user_ids": [1],
                 "username": "Alice",
-                "guest": False,
+                "guest": None,
                 "home_committee_id": 1,
             },
         )
