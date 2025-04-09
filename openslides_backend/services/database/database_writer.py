@@ -1,6 +1,6 @@
 import threading
 
-from psycopg import Connection, sql
+from psycopg import Connection, rows, sql
 from psycopg.errors import (
     CheckViolation,
     GeneratedAlways,
@@ -50,7 +50,7 @@ class DatabaseWriter:
     env: Env
 
     def __init__(
-        self, connection: Connection, logging: LoggingModule, env: Env
+        self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class DatabaseWriter:
         self.print_stats()
         self.print_summary()
         # TODO if returning the id is all then this can be done at the bottom of call stack without generating fqids.
-        return list(modified_models)  # type: ignore
+        return list(modified_models)
 
     def print_stats(self) -> None:
         pass
@@ -276,13 +276,14 @@ class DatabaseWriter:
         try:
             with self.connection.cursor() as curs:
                 # print(statement.as_string(curs), flush=True)
-                curs.execute(statement)
-                if curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
+                result = curs.execute(statement).fetchone()
+                if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
                     assert target_id  # we will never reach here with delete or update events being None on id
                     raise ModelDoesNotExist(
                         fqid_from_collection_and_id(collection, target_id)
                     )
-                id_ = curs.fetchone().get("id")  # type: ignore
+                else:
+                    id_ = result.get("id", 0)
         except UniqueViolation as e:
             if "duplicate key value violates unique constraint" in e.args[0]:
                 raise ModelExists(
@@ -355,7 +356,7 @@ class DatabaseWriter:
             for collection, ids in ids_per_collection.items()
         }
 
-    # @retry_on_db_failure
+    # @retry_on_db_failure TODO for all
     def reserve_ids(self, collection: str, amount: int) -> list[Id]:
         with make_span(self.env, "reserve ids"):
             with self.connection.cursor() as curs:
@@ -368,15 +369,19 @@ class DatabaseWriter:
                         f"Collection length must be between 1 and {COLLECTION_MAX_LEN}"
                     )
 
-                # TODO better option to read is_called and last_value?
-                curs.execute(f"""SELECT nextval('{collection}_t_id_seq')""")
-                # TODO is there a possibility of failure f.e. empty return value?
-                current_max_id = curs.fetchone().get("nextval")  # type:ignore
-                # TODO this should be set the is_called flag to false. Is that so? Shouldn't then no minus 1?
-                curs.execute(
+                # TODO find better way to read is_called and last_value
+                if result := curs.execute(
+                    f"""SELECT nextval('{collection}_t_id_seq')"""
+                ).fetchone():
+                    current_max_id = result.get("nextval", 0)
+                else:
+                    raise BadCodingException("db id sequence broken.")
+                if result := curs.execute(
                     f"""SELECT setval('{collection}_t_id_seq', {amount + current_max_id - 1})"""
-                )
-                new_max_id = curs.fetchone().get("setval")  # type:ignore
+                ).fetchone():
+                    new_max_id = result.get("setval", 0)
+                else:
+                    raise BadCodingException("db id sequence broken.")
                 ids = list(range(current_max_id, new_max_id + 1))
                 self.logger.info(f"{len(ids)} ids reserved")
                 return ids
@@ -394,72 +399,3 @@ class DatabaseWriter:
         # with self.database_reader.get_context():
         #     self.database_reader.truncate_db()
         # logger.info("Database truncated")
-
-    # # # @retry_on_db_failure
-    # def write_without_events(
-    #     self,
-    #     write_request: WriteRequest,
-    # ) -> None:
-    #     """
-    #     # TODO can this all be done by the regular write now since we don't store events and positions?
-    #     Writes or updates an action_worker- or
-    #     import_preview-object.
-    #     The record will be written to
-    #     the models-table only, because there is no history
-    #     needed and after the action is finished and notified,
-    #     isn't needed anymore.
-    #     There is no position available or needed,
-    #     for redis notifying the 0 is used therefore.
-    #     """
-    #     self.write_requests = [write_request]
-
-    #     with make_span("write action worker"):
-    #         if isinstance(write_request.events[0], EventType.Delete):
-    #             fqids_to_delete: list[FullQualifiedId] = []
-    #             for event in write_request.events:
-    #                 fqids_to_delete.append(event.fqid)
-    #             self.write_model_deletes_without_events(fqids_to_delete)
-    #         else:
-    #             for event in write_request.events:
-    #                 fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
-    #                 self.write_model_updates_without_events(
-    #                     {event.fqid: fields_with_delete}
-    #                 )
-
-    #     self.print_stats()
-    #     self.print_summary()
-
-    # self.write_requests = [write_request]
-
-    # with make_span("write action worker"):
-    #     self.position_to_modified_models = {}
-    #     if isinstance(write_request.events[0], RequestDeleteEvent):
-    #         fqids_to_delete: list[FullQualifiedId] = []
-    #         for event in write_request.events:
-    #             fqids_to_delete.append(event.fqid)
-    #         with self.database.get_context():
-    #             self.database.write_model_deletes_without_events(fqids_to_delete)
-    #     else:
-    #         with self.database.get_context():
-    #             for event in write_request.events:
-    #         fields_with_delete = copy.deepcopy(event.fields)  # type: ignore
-    #         fields_with_delete.update({META_DELETED: False})
-    #         self.database.write_model_updates_without_events(
-    #             {event.fqid: fields_with_delete}
-    #         )
-    #         self.position_to_modified_models[0] = {event.fqid: event.fields}  # type: ignore
-
-    # self.print_stats()
-    # self.print_summary()
-
-    def write_model_deletes(self, ids_per_collection: dict[str, set[Id]]) -> None:
-        """Physically delete of action_workers or import_previews"""
-        # ids_per_collection = dict()
-        # for fqid in fqids:
-        #     collection, id_ = collection_and_id_from_fqid(fqid)
-        #     ids_per_collection["collection"].append(id_)
-
-        for collection, ids in ids_per_collection.items():
-            statement = f"delete from {collection}_t where id = any(%s);"
-            with self.connection.cursor() as curs:
-                curs.execute(statement, (list(ids),))

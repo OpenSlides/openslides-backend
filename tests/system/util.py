@@ -3,7 +3,7 @@ import cProfile
 import os
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Self
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -171,7 +171,7 @@ class CountDatastoreCalls:
     def __init__(self, verbose: bool = False) -> None:
         self.verbose = verbose
 
-    def __enter__(self) -> "CountDatastoreCalls":
+    def __enter__(self) -> Self:
         self.patcher: list[Any] = []
         self.mocks: list[Mock] = []
         for method in ("get", "get_many"):

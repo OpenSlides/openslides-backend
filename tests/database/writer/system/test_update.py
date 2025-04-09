@@ -2,7 +2,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from psycopg import Connection
+from psycopg import Connection, rows
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -136,7 +136,7 @@ def test_single_field_delete_on_null() -> None:
     assert_model(f"user/{id_}", {"first_name": "1", "id": id_})
 
 
-def test_update_non_existing_1(db_connection: Connection) -> None:
+def test_update_non_existing_1(db_connection: Connection[rows.DictRow]) -> None:
     data = get_data()
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -151,7 +151,7 @@ def test_update_non_existing_1(db_connection: Connection) -> None:
     assert_no_db_entry(db_connection.cursor())
 
 
-def test_update_non_existing_2(db_connection: Connection) -> None:
+def test_update_non_existing_2(db_connection: Connection[rows.DictRow]) -> None:
     data = get_data()
     data[0]["events"][0] = {
         "type": EventType.Update,

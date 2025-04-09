@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, TypedDict, Union
+from typing import Any, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -15,16 +15,12 @@ class EventType(str, Enum):
         return repr(self.value)
 
 
-ListFieldsDict = dict[str, Union[list[int], list[str]]]
+ListFieldsDict = dict[str, list[int] | list[str]]
 
 
 class ListFields(TypedDict):
     add: NotRequired[ListFieldsDict]
     remove: NotRequired[ListFieldsDict]
-
-    def __iter__(self) -> ListFieldsDict:
-        yield self.add
-        yield self.remove
 
 
 class Event(TypedDict):

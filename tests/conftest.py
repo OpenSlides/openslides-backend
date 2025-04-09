@@ -3,7 +3,7 @@ from typing import Any
 from unittest.mock import _patch
 
 import pytest
-from psycopg import Connection
+from psycopg import Connection, rows
 
 from openslides_backend.services.postgresql.db_connection_handling import (  # get_current_os_conn_pool,
     env,
@@ -62,7 +62,7 @@ def auth_mockers(request: Any, setup_pytest_session: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def db_connection() -> Generator[Connection, None, None]:
+def db_connection() -> Generator[Connection[rows.DictRow], None, None]:
     """Generates a Connection object for setting up initial test data and truncating changes afterwards."""
     with get_new_os_conn() as conn:
         yield conn

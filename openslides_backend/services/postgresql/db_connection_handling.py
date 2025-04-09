@@ -16,7 +16,7 @@ class ConnectionContext:
     def __init__(self, context_manager: _GeneratorContextManager) -> None:
         self.connection_context = context_manager
 
-    def __enter__(self) -> Connection:
+    def __enter__(self) -> Connection[rows.DictRow]:
         self.connection = self.connection_context.__enter__()
         self.connection.autocommit = False
         self.connection.set_isolation_level(IsolationLevel.REPEATABLE_READ)
@@ -26,13 +26,15 @@ class ConnectionContext:
         self.connection_context.__exit__(exception, exception_value, traceback)
 
 
-def create_os_conn_pool(open: bool = True) -> ConnectionPool:
+def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.DictRow]]:
     global os_conn_pool
     if "os_conn_pool" in globals() and not os_conn_pool.closed:
         os_conn_pool.close()
     os_conn_pool = ConnectionPool(
         conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",
-        connection_class=Connection,
+        # provides type hinting
+        connection_class=Connection[rows.DictRow],  # type:ignore
+        # works at runtime
         kwargs={"autocommit": True, "row_factory": rows.dict_row},
         min_size=int(env.DB_POOL_MIN_SIZE),
         max_size=int(env.DB_POOL_MAX_SIZE),
@@ -49,10 +51,10 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool:
     return os_conn_pool
 
 
-os_conn_pool = create_os_conn_pool(open=False)
+os_conn_pool: ConnectionPool[Connection[rows.DictRow]] = create_os_conn_pool(open=False)
 
 
-def get_current_os_conn_pool() -> ConnectionPool:
+def get_current_os_conn_pool() -> ConnectionPool[Connection[rows.DictRow]]:
     global os_conn_pool
     if os_conn_pool.closed:
         try:
@@ -72,7 +74,7 @@ def get_unpooled_db_connection(
     db_name: str,
     autocommit: bool = False,
     row_factory: Callable = rows.dict_row,
-) -> Connection:
+) -> Connection[rows.DictRow]:
     """Use for temporary connections, where pooling is not helpfull like specific DDL-Connections"""
     try:
         db_connection = connect(

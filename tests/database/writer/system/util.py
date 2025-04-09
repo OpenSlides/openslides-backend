@@ -1,11 +1,11 @@
 import os
 from collections.abc import Callable
 from time import time
-from typing import Any, TypeVar
+from typing import Any, Self
 from unittest.mock import MagicMock, patch
 
 import pytest
-from psycopg import Connection, Cursor, sql
+from psycopg import Connection, Cursor, rows, sql
 
 from openslides_backend.services.database.database_reader import (
     DatabaseReader,
@@ -60,17 +60,17 @@ def assert_no_model(fqid: FullQualifiedId) -> None:
             extended_database.get(fqid)
 
 
-def assert_no_db_entry(db_cur: Cursor) -> None:
+def assert_no_db_entry(db_cur: Cursor[rows.DictRow]) -> None:
     assert_db_entries(db_cur, 0)
 
 
-def assert_db_entries(db_cur: Cursor, amount: int) -> None:
+def assert_db_entries(db_cur: Cursor[rows.DictRow], amount: int) -> None:
     table_names = db_cur.execute("SELECT tablename FROM truncate_tables").fetchall()
     sum_ = 0
     for table_name in table_names:
-        if table := table_name.get("tablename"):  # type: ignore
+        if table := table_name.get("tablename"):
             if count := db_cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone():
-                sum_ += count.get("count", 0)  # type: ignore
+                sum_ += count.get("count", 0)
     assert sum_ == amount
 
 
@@ -146,7 +146,7 @@ class TestPerformance:
 
     __test__ = False
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Connection[rows.DictRow]) -> None:
         self.connection = connection
         self.performance_info: dict[str, int | float] = {}
         self.cursor = CursorMock(connection.cursor(), self)
@@ -170,33 +170,31 @@ class TestPerformance:
         self.performance_info["total_time"] = diff
 
 
-TCursorMock = TypeVar("TCursorMock", bound="CursorMock")
-
-
 class CursorMock:
-    def __init__(self, curs: Cursor, tp: TestPerformance) -> None:
+    def __init__(self, curs: Cursor[rows.DictRow], tp: TestPerformance) -> None:
         self.cursor = curs
+        self.cursor.__init__()
         self.performance_info = tp.performance_info
         self.statusmessage = ""
 
-    def __enter__(self) -> "CursorMock":
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exception, exception_value, traceback):  # type ignore
-        pass
+    def __exit__(self, exception, exception_value, traceback):  # type: ignore
+        self.cursor.__exit__(exception, exception_value, traceback)
 
-    def execute(self, statement: sql.SQL) -> Cursor:
+    def execute(self, statement: sql.SQL) -> Cursor[rows.DictRow]:
         self.performance_info["requests_count"] += 1
         start = time()
-        result = self.cursor.execute(statement)  # type ignore
+        self.cursor.execute(statement)
         diff = time() - start
         if statement.as_string().strip().lower().startswith("select"):
             self.performance_info["read_time"] += diff
         else:
             self.performance_info["write_time"] += diff
-        return result
+        return self.cursor
 
-    def fetchone(self) -> tuple[Any, ...]:
+    def fetchone(self) -> rows.DictRow | None:
         return self.cursor.fetchone()
 
 

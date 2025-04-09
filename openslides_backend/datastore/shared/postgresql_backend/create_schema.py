@@ -2,7 +2,7 @@ import os
 
 from psycopg import Connection
 from psycopg import errors as psycopg_errors
-from psycopg import sql
+from psycopg import rows, sql
 
 from openslides_backend.database.db_connection_handling import (
     env,
@@ -16,7 +16,7 @@ def create_schema() -> None:
     Helper function to write the relational database schema into the database.
     Other schemata, vote and event-schema ar expected to be applied by their services, i.e. vote and datastore-service
     """
-    connection: Connection
+    connection: Connection[rows.DictRow]
     try:
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     except DatabaseException:

@@ -1,6 +1,6 @@
 from typing import Any
 
-from psycopg import Connection, sql
+from psycopg import Connection, rows, sql
 from psycopg.errors import UndefinedColumn, UndefinedTable
 
 from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
@@ -20,15 +20,13 @@ from ..database.commands import GetManyRequest
 from .mapped_fields import MappedFields
 from .query_helper import SqlQueryHelper
 
-# from ..postgresql.pg_connection_handler import ConnectionContext
-
 
 class DatabaseReader:
 
     query_helper = SqlQueryHelper()
 
     def __init__(
-        self, connection: Connection, logging: LoggingModule, env: Env
+        self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -94,7 +92,7 @@ class DatabaseReader:
                 raise DatabaseException(f"Unexpected error reading from database: {e}")
 
             self.insert_models_into_result(
-                db_result, mapped_fields, collection, result[collection]  # type: ignore
+                db_result, mapped_fields, collection, result[collection]
             )
             # result[collection].update(self.build_models_from_result(db_result, mapped_fields, collection))
         return result

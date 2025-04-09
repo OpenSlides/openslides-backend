@@ -1,8 +1,8 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
-from psycopg import Connection
+from psycopg import Connection, rows
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import ArrayField, Field
@@ -20,7 +20,7 @@ from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
-from ...shared.interfaces.event import EventType
+from ...shared.interfaces.event import EventType, ListFields
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
@@ -78,7 +78,7 @@ class ExtendedDatabase(Database):
     locked_fields: dict[str, CollectionFieldLock]
 
     def __init__(
-        self, connection: Connection, logging: LoggingModule, env: Env
+        self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -374,9 +374,9 @@ class ExtendedDatabase(Database):
                 if event["type"] == EventType.Update:
                     if not (event.get("fields") or (event.get("list_fields"))):
                         raise InvalidFormat("No fields given.")
-                if list_fields := event.get("list_fields", dict()):
+                if list_fields := event.get("list_fields", ListFields()):
                     for add_or_remove_dict in list_fields.values():
-                        for field_name in add_or_remove_dict:
+                        for field_name in cast(dict, add_or_remove_dict):
                             field: Field = model_registry[collection]().get_field(
                                 field_name
                             )
