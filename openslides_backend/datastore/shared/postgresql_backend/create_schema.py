@@ -4,7 +4,7 @@ from psycopg import Connection
 from psycopg import errors as psycopg_errors
 from psycopg import rows, sql
 
-from openslides_backend.database.db_connection_handling import (
+from openslides_backend.services.postgresql.db_connection_handling import (
     env,
     get_unpooled_db_connection,
 )

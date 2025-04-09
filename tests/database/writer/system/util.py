@@ -149,10 +149,12 @@ class TestPerformance:
     def __init__(self, connection: Connection[rows.DictRow]) -> None:
         self.connection = connection
         self.performance_info: dict[str, int | float] = {}
-        self.cursor = CursorMock(connection.cursor(), self)
+        self.cursor_mocked = CursorMock(connection.cursor(), self)
 
     def __enter__(self) -> dict[str, int | float]:
-        self.patcher = patch.object(self.connection, "cursor", new=lambda: self.cursor)
+        self.patcher = patch.object(
+            self.connection, "cursor", new=lambda: self.cursor_mocked
+        )
         self.patcher.start()
         self.performance_info.update(
             {
@@ -173,7 +175,7 @@ class TestPerformance:
 class CursorMock:
     def __init__(self, curs: Cursor[rows.DictRow], tp: TestPerformance) -> None:
         self.cursor = curs
-        self.cursor.__init__()
+        self.cursor.__init__()  # type: ignore
         self.performance_info = tp.performance_info
         self.statusmessage = ""
 

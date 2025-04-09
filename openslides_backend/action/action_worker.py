@@ -9,9 +9,9 @@ from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
 
-from openslides_backend.database.db_connection_handling import env
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
+    env,
     get_new_os_conn,
 )
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
