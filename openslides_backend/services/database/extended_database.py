@@ -6,7 +6,10 @@ from psycopg import Connection, rows
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import ArrayField, Field
-from openslides_backend.services.database.interface import FQID_MAX_LEN
+from openslides_backend.services.database.interface import (
+    COLLECTION_MAX_LEN,
+    FQID_MAX_LEN,
+)
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
@@ -337,6 +340,14 @@ class ExtendedDatabase(Database):
             f"Start to reserve ids with the following data: "
             f"Collection: {collection}, Amount: {amount}"
         )
+        if not isinstance(amount, int):
+            raise InvalidFormat("Amount must be integer.")
+        if amount <= 0:
+            raise InvalidFormat(f"Amount must be >= 1, not {amount}.")
+        if len(collection) > COLLECTION_MAX_LEN or not collection:
+            raise InvalidFormat(
+                f"Collection length must be between 1 and {COLLECTION_MAX_LEN}"
+            )
         return self.database_writer.reserve_ids(collection, amount)
 
     def reserve_id(self, collection: Collection) -> int:

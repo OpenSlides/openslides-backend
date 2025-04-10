@@ -11,10 +11,7 @@ from psycopg.errors import (
     UniqueViolation,
 )
 
-from openslides_backend.services.database.interface import (
-    COLLECTION_MAX_LEN,
-    FQID_MAX_LEN,
-)
+from openslides_backend.services.database.interface import FQID_MAX_LEN
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     InvalidFormat,
@@ -360,29 +357,16 @@ class DatabaseWriter:
     def reserve_ids(self, collection: str, amount: int) -> list[Id]:
         with make_span(self.env, "reserve ids"):
             with self.connection.cursor() as curs:
-                if not isinstance(amount, int):
-                    raise InvalidFormat("Amount must be integer.")
-                if amount <= 0:
-                    raise InvalidFormat(f"Amount must be >= 1, not {amount}.")
-                if len(collection) > COLLECTION_MAX_LEN or not collection:
-                    raise InvalidFormat(
-                        f"Collection length must be between 1 and {COLLECTION_MAX_LEN}"
-                    )
-
-                # TODO find better way to read is_called and last_value
-                if result := curs.execute(
-                    f"""SELECT nextval('{collection}_t_id_seq')"""
-                ).fetchone():
-                    current_max_id = result.get("nextval", 0)
+                statement = sql.SQL(
+                    """SELECT nextval('{collection}_t_id_seq') FROM generate_series(1, {amount})"""
+                ).format(
+                    collection=sql.SQL(collection),
+                    amount=sql.Literal(amount),
+                )
+                if result := curs.execute(statement).fetchall():
+                    ids = [item.get("nextval", 0) for item in result]
                 else:
                     raise BadCodingException("db id sequence broken.")
-                if result := curs.execute(
-                    f"""SELECT setval('{collection}_t_id_seq', {amount + current_max_id - 1})"""
-                ).fetchone():
-                    new_max_id = result.get("setval", 0)
-                else:
-                    raise BadCodingException("db id sequence broken.")
-                ids = list(range(current_max_id, new_max_id + 1))
                 self.logger.info(f"{len(ids)} ids reserved")
                 return ids
 
