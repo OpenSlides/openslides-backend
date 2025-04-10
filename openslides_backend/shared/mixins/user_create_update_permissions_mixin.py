@@ -645,7 +645,9 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             logging,
         )
 
-    def get_failing_fields(self, instance: dict[str, Any]) -> list[str]:
+    def get_failing_fields(
+        self, instance: dict[str, Any], groups: str = "ABDEFGHIJ"
+    ) -> list[str]:
         """
         Checks the permissions on a per field and user.scope base, details see
         https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
@@ -686,21 +688,21 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         if actual_group_fields["H"]:
             actual_group_fields["A"] += actual_group_fields["H"]
         failing_fields: list[str] = []
-        for method, fields, inst_param, other_param in [
-            (self.check_group_E, actual_group_fields["E"], instance, None),
-            (self.check_group_D, actual_group_fields["D"], instance, None),
-            (
-                self.check_group_B,
-                actual_group_fields["B"],
-                instance,
-                locked_from_inside,
-            ),
-            (self.check_group_A, actual_group_fields["A"], instance, None),
-            (self.check_group_F, actual_group_fields["F"], instance, None),
-            (self.check_group_G, actual_group_fields["G"], None, None),
-            (self.check_group_I, actual_group_fields["I"], instance, None),
-            (self.check_group_J, actual_group_fields["J"], instance, None),
+        for method, group, inst_param, other_param in [
+            tup
+            for tup in [
+                (self.check_group_E, "E", instance, None),
+                (self.check_group_D, "D", instance, None),
+                (self.check_group_B, "B", instance, locked_from_inside),
+                (self.check_group_A, "A", instance, None),
+                (self.check_group_F, "F", instance, None),
+                (self.check_group_G, "G", None, None),
+                (self.check_group_I, "I", instance, None),
+                (self.check_group_J, "J", instance, None),
+            ]
+            if tup[1] in groups
         ]:
+            fields = actual_group_fields[group]
             try:
                 if inst_param is None:
                     cast(Callable[[list[str]], None], method)(fields)
@@ -716,8 +718,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                 failing_fields += fields
         return failing_fields
 
-    def get_all_checked_fields(self) -> set[str]:
+    def get_all_checked_fields(self, groups: str = "ABDEFGHIJ") -> set[str]:
         all_fields = set()
-        for letter in "ABDEFGHIJ":
+        for letter in groups:
             all_fields.update(self.field_rights[letter])
         return all_fields

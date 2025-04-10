@@ -1,10 +1,11 @@
 from typing import Any, cast
 
 from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsFailingFields,
+    PermissionVarStore,
+)
 
-from ....permissions.management_levels import CommitteeManagementLevel
-from ....permissions.permission_helper import has_committee_management_level
-from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
 from .create import UserCreate
@@ -17,6 +18,22 @@ class BaseUserImport(BaseImportAction):
     """
 
     skip_archived_meeting_check = True
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+
+        permstore = PermissionVarStore(self.datastore, self.user_id)
+        self.permission_check = CreateUpdatePermissionsFailingFields(
+            self.user_id,
+            permstore,
+            self.services,
+            self.datastore,
+            self.relation_manager,
+            self.logging,
+            self.env,
+            self.skip_archived_meeting_check,
+            self.use_meeting_ids_for_archived_meeting_check,
+        )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().update_instance(instance)
@@ -145,64 +162,54 @@ class BaseUserImport(BaseImportAction):
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         self.validate_field(row, self.committee_map, "home_committee", False)
-        if (row["data"].get("id")) and (
-            old_home_committee_id := self.datastore.get(
-                fqid_from_collection_and_id("user", (row["data"]["id"])),
-                ["home_committee_id"],
-                raise_exception=False,
-            ).get("home_committee_id")
-        ):
-            old_hc_permission = has_committee_management_level(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                old_home_committee_id,
-            )
-        else:
-            old_hc_permission = True
-        if (
-            (
-                home_committee_id := (
-                    home_committee := row["data"].get("home_committee", {})
-                ).get("id")
-            )
-            and home_committee["info"] == ImportState.DONE
-            and (
-                not old_hc_permission
-                or not has_committee_management_level(
-                    self.datastore,
-                    self.user_id,
-                    CommitteeManagementLevel.CAN_MANAGE,
-                    home_committee_id,
-                )
-            )
-        ):
-            row["data"]["home_committee"] = {
-                "id": home_committee["id"],
-                "value": home_committee["value"],
-                "info": ImportState.ERROR,
-            }
-            row["state"] = ImportState.ERROR
-            row["messages"].append(
-                "Error: No longer permitted to change the home committee."
-            )
-        if (
-            not old_hc_permission
-            and row["data"].get("guest", {}).get("value") != ImportState.REMOVE
-            and (guest := row["data"].get("guest", {}).get("value")) is True
-            and row["data"].get("guest", {}).get("info") == ImportState.DONE
-        ):
-            row["data"]["guest"] = {
-                "value": guest,
-                "info": ImportState.ERROR,
-            }
-            row["state"] = ImportState.ERROR
-            row["messages"].append(
-                "Error: No longer permitted to set guest to true: Insufficient rights for unsetting the home committee."
-            )
 
-        if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
-            self.import_state = ImportState.ERROR
+        # if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
+        #     self.import_state = ImportState.ERROR
+
+    def check_field_failures(
+        self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEFGHIJ"
+    ) -> bool:
+        if home_committee := entry.pop("home_committee", None):
+            entry["home_committee_id"] = home_committee
+        failing_fields_jsonupload = {
+            field
+            for field in entry
+            if isinstance(entry[field], dict)
+            and entry[field]["info"] == ImportState.REMOVE
+        }
+        if home_committee:
+            entry["home_committee_id"] = home_committee.get("id")
+
+        failing_fields = self.permission_check.get_failing_fields(entry, groups)
+        if home_committee:
+            entry["home_committee"] = home_committee
+            entry.pop("home_committee_id")
+        if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
+            less_ff.sort()
+            messages.append(
+                f"In contrast to preview you may import field(s) '{', '.join(less_ff)}'"
+            )
+            for field in less_ff:
+                actual_field = (
+                    field[:-3]
+                    if field not in entry and field.endswith("_id")
+                    else field
+                )
+                entry[actual_field]["info"] = ImportState.DONE
+        if more_ff := list(set(failing_fields) - failing_fields_jsonupload):
+            more_ff.sort()
+            messages.append(
+                f"Error: In contrast to preview you may not import field(s) '{', '.join(more_ff)}'"
+            )
+            for field in more_ff:
+                actual_field = (
+                    field[:-3]
+                    if field not in entry and field.endswith("_id")
+                    else field
+                )
+                entry[actual_field]["info"] = ImportState.ERROR
+            return False
+        return True
 
     def setup_lookups(self) -> None:
         self.username_lookup = Lookup(

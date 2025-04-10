@@ -1087,7 +1087,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
-            {"id": 2, "username": "Alice", "guest": False},
+            {"id": 2, "username": "Alice", "guest": None},
         )
 
     def test_json_upload_set_home_committee_no_perms(self) -> None:
@@ -1108,7 +1108,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
-            {"id": 2, "username": "Alice", "guest": False},
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": None},
         )
 
     def test_json_upload_update_home_committee_no_perms_old(self) -> None:
@@ -1141,16 +1141,5 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
-            {"id": 2, "username": "Alice", "guest": False},
-        )
-
-    def test_json_upload_set_home_committee_without_permission_and_set_guest_to_true(
-        self,
-    ) -> None:
-        self.json_upload_set_home_committee_without_permission_and_set_guest_to_true()
-        response = self.request("account.import", {"id": 1, "import": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2",
-            {"id": 2, "username": "Alice", "first_name": "alice"},
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": 1},
         )

@@ -1,6 +1,11 @@
 from collections import defaultdict
 from typing import Any, cast
 
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsFailingFields,
+    PermissionVarStore,
+)
+
 from ....models.models import User
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
@@ -82,6 +87,22 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 },
                 **(additional_required_fields or {}),
             }
+        )
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+
+        permstore = PermissionVarStore(self.datastore, self.user_id)
+        self.permission_check = CreateUpdatePermissionsFailingFields(
+            self.user_id,
+            permstore,
+            self.services,
+            self.datastore,
+            self.relation_manager,
+            self.logging,
+            self.env,
+            self.skip_archived_meeting_check,
+            self.use_meeting_ids_for_archived_meeting_check,
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -386,45 +407,17 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 self.row_state = ImportState.ERROR
                 messages.append(f"Error: '{email}' is not a valid email address.")
 
-        if id_ and (
-            old_home_committee_id := self.datastore.get(
-                fqid_from_collection_and_id("user", id_), ["home_committee_id"]
-            ).get("home_committee_id")
-        ):
-            old_hc_permission = has_committee_management_level(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                old_home_committee_id,
-            )
-        else:
-            old_hc_permission = True
         if home_committee := entry.get("home_committee"):
             result = self.committee_lookup.check_duplicate(home_committee)
             if result == ResultType.FOUND_ID:
                 home_committee_id: int = cast(
                     int, self.committee_lookup.get_field_by_name(home_committee, "id")
                 )
-                # if old_hc_permission and has_committee_management_level(
-                #     self.datastore,
-                #     self.user_id,
-                #     CommitteeManagementLevel.CAN_MANAGE,
-                #     home_committee_id,
-                # ):
                 entry["home_committee"] = {
                     "value": home_committee,
                     "info": ImportState.DONE,
                     "id": home_committee_id,
                 }
-                # else:
-                #     entry["home_committee"] = {
-                #         "value": home_committee,
-                #         "info": ImportState.REMOVE,
-                #         "id": home_committee_id,
-                #     }
-                #     messages.append(
-                #         "Home committee will be skipped due to missing permissions in either new or former home committee."
-                #     )
             elif result == ResultType.NOT_FOUND:
                 self.row_state = ImportState.ERROR
                 entry["home_committee"] = {
@@ -449,7 +442,23 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 messages.append(
                     "Error: Cannot set guest to true while setting home committee."
                 )
-            elif guest and not old_hc_permission:
+            elif guest and not (
+                not (
+                    id_
+                    and (
+                        old_home_committee_id := self.datastore.get(
+                            fqid_from_collection_and_id("user", id_),
+                            ["home_committee_id"],
+                        ).get("home_committee_id")
+                    )
+                )
+                or has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    old_home_committee_id,
+                )
+            ):
                 entry["guest"] = {"value": guest, "info": ImportState.REMOVE}
                 messages.append(
                     "Cannot set guest to true: Insufficient rights for unsetting the home committee."
@@ -460,7 +469,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["guest"] = {"value": False, "info": ImportState.GENERATED}
         elif (guest := entry.get("guest")) is not None:
             if guest is True:
-                # if old_hc_permission:
                 entry["guest"] = {
                     "value": guest,
                     "info": ImportState.DONE,
@@ -472,14 +480,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 messages.append(
                     "If guest is set to true, any home_committee that was set will be removed."
                 )
-                # else:
-                #     entry["guest"] = {
-                #         "value": guest,
-                #         "info": ImportState.REMOVE,
-                #     }
-                #     messages.append(
-                #         "Cannot set guest to true: Insufficient rights for unsetting the home committee."
-                #     )
             else:
                 entry["guest"] = {
                     "value": guest,
@@ -487,6 +487,77 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 }
 
         return {"state": self.row_state, "messages": messages, "data": entry}
+
+    def remove_helper_fields_from_entry_in_field_failure_check(
+        self, entry: dict[str, Any]
+    ) -> None:
+        pass
+
+    def check_field_failures(
+        self,
+        entry: dict[str, Any],
+        messages: list[str],
+        failing_msg: str,
+        groups: str = "ABDEFGHIJ",
+    ) -> None:
+        payload_index = entry.pop("payload_index", None)
+        # swapping needed for get_failing_fields and setting import states not to fail
+        if entry.get("gender"):
+            entry["gender_id"] = entry.pop("gender")
+        if home_committee := entry.pop("home_committee", None):
+            if (home_committee_id := home_committee.get("id")) or home_committee[
+                "value"
+            ] is None:
+                entry["home_committee_id"] = home_committee_id
+        if guest := entry.pop("guest", None):
+            entry["guest"] = guest["value"]
+        failing_fields = self.permission_check.get_failing_fields(entry, groups)
+        self.remove_helper_fields_from_entry_in_field_failure_check(entry)
+
+        if not entry.get("id"):
+            if "username" in failing_fields:
+                failing_fields.remove("username")
+            if "member_number" in failing_fields:
+                failing_fields.remove("member_number")
+
+        verbose_ff = [
+            field if field != "home_committee_id" else "home_committee"
+            for field in failing_fields
+        ]
+        if failing_fields:
+            messages.append(f"{failing_msg} {', '.join(verbose_ff)}")
+        field_to_fail = set(
+            entry.keys()
+        ) & self.permission_check.get_all_checked_fields(groups)
+        if home_committee:
+            entry["home_committee"] = home_committee
+            entry.pop("home_committee_id", None)
+        if guest:
+            entry["guest"] = guest
+        for field in field_to_fail:
+            actual_field = (
+                field[:-3] if field not in entry and field.endswith("_id") else field
+            )
+            if field in failing_fields:
+                if isinstance(entry[actual_field], dict):
+                    if entry[actual_field]["info"] != ImportState.ERROR:
+                        entry[actual_field]["info"] = ImportState.REMOVE
+                else:
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.REMOVE,
+                    }
+            else:
+                if not isinstance(entry[actual_field], dict):
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.DONE,
+                    }
+
+        if payload_index:
+            entry["payload_index"] = payload_index
+        if entry.get("gender_id"):
+            entry["gender"] = entry.pop("gender_id")
 
     def create_usernames(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         usernames: list[str] = []

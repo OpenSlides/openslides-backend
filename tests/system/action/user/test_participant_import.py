@@ -1633,6 +1633,55 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
         )
 
+    def test_json_upload_update_home_committee_no_perms_new_anymore(self) -> None:
+        self.json_upload_update_home_committee()
+        self.set_committee_management_level([1])
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: In contrast to preview you may not import field(s) 'guest, home_committee_id'"
+        ]
+        assert response.json["results"][0][0]["rows"][0]["data"] == {
+            "id": 2,
+            "first_name": {
+                "info": ImportState.DONE,
+                "value": "alice",
+            },
+            "groups": [
+                {
+                    "id": 1,
+                    "info": ImportState.GENERATED,
+                    "value": "group1",
+                },
+            ],
+            "guest": {
+                "info": ImportState.ERROR,
+                "value": False,
+            },
+            "home_committee": {
+                "id": 2,
+                "info": ImportState.ERROR,
+                "value": "Home",
+            },
+            "username": {
+                "id": 2,
+                "info": ImportState.DONE,
+                "value": "Alice",
+            },
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": None,
+                "username": "Alice",
+                "first_name": None,
+                "home_committee_id": 1,
+            },
+        )
+
     def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
         self,
     ) -> None:
@@ -1647,5 +1696,23 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "Alice",
                 "guest": None,
                 "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_update_home_committee_and_guest_false_formerly_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_guest_false_no_perms_new()
+        self.set_committee_management_level([1, 2])
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "meeting_user_ids": [1],
+                "username": "Alice",
+                "guest": False,
+                "home_committee_id": 2,
             },
         )
