@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Self
 
 from openslides_backend.datastore.shared.postgresql_backend import (
     EVENT_TYPE,
@@ -42,7 +42,7 @@ class BaseEvent:
     def get_data(self) -> Any:
         return self.data
 
-    def clone(self) -> "BaseEvent":
+    def clone(self) -> Self:
         data_copy = json.loads(json.dumps(self.get_data()))
         return self.__class__(self.fqid, data_copy)
 

@@ -1,14 +1,10 @@
 import os
 
-from psycopg import Connection
-from psycopg import errors as psycopg_errors
-from psycopg import rows, sql
+from psycopg import Connection, rows, sql
 
-from openslides_backend.services.postgresql.db_connection_handling import (
-    env,
-    get_unpooled_db_connection,
-)
 from openslides_backend.shared.exceptions import DatabaseException
+
+from .db_connection_handling import env, get_unpooled_db_connection
 
 
 def create_schema() -> None:
@@ -33,18 +29,18 @@ def create_schema() -> None:
     with connection:
         with connection.cursor() as cursor:
             # idempotent key-value-store schema
-            path = os.path.realpath(
-                os.path.join(os.getcwd(), os.path.dirname(__file__), "schema.sql")
-            )
-            try:
-                cursor.execute(open(path).read())
-                print("Idempotent key-value-schema applied by backend\n")
-            except psycopg_errors.InternalError_ as e:
-                if str(e) == "tuple concurrently updated":
-                    connection.rollback()
-                    print("Idempotent key-value-schema applied by datastore\n")
-                else:
-                    raise e
+            # path = os.path.realpath(
+            #     os.path.join(os.getcwd(), os.path.dirname(__file__), "schema.sql")
+            # )
+            # try:
+            #     cursor.execute(open(path).read())
+            #     print("Idempotent key-value-schema applied by backend\n")
+            # except psycopg_errors.InternalError_ as e:
+            #     if str(e) == "tuple concurrently updated":
+            #         connection.rollback()
+            #         print("Idempotent key-value-schema applied by datastore\n")
+            #     else:
+            #         raise e
 
             # programmatic migrations of schema necessary, only apply if not exists
             result = cursor.execute(
