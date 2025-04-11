@@ -4477,6 +4477,90 @@ class UserUpdateActionTest(BaseActionTestCase):
             user = sorted(self.get_model(f"user/{i}").get("committee_ids", []))
             assert user == testcase["expected_committees"]
 
+    def test_update_with_home_committee_as_multi_meeting_admin_group_A(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_user_groups(1, [2, 5, 8])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "first_name": "Alice",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_committee_admin_group_A(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_committee_management_level([60, 63, 66])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "first_name": "Alice",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_meeting_admin_group_F(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_user_groups(1, [2, 5, 8])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "default_password": "defP",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_committee_admin_group_F(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_committee_management_level([60, 63, 66])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "default_password": "defP",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     committeePerms: set[int] = set()

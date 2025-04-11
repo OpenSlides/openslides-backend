@@ -35,14 +35,15 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, Any]]:
+    ) -> tuple[UserScope, int, str, dict[int, Any], int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization), the OML level of the user as string (empty string if the user
-        has none) and the ids of all committees that the user is either a manager in or a member of
-        together with their respective meetings the user being part of. A committee can have no meetings if the
-        user just has committee management rights and is not part of any of its meetings.
+        has none), the ids of all committees that the user is either a manager in or a member of
+        together with their respective meetings the user being part of and his home_committee_id.
+        A committee can have no meetings if the user just has committee management rights and is
+        not part of any of its meetings.
         """
         meeting_ids: set[int] = set()
         committees_manager: set[int] = set()
@@ -101,6 +102,7 @@ class UserScopeMixin(BaseServiceProvider):
                 home_committee_id,
                 oml_right,
                 committee_meetings,
+                home_committee_id,
             )
         elif len(meetings_committee) == 1 and len(committees) == 1:
             return (
@@ -108,6 +110,7 @@ class UserScopeMixin(BaseServiceProvider):
                 next(iter(meetings_committee)),
                 oml_right,
                 committee_meetings,
+                home_committee_id,
             )
         elif len(committees) == 1:
             return (
@@ -115,8 +118,15 @@ class UserScopeMixin(BaseServiceProvider):
                 next(iter(committees)),
                 oml_right,
                 committee_meetings,
+                home_committee_id,
             )
-        return UserScope.Organization, 1, oml_right, committee_meetings
+        return (
+            UserScope.Organization,
+            1,
+            oml_right,
+            committee_meetings,
+            home_committee_id,
+        )
 
     def check_permissions_for_scope(
         self,
@@ -131,8 +141,8 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml, committees_to_meetings = self.get_user_scope(
-            instance_id
+        scope, scope_id, user_oml, committees_to_meetings, home_committe_id = (
+            self.get_user_scope(instance_id)
         )
         if (
             always_check_user_oml

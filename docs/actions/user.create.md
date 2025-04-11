@@ -137,4 +137,4 @@ CML `can_manage` for the new `home_committee_id` if there is one and CML `can_ma
 
 Group J:
 
-Group I permissions if new value is `true`, otherwise or if there is no home committee (old or new) Group A Permissions
+Group I permissions and if there is no home committee (old or new) Group A Permissions
