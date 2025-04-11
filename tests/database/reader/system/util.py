@@ -6,6 +6,26 @@ from psycopg import Connection
 
 from openslides_backend.shared.patterns import strip_reserved_fields
 
+standard_data: dict[str, dict[int, Any]] = {
+    "user": {
+        1: {
+            "id": 1,
+            "username": "data",
+            "default_vote_weight": "42.000000",
+            "meeting_ids": [1, 2, 3],
+            "is_demo_user": True,
+        },
+    },
+    "committee": {
+        1: {
+            "name": "23",
+        },
+        2: {
+            "name": "42",
+        },
+    },
+}
+
 standard_responses = {
     "user": {
         1: {

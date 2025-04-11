@@ -12,7 +12,12 @@ from openslides_backend.shared.patterns import (
     Id,
     Position,
 )
-from openslides_backend.shared.typing import HistoryInformation, LockResult, Model
+from openslides_backend.shared.typing import (
+    HistoryInformation,
+    LockResult,
+    Model,
+    PartialModel,
+)
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
@@ -36,8 +41,8 @@ class DatabaseReader:
         self,
         get_many_requests: list[GetManyRequest],
         lock_result: LockResult = True,
-    ) -> dict[Collection, dict[Id, Model]]:
-        result: dict[Collection, dict[int, dict[str, Any]]] = {
+    ) -> dict[Collection, dict[Id, PartialModel]]:
+        result: dict[Collection, dict[Id, PartialModel]] = {
             get_many_request.collection: dict()
             for get_many_request in get_many_requests
         }
@@ -91,9 +96,7 @@ class DatabaseReader:
             except Exception as e:
                 raise DatabaseException(f"Unexpected error reading from database: {e}")
 
-            self.insert_models_into_result(
-                db_result, mapped_fields, collection, result[collection]
-            )
+            self.insert_models_into_result(db_result, mapped_fields, result[collection])
             # result[collection].update(self.build_models_from_result(db_result, mapped_fields, collection))
         return result
 
@@ -101,40 +104,25 @@ class DatabaseReader:
         self,
         collection: Collection,
         mapped_fields: MappedFields | None = None,
-    ) -> dict[Id, Model]:
-        #        if mapped_fields is None:
-        #            mapped_fields = MappedFields()
-        #        (
-        #            mapped_fields_str,
-        #            mapped_field_args,
-        #        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
-        #        query = f"""
-        #            select fqid as __fqid__, {mapped_fields_str} from models
-        #            where fqid like %s"""
-        #        models = self.fetch_models(
-        #            query,
-        #            mapped_field_args + [fqid_from_collection_and_id(collection, "%")],
-        #            mapped_fields.unique_fields,
-        #            mapped_fields.unique_fields,
-        #        )
-        return {}
-
-    def get_everything(
-        self,
-    ) -> dict[Collection, dict[Id, Model]]:
-        #        query = f"""
-        #            select fqid as __fqid__, data from models
-        #            {"where "}"""
-        #        result = self.connection.query(query, [], [])
-        #
-        #        data: dict[Collection, dict[Id, Model]] = defaultdict(dict)
-        #        for row in result:
-        #            collection, id = collection_and_id_from_fqid(row["__fqid__"])
-        #            model = row["data"]
-        #            model["id"] = id
-        #            data[collection][id] = modelpython -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest tests/system/
-        #
-        return {}
+        lock_result: bool = True,
+    ) -> dict[Id, PartialModel]:
+        if mapped_fields is None:
+            mapped_fields = MappedFields()
+        (
+            mapped_fields_str,
+            mapped_field_args,
+        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
+        query = sql.SQL("""SELECT {mapped_fields_str} FROM {collection}""").format(
+            mapped_fields_str=sql.SQL(mapped_fields_str),
+            collection=sql.Identifier(collection),
+        )
+        result: dict[Id, PartialModel] = dict()
+        self.insert_models_into_result(
+            self.execute_query(collection, query, lock_result),
+            mapped_fields,
+            result,
+        )
+        return result
 
     def filter(
         self, collection: Collection, filter: Filter, mapped_fields: list[Field]
@@ -181,13 +169,11 @@ class DatabaseReader:
 
     def insert_models_into_result(
         self,
-        db_result: list[dict[str, Any]],
+        db_result: list[PartialModel],
         mapped_fields: MappedFields,
-        collection: Collection,
-        collection_result_part: dict[int, Any],
+        collection_result_part: dict[Id, PartialModel],
     ) -> None:
         """Composes the result so that exactly the required fields are returned."""
-        # result_map = {}
         for row in db_result:
             id_ = row["id"]
 
@@ -202,7 +188,6 @@ class DatabaseReader:
                         model[field] = row[field]
             else:
                 collection_result_part[id_] = row
-            # result_map[row['id']] = model
 
     def build_model_ignore_deleted(
         self, fqid: FullQualifiedId, position: Position | None = None
@@ -317,3 +302,23 @@ class DatabaseReader:
         #                + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
         #            )
         return -1
+
+    def execute_query(
+        self, collection: Collection, query: sql.Composed, lock_result: bool
+    ) -> list[PartialModel]:
+        if lock_result:
+            query += sql.SQL(" FOR UPDATE")
+        try:
+            with self.connection.cursor() as curs:
+                return curs.execute(query).fetchall()
+        except UndefinedColumn as e:
+            column = e.args[0].split('"')[1]
+            raise InvalidFormat(
+                f"Field '{column}' does not exist in collection '{collection}': {e}"
+            )
+        except UndefinedTable as e:
+            raise InvalidFormat(
+                f"Collection '{collection}' does not exist in the database: {e}"
+            )
+        except Exception as e:
+            raise DatabaseException(f"Unexpected error reading from database: {e}")

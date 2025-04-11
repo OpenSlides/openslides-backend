@@ -34,11 +34,12 @@ from ...shared.patterns import (
     fqid_from_collection_and_id,
     id_from_fqid,
 )
-from ...shared.typing import DeletedModel, ModelMap
+from ...shared.typing import DeletedModel, Model, ModelMap
 from ..database.commands import GetManyRequest
 from ..database.interface import Database
 from .database_reader import DatabaseReader
 from .database_writer import DatabaseWriter
+from .mapped_fields import MappedFields
 
 MappedFieldsPerCollectionAndId = dict[str, dict[Id, list[str]]]
 
@@ -263,10 +264,12 @@ class ExtendedDatabase(Database):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: list[str],
+        mapped_fields: list[str] = [],
         lock_result: bool = True,
-    ) -> dict[int, PartialModel]:
-        return {}
+    ) -> dict[Id, PartialModel]:
+        return self.database_reader.get_all(
+            collection, MappedFields(mapped_fields), lock_result
+        )
 
     def filter(
         self,
@@ -405,14 +408,18 @@ class ExtendedDatabase(Database):
 
     def truncate_db(self) -> None: ...
 
-    def get_everything(self) -> dict[Collection, dict[int, PartialModel]]:
-        return {}
-        # command = commands.GetEverything()
-        # self.logger.debug("Get Everything from datastore.")
-        # return self.retrieve(command)
+    def get_everything(self) -> dict[Collection, dict[int, Model]]:
+        return {
+            k: v
+            for k, v in {
+                collection: self.database_reader.get_all(
+                    collection, MappedFields(), False
+                )
+                for collection in model_registry
+                if collection != "motion_statute_paragraph"
+            }.items()
+            if v
+        }
 
     def delete_history_information(self) -> None:
         pass
-        # command = commands.DeleteHistoryInformation()
-        # self.logger.debug("Delete history information send to datastore.")
-        # self.retrieve(command)
