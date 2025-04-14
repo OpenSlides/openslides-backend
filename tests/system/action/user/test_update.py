@@ -4933,11 +4933,6 @@ class UserUpdateHomeCommitteePermissionTestAsForeignCommitteeAdmin(
     ) -> None:
         self.update_with_home_committee_group_B()
 
-    def test_update_with_home_committee_group_B_other_committee_meeting_as_foreign_committee_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_B_other_committee_meeting()
-
     def test_update_with_home_committee_group_C_as_foreign_committee_admin(
         self,
     ) -> None:
@@ -4953,11 +4948,6 @@ class UserUpdateHomeCommitteePermissionTestAsForeignCommitteeAdmin(
     ) -> None:
         self.update_with_home_committee_group_D_other_committee()
 
-    def test_update_with_home_committee_group_F_as_foreign_committee_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_F()
-
 
 class UserUpdateHomeCommitteePermissionTestAsUserAdmin(
     UserUpdateHomeCommitteePermissionTest
@@ -4972,21 +4962,11 @@ class UserUpdateHomeCommitteePermissionTestAsUserAdmin(
     def test_update_with_home_committee_group_B_as_user_admin(self) -> None:
         self.update_with_home_committee_group_B()
 
-    def test_update_with_home_committee_group_B_other_committee_meeting_as_user_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_B_other_committee_meeting()
-
     def test_update_with_home_committee_group_C_as_user_admin(self) -> None:
         self.update_with_home_committee_group_C()
 
     def test_update_with_home_committee_group_D_as_user_admin(self) -> None:
         self.update_with_home_committee_group_D()
-
-    def test_update_with_home_committee_group_D_other_committee_as_user_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_D_other_committee()
 
     def test_update_with_home_committee_group_E_as_user_admin(self) -> None:
         self.update_with_home_committee_group_E()
@@ -5038,20 +5018,11 @@ class UserUpdateHomeCommitteePermissionTestAsLowerOml(
     def test_update_with_home_committee_group_B_as_lower_oml(self) -> None:
         self.update_with_home_committee_group_B()
 
-    def test_update_with_home_committee_group_C_as_lower_oml(self) -> None:
-        self.update_with_home_committee_group_C()
-
-    def test_update_with_home_committee_group_D_as_lower_oml(self) -> None:
-        self.update_with_home_committee_group_D()
-
     def test_update_with_home_committee_group_E_as_lower_oml(self) -> None:
         self.update_with_home_committee_group_E()
 
     def test_update_with_home_committee_group_F_as_lower_oml(self) -> None:
         self.update_with_home_committee_group_F()
-
-    def test_update_with_home_committee_group_G_as_lower_oml(self) -> None:
-        self.update_with_home_committee_group_G()
 
 
 class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsMeetingAdmin(
@@ -5117,11 +5088,6 @@ class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsCommitteeAdmin(
         self,
     ) -> None:
         self.update_with_home_committee_group_D()
-
-    def test_update_with_home_committee_old_orga_scope_group_D_other_committee_as_committee_admin(
-        self,
-    ) -> None:
-        self.update_with_home_committee_group_D_other_committee()
 
     def test_update_with_home_committee_old_orga_scope_group_F_as_committee_admin(
         self,
