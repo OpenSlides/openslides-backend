@@ -7,8 +7,6 @@ from openslides_backend.shared.mixins.user_create_update_permissions_mixin impor
 )
 
 from ....models.models import User
-from ....permissions.management_levels import CommitteeManagementLevel
-from ....permissions.permission_helper import has_committee_management_level
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
@@ -441,27 +439,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["guest"] = {"value": guest, "info": ImportState.ERROR}
                 messages.append(
                     "Error: Cannot set guest to true while setting home committee."
-                )
-            elif guest and not (
-                not (
-                    id_
-                    and (
-                        old_home_committee_id := self.datastore.get(
-                            fqid_from_collection_and_id("user", id_),
-                            ["home_committee_id"],
-                        ).get("home_committee_id")
-                    )
-                )
-                or has_committee_management_level(
-                    self.datastore,
-                    self.user_id,
-                    CommitteeManagementLevel.CAN_MANAGE,
-                    old_home_committee_id,
-                )
-            ):
-                entry["guest"] = {"value": guest, "info": ImportState.REMOVE}
-                messages.append(
-                    "Cannot set guest to true: Insufficient rights for unsetting the home committee."
                 )
             elif guest:
                 entry["guest"] = {"value": guest, "info": ImportState.DONE}

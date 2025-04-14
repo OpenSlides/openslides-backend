@@ -13,6 +13,7 @@ The types noted below are the internal types after conversion in the backend. Se
         forward_to_committees: string[],
         organization_tags: string[],
         managers: string[],
+        parent: string;
         meeting_name: string,
         meeting_start_time: date,
         meeting_end_time: date,
@@ -37,10 +38,15 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
 - `managers`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.
+- `parent`:
+  - `done`: The committee was found in the datastore.
+  - `warning`: The row is an update row and therefore the parent field will be skipped.
+  - `new`: The committee will be newly created as part of this import.
+  - `error`: Committee could not be identified or there is a parentage circle.
 - `meeting_admins`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.
-  - `error`: Will be entered in extra object if no user was found here or in the otional templates admins
+  - `error`: Will be entered in extra object if no user was found here or in the optional templates admins
 - `meeting_template`:
   - `done`: The meeting was found in the datastore, the new meeting will be cloned from it.
   - `warning`: The meeting was not found and the new meeting will not be cloned, but freshly created.
@@ -66,7 +72,7 @@ See [common description](preface_special_imports.md#general-format-of-the-result
 ## Action
 
 The data will create or update committees. The committees will be identified by their exact name.
-The fields `description`, `forward_to_committees`,`managers` and `organization_tags` belong to the committee and will be updated in an existing committee. This way forwardings, managers and organization tags can be added or removed.
+The fields `description`, `forward_to_committees`,`managers`, `parent` and `organization_tags` belong to the committee and will be updated in an existing committee. This way forwardings, managers and organization tags can be added or removed.
 
 Giving a `meeting_name` will always create a new meeting in the committee with the given name. If a `meeting_template` is given, this will be cloned, otherwise a fresh meeting will be created.
 
@@ -75,6 +81,12 @@ The data, enriched with building some field values and a first new column "state
 ### User matching
 
 The users given in `managers` and `meeting_admins` will be matched only by username. The `saml_id` will not be used for the search.
+
+### Committee matching
+
+The `parent` field refers to the `committee/parent_id` field. If the row is an update row, it will be ignored.
+If the row is creating a new committee, an existing committee by that name is found, that will be referenced, otherwise a match will be sought among the committees in the import.
+If no match is found when the field is filled on a create row, the row will be marked as error. This is because the parent can't be set later, so in case this is a mistake an error is thrown to ensure the file can be corrected.
 
 ## Permission
 
