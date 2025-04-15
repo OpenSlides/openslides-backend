@@ -327,22 +327,22 @@ class CommitteeJsonUpload(
         circles: set[str] = set()
         while names:
             name = names.pop()
-            relation_parents: list[str] = []
+            relation_descendants: list[str] = [name]
             while parent := new_relations.get(name):
-                if name in encircled:
-                    encircled.update(relation_parents)
+                if parent in encircled:
+                    encircled.update(relation_descendants)
                     break
-                if name in free:
-                    free.update(relation_parents)
+                if parent in free:
+                    free.update(relation_descendants)
                     break
-                if name in relation_parents:
-                    index = relation_parents.index(name)
-                    encircled.update(relation_parents)
-                    circles.update(relation_parents[index:])
+                if parent in relation_descendants:
+                    index = relation_descendants.index(parent)
+                    encircled.update(relation_descendants)
+                    circles.update(relation_descendants[index:])
                     break
-                relation_parents.append(name)
+                relation_descendants.append(parent)
                 name = parent
-            names.difference_update(relation_parents)
+            names.difference_update(relation_descendants)
         encircled = {circle for circle in circles}
         for row in self.rows:
             if row["data"]["name"]["value"] in encircled:

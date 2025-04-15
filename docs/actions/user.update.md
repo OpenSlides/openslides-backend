@@ -133,7 +133,9 @@ Group H fields are only allowed in internal requests
 
 Group I:
 
-CML `can_manage` for the new `home_committee_id` if there is one and CML `can_manage` for the old `home_committee_id` if there is one.
+If the user already has a `home_committee_id`, the CML `can_manage` for that committee is required.
+If a new `home_committee_id` is set, the CML `can_manage` of that is required.
+Depending on the circumstances, the caller may therefore need manage rights for 2, 1 or 0 committees.
 
 Group J:
 
