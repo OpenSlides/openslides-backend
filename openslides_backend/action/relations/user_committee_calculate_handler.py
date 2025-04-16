@@ -28,7 +28,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     This method will calculate additions and removals by comparing the
     instances of datastore.changed_models and the stored db-content.
     Calculates per user on
-    1. user.committee_managment_ids, if changed
+    1. user.committee_management_ids, if changed
     2. user.home_committee_id, if changed
     3. MeetingUser.group_ids of all changes
     """
@@ -43,7 +43,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             or ("group_ids" in instance and field_name != "group_ids")
             or (
                 field_name == "home_committee_id"
-                and "committee_managment_ids" in instance
+                and "committee_management_ids" in instance
             )
         ):
             return {}

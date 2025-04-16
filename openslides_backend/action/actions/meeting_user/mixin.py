@@ -186,13 +186,12 @@ class CheckLockOutPermissionMixin(Action):
                 ),
             ]
         )
-        if data["meeting"][final["meeting_id"]]["committee_id"] in [
-            *(final.get("committee_management_ids") or []),
-            *[
-                child_id
-                for committee in data.get("committee", {}).values()
-                for child_id in committee.get("all_child_ids", [])
-            ],
+        if data["meeting"][final["meeting_id"]]["committee_id"] in (
+            final.get("committee_management_ids") or []
+        ) or data["meeting"][final["meeting_id"]]["committee_id"] in [
+            child_id
+            for committee in data.get("committee", {}).values()
+            for child_id in committee.get("all_child_ids", [])
         ]:
             self._add_message(
                 f"Cannot lock user out of meeting {final['meeting_id']} as he is manager of the meetings committee or one of its parents",
@@ -276,7 +275,7 @@ class CheckLockOutPermissionMixin(Action):
                     )
                 ]
             )["committee"]
-            committees2 = self.datastore.get_many(
+            child_committees = self.datastore.get_many(
                 [
                     GetManyRequest(
                         "committee",
@@ -292,7 +291,7 @@ class CheckLockOutPermissionMixin(Action):
             )["committee"]
             meeting_id_to_committee_id = {
                 meeting_id: committee["id"]
-                for committee in [*committees.values(), *committees2.values()]
+                for committee in [*committees.values(), *child_committees.values()]
                 for meeting_id in committee.get("meeting_ids", [])
             }
             if len(

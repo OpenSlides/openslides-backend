@@ -143,7 +143,7 @@ class MeetingImport(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["committee_ids", "committee_management_ids"],
+                    ["committee_ids", "committee_management_ids", "home_committee_id"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -190,6 +190,7 @@ class MeetingImport(
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
+            user.pop("home_committee_id", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)
@@ -565,7 +566,13 @@ class MeetingImport(
             meeting["meeting_user_ids"].append(new_meeting_user_id)
             request_user = self.datastore.get(
                 fqid_user := fqid_from_collection_and_id("user", self.user_id),
-                ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"],
+                [
+                    "id",
+                    "meeting_user_ids",
+                    "committee_management_ids",
+                    "committee_ids",
+                    "home_committee_id",
+                ],
             )
             request_user.pop("meta_position", None)
             request_user["meeting_user_ids"] = (

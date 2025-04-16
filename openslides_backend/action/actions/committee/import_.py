@@ -165,9 +165,8 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     )
                 result = self.execute_other_action(CommitteeCreate, [date])
                 if result:
-                    result_list = list(result)
-                    result_element = result_list[0]
-                    create_results.extend(result_list)
+                    result_element = result[0]
+                    create_results.extend(result)
                     if result_element:
                         date.update(result_element)
                 create_committee_data.append(date)
