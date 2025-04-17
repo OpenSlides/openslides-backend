@@ -43,6 +43,7 @@ class MotionWorkflowImport(SequentialNumbersMixin):
                             "merge_amendment_into_final",
                             "set_workflow_timestamp",
                             "allow_motion_forwarding",
+                            "allow_amendment_forwarding",
                         ),
                         "next_state_names": str_list_schema,
                         "previous_state_names": str_list_schema,
