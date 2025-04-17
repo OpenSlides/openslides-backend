@@ -430,16 +430,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             lock_meeting=True,
         )
 
-    def test_delete_with_locked_meeting_orgaadmin(self) -> None:
-        self.base_permission_test(
-            {},
-            "meeting.delete",
-            {"id": 1},
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            fail=True,
-            lock_meeting=True,
-        )
-
     def test_delete_permissions_can_manage_organization_with_locked_meeting_not_allowed(
         self,
     ) -> None:
@@ -450,9 +440,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             }
         )
         response = self.request("meeting.delete", {"id": 1})
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "You are not allowed to perform action meeting.delete. Missing permission: Permission meeting.can_manage_settings in meeting 1",
+            "Cannot delete locked meeting.",
             response.json["message"],
         )
 
