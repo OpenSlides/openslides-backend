@@ -1590,7 +1590,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         )
 
     def test_json_upload_set_home_committee_no_perms(self) -> None:
-        self.json_upload_set_home_committee_no_perms()
+        self.json_upload_set_home_committee(has_perm=False)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
