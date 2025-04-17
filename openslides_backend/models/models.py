@@ -1751,7 +1751,6 @@ class MotionState(Model):
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     allow_motion_forwarding = fields.BooleanField(default=False)
-    allow_amendment_forwarding = fields.BooleanField()
     set_workflow_timestamp = fields.BooleanField(default=False)
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},

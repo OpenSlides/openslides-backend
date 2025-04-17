@@ -1552,7 +1552,6 @@
             "show_recommendation_extension_field": false,
             "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": false,
             "meeting_id": 1
         },
         "2": {
@@ -1575,7 +1574,6 @@
             "allow_support": false,
             "set_workflow_timestamp": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "meeting_id": 1
         },
         "3": {
@@ -1597,7 +1595,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1620,7 +1617,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1645,7 +1641,6 @@
             "allow_support": false,
             "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true, 
             "meeting_id": 1
         },
         "6": {
@@ -1671,7 +1666,6 @@
             "allow_create_poll": false,
             "allow_support": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1706,7 +1700,6 @@
             "allow_create_poll": true,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1729,7 +1722,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1752,7 +1744,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1776,7 +1767,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1799,7 +1789,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1822,7 +1811,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1845,7 +1833,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1867,7 +1854,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         },
@@ -1890,7 +1876,6 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true,
             "set_workflow_timestamp": false,
             "meeting_id": 1
         }

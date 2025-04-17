@@ -28,7 +28,6 @@ class MotionWorkflowImport(BaseActionTestCase):
             "weight": weight,
             "set_workflow_timestamp": True,
             "allow_motion_forwarding": True,
-            "allow_amendment_forwarding": True,
         }
 
     def test_import_simple_case(self) -> None:
@@ -65,7 +64,6 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "weight": 1,
                 "set_workflow_timestamp": True,
                 "allow_motion_forwarding": True,
-                "allow_amendment_forwarding": True,
             },
         )
 

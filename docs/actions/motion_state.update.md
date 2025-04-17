@@ -15,7 +15,6 @@
     allow_create_poll: boolean;
     allow_submitter_edit: boolean;
     allow_motion_forwarding: boolean;
-    allow_amendment_forwarding: boolean;
     set_number: boolean;
     set_workflow_timestamp: boolean;
     show_state_extension_field: boolean;

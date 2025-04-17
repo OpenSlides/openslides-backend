@@ -36,7 +36,6 @@ class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
             "show_recommendation_extension_field",
             "first_state_of_workflow_id",
             "allow_motion_forwarding",
-            "allow_amendment_forwarding",
             "set_workflow_timestamp",
         ],
     )

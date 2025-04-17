@@ -1,7 +1,7 @@
 from typing import Any
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -46,23 +46,8 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_amendments = instance.pop("with_amendments", False)
-        self.check_state_allow_forwarding(instance)
         super().update_instance(instance)
         return instance
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return self.with_amendments
-
-    def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
-        origin = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
-            ["state_id"],
-            lock_result=False,
-        )
-        state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", origin["state_id"]),
-            ["allow_motion_forwarding"],
-            lock_result=False,
-        )
-        if not state.get("allow_motion_forwarding"):
-            raise ActionException("State doesn't allow to forward motion.")
