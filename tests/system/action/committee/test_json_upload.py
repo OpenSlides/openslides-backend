@@ -949,6 +949,10 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "name": "Unrelated child committee",
                         "parent": "Unrelated committee",
                     },
+                    {
+                        "name": "Recursion committee",
+                        "parent": "Recursion committee",
+                    },
                 ]
             },
         )
@@ -1027,6 +1031,22 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "parent": {
                     "info": ImportState.ERROR,
                     "value": "Unrelated committee",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 5) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "Recursion committee",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "Recursion committee",
                 },
             },
             "messages": [

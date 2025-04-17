@@ -59,7 +59,10 @@ class BaseUserImport(BaseImportAction):
         """
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
-        pass
+        """
+        Function for creating all non-user models that need to be created as part of the
+        import. Should be overwritten by subclasses if it is required.
+        """
 
     def handle_remove_and_group_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
         for field in ("groups", "structure_level"):
@@ -71,9 +74,9 @@ class BaseUserImport(BaseImportAction):
         if (
             "home_committee" in entry
             and entry["home_committee"]["info"] != ImportState.REMOVE
-            and (instance := entry.pop("home_committee"))
+            and (committee_instance := entry.pop("home_committee"))
         ):
-            if home_committee_id := instance.get("id"):
+            if home_committee_id := committee_instance.get("id"):
                 entry["home_committee_id"] = home_committee_id
 
         # set fields empty/False if saml_id will be set
@@ -162,9 +165,6 @@ class BaseUserImport(BaseImportAction):
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         self.validate_field(row, self.committee_map, "home_committee", False)
-
-        # if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
-        #     self.import_state = ImportState.ERROR
 
     def check_field_failures(
         self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEFGHIJ"

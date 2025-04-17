@@ -468,14 +468,18 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     def remove_helper_fields_from_entry_in_field_failure_check(
         self, entry: dict[str, Any]
     ) -> None:
-        pass
+        """
+        This method is supposed to remove subclass-specific helper fields that were
+        added for the sake of checking the values in the failing fields check before remove infos are calculated.
+        Should be overwritten by subclasses if it is required.
+        """
 
     def check_field_failures(
         self,
         entry: dict[str, Any],
         messages: list[str],
         failing_msg: str,
-        groups: str = "ABDEFGHIJ",
+        field_groups: str = "ABDEFGHIJ",
     ) -> None:
         payload_index = entry.pop("payload_index", None)
         # swapping needed for get_failing_fields and setting import states not to fail
@@ -488,7 +492,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["home_committee_id"] = home_committee_id
         if guest := entry.pop("guest", None):
             entry["guest"] = guest["value"]
-        failing_fields = self.permission_check.get_failing_fields(entry, groups)
+        failing_fields = self.permission_check.get_failing_fields(entry, field_groups)
         self.remove_helper_fields_from_entry_in_field_failure_check(entry)
 
         if not entry.get("id"):
@@ -505,7 +509,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             messages.append(f"{failing_msg} {', '.join(verbose_ff)}")
         field_to_fail = set(
             entry.keys()
-        ) & self.permission_check.get_all_checked_fields(groups)
+        ) & self.permission_check.get_all_checked_fields(field_groups)
         if home_committee:
             entry["home_committee"] = home_committee
             entry.pop("home_committee_id", None)

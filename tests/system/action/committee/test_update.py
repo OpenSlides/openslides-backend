@@ -900,3 +900,18 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "The external_id of the committee is not unique.", response.json["message"]
         )
+
+    def test_update_try_updating_parent_id(self) -> None:
+        self.create_committee(100)
+        self.create_committee(200)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 200,
+                "parent_id": 100,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must not contain {'parent_id'} properties", response.json["message"]
+        )

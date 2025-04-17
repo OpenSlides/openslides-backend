@@ -38,10 +38,14 @@ class UserScopeMixin(BaseServiceProvider):
     ) -> tuple[UserScope, int, str, dict[int, Any], int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
-        Returns the scope of the given user id together with the relevant scope id (either meeting,
-        committee or organization), the OML level of the user as string (empty string if the user
-        has none), the ids of all committees that the user is either a manager in or a member of
-        together with their respective meetings the user being part of and his home_committee_id.
+        Returns in the tuple:
+        * the scope of the given user id
+        * the relevant scope id (either meeting, committee or organization id
+            depending on scope)
+        * the OML level of the user as string (empty string if the user has none)
+        * the ids of all committees that the user is either a manager in or a member
+            of together with the respective meetings the user is part of
+        * his home_committee_id.
         A committee can have no meetings if the user just has committee management rights and is
         not part of any of its meetings.
         """
@@ -141,8 +145,8 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml, committees_to_meetings, home_committe_id = (
-            self.get_user_scope(instance_id)
+        scope, scope_id, user_oml, committees_to_meetings, _ = self.get_user_scope(
+            instance_id
         )
         if (
             always_check_user_oml

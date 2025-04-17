@@ -1015,7 +1015,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_parent_cml_locked_meeting(self) -> None:
-        """May not create group C group_ids in locked meetings as a committee manager"""
+        """May not create group C group_ids in locked meetings as a committee manager of a parent committee"""
         self.permission_setup()
         self.create_meeting(4)
         self.create_committee()
