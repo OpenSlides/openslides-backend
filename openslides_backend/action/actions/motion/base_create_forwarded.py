@@ -153,7 +153,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         )
         self.set_state_from_workflow(instance, meeting)
         committee = self.check_for_origin_id(instance)
-        # self.check_state_allow_forwarding(instance)
         use_original_number = instance.get("use_original_number", False)
 
         if use_original_submitter := instance.pop("use_original_submitter", False):
