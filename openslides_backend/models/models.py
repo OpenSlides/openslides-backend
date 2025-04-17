@@ -34,7 +34,7 @@ class Organization(Model):
         },
     )
     default_language = fields.CharField(
-        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
+        default="en", constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
@@ -243,7 +243,7 @@ class Theme(Model):
     accent_300 = fields.ColorField()
     accent_400 = fields.ColorField()
     accent_50 = fields.ColorField()
-    accent_500 = fields.ColorField(required=True)
+    accent_500 = fields.ColorField(default="#2196f3")
     accent_600 = fields.ColorField()
     accent_700 = fields.ColorField()
     accent_800 = fields.ColorField()
@@ -257,7 +257,7 @@ class Theme(Model):
     primary_300 = fields.ColorField()
     primary_400 = fields.ColorField()
     primary_50 = fields.ColorField()
-    primary_500 = fields.ColorField(required=True)
+    primary_500 = fields.ColorField(default="#317796")
     primary_600 = fields.ColorField()
     primary_700 = fields.ColorField()
     primary_800 = fields.ColorField()
@@ -271,7 +271,7 @@ class Theme(Model):
     warn_300 = fields.ColorField()
     warn_400 = fields.ColorField()
     warn_50 = fields.ColorField()
-    warn_500 = fields.ColorField(required=True)
+    warn_500 = fields.ColorField(default="#f06400")
     warn_600 = fields.ColorField()
     warn_700 = fields.ColorField()
     warn_800 = fields.ColorField()
@@ -357,8 +357,8 @@ class Meeting(Model, MeetingModelMixin):
     locked_from_inside = fields.BooleanField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
-        required=True,
         constant=True,
+        default="en",
         constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]},
     )
     jitsi_domain = fields.CharField()
@@ -1758,6 +1758,7 @@ class MotionState(Model):
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     allow_motion_forwarding = fields.BooleanField(default=False)
+    allow_amendment_forwarding = fields.BooleanField()
     set_workflow_timestamp = fields.BooleanField(default=False)
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
