@@ -30,13 +30,12 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         }
 
     def test_unset_logo(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
                     "logo_pdf_header_l_id": 7,
                     "logo_pdf_header_r_id": 7,
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
@@ -65,12 +64,11 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         assert mediafile.get("used_as_logo_pdf_header_r_in_meeting_id") == 222
 
     def test_unset_with_underscore(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
                     "logo_web_header_id": 7,
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {

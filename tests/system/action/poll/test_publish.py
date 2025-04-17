@@ -21,7 +21,8 @@ class PollPublishActionTest(BasePollTestCase):
                 "onehundred_percent_base": "YNA",
             },
             "topic/1": {"meeting_id": 1},
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/1": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
     def test_publish_correct(self) -> None:
@@ -43,6 +44,7 @@ class PollPublishActionTest(BasePollTestCase):
         self.assert_history_information("assignment/1", ["Ballot published"])
 
     def test_publish_wrong_state(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"poll_ids": [111], "meeting_id": 1},
@@ -51,7 +53,7 @@ class PollPublishActionTest(BasePollTestCase):
                     "meeting_id": 1,
                     "content_object_id": "topic/1",
                 },
-                "meeting/1": {"is_active_in_organization_id": 1, "topic_ids": [1]},
+                "meeting/1": {"topic_ids": [1]},
             }
         )
         response = self.request("poll.publish", {"id": 1})

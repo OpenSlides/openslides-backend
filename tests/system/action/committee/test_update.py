@@ -646,10 +646,44 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
+        self.set_organization_management_level(None)
         response = self.request(
             "committee.update",
             {
                 "id": 1,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_parent_committee_admin(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_grandparent_committee_admin(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
@@ -865,4 +899,19 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "The external_id of the committee is not unique.", response.json["message"]
+        )
+
+    def test_update_try_updating_parent_id(self) -> None:
+        self.create_committee(100)
+        self.create_committee(200)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 200,
+                "parent_id": 100,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must not contain {'parent_id'} properties", response.json["message"]
         )

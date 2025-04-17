@@ -44,6 +44,7 @@ class CommitteeJsonUpload(
                         },
                         "meeting_admins": str_list_schema,
                         "meeting_template": {"type": "string"},
+                        "parent": {"type": "string"},
                     },
                     "required": ["name"],
                     "additionalProperties": False,
@@ -84,6 +85,7 @@ class CommitteeJsonUpload(
             "is_list": True,
         },
         {"property": "meeting_template", "type": "string", "is_object": True},
+        {"property": "parent", "type": "string", "is_object": True},
     ]
     import_name = "committee"
 
@@ -93,10 +95,12 @@ class CommitteeJsonUpload(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
         self.setup_lookups(data)
+        self.names = {entry["name"] for entry in data}
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # check meeting_template afterwards to ensure each committee has an id
         self.check_meetings()
+        self.check_parents_for_circles()
 
         self.generate_statistics()
         return {}
@@ -124,7 +128,45 @@ class CommitteeJsonUpload(
                 "value": entry["name"],
                 "info": ImportState.ERROR,
             }
-            messages.append("Found multiple committees with the same name.")
+            messages.append("Error: Found multiple committees with the same name.")
+
+        if parent := entry.get("parent"):
+            if "id" in entry:
+                entry["parent"] = {
+                    "value": "",
+                    "info": ImportState.WARNING,
+                }
+                messages.append(
+                    "The parent field will be skipped, because parent can not be updated for an existing committee."
+                )
+            else:
+                result = self.committee_lookup.check_duplicate(parent)
+                if result == ResultType.FOUND_ID:
+                    parent_id = self.committee_lookup.get_field_by_name(parent, "id")
+                    entry["parent"] = {
+                        "value": parent,
+                        "info": ImportState.DONE,
+                        "id": parent_id,
+                    }
+                elif result == ResultType.NOT_FOUND:
+                    if parent in self.names:
+                        entry["parent"] = {"value": parent, "info": ImportState.NEW}
+                    else:
+                        row_state = ImportState.ERROR
+                        entry["parent"] = {
+                            "value": parent,
+                            "info": ImportState.ERROR,
+                        }
+                        messages.append("Error: Parent committee not found.")
+                elif result == ResultType.FOUND_MORE_IDS:
+                    row_state = ImportState.ERROR
+                    entry["parent"] = {
+                        "value": parent,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(
+                        "Error: Found multiple committees with the same name as the parent."
+                    )
 
         if not entry.get("meeting_name"):
             if any(
@@ -151,7 +193,7 @@ class CommitteeJsonUpload(
                     {},
                 )
             except ActionException as e:
-                messages.append(e.message)
+                messages.append("Error: " + e.message)
                 row_state = ImportState.ERROR
 
         self.validate_with_lookup(entry, "managers", self.username_lookup, messages)
@@ -232,7 +274,7 @@ class CommitteeJsonUpload(
                         for field in ("start_time", "end_time")
                     ):
                         row["messages"].append(
-                            "A meeting with this name and dates already exists."
+                            "Error: A meeting with this name and dates already exists."
                         )
                         row["state"] = ImportState.ERROR
                         break
@@ -267,6 +309,50 @@ class CommitteeJsonUpload(
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
             self.check_admin_groups_for_meeting(row)
+
+    def check_parents_for_circles(self) -> None:
+        """
+        Search for circles among the parents of new rows.
+        Update rows do not need to be considered as it isn't possible to update a parent.
+        """
+        new_relations: dict[str, str] = {
+            row["data"]["name"]["value"]: row["data"]["parent"]["value"]
+            for row in self.rows
+            if "id" not in row
+            and row["data"].get("parent", {}).get("info") == ImportState.NEW
+        }
+        names = set(new_relations.keys())
+        circle_related: set[str] = set()
+        free: set[str] = set()
+        circles: set[str] = set()
+        while names:
+            name = names.pop()
+            descendants: list[str] = [name]
+            while parent := new_relations.get(name):
+                if parent in circle_related:
+                    circle_related.update(descendants)
+                    break
+                if parent in free:
+                    free.update(descendants)
+                    break
+                if parent in descendants:
+                    index = descendants.index(parent)
+                    circle_related.update(descendants)
+                    circles.update(descendants[index:])
+                    break
+                descendants.append(parent)
+                name = parent
+            names.difference_update(descendants)
+        for row in self.rows:
+            if row["data"]["name"]["value"] in circles:
+                row["data"]["parent"] = {
+                    "value": row["data"]["parent"]["value"],
+                    "info": ImportState.ERROR,
+                }
+                row["state"] = ImportState.ERROR
+                row["messages"].append(
+                    "Error: The parents are forming circles, please rework the hierarchy"
+                )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:
@@ -345,13 +431,15 @@ class CommitteeJsonUpload(
         committee_tuples: list[tuple[str | tuple[str, ...], dict[str, Any]]] = []
         usernames: set[str] = set()
         organization_tags: set[str] = set()
-        forward_committees: set[str] = set()
+        other_committees: set[str] = set()
 
         for entry in data:
             committee_names.add(entry["name"])
             committee_tuples.append((entry["name"], entry))
             if forwards := entry.get("forward_to_committees"):
-                forward_committees.update(forwards)
+                other_committees.update(forwards)
+            if parent := entry.get("parent"):
+                other_committees.add(parent)
             if managers := entry.get("managers"):
                 usernames.update(managers)
             if admins := entry.get("meeting_admins"):
@@ -363,9 +451,7 @@ class CommitteeJsonUpload(
             self.datastore,
             "committee",
             committee_tuples
-            + [
-                (name, {}) for name in forward_committees if name not in committee_names
-            ],
+            + [(name, {}) for name in other_committees if name not in committee_names],
         )
         self.username_lookup = Lookup(
             self.datastore, "user", [(name, {}) for name in usernames], field="username"

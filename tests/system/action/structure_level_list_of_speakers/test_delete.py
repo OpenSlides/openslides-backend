@@ -3,11 +3,11 @@ from tests.system.action.base import BaseActionTestCase
 
 class StructureLevelListOfSpeakersDeleteTest(BaseActionTestCase):
     def test_delete(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
                     "list_of_speakers_default_structure_level_time": 600,
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
                     "list_of_speakers_ids": [2],
                     "structure_level_list_of_speakers_ids": [3],

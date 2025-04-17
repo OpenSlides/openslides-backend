@@ -46,53 +46,78 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "username": "meeting_and_archived_meeting",
                     "meeting_ids": [1, 2],
                 },
+                "user/8": {
+                    "username": "with_home_committee",
+                    "home_committee_id": 2,
+                },
+                "user/9": {
+                    "username": "with_home_committee_and_meeting",
+                    "home_committee_id": 1,
+                    "meeting_ids": [1, 2],
+                },
             }
         )
         status_code, data = self.request(
-            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7]}
+            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7, 8, 9]}
         )
         self.assertEqual(status_code, 200)
-        self.assertEqual(
-            data,
-            {
-                "2": {
-                    "collection": "organization",
-                    "id": 1,
-                    "user_oml": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_ids": [],
-                },
-                "3": {
-                    "collection": "committee",
-                    "id": 1,
-                    "user_oml": "",
-                    "committee_ids": [1],
-                },
-                "4": {
-                    "collection": "meeting",
-                    "id": 1,
-                    "user_oml": "",
-                    "committee_ids": [2],
-                },
-                "5": {
-                    "collection": "organization",
-                    "id": 1,
-                    "user_oml": "",
-                    "committee_ids": [],
-                },
-                "6": {
-                    "collection": "meeting",
-                    "id": 1,
-                    "user_oml": OrganizationManagementLevel.SUPERADMIN,
-                    "committee_ids": [2],
-                },
-                "7": {
-                    "collection": "meeting",
-                    "id": 1,
-                    "user_oml": "",
-                    "committee_ids": [2],
-                },
-            },
-        )
+        assert len(data) == 8
+        assert data["2"] == {
+            "collection": "organization",
+            "id": 1,
+            "user_oml": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            "committee_ids": [],
+            "home_committee_id": None,
+        }
+        assert data["3"] == {
+            "collection": "committee",
+            "id": 1,
+            "user_oml": "",
+            "committee_ids": [1],
+            "home_committee_id": None,
+        }
+        assert data["4"] == {
+            "collection": "meeting",
+            "id": 1,
+            "user_oml": "",
+            "committee_ids": [2],
+            "home_committee_id": None,
+        }
+        assert data["5"] == {
+            "collection": "organization",
+            "id": 1,
+            "user_oml": "",
+            "committee_ids": [],
+            "home_committee_id": None,
+        }
+        assert data["6"] == {
+            "collection": "meeting",
+            "id": 1,
+            "user_oml": OrganizationManagementLevel.SUPERADMIN,
+            "committee_ids": [2],
+            "home_committee_id": None,
+        }
+        assert data["7"] == {
+            "collection": "meeting",
+            "id": 1,
+            "user_oml": "",
+            "committee_ids": [2],
+            "home_committee_id": None,
+        }
+        assert data["8"] == {
+            "collection": "committee",
+            "id": 2,
+            "user_oml": "",
+            "committee_ids": [],
+            "home_committee_id": 2,
+        }
+        assert data["9"] == {
+            "collection": "committee",
+            "id": 1,
+            "user_oml": "",
+            "committee_ids": [2],
+            "home_committee_id": 1,
+        }
 
     def test_without_user_None(self) -> None:
         status_code, data = self.request("get_user_scope", {"user_ids": [None]})

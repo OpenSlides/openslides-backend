@@ -18,12 +18,11 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
         }
 
     def test_delete_all_correct(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_xQyvfmsS",
                     "speaker_ids": list(range(1, 11)),
-                    "is_active_in_organization_id": 1,
                 },
                 "list_of_speakers/111": {
                     "closed": False,
