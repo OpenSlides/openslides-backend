@@ -2267,12 +2267,23 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert data["home_committee"] == {"info": ImportState.GENERATED, "value": None}
         assert data["guest"] == {"info": ImportState.DONE, "value": True}
 
-    def json_upload_update_guest_true_without_home_committee(self) -> None:
-        alice_id = self.create_user("Alice")
+    def json_upload_update_guest_true(
+        self, with_home_committee: bool = False, has_home_committee_perms: bool = True
+    ) -> None:
+        if with_home_committee:
+            self.create_committee(1, name="Home")
+            alice_id = self.create_user("Alice", home_committee_id=1)
+            if not has_home_committee_perms:
+                self.set_organization_management_level(
+                    OrganizationManagementLevel.CAN_MANAGE_USERS
+                )
+        else:
+            has_home_committee_perms = True
+            alice_id = self.create_user("Alice")
         response = self.request(
             "account.json_upload",
             {
-                "data": [{"username": "Alice", "guest": "1"}],
+                "data": [{"username": "Alice", "guest": "1", "first_name": "alice"}],
             },
         )
         self.assert_status_code(response, 200)
@@ -2280,18 +2291,35 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["state"] == ImportState.DONE
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == [
+        messages = [
             "If guest is set to true, any home_committee that was set will be removed."
         ]
+        if not has_home_committee_perms:
+            messages.append(
+                "Account is updated, but changes to the following field(s) are not possible: home_committee, guest"
+            )
+        assert import_preview["result"]["rows"][0]["messages"] == messages
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
         assert data["username"] == {
-            "id": alice_id,
             "info": ImportState.DONE,
             "value": "Alice",
+            "id": alice_id,
         }
-        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": None}
-        assert data["guest"] == {"info": ImportState.DONE, "value": True}
+        assert data["home_committee"] == {
+            "info": (
+                ImportState.GENERATED
+                if has_home_committee_perms
+                else ImportState.REMOVE
+            ),
+            "value": None,
+        }
+        assert data["guest"] == {
+            "info": (
+                ImportState.DONE if has_home_committee_perms else ImportState.REMOVE
+            ),
+            "value": True,
+        }
 
     def json_upload_update_guest_false_without_home_committee(self) -> None:
         alice_id = self.create_user("Alice")
@@ -2318,33 +2346,6 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert data["guest"] == {"info": ImportState.DONE, "value": False}
         assert "home_committee" not in data
 
-    def json_upload_update_guest_true_with_home_committee(self) -> None:
-        self.create_committee(1, name="Home")
-        alice_id = self.create_user("Alice", home_committee_id=1)
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [{"username": "Alice", "guest": "1"}],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
-        assert import_preview["name"] == "account"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == [
-            "If guest is set to true, any home_committee that was set will be removed."
-        ]
-        data = import_preview["result"]["rows"][0]["data"]
-        assert data["id"] == alice_id
-        assert data["username"] == {
-            "info": ImportState.DONE,
-            "value": "Alice",
-            "id": alice_id,
-        }
-        assert data["home_committee"] == {"info": ImportState.GENERATED, "value": None}
-        assert data["guest"] == {"info": ImportState.DONE, "value": True}
-
     def json_upload_update_guest_false_with_home_committee(self) -> None:
         self.create_committee(1, name="Home")
         alice_id = self.create_user("Alice", home_committee_id=1)
@@ -2369,37 +2370,6 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         }
         assert data["guest"] == {"info": ImportState.DONE, "value": False}
         assert "home_committee" not in data
-
-    def json_upload_update_guest_true_without_home_committee_perms(self) -> None:
-        self.create_committee(1, name="Home")
-        alice_id = self.create_user("Alice", home_committee_id=1)
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [{"username": "Alice", "guest": "1", "first_name": "alice"}],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
-        assert import_preview["name"] == "account"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == [
-            "If guest is set to true, any home_committee that was set will be removed.",
-            "Account is updated, but changes to the following field(s) are not possible: home_committee, guest",
-        ]
-        data = import_preview["result"]["rows"][0]["data"]
-        assert data["id"] == alice_id
-        assert data["username"] == {
-            "info": ImportState.DONE,
-            "value": "Alice",
-            "id": alice_id,
-        }
-        assert data["guest"] == {"info": ImportState.REMOVE, "value": True}
-        assert data["home_committee"] == {"info": ImportState.REMOVE, "value": None}
 
     def json_upload_update_guest_false_without_home_committee_perms(self) -> None:
         self.create_committee(1, name="Home")
