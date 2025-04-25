@@ -1,11 +1,8 @@
-import os
-from collections.abc import Callable
-from time import time
-from typing import Any, Self
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
-from psycopg import Connection, Cursor, rows, sql
+from psycopg import Cursor, rows
 
 from openslides_backend.services.database.database_reader import (
     DatabaseReader,
@@ -119,85 +116,6 @@ def create_model(data: list[dict[str, Any]]) -> list[Id]:
             id_from_fqid(fqid)
             for fqid in extended_database.write(create_write_requests(data))
         ]
-
-
-def performance(func: Callable) -> Callable:
-    return pytest.mark.skipif(
-        not os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "").lower()
-        in ("1", "on", "true"),
-        reason="Performance tests are disabled.",
-    )(func)
-
-
-class TestPerformance:
-    """
-    Useful for testing the performance of certain requests in system tests. Automatically patches
-    all relevant methods of the used connection handler to count and measure the requests in
-    addition to measuring the total time used. Example usage:
-    ```
-    with TestPerformance() as performance:
-        response = json_client.post(url, data)
-
-    print(f"{performance['total_time']} seconds")
-    print(f"requests: {performance['requests_count']}")
-    print(f"read time: {performance['read_time']}, write time: {performance['write_time']}")
-    ```
-    """
-
-    __test__ = False
-
-    def __init__(self, connection: Connection[rows.DictRow]) -> None:
-        self.connection = connection
-        self.performance_info: dict[str, int | float] = {}
-        self.cursor_mocked = CursorMock(connection.cursor(), self)
-
-    def __enter__(self) -> dict[str, int | float]:
-        self.patcher = patch.object(
-            self.connection, "cursor", new=lambda: self.cursor_mocked
-        )
-        self.patcher.start()
-        self.performance_info.update(
-            {
-                "read_time": 0.0,
-                "write_time": 0.0,
-                "requests_count": 0,
-            }
-        )
-        self.start_time = time()
-        return self.performance_info
-
-    def __exit__(self, exception, exception_value, traceback):  # type: ignore
-        diff = time() - self.start_time
-        self.patcher.stop()
-        self.performance_info["total_time"] = diff
-
-
-class CursorMock:
-    def __init__(self, curs: Cursor[rows.DictRow], tp: TestPerformance) -> None:
-        self.cursor = curs
-        self.cursor.__init__()  # type: ignore
-        self.performance_info = tp.performance_info
-        self.statusmessage = ""
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, exception, exception_value, traceback):  # type: ignore
-        self.cursor.__exit__(exception, exception_value, traceback)
-
-    def execute(self, statement: sql.SQL) -> Cursor[rows.DictRow]:
-        self.performance_info["requests_count"] += 1
-        start = time()
-        self.cursor.execute(statement)
-        diff = time() - start
-        if statement.as_string().strip().lower().startswith("select"):
-            self.performance_info["read_time"] += diff
-        else:
-            self.performance_info["write_time"] += diff
-        return self.cursor
-
-    def fetchone(self) -> rows.DictRow | None:
-        return self.cursor.fetchone()
 
 
 # def setup_otel():

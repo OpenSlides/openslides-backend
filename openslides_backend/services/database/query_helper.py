@@ -1,139 +1,143 @@
-# from datastore.shared.services.read_database import (
-#    AggregateFilterQueryFieldsParameters,
-#    BaseFilterQueryFieldsParameters,
-#    CountFilterQueryFieldsParameters,
-#    MappedFieldsFilterQueryFieldsParameters,
-# )
-# from datastore.shared.util import (
-#    KEYSEPARATOR,
-#    And,
-#    BadCodingError,
-#    DeletedModelsBehaviour,
-#    Filter,
-#    FilterOperator,
-#    InvalidFormat,
-#    Not,
-#    Or,
-# )
+from psycopg import sql
+
+from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
+
 from .mapped_fields import MappedFields
 
-# extend if neccessary. first is always the default (should be int)
-# min/max functions support the following:
-# "any numeric, string, date/time, network, or enum type, or arrays of these types"
-VALID_AGGREGATE_CAST_TARGETS = ["int"]
-
-VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
+SqlArguments = list[str | int]
 
 
+# TODO move insert and select creation into this class?
 class SqlQueryHelper:
     def build_select_from_mapped_fields(
         self, mapped_fields: MappedFields
-    ) -> tuple[str, list[str]]:
+    ) -> sql.Composed:
+        """
+        returns an sql.Composed string of the mapped fields.
+        returns only * if all fields are needed.
+        """
         if mapped_fields.needs_whole_model:
             # at least one collection needs all fields, so we just select data and
             # calculate the mapped_fields later
-            return "*", []
+            return sql.SQL("*")  # type: ignore
         else:
-            return (
-                ", ".join(mapped_fields.unique_fields),
-                mapped_fields.unique_fields,
+            result = sql.SQL(", ").join(
+                sql.Identifier(field) for field in {*mapped_fields.unique_fields, "id"}
             )
+            return result
 
     def build_filter_query(
         self,
         collection: str,
-        #        filter: Filter,
-        #        fields_params: Optional[BaseFilterQueryFieldsParameters] = None,
-        select_fqid: bool = False,
-    ) -> None:  # -> Tuple[str, List[str], List[str]]:
-        return None
+        filter_: Filter | None,
+        mapped_fields: MappedFields | None,
+        aggregate_function: sql.Composed | None = None,
+    ) -> tuple[sql.Composed, SqlArguments]:
+        """
+        returns in the returned tuple:
+        * the query string
+        * the arguments to be used within that query
+        """
+        arguments: SqlArguments = []
 
-    #        arguments: List[str] = []
-    #        sql_parameters: List[str] = []
-    #        filter_str = self.build_filter_str(filter, arguments)
-    #
-    #        arguments = [collection + KEYSEPARATOR + "%"] + arguments
-    #
-    #        if isinstance(fields_params, MappedFieldsFilterQueryFieldsParameters):
-    #            fields, mapped_field_args = self.build_select_from_mapped_fields(
-    #                fields_params.mapped_fields
-    #            )
-    #            arguments = mapped_field_args + arguments
-    #            sql_parameters = fields_params.mapped_fields.unique_fields
-    #        else:
-    #            if isinstance(fields_params, CountFilterQueryFieldsParameters):
-    #                fields = "count(*)"
-    #            elif isinstance(fields_params, AggregateFilterQueryFieldsParameters):
-    #                if fields_params.function not in VALID_AGGREGATE_FUNCTIONS:
-    #                    raise BadCodingError(
-    #                        "Invalid aggregate function: %s" % fields_params.function
-    #                    )
-    #                if fields_params.type not in VALID_AGGREGATE_CAST_TARGETS:
-    #                    raise BadCodingError("Invalid cast type: %s" % fields_params.type)
-    #
-    #                fields = f"{fields_params.function}((data->>%s)::{fields_params.type})"
-    #                arguments = [fields_params.field] + arguments
-    #            else:
-    #                raise BadCodingError(
-    #                    f"Invalid fields_params for build_filter_query: {fields_params}"
-    #                )
-    #            fields += f" AS {fields_params.function},\
-    #                        (SELECT MAX(position) FROM positions) AS position"
-    #
-    #        if select_fqid:
-    #            fields = f"fqid as __fqid__, {fields}"
-    #
-    #        query = f"select {fields} from models where fqid like %s and ({filter_str})"
-    #        return (
-    #            query,
-    #            arguments,
-    #            sql_parameters,
-    #        )
-    #
+        if mapped_fields:
+            aggregate_function = self.build_select_from_mapped_fields(mapped_fields)
+        query = sql.SQL("SELECT {columns} FROM {view}").format(
+            view=sql.Identifier(collection),
+            columns=aggregate_function,
+        )
+        if filter_:
+            query += sql.SQL(" WHERE ({filter_str})").format(
+                filter_str=self.build_filter_str(filter_, arguments)
+            )
+        return (
+            query,
+            arguments,
+        )
+
     def build_filter_str(
-        #        self, filter: Filter, arguments: List[str], table_alias=""
         self,
-        filter: str,
-        arguments: list[str],
+        filter_: Filter,
+        arguments: SqlArguments,
         table_alias: str = "",
-    ) -> str:
-        return ""
-
-
-#        if isinstance(filter, Not):
-#            filter_str = self.build_filter_str(
-#                filter.not_filter, arguments, table_alias
-#            )
-#            return f"NOT ({filter_str})"
-#        elif isinstance(filter, Or):
-#            return " OR ".join(
-#                f"({self.build_filter_str(part, arguments, table_alias)})"
-#                for part in filter.or_filter
-#            )
-#        elif isinstance(filter, And):
-#            return " AND ".join(
-#                f"({self.build_filter_str(part, arguments, table_alias)})"
-#                for part in filter.and_filter
-#            )
-#        elif isinstance(filter, FilterOperator):
-#            if table_alias:
-#                table_alias += "."
-#            if filter.value is None:
-#                if filter.operator not in ("=", "!="):
-#                    raise InvalidFormat("You can only compare to None with = or !=")
-#                operator = filter.operator[::-1].replace("=", "IS").replace("!", " NOT")
-#                condition = f"{table_alias}data->>%s {operator} NULL"
-#                arguments += [filter.field]
-#            else:
-#                if filter.operator == "~=":
-#                    condition = f"LOWER({table_alias}data->>%s) = LOWER(%s::text)"
-#                elif filter.operator == "%=":
-#                    condition = f"{table_alias}data->>%s ILIKE %s::text"
-#                elif filter.operator in ("=", "!="):
-#                    condition = f"{table_alias}data->>%s {filter.operator} %s::text"
-#                else:
-#                    condition = f"({table_alias}data->%s)::numeric {filter.operator} %s"
-#                arguments += [filter.field, filter.value]
-#            return condition
-#        else:
-#            raise BadCodingError("Invalid filter type")
+    ) -> sql.Composed | sql.Identifier:
+        """
+        appends the values to the arguments list
+        returns the filter string
+        """
+        if isinstance(filter_, Not):
+            return sql.SQL("NOT ({filter_str})").format(
+                filter_str=self.build_filter_str(
+                    filter_.not_filter, arguments, table_alias
+                )
+            )
+        elif isinstance(filter_, Or):
+            return sql.SQL(" OR ").join(
+                sql.SQL("({filter_str})").format(
+                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                )
+                for part in filter_.or_filter
+            )
+        elif isinstance(filter_, And):
+            return sql.SQL(" AND ").join(
+                sql.SQL("({filter_str})").format(
+                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                )
+                for part in filter_.and_filter
+            )
+        elif isinstance(filter_, FilterOperator):
+            if table_alias:
+                table_column: sql.Composed | sql.Identifier = sql.SQL(
+                    "{table_alias}.{column_name}"
+                ).format(
+                    table_alias=sql.Identifier(table_alias),
+                    column_name=sql.Identifier(filter_.field),
+                )
+            else:
+                table_column = sql.Identifier(filter_.field)
+            if filter_.value is None:
+                if filter_.operator not in ("=", "!="):
+                    raise InvalidFormat("You can only compare to None with = or !=")
+                operator = (
+                    filter_.operator[::-1].replace("=", "IS").replace("!", " NOT")
+                )
+                condition = sql.SQL("{table_column} {operator} NULL").format(
+                    table_column=table_column, operator=sql.SQL(operator)
+                )
+            else:
+                if filter_.operator == "~=":
+                    condition = sql.SQL(
+                        "LOWER({table_column}) = LOWER(%s::text)"
+                    ).format(table_column=table_column)
+                elif filter_.operator == "%=":
+                    condition = sql.SQL("{table_column} ILIKE %s::text").format(
+                        table_column=table_column
+                    )
+                # TODO delete or use if all backend tests were run.
+                # elif filter_.operator in ("=", "!=") and isinstance(filter_.value, str):
+                #     condition = sql.SQL("{table_column} {filter_operator} %s::text").format(
+                #         table_column=table_column, filter_operator=sql.SQL(filter_.operator)
+                #     )
+                elif filter_.operator in ("=", "!=") and isinstance(
+                    filter_.value, list
+                ):
+                    first_elem = next(iter(filter_.value))
+                    condition = sql.SQL(
+                        "{table_column} {filter_operator} %s::{type}"
+                    ).format(
+                        table_column=table_column,
+                        filter_operator=sql.SQL(filter_.operator),
+                        type=sql.SQL(
+                            "text[]" if isinstance(first_elem, str) else "integer[]"
+                        ),
+                    )
+                else:
+                    condition = sql.SQL("{table_column} {filter_operator} %s").format(
+                        table_column=table_column,
+                        filter_operator=sql.SQL(filter_.operator),
+                    )
+                arguments += [filter_.value]
+            return condition
+        else:
+            raise BadCodingException("Invalid filter type")

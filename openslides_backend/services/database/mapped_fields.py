@@ -1,4 +1,4 @@
-from openslides_backend.shared.exceptions import DatabaseException
+from openslides_backend.shared.exceptions import InvalidFormat
 from openslides_backend.shared.patterns import Collection, Field, FullQualifiedId
 
 # Postgres only supports 1664 columns per query, so choose a number below that
@@ -19,16 +19,13 @@ class MappedFields:
 
     def __init__(self, mapped_fields: list[Field] = []) -> None:
         self.validate_mapped_fields(mapped_fields)
-        # self.per_fqid = defaultdict(list)
         self.unique_fields = mapped_fields
         self.collections = []
         self.post_init()
 
     def post_init(self) -> None:
-        # self.fqids = list(self.per_fqid.keys())
         self.needs_whole_model = (
             len(self.unique_fields) == 0
-            # or any(len(fields) == 0 for fields in self.per_fqid.values())
             or len(self.unique_fields) > MAX_UNIQUE_FIELDS_PER_QUERY
         )
 
@@ -38,4 +35,4 @@ class MappedFields:
             if field is None or " " in field:
                 invalid_fields.append(field)
         if invalid_fields:
-            raise DatabaseException(f"Invalid fields: {invalid_fields}")
+            raise InvalidFormat(f"Invalid fields: {invalid_fields}")

@@ -16,12 +16,12 @@ from openslides_backend.shared.exceptions import (
     InvalidFormat,
     ModelDoesNotExist,
 )
+from openslides_backend.shared.filters import And, Filter, Not, Or
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
 )
 from openslides_backend.shared.typing import LockResult, PartialModel
 
-from ...shared.filters import Filter
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.event import EventType, ListFields
 from ...shared.interfaces.logging import LoggingModule
@@ -86,7 +86,7 @@ class ExtendedDatabase(Database):
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
-        self.changed_models: dict[str, dict[str, Any]] = defaultdict(dict)
+        self.changed_models: dict[FullQualifiedId, PartialModel] = defaultdict(dict)
         self.connection = connection
         self.database_reader = DatabaseReader(self.connection, logging, env)
         self.database_writer = DatabaseWriter(self.connection, logging, env)
@@ -274,13 +274,31 @@ class ExtendedDatabase(Database):
     def filter(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         mapped_fields: list[str],
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> dict[int, PartialModel]:
-        # TODO Implement me!
-        return {}
+        if filter_:
+            result = self.database_reader.filter(
+                collection, filter_, MappedFields(mapped_fields), lock_result
+            )
+        else:
+            result = self.database_reader.get_all(
+                collection, MappedFields(mapped_fields), lock_result
+            )
+        if use_changed_models and self.changed_models:
+            for fqid, changed_model in self.changed_models.items():
+                if not filter_ or (
+                    fqid.startswith(collection)
+                    and self.model_fits_filter(changed_model, filter_)
+                ):
+                    id_ = id_from_fqid(fqid)
+                    if id_ in result:
+                        result[id_].update(changed_model)
+                    else:
+                        result[id_] = changed_model
+        return result
 
     def exists(
         self,
@@ -295,34 +313,54 @@ class ExtendedDatabase(Database):
     def count(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int:
-        # TODO Implement me!
-        return 0
+        if use_changed_models and self.changed_models:
+            return len(
+                self.filter(collection, filter_, [], lock_result, use_changed_models)
+            )
+        else:
+            return self.database_reader.aggregate(
+                collection, filter_, "count", "*", lock_result
+            )
 
     def min(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        # TODO Implement me!
-        return None
+        if use_changed_models and self.changed_models:
+            response = self.filter(
+                collection, filter_, [field], lock_result, use_changed_models
+            )
+            return min(model[field] for model in response.values())
+        else:
+            return self.database_reader.aggregate(
+                collection, filter_, "min", field, lock_result
+            )
 
     def max(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        # TODO Implement me!
-        return None
+        if use_changed_models and self.changed_models:
+            response = self.filter(
+                collection, filter_, [field], lock_result, use_changed_models
+            )
+            return max(model[field] for model in response.values())
+        else:
+            return self.database_reader.aggregate(
+                collection, filter_, "max", field, lock_result
+            )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         return isinstance(self.changed_models.get(fqid), DeletedModel)
@@ -423,3 +461,17 @@ class ExtendedDatabase(Database):
 
     def delete_history_information(self) -> None:
         pass
+
+    def model_fits_filter(self, model: Model, filter_: Filter) -> bool:
+        if isinstance(filter_, Not):
+            return not self.model_fits_filter(model, filter_.not_filter)
+        elif isinstance(filter_, Or):
+            return any(
+                self.model_fits_filter(model, part) for part in filter_.or_filter
+            )
+        elif isinstance(filter_, And):
+            return all(
+                self.model_fits_filter(model, part) for part in filter_.and_filter
+            )
+        else:
+            return model.get(filter_.field) == filter_.value

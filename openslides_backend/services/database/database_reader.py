@@ -1,17 +1,15 @@
 from typing import Any
 
 from psycopg import Connection, rows, sql
-from psycopg.errors import UndefinedColumn, UndefinedTable
+from psycopg.errors import UndefinedColumn, UndefinedFunction, UndefinedTable
 
-from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
-from openslides_backend.shared.filters import Filter
-from openslides_backend.shared.patterns import (
-    Collection,
-    Field,
-    FullQualifiedId,
-    Id,
-    Position,
+from openslides_backend.shared.exceptions import (
+    BadCodingException,
+    DatabaseException,
+    InvalidFormat,
 )
+from openslides_backend.shared.filters import And, Filter, Not, Or
+from openslides_backend.shared.patterns import Collection, FullQualifiedId, Id, Position
 from openslides_backend.shared.typing import (
     HistoryInformation,
     LockResult,
@@ -23,7 +21,10 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ..database.commands import GetManyRequest
 from .mapped_fields import MappedFields
-from .query_helper import SqlQueryHelper
+from .query_helper import SqlArguments, SqlQueryHelper
+
+SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
+VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 
 
 class DatabaseReader:
@@ -66,36 +67,18 @@ class DatabaseReader:
             if "id" not in mapped_fields.unique_fields:
                 mapped_fields.unique_fields.append("id")
 
-            # arguments: list[Any] = [list(fqids)]
-
-            (
-                mapped_fields_str,
-                _,  # mapped_field_args,
-            ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
-            query = sql.SQL(
-                """SELECT {mapped_fields_str} FROM {collection} WHERE id = ANY(%s)"""
-            ).format(
-                mapped_fields_str=sql.SQL(mapped_fields_str),
-                collection=sql.Identifier(collection),
+            mapped_fields_sql = self.query_helper.build_select_from_mapped_fields(
+                mapped_fields
             )
-            if lock_result:
-                query += sql.SQL(" FOR UPDATE")
-            try:
-                with self.connection.cursor() as curs:
-                    db_result = curs.execute(query, (ids,)).fetchall()
-            except UndefinedColumn as e:
-                column = e.args[0].split('"')[1]
-                raise InvalidFormat(
-                    f"Field '{column}' does not exist in collection '{collection}': {e}"
-                )
-                # raise InvalidFormat(f"A field does not exist in model table: {e}")
-            except UndefinedTable as e:
-                raise InvalidFormat(
-                    f"Collection '{collection}' does not exist in the database: {e}"
-                )
-            except Exception as e:
-                raise DatabaseException(f"Unexpected error reading from database: {e}")
-
+            query = sql.SQL(
+                """SELECT {columns} FROM {view} WHERE id = ANY(%s)"""
+            ).format(
+                columns=mapped_fields_sql,
+                view=sql.Identifier(collection),
+            )
+            db_result = self.execute_query(
+                collection, query, lock_result, mapped_fields, (ids,)
+            )
             self.insert_models_into_result(db_result, mapped_fields, result[collection])
             # result[collection].update(self.build_models_from_result(db_result, mapped_fields, collection))
         return result
@@ -108,64 +91,109 @@ class DatabaseReader:
     ) -> dict[Id, PartialModel]:
         if mapped_fields is None:
             mapped_fields = MappedFields()
-        (
-            mapped_fields_str,
-            mapped_field_args,
-        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
-        query = sql.SQL("""SELECT {mapped_fields_str} FROM {collection}""").format(
-            mapped_fields_str=sql.SQL(mapped_fields_str),
+        mapped_fields_sql = self.query_helper.build_select_from_mapped_fields(
+            mapped_fields
+        )
+        query = sql.SQL("""SELECT {columns} FROM {collection}""").format(
+            columns=mapped_fields_sql,
             collection=sql.Identifier(collection),
         )
         result: dict[Id, PartialModel] = dict()
         self.insert_models_into_result(
-            self.execute_query(collection, query, lock_result),
+            self.execute_query(collection, query, lock_result, mapped_fields),
             mapped_fields,
             result,
         )
         return result
 
     def filter(
-        self, collection: Collection, filter: Filter, mapped_fields: list[Field]
+        self,
+        collection: Collection,
+        filter_: Filter,
+        mapped_fields: MappedFields,
+        lock_result: bool,
     ) -> dict[Id, Model]:
-        #        fields_params = MappedFieldsFilterQueryFieldsParameters(mapped_fields)
-        #        query, arguments, sql_params = self.query_helper.build_filter_query(
-        #            collection, filter, fields_params, select_fqid=True
-        #        )
-        #        models = self.fetch_models(query, arguments, sql_params, mapped_fields)
-        return {}
+        query, arguments = self.query_helper.build_filter_query(
+            collection, filter_, mapped_fields
+        )
+        try:
+            return self.fetch_models(
+                collection, query, arguments, mapped_fields, lock_result
+            )
+        except InvalidFormat as e:
+            if '"' in e.msg:
+                part_one, field, *_ = e.msg.split('"')
+                if "Field" in part_one and self.is_field_in_filter(field, filter_):
+                    e.msg += "\nCheck filter fields."
+            raise e
+
+    def is_field_in_filter(self, field: str, filter_: Filter) -> bool:
+        if isinstance(filter_, Not):
+            return self.is_field_in_filter(field, filter_.not_filter)
+        elif isinstance(filter_, Or):
+            return any(
+                self.is_field_in_filter(field, part) for part in filter_.or_filter
+            )
+        elif isinstance(filter_, And):
+            return any(
+                self.is_field_in_filter(field, part) for part in filter_.and_filter
+            )
+        else:
+            return filter_.field == field
 
     def aggregate(
         self,
         collection: Collection,
-        filter: Filter,
-        #        fields_params: BaseAggregateFilterQueryFieldsParameters,
+        filter: Filter | None,
+        agg_function: str,
+        field_or_star: str,
+        lock_result: bool,
     ) -> Any:
-        #        query, arguments, sql_params = self.query_helper.build_filter_query(
-        #            collection, filter, fields_params
-        #        )
-        #        value = self.connection.query(query, arguments, sql_params)
-        return {}
+        """
+        This function creates and executes an SQL query with an aggregate function like count or max.
+        field_or_star should be "*" if count is used else the field to be aggregated on.
+        Returns only the aggregate.
+        """
+        if agg_function not in VALID_AGGREGATE_FUNCTIONS:
+            raise BadCodingException(f"Invalid aggregate function: {agg_function}")
+        aggregate_function = sql.SQL("{aggregate_function}({agg_field})").format(
+            agg_field=(
+                sql.Identifier(field_or_star)
+                if field_or_star != "*"
+                else sql.Literal("*")
+            ),
+            aggregate_function=sql.SQL(agg_function),
+        )
+        query, arguments = self.query_helper.build_filter_query(
+            collection, filter, None, aggregate_function
+        )
+        return self.execute_query(
+            collection, query, lock_result, None, arguments, aggregate=True
+        )[0].get(agg_function)
 
     def fetch_models(
         self,
-        query: str,
-        arguments: list[str],
-        sql_parameters: list[str],
-        mapped_fields: list[str],
+        collection: Collection,
+        query: sql.Composed,
+        arguments: SqlArgumentsExtended,
+        mapped_fields: MappedFields,
+        lock_result: bool,
     ) -> dict[int, Model]:
-        #        """Fetched models for one collection"""
-        #        result = self.connection.query(query, arguments, sql_parameters)
-        #        models = {}
-        #        for row in result:
-        #            # if there are mapped_fields, we already resolved them in the query and
-        #            # can just copy all fields. else we can just use the whole `data` field
-        #            if len(mapped_fields) > 0:
-        #                model = row.copy()
-        #                del model["__fqid__"]
-        #            else:
-        #                model = row["data"]
-        #            models[id_from_fqid(row["__fqid__"])] = model
-        return {}
+        """Fetched models for one collection"""
+        result = self.execute_query(
+            collection, query, lock_result, mapped_fields, arguments
+        )
+        models = {}
+        for row in result:
+            # if there are mapped_fields, we already resolved them in the query and
+            # can just use all fields.
+            models[row["id"]] = row
+            if (
+                not mapped_fields.needs_whole_model
+                and "id" not in mapped_fields.unique_fields
+            ):
+                del row["id"]
+        return models
 
     def insert_models_into_result(
         self,
@@ -173,7 +201,7 @@ class DatabaseReader:
         mapped_fields: MappedFields,
         collection_result_part: dict[Id, PartialModel],
     ) -> None:
-        """Composes the result so that exactly the required fields are returned."""
+        """Composes the result so that exactly the required fields and no None values are returned."""
         for row in db_result:
             id_ = row["id"]
 
@@ -304,21 +332,32 @@ class DatabaseReader:
         return -1
 
     def execute_query(
-        self, collection: Collection, query: sql.Composed, lock_result: bool
+        self,
+        collection: Collection,
+        query: sql.Composed,
+        lock_result: LockResult,
+        mapped_fields: MappedFields | None = None,
+        arguments: SqlArgumentsExtended = [],
+        aggregate: bool = False,
     ) -> list[PartialModel]:
-        if lock_result:
+        if lock_result and not aggregate:
             query += sql.SQL(" FOR UPDATE")
         try:
             with self.connection.cursor() as curs:
-                return curs.execute(query).fetchall()
+                return curs.execute(query, arguments).fetchall()
         except UndefinedColumn as e:
             column = e.args[0].split('"')[1]
-            raise InvalidFormat(
+            error_msg = (
                 f"Field '{column}' does not exist in collection '{collection}': {e}"
             )
+            if mapped_fields and column in mapped_fields.unique_fields:
+                error_msg += "\nCheck mapped fields."
+            raise InvalidFormat(error_msg)
         except UndefinedTable as e:
             raise InvalidFormat(
                 f"Collection '{collection}' does not exist in the database: {e}"
             )
+        except UndefinedFunction as e:
+            raise InvalidFormat(e.diag.message_primary or "")
         except Exception as e:
             raise DatabaseException(f"Unexpected error reading from database: {e}")

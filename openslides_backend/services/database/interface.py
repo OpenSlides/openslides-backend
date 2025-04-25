@@ -64,7 +64,7 @@ class Database(Protocol):
     def filter(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         mapped_fields: list[str],
         lock_result: bool = True,
         use_changed_models: bool = True,
@@ -83,7 +83,7 @@ class Database(Protocol):
     def count(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int: ...
@@ -92,7 +92,7 @@ class Database(Protocol):
     def min(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,
@@ -102,7 +102,7 @@ class Database(Protocol):
     def max(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,

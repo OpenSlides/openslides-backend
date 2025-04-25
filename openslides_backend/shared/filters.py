@@ -59,7 +59,7 @@ filter_definitions_schema = {
 
 
 FilterData = dict[str, Any]
-
+FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
 
 # Whoof, that's an ugly workaround... A bit of background:
 # - The `dacite` package cannot handle `collections.abc.Sequence` (the replacement for the
@@ -110,7 +110,7 @@ class _ListFilterBase(_FilterBase, ABC):
 @dataclass
 class FilterOperator(_FilterBase, SelfValidatingDataclass):
     field: Field
-    operator: Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
+    operator: FilterLiteral
     value: Any
 
     def to_dict(self) -> FilterData:

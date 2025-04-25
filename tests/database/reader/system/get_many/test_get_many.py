@@ -20,7 +20,7 @@ default_request = [
     GetManyRequest("committee", [1, 2], ["name", "organization_id"]),
 ]
 full_request = [
-    GetManyRequest("user", [1]),
+    GetManyRequest("user", [1, 2]),
     GetManyRequest("committee", [1, 2]),
 ]
 default_response = {
@@ -58,7 +58,7 @@ def test_invalid_fqids(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         response = extended_database.get_many(request, use_changed_models=False)
     assert response == {
-        "user": standard_responses["user"],
+        "user": {1: standard_responses["user"][1]},
         "committee": {1: standard_responses["committee"][1]},
     }
 
@@ -66,7 +66,7 @@ def test_invalid_fqids(db_connection: Connection) -> None:
 def test_only_invalid_fqids(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     request = [
-        GetManyRequest("user", [2]),
+        GetManyRequest("user", [42]),
         GetManyRequest("committee", [3, 4]),
     ]
     with get_new_os_conn() as conn:

@@ -8,14 +8,13 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import ModelDoesNotExist
 from openslides_backend.shared.interfaces.event import EventType
+from tests.database.util import TestPerformance, performance
 from tests.database.writer.system.util import (
-    TestPerformance,
     assert_model,
     assert_no_model,
     create_model,
     create_write_requests,
     get_data,
-    performance,
 )
 
 
