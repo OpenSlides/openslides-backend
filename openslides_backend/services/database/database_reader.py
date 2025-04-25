@@ -3,19 +3,17 @@ from typing import Any
 from psycopg import Connection, rows, sql
 from psycopg.errors import UndefinedColumn, UndefinedFunction, UndefinedTable
 
+from openslides_backend.services.postgresql.db_connection_handling import (
+    retry_on_db_failure,
+)
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     DatabaseException,
     InvalidFormat,
 )
 from openslides_backend.shared.filters import And, Filter, Not, Or
-from openslides_backend.shared.patterns import Collection, FullQualifiedId, Id, Position
-from openslides_backend.shared.typing import (
-    HistoryInformation,
-    LockResult,
-    Model,
-    PartialModel,
-)
+from openslides_backend.shared.patterns import Collection, Id
+from openslides_backend.shared.typing import LockResult, Model, PartialModel
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
@@ -217,102 +215,6 @@ class DatabaseReader:
             else:
                 collection_result_part[id_] = row
 
-    def build_model_ignore_deleted(
-        self, fqid: FullQualifiedId, position: Position | None = None
-    ) -> Model:
-        #        models = self.build_models_ignore_deleted([fqid], position)
-        #        try:
-        #            return models[fqid]
-        #        except KeyError:
-        #            raise ModelDoesNotExist(fqid)
-        return {}
-
-    def build_models_ignore_deleted(
-        self, fqids: list[FullQualifiedId], position: Position | None = None
-    ) -> dict[FullQualifiedId, Model]:
-        #        # Optionally only builds the models up to the specified position.
-        #        # TODO: There might be a speedup: Get the model from the readdb first.
-        #        # If the model exists there, read the position from it, use the model
-        #        # as a starting point in `build_model_from_events` and just fetch all
-        #        # events after the position.
-        #        if position:
-        #            pos_cond = "and position <= %s"
-        #            pos_args = [position]
-        #        else:
-        #            pos_cond = ""
-        #            pos_args = []
-        #
-        #        query = dedent(
-        #            f"""\
-        #            select fqid, type, data, position from events e
-        #            where fqid = any(%s) {pos_cond}
-        #            order by position asc, weight asc"""
-        #        )
-        #
-        #        args: list[Any] = [fqids]
-        #        db_events = self.connection.query(query, args + pos_args)
-        #
-        #        events_per_fqid: dict[FullQualifiedId, list[dict[str, Any]]] = defaultdict(list)
-        #        for event in db_events:
-        #            events_per_fqid[event["fqid"]].append(event)
-        #
-        #        models = {}
-        #        for fqid, events in events_per_fqid.items():
-        #            models[fqid] = self.build_model_from_events(events)
-        #
-        return {}
-
-    def build_model_from_events(self, events: list[dict[str, Any]]) -> Model:
-        #        if not events:
-        #            raise BadCodingError()
-        #
-        #        create_event = events[0]
-        #        assert create_event["type"] == EVENT_TYPE.CREATE
-        #        model: Model = {**create_event["data"], META_DELETED: False}
-        #
-        #        # apply all other update/delete_fields
-        #        for event in events[1:]:
-        #            if event["type"] == EVENT_TYPE.UPDATE:
-        #                model.update(event["data"])
-        #            elif event["type"] == EVENT_TYPE.DELETE_FIELDS:
-        #                for field in event["data"]:
-        #                    if field in model:
-        #                        del model[field]
-        #            elif event["type"] == EVENT_TYPE.LIST_FIELDS:
-        #                for field, value in apply_fields(
-        #                    model, event["data"]["add"], event["data"]["remove"]
-        #                ).items():
-        #                    model[field] = value
-        #            elif event["type"] == EVENT_TYPE.DELETE:
-        #                model[META_DELETED] = True
-        #            elif event["type"] == EVENT_TYPE.RESTORE:
-        #                model[META_DELETED] = False
-        #            else:
-        #                raise BadCodingError()
-        #
-        #        model[META_POSITION] = events[-1]["position"]
-        return {}
-
-    def get_history_information(
-        self, fqids: list[FullQualifiedId]
-    ) -> dict[FullQualifiedId, list[HistoryInformation]]:
-        #        positions = self.connection.query(
-        #            """select fqid, position, timestamp, user_id, information from positions natural join events
-        #            where fqid = any(%s) and information::text <> %s::text order by position asc""",
-        #            [fqids, self.json(None)],
-        #        )
-        #        history_information = defaultdict(list)
-        #        for position in positions:
-        #            history_information[position["fqid"]].append(
-        #                HistoryInformation(
-        #                    position=position["position"],
-        #                    timestamp=position["timestamp"].timestamp(),
-        #                    user_id=position["user_id"],
-        #                    information=position["information"],
-        #                )
-        #            )
-        return {}
-
     # def is_empty(self) -> bool:
     #     return not self.connection.query_single_value(
     #         "select exists(select * from positions)", []
@@ -331,6 +233,7 @@ class DatabaseReader:
         #            )
         return -1
 
+    @retry_on_db_failure
     def execute_query(
         self,
         collection: Collection,

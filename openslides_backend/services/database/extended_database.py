@@ -291,7 +291,7 @@ class ExtendedDatabase(Database):
             for fqid, changed_model in self.changed_models.items():
                 if not filter_ or (
                     fqid.startswith(collection)
-                    and self.model_fits_filter(changed_model, filter_)
+                    and self._model_fits_filter(changed_model, filter_)
                 ):
                     id_ = id_from_fqid(fqid)
                     if id_ in result:
@@ -368,12 +368,8 @@ class ExtendedDatabase(Database):
         return self.changed_models.get(fqid, {}).get("meta_new") is True
 
     def reset(self, hard: bool = True) -> None:
-        # super().reset()
         if hard:
             self.changed_models.clear()
-
-    def history_information(self, fqids: list[str]) -> dict[str, list[dict]]:
-        return {}
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         self.logger.debug(
@@ -443,7 +439,8 @@ class ExtendedDatabase(Database):
         )
         return fqids
 
-    def truncate_db(self) -> None: ...
+    def truncate_db(self) -> None:
+        self.database_writer.truncate_db()
 
     def get_everything(self) -> dict[Collection, dict[int, Model]]:
         return {
@@ -458,19 +455,16 @@ class ExtendedDatabase(Database):
             if v
         }
 
-    def delete_history_information(self) -> None:
-        pass
-
-    def model_fits_filter(self, model: Model, filter_: Filter) -> bool:
+    def _model_fits_filter(self, model: Model, filter_: Filter) -> bool:
         if isinstance(filter_, Not):
-            return not self.model_fits_filter(model, filter_.not_filter)
+            return not self._model_fits_filter(model, filter_.not_filter)
         elif isinstance(filter_, Or):
             return any(
-                self.model_fits_filter(model, part) for part in filter_.or_filter
+                self._model_fits_filter(model, part) for part in filter_.or_filter
             )
         elif isinstance(filter_, And):
             return all(
-                self.model_fits_filter(model, part) for part in filter_.and_filter
+                self._model_fits_filter(model, part) for part in filter_.and_filter
             )
         else:
             return model.get(filter_.field) == filter_.value

@@ -12,6 +12,9 @@ from psycopg.errors import (
 )
 
 from openslides_backend.services.database.interface import FQID_MAX_LEN
+from openslides_backend.services.postgresql.db_connection_handling import (
+    retry_on_db_failure,
+)
 from openslides_backend.shared.exceptions import (
     BadCodingException,
     InvalidFormat,
@@ -54,7 +57,7 @@ class DatabaseWriter:
         self.connection = connection
         self.database_reader = DatabaseReader(self.connection, logging, env)
 
-    # @retry_on_db_failure
+    @retry_on_db_failure
     def write(
         self,
         write_requests: list[WriteRequest],
@@ -86,15 +89,7 @@ class DatabaseWriter:
                     # Check locked_fields -> Possible LockedError
                     # self.occ_locker.assert_locked_fields(write_request)
 
-                    modified_models.update(
-                        self.write_events(
-                            write_request.events,
-                            write_request.user_id,
-                            # models,
-                        )
-                    )
-
-                    # return modified_fqfields
+                    modified_models.update(self.write_events(write_request.events))
 
         self.print_stats()
         self.print_summary()
@@ -128,7 +123,6 @@ class DatabaseWriter:
     def write_events(
         self,
         events: list[Event],
-        user_id: int | None,  # TODO is None okay?
     ) -> list[FullQualifiedId]:
         if not events:
             raise BadCodingException("Events are needed.")
@@ -353,7 +347,7 @@ class DatabaseWriter:
             for collection, ids in ids_per_collection.items()
         }
 
-    # @retry_on_db_failure TODO for all
+    @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> list[Id]:
         with make_span(self.env, "reserve ids"):
             with self.connection.cursor() as curs:
@@ -370,16 +364,9 @@ class DatabaseWriter:
                 self.logger.info(f"{len(ids)} ids reserved")
                 return ids
 
-    # @retry_on_db_failure
-    def delete_history_information(self) -> None:
-        with self.connection:
-            pass
-            # self.database_reader.delete_history_information()
-            # logger.info("History information deleted")
-
-    # @retry_on_db_failure
+    @retry_on_db_failure
     def truncate_db(self) -> None:
-        pass
-        # with self.database_reader.get_context():
-        #     self.database_reader.truncate_db()
-        # logger.info("Database truncated")
+        with self.connection.cursor() as curs:
+            curs.execute("SELECT tablename from pg_tables WHERE schemaname = 'public'")
+            table_names = ", ".join(table["tablename"] for table in curs.fetchall())
+        self.connection.execute(f"TRUNCATE TABLE {table_names} RESTART IDENTITY;")
