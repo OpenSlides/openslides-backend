@@ -303,12 +303,11 @@ class ExtendedDatabase(Database):
     def exists(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> bool:
-        # TODO Implement me!
-        return False
+        return self.count(collection, filter_, lock_result, use_changed_models) > 0
 
     def count(
         self,

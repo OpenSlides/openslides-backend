@@ -74,7 +74,7 @@ class Database(Protocol):
     def exists(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> bool: ...
