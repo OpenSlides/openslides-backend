@@ -153,7 +153,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         )
         self.set_state_from_workflow(instance, meeting)
         committee = self.check_for_origin_id(instance)
-        self.check_state_allow_forwarding(instance)
         use_original_number = instance.get("use_original_number", False)
 
         if use_original_submitter := instance.pop("use_original_submitter", False):
@@ -251,7 +250,9 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 states = self.datastore.get_many(
                     [
                         GetManyRequest(
-                            "motion_state", list(state_ids), ["allow_motion_forwarding"]
+                            "motion_state",
+                            list(state_ids),
+                            ["allow_amendment_forwarding"],
                         )
                     ],
                     lock_result=False,
@@ -261,7 +262,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             states = {
                 id_: state
                 for id_, state in states.items()
-                if state.get("allow_motion_forwarding")
+                if state.get("allow_amendment_forwarding")
             }
             for amendment in list(new_amendments.values()):
                 if not (
@@ -384,20 +385,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
-
-    def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
-        origin = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
-            ["state_id"],
-            lock_result=False,
-        )
-        state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", origin["state_id"]),
-            ["allow_motion_forwarding"],
-            lock_result=False,
-        )
-        if not state.get("allow_motion_forwarding"):
-            raise ActionException("State doesn't allow to forward motion.")
 
     def get_history_information(self) -> HistoryInformation | None:
         forwarded_entries = defaultdict(list)

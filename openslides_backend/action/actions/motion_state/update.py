@@ -28,6 +28,7 @@ class MotionStateUpdateAction(UpdateAction):
             "allow_create_poll",
             "allow_submitter_edit",
             "allow_motion_forwarding",
+            "allow_amendment_forwarding",
             "set_number",
             "set_workflow_timestamp",
             "show_state_extension_field",

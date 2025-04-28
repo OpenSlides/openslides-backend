@@ -48,6 +48,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "name": "name_Xcdfgee",
                 "is_internal": True,
                 "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
                 "submitter_withdraw_state_id": 112,
             },
@@ -58,6 +59,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("name") == "name_Xcdfgee"
         assert model.get("is_internal") is True
         assert model.get("allow_motion_forwarding") is True
+        assert model.get("allow_amendment_forwarding") is True
         assert model.get("set_workflow_timestamp") is True
         assert model.get("submitter_withdraw_state_id") == 112
 
