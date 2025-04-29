@@ -233,7 +233,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             self.instance_user_oml_permission,
             self.instance_committee_meeting_ids,
             self.user_in_archived_meetings_only,
-        ) = self.get_user_scope((instance.get("id") or instance))
+        ) = self.get_user_scope(instance.get("id") or instance)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
             self._check_for_higher_OML(actual_group_fields, instance)

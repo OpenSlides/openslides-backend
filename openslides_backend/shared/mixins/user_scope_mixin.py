@@ -224,9 +224,9 @@ class UserScopeMixin(BaseServiceProvider):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: set(
-                            [ci for ci in committees_to_meetings.keys()]
-                        ),
+                        CommitteeManagementLevel.CAN_MANAGE: {
+                            ci for ci in committees_to_meetings.keys()
+                        },
                     }
                 )
 
