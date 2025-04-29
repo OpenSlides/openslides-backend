@@ -86,23 +86,13 @@ class UserScopeMixin(BaseServiceProvider):
             if meeting_data.get("is_active_in_organization_id"):
                 active_meetings_committee.update(item)
 
-        def get_committee_meetings_and_committees(
-            meetings_committee: dict[int, int],
-        ) -> tuple[dict[int, Any], set[int | Any]]:
-            committees = committees_manager | set(meetings_committee.values())
-            committee_meetings: dict[int, Any] = defaultdict(list)
-            for meeting, committee in meetings_committee.items():
-                committee_meetings[committee].append(meeting)
-            for committee in committees:
-                if committee not in committee_meetings.keys():
-                    committee_meetings[committee] = None
-            return committee_meetings, committees
-
-        committee_meetings, committees = get_committee_meetings_and_committees(
-            meetings_committee
+        committee_meetings, committees = self._get_committee_meetings_and_committees(
+            meetings_committee, committees_manager
         )
         active_committee_meetings, active_committees = (
-            get_committee_meetings_and_committees(active_meetings_committee)
+            self._get_committee_meetings_and_committees(
+                active_meetings_committee, committees_manager
+            )
         )
 
         user_in_archived_meetings_only = (
@@ -311,6 +301,18 @@ class UserScopeMixin(BaseServiceProvider):
             ],
             lock_result=False,
         ).get("meeting", {})
+
+    def _get_committee_meetings_and_committees(
+        self, meetings_committee: dict[int, int], committees_manager: set[int]
+    ) -> tuple[dict[int, list[int]], set[int]]:
+        committees = committees_manager | set(meetings_committee.values())
+        committee_meetings: dict[int, Any] = defaultdict(list)
+        for meeting, committee in meetings_committee.items():
+            committee_meetings[committee].append(meeting)
+        for committee in committees:
+            if committee not in committee_meetings.keys():
+                committee_meetings[committee] = None
+        return committee_meetings, committees
 
     def _collect_admin_meeting_users(self, meetings: dict[int, Any]) -> set[int]:
         """

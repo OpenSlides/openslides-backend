@@ -989,11 +989,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         May not update group A fields on meeting scope. User belongs to 1 archived meeting without being part of a committee.
         """
         self.permission_setup()
-        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(self.user_id, [1])
         self.set_user_groups(111, [1])
         self.set_models(
             {
-                "group/2": {"permissions": [Permissions.User.CAN_UPDATE]},
+                "group/1": {"permissions": [Permissions.User.CAN_UPDATE]},
                 "user/111": {"committee_ids": [60], "meeting_ids": [1]},
                 "meeting/1": {"is_active_in_organization_id": None},
             },
@@ -1310,6 +1310,58 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/4": {"is_active_in_organization_id": None},
+                "group/2": {"permissions": [permission]},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "committee_ids": None,
+            },
+        )
+        user111 = self.get_model("user/111")
+        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+
+    def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+            Permissions.User.CAN_UPDATE
+        )
+
+    def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee_with_parent_permission(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+            Permissions.User.CAN_MANAGE
+        )
+
+    def perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+        self, permission: Permission
+    ) -> None:
+        """
+        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
+        User is member of an archived meeting in the same committee, but this doesn't may affect the result.
+        """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(111, [1, 4])
+        self.set_models(
+            {
+                "meeting/4": {
+                    "is_active_in_organization_id": None,
+                    "committee_id": 60,
+                },
                 "group/2": {"permissions": [permission]},
             }
         )
