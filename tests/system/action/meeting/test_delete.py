@@ -446,7 +446,24 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_delete_permissions_can_manage_organization_with_locked_meeting(
+    def test_delete_permissions_oml_locked_meeting_not_allowed(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_organization"},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        self.set_user_groups(1, [11])
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot delete locked meeting.",
+            response.json["message"],
+        )
+
+    def test_delete_permissions_oml_locked_meeting_with_can_manage_settings(
         self,
     ) -> None:
         self.set_models(
