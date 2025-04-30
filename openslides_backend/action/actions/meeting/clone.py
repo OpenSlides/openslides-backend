@@ -245,11 +245,9 @@ class MeetingClone(MeetingImport):
         meeting_user_ids.update(additional_meeting_user_ids)
         group_id = group_in_instance["id"]
         for meeting_user_id in additional_meeting_user_ids:
-            fqid_meeting_user = fqid_from_collection_and_id(
-                "meeting_user", meeting_user_id
-            )
             meeting_user = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any],
+                self.datastore.get_changed_model("meeting_user", meeting_user_id),
             )
             group_ids = meeting_user.get("group_ids", [])
             if group_id not in group_ids:

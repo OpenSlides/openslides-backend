@@ -72,8 +72,10 @@ def test_changed_models(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.changed_models["committee/1"].update({"name": "3"})
-        extended_database.changed_models["committee/4"].update({"name": "5"})
+        extended_database.apply_changed_model("committee/1", {"name": "3"})
+        extended_database.apply_changed_model(
+            "committee/4", {"name": "5", "meta_new": True}
+        )
         response = extended_database.exists(
             "committee", FilterOperator("name", "=", "5")
         )

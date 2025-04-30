@@ -1,3 +1,6 @@
+import datetime
+import zoneinfo
+from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
@@ -25,6 +28,17 @@ from tests.database.reader.system.util import (
 )
 from tests.database.util import TestPerformance, performance
 
+expected_response_changed_models = {
+    1: {"username": "3", "default_vote_weight": Decimal("42")},
+    2: {"username": "3", "default_vote_weight": Decimal("23")},
+    4: {"username": "3", "default_vote_weight": None},
+}
+last_login_filter = FilterOperator(
+    "last_login",
+    "=",
+    datetime.datetime(2012, 5, 31, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
+)
+
 
 def base_test(
     db_connection: Connection,
@@ -36,7 +50,9 @@ def base_test(
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        response = extended_database.filter(collection, filter_, mapped_fields)
+        response = extended_database.filter(
+            collection, filter_, mapped_fields, use_changed_models=False
+        )
     if isinstance(to_be_found_id, int):
         assert response == {
             to_be_found_id: standard_responses[collection][to_be_found_id]
@@ -79,19 +95,19 @@ def test_eq_ignore_case(db_connection: Connection) -> None:
 
 
 def test_ilike_case_insensitive(db_connection: Connection) -> None:
-    base_test(db_connection, "user", FilterOperator("username", "%=", "DA%"), "all")
+    base_test(db_connection, "user", FilterOperator("username", "%=", "DAt%"), 1)
 
 
 @pytest.mark.parametrize(
     "filter_,to_be_found_id",
     [
         pytest.param(FilterOperator("id", "=", 1), 1, id="int_equal"),
-        pytest.param(FilterOperator("id", "!=", 1), 2, id="int_not_equal"),
+        pytest.param(FilterOperator("id", "!=", 0), "all", id="int_not_equal"),
         pytest.param(FilterOperator("id", "<", 2), 1, id="int_smaller"),
-        pytest.param(FilterOperator("id", "<=", 2), "all", id="int_smaller_equal"),
-        pytest.param(FilterOperator("id", ">", 1), 2, id="int_greater"),
+        pytest.param(FilterOperator("id", "<=", 3), "all", id="int_smaller_equal"),
+        pytest.param(FilterOperator("id", ">", 2), 3, id="int_greater"),
         pytest.param(FilterOperator("id", ">=", 1), "all", id="int_greater_equal"),
-        pytest.param(FilterOperator("is_demo_user", "=", True), 1, id="bool"),
+        pytest.param(FilterOperator("is_demo_user", "=", False), 2, id="bool"),
         pytest.param(FilterOperator("meeting_ids", "=", [1, 3]), 2, id="list[int]"),
         pytest.param(FilterOperator("last_login", "=", "2012/05/31"), 2, id="date"),
         pytest.param(
@@ -109,34 +125,38 @@ def test_types(db_connection: Connection, filter_: Filter, to_be_found_id: int) 
 @pytest.mark.parametrize(
     "filter_,to_be_found_id",
     [
-        (
+        pytest.param(
             And(
                 FilterOperator("username", "=", "daren"),
                 FilterOperator("username", "=", "daren"),
             ),
             2,
+            id="and",
         ),
-        (
+        pytest.param(
             Or(
                 FilterOperator("username", "=", "data"),
                 FilterOperator("username", "=", "daren"),
+                FilterOperator("first_name", "=", "nerad"),
             ),
             "all",
+            id="or",
         ),
-        (
+        pytest.param(
             Or(
                 And(
                     FilterOperator("username", "=", "daren"),
-                    FilterOperator("username", "=", "daren"),
+                    FilterOperator("first_name", "=", "daren"),
                 ),
                 Not(
                     Or(
                         FilterOperator("username", "=", "data"),
-                        FilterOperator("username", "=", "daren"),
+                        FilterOperator("first_name", "=", "nerad"),
                     )
                 ),
             ),
             2,
+            id="complex",
         ),
     ],
 )
@@ -151,7 +171,7 @@ def test_eq_none(db_connection: Connection) -> None:
 
 
 def test_neq_none(db_connection: Connection) -> None:
-    base_test(db_connection, "user", FilterOperator("first_name", "!=", None), 2)
+    base_test(db_connection, "user", FilterOperator("last_name", "!=", None), 2)
 
 
 def test_mapped_fields(db_connection: Connection) -> None:
@@ -209,17 +229,94 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
     assert "\nCheck filter fields." in e.value.msg
 
 
-def test_changed_models(db_connection: Connection) -> None:
-    # TODO this could be erroneous
-    # need complex Filter test too
+@pytest.mark.parametrize(
+    "filter_,to_be_found_ids",
+    [
+        pytest.param(last_login_filter, [2], id="operator"),
+        pytest.param(FilterOperator("last_login", "=", None), [1, 4], id="none"),
+        pytest.param(FilterOperator("meeting_ids", "!=", None), [2], id="none2"),
+        pytest.param(
+            FilterOperator("meeting_ids", "has", 3), [2, 4], id="none_with_has"
+        ),
+        pytest.param(Not(last_login_filter), [1, 4], id="not"),
+        pytest.param(Not(FilterOperator("username", "=", "3")), [], id="not_name"),
+        pytest.param(
+            Not(Not(FilterOperator("username", "=", "3"))), [1, 2, 4], id="not_not"
+        ),
+        pytest.param(
+            And(
+                FilterOperator("username", "=", "3"),
+                FilterOperator("is_demo_user", "=", True),
+            ),
+            [1, 2],
+            id="and_simple",
+        ),
+        pytest.param(
+            And(
+                FilterOperator("username", "=", "3"),
+                FilterOperator("default_vote_weight", "=", "42.000000"),
+            ),
+            [1],
+            id="and_split",
+        ),
+        pytest.param(
+            Or(
+                FilterOperator("username", "=", "3"),
+                FilterOperator("first_name", "=", "daren"),
+            ),
+            [1, 2, 4],
+            id="or",
+        ),
+        pytest.param(
+            Not(
+                Or(
+                    FilterOperator("username", "=", "data"),
+                    FilterOperator("first_name", "=", "daren"),
+                )
+            ),
+            [1, 4],
+            id="not_or",
+        ),
+        pytest.param(
+            Not(
+                And(
+                    FilterOperator("first_name", "=", "daren"),
+                    FilterOperator("is_demo_user", "=", True),
+                )
+            ),
+            [1, 4],
+            id="not_and",
+        ),
+        pytest.param(
+            Or(
+                And(FilterOperator("username", "=", "3"), Not(last_login_filter)),
+                Not(
+                    Or(
+                        FilterOperator("default_vote_weight", ">=", "23"),
+                        FilterOperator("default_vote_weight", "<=", "42"),
+                    )
+                ),
+            ),
+            [1, 4],
+            id="complex",
+        ),
+    ],
+)
+def test_changed_models(
+    db_connection: Connection, filter_: Filter, to_be_found_ids: list[int]
+) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.changed_models["committee/1"].update({"name": "3"})
-        response = extended_database.filter(
-            "committee", FilterOperator("name", "=", "3"), []
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("user/1", {"username": "3", "meeting_ids": None})
+        ex_db.apply_changed_model("user/2", {"username": "3", "is_demo_user": True})
+        ex_db.apply_changed_model("user/3", {"meta_deleted": True})
+        ex_db.apply_changed_model(
+            "user/4", {"username": "3", "meta_new": True, "meeting_ids": [1, 3]}
         )
-    assert response == {1: {"name": "3"}}
+        response = ex_db.filter("user", filter_, ["username", "default_vote_weight"])
+    for id_ in to_be_found_ids:
+        assert response[id_] == expected_response_changed_models[id_]
 
 
 @performance

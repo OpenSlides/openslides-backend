@@ -25,7 +25,7 @@ filter_definitions_schema = {
             "value": {},
             "operator": {
                 "type": "string",
-                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%="],
+                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"],
             },
         },
         "required": ["field", "value", "operator"],
@@ -59,7 +59,7 @@ filter_definitions_schema = {
 
 
 FilterData = dict[str, Any]
-FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
+FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"]
 
 # Whoof, that's an ugly workaround... A bit of background:
 # - The `dacite` package cannot handle `collections.abc.Sequence` (the replacement for the

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Sequence
+from decimal import Decimal
 from typing import Any, cast
 
 from psycopg import Connection, rows
@@ -16,7 +17,14 @@ from openslides_backend.shared.exceptions import (
     InvalidFormat,
     ModelDoesNotExist,
 )
-from openslides_backend.shared.filters import And, Filter, Not, Or
+from openslides_backend.shared.filters import (
+    And,
+    Filter,
+    FilterOperator,
+    Not,
+    Or,
+    filter_visitor,
+)
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
 )
@@ -32,7 +40,6 @@ from ...shared.patterns import (
     Id,
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
-    id_from_fqid,
 )
 from ...shared.typing import DeletedModel, Model, ModelMap
 from ..database.commands import GetManyRequest
@@ -86,7 +93,9 @@ class ExtendedDatabase(Database):
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
-        self.changed_models: dict[FullQualifiedId, PartialModel] = defaultdict(dict)
+        self._changed_models: dict[Collection, dict[Id, PartialModel]] = defaultdict(
+            lambda: defaultdict(dict)
+        )
         self.connection = connection
         self.database_reader = DatabaseReader(self.connection, logging, env)
         self.database_writer = DatabaseWriter(self.connection, logging, env)
@@ -98,12 +107,20 @@ class ExtendedDatabase(Database):
         Adds or replaces the model identified by fqid in the changed_models.
         Automatically adds missing id field.
         """
+        collection, id_ = collection_and_id_from_fqid(fqid)
         if replace:
-            self.changed_models[fqid] = instance
+            self._changed_models[collection][id_] = instance
         else:
-            self.changed_models[fqid].update(instance)
-        if "id" not in self.changed_models[fqid]:
-            self.changed_models[fqid]["id"] = id_from_fqid(fqid)
+            self._changed_models[collection][id_].update(instance)
+        if "id" not in self._changed_models[collection][id_]:
+            self._changed_models[collection][id_]["id"] = id_
+
+    def get_changed_model(
+        self, collection_or_fqid: str, id_: int | None = None
+    ) -> PartialModel:
+        if not id_:
+            collection_or_fqid, id_ = collection_and_id_from_fqid(collection_or_fqid)
+        return self._changed_models[collection_or_fqid][id_]
 
     def get(
         self,
@@ -126,7 +143,9 @@ class ExtendedDatabase(Database):
             collection, id_ = collection_and_id_from_fqid(fqid)
         except IndexError as e:
             raise InvalidFormat(f"Invalid fqid format. {e}")
-        if use_changed_models and (changed_model := self.changed_models.get(fqid)):
+        if use_changed_models and (
+            changed_model := self._changed_models[collection][id_]
+        ):
             # fetch result from changed models
             if mapped_fields:
                 missing_fields = [
@@ -141,7 +160,9 @@ class ExtendedDatabase(Database):
                 # overwrite params and fetch missing fields from db
                 mapped_fields = missing_fields
                 # we only raise an exception now if the model is not present in the changed_models at all
-                raise_exception = raise_exception and fqid not in self.changed_models
+                raise_exception = (
+                    raise_exception and id_ not in self._changed_models[collection]
+                )
         else:
             changed_model = dict()
 
@@ -239,10 +260,8 @@ class ExtendedDatabase(Database):
             models_mapped_fields,
         ) in mapped_fields_per_collection_and_id.items():
             for id_, mapped_fields in models_mapped_fields.items():
-                if (
-                    fqid := fqid_from_collection_and_id(collection, id_)
-                ) in self.changed_models:
-                    changed_model = self.changed_models[fqid]
+                if id_ in self._changed_models[collection]:
+                    changed_model = self._changed_models[collection][id_]
                     if mapped_fields:
                         for field in mapped_fields:
                             if field in changed_model:
@@ -279,25 +298,68 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> dict[int, PartialModel]:
-        if filter_:
-            result = self.database_reader.filter(
-                collection, filter_, MappedFields(mapped_fields), lock_result
-            )
-        else:
+        if not filter_:
             result = self.database_reader.get_all(
                 collection, MappedFields(mapped_fields), lock_result
             )
-        if use_changed_models and self.changed_models:
-            for fqid, changed_model in self.changed_models.items():
-                if not filter_ or (
-                    fqid.startswith(collection)
-                    and self._model_fits_filter(changed_model, filter_)
-                ):
-                    id_ = id_from_fqid(fqid)
-                    if id_ in result:
-                        result[id_].update(changed_model)
+        else:
+            if use_changed_models and (
+                changed_models_collection := self._changed_models[collection]
+            ):
+                # identify and get models that could lead to matches in conjunction with the database
+                # we are currently slightly overmatching but we filter again on the full model
+                partially_matched_ids = []
+                except_by_changed_models = []
+                for id_, changed_model in changed_models_collection.items():
+                    if "meta_deleted" in changed_model or self._model_fails_filter(
+                        changed_model,
+                        filter_,
+                    ):
+                        except_by_changed_models.append(id_)
+                    elif self._model_fits_subfilter(changed_model, filter_):
+                        partially_matched_ids.append(id_)
+                if partially_matched_ids:
+                    filter_fields = set()
+                    filter_visitor(filter_, lambda fo: filter_fields.add(fo.field))
+                    partially_matched_models = self.database_reader.get_many(
+                        [
+                            GetManyRequest(
+                                collection, partially_matched_ids, list(filter_fields)
+                            )
+                        ],
+                        lock_result,
+                    ).get(collection, dict())
+                # update db models and calculate exact matching
+                fully_matched_ids = []
+                for id_ in partially_matched_ids:
+                    # TODO update seems unnecassary and should be treated by ex_dbs get_many
+                    if id_ in partially_matched_models:
+                        partially_matched_models[id_].update(
+                            changed_models_collection[id_]
+                        )
                     else:
-                        result[id_] = changed_model
+                        partially_matched_models[id_] = changed_models_collection[id_]
+                    if self._model_fits_filter(partially_matched_models[id_], filter_):
+                        fully_matched_ids.append(id_)
+                # update filter for fast query of mapped fields
+                filter_ = And(
+                    Not(FilterOperator("id", "in", except_by_changed_models)),
+                    Or(FilterOperator("id", "in", fully_matched_ids), filter_),
+                )
+            result = self.database_reader.filter(
+                collection, filter_, MappedFields(mapped_fields), lock_result
+            )
+            if use_changed_models:
+                for id_, changed_model in changed_models_collection.items():
+                    # new models will not be in the filter result. So we need to search them in the before matched ids and add a dict.
+                    if changed_model.get("meta_new") and id_ in fully_matched_ids:
+                        result[id_] = dict()
+                    if id_ in result:
+                        for mapped_field in mapped_fields:
+                            if mapped_field in changed_model:
+                                result[id_][mapped_field] = changed_model[mapped_field]
+                            elif changed_model.get("meta_new"):
+                                result[id_][mapped_field] = None
         return result
 
     def exists(
@@ -316,7 +378,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int:
-        if use_changed_models and self.changed_models:
+        if use_changed_models and self._changed_models[collection]:
             return len(
                 self.filter(collection, filter_, [], lock_result, use_changed_models)
             )
@@ -333,7 +395,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        if use_changed_models and self.changed_models:
+        if use_changed_models and self._changed_models[collection]:
             response = self.filter(
                 collection, filter_, [field], lock_result, use_changed_models
             )
@@ -351,7 +413,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        if use_changed_models and self.changed_models:
+        if use_changed_models and self._changed_models[collection]:
             response = self.filter(
                 collection, filter_, [field], lock_result, use_changed_models
             )
@@ -362,14 +424,16 @@ class ExtendedDatabase(Database):
             )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
-        return isinstance(self.changed_models.get(fqid), DeletedModel)
+        collection, id_ = collection_and_id_from_fqid(fqid)
+        return isinstance(self._changed_models[collection].get(id_), DeletedModel)
 
     def is_new(self, fqid: FullQualifiedId) -> bool:
-        return self.changed_models.get(fqid, {}).get("meta_new") is True
+        collection, id_ = collection_and_id_from_fqid(fqid)
+        return self._changed_models[collection].get(id_, {}).get("meta_new") is True
 
     def reset(self, hard: bool = True) -> None:
         if hard:
-            self.changed_models.clear()
+            self._changed_models.clear()
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         self.logger.debug(
@@ -395,7 +459,6 @@ class ExtendedDatabase(Database):
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]
 
-        # prefetch changed models? TODO
         for write_request in write_requests:
             for event in write_request.events:
                 if fqid := event.get("fqid"):
@@ -455,6 +518,50 @@ class ExtendedDatabase(Database):
             if v
         }
 
+    def _model_fits_subfilter(
+        self, model: Model, filter_: Filter, negation: bool = False
+    ) -> bool:
+        """This method returns True if one subfilter could lead the whole filter to return True if all other fields did too."""
+        if isinstance(filter_, Not):
+            return self._model_fits_subfilter(model, filter_.not_filter, not negation)
+        elif isinstance(filter_, Or):
+            return any(
+                self._model_fits_subfilter(model, part, negation)
+                for part in filter_.or_filter
+            )
+        elif isinstance(filter_, And):
+            return any(
+                self._model_fits_subfilter(model, part, negation)
+                for part in filter_.and_filter
+            )
+        else:
+            return negation ^ self._model_fits_operator_filter(model, filter_)
+
+    def _model_fails_filter(
+        self, model: Model, filter_: Filter, negation: bool = False
+    ) -> bool:
+        """This method returns True if one subfilter would lead the whole filter to return False."""
+        if isinstance(filter_, Not):
+            return self._model_fails_filter(model, filter_.not_filter, not negation)
+        elif isinstance(filter_, Or):
+            return all(
+                self._model_fails_filter(model, part, negation)
+                for part in filter_.or_filter
+            )
+        elif isinstance(filter_, And):
+            return any(
+                self._model_fails_filter(model, part, negation)
+                for part in filter_.and_filter
+            )
+        else:
+            if filter_.field not in model:
+                # if the model is not in the database the value should be assumed to be the default TODO
+                if model.get("meta_new"):
+                    model = {filter_.field: None}
+                else:
+                    return False
+            return not negation ^ self._model_fits_operator_filter(model, filter_)
+
     def _model_fits_filter(self, model: Model, filter_: Filter) -> bool:
         if isinstance(filter_, Not):
             return not self._model_fits_filter(model, filter_.not_filter)
@@ -467,4 +574,40 @@ class ExtendedDatabase(Database):
                 self._model_fits_filter(model, part) for part in filter_.and_filter
             )
         else:
-            return model.get(filter_.field) == filter_.value
+            return self._model_fits_operator_filter(model, filter_)
+
+    def _model_fits_operator_filter(
+        self, model: Model, filter_: FilterOperator
+    ) -> bool:
+        field_value = model.get(filter_.field)
+        if isinstance(field_value, Decimal):
+            field_value = str(field_value)
+        if field_value is None or filter_.value is None:
+            if filter_.operator == "=":
+                return field_value is filter_.value
+            elif filter_.operator == "!=":
+                return field_value is not filter_.value
+            return False
+        match filter_.operator:
+            case "!=":
+                return field_value != filter_.value
+            case "=":
+                return field_value == filter_.value
+            case "<=":
+                return field_value <= filter_.value
+            case "<":
+                return field_value < filter_.value
+            case ">=":
+                return field_value >= filter_.value
+            case ">":
+                return field_value > filter_.value
+            case "in":
+                return field_value in filter_.value
+            case "has":
+                return filter_.value in field_value
+            case "~=":
+                return field_value.lower() == filter_.value.lower()
+            case "%=":
+                raise NotImplementedError("Operator %= is not supported")
+            case default:
+                raise NotImplementedError(f"Operator {default} is not supported")

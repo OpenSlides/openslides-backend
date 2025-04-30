@@ -40,8 +40,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         ):
             return {}
         assert (
-            changed_model := self.datastore.changed_models.get(
-                fqid_from_collection_and_id(field.own_collection, instance["id"])
+            changed_model := self.datastore.get_changed_model(
+                field.own_collection, instance["id"]
             )
         )
         assert changed_model.get(field_name) == instance.get(field_name)
@@ -61,11 +61,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         else:
             if action != "user.delete":
                 self.fill_meeting_user_changed_models_with_user_and_meeting_id()
-            fqid_meeting_user = fqid_from_collection_and_id(
-                field.own_collection, instance["id"]
-            )
             user_id = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any],
+                self.datastore.get_changed_model(field.own_collection, instance["id"]),
             ).get("user_id")
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             fqid_user = fqid_from_collection_and_id("user", user_id)

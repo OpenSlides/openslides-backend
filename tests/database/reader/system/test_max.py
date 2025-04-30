@@ -18,7 +18,7 @@ from tests.database.reader.system.util import setup_data, standard_data
     [
         pytest.param("user", FilterOperator("id", "<", 2), "id", 1, id="single"),
         pytest.param("user", FilterOperator("id", "<=", 2), "id", 2, id="multiple"),
-        pytest.param("user", None, "id", 2, id="all"),
+        pytest.param("user", None, "id", 3, id="collection"),
         pytest.param(
             "committee", FilterOperator("id", "<=", 2), "name", "42", id="text"
         ),
@@ -88,8 +88,10 @@ def test_changed_models(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.changed_models["committee/1"].update({"name": "3"})
-        extended_database.changed_models["committee/4"].update({"name": "5"})
+        extended_database.apply_changed_model("committee/1", {"name": "3"})
+        extended_database.apply_changed_model(
+            "committee/4", {"name": "5", "meta_new": True}
+        )
         response = extended_database.max(
             "committee", FilterOperator("name", "=", "3"), "name"
         )

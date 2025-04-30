@@ -114,6 +114,14 @@ class SqlQueryHelper:
                     condition = sql.SQL("{table_column} ILIKE %s::text").format(
                         table_column=table_column
                     )
+                elif filter_.operator == "in":
+                    condition = sql.SQL("{table_column} = ANY(%s)").format(
+                        table_column=table_column
+                    )
+                elif filter_.operator == "has":
+                    condition = sql.SQL("%s = ANY({table_column})").format(
+                        table_column=table_column
+                    )
                 # TODO delete or use if all backend tests were run.
                 # elif filter_.operator in ("=", "!=") and isinstance(filter_.value, str):
                 #     condition = sql.SQL("{table_column} {filter_operator} %s::text").format(

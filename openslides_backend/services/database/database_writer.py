@@ -61,7 +61,6 @@ class DatabaseWriter:
     def write(
         self,
         write_requests: list[WriteRequest],
-        # log_all_modified_fields: bool = True,
     ) -> list[FullQualifiedId]:
         #       with make_span("write request"):
         self.write_requests = write_requests
@@ -93,7 +92,6 @@ class DatabaseWriter:
 
         self.print_stats()
         self.print_summary()
-        # TODO if returning the id is all then this can be done at the bottom of call stack without generating fqids.
         return list(modified_models)
 
     def print_stats(self) -> None:
@@ -266,7 +264,6 @@ class DatabaseWriter:
 
         try:
             with self.connection.cursor() as curs:
-                # print(statement.as_string(curs), flush=True)
                 result = curs.execute(statement).fetchone()
                 if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
                     assert target_id  # we will never reach here with delete or update events being None on id

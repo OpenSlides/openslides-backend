@@ -35,6 +35,9 @@ class Database(Protocol):
     ) -> None: ...
 
     @abstractmethod
+    def get_changed_model(self, fqid: FullQualifiedId) -> PartialModel: ...
+
+    @abstractmethod
     def get(
         self,
         fqid: FullQualifiedId,

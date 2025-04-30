@@ -20,7 +20,7 @@ default_request = [
     GetManyRequest("committee", [1, 2], ["name", "organization_id"]),
 ]
 full_request = [
-    GetManyRequest("user", [1, 2]),
+    GetManyRequest("user", [1, 2, 3]),
     GetManyRequest("committee", [1, 2]),
 ]
 default_response = {
@@ -174,7 +174,7 @@ def test_use_changed_models_missing_field(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.changed_models["committee/1"].update({"name": "3"})
+        extended_database.apply_changed_model("committee/1", {"name": "3"})
         response = extended_database.get_many(default_request, use_changed_models=True)
     assert response == {
         "user": {1: {"id": 1, "username": "data"}},

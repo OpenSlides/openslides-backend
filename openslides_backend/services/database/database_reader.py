@@ -53,7 +53,7 @@ class DatabaseReader:
                 )
             if not (ids := get_many_request.ids):
                 raise DatabaseException(
-                    f"No id for collection {collection} supplied. Give at least one id."
+                    f"No id for collection '{collection}' supplied. Give at least one id."
                 )
             for id_ in ids:
                 if not id_ > 0:
@@ -214,11 +214,6 @@ class DatabaseReader:
                         model[field] = row[field]
             else:
                 collection_result_part[id_] = row
-
-    # def is_empty(self) -> bool:
-    #     return not self.connection.query_single_value(
-    #         "select exists(select * from positions)", []
-    #     )
 
     def get_current_migration_index(self) -> int:
         #        result = self.connection.query(

@@ -8,7 +8,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.exceptions import InvalidFormat
-from openslides_backend.shared.filters import Filter, FilterOperator
+from openslides_backend.shared.filters import Filter, FilterOperator, Or
 from openslides_backend.shared.patterns import Collection, Field
 from tests.database.reader.system.util import setup_data, standard_data
 
@@ -88,9 +88,13 @@ def test_changed_models(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.changed_models["committee/1"].update({"name": "3"})
-        extended_database.changed_models["committee/4"].update({"name": "5"})
-        response = extended_database.min(
-            "committee", FilterOperator("name", "=", "5"), "name"
+        extended_database.apply_changed_model("committee/1", {"name": "3"})
+        extended_database.apply_changed_model(
+            "committee/4", {"name": "5", "meta_new": True}
         )
-    assert response == "5"
+        response = extended_database.min(
+            "committee",
+            Or(FilterOperator("name", "=", "3"), FilterOperator("name", "=", "5")),
+            "name",
+        )
+    assert response == "3"
