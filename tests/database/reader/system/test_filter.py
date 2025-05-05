@@ -233,8 +233,8 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
     "filter_,to_be_found_ids",
     [
         pytest.param(last_login_filter, [2], id="operator"),
-        pytest.param(FilterOperator("last_login", "=", None), [1, 4], id="none"),
-        pytest.param(FilterOperator("meeting_ids", "!=", None), [2], id="none2"),
+        pytest.param(FilterOperator("last_login", "=", None), [1, 4], id="none_db"),
+        pytest.param(FilterOperator("meeting_ids", "!=", None), [2, 4], id="none_changed"),
         pytest.param(
             FilterOperator("meeting_ids", "has", 3), [2, 4], id="none_with_has"
         ),
@@ -270,7 +270,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             Not(
                 Or(
-                    FilterOperator("username", "=", "data"),
+                    FilterOperator("meeting_ids", "=", [1, 2, 3]),
                     FilterOperator("first_name", "=", "daren"),
                 )
             ),
@@ -279,13 +279,43 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         ),
         pytest.param(
             Not(
-                And(
+                Or(
+                    FilterOperator("meeting_ids", "=", None),
                     FilterOperator("first_name", "=", "daren"),
-                    FilterOperator("is_demo_user", "=", True),
+                )
+            ),
+            [4],
+            id="not_or_split_unmatched",
+        ),
+        pytest.param(
+            Not(
+                Or(
+                    FilterOperator("meeting_ids", "=", [1, 3]),
+                    FilterOperator("default_vote_weight", "=", "81"),
                 )
             ),
             [1, 4],
-            id="not_and",
+            id="not_or_split_matched",
+        ),
+        pytest.param(
+            Not(
+                And(
+                    FilterOperator("meeting_ids", "=", None),
+                    FilterOperator("default_vote_weight", "=", "42"),
+                )
+            ),
+            [2, 4],
+            id="not_and_split_unmatched",
+        ),
+        pytest.param(
+            Not(
+                And(
+                    FilterOperator("meeting_ids", "=", None),
+                    FilterOperator("default_vote_weight", "=", "23"),
+                )
+            ),
+            [1, 2, 4],
+            id="not_and_split_matched",
         ),
         pytest.param(
             Or(
@@ -312,10 +342,13 @@ def test_changed_models(
         ex_db.apply_changed_model("user/2", {"username": "3", "is_demo_user": True})
         ex_db.apply_changed_model("user/3", {"meta_deleted": True})
         ex_db.apply_changed_model(
-            "user/4", {"username": "3", "meta_new": True, "meeting_ids": [1, 3]}
+            "user/4", {"username": "3", "meta_new": True, "meeting_ids": [3]}
         )
         response = ex_db.filter("user", filter_, ["username", "default_vote_weight"])
+    for id_ in response:
+        assert id_ in to_be_found_ids
     for id_ in to_be_found_ids:
+        assert id_ in response
         assert response[id_] == expected_response_changed_models[id_]
 
 

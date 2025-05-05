@@ -309,13 +309,13 @@ class ExtendedDatabase(Database):
                 # identify and get models that could lead to matches in conjunction with the database
                 # we are currently slightly overmatching but we filter again on the full model
                 partially_matched_ids = []
-                except_by_changed_models = []
+                except_by_changed_models = set()
                 for id_, changed_model in changed_models_collection.items():
                     if "meta_deleted" in changed_model or self._model_fails_filter(
                         changed_model,
                         filter_,
                     ):
-                        except_by_changed_models.append(id_)
+                        except_by_changed_models.add(id_)
                     elif self._model_fits_subfilter(changed_model, filter_):
                         partially_matched_ids.append(id_)
                 if partially_matched_ids:
@@ -341,9 +341,13 @@ class ExtendedDatabase(Database):
                         partially_matched_models[id_] = changed_models_collection[id_]
                     if self._model_fits_filter(partially_matched_models[id_], filter_):
                         fully_matched_ids.append(id_)
+                    # we can and should exclude here since the models are not wanted 
+                    # as they could fit without the changed models data 
+                    else: 
+                        except_by_changed_models.add(id_)
                 # update filter for fast query of mapped fields
                 filter_ = And(
-                    Not(FilterOperator("id", "in", except_by_changed_models)),
+                    Not(FilterOperator("id", "in", list(except_by_changed_models))),
                     Or(FilterOperator("id", "in", fully_matched_ids), filter_),
                 )
             result = self.database_reader.filter(
@@ -544,15 +548,27 @@ class ExtendedDatabase(Database):
         if isinstance(filter_, Not):
             return self._model_fails_filter(model, filter_.not_filter, not negation)
         elif isinstance(filter_, Or):
-            return all(
-                self._model_fails_filter(model, part, negation)
-                for part in filter_.or_filter
-            )
+            if negation:
+                return any(
+                    self._model_fails_filter(model, part, negation)
+                    for part in filter_.or_filter
+                )
+            else:
+                return all(
+                    self._model_fails_filter(model, part, negation)
+                    for part in filter_.or_filter
+                )
         elif isinstance(filter_, And):
-            return any(
-                self._model_fails_filter(model, part, negation)
-                for part in filter_.and_filter
-            )
+            if negation:
+                return all(
+                    self._model_fails_filter(model, part, negation)
+                    for part in filter_.and_filter
+                )
+            else:
+                return any(
+                    self._model_fails_filter(model, part, negation)
+                    for part in filter_.and_filter
+                )
         else:
             if filter_.field not in model:
                 # if the model is not in the database the value should be assumed to be the default TODO
@@ -581,7 +597,7 @@ class ExtendedDatabase(Database):
     ) -> bool:
         field_value = model.get(filter_.field)
         if isinstance(field_value, Decimal):
-            field_value = str(field_value)
+            filter_.value = Decimal(filter_.value)
         if field_value is None or filter_.value is None:
             if filter_.operator == "=":
                 return field_value is filter_.value
