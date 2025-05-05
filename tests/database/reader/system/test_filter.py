@@ -111,10 +111,7 @@ def test_ilike_case_insensitive(db_connection: Connection) -> None:
         pytest.param(FilterOperator("meeting_ids", "=", [1, 3]), 2, id="list[int]"),
         pytest.param(FilterOperator("last_login", "=", "2012/05/31"), 2, id="date"),
         pytest.param(
-            FilterOperator("default_vote_weight", "=", "42.000000"), 1, id="decimal"
-        ),
-        pytest.param(
-            FilterOperator("default_vote_weight", "=", 42), 1, id="decimal_with_int"
+            FilterOperator("default_vote_weight", "=", Decimal(42)), 1, id="decimal"
         ),
     ],
 )
@@ -234,7 +231,9 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
     [
         pytest.param(last_login_filter, [2], id="operator"),
         pytest.param(FilterOperator("last_login", "=", None), [1, 4], id="none_db"),
-        pytest.param(FilterOperator("meeting_ids", "!=", None), [2, 4], id="none_changed"),
+        pytest.param(
+            FilterOperator("meeting_ids", "!=", None), [2, 4], id="none_changed"
+        ),
         pytest.param(
             FilterOperator("meeting_ids", "has", 3), [2, 4], id="none_with_has"
         ),
@@ -254,7 +253,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             And(
                 FilterOperator("username", "=", "3"),
-                FilterOperator("default_vote_weight", "=", "42.000000"),
+                FilterOperator("default_vote_weight", "=", Decimal(42)),
             ),
             [1],
             id="and_split",
@@ -291,7 +290,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
             Not(
                 Or(
                     FilterOperator("meeting_ids", "=", [1, 3]),
-                    FilterOperator("default_vote_weight", "=", "81"),
+                    FilterOperator("default_vote_weight", "=", Decimal(81)),
                 )
             ),
             [1, 4],
@@ -301,7 +300,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
             Not(
                 And(
                     FilterOperator("meeting_ids", "=", None),
-                    FilterOperator("default_vote_weight", "=", "42"),
+                    FilterOperator("default_vote_weight", "=", Decimal(42)),
                 )
             ),
             [2, 4],
@@ -311,7 +310,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
             Not(
                 And(
                     FilterOperator("meeting_ids", "=", None),
-                    FilterOperator("default_vote_weight", "=", "23"),
+                    FilterOperator("default_vote_weight", "=", Decimal(23)),
                 )
             ),
             [1, 2, 4],
@@ -322,8 +321,8 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
                 And(FilterOperator("username", "=", "3"), Not(last_login_filter)),
                 Not(
                     Or(
-                        FilterOperator("default_vote_weight", ">=", "23"),
-                        FilterOperator("default_vote_weight", "<=", "42"),
+                        FilterOperator("default_vote_weight", ">=", Decimal(23)),
+                        FilterOperator("default_vote_weight", "<=", Decimal(42)),
                     )
                 ),
             ),

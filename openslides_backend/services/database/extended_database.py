@@ -1,6 +1,5 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from decimal import Decimal
 from typing import Any, cast
 
 from psycopg import Connection, rows
@@ -341,9 +340,9 @@ class ExtendedDatabase(Database):
                         partially_matched_models[id_] = changed_models_collection[id_]
                     if self._model_fits_filter(partially_matched_models[id_], filter_):
                         fully_matched_ids.append(id_)
-                    # we can and should exclude here since the models are not wanted 
-                    # as they could fit without the changed models data 
-                    else: 
+                    # we can and should exclude here since the models are not wanted
+                    # as they could fit without the changed models data
+                    else:
                         except_by_changed_models.add(id_)
                 # update filter for fast query of mapped fields
                 filter_ = And(
@@ -596,8 +595,6 @@ class ExtendedDatabase(Database):
         self, model: Model, filter_: FilterOperator
     ) -> bool:
         field_value = model.get(filter_.field)
-        if isinstance(field_value, Decimal):
-            filter_.value = Decimal(filter_.value)
         if field_value is None or filter_.value is None:
             if filter_.operator == "=":
                 return field_value is filter_.value
