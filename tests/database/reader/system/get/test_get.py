@@ -123,3 +123,37 @@ def test_none(db_connection: Connection) -> None:
         with pytest.raises(BadCodingException) as e_info:
             extended_database.get(None)  # type: ignore
     assert "No fqid. Offer at least one fqid." == e_info.value.message
+
+
+def test_changed_models(db_connection: Connection) -> None:
+    """Uses data from database and changed models dict."""
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model(FQID, {"is_demo_user": True})
+        response = ex_db.get(FQID, ["is_demo_user", "username"])
+    assert response == {
+        "is_demo_user": True,
+        "username": "data",
+        "id": ID
+    }
+
+
+def test_changed_models_only(db_connection: Connection) -> None:
+    """Requests data from changed models dict only."""
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model(FQID, {"is_demo_user": True})
+        response = ex_db.get(FQID, ["is_demo_user"])
+    assert response == {"is_demo_user": True, "id": ID}
+
+
+def test_changed_models_no_deleted(db_connection: Connection) -> None:
+    """This should throw an Exception."""
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model(FQID, {"meta_deleted": True})
+        response = ex_db.get(FQID)
+    assert response == {}

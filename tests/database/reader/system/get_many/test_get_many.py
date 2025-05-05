@@ -23,6 +23,9 @@ full_request = [
     GetManyRequest("user", [1, 2, 3]),
     GetManyRequest("committee", [1, 2]),
 ]
+changed_models_request = [
+    GetManyRequest("committee", [1, 3], ["name", "description"]),
+]
 default_response = {
     "user": {1: {"id": 1, "username": "data"}},
     "committee": {
@@ -168,6 +171,57 @@ def test_invalid_collection(db_connection: Connection) -> None:
         "Collection 'committeee' does not exist in the database: relation"
         in e_info.value.msg
     )
+
+
+def test_changed_models(db_connection: Connection) -> None:
+    """Uses data from database and changed models dict."""
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("committee/1", {"name": "3", "description": "descr"})
+        response = ex_db.get_many(changed_models_request, use_changed_models=True)
+    assert response == {
+        "committee": {
+            1: {
+                "id": 1,
+                "name": "3",
+                "description": "descr",
+            },
+        },
+    }
+
+
+def test_changed_models_new(db_connection: Connection) -> None:
+    """Requests data from new changed model."""
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("committee/3", {"name": "3", "meta_new": True})
+        response = ex_db.get_many(changed_models_request, use_changed_models=True)
+    assert response == {
+        "committee": {
+            1: {
+                "id": 1,
+                "name": "23",
+                "description": None,
+            },
+            3: {
+                "id": 3,
+                "name": "3",
+                "description": None,
+            },
+        },
+    }
+
+
+def test_changed_models_no_deleted(db_connection: Connection) -> None:
+    """This should throw an Exception."""
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        ex_db.apply_changed_model("committee/1", {"meta_deleted": True})
+        response = ex_db.get_many(changed_models_request, use_changed_models=True)
+    assert response == {}
 
 
 def test_use_changed_models_missing_field(db_connection: Connection) -> None:

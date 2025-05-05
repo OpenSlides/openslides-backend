@@ -41,6 +41,11 @@ class DatabaseReader:
         get_many_requests: list[GetManyRequest],
         lock_result: LockResult = True,
     ) -> dict[Collection, dict[Id, PartialModel]]:
+        """
+        Returns the models requested in the shape of their requested fields.
+        Will combine overlapping requests on the same id.
+        Always adds the id to the fields.
+        """
         result: dict[Collection, dict[Id, PartialModel]] = {
             get_many_request.collection: dict()
             for get_many_request in get_many_requests

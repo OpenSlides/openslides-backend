@@ -22,10 +22,9 @@ class SqlQueryHelper:
             # calculate the mapped_fields later
             return sql.SQL("*")  # type: ignore
         else:
-            result = sql.SQL(", ").join(
+            return sql.SQL(", ").join(
                 sql.Identifier(field) for field in {*mapped_fields.unique_fields, "id"}
             )
-            return result
 
     def build_filter_query(
         self,
