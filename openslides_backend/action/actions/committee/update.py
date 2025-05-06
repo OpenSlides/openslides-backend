@@ -9,12 +9,15 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
 )
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .committee_common_mixin import CommitteeCommonCreateUpdateMixin
+from .functions import detect_circles
 
 
 @register_action("committee.update")
@@ -34,8 +37,103 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "organization_tag_ids",
             "manager_ids",
             "external_id",
+            "parent_id",
         ],
     )
+
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        action_data = list(super().get_updated_instances(action_data))
+        # Action data is an iterable with exactly one item
+        if action_data:
+            # instance = next(iter(action_data))
+            instances: dict[int, dict[str, Any]] = {
+                instance["id"]: instance for instance in action_data
+            }
+            parent_change_ids: list[int] = [
+                id_
+                for inst in action_data
+                for id_ in (
+                    [inst["id"], inst["parent_id"]]
+                    if inst.get("parent_id")
+                    else [inst["id"]]
+                )
+                if "parent_id" in inst
+            ]
+            if parent_change_ids:
+                db_instances = self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "committee",
+                            parent_change_ids,
+                            [
+                                "parent_id",
+                                "child_ids",
+                                "all_parent_ids",
+                                "all_child_ids",
+                            ],
+                        )
+                    ]
+                )["committee"]
+                all_other_ids = {
+                    id_
+                    for db_inst in db_instances.values()
+                    for id_ in [
+                        *db_inst.get("all_child_ids", []),
+                        *db_inst.get("all_parent_ids", []),
+                    ]
+                }
+                # all_other_ids.update([parent_id for instance in instances.values() if (parent_id:=instance.get("parent_id"))])
+                all_other_ids.difference_update(db_instances)
+                if all_other_ids:
+                    db_instances.update(
+                        self.datastore.get_many(
+                            [
+                                GetManyRequest(
+                                    "committee",
+                                    list(all_other_ids),
+                                    ["parent_id", "child_ids"],
+                                )
+                            ]
+                        )["committee"]
+                    )
+                relevant_tree: dict[int, tuple[int | None, list[int]]] = (
+                    {}
+                )  # id -> parent_id, child_ids
+                for id_, db_inst in db_instances.items():
+                    if (inst := instances.get(id_)) and "parent_id" in inst:
+                        relevant_tree[id_] = (inst["parent_id"], [])
+                    else:
+                        relevant_tree[id_] = (db_inst.get("parent_id"), [])
+                # circle detection
+                if circles := detect_circles(set(db_instances), relevant_tree):
+                    raise ActionException(
+                        f"Cannot perform parent updates, as it would create circles for the following committees: {circles}"
+                    )
+                # all_parent_ids generation
+                nodes: list[tuple[int, list[int], bool]] = [
+                    (id_, [], id_ in instances)
+                    for id_, data in relevant_tree.items()
+                    if data[0] is None
+                ]
+                ind = 0
+                while ind < len(nodes):
+                    id_, all_parent_ids, write = nodes[ind]
+                    if write:
+                        if id_ not in instances:
+                            instances[id_] = {
+                                "id": id_,
+                                "all_parent_ids": all_parent_ids,
+                            }
+                        else:
+                            instances[id_]["all_parent_ids"] = all_parent_ids
+                    all_parent_ids = [*all_parent_ids, id_]
+                    nodes.extend(
+                        (child_id, all_parent_ids, write or child_id in instances)
+                        for child_id in relevant_tree[id_][1]
+                    )
+                    ind += 1
+            action_data = list(instances.values())
+        return action_data
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
@@ -73,8 +171,43 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                     "manager_ids",
                 ]
             ]
-        ):
+        ) or ("parent_id" in instance and not instance["parent_id"]):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
+
+        if "parent_id" in instance:
+            data = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "committee",
+                        [instance["parent_id"], instance["id"]],
+                        ["all_parent_ids"],
+                    ),
+                    GetManyRequest(
+                        "user", [self.user_id], ["committee_management_ids"]
+                    ),
+                ],
+                lock_result=False,
+            )
+            committee_ancestors = [
+                com.get("all_parent_ids", []) for com in data["committee"].values()
+            ]
+            parent_intersection = set(committee_ancestors[0]).intersection(
+                committee_ancestors[1]
+            )
+            if not len(parent_intersection):
+                raise MissingPermission(
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                )
+            permitted_ids = set(
+                data["user"][self.user_id].get("committee_management_ids", [])
+            ).intersection(parent_intersection)
+            if not len(permitted_ids):
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: parent_intersection,
+                    }
+                )
 
         if has_committee_management_level(
             self.datastore,

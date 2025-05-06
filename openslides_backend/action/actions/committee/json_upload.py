@@ -17,6 +17,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .functions import detect_circles
 from .import_mixin import CommitteeImportMixin
 
 
@@ -315,34 +316,37 @@ class CommitteeJsonUpload(
         Search for circles among the parents of new rows.
         Update rows do not need to be considered as it isn't possible to update a parent.
         """
-        new_relations: dict[str, str] = {
+        # TODO: new_relations should include all the parent hierarchy.
+        # Pre-existing ones too.
+        new_relations: dict[str, str | None] = {
             row["data"]["name"]["value"]: row["data"]["parent"]["value"]
             for row in self.rows
             if "id" not in row
             and row["data"].get("parent", {}).get("info") == ImportState.NEW
         }
-        names = set(new_relations.keys())
-        circle_related: set[str] = set()
-        free: set[str] = set()
-        circles: set[str] = set()
-        while names:
-            name = names.pop()
-            descendants: list[str] = [name]
-            while parent := new_relations.get(name):
-                if parent in circle_related:
-                    circle_related.update(descendants)
-                    break
-                if parent in free:
-                    free.update(descendants)
-                    break
-                if parent in descendants:
-                    index = descendants.index(parent)
-                    circle_related.update(descendants)
-                    circles.update(descendants[index:])
-                    break
-                descendants.append(parent)
-                name = parent
-            names.difference_update(descendants)
+        circles = detect_circles(set(new_relations), new_relations)
+        # names = set(new_relations.keys())
+        # circle_related: set[str] = set()
+        # free: set[str] = set()
+        # circles: set[str] = set()
+        # while names:
+        #     name = names.pop()
+        #     descendants: list[str] = [name]
+        #     while parent := new_relations.get(name):
+        #         if parent in circle_related:
+        #             circle_related.update(descendants)
+        #             break
+        #         if parent in free:
+        #             free.update(descendants)
+        #             break
+        #         if parent in descendants:
+        #             index = descendants.index(parent)
+        #             circle_related.update(descendants)
+        #             circles.update(descendants[index:])
+        #             break
+        #         descendants.append(parent)
+        #         name = parent
+        #     names.difference_update(descendants)
         for row in self.rows:
             if row["data"]["name"]["value"] in circles:
                 row["data"]["parent"] = {

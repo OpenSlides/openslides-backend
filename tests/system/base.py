@@ -272,7 +272,7 @@ class BaseSystemTestCase(TestCase):
             self.assertEqual(
                 model.get(field_name),
                 value,
-                f"Models differ in field {field_name}!",
+                f"Models differ in field {field_name} for {fqid}!",
             )
         return model
 
