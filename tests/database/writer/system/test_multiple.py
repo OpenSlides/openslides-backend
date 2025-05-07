@@ -12,7 +12,7 @@ from tests.database.util import TestPerformance, performance
 from tests.database.writer.system.util import (
     assert_model,
     assert_no_model,
-    create_model,
+    create_models,
     create_write_requests,
     get_data,
 )
@@ -92,7 +92,7 @@ def test_create_delete() -> None:
 
 def test_delete_update() -> None:
     data = get_data()
-    create_model(data)
+    create_models(data)
     data[0]["events"][0] = {
         "type": EventType.Delete,
         "fqid": "user/1",

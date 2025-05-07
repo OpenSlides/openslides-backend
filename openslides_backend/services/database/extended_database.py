@@ -259,12 +259,16 @@ class ExtendedDatabase(Database):
             models_mapped_fields,
         ) in mapped_fields_per_collection_and_id.items():
             for id_, mapped_fields in models_mapped_fields.items():
-                if (changed_model := self._changed_models[collection].get(id_, dict())) and not changed_model.get("meta_deleted"):
+                if (
+                    changed_model := self._changed_models[collection].get(id_, dict())
+                ) and not changed_model.get("meta_deleted"):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
                         for field in mapped_fields:
                             if field in changed_model or changed_model.get("meta_new"):
-                                results[collection][id_][field] = changed_model.get(field, None)
+                                results[collection][id_][field] = changed_model.get(
+                                    field, None
+                                )
                             else:
                                 missing_fields_per_collection_and_id[collection][
                                     id_

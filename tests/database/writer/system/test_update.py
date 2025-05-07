@@ -10,10 +10,12 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import InvalidFormat, ModelDoesNotExist
 from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.typing import PartialModel
+from tests.database.writer.system.test_create import test_create_nm_field_simple
 from tests.database.writer.system.util import (
     assert_model,
     assert_no_db_entry,
-    create_model,
+    create_models,
     create_write_requests,
     get_data,
 )
@@ -82,7 +84,7 @@ def get_group_base_data() -> list[dict[str, Any]]:
 
 def test_update() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     field_data: dict[str, int | str | None] = {"last_name": "Some", "first_name": None}
     data[0]["events"][0] = {
@@ -97,9 +99,140 @@ def test_update() -> None:
     assert_model(f"user/{id_}", field_data)
 
 
+def test_update_view_field() -> None:
+    data = get_data()
+    id_ = create_models(data)[0]
+
+    data[0]["events"][0] = {
+        "type": EventType.Update,
+        "fqid": f"user/{id_}",
+        "fields": {"meeting_user_ids": [1, 1337]},
+    }
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(f"user/{id_}", {"id": 1, "meeting_user_ids": None})
+
+
+def test_update_nm_field_simple() -> None:
+    data = get_data()
+    data.append(
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "committee",
+                    "fields": {"name": "com1"},
+                }
+            ]
+        }
+    )
+    user_id, committee_id = create_models(data)
+
+    data = [
+        {
+            "events": [
+                {
+                    "type": EventType.Update,
+                    "fqid": f"committee/{committee_id}",
+                    "fields": {"user_ids": [1]},
+                },
+                {
+                    "type": EventType.Update,
+                    "fqid": f"user/{user_id}",
+                    "fields": {"committee_ids": [1]},
+                },
+            ]
+        }
+    ]
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(
+        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": [1]}
+    )
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": [1]})
+
+
+def test_update_nm_field_remove() -> None:
+    test_create_nm_field_simple()
+
+    data = [
+        {
+            "events": [
+                {
+                    "type": EventType.Update,
+                    "fqid": f"committee/{1}",
+                    "fields": {"user_ids": []},
+                },
+                {
+                    "type": EventType.Update,
+                    "fqid": f"user/{1}",
+                    "fields": {"committee_ids": []},
+                },
+            ]
+        }
+    ]
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(
+        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": None}
+    )
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+
+
+def test_update_nm_field_generic() -> None:
+    data: list[dict[str, list[PartialModel]]] = [
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "committee",
+                    "fields": {"name": "com1"},
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "organization_tag",
+                    "fields": {"name": "Tag 1", "color": "#FF1339"},
+                },
+            ]
+        },
+    ]
+    committee_id, org_tag_id = create_models(data)
+
+    data = [
+        {
+            "events": [
+                {
+                    "type": EventType.Update,
+                    "fqid": f"committee/{committee_id}",
+                    "fields": {"organization_tag_ids": [1]},
+                },
+                {
+                    "type": EventType.Update,
+                    "fqid": f"organization_tag/{org_tag_id}",
+                    "fields": {"tagged_ids": ["committee/1"]},
+                },
+            ]
+        }
+    ]
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model("committee/1", {"id": 1, "name": "com1", "organization_tag_ids": [1]})
+    assert_model(
+        "organization_tag/1",
+        {"id": 1, "name": "Tag 1", "color": "#FF1339", "tagged_ids": ["committee/1"]},
+    )
+
+
 def test_update_twice() -> None:
     data = get_data()
-    create_model(data)
+    create_models(data)
     data[0]["events"] = [
         {
             "type": EventType.Update,
@@ -123,7 +256,7 @@ def test_update_twice() -> None:
 
 def test_single_field_delete_on_null() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -168,7 +301,7 @@ def test_update_non_existing_2(db_connection: Connection[rows.DictRow]) -> None:
 
 def test_list_update_add_empty_1() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -184,7 +317,7 @@ def test_list_update_add_empty_1() -> None:
 def test_list_update_add_empty_2() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -199,7 +332,7 @@ def test_list_update_add_empty_2() -> None:
 
 def test_list_update_add_string() -> None:
     data = get_group_base_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"] = [
         {
@@ -219,7 +352,7 @@ def test_list_update_add_string() -> None:
 def test_list_update_add_existing_number() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [42]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -235,7 +368,7 @@ def test_list_update_add_existing_number() -> None:
 def test_list_update_add_existing_string() -> None:
     data = get_group_base_data()
     data[0]["events"][0]["fields"]["permissions"] = ["user.can_update"]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"] = [
         {
@@ -255,7 +388,7 @@ def test_list_update_add_existing_string() -> None:
 
 def test_list_update_add_wrong_field_type() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -276,7 +409,7 @@ def test_list_update_add_wrong_field_type() -> None:
 def test_list_update_add_duplicate() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -292,7 +425,7 @@ def test_list_update_add_duplicate() -> None:
 def test_list_update_remove_empty_1() -> None:
     """Should do nothing, since the field is not filled."""
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -308,7 +441,7 @@ def test_list_update_remove_empty_1() -> None:
 def test_list_update_remove_empty_2() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -324,7 +457,7 @@ def test_list_update_remove_empty_2() -> None:
 def test_list_update_remove_existing() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [42]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -339,7 +472,7 @@ def test_list_update_remove_existing() -> None:
 
 def test_list_update_remove_no_array() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -360,7 +493,7 @@ def test_list_update_remove_no_array() -> None:
 def test_list_update_remove_not_existent() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -376,7 +509,7 @@ def test_list_update_remove_not_existent() -> None:
 def test_list_update_remove_partially_not_existent() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -394,7 +527,7 @@ def test_list_update_add_remove() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [1]
     data[0]["events"][0]["fields"]["last_name"] = ["1"]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -410,7 +543,7 @@ def test_list_update_add_remove() -> None:
 def test_list_update_add_remove_same_field() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -425,7 +558,7 @@ def test_list_update_add_remove_same_field() -> None:
 
 def test_list_update_add_remove_same_field_2() -> None:
     data = get_data()
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,
@@ -442,7 +575,7 @@ def test_list_update_add_remove_same_field_2() -> None:
 def test_list_update_add_remove_same_field_empty() -> None:
     data = get_data()
     data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_model(data)[0]
+    id_ = create_models(data)[0]
 
     data[0]["events"][0] = {
         "type": EventType.Update,

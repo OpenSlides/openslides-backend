@@ -7,12 +7,12 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.interfaces.event import EventType
-from tests.database.writer.system.util import assert_no_model, create_model, get_data
+from tests.database.writer.system.util import assert_no_model, create_models, get_data
 
 
 def test_truncate_simple(db_connection: Connection) -> None:
     data = get_data()
-    create_model(data)
+    create_models(data)
     fqid = "user/1"
 
     data[0]["events"] = [{"type": EventType.Delete, "fqid": fqid}]

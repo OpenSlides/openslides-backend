@@ -132,11 +132,7 @@ def test_changed_models(db_connection: Connection) -> None:
         ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
         ex_db.apply_changed_model(FQID, {"is_demo_user": True})
         response = ex_db.get(FQID, ["is_demo_user", "username"])
-    assert response == {
-        "is_demo_user": True,
-        "username": "data",
-        "id": ID
-    }
+    assert response == {"is_demo_user": True, "username": "data", "id": ID}
 
 
 def test_changed_models_only(db_connection: Connection) -> None:

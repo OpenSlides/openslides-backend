@@ -11,7 +11,7 @@ from openslides_backend.shared.exceptions import ModelLocked
 from openslides_backend.shared.interfaces.event import EventType
 from tests.database.writer.system.util import (
     assert_model,
-    create_model,
+    create_models,
     create_write_requests,
     get_data,
 )
@@ -22,7 +22,7 @@ def test_two_write_requests_with_locked_fields(db_connection: Connection) -> Non
     # TODO this probably needs two async threads to actually have conflicts
     # TODO doesn't use fqfields yet
     data = get_data()
-    create_model(data)
+    create_models(data)
     data = [
         {
             "events": [

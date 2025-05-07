@@ -11,7 +11,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.exceptions import InvalidFormat
 from openslides_backend.shared.patterns import collection_from_fqid
-from tests.database.writer.system.util import create_model, get_data
+from tests.database.writer.system.util import create_models, get_data
 
 
 @pytest.fixture(autouse=True)
@@ -97,7 +97,7 @@ def test_too_long_collection(db_connection: Connection) -> None:
 )
 def test_create_reserve(db_connection: Connection) -> None:
     data = get_data()
-    create_model(data)
+    create_models(data)
 
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
@@ -116,7 +116,7 @@ def test_create_with_collection_reserve(db_connection: Connection) -> None:
     data = get_data()
     event = data[0]["events"][0]
     event["collection"] = collection_from_fqid(event.pop("fqid"))
-    create_model(data)
+    create_models(data)
 
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
@@ -135,7 +135,7 @@ def test_reserve_create(db_connection: Connection) -> None:
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
         assert curs.fetchone() == {"is_called": True, "last_value": 5}
-    create_model(get_data())
+    create_models(get_data())
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
         assert curs.fetchone() == {"is_called": True, "last_value": 5}

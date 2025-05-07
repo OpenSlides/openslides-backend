@@ -15,7 +15,8 @@ class EventType(str, Enum):
         return repr(self.value)
 
 
-ListFieldsDict = dict[str, list[int] | list[str]]
+ListField = list[int] | list[str]
+ListFieldsDict = dict[str, ListField]
 
 
 class ListFields(TypedDict):

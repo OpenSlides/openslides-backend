@@ -11,6 +11,12 @@ from psycopg.errors import (
     UniqueViolation,
 )
 
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import (
+    Field,
+    GenericRelationListField,
+    RelationListField,
+)
 from openslides_backend.services.database.interface import FQID_MAX_LEN
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
@@ -22,7 +28,12 @@ from openslides_backend.shared.exceptions import (
     ModelExists,
     ModelLocked,
 )
-from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.event import (
+    Event,
+    EventType,
+    ListField,
+    ListFields,
+)
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import (
@@ -34,7 +45,7 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
     id_from_fqid,
 )
-from openslides_backend.shared.typing import JSON, Model
+from openslides_backend.shared.typing import JSON, Model, PartialModel
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
@@ -153,7 +164,10 @@ class DatabaseWriter:
         return list(models_created_or_updated)
 
     def insert_model(self, event: Event, collection: Collection) -> FullQualifiedId:
-        fields = event["fields"]
+        event_fields = event.get("fields", dict())
+        simple_fields, intermediate_tables = self.get_simple_fields_intermediate_table(
+            event_fields, collection
+        )
         statement = sql.SQL(
             """
             INSERT INTO {table_name} ({columns})
@@ -161,10 +175,14 @@ class DatabaseWriter:
             """
         ).format(
             table_name=sql.Identifier(f"{collection}_t"),
-            columns=sql.SQL(", ").join(map(sql.Identifier, fields)),
-            values=sql.SQL(", ").join(fields.values()),
+            columns=sql.SQL(", ").join(map(sql.Identifier, simple_fields)),
+            values=sql.SQL(", ").join(sql.SQL("%s") for _ in range(len(simple_fields))),
         )
-        return self.execute_sql(statement, collection, fields.get("id"))
+        id_ = self.execute_sql(
+            statement, list(simple_fields.values()), collection, simple_fields.get("id")
+        )
+        self.write_to_intermediate_tables(event_fields, intermediate_tables, id_)
+        return fqid_from_collection_and_id(collection, id_)
 
     def delete_model(self, event: Event) -> FullQualifiedId:
         collection, id_ = collection_and_id_from_fqid(event["fqid"])
@@ -173,105 +191,250 @@ class DatabaseWriter:
             DELETE FROM {table_name} WHERE id = {id}
             """
         ).format(id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t"))
-        return self.execute_sql(statement, collection, id_)
+        return fqid_from_collection_and_id(
+            collection, self.execute_sql(statement, [], collection, id_)
+        )
 
     def update_model(self, event: Event, collection: Collection) -> FullQualifiedId:
-        table_name = f"{collection}_t"
+        table = sql.Identifier(f"{collection}_t")
         statement = sql.SQL(
             """
-            UPDATE {table_name} SET
+            UPDATE {table} SET
             """
         ).format(
-            table_name=sql.Identifier(table_name),
+            table=table,
         )
 
-        set_dict = event["fields"]  # id always exists for updates
-        if list_fields := event.get("list_fields"):
-            add_dict = list_fields.get("add", dict())
-            remove_dict = list_fields.get("remove", dict())
-            joined_type_dict = {
-                field_name: type(value_list[0])
-                for dictionary in [add_dict, remove_dict]
-                for field_name, value_list in dictionary.items()
-                if value_list
-            }
-        else:
-            joined_type_dict = dict()
+        # id always exists for updates
+        event_fields = event["fields"]
+        id_ = event_fields["id"]
+        set_fields_dict, intermediate_tables = (
+            self.get_simple_fields_intermediate_table(event_fields, collection)
+        )
+
+        self.delete_from_intermediate_tables(intermediate_tables, id_)
+        # TODO there may be an improvement by doing a subselect and except with new values to only delete those which are removed from the list.
+        self.write_to_intermediate_tables(event_fields, intermediate_tables, id_)
+
+        array_statements_per_field, array_values = self.get_array_values(
+            table, set_fields_dict, event.get("list_fields") or dict()
+        )
 
         statement += sql.SQL(", ").join(
-            sql.SQL("""{field} = {value}""").format(
+            sql.SQL("""{field} = %s""").format(
                 field=sql.Identifier(field_name),
-                value=sql.Literal(value),
             )
-            for field_name, value in set_dict.items()
-            if field_name not in joined_type_dict
+            for field_name in set_fields_dict.keys()
+            if field_name not in array_statements_per_field
         )
+        arguments = [
+            value
+            for field_name, value in set_fields_dict.items()
+            if field_name not in array_statements_per_field
+        ]
 
-        values = {
-            field_name: sql.SQL(
-                """ARRAY(
-                SELECT unnest({base_array}
-                EXCEPT
-                SELECT unnest({values_remove})
-                UNION
-                SELECT unnest({values_add})
-                ORDER BY list_element
-            )"""
-            ).format(
-                base_array=(
-                    self.get_array_with_type(list_type, set_dict[field_name])
-                    + sql.SQL(") AS list_element")
-                    if set_dict.get(field_name)
-                    else sql.Identifier(table_name)
-                    + sql.SQL(".")
-                    + sql.Identifier(field_name)
-                    + sql.SQL(") AS list_element FROM ")
-                    + sql.Identifier(table_name)
-                ),
-                values_add=self.get_array_with_type(
-                    list_type, add_dict.get(field_name, [])
-                ),
-                values_remove=self.get_array_with_type(
-                    list_type, remove_dict.get(field_name, [])
-                ),
-            )
-            for field_name, list_type in joined_type_dict.items()
-        }
-
-        if values and any(k for k in set_dict if k not in joined_type_dict):
+        if array_statements_per_field and any(
+            k for k in set_fields_dict if k not in array_statements_per_field
+        ):
             statement += sql.SQL(", ")
         statement += sql.SQL(", ").join(
             sql.SQL(
                 """
-            {field} = {values}"""
+            {field} = {array_statement}"""
             ).format(
                 field=sql.Identifier(field),
-                values=value,
+                array_statement=statement,
             )
-            for field, value in values.items()
+            for field, statement in array_statements_per_field.items()
         )
+        for array_value in array_values:
+            arguments.extend(array_value)
+
         statement += sql.SQL(
             """
             WHERE id = {id}
             """
-        ).format(id=set_dict["id"])
-        return self.execute_sql(statement, collection, set_dict["id"])
+        ).format(id=id_)
+        return fqid_from_collection_and_id(
+            collection,
+            self.execute_sql(statement, arguments, collection, set_fields_dict["id"]),
+        )
+
+    def get_simple_fields_intermediate_table(
+        self, event_fields: PartialModel, collection: Collection
+    ) -> tuple[dict, dict]:
+        """
+        returns the fields that do not need special handling within an intermediate table.
+        returns in the second dict the other fields with their field representation from the model_registry.
+        """
+        return {
+            field_name: value
+            for field_name, value in event_fields.items()
+            if (field := model_registry[collection]().get_field(field_name))
+            if not field.is_view_field
+        }, {
+            field_name: field
+            for field_name in event_fields
+            if (field := model_registry[collection]().get_field(field_name))
+            and field.is_primary
+            if any(
+                isinstance(field, type_)
+                for type_ in [RelationListField, GenericRelationListField]
+            )
+        }
+
+    def write_to_intermediate_tables(
+        self, event_fields: PartialModel, intermediate_tables: dict[str, Field], id_: Id
+    ) -> None:
+        for field_name, field in intermediate_tables.items():
+            if not field.write_fields:
+                raise BadCodingException(
+                    f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
+                )
+            intermediate_table, close_side, far_side, _ = field.write_fields
+            for other_id in event_fields[field_name]:
+                statement = sql.SQL(
+                    """
+                    INSERT INTO {table_name} ({columns})
+                    VALUES (%s, %s)
+                    """
+                ).format(
+                    table_name=sql.Identifier(intermediate_table),
+                    columns=sql.Identifier(close_side)
+                    + sql.SQL(", ")
+                    + sql.Identifier(far_side),
+                )
+                self.execute_sql(
+                    statement,
+                    [id_, other_id],
+                    "",
+                    None,
+                    return_id=False,
+                )
+
+    def delete_from_intermediate_tables(
+        self, intermediate_tables: dict[str, Field], id_: Id
+    ) -> None:
+        for field_name, field in intermediate_tables.items():
+            if not field.write_fields:
+                raise BadCodingException(
+                    f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
+                )
+            intermediate_table, close_side, *_ = field.write_fields
+            statement = sql.SQL(
+                """
+                DELETE FROM {table_name} WHERE {column} = {id}
+                """
+            ).format(
+                table_name=sql.Identifier(intermediate_table),
+                column=sql.Identifier(close_side),
+                id=id_,
+            )
+            self.execute_sql(
+                statement,
+                [],
+                "",
+                None,
+                return_id=False,
+            )
+
+    def get_array_values(
+        self, table: sql.Identifier, set_dict: PartialModel, list_fields: ListFields
+    ) -> tuple[
+        dict[str, sql.Composed],
+        list[tuple[ListField, ListField, ListField] | tuple[ListField, ListField]],
+    ]:
+        """
+        returns the composed array calculation strings and the lists/arrays to be inserted as arguments
+        """
+        add_dict = list_fields.get("add", dict())
+        remove_dict = list_fields.get("remove", dict())
+        lists_type_dict = {
+            field_name: type(value_list[0])
+            for dictionary in [add_dict, remove_dict]
+            for field_name, value_list in dictionary.items()
+            if value_list
+        }
+        return (
+            {
+                field_name: sql.SQL(
+                    """ARRAY(
+                SELECT unnest({row_or_placeholder}{base_array_type}) AS list_element{nothing_or_table}
+                EXCEPT
+                SELECT unnest(%s{remove_list_type})
+                UNION
+                SELECT unnest(%s{add_list_type})
+                ORDER BY list_element
+            )"""
+                ).format(
+                    row_or_placeholder=(
+                        sql.Placeholder()
+                        if field_name in set_dict
+                        else table + sql.SQL(".") + sql.Identifier(field_name)
+                    ),
+                    nothing_or_table=(
+                        sql.SQL("")
+                        if field_name in set_dict
+                        else sql.SQL(" FROM ") + table
+                    ),
+                    base_array_type=(
+                        self.get_array_type(list_type, set_dict[field_name])
+                        if field_name in set_dict
+                        else sql.SQL("")
+                    ),
+                    add_list_type=self.get_array_type(
+                        list_type, add_dict.get(field_name, [])
+                    ),
+                    remove_list_type=self.get_array_type(
+                        list_type, remove_dict.get(field_name, [])
+                    ),
+                )
+                for field_name, list_type in lists_type_dict.items()
+            },
+            [
+                (
+                    (
+                        set_dict[field_name],
+                        remove_dict.get(field_name, []),
+                        add_dict.get(field_name, []),
+                    )
+                    if field_name in set_dict
+                    else (
+                        remove_dict.get(field_name, []),
+                        add_dict.get(field_name, []),
+                    )
+                )
+                for field_name in lists_type_dict.keys()
+            ],
+        )
 
     def execute_sql(
-        self, statement: sql.Composable, collection: Collection, target_id: Id | None
-    ) -> FullQualifiedId:
-        statement += sql.SQL("""RETURNING id;""")
+        self,
+        statement: sql.Composed,
+        arguments: list[int],
+        collection: Collection,
+        target_id: Id | None,
+        return_id: bool = True,
+    ) -> Id:
+        """
+        executes the statement with the arguments
+        returns the id if return_id is True else returns zero
+        """
+        if return_id:
+            statement += sql.SQL("""RETURNING id;""")
 
         try:
             with self.connection.cursor() as curs:
-                result = curs.execute(statement).fetchone()
-                if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
-                    assert target_id  # we will never reach here with delete or update events being None on id
-                    raise ModelDoesNotExist(
-                        fqid_from_collection_and_id(collection, target_id)
-                    )
-                else:
+                curs.execute(statement, arguments)
+                if return_id:
+                    result = curs.fetchone()
+                    if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
+                        assert target_id  # we will never reach here with delete or update events being None on id
+                        raise ModelDoesNotExist(
+                            fqid_from_collection_and_id(collection, target_id)
+                        )
                     id_ = result.get("id", 0)
+                    return id_
         except UniqueViolation as e:
             if "duplicate key value violates unique constraint" in e.args[0]:
                 raise ModelExists(
@@ -306,20 +469,20 @@ class DatabaseWriter:
                 This is not the end. There will be more next episode. To be continued."
             )
 
-        return fqid_from_collection_and_id(collection, id_)
+        return 0
 
-    def get_array_with_type(
+    def get_array_type(
         self,
         list_type: type,
         affected_list: list[int] | list[str],
     ) -> sql.Composable:
         if list_type == int:
             if affected_list:
-                return sql.Literal(affected_list)
+                return sql.SQL("")
             else:
-                return sql.Literal(affected_list) + sql.SQL("::int2[]")
+                return sql.SQL("::int2[]")
         elif list_type == str:
-            return sql.Literal(affected_list) + sql.SQL("::text[]")
+            return sql.SQL("::text[]")
         else:
             raise ValueError("Only integer or string lists are supported.")
 

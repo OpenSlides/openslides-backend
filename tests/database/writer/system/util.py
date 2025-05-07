@@ -37,9 +37,10 @@ def assert_model(fqid: FullQualifiedId, fields: Model) -> None:
         )
         assert model, "No model returned from database."
         failing_fields = {k: v for k, v in fields.items() if v != model[k]}
-        assert (
-            not failing_fields
-        ), f"failing fields: {dict({k: model[k] for k in failing_fields})}\nexpected fields: {failing_fields}"
+        assert not failing_fields, (
+            f"failing fields: {dict({k: model[k] for k in failing_fields})} expected fields: {failing_fields}"
+            ""
+        )
         assert (
             fields == model
         ), f"fields not expected in model: {dict({k: v for k, v in model.items() if k not in fields})}"
@@ -109,7 +110,7 @@ def create_write_requests(data: list[dict[str, Any]]) -> list[WriteRequest]:
     ]
 
 
-def create_model(data: list[dict[str, Any]]) -> list[Id]:
+def create_models(data: list[dict[str, Any]]) -> list[Id]:
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         return [
