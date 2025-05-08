@@ -44,7 +44,13 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
                 id_,
             )
         ):
-            raise MissingPermission({Permissions.Meeting.CAN_MANAGE_SETTINGS: id_})
+            if hasattr(self, "action_name"):
+                raise ActionException(f"Cannot {self.action_name} locked meeting.")
+            else:
+                raise ActionException(
+                    "Cannot perform this action for the locked meeting."
+                )
+
         if not has_committee_management_level(
             self.datastore,
             self.user_id,

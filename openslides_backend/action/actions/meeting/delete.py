@@ -17,6 +17,7 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_delete_schema()
     skip_archived_meeting_check = True
+    action_name = "delete"
 
     def get_committee_id(self, instance: dict[str, Any]) -> int:
         meeting = self.datastore.get(

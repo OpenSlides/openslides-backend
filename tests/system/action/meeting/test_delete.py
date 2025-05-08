@@ -430,17 +430,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             lock_meeting=True,
         )
 
-    def test_delete_with_locked_meeting_orgaadmin(self) -> None:
-        self.base_permission_test(
-            {},
-            "meeting.delete",
-            {"id": 1},
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            fail=True,
-            lock_meeting=True,
-        )
-
-    def test_delete_permissions_can_manage_organization_with_locked_meeting_not_allowed(
+    def test_delete_permissions_oml_locked_meeting_not_allowed(
         self,
     ) -> None:
         self.set_models(
@@ -450,13 +440,43 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             }
         )
         response = self.request("meeting.delete", {"id": 1})
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "You are not allowed to perform action meeting.delete. Missing permission: Permission meeting.can_manage_settings in meeting 1",
+            "Cannot delete locked meeting.",
             response.json["message"],
         )
 
-    def test_delete_permissions_can_manage_organization_with_locked_meeting(
+    def test_delete_permissions_committee_admin_locked_meeting_not_allowed(
+        self,
+    ) -> None:
+        self.set_committee_management_level([1])
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot delete locked meeting.",
+            response.json["message"],
+        )
+
+    def test_delete_permissions_committee_admin_locked_meeting_with_oml(
+        self,
+    ) -> None:
+        self.set_committee_management_level([1])
+        self.set_models(
+            {
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting/1")
+
+    def test_delete_permissions_oml_locked_meeting_with_can_manage_settings(
         self,
     ) -> None:
         self.set_models(

@@ -2109,6 +2109,9 @@ class MeetingClone(BaseActionTestCase):
                     "template_for_organization_id": 1,
                 },
                 ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+                "user/1": {
+                    "organization_management_level": "can_manage_organization",
+                },
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
