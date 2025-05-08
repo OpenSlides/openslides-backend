@@ -9,8 +9,10 @@ from openslides_backend.shared.schema import str_list_schema
 
 from ....models.models import Committee, Meeting
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....services.datastore.commands import GetManyRequest
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
+    ImportRow,
     ImportState,
     Lookup,
     ResultType,
@@ -101,7 +103,7 @@ class CommitteeJsonUpload(
 
         # check meeting_template afterwards to ensure each committee has an id
         self.check_meetings()
-        self.check_parents_for_circles()
+        self.check_parents_for_circles(self.rows)
 
         self.generate_statistics()
         return {}
@@ -132,42 +134,33 @@ class CommitteeJsonUpload(
             messages.append("Error: Found multiple committees with the same name.")
 
         if parent := entry.get("parent"):
-            if "id" in entry:
+            result = self.committee_lookup.check_duplicate(parent)
+            if result == ResultType.FOUND_ID:
+                parent_id = self.committee_lookup.get_field_by_name(parent, "id")
                 entry["parent"] = {
-                    "value": "",
-                    "info": ImportState.WARNING,
+                    "value": parent,
+                    "info": ImportState.DONE,
+                    "id": parent_id,
                 }
-                messages.append(
-                    "The parent field will be skipped, because parent can not be updated for an existing committee."
-                )
-            else:
-                result = self.committee_lookup.check_duplicate(parent)
-                if result == ResultType.FOUND_ID:
-                    parent_id = self.committee_lookup.get_field_by_name(parent, "id")
-                    entry["parent"] = {
-                        "value": parent,
-                        "info": ImportState.DONE,
-                        "id": parent_id,
-                    }
-                elif result == ResultType.NOT_FOUND:
-                    if parent in self.names:
-                        entry["parent"] = {"value": parent, "info": ImportState.NEW}
-                    else:
-                        row_state = ImportState.ERROR
-                        entry["parent"] = {
-                            "value": parent,
-                            "info": ImportState.ERROR,
-                        }
-                        messages.append("Error: Parent committee not found.")
-                elif result == ResultType.FOUND_MORE_IDS:
+            elif result == ResultType.NOT_FOUND:
+                if parent in self.names:
+                    entry["parent"] = {"value": parent, "info": ImportState.NEW}
+                else:
                     row_state = ImportState.ERROR
                     entry["parent"] = {
                         "value": parent,
                         "info": ImportState.ERROR,
                     }
-                    messages.append(
-                        "Error: Found multiple committees with the same name as the parent."
-                    )
+                    messages.append("Error: Parent committee not found.")
+            elif result == ResultType.FOUND_MORE_IDS:
+                row_state = ImportState.ERROR
+                entry["parent"] = {
+                    "value": parent,
+                    "info": ImportState.ERROR,
+                }
+                messages.append(
+                    "Error: Found multiple committees with the same name as the parent."
+                )
 
         if not entry.get("meeting_name"):
             if any(
@@ -311,52 +304,84 @@ class CommitteeJsonUpload(
                         )
             self.check_admin_groups_for_meeting(row)
 
-    def check_parents_for_circles(self) -> None:
-        """
-        Search for circles among the parents of new rows.
-        Update rows do not need to be considered as it isn't possible to update a parent.
-        """
-        # TODO: new_relations should include all the parent hierarchy.
-        # Pre-existing ones too.
-        new_relations: dict[str, str | None] = {
-            row["data"]["name"]["value"]: row["data"]["parent"]["value"]
-            for row in self.rows
-            if "id" not in row
-            and row["data"].get("parent", {}).get("info") == ImportState.NEW
-        }
-        circles = detect_circles(set(new_relations), new_relations)
-        # names = set(new_relations.keys())
-        # circle_related: set[str] = set()
-        # free: set[str] = set()
-        # circles: set[str] = set()
-        # while names:
-        #     name = names.pop()
-        #     descendants: list[str] = [name]
-        #     while parent := new_relations.get(name):
-        #         if parent in circle_related:
-        #             circle_related.update(descendants)
-        #             break
-        #         if parent in free:
-        #             free.update(descendants)
-        #             break
-        #         if parent in descendants:
-        #             index = descendants.index(parent)
-        #             circle_related.update(descendants)
-        #             circles.update(descendants[index:])
-        #             break
-        #         descendants.append(parent)
-        #         name = parent
-        #     names.difference_update(descendants)
-        for row in self.rows:
-            if row["data"]["name"]["value"] in circles:
-                row["data"]["parent"] = {
-                    "value": row["data"]["parent"]["value"],
-                    "info": ImportState.ERROR,
-                }
-                row["state"] = ImportState.ERROR
-                row["messages"].append(
-                    "Error: The parents are forming circles, please rework the hierarchy"
-                )
+    # def check_parents_for_circles(self) -> None:
+    #     """
+    #     Search for circles among the new rows.
+    #     """
+    #     new_relations: dict[str, str | None] = {
+    #         row["data"]["name"]["value"]: row["data"].get("parent", {}).get("value")
+    #         for row in self.rows
+    #         if row["data"]["name"]["info"] != ImportState.ERROR
+    #         and row["data"].get("parent", {}).get("info") != ImportState.ERROR
+    #     }
+    #     child_ids = {
+    #         row["data"]["id"]
+    #         for row in self.rows
+    #         if "id" in row["data"]
+    #         and row["data"]["name"]["info"] != ImportState.ERROR
+    #         and row["data"].get("parent", {}).get("info")
+    #         in [ImportState.NEW, ImportState.DONE]
+    #     }
+    #     parent_ids = {
+    #         row["data"]["parent"]["id"]
+    #         for row in self.rows
+    #         if row["data"]["name"]["info"] != ImportState.ERROR
+    #         and row["data"].get("parent", {}).get("info") == ImportState.DONE
+    #     }
+    #     parent_ids.difference_update(child_ids)
+    #     db_instances = self.datastore.get_many(
+    #         [
+    #             GetManyRequest("committee", list(child_ids), ["name", "all_child_ids"]),
+    #             GetManyRequest(
+    #                 "committee",
+    #                 list(parent_ids),
+    #                 ["name", "parent_id", "all_parent_ids"],
+    #             ),
+    #         ]
+    #     )["committee"]
+    #     all_other_ids = {
+    #         id_
+    #         for inst in db_instances.values()
+    #         for id_ in [*inst.get("all_child_ids", []), *inst.get("all_parent_ids", [])]
+    #     }
+    #     all_other_ids.difference_update(child_ids, parent_ids)
+    #     db_instances.update(
+    #         self.datastore.get_many(
+    #             [
+    #                 GetManyRequest(
+    #                     "committee", list(all_other_ids), ["name", "parent_id"]
+    #                 )
+    #             ]
+    #         )["committee"]
+    #     )
+    #     id_to_name: dict[int, str] = {
+    #         id_: inst["name"] for id_, inst in db_instances.items()
+    #     }
+    #     for inst in db_instances.values():
+    #         if (name := inst["name"]) not in new_relations or new_relations[
+    #             name
+    #         ] is None:
+    #             new_relations[name] = (
+    #                 id_to_name[parent_id]
+    #                 if (parent_id := inst.get("parent_id"))
+    #                 else None
+    #             )
+    #     check_list: set[str] = {
+    #         *id_to_name.values(),
+    #         *new_relations.keys(),
+    #         *[val for val in new_relations.values() if val],
+    #     }
+    #     circles = detect_circles(check_list, new_relations)
+    #     for row in self.rows:
+    #         if row["data"]["name"]["value"] in circles:
+    #             row["data"]["parent"] = {
+    #                 "value": row["data"]["parent"]["value"],
+    #                 "info": ImportState.ERROR,
+    #             }
+    #             row["state"] = ImportState.ERROR
+    #             row["messages"].append(
+    #                 "Error: The parents are forming circles, please rework the hierarchy"
+    #             )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:

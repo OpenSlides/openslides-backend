@@ -816,6 +816,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                         "name": "Unrelated child committee",
                         "parent": "Unrelated committee",
                     },
+                    {"name": "Regional council", "parent": "District council"},
                 ]
             },
         )
@@ -921,6 +922,24 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             },
             "messages": [],
             "state": ImportState.NEW,
+        }
+        assert self.get_row(response, 7) == {
+            "data": {
+                "id": 2,
+                "name": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "Regional council",
+                },
+                "parent": {
+                    "info": ImportState.ERROR,
+                    "value": "District council",
+                },
+            },
+            "messages": [
+                "Error: The parents are forming circles, please rework the hierarchy"
+            ],
+            "state": ImportState.ERROR,
         }
 
     def test_json_upload_multiple_circles(self) -> None:
@@ -1332,7 +1351,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
         self.assert_parents_test_result(response)
 
     def assert_parents_test_result(self, response: Response) -> None:
@@ -1357,13 +1376,11 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "value": "two",
                 },
                 "parent": {
-                    "info": ImportState.WARNING,
-                    "value": "",
+                    "info": ImportState.NEW,
+                    "value": "five",
                 },
             },
-            "messages": [
-                "The parent field will be skipped, because parent can not be updated for an existing committee.",
-            ],
+            "messages": [],
             "state": ImportState.DONE,
         }
         assert self.get_row(response, 2) == {
@@ -1375,14 +1392,12 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "value": "three",
                 },
                 "parent": {
-                    "info": ImportState.WARNING,
-                    "value": "",
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "two",
                 },
             },
-            "messages": [
-                "The parent field will be skipped, because parent can not be updated "
-                "for an existing committee.",
-            ],
+            "messages": [],
             "state": ImportState.DONE,
         }
         assert self.get_row(response, 3) == {

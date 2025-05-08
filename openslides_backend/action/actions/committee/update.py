@@ -49,7 +49,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             instances: dict[int, dict[str, Any]] = {
                 instance["id"]: instance for instance in action_data
             }
-            parent_change_ids: list[int] = [
+            parent_change_ids: list[int] = list({
                 id_
                 for inst in action_data
                 for id_ in (
@@ -58,8 +58,10 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                     else [inst["id"]]
                 )
                 if "parent_id" in inst
-            ]
+            })
             if parent_change_ids:
+                # TODO: Why doesn't this deliver the data of newly created models?
+                # See import tests
                 db_instances = self.datastore.get_many(
                     [
                         GetManyRequest(

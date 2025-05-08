@@ -837,6 +837,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_parents_test_result(response)
+        ev = self.datastore.get_everything()
         expected_structure: dict[
             int,
             tuple[
@@ -844,15 +845,15 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ],
         ] = {
             1: ("one", None, None, None, None),
-            2: ("two", None, [6], None, [6]),
-            3: ("three", None, None, None, None),
-            4: ("four", None, None, None, None),
-            5: ("five", None, [7, 8], None, [7, 8, 9, 10]),
-            6: ("ten", 2, None, [2], None),
-            7: ("six", 5, None, [5], None),
-            8: ("seven", 5, [9], [5], [9, 10]),
-            9: ("eight", 8, [10], [5, 8], [10]),
-            10: ("nine", 9, None, [5, 8, 9], None),
+            2: ("two", 6, [3,10], [6], [3,10]),
+            3: ("three", 2, None, [6,2], None),
+            4: ("nine", 9, None, [6,8,9], None),
+            5: ("four", None, None, None, None),
+            6: ("five", None, [2,7,8], None, [2,3,4,7,8,9,10]),
+            7: ("six", 6, None, [6], None),
+            8: ("seven", 6, [8], [6], [4,8]),
+            9: ("eight", 8, [4], [6,8], [4]),
+            10: ("ten", 2, None, [6,2], None),
         }
         for id_, (
             name,
@@ -887,12 +888,11 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "value": "two",
                 },
                 "parent": {
-                    "info": ImportState.WARNING,
-                    "value": "",
+                    "info": ImportState.NEW,
+                    "value": "five",
                 },
             },
             "messages": [
-                "The parent field will be skipped, because parent can not be updated for an existing committee.",
                 "Error: committee 2 not found anymore for updating committee 'two'.",
             ],
             "state": ImportState.ERROR,
