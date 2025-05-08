@@ -481,10 +481,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 }
             )
             raise MissingPermission(missing_permissions)
-        elif (
-            self.check_for_admin_in_all_meetings(instance.get("id", 0))
-            and self.user_in_archived_meetings_only
-        ):
+        elif self.user_in_archived_meetings_only:
             raise MissingPermission(missing_permissions)
 
     def _get_actual_grouping_from_instance(

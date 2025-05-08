@@ -986,7 +986,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self,
     ) -> None:
         """
-        May not update group A fields on meeting scope. User belongs to 1 archived meeting without being part of a committee.
+        May not update group A fields on meeting scope. User belongs to 1 archived meeting.
         """
         self.permission_setup()
         self.set_user_groups(self.user_id, [1])
@@ -1349,7 +1349,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self, permission: Permission
     ) -> None:
         """
-        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
+        May update group A fields on meeting scope. User belongs to 1 active meeting.
         User is member of an archived meeting in the same committee, but this doesn't may affect the result.
         """
         self.permission_setup()
@@ -1363,6 +1363,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "committee_id": 60,
                 },
                 "group/2": {"permissions": [permission]},
+                "user/111": {"committee_ids": [1]},
             }
         )
         response = self.request(
@@ -1373,13 +1374,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "username": "new_username",
-                "committee_ids": None,
-            },
-        )
+        self.assert_model_exists("user/111", {"username": "new_username"})
         user111 = self.get_model("user/111")
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
