@@ -40,7 +40,9 @@ class CommitteeImportMixin(Action):
                     "Error: Meeting cannot be created without admins"
                 )
 
-    def check_parents_for_circles(self, rows: list[ImportRow] | list[dict[str,Any]]) -> bool:
+    def check_parents_for_circles(
+        self, rows: list[ImportRow] | list[dict[str, Any]]
+    ) -> bool:
         """
         Searches for circles formed through the changes in the rows.
         Returns true if any error has been added.
@@ -71,7 +73,9 @@ class CommitteeImportMixin(Action):
             parent_ids.difference_update(child_ids)
             db_instances = self.datastore.get_many(
                 [
-                    GetManyRequest("committee", list(child_ids), ["name", "all_child_ids"]),
+                    GetManyRequest(
+                        "committee", list(child_ids), ["name", "all_child_ids"]
+                    ),
                     GetManyRequest(
                         "committee",
                         list(parent_ids),
@@ -82,7 +86,10 @@ class CommitteeImportMixin(Action):
             all_other_ids = {
                 id_
                 for inst in db_instances.values()
-                for id_ in [*inst.get("all_child_ids", []), *inst.get("all_parent_ids", [])]
+                for id_ in [
+                    *inst.get("all_child_ids", []),
+                    *inst.get("all_parent_ids", []),
+                ]
             }
             all_other_ids.difference_update(child_ids, parent_ids)
             db_instances.update(
@@ -101,7 +108,11 @@ class CommitteeImportMixin(Action):
                 if (name := row["data"]["name"]["value"]) in new_relations:
                     if "id" in row["data"] and (id_ := row["data"]["id"]) in id_to_name:
                         id_to_name[id_] = name
-                    if "parent" in row["data"] and "id" in (parent:=row["data"]["parent"]) and (id_ := parent["id"]) in id_to_name:
+                    if (
+                        "parent" in row["data"]
+                        and "id" in (parent := row["data"]["parent"])
+                        and (id_ := parent["id"]) in id_to_name
+                    ):
                         id_to_name[id_] = parent["value"]
             for inst in db_instances.values():
                 if (name := inst["name"]) not in new_relations or new_relations[
@@ -133,4 +144,3 @@ class CommitteeImportMixin(Action):
                         "Error: The parents are forming circles, please rework the hierarchy"
                     )
         return has_error
-

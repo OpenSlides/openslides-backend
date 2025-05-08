@@ -5,11 +5,7 @@ from openslides_backend.action.actions.meeting.create import MeetingCreate
 from openslides_backend.action.actions.organization_tag.create import (
     OrganizationTagCreate,
 )
-from openslides_backend.action.util.typing import (
-    ActionData,
-    ActionResultElement,
-    ActionResults,
-)
+from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
@@ -29,15 +25,18 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     skip_archived_meeting_check = True
     import_name = "committee"
 
-    field_map = {**{
-        field: field[:-1] + "_ids"
-        for field in (
-            "forward_to_committees",
-            "managers",
-            "meeting_admins",
-            "organization_tags",
-        )
-    }, "parent": "parent_id"}
+    field_map = {
+        **{
+            field: field[:-1] + "_ids"
+            for field in (
+                "forward_to_committees",
+                "managers",
+                "meeting_admins",
+                "organization_tags",
+            )
+        },
+        "parent": "parent_id",
+    }
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().update_instance(instance)
@@ -152,30 +151,12 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
 
         # create missing committees & update row data
         create_committee_data: list[dict[str, Any]] = []
-        create_results: list[ActionResultElement | None] = []
         for row in rows:
             entry = row["data"]
             if "id" not in entry:
                 create_committee_data.append(
                     {"name": entry["name"], "organization_id": ONE_ORGANIZATION_ID}
                 )
-                # date = {"name": entry["name"], "organization_id": ONE_ORGANIZATION_ID}
-                # if parent_id := entry.pop("parent_id", None):
-                #     entry.pop("parent")
-                #     date["parent_id"] = parent_id
-                # elif parent := entry.pop("parent", None):
-                #     date["parent_id"] = next(
-                #         payload["id"]
-                #         for payload in create_committee_data
-                #         if payload["name"] == parent
-                #     )
-                # result = self.execute_other_action(CommitteeCreate, [date])
-                # if result:
-                #     result_element = result[0]
-                #     create_results.extend(result)
-                #     if result_element:
-                #         date.update(result_element)
-                # create_committee_data.append(date)
         if create_committee_data:
             results = self.execute_other_action(CommitteeCreate, create_committee_data)
             self.update_rows_from_results(
@@ -212,7 +193,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     "forward_to_committee_ids",
                     "manager_ids",
                     "organization_tag_ids",
-                    "parent_id"
+                    "parent_id",
                 )
                 if field in entry
             }

@@ -1491,3 +1491,109 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "messages": [],
             "state": ImportState.NEW,
         }
+
+    def json_upload_update_parent_ids(self) -> None:
+        self.create_committee(name="'mittee 1")
+        self.create_committee(2, parent_id=1, name="'mittee 2")
+        self.create_committee(3, parent_id=2, name="'mittee 3")
+        self.create_committee(4, parent_id=3, name="'mittee 4")
+        self.create_committee(5, parent_id=3, name="'mittee 5")
+        self.create_committee(6, parent_id=2, name="'mittee 6")
+        self.create_committee(7, parent_id=6, name="'mittee 7")
+        self.create_committee(8, parent_id=6, name="'mittee 8")
+        self.create_committee(9, parent_id=1, name="'mittee 9")
+        self.create_committee(10, parent_id=9, name="'mittee a")
+        self.create_committee(11, parent_id=10, name="'mittee b")
+        self.create_committee(12, parent_id=10, name="'mittee c")
+        self.create_committee(13, parent_id=9, name="'mittee d")
+        self.create_committee(14, parent_id=13, name="'mittee e")
+        self.create_committee(15, parent_id=13, name="'mittee f")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "'mittee 3", "parent": "'mittee e"},
+                    {"name": "'mittee a", "parent": "'mittee 4"},
+                    {"name": "'mittee 5", "parent": "'mittee 6"},
+                    {
+                        "name": "'mittee 9",
+                        "description": "Now this ain't just any ol' 'mittee, this is THE 'mittee I tell ya.",
+                    },
+                    {
+                        "name": "'mittee b",
+                        "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response) == {
+            "data": {
+                "id": 3,
+                "name": {
+                    "id": 3,
+                    "info": ImportState.DONE,
+                    "value": "'mittee 3",
+                },
+                "parent": {
+                    "id": 14,
+                    "info": ImportState.DONE,
+                    "value": "'mittee e",
+                },
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 1) == {
+            "data": {
+                "id": 10,
+                "name": {
+                    "id": 10,
+                    "info": ImportState.DONE,
+                    "value": "'mittee a",
+                },
+                "parent": {
+                    "id": 4,
+                    "info": ImportState.DONE,
+                    "value": "'mittee 4",
+                },
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 2) == {
+            "data": {
+                "id": 5,
+                "name": {
+                    "id": 5,
+                    "info": ImportState.DONE,
+                    "value": "'mittee 5",
+                },
+                "parent": {
+                    "id": 6,
+                    "info": ImportState.DONE,
+                    "value": "'mittee 6",
+                },
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 3) == {
+            "data": {
+                "id": 9,
+                "name": {"id": 9, "info": ImportState.DONE, "value": "'mittee 9"},
+                "description": "Now this ain't just any ol' 'mittee, this is THE 'mittee I tell ya.",
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }
+        assert self.get_row(response, 4) == {
+            "data": {
+                "id": 11,
+                "name": {"id": 11, "info": ImportState.DONE, "value": "'mittee b"},
+                "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
+            },
+            "messages": [],
+            "state": ImportState.DONE,
+        }

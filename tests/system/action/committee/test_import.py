@@ -837,7 +837,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_parents_test_result(response)
-        ev = self.datastore.get_everything()
         expected_structure: dict[
             int,
             tuple[
@@ -845,15 +844,15 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ],
         ] = {
             1: ("one", None, None, None, None),
-            2: ("two", 6, [3,10], [6], [3,10]),
-            3: ("three", 2, None, [6,2], None),
-            4: ("nine", 9, None, [6,8,9], None),
+            2: ("two", 6, [3, 10], [6], [3, 10]),
+            3: ("three", 2, None, [6, 2], None),
+            4: ("nine", 9, None, [6, 8, 9], None),
             5: ("four", None, None, None, None),
-            6: ("five", None, [2,7,8], None, [2,3,4,7,8,9,10]),
+            6: ("five", None, [2, 7, 8], [], [2, 3, 4, 7, 8, 9, 10]),
             7: ("six", 6, None, [6], None),
-            8: ("seven", 6, [8], [6], [4,8]),
-            9: ("eight", 8, [4], [6,8], [4]),
-            10: ("ten", 2, None, [6,2], None),
+            8: ("seven", 6, [9], [6], [4, 9]),
+            9: ("eight", 8, [4], [6, 8], [4]),
+            10: ("ten", 2, None, [6, 2], None),
         }
         for id_, (
             name,
@@ -961,3 +960,137 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 400)
         assert "Model 'committee/1' does not exist." in response.json["message"]
+
+    def test_json_upload_update_parent_ids(self) -> None:
+        self.json_upload_update_parent_ids()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "parent_id": None,
+                "all_parent_ids": None,
+                "child_ids": [2, 9],
+                "all_child_ids": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            },
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [6],
+                "all_child_ids": [5, 6, 7, 8],
+            },
+        )
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "parent_id": 14,
+                "all_parent_ids": [1, 9, 13, 14],
+                "child_ids": [4],
+                "all_child_ids": [4, 10, 11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {
+                "parent_id": 3,
+                "all_parent_ids": [1, 9, 13, 14, 3],
+                "child_ids": [10],
+                "all_child_ids": [10, 11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/5",
+            {
+                "parent_id": 6,
+                "all_parent_ids": [1, 2, 6],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "committee/6",
+            {
+                "parent_id": 2,
+                "all_parent_ids": [1, 2],
+                "child_ids": [7, 8, 5],
+                "all_child_ids": [7, 8, 5],
+            },
+        )
+        for id_ in [7, 8]:
+            self.assert_model_exists(
+                f"committee/{id_}",
+                {
+                    "parent_id": 6,
+                    "all_parent_ids": [1, 2, 6],
+                    "child_ids": None,
+                    "all_child_ids": None,
+                },
+            )
+        self.assert_model_exists(
+            "committee/9",
+            {
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [13],
+                "all_child_ids": [10, 11, 12, 13, 14, 15, 3, 4],
+                "description": "Now this ain't just any ol' 'mittee, this is THE 'mittee I tell ya.",
+            },
+        )
+        self.assert_model_exists(
+            "committee/10",
+            {
+                "parent_id": 4,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4],
+                "child_ids": [11, 12],
+                "all_child_ids": [11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/11",
+            {
+                "parent_id": 10,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "child_ids": None,
+                "all_child_ids": None,
+                "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
+            },
+        )
+        self.assert_model_exists(
+            "committee/12",
+            {
+                "parent_id": 10,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "committee/13",
+            {
+                "parent_id": 9,
+                "all_parent_ids": [1, 9],
+                "child_ids": [14, 15],
+                "all_child_ids": [14, 15, 3, 10, 11, 4, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/14",
+            {
+                "parent_id": 13,
+                "all_parent_ids": [1, 9, 13],
+                "child_ids": [3],
+                "all_child_ids": [3, 10, 11, 4, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/15",
+            {
+                "parent_id": 13,
+                "all_parent_ids": [1, 9, 13],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )

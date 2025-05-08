@@ -9,17 +9,14 @@ from openslides_backend.shared.schema import str_list_schema
 
 from ....models.models import Committee, Meeting
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....services.datastore.commands import GetManyRequest
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
-    ImportRow,
     ImportState,
     Lookup,
     ResultType,
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .functions import detect_circles
 from .import_mixin import CommitteeImportMixin
 
 
@@ -303,85 +300,6 @@ class CommitteeJsonUpload(
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
             self.check_admin_groups_for_meeting(row)
-
-    # def check_parents_for_circles(self) -> None:
-    #     """
-    #     Search for circles among the new rows.
-    #     """
-    #     new_relations: dict[str, str | None] = {
-    #         row["data"]["name"]["value"]: row["data"].get("parent", {}).get("value")
-    #         for row in self.rows
-    #         if row["data"]["name"]["info"] != ImportState.ERROR
-    #         and row["data"].get("parent", {}).get("info") != ImportState.ERROR
-    #     }
-    #     child_ids = {
-    #         row["data"]["id"]
-    #         for row in self.rows
-    #         if "id" in row["data"]
-    #         and row["data"]["name"]["info"] != ImportState.ERROR
-    #         and row["data"].get("parent", {}).get("info")
-    #         in [ImportState.NEW, ImportState.DONE]
-    #     }
-    #     parent_ids = {
-    #         row["data"]["parent"]["id"]
-    #         for row in self.rows
-    #         if row["data"]["name"]["info"] != ImportState.ERROR
-    #         and row["data"].get("parent", {}).get("info") == ImportState.DONE
-    #     }
-    #     parent_ids.difference_update(child_ids)
-    #     db_instances = self.datastore.get_many(
-    #         [
-    #             GetManyRequest("committee", list(child_ids), ["name", "all_child_ids"]),
-    #             GetManyRequest(
-    #                 "committee",
-    #                 list(parent_ids),
-    #                 ["name", "parent_id", "all_parent_ids"],
-    #             ),
-    #         ]
-    #     )["committee"]
-    #     all_other_ids = {
-    #         id_
-    #         for inst in db_instances.values()
-    #         for id_ in [*inst.get("all_child_ids", []), *inst.get("all_parent_ids", [])]
-    #     }
-    #     all_other_ids.difference_update(child_ids, parent_ids)
-    #     db_instances.update(
-    #         self.datastore.get_many(
-    #             [
-    #                 GetManyRequest(
-    #                     "committee", list(all_other_ids), ["name", "parent_id"]
-    #                 )
-    #             ]
-    #         )["committee"]
-    #     )
-    #     id_to_name: dict[int, str] = {
-    #         id_: inst["name"] for id_, inst in db_instances.items()
-    #     }
-    #     for inst in db_instances.values():
-    #         if (name := inst["name"]) not in new_relations or new_relations[
-    #             name
-    #         ] is None:
-    #             new_relations[name] = (
-    #                 id_to_name[parent_id]
-    #                 if (parent_id := inst.get("parent_id"))
-    #                 else None
-    #             )
-    #     check_list: set[str] = {
-    #         *id_to_name.values(),
-    #         *new_relations.keys(),
-    #         *[val for val in new_relations.values() if val],
-    #     }
-    #     circles = detect_circles(check_list, new_relations)
-    #     for row in self.rows:
-    #         if row["data"]["name"]["value"] in circles:
-    #             row["data"]["parent"] = {
-    #                 "value": row["data"]["parent"]["value"],
-    #                 "info": ImportState.ERROR,
-    #             }
-    #             row["state"] = ImportState.ERROR
-    #             row["messages"].append(
-    #                 "Error: The parents are forming circles, please rework the hierarchy"
-    #             )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:

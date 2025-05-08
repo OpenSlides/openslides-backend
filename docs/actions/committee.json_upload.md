@@ -40,7 +40,6 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
   - `warning`: The user was not found and will not be part of the import.
 - `parent`:
   - `done`: The committee was found in the datastore.
-  - `warning`: The row is an update row and therefore the parent field will be skipped.
   - `new`: The committee will be newly created as part of this import.
   - `error`: Committee could not be identified or there is a parentage circle.
 - `meeting_admins`:
@@ -84,9 +83,9 @@ The users given in `managers` and `meeting_admins` will be matched only by usern
 
 ### Committee matching
 
-The `parent` field refers to the `committee/parent_id` field. If the row is an update row, it will be ignored.
+The `parent` field refers to the `committee/parent_id` field.
 If the row is creating a new committee, an existing committee by that name is found, that will be referenced, otherwise a match will be sought among the committees in the import.
-If no match is found when the field is filled on a create row, the row will be marked as error. This is because the parent can't be set later, so in case this is a mistake an error is thrown to ensure the file can be corrected.
+If no match is found when the field is filled on a create row, the row will be marked as error.
 
 ## Permission
 
