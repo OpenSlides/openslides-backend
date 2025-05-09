@@ -108,8 +108,8 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             user_id=0,
             migration_index=5,
         )
-        with self.datastore.get_database_context():
-            self.datastore.write(write_request)
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, self.logging, self.env).write(write_request)
         gbmi.return_value = 6
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)
@@ -126,8 +126,8 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             migration_index=6,
         )
         write_request.migration_index = 6
-        with self.datastore.get_database_context():
-            self.datastore.write(write_request)
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, self.logging, self.env).write(write_request)
         gbmi.return_value = 5
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)

@@ -151,7 +151,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -285,7 +285,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_id": 1,
                     "tagged_ids": ["meeting/1"],
                 },
-                "committee/1": {"organization_id": 1, "default_meeting_id": 1},
+                "committee/1": {
+                    "name": "!",
+                    "organization_id": 1,
+                    "default_meeting_id": 1,
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -339,6 +343,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "admin_group_for_meeting_id": 1,
                 },
                 "user/1": {
+                    "username": "no",
                     "meeting_user_ids": [11],
                     "can_change_own_password": False,
                     "is_physical_person": True,
@@ -551,7 +556,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -770,7 +775,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             {
                 "meeting/1": {"name": "test_foo"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                    "username": "no",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                 },
             }
         )

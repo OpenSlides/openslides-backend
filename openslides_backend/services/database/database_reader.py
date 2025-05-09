@@ -204,16 +204,17 @@ class DatabaseReader:
         mapped_fields: MappedFields,
         collection_result_part: dict[Id, PartialModel],
     ) -> None:
-        """Composes the result so that exactly the required fields and no None values are returned."""
+        """
+        Composes the result so that exactly the required fields are returned.
+        Normally this means no None values.
+        Exception: the mapped fields require the whole model.
+        """
         for row in db_result:
             id_ = row["id"]
 
-            if (
-                not mapped_fields.needs_whole_model
-                and mapped_fields.unique_fields
-                and id_ in collection_result_part
-            ):
-                model = collection_result_part[id_]
+            if not mapped_fields.needs_whole_model and mapped_fields.unique_fields:
+                if not (model := collection_result_part.get(id_, dict())):
+                    collection_result_part[id_] = model
                 for field in mapped_fields.unique_fields:
                     if row.get(field) is not None:
                         model[field] = row[field]

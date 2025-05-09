@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import (
     AssignmentCandidate,
@@ -11,7 +11,7 @@ from ....models.models import (
     PersonalNote,
     Speaker,
 )
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, fqid_from_collection_and_id

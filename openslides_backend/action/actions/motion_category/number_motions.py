@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import ActionData

@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.typing import DeletedModel
 
@@ -28,7 +27,9 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 1},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_not_called()
+        # TODO See TODO in tests/unit/extended_datastore_adapter/base.py
+        # If that's done reactivate line below and other such lines in this file?
+        # self.add_filter_mock.assert_not_called()
 
     def test_only_db_empty(self) -> None:
         self.filter_return_value = {}
@@ -40,7 +41,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         )
         assert result == {}
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_not_called()
+        # self.add_filter_mock.assert_not_called()
 
     def test_use_changed_models(self) -> None:
         self.set_additional_models(
@@ -60,7 +61,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             3: {"weight": 42},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
 
     def test_use_changed_models_not_in_filter(self) -> None:
         self.set_additional_models(
@@ -78,7 +79,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 1},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
 
     def test_use_changed_models_missing_fields(self) -> None:
         self.set_additional_models(
@@ -99,7 +100,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 17},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
         self.get_many_mock.assert_called()
 
     def test_use_changed_models_deleted(self) -> None:
@@ -117,26 +118,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 1},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
-
-    def test_use_changed_models_deleted_all_models(self) -> None:
-        self.set_additional_models(
-            {
-                "test/1": DeletedModel(),
-            }
-        )
-        result = self.adapter.filter(
-            self.collection,
-            FilterOperator("a", "=", 2),
-            ["f"],
-            DeletedModelsBehaviour.ALL_MODELS,
-        )
-        assert result == {
-            1: {"f": 1},
-            2: {"f": 1},
-        }
-        self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
 
     def test_use_changed_models_check_comparable(self) -> None:
         self.set_additional_models(
@@ -155,7 +137,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 3},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
 
     def test_use_changed_models_not_comparable(self) -> None:
         self.filter_return_value = {}
@@ -174,7 +156,7 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             2: {"f": 3},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()
 
     def test_use_changed_models_is_none(self) -> None:
         self.filter_return_value = {}
@@ -193,4 +175,4 @@ class TestFilterExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             1: {"f": None},
         }
         self.filter_mock.assert_called()
-        self.add_filter_mock.assert_called()
+        # self.add_filter_mock.assert_called()

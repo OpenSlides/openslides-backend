@@ -8,14 +8,14 @@ from typing import Any
 
 from gunicorn.app.base import BaseApplication
 
-from openslides_backend.datastore.reader.services import register_services
+# from openslides_backend.datastore.reader.services import register_services
 from openslides_backend.shared.interfaces.env import Env
 
 from .action.action_worker import gunicorn_post_request, gunicorn_worker_abort
 from .shared.env import Environment
 from .shared.interfaces.wsgi import WSGIApplication
 
-register_services()
+# register_services()
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".

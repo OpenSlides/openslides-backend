@@ -44,6 +44,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "locked_from_inside": True,
                 },
                 "committee/1": {
+                    "name": "Ent council",
                     "meeting_ids": [456],
                     "user_ids": [111],
                     "manager_ids": [111],
@@ -442,8 +443,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
+                "committee/1": {"name": "CoMtTe", "meeting_ids": [1]},
+                "committee/2": {"name": "KommmitTee", "meeting_ids": [2]},
                 "meeting/1": {
                     "committee_id": 1,
                     "is_active_in_organization_id": 1,
@@ -513,7 +514,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "committee_id": 2,
                 },
                 "group/1": {"name": "test default group", "meeting_id": 1},
-                "committee/2": {"meeting_ids": [1]},
+                "committee/2": {"name": "intern", "meeting_ids": [1]},
             }
         )
         response = self.request(

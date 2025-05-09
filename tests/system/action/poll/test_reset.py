@@ -155,6 +155,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
 
     @performance
     def test_reset_performance(self) -> None:
+        # TODO this needs a different idea
         self.prepare_users_and_poll(100)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)

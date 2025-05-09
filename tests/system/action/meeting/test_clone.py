@@ -1330,7 +1330,9 @@ class MeetingClone(BaseActionTestCase):
                 "language": "en",
             },
         )
-        everything = self.datastore.get_everything()
+        with get_new_os_conn() as conn:
+            ex_db = ExtendedDatabase(conn, self.logging, self.env)
+            everything = ex_db.get_everything()
         self.created_fqids.update(
             [
                 fqid_from_collection_and_id(collection, id_)
@@ -1380,7 +1382,9 @@ class MeetingClone(BaseActionTestCase):
                 "language": "en",
             },
         )
-        everything = self.datastore.get_everything()
+        with get_new_os_conn() as conn:
+            ex_db = ExtendedDatabase(conn, self.logging, self.env)
+            everything = ex_db.get_everything()
         self.created_fqids.update(
             [
                 fqid_from_collection_and_id(collection, id_)

@@ -16,6 +16,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
+# from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import ActionException, DatastoreException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
@@ -103,6 +104,7 @@ class ActionWorkerWriting:
         user_id: int,
         logging: LoggingModule,
         action_names: str,
+        # datastore: DatastoreService,
     ) -> None:
         self.user_id = user_id
         self.start_time = round(time())

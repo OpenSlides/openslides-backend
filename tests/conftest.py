@@ -24,6 +24,8 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     """applies the login and auth-service mocker
     truncates all database tables for initialization of tests
     """
+    # connection_pool = get_current_os_conn_pool()
+    # with connection_pool:
     login_patch.start()
     auth_http_adapter_patch.start()
     with get_new_os_conn() as conn:
@@ -39,7 +41,6 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
             )
             curs.execute(generate_sql_for_test_initiation(tablenames))
 
-    # Todo: Load example-data.json as preset. BUT: with this truncate version this is not possible, because they would be truncated
     yield {
         "login_patch": login_patch,
         "auth_http_adapter_patch": auth_http_adapter_patch,
@@ -48,7 +49,7 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     # teardown session
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
-            curs.execute(generate_remove_all_test_functions(tablenames))
+            curs.execute(generate_remove_all_test_functions())
     login_patch.stop()
     auth_http_adapter_patch.stop()
 

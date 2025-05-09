@@ -302,15 +302,17 @@ class ActionWorkerTest(BaseActionTestCase):
                 {"name": "test", "state": ActionWorkerState.RUNNING},
             )
 
-        self.datastore.write_without_events(
-            WriteRequest(
-                events=[
-                    Event(type=EventType.Delete, fqid=f"action_worker/{new_id}")
-                    for new_id in new_ids
-                ],
-                user_id=self.user_id,
-                locked_fields={},
+        with get_new_os_conn() as conn:
+            ex_db = ExtendedDatabase(conn, self.logging, self.env)
+            ex_db.write(
+                WriteRequest(
+                    events=[
+                        Event(type=EventType.Delete, fqid=f"action_worker/{new_id}")
+                        for new_id in new_ids
+                    ],
+                    user_id=self.user_id,
+                    locked_fields={},
+                )
             )
-        )
         for new_id in new_ids:
             self.assert_model_not_exists(f"action_worker/{new_id}")

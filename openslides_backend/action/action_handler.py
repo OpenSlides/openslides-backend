@@ -108,16 +108,18 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            self.user_id = user_id
-            self.internal = internal
+            with get_new_os_conn() as db_connection:
+                self.db_connection = db_connection
+                self.user_id = user_id
+                self.internal = internal
 
-            try:
-                payload_schema(payload)
-            except fastjsonschema.JsonSchemaException as exception:
-                raise ActionException(exception.message)
+                try:
+                    payload_schema(payload)
+                except fastjsonschema.JsonSchemaException as exception:
+                    raise ActionException(exception.message)
 
             with get_new_os_conn() as conn:
-                self.extended_db = ExtendedDatabase(conn, self.logging, self.env)
+                self.datastore = ExtendedDatabase(conn, self.logging, self.env)
                 results: ActionsResponseResults = []
                 if atomic:
                     results = self.execute_write_requests(self.parse_actions, payload)
@@ -140,18 +142,18 @@ class ActionHandler(BaseHandler):
                             results.append(error)
                         self.datastore.reset()
 
-            # execute cleanup methods
-            for on_success in self.on_success:
-                on_success()
+                # execute cleanup methods
+                for on_success in self.on_success:
+                    on_success()
 
-            # Return action result
-            self.logger.info("Request was successful. Send response now.")
-            return ActionsResponse(
-                status_code=HTTPStatus.OK.value,
-                success=True,
-                message="Actions handled successfully",
-                results=results,
-            )
+                # Return action result
+                self.logger.info("Request was successful. Send response now.")
+                return ActionsResponse(
+                    status_code=HTTPStatus.OK.value,
+                    success=True,
+                    message="Actions handled successfully",
+                    results=results,
+                )
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
         """Helper function to execute an internal action with user id -1."""
@@ -257,19 +259,19 @@ class ActionHandler(BaseHandler):
         action_data = deepcopy(action_payload_element["data"])
 
         try:
-            with self.datastore.get_database_context():
-                with make_span(self.env, "action.perform"):
-                    write_request, results = action.perform(
-                        action_data, self.user_id, internal=self.internal
-                    )
+            # with self.datastore.get_database_context():
+            with make_span(self.env, "action.perform"):
+                write_request, results = action.perform(
+                    action_data, self.user_id, internal=self.internal
+                )
             if write_request:
                 action.validate_write_request(write_request)
 
-                # add locked_fields to request
-                write_request.locked_fields = self.datastore.locked_fields
-                # reset locked fields, but not changed models - these might be needed
-                # by another action
-                self.datastore.reset(hard=False)
+                # # add locked_fields to request
+                # write_request.locked_fields = self.datastore.locked_fields
+                # # reset locked fields, but not changed models - these might be needed
+                # # by another action
+                # self.datastore.reset(hard=False)
 
             # add on_success routine
             if on_success := action.get_on_success(action_data):

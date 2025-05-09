@@ -1,16 +1,14 @@
 from typing import Any
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-
 from ...models.models import Model
-from ...services.datastore.interface import DatastoreService
+from ...services.database.interface import Database
 from ...shared.filters import FilterOperator
 from ..generics.create import CreateAction
 from ..util.typing import ActionResultElement
 
 
 class SequentialNumbersMixin(CreateAction):
-    datastore: DatastoreService
+    datastore: Database
     model: Model
 
     def get_sequential_number(self, meeting_id: int) -> int:
@@ -23,7 +21,6 @@ class SequentialNumbersMixin(CreateAction):
             collection=self.model.collection,
             filter=filter,
             field="sequential_number",
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
         )
         number = 1 if number is None else number + 1
         return number

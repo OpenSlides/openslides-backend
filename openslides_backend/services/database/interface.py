@@ -2,6 +2,9 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Protocol
 
+from openslides_backend.shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+)
 from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
@@ -28,6 +31,7 @@ class Database(Protocol):
     """
 
     changed_models: ModelMap
+    locked_fields: dict[str, CollectionFieldLock]
 
     @abstractmethod
     def apply_changed_model(
@@ -35,7 +39,9 @@ class Database(Protocol):
     ) -> None: ...
 
     @abstractmethod
-    def get_changed_model(self, fqid: FullQualifiedId) -> PartialModel: ...
+    def get_changed_model(
+        self, collection_or_fqid: str, id_: int | None = None
+    ) -> PartialModel: ...
 
     @abstractmethod
     def get(

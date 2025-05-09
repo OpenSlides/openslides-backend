@@ -1,5 +1,5 @@
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.database.interface import Database
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_current_os_conn_pool,
@@ -15,7 +15,7 @@ class BaseServiceProvider:
     """
 
     services: Services
-    datastore: DatastoreService
+    datastore: Database
     auth: AuthenticationService
     media: MediaService
     vote: VoteService
@@ -28,7 +28,7 @@ class BaseServiceProvider:
     def __init__(
         self,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         logging: LoggingModule,
     ) -> None:
         self.services = services

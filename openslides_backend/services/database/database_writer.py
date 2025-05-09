@@ -272,11 +272,12 @@ class DatabaseWriter:
             for field_name, value in event_fields.items()
             if (field := model_registry[collection]().get_field(field_name))
             if not field.is_view_field
+            if not field_name == "organization_id"
         }, {
             field_name: field
             for field_name in event_fields
             if (field := model_registry[collection]().get_field(field_name))
-            and field.is_primary
+            and field.write_fields
             if any(
                 isinstance(field, type_)
                 for type_ in [RelationListField, GenericRelationListField]

@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm

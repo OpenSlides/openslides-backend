@@ -1,16 +1,16 @@
 import json
 from typing import Any, Self
 
-from openslides_backend.datastore.shared.postgresql_backend import (
-    EVENT_TYPE,
-    ListUpdatesDict,
-)
-from openslides_backend.datastore.shared.util import (
+from openslides_backend.services.database.event_types import EVENT_TYPE
+from openslides_backend.shared.interfaces.write_request import ListUpdatesDict
+from openslides_backend.shared.patterns import (
+    Field,
+    FullQualifiedId,
     InvalidKeyFormat,
     assert_is_field,
     assert_is_fqid,
+    is_reserved_field,
 )
-from openslides_backend.shared.patterns import Field, FullQualifiedId, is_reserved_field
 from openslides_backend.shared.typing import Model
 
 
@@ -116,20 +116,12 @@ class DeleteEvent(BaseEvent):
         super().__init__(fqid, None)
 
 
-class RestoreEvent(BaseEvent):
-    type = EVENT_TYPE.RESTORE
-
-    def __init__(self, fqid: FullQualifiedId, data: Any = None) -> None:
-        super().__init__(fqid, None)
-
-
 EVENT_TYPE_TRANSLATION = {
     EVENT_TYPE.CREATE: CreateEvent,
     EVENT_TYPE.UPDATE: UpdateEvent,
     EVENT_TYPE.DELETE_FIELDS: DeleteFieldsEvent,
     EVENT_TYPE.LIST_FIELDS: ListUpdateEvent,
     EVENT_TYPE.DELETE: DeleteEvent,
-    EVENT_TYPE.RESTORE: RestoreEvent,
 }
 
 

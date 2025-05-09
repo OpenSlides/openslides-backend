@@ -1,3 +1,4 @@
+# from collections import defaultdict
 from openslides_backend.shared.exceptions import InvalidFormat
 from openslides_backend.shared.patterns import Collection, Field, FullQualifiedId
 
@@ -11,21 +12,24 @@ class MappedFields:
     `needs_whole_model`, all other fields have to be set by the user.
     """
 
-    per_fqid: dict[FullQualifiedId, list[Field]]
+    # per_fqid: dict[FullQualifiedId, list[Field]]
     unique_fields: list[Field]
     collections: list[Collection]
     fqids: list[FullQualifiedId]
     needs_whole_model: bool
 
     def __init__(self, mapped_fields: list[Field] = []) -> None:
+        # self.per_fqid = defaultdict(list)
         self.validate_mapped_fields(mapped_fields)
         self.unique_fields = mapped_fields
         self.collections = []
         self.post_init()
 
     def post_init(self) -> None:
+        # self.fqids = list(self.per_fqid.keys())
         self.needs_whole_model = (
             len(self.unique_fields) == 0
+            # or any(len(fields) == 0 for fields in self.per_fqid.values())
             or len(self.unique_fields) > MAX_UNIQUE_FIELDS_PER_QUERY
         )
 

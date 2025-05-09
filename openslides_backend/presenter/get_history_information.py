@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import PermissionDenied
 from ..shared.schema import required_fqid_schema, schema_version
 from .base import BasePresenter

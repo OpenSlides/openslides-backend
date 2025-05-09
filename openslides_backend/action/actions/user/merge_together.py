@@ -1,12 +1,12 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
