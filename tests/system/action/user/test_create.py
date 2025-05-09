@@ -198,7 +198,11 @@ class UserCreateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "structure_level_ids": [31],
                 },
-                "user/222": {"meeting_ids": [1], "meeting_user_ids": [1]},
+                "user/222": {
+                    "username": "timtari",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [1],
+                },
                 "meeting_user/1": {"meeting_id": 1, "user_id": 222},
                 "group/11": {"meeting_id": 1},
                 "structure_level/31": {"meeting_id": 1},
@@ -253,7 +257,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"name": "C1", "meeting_ids": [1]},
                 "meeting/1": {"committee_id": 1},
-                "user/222": {"meeting_ids": [1]},
+                "user/222": {"username": "timtari", "meeting_ids": [1]},
             }
         )
         response = self.request(
@@ -286,7 +290,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_invalid_group_id(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1, 2]},
+                "committee/1": {"name": "minish council", "meeting_ids": [1, 2]},
                 "meeting/1": {"committee_id": 1},
                 "meeting/2": {
                     "is_active_in_organization_id": ONE_ORGANIZATION_ID,
@@ -621,7 +625,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "committee_ids": [60],
                 },
                 "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
-                "committee/60": {"meeting_ids": [1, 4]},
+                "committee/60": {"name": "minish council", "meeting_ids": [1, 4]},
             }
         )
 
@@ -1222,8 +1226,8 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
+                "user/2": {"username": "timtari", "is_active": True},
+                "user/3": {"username": "timtari", "is_active": True},
             }
         )
         response = self.request(
@@ -1342,6 +1346,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/222": {
+                    "username": "timtari",
                     "committee_management_ids": [1, 2],
                 },
                 "group/22": {"meeting_id": 2},

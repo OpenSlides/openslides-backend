@@ -8,16 +8,12 @@ from unittest.mock import MagicMock, _patch
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 
-from openslides_backend.datastore.reader.services import register_services
-from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.services import ShutdownService
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.interface import DatastoreService
-from openslides_backend.services.datastore.with_database_context import (
-    with_database_context,
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
 )
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import ActionException, DatastoreException
@@ -47,7 +43,7 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    datastore: DatastoreService
+    # datastore: Database
     vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
@@ -64,7 +60,7 @@ class BaseSystemTestCase(TestCase):
     init_with_login: bool = True
 
     def setUp(self) -> None:
-        register_services()
+        # register_services()
         self.app = self.get_application()
         self.logger = cast(MagicMock, self.app.logger)
         self.services = self.app.services
@@ -72,7 +68,6 @@ class BaseSystemTestCase(TestCase):
         self.auth = self.services.authentication()
         self.media = self.services.media()
         self.vote_service = cast(TestVoteService, self.services.vote())
-        self.datastore = self.services.datastore()
         self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()
@@ -89,11 +84,18 @@ class BaseSystemTestCase(TestCase):
                 },
             )
             self.create_model(
+                "theme/1",
+                {
+                    "name": "OpenSlides Organization",
+                },
+            )
+            self.create_model(
                 ONE_ORGANIZATION_FQID,
                 {
                     "name": "OpenSlides Organization",
                     "default_language": "en",
                     "user_ids": [1],
+                    "theme_id": 1,
                 },
             )
         self.client = self.create_client(self.update_vote_service_auth_data)
@@ -122,7 +124,11 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-        injector.get(ShutdownService).shutdown()
+
+        # TODO: Does something equivalent to this old code
+        #  need to be done here?
+        # injector.get(ShutdownService).shutdown()
+
         super().tearDown()
 
     @staticmethod
@@ -199,14 +205,16 @@ class BaseSystemTestCase(TestCase):
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
+        with get_new_os_conn() as conn:  # TODO I think this can be still used directly from the self variable
+            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
 
     def get_create_events(
         self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
@@ -243,7 +251,8 @@ class BaseSystemTestCase(TestCase):
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
 
     def check_auth_mockers_started(self) -> bool:
         if (
@@ -263,23 +272,22 @@ class BaseSystemTestCase(TestCase):
             except ActionException as e:
                 raise JsonSchemaException(e.message)
 
-    @with_database_context
     def get_model(self, fqid: str) -> dict[str, Any]:
-        model = self.datastore.get(
-            fqid,
-            mapped_fields=[],
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
-            lock_result=False,
-            use_changed_models=False,
-        )
+        with get_new_os_conn() as conn:
+            model = ExtendedDatabase(conn, MagicMock(), MagicMock()).get(
+                fqid,
+                mapped_fields=[],
+                lock_result=False,
+                use_changed_models=False,
+            )
         self.assertTrue(model)
         self.assertEqual(model.get("id"), id_from_fqid(fqid))
         return model
 
     def assert_model_exists(
-        self, fqid: str, fields: dict[str, Any] | None = None
+        self, fqid: str, fields: dict[str, Any] = dict()
     ) -> dict[str, Any]:
-        return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": False})
+        return self._assert_fields(fqid, fields)
 
     def assert_model_not_exists(self, fqid: str) -> None:
         with self.assertRaises(DatastoreException):
@@ -315,11 +323,11 @@ class BaseSystemTestCase(TestCase):
                     f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'None')} is not equal default value {field.default}.",
                 )
 
-    @with_database_context
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
-        db_count = self.datastore.count(
-            collection,
-            FilterOperator("meeting_id", "=", meeting_id),
-            lock_result=False,
-        )
-        self.assertEqual(db_count, count)
+        with get_new_os_conn() as conn:
+            db_count = ExtendedDatabase(conn, MagicMock(), MagicMock()).count(
+                collection,
+                FilterOperator("meeting_id", "=", meeting_id),
+                lock_result=False,
+            )
+            self.assertEqual(db_count, count)

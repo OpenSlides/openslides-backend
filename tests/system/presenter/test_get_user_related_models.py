@@ -21,6 +21,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "committee/1": {"name": "test"},
                 "user/1": {
+                    "username": "na",
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
@@ -40,14 +41,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "committee/1": {"name": "test", "user_ids": [1, 2, 3]},
                 "user/1": {
+                    "username": "na",
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
                 "user/2": {
+                    "username": "na",
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
                 "user/3": {
+                    "username": "na",
                     "committee_ids": [1],
                 },
             }
@@ -72,6 +76,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/2": {"name": "test2", "user_ids": [1]},
                 "committee/3": {"name": "test3", "user_ids": [1]},
                 "user/1": {
+                    "username": "na",
                     "committee_ids": [1, 2, 3],
                     "committee_management_ids": [1, 2],
                 },
@@ -93,8 +98,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meeting(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/1": {
+                    "username": "na",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [1],
+                },
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -140,9 +149,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meetings_more_users(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
-                "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/1": {
+                    "username": "na",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [1],
+                },
+                "user/2": {
+                    "username": "na",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -213,9 +230,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
-                "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/1": {
+                    "username": "na",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [1],
+                },
+                "user/2": {
+                    "username": "na",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -276,8 +301,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_no_permissions(self) -> None:
         self.set_models(
             {
-                "user/1": {"organization_management_level": None, "meeting_ids": [1]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/1": {
+                    "username": "na",
+                    "organization_management_level": None,
+                    "meeting_ids": [1],
+                },
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -299,8 +328,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/2": {"meeting_user_ids": [1]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/2": {"username": "na", "meeting_user_ids": [1]},
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -332,8 +361,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/2": {"meeting_user_ids": [1]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/2": {"username": "na", "meeting_user_ids": [1]},
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
@@ -354,8 +383,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/2": {"meeting_user_ids": [1]},
-                "committee/1": {"meeting_ids": [1]},
+                "user/2": {"username": "na", "meeting_user_ids": [1]},
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_archived_in_organization_id": 1,
@@ -390,6 +419,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {
+                    "username": "na",
                     "organization_management_level": None,
                     "meeting_ids": [1],
                     "meeting_user_ids": [1],
@@ -399,7 +429,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "user_id": 1,
                     "group_ids": [3],
                 },
-                "committee/1": {"meeting_ids": [1]},
+                "committee/1": {"name": "ha", "meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "default_group_id": 3,
@@ -421,7 +451,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                    "username": "na",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 }
             }
         )
@@ -441,6 +472,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "committee/1": {"name": "test"},
                 "user/1": {
+                    "username": "na",
                     "organization_management_level": None,
                     "committee_ids": [1],
                     "committee_management_ids": [],
@@ -457,6 +489,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/2": {"name": "test2", "user_ids": [1]},
                 "committee/3": {"name": "test3", "user_ids": [1]},
                 "user/1": {
+                    "username": "na",
                     "committee_ids": [1],
                     "committee_management_ids": [1, 2],
                 },
@@ -473,10 +506,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                    "username": "na",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 },
                 "user/2": {
-                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                    "username": "na",
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 },
             }
         )
@@ -490,9 +525,13 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_with_locked_meetings(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [2]},
-                "user/2": {"meeting_ids": [1, 2, 3], "meeting_user_ids": [1, 2, 3]},
-                "committee/1": {"meeting_ids": [1, 2, 3]},
+                "user/1": {"username": "na", "meeting_ids": [2]},
+                "user/2": {
+                    "username": "na",
+                    "meeting_ids": [1, 2, 3],
+                    "meeting_user_ids": [1, 2, 3],
+                },
+                "committee/1": {"name": "ha", "meeting_ids": [1, 2, 3]},
                 **{
                     key: cast(dict[str, Any], value)
                     for id_ in [1, 2, 3]

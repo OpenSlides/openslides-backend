@@ -78,10 +78,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/22": {
+                    "username": "username_Xcdfgee",
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
                 "user/23": {
+                    "username": "username_Xcdfgee",
                     "meeting_ids": [1],
                     "meeting_user_ids": [223],
                     "committee_ids": [1],
@@ -114,6 +116,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/22",
             {
+                "username": "username_Xcdfgee",
                 "committee_management_ids": [2],
                 "committee_ids": [1, 2],
                 "meeting_ids": [1],
@@ -169,10 +172,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_user_ids": [222, 223],
                 },
                 "user/22": {
+                    "username": "username_Xcdfgee",
                     "meeting_ids": [1],
                     "meeting_user_ids": [223],
                 },
                 "user/23": {
+                    "username": "username_Xcdfgee",
                     "meeting_ids": [1],
                     "meeting_user_ids": [223],
                 },
@@ -388,6 +393,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"name": "C1", "user_ids": [111]},
                 "user/111": {
+                    "username": "username_Xcdfgee",
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
@@ -446,6 +452,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/222": {"meeting_user_ids": [112], "meeting_id": 22},
                 "group/333": {"meeting_user_ids": [], "meeting_id": 33},
                 "user/123": {
+                    "username": "username_Xcdfgee",
                     "meeting_ids": [11, 22],
                     "committee_ids": [1, 2],
                     "committee_management_ids": [1, 2],
@@ -534,7 +541,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("username") == "username_srtgb123"
 
     def test_username_already_given(self) -> None:
-        self.create_model("user/222")
+        self.create_model("user/222", {"username": "username_Xcdfgee"})
         response = self.request("user.update", {"id": 222, "username": "admin"})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -542,8 +549,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_member_number_already_given(self) -> None:
-        self.create_model("user/221", {"member_number": "abcdefghij"})
-        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        self.create_model(
+            "user/221", {"username": "username_Xcdfgee", "member_number": "abcdefghij"}
+        )
+        self.create_model(
+            "user/222", {"username": "username_Xcdfgee", "member_number": "klmnopqrst"}
+        )
         response = self.request(
             "user.update", {"id": 222, "member_number": "abcdefghij"}
         )
@@ -554,7 +565,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_clear_member_number(self) -> None:
-        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        self.create_model(
+            "user/222", {"username": "username_Xcdfgee", "member_number": "klmnopqrst"}
+        )
         response = self.request("user.update", {"id": 222, "member_number": None})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/222", {"member_number": None})
@@ -1884,9 +1897,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
-                "user/4": {"is_active": False},
+                "user/2": {"username": "username_Xcdfgee", "is_active": True},
+                "user/3": {"username": "username_Xcdfge", "is_active": True},
+                "user/4": {"username": "username_Xcdfe", "is_active": False},
             }
         )
         response = self.request(
@@ -1906,9 +1919,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 4},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
-                "user/4": {"is_active": False},
+                "user/2": {"username": "username_Xcdfgee", "is_active": True},
+                "user/3": {"username": "username_Xcdfge", "is_active": True},
+                "user/4": {"username": "username_Xcdfe", "is_active": False},
             }
         )
         response = self.request(
@@ -1994,6 +2007,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group/22": {"meeting_id": 2, "meeting_user_ids": [2]},
                 "group/33": {"meeting_id": 3, "meeting_user_ids": [3, 12]},
                 "user/222": {
+                    "username": "somebody",
                     "meeting_ids": [1, 2, 3],
                     "committee_ids": [1, 2, 3],
                     "meeting_user_ids": [1, 2, 3],
@@ -2014,6 +2028,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "group_ids": [33],
                 },
                 "user/223": {
+                    "username": "ain't",
                     "meeting_ids": [1, 3],
                     "committee_ids": [1, 3],
                     "committee_management_ids": [1, 3],
@@ -2282,7 +2297,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "structure_level/31": {
                     "meeting_id": 1,
                 },
-                "committee/78": {"meeting_ids": [1]},
+                "committee/78": {
+                    "name": "69. yearly kumquat gatherer meetup",
+                    "meeting_ids": [1],
+                },
             }
         )
         response = self.request(
@@ -2305,6 +2323,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {
+                    "username": "gonna",
                     "committee_management_ids": [],
                 },
             }
@@ -2324,8 +2343,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "user/222": {"meeting_user_ids": [42]},
+                "committee/1": {"name": "comm", "meeting_ids": [1]},
+                "user/222": {"username": "jaja", "meeting_user_ids": [42]},
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
@@ -2358,8 +2377,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/3": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "user/222": {"meeting_user_ids": [42]},
+                "committee/1": {"name": "comm", "meeting_ids": [1]},
+                "user/222": {"username": "felix", "meeting_user_ids": [42]},
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
@@ -2450,7 +2469,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_user_ids": [5555],
                     "committee_id": 1,
                 },
-                "committee/1": {"meeting_ids": [4, 5]},
+                "committee/1": {"name": "action", "meeting_ids": [4, 5]},
                 "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
                 "speaker/24": {
                     "meeting_user_id": 4444,
@@ -2508,7 +2527,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_user_ids": [4444],
                     "committee_id": 1,
                 },
-                "committee/1": {"meeting_ids": [4]},
+                "committee/1": {"name": "stray cats", "meeting_ids": [4]},
                 "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
                 "speaker/24": {
                     "meeting_user_id": 4444,
@@ -2549,11 +2568,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
+                    "username": "boady",
                     "poll_candidate_ids": [1],
                     "option_ids": [1],
                     "vote_ids": [1, 2],
                 },
-                "user/2": {"delegated_vote_ids": [2]},
+                "user/2": {"username": "john", "delegated_vote_ids": [2]},
                 "meeting/1": {
                     "poll_ids": [1],
                     "option_ids": [1, 2],

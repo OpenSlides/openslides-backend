@@ -3,7 +3,7 @@ from typing import Any
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
 from ....models.models import Poll
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction

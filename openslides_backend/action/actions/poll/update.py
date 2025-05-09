@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException

@@ -16,8 +16,8 @@ from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.with_database_context import (
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.with_database_context import (
     with_database_context,
 )
 from openslides_backend.shared.exceptions import AuthenticationException
@@ -141,9 +141,12 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
-        Useful when an action is just execute for the end result and not for testing it.
+        Useful when an action is just executed for the end result and not for testing it.
         """
         ActionClass = actions_map[action_name]
+        # # with self.datastore.get_database_context():
+        # with get_new_os_conn() as conn:
+        #     self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
         action = ActionClass(
             self.services,
             self.datastore,
@@ -152,10 +155,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             MagicMock(),
         )
         action_data = deepcopy(data)
-        with self.datastore.get_database_context():
-            write_request, result = action.perform(
-                [action_data], user_id, internal=True
-            )
+        write_request, result = action.perform([action_data], user_id, internal=True)
         if write_request:
             self.datastore.write(write_request)
         self.datastore.reset()

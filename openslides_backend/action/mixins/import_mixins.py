@@ -15,7 +15,7 @@ from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
-from ...shared.interfaces.services import DatastoreService
+from ...shared.interfaces.services import Database
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ...shared.schema import required_id_schema
@@ -57,7 +57,7 @@ class ResultType(Enum):
 class Lookup:
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         collection: str,
         name_entries: list[tuple[SearchFieldType, dict[str, Any]]],
         field: SearchFieldType = "name",
@@ -317,7 +317,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
     ) -> list[ImportRow]:
         """The self.rows will be deepcopied, flattened and returned, without
         changes on the self.rows.
-        This is necessary for using the data in the executution of actions.
+        This is necessary for using the data in the execution of actions.
         The requests response should be given with the unchanged self.rows.
         Parameter:
         hook_method:
@@ -351,7 +351,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
                 store_id = instance["id"]
                 if self.import_state == ImportState.ERROR:
                     continue
-                self.datastore.write_without_events(
+                self.datastore.write(
                     WriteRequest(
                         events=[
                             Event(
@@ -409,7 +409,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
-        self.datastore.write_without_events(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(

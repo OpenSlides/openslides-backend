@@ -1,18 +1,18 @@
 from enum import Enum
-from typing import cast
+from typing import Self, cast
 
 from .base_classes import VerbosePermission
 
 
 class CompareRightLevel(str, VerbosePermission, Enum):
     @classmethod
-    def _missing_(cls, _: object) -> "CompareRightLevel":
+    def _missing_(cls, _: object) -> Self:
         """
         Always return the first enum item if no matching one was found. -> NO_RIGHT must always be listed first.
         """
         return cls(list(cls)[0])
 
-    def check_instance(self, other: str) -> "CompareRightLevel":
+    def check_instance(self, other: str) -> Self:
         """
         Check that only objects of the same class are compared with each other and cast it
         accordingly. (Supertype `str` enforces that the initial argument type is also `str`)
@@ -21,7 +21,7 @@ class CompareRightLevel(str, VerbosePermission, Enum):
             raise TypeError(
                 f"The comparison expect an {type(self)}-type and no string!"
             )
-        return cast("CompareRightLevel", other)
+        return cast(Self, other)
 
     @property
     def weight(self) -> int:

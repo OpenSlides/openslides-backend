@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.models.models import MeetingUser
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import required_id_schema, str_list_schema
