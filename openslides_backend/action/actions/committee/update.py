@@ -83,7 +83,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                         *db_inst.get("all_parent_ids", []),
                     ]
                 }
-                # all_other_ids.update([parent_id for instance in instances.values() if (parent_id:=instance.get("parent_id"))])
                 all_other_ids.difference_update(db_instances)
                 if all_other_ids:
                     db_instances.update(
@@ -118,8 +117,8 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 ]
                 ind = 0
                 while ind < len(nodes):
-                    id_, all_parent_ids, write = nodes[ind]
-                    if write:
+                    id_, all_parent_ids, should_write = nodes[ind]
+                    if should_write:
                         if id_ not in instances:
                             instances[id_] = {
                                 "id": id_,
@@ -129,7 +128,11 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                             instances[id_]["all_parent_ids"] = all_parent_ids
                     all_parent_ids = [*all_parent_ids, id_]
                     nodes.extend(
-                        (child_id, all_parent_ids, write or child_id in instances)
+                        (
+                            child_id,
+                            all_parent_ids,
+                            should_write or child_id in instances,
+                        )
                         for child_id in relevant_tree[id_][1]
                     )
                     ind += 1
