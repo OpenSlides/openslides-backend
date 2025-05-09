@@ -901,7 +901,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "The external_id of the committee is not unique.", response.json["message"]
         )
 
-    def test_update_update_parent_id(self) -> None:
+    def test_update_parent_id(self) -> None:
         self.create_committee(100)
         self.create_committee(200)
         response = self.request(
