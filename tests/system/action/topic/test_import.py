@@ -6,9 +6,9 @@ from tests.system.action.topic.test_json_upload import TopicJsonUploadForUseInIm
 class TopicJsonImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(22)
         self.set_models(
             {
-                "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "topic",

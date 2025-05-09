@@ -5,6 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "projector/111": {
@@ -21,7 +22,6 @@ class ProjectorDelete(BaseActionTestCase):
                     "reference_projector_id": 113,
                     "default_projector_motion_ids": [111],
                     "projector_ids": [111, 113],
-                    "is_active_in_organization_id": 1,
                 },
             }
         )

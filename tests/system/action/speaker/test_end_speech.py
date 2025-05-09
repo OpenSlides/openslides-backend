@@ -10,11 +10,11 @@ from tests.system.action.base import BaseActionTestCase
 class SpeakerEndSpeachTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_couple_countdown": True,
                 "list_of_speakers_countdown_id": 11,
-                "is_active_in_organization_id": 1,
                 "meeting_user_ids": [7],
             },
             "projector_countdown/11": {

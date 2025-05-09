@@ -16,10 +16,10 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
         self.assert_status_code(response, 403)
 
     def test_delete_history_information_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "organization/1": {"name": "Orga", "enable_electronic_voting": True},
-                "meeting/1": {"name": "Meeting", "is_active_in_organization_id": 1},
                 "assignment/1": {
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
