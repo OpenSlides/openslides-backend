@@ -47,9 +47,6 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
             self.import_state = ImportState.ERROR
 
         if self.import_state != ImportState.ERROR:
-            # for row in self.rows:
-            #     if row["data"].get("parent", {}).get("info") == ImportState.WARNING:
-            #         del row["data"]["parent"]
             rows = self.flatten_copied_object_fields(self.handle_relation_fields)
             self.create_models(rows)
 
@@ -99,38 +96,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     entry.pop("parent")
         return entry
 
-    def sort_by_parents(self, rows: list[ImportRow]) -> list[ImportRow]:
-        name_to_ind = {row["data"]["name"]: ind for ind, row in enumerate(rows)}
-        tree_root: dict[int, dict[str, Any]] = {
-            ind: {"row": row, "parent": row["data"].get("parent"), "children": []}
-            for ind, row in enumerate(rows)
-        }
-        tree_branches: dict[int, dict[str, Any]] = {}
-        for ind in range(len(rows)):
-            if (parent_name := tree_root[ind]["parent"]) and isinstance(
-                parent_ind := name_to_ind.get(parent_name), int
-            ):
-                tree_branches[ind] = tree_root[ind]
-                del tree_root[ind]
-                if parent_ind in tree_root:
-                    tree_root[parent_ind]["children"].append(ind)
-                else:
-                    tree_branches[parent_ind]["children"].append(ind)
-        sorted_amount = len(tree_root)
-        sorted_list: list[ImportRow] = [val["row"] for val in tree_root.values()]
-        children: list[int] = [
-            child for val in tree_root.values() for child in val["children"]
-        ]
-        while children:
-            sorted_list.extend([tree_branches[ind]["row"] for ind in children])
-            sorted_amount += len(children)
-            children = [
-                child for ind in children for child in tree_branches[ind]["children"]
-            ]
-        return sorted_list
-
     def create_models(self, rows: list[ImportRow]) -> None:
-        # rows = self.sort_by_parents(rows)
         # create tags & update row data
         create_tag_data: list[dict[str, Any]] = []
         for row in rows:

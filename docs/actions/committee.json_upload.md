@@ -41,7 +41,8 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
 - `parent`:
   - `done`: The committee was found in the datastore.
   - `new`: The committee will be newly created as part of this import.
-  - `error`: Committee could not be identified or there is a parentage circle.
+  - `warning`: Committee could not be identified and therefore the field will be skipped.
+  - `error`: There is a parentage circle.
 - `meeting_admins`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.

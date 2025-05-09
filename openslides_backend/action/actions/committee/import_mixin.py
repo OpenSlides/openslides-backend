@@ -52,7 +52,8 @@ class CommitteeImportMixin(Action):
             for row in rows
             if row["data"]["name"]["info"] != ImportState.ERROR
             and row["data"].get("parent")
-            and row["data"].get("parent", {}).get("info") != ImportState.ERROR
+            and row["data"].get("parent", {}).get("info")
+            in [ImportState.NEW, ImportState.DONE]
         }
         has_error = False
         if len(new_relations):

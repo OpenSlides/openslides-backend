@@ -143,20 +143,20 @@ class CommitteeJsonUpload(
                 if parent in self.names:
                     entry["parent"] = {"value": parent, "info": ImportState.NEW}
                 else:
-                    row_state = ImportState.ERROR
                     entry["parent"] = {
-                        "value": parent,
-                        "info": ImportState.ERROR,
+                        "value": "",
+                        "info": ImportState.WARNING,
                     }
-                    messages.append("Error: Parent committee not found.")
+                    messages.append(
+                        f"Could not identify parent: Name '{parent}' not found, the field will therefore be ignored."
+                    )
             elif result == ResultType.FOUND_MORE_IDS:
-                row_state = ImportState.ERROR
                 entry["parent"] = {
-                    "value": parent,
-                    "info": ImportState.ERROR,
+                    "value": "",
+                    "info": ImportState.WARNING,
                 }
                 messages.append(
-                    "Error: Found multiple committees with the same name as the parent."
+                    f"Could not identify parent: Name '{parent}' found multiple times, the field will therefore be ignored."
                 )
 
         if not entry.get("meeting_name"):

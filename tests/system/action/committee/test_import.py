@@ -1094,3 +1094,27 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "all_child_ids": None,
             },
         )
+
+    def test_json_upload_parent_not_found(self) -> None:
+        self.json_upload_parent_not_found()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/5",
+            {
+                "parent_id": None,
+                "name": "National conference",
+            },
+        )
+
+    def test_json_upload_parent_multiple_found(self) -> None:
+        self.json_upload_parent_multiple_found()
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "parent_id": None,
+                "name": "Regional council",
+                "child_ids": [3],
+                "all_child_ids": [3, 4],
+            },
+        )

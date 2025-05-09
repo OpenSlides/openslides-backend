@@ -43,9 +43,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = list(super().get_updated_instances(action_data))
-        # Action data is an iterable with exactly one item
         if action_data:
-            # instance = next(iter(action_data))
             instances: dict[int, dict[str, Any]] = {
                 instance["id"]: instance for instance in action_data
             }
@@ -62,8 +60,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 }
             )
             if parent_change_ids:
-                # TODO: Why doesn't this deliver the data of newly created models?
-                # See import tests
                 db_instances = self.datastore.get_many(
                     [
                         GetManyRequest(

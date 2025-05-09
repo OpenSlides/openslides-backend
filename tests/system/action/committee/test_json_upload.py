@@ -720,71 +720,6 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.create_committee(3, parent_id=2, name="County council")
         self.create_committee(4, parent_id=3, name="District council")
 
-    def test_json_upload_parent_not_found(self) -> None:
-        self.create_committees_for_parent_tests()
-        response = self.request(
-            "committee.json_upload",
-            {
-                "data": [
-                    {
-                        "name": "National conference",
-                        "parent": "National",
-                    },
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        assert self.get_row(response) == {
-            "data": {
-                "name": {
-                    "info": ImportState.NEW,
-                    "value": "National conference",
-                },
-                "parent": {
-                    "info": ImportState.ERROR,
-                    "value": "National",
-                },
-            },
-            "messages": [
-                "Error: Parent committee not found.",
-            ],
-            "state": ImportState.ERROR,
-        }
-
-    def test_json_upload_parent_multiple_found(self) -> None:
-        self.create_committees_for_parent_tests()
-        self.create_committee(5, name="National council")
-        response = self.request(
-            "committee.json_upload",
-            {
-                "data": [
-                    {
-                        "name": "National conference",
-                        "parent": "National council",
-                    },
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        assert self.get_row(response) == {
-            "data": {
-                "name": {
-                    "info": ImportState.NEW,
-                    "value": "National conference",
-                },
-                "parent": {
-                    "info": ImportState.ERROR,
-                    "value": "National council",
-                },
-            },
-            "messages": [
-                "Error: Found multiple committees with the same name as the parent.",
-            ],
-            "state": ImportState.ERROR,
-        }
-
     def test_json_upload_parent_circle(self) -> None:
         self.create_committees_for_parent_tests()
         response = self.request(
@@ -1328,9 +1263,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     {
                         "name": "four",
                     },
-                    {
-                        "name": "five",
-                    },
+                    {"name": "five", "parent": "fourhundredandtwenty"},
                     {
                         "name": "six",
                         "parent": "five",
@@ -1351,7 +1284,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
         self.assert_parents_test_result(response)
 
     def assert_parents_test_result(self, response: Response) -> None:
@@ -1430,8 +1363,14 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "info": ImportState.NEW,
                     "value": "five",
                 },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
             },
-            "messages": [],
+            "messages": [
+                "Could not identify parent: Name 'fourhundredandtwenty' not found, the field will therefore be ignored."
+            ],
             "state": ImportState.NEW,
         }
         assert self.get_row(response, 6) == {
@@ -1521,13 +1460,14 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     },
                     {
                         "name": "'mittee b",
+                        "parent": "'nother 'mittee",
                         "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
                     },
                 ]
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
         assert self.get_row(response) == {
             "data": {
                 "id": 3,
@@ -1592,8 +1532,84 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "data": {
                 "id": 11,
                 "name": {"id": 11, "info": ImportState.DONE, "value": "'mittee b"},
+                "parent": {"value": "", "info": ImportState.WARNING},
                 "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
             },
-            "messages": [],
+            "messages": [
+                "Could not identify parent: Name ''nother 'mittee' not found, the field will therefore be ignored."
+            ],
+            "state": ImportState.DONE,
+        }
+
+    def json_upload_parent_not_found(self) -> None:
+        self.create_committee(name="National council")
+        self.create_committee(2, name="Regional council")
+        self.create_committee(3, parent_id=2, name="County council")
+        self.create_committee(4, parent_id=3, name="District council")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "National conference",
+                        "parent": "National",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "National conference",
+                },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
+            },
+            "messages": [
+                "Could not identify parent: Name 'National' not found, the field will therefore be ignored.",
+            ],
+            "state": ImportState.NEW,
+        }
+
+    def json_upload_parent_multiple_found(self) -> None:
+        self.create_committee(name="National council")
+        self.create_committee(2, name="Regional council")
+        self.create_committee(3, parent_id=2, name="County council")
+        self.create_committee(4, parent_id=3, name="District council")
+        self.create_committee(5, name="National council")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "Regional council",
+                        "parent": "National council",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        assert self.get_row(response) == {
+            "data": {
+                "id": 2,
+                "name": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "Regional council",
+                },
+                "parent": {
+                    "info": ImportState.WARNING,
+                    "value": "",
+                },
+            },
+            "messages": [
+                "Could not identify parent: Name 'National council' found multiple times, the field will therefore be ignored.",
+            ],
             "state": ImportState.DONE,
         }
