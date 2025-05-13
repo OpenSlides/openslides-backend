@@ -141,8 +141,25 @@ run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
 
 # Build standalone development container (not usable inside the docker container)
 
+build-aio:
+	@if [ -z "${submodule}" ] ; then \
+		echo "Please provide the name of the submodule service to build (submodule=<submodule service name>)"; \
+		exit 1; \
+	fi
+
+	@if [ "${context}" != "prod" -a "${context}" != "dev" -a "${context}" != "tests" ] ; then \
+		echo "Please provide a context for this build (context=<desired_context> , possible options: prod, dev, tests)"; \
+		exit 1; \
+	fi
+
+	echo "Building submodule '${submodule}' for ${context} context"
+
+	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-${context} --build-arg CONTEXT=${context} --target ${context} ${args}
+
 build-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
+	make build-aio context=dev submodule=backend
+
+#	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
 
 rebuild-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
