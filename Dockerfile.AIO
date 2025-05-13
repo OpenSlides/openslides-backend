@@ -1,12 +1,3 @@
-# Changes: apt-get in Dockerfile.Dev doesnt use upgrade, now it does
-# Change: Removed ARG 'REQUIREMENTS_FILE' and replaced it with a hardcoded ENV that depends on Context
-# Change: Development hat jetzt auch ein Healthcheck
-# Question: ARG VERSION=dev , what is this? Warum ist das nur in der Prod Dockerfile und nicht in der Development Dockerfile, hat aber dev als Value
-# !! Question: --no-install-recommends Flags causes Errors for dev. Prod uses it. How important is this??
-#   Dev probably needs to manually install all necessary packages.
-# Question: Was macht adduser etc.? Das Ding wirft Fehler
-# Question: echo "$VERSION" > openslides_backend/version.txt wirft Error, da Directory nicht existiert
-
 ARG CONTEXT=dev
 ARG PYTHON_IMAGE_VERSION=3.10.15
 
@@ -33,8 +24,6 @@ RUN if [ -z $REQUIREMENTS_FILE_OVERWRITE ]; then REQUIREMENTS_FILE=$REQUIREMENTS
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y curl ncat git mime-support gcc libpq-dev libmagic1 ${CONTEXT_INSTALLS}
 
-# RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev libmagic1
-
 COPY requirements/ requirements/
 RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/requirements_${REQUIREMENTS_FILE}.txt
 
@@ -55,33 +44,13 @@ LABEL org.opencontainers.image.description="Backend service for OpenSlides which
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
 
-HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ || curl --fail http://localhost:9003/system/presenter/health/ || exit 1
+HEALTHCHECK CMD (curl --fail http://localhost:9002/system/action/health/ && curl --fail http://localhost:9003/system/presenter/health/) || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/healthx/ || exit 1
 
 EXPOSE 9002
 EXPOSE 9003
 
 ENTRYPOINT ["./entrypoint.sh"]
-
-
-
-# Production Image
-FROM base as prod
-
-#RUN adduser --system --no-create-home appuser
-#USER appuser
-
-#COPY --chown=appuser:appuser scripts scripts
-#COPY --chown=appuser:appuser entrypoint.sh ./
-#COPY --chown=appuser:appuser openslides_backend openslides_backend
-#COPY --chown=appuser:appuser meta meta
-#COPY --chown=appuser:appuser data data
-
-#ARG VERSION=dev
-#RUN echo "$VERSION" > openslides_backend/version.txt
-
-CMD exec python -m openslides_backend
-
-
 
 
 # Development Image
@@ -112,3 +81,25 @@ CMD exec python -m debugpy --listen 0.0.0.0:5678 openslides_backend
 
 # Test Image (same as dev)
 FROM dev as tests
+
+
+
+# Production Image
+FROM base as prod
+
+# Große Sicherheitslücke hier umgehen:
+# Das sorgt dafür dass alle Commands innerhalb des Containers als unprivilegierter User durchgeführt werden und nicht als root
+RUN adduser --system --no-create-home appuser
+USER appuser
+
+COPY --chown=appuser:appuser scripts scripts
+COPY --chown=appuser:appuser entrypoint.sh ./
+COPY --chown=appuser:appuser openslides_backend openslides_backend
+COPY --chown=appuser:appuser meta meta
+COPY --chown=appuser:appuser data data
+
+ARG VERSION=dev
+RUN echo "$VERSION" > openslides_backend/version.txt
+
+CMD exec python -m openslides_backend
+
