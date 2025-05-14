@@ -9,6 +9,7 @@ class PollTestMixin(BaseActionTestCase):
 
     def prepare_users_and_poll(self, user_count: int) -> list[int]:
         user_ids = list(range(2, user_count + 2))
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -52,7 +53,6 @@ class PollTestMixin(BaseActionTestCase):
                 "meeting/1": {
                     "user_ids": user_ids,
                     "group_ids": [3],
-                    "is_active_in_organization_id": 1,
                     "name": "test",
                 },
             }

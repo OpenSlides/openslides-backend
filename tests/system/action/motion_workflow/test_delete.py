@@ -11,6 +11,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                     "motions_default_workflow_id": 12,
                     "motion_workflow_ids": [111, 2],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
                 "motion_workflow/2": {"meeting_id": 90},
@@ -26,6 +27,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "motion_workflow_ids": [2, 100],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/2": {"meeting_id": 1, "state_ids": [3]},
                 "motion_state/3": {"workflow_id": 2, "meeting_id": 1},
@@ -43,6 +45,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "motion_workflow_ids": [2, 100],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/2": {
                     "meeting_id": 1,
@@ -76,6 +79,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                     "motions_default_workflow_id": 111,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
             }
@@ -96,6 +100,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                     "motions_default_workflow_id": 12,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
             }
@@ -117,6 +122,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                     "motions_default_amendment_workflow_id": 111,
                     "motion_workflow_ids": [111],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
             }
@@ -135,6 +141,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "motion_workflow_ids": [1],
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_workflow/1": {"meeting_id": 1},
             }

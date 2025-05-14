@@ -6,10 +6,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class TopicCreateSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/41": {},
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
             }
         )
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
@@ -36,9 +36,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
 
     def test_create_multiple_requests(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "test", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting()
         response = self.request_json(
             [
                 {
@@ -68,11 +66,10 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("topic/4")
 
     def test_create_more_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "test",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [11, 14],
                     "group_ids": [2],
                     "admin_group_id": 2,
@@ -151,7 +148,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
 
     def test_create_multiple_in_one_request(self) -> None:
-        self.create_model("meeting/1", {"is_active_in_organization_id": 1})
+        self.create_meeting()
         response = self.request_multi(
             "topic.create",
             [
@@ -192,9 +189,9 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])
 
     def test_create_multiple_with_existing_sequential_number(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 1, "sequential_number": 42},
             }
         )
@@ -220,11 +217,11 @@ class TopicCreateSystemTest(BaseActionTestCase):
     def test_create_meeting_id_agenda_tag_ids_mismatch(self) -> None:
         """Tag 8 is from meeting 8 and a topic for meeting 1 should be created.
         This should lead to an error."""
+        self.create_meeting()
+        self.create_meeting(8)
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/8": {
-                    "is_active_in_organization_id": 1,
                     "tag_ids": [8],
                 },
                 "tag/8": {"name": "tag8", "meeting_id": 8},
@@ -248,9 +245,10 @@ class TopicCreateSystemTest(BaseActionTestCase):
 
     def test_create_with_agenda_tag_ids(self) -> None:
         """Tag 1 is from meeting 1 and a topic for meeting 1 should be created."""
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1, "tag_ids": [1]},
+                "meeting/1": {"tag_ids": [1]},
                 "tag/1": {"name": "test tag", "meeting_id": 1},
             }
         )

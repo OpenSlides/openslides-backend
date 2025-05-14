@@ -17,6 +17,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         }
 
     def test_create(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -26,9 +27,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                     "group_ids": [3],
                 },
                 "meeting/111": {
-                    "name": "name_m123etrd",
                     "admin_group_id": 3,
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
                 "group/3": {},
@@ -50,6 +49,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_not_unique_error(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -59,9 +59,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                     "group_ids": [3],
                 },
                 "meeting/111": {
-                    "name": "name_m123etrd",
                     "admin_group_id": 3,
-                    "is_active_in_organization_id": 1,
                 },
                 "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
@@ -93,12 +91,9 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
-                "meeting/111": {
-                    "name": "name_m123etrd",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "motion_comment_section/78": {},
             }

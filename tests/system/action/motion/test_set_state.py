@@ -8,6 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "motion_state/76": {
@@ -48,7 +49,6 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "id": 1,
                     "meeting_user_ids": [5],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"id": 1, "meeting_user_ids": [5]},
             }

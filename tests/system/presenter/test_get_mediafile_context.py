@@ -28,7 +28,9 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "name": "...",
                     "mediafile_ids": [1],
                     "meeting_mediafile_ids": [1],
+                    "committee_id": 1,
                 },
+                "committee/1": {"meeting_ids": [1]},
                 "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
@@ -103,7 +105,9 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "font_bold_italic_id": 1,
                     "group_ids": [1],
                     "admin_group_id": 1,
+                    "committee_id": 1,
                 },
+                "committee/1": {"meeting_ids": [1, 2, 3]},
                 "group/1": {
                     "name": "Group 1",
                     "meeting_id": 1,
@@ -158,6 +162,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "font_monospace_id": 10,
                     "group_ids": [2],
                     "admin_group_id": 2,
+                    "committee_id": 1,
                 },
                 "group/2": {
                     "name": "Group 2",
@@ -235,6 +240,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "logo_pdf_header_r_id": 9,
                     "group_ids": [3],
                     "admin_group_id": 3,
+                    "committee_id": 1,
                 },
                 "group/3": {
                     "name": "Group 3",

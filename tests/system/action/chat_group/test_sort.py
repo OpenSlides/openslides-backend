@@ -22,13 +22,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         }
 
     def test_sort_correct(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "chat_group/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",
@@ -50,13 +47,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         assert model_32.get("weight") == 1
 
     def test_sort_not_enabled(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": False},
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "chat_group/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",
@@ -71,13 +65,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         assert "Chat is not enabled." in response.json["message"]
 
     def test_sort_missing_model(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "chat_group/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",
@@ -95,13 +86,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         )
 
     def test_sort_additional_chat_groups_in_meeting(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "chat_group/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",

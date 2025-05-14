@@ -6,10 +6,10 @@ from tests.system.action.base import BaseActionTestCase
 class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
                     "list_of_speakers_ids": [2, 4],
                     "structure_level_list_of_speakers_ids": [3, 5],

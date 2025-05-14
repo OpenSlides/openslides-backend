@@ -8,6 +8,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     Tests agenda item numbering action.
     """
 
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting()
+
     def test_numbering(self) -> None:
         self.set_models(
             {

@@ -12,12 +12,9 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
                 "list_of_speakers/111": {"closed": False, "meeting_id": 222},
             }
         )
@@ -28,12 +25,9 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
         assert model.get("closed") is True
 
     def test_update_wrong_id(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
                 "list_of_speakers/111": {"closed": False, "meeting_id": 222},
             }
         )
