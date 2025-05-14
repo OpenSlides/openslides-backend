@@ -31,6 +31,10 @@ def open_yml_file(file: str) -> Any:
     return yaml.safe_load(models_yml)
 
 
+def get_filenames(dirpath: str) -> list[str]:
+    return os.listdir(dirpath)
+
+
 def open_output(destination: str, check: bool) -> TextIOBase:
     if check:
         return StringIO()
