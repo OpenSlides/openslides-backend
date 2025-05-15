@@ -1370,6 +1370,11 @@ class Motion(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "motion_ids"}, required=True, constant=True
     )
+    marked_forwarded = fields.BooleanField(
+        constraints={
+            "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
+        }
+    )
 
 
 class MotionBlock(Model):
