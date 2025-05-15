@@ -28,6 +28,7 @@
     weight: number;
     set_workflow_timestamp: boolean;
     allow_motion_forwarding: boolean;
+    allow_amendment_forwarding: boolean;
   }]
 }
 ```
