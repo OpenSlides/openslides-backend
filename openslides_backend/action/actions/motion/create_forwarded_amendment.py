@@ -21,7 +21,12 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
 
     schema = DefaultSchema(Motion()).get_create_schema(
         required_properties=["meeting_id", "title", "origin_id", "lead_motion_id"],
-        optional_properties=["reason", "text", "amendment_paragraphs"],
+        optional_properties=[
+            "reason",
+            "text",
+            "amendment_paragraphs",
+            "marked_forwarded",
+        ],
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},
             "use_original_number": {"type": "boolean"},
