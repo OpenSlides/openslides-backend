@@ -5,12 +5,11 @@ from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
-import yaml
-
 from cli.util.util import (
     ROOT,
+    SOURCE_META,
     assert_equal,
-    get_filenames,
+    get_merged_models_yml,
     open_output,
     parse_arguments,
 )
@@ -22,11 +21,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-META_PATH = "./meta"
-SOURCE_META = f"{META_PATH}/models.yml"
-SOURCE_COLLECTIONS = f"{META_PATH}/collections"
-
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -99,25 +93,8 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    with open(SOURCE_META) as file:
-        models_file_content: str = file.read()
-    filenames = sorted(get_filenames(SOURCE_COLLECTIONS))
-    for filename in filenames:
-        if os.path.isfile(
-            path := f"{SOURCE_COLLECTIONS}/{filename}"
-        ) and filename.endswith(".yml"):
-            collection = filename[:-4]
-            with open(path) as file:
-                content = "\n  ".join(file.read().split("\n"))
-            if content:
-                models_file_content = (
-                    f"{models_file_content}\n{collection}:\n  {content}"
-                )
-        else:
-            # TODO: Consider what may be done alternatively here (see open_yml_file)
-            raise Exception(f"Path {path} was not a yml file")
     global MODELS
-    MODELS = yaml.safe_load(models_file_content)
+    MODELS = get_merged_models_yml()
     # TODO: Is the below still necessary
     args: Namespace = parse_arguments(SOURCE_META)
 

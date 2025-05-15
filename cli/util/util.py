@@ -13,6 +13,10 @@ ROOT = os.path.join(
     "..",
 )
 
+META_PATH = "./meta"
+SOURCE_META = f"{META_PATH}/models.yml"
+SOURCE_COLLECTIONS = f"{META_PATH}/collections"
+
 
 def parse_arguments(default: str) -> Namespace:
     parser = ArgumentParser()
@@ -29,6 +33,27 @@ def open_yml_file(file: str) -> Any:
     else:
         models_yml = requests.get(file).content
     return yaml.safe_load(models_yml)
+
+
+def get_merged_models_yml() -> dict[str, dict[str, Any]]:
+    with open(SOURCE_META) as file:
+        models_file_content: str = file.read()
+    filenames = sorted(get_filenames(SOURCE_COLLECTIONS))
+    for filename in filenames:
+        if os.path.isfile(
+            path := f"{SOURCE_COLLECTIONS}/{filename}"
+        ) and filename.endswith(".yml"):
+            collection = filename[:-4]
+            with open(path) as file:
+                content = "\n  ".join(file.read().split("\n"))
+            if content:
+                models_file_content = (
+                    f"{models_file_content}\n{collection}:\n  {content}"
+                )
+        else:
+            # TODO: Consider what may be done alternatively here (see open_yml_file)
+            raise Exception(f"Path {path} was not a yml file")
+    return yaml.safe_load(models_file_content)
 
 
 def get_filenames(dirpath: str) -> list[str]:

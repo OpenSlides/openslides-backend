@@ -1,13 +1,16 @@
 import os
 from collections import defaultdict
 from collections.abc import Iterable
-from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-import yaml
-
-from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
+from cli.util.util import (
+    assert_equal,
+    get_merged_models_yml,
+    open_output,
+    open_yml_file,
+    parse_arguments,
+)
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
 SOURCE = "./meta/permission.yml"
@@ -78,25 +81,20 @@ def main() -> None:
             print("Permissions file up-to-date.")
 
             # check group.permissions enum in models.yml, if possible
-            models_file = Path(args.filename).parent / "models.yml"
-            if os.path.isfile(models_file):
-                with open(models_file, "rb") as f:
-                    models = yaml.safe_load(f.read())
-                enum = set(models["group"]["permissions"]["items"]["enum"])
-                permissions = {
-                    str(permission)
-                    for permissions in all_permissions.values()
-                    for permission in permissions
-                }
-                assert enum == permissions, (
-                    "Missing permissions: "
-                    + str(permissions - enum)
-                    + "\nAdditional permissions: "
-                    + str(enum - permissions)
-                )
-                print(
-                    "models.yml field group/permissions enum contains all permissions"
-                )
+            models = get_merged_models_yml()
+            enum = set(models["group"]["permissions"]["items"]["enum"])
+            permissions = {
+                str(permission)
+                for permissions in all_permissions.values()
+                for permission in permissions
+            }
+            assert enum == permissions, (
+                "Missing permissions: "
+                + str(permissions - enum)
+                + "\nAdditional permissions: "
+                + str(enum - permissions)
+            )
+            print("models.yml field group/permissions enum contains all permissions")
         else:
             print(f"Permissions file {DESTINATION} successfully created.")
 
