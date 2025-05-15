@@ -45,7 +45,7 @@ If `with_change_recommendations` is set to True, all change recommendations of t
 
 ### State needs to allow forwarding
 
-* The origin state must allow forwarding (`allow_motion_forwarding` must be set to True).
+* The origin state must allow forwarding (`allow_motion_forwarding` must be set to True, for amendments it's `allow_amendment_forwarding`).
 
 ## Result
 
