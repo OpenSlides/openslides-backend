@@ -95,7 +95,6 @@ def main() -> None:
     """
     global MODELS
     MODELS = get_merged_models_yml()
-    # TODO: Is the below still necessary
     args: Namespace = parse_arguments(SOURCE_META)
 
     # Load and parse models.yml
