@@ -52,3 +52,6 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return True
+
+    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
+        return False
