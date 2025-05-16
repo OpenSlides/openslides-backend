@@ -449,10 +449,19 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             in response.json["message"]
         )
 
-    def test_stop_no_permissions(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_stop_no_permissions(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.set_models(self.test_models)
         self.start_poll(1)
         self.base_permission_test({}, "poll.stop", {"id": 1})
+
+        assert clear_called_on == []
 
     def test_stop_permissions(self) -> None:
         self.set_models(self.test_models)

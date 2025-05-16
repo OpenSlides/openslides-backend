@@ -114,12 +114,21 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         self.assert_model_deleted("option/42")
         self.assert_model_deleted("poll_candidate_list/12")
 
-    def test_delete_no_permissions(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_delete_no_permissions(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.base_permission_test(
             {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
             "poll.delete",
             {"id": 111},
         )
+
+        assert clear_called_on == []
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
