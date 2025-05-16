@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
@@ -15,6 +16,8 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion_change_recommendation.create import MotionChangeRecommendationCreateAction
 from .create_base import MotionCreateBase
+from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 
 class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
@@ -69,6 +72,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "derived_motion_ids",
                         "all_derived_motion_ids",
                         "amendment_ids",
+                        "attachment_meeting_mediafile_ids",
                     ],
                 ),
             ],
@@ -297,7 +301,33 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "non_forwarded_amendment_amount": len(amendment_ids),
                 "amendment_result_data": [],
             }
+
+        if self.with_attachments:
+            events_data = self.forward_mediafiles(instance)
+            if events_data.keys():
+                instance["attachment_meeting_mediafile_ids"] = [
+                    id_ for id_ in events_data["meeting_mediafile"]
+                ]
+
+                for collection, instances in events_data.items():
+                    for id_, instance_ in instances.items():
+                        fqid = fqid_from_collection_and_id(collection, id_)
+                        if instance_.get("meta_new"):
+                            self.validate_relation_fields(instance_)
+                        self.events.extend(
+                            self._create_events(instance_, collection, fqid)
+                        )
+
         return instance
+
+    def _create_events(
+        self, instance: dict[str, Any], collection: str = "", fqid: str = ""
+    ) -> Iterable[Event]:
+        collection = collection or self.model.collection
+        fqid = fqid or fqid_from_collection_and_id(collection, instance["id"])
+        meta_new = instance.pop("meta_new", False)
+        event_type = EventType.Create if meta_new else EventType.Update
+        yield self.build_event(event_type, fqid, instance)
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         raise ActionException("Not implemented")
@@ -389,6 +419,219 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
+
+    def forward_mediafiles(
+        self, instance: dict[str, Any]
+    ) -> dict[str, dict[int, dict[str, Any]]] | None:
+        """
+        Builds a collections dictionary with the models to be created or updated.
+        """
+        meeting_id = instance["meeting_id"]
+
+        origin_mediafiles, origin_meeting_mediafiles = (
+            self._fetch_origin_mediafiles_data(instance)
+        )
+        replace_map = self._build_replace_map(origin_mediafiles)
+        if not replace_map:
+            return None
+        all_target_mediafiles = self._duplicate_mediafiles(
+            origin_mediafiles, replace_map, meeting_id
+        )
+        target_mediafiles, target_meeting_mediafiles, new_meeting_data = (
+            self._build_events_data(
+                origin_meeting_mediafiles,
+                all_target_mediafiles,
+                replace_map,
+                meeting_id,
+                instance,
+            )
+        )
+        return {
+            "mediafile": target_mediafiles,
+            "meeting_mediafile": target_meeting_mediafiles,
+            "meeting": new_meeting_data,
+        }
+
+    @staticmethod
+    def _is_orga_wide(mediafile: dict) -> bool:
+        return mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+
+    def _fetch_origin_mediafiles_data(
+        self, instance: dict[str, Any]
+    ) -> tuple[dict[int, dict[str, Any]], dict[int, dict[str, Any]]]:
+        """
+        Retrieves `meeting_mediafile` models used as attachments in the origin motion and the corresponding `mediafile` models.
+        """
+        attachment_ids = self.datastore.get(
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
+            ["attachment_meeting_mediafile_ids"],
+            lock_result=False,
+        ).get("attachment_meeting_mediafile_ids", [])
+        meeting_mediafiles = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_mediafile",
+                    attachment_ids,
+                    ["mediafile_id", "is_public", "attachment_ids"],
+                )
+            ],
+            lock_result=False,
+        )["meeting_mediafile"]
+        mediafile_ids = [
+            meeting_mediafile["mediafile_id"]
+            for meeting_mediafile in meeting_mediafiles.values()
+        ]
+        mediafiles = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "mediafile",
+                    mediafile_ids,
+                    [
+                        "id",
+                        "title",
+                        "is_directory",
+                        "filesize",
+                        "filename",
+                        "mimetype",
+                        "pdf_information",
+                        "token",
+                        "published_to_meetings_in_organization_id",
+                        "parent_id",
+                        "child_ids",
+                        "owner_id",
+                        "meeting_mediafile_ids",
+                    ],
+                )
+            ],
+            lock_result=False,
+        )["mediafile"]
+        return mediafiles, meeting_mediafiles
+
+    def _build_replace_map(
+        self, origin_mediafiles: dict[int, dict[str, Any]]
+    ) -> dict[int, int]:
+        meeting_wide_mediafiles_ids = [
+            mediafile["id"]
+            for mediafile in origin_mediafiles.values()
+            if not self._is_orga_wide(mediafile)
+        ]
+        if meeting_wide_mediafiles_ids:
+            new_ids = iter(
+                self.datastore.reserve_ids(
+                    "mediafile", len(meeting_wide_mediafiles_ids)
+                )
+            )
+        replace_map: dict[int, int] = {}
+        for origin_mediafile_id in origin_mediafiles:
+            if origin_mediafile_id in meeting_wide_mediafiles_ids:
+                replace_map[origin_mediafile_id] = next(new_ids)
+            else:
+                replace_map[origin_mediafile_id] = origin_mediafile_id
+        return replace_map
+
+    def _duplicate_mediafiles(
+        self,
+        origin_mediafiles: dict[int, dict[str, Any]],
+        replace_map: dict[int, int],
+        meeting_id: int,
+    ) -> dict[int, dict[str, Any]]:
+        """
+        Duplicates meeting-wide mediafiles that must be forwarded to the target motion.
+        Builds a dictionary of `mediafile` models for which new `meeting_mediafiles` models are to be generated.
+        """
+        target_mediafiles: dict[int, dict[str, Any]] = {}
+        for origin_id, target_id in replace_map.items():
+            origin_mediafile = origin_mediafiles[origin_id]
+            if self._is_orga_wide(origin_mediafile):
+                target_mediafiles[origin_id] = origin_mediafile
+            else:
+                if not origin_mediafile.get("is_directory"):
+                    self.media.duplicate_mediafile(origin_id, target_id)
+                new_mediafile = {
+                    **origin_mediafile,
+                    "id": target_id,
+                    "owner_id": fqid_from_collection_and_id("meeting", meeting_id),
+                    "meta_new": True,
+                }
+                parent_id = new_mediafile.pop("parent_id", None)
+                child_ids = new_mediafile.pop("child_ids", [])
+                if parent_id:
+                    new_mediafile["parent_id"] = replace_map[parent_id]
+                if len(child_ids):
+                    new_mediafile["child_ids"] = [
+                        replace_map[child_id] for child_id in child_ids
+                    ]
+                target_mediafiles[target_id] = new_mediafile
+        return target_mediafiles
+
+    def _build_events_data(
+        self,
+        origin_meeting_mediafiles: dict[int, dict[str, Any]],
+        all_target_mediafiles: dict[int, dict[str, Any]],
+        replace_map: dict[int, int],
+        meeting_id: int,
+        instance: dict[str, Any],
+    ) -> tuple[
+        dict[int, dict[str, Any]], dict[int, dict[str, Any]], dict[int, dict[str, Any]]
+    ]:
+        """
+        Builds data for creating events for the following collections:
+        - mediafile: contains two types of data depending on the owner_id:
+            - meeting: all necessary fields for creating a new model
+            - organization: new value for the `meeting_mediafile_ids` field
+        - meeting_mediafile: contains data for creating new models
+        - meeting: contains updated value for the `meeting_mediafile_ids` field
+        """
+        target_mediafiles_events = {
+            mediafile_id: mediafile
+            for mediafile_id, mediafile in all_target_mediafiles.items()
+            if mediafile.get("meta_new", False)
+        }
+        new_ids = iter(
+            self.datastore.reserve_ids("meeting_mediafile", len(replace_map))
+        )
+        target_meeting_mediafiles: dict[int, dict[str, Any]] = {}
+        for origin_meeting_mediafile in origin_meeting_mediafiles.values():
+            target_meeting_mediafile_id = next(new_ids)
+            target_mediafile_id = replace_map[origin_meeting_mediafile["mediafile_id"]]
+            target_mediafile = all_target_mediafiles[target_mediafile_id]
+            new_meeting_mediafile = {
+                "id": target_meeting_mediafile_id,
+                "is_public": origin_meeting_mediafile["is_public"],
+                "mediafile_id": target_mediafile_id,
+                "meeting_id": meeting_id,
+                "meta_new": True,
+                "attachment_ids": [
+                    fqid_from_collection_and_id("motion", instance["id"])
+                ],
+            }
+            if self._is_orga_wide(target_mediafile):
+                target_mediafiles_events[target_mediafile_id] = {
+                    "meeting_mediafile_ids": target_mediafile.get(
+                        "meeting_mediafile_ids", []
+                    )
+                    + [target_meeting_mediafile_id]
+                }
+            else:
+                target_mediafiles_events[target_mediafile_id][
+                    "meeting_mediafile_ids"
+                ] = [target_meeting_mediafile_id]
+            target_meeting_mediafiles[target_meeting_mediafile_id] = (
+                new_meeting_mediafile
+            )
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["meeting_mediafile_ids"],
+            lock_result=False,
+        )
+        updated_meeting_data = {
+            meeting_id: {
+                "meeting_mediafile_ids": meeting.get("meeting_mediafile_ids", [])
+                + list(target_meeting_mediafiles)
+            }
+        }
+
+        return target_mediafiles_events, target_meeting_mediafiles, updated_meeting_data
 
     def get_history_information(self) -> HistoryInformation | None:
         forwarded_entries = defaultdict(list)

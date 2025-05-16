@@ -12,6 +12,7 @@
     use_original_submitter: boolean;
     use_original_number: boolean;
     with_amendments: boolean;
+    with_attachments: boolean;
     with_change_recommendations: boolean;
 }
 ```
@@ -35,6 +36,8 @@ If `with_amendments` is set to True, all amendments of the motion, that have a s
 The three boolean flags for extra rules will be applied to the amendments as well.
 
 If the forwarded amendments have amendments themselves, those will also be treated the same way
+
+If `with_attachments` is set to True, all the attachments of the motion will also be forwarded to the target meeting and connected to the newly forwarded motion.
 
 If `with_change_recommendations` is set to True, all change recommendations of the motion will be copied to the target meeting and connected to the newly forwarded lead motion. They will not have any reference to the original recommendation afterwards.
 

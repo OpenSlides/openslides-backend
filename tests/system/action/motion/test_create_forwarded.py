@@ -1,8 +1,11 @@
 from typing import Any
+from unittest.mock import call, MagicMock
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
+from tests.util import Response
 
 
 class MotionCreateForwardedTest(BaseActionTestCase):
@@ -106,6 +109,39 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "user_id": 1,
                 "meeting_id": 2,
                 "group_ids": [112],
+            },
+            "mediafile/1": {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+            },
+            "mediafile/2": {
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                "mimetype": "text/plain",
+            },
+            "mediafile/3": {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "is_directory": True,
+                "child_ids": [4],
+            },
+            "mediafile/4": {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "parent_id": 3,
+            },
+            "mediafile/5": {
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                "mimetype": "text/plain",
+                "is_directory": True,
+                "child_ids": [6],
+            },
+            "mediafile/6": {
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                "mimetype": "text/plain",
+                "parent_id": 5,
             },
         }
 
@@ -1675,3 +1711,352 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("motion/6")
+
+    def test_forward_with_meeting_wide_mediafile_with_attachments_false(self) -> None:
+        self.base_test_forward_with_attachments_false(origin_mediafile_ids=[1])
+
+    def test_forward_with_orga_wide_mediafile_with_attachments_false(self) -> None:
+        self.base_test_forward_with_attachments_false(origin_mediafile_ids=[2])
+
+    def test_forward_with_nested_mediafiles_with_attachments_false(self) -> None:
+        self.base_test_forward_with_attachments_false(origin_mediafile_ids=[3, 4, 5, 6])
+
+    def test_forward_with_meeting_wide_mediafile_with_attachments_true(self) -> None:
+        self.base_test_forward_with_attachments_true(origin_mediafile_ids=[1])
+
+    def test_forward_with_orga_wide_mediafile_with_attachments_true(self) -> None:
+        self.base_test_forward_with_attachments_true(origin_mediafile_ids=[2])
+
+    def test_forward_with_nested_mediafiles_with_attachments_true(self) -> None:
+        self.base_test_forward_with_attachments_true(
+            origin_mediafile_ids=[1, 2, 3, 4, 5, 6],
+            nested_files_ids={3: [1, 4], 2: [5], 5: [6]},
+            custom_models_data={
+                "mediafile/3": {
+                    "child_ids": [1, 4],
+                },
+                "mediafile/1": {
+                    "parent_id": 3,
+                },
+                "mediafile/4": {
+                    "parent_id": 3,
+                },
+                "mediafile/2": {
+                    "is_directory": True,
+                    "child_ids": [5],
+                },
+                "mediafile/5": {
+                    "parent_id": 2,
+                },
+            },
+        )
+
+    def test_preserve_meeting_attachments_ids_with_attachments_false(self) -> None:
+        self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=False)
+
+    def test_preserve_meeting_attachments_ids_with_attachments_true(self) -> None:
+        self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=True)
+
+    def base_test_forward_with_attachments_false(
+        self,
+        origin_mediafile_ids: list[int],
+        custom_models_data: dict[str, dict[str, Any]] = {},
+    ) -> None:
+        """
+        Base test for forwarding a motion without attachments.
+
+        This test verifies that when forwarding a motion with the flag `with_attachments` set to False:
+        1. A motion model is created with the correct data but without any attachments.
+        2. The target meeting does not include any new ids in the `attachment_meeting_mediafile_ids` field.
+        3. New `mediafile` and `meeting_mediafile` models are not created.
+        4. Mediafiles are not duplicated.
+        """
+
+        (
+            response,
+            origin_meeting_mediafile_ids,
+            target_mediafile_ids,
+            target_meeting_mediafile_ids,
+        ) = self.set_test_data_for_forwarding_with_attachments(
+            False, origin_mediafile_ids, custom_models_data
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/13",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "state_id": 34,
+                "all_origin_ids": [12],
+                "origin_meeting_id": 1,
+                "sequential_number": 1,
+                "attachment_meeting_mediafile_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "meeting_mediafile_ids": None,
+            },
+        )
+        self.media.duplicate_mediafile.assert_not_called()
+        for meeting_mediafile_id in target_meeting_mediafile_ids:
+            self.assert_model_not_exists(f"meeting_mediafile/{meeting_mediafile_id}")
+        for original_id, expected_mediafile_id in zip(
+            origin_mediafile_ids, target_mediafile_ids
+        ):
+            if original_id != expected_mediafile_id:
+                self.assert_model_not_exists(f"mediafile/{expected_mediafile_id}")
+
+    def base_test_forward_with_attachments_true(
+        self,
+        origin_mediafile_ids: list[int],
+        nested_files_ids: dict[int, list[int]] = {},
+        custom_models_data: dict[str, dict[str, Any]] = {},
+    ) -> None:
+        """
+        Base test for forwarding a motion with attachments.
+
+        This test verifies that when forwarding a motion with the flag `with_attachments` set to True:
+        1. A motion model ("motion/13") is created with the correct data.
+        2. The target meeting ("meeting/2") includes all the `attachment_meeting_mediafile_ids` used in the origin motion.
+        3. For each the meeting-wide mediafiles from the origin motion:
+            - A new `mediafile` model is created
+            - If the model is not a directory, the corresponding mediafile itself is duplicated
+        4. Orga-wide mediafiles and `mediafile` models from the origin motion are not duplicated.
+        5. For each forwarded mediafile a new `meeting_mediafile` is created.
+        """
+
+        (
+            response,
+            origin_meeting_mediafile_ids,
+            target_mediafile_ids,
+            target_meeting_mediafile_ids,
+        ) = self.set_test_data_for_forwarding_with_attachments(
+            True, origin_mediafile_ids, custom_models_data
+        )
+
+        self.assert_status_code(response, 200)
+
+        expected_models = {
+            "motion/13": {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "state_id": 34,
+                "all_origin_ids": [12],
+                "origin_meeting_id": 1,
+                "sequential_number": 1,
+                "attachment_meeting_mediafile_ids": target_meeting_mediafile_ids,
+            },
+            "meeting/2": {
+                "meeting_mediafile_ids": target_meeting_mediafile_ids,
+            },
+        }
+
+        for (
+            origin_mediafile_id,
+            target_mediafile_id,
+            origin_meeting_mediafile_id,
+            target_meeting_mediafile_id,
+        ) in zip(
+            origin_mediafile_ids,
+            target_mediafile_ids,
+            origin_meeting_mediafile_ids,
+            target_meeting_mediafile_ids,
+        ):
+            if origin_mediafile_id != target_mediafile_id:
+                m_owner_id = "meeting/2"
+                m_meeting_mediafile_ids = [target_meeting_mediafile_id]
+            else:
+                m_owner_id = ONE_ORGANIZATION_FQID
+                m_meeting_mediafile_ids = [
+                    origin_meeting_mediafile_id,
+                    target_meeting_mediafile_id,
+                ]
+            expected_models[f"mediafile/{target_mediafile_id}"] = {
+                "owner_id": m_owner_id,
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": m_meeting_mediafile_ids,
+            }
+            expected_models[f"meeting_mediafile/{target_meeting_mediafile_id}"] = {
+                "meeting_id": 2,
+                "mediafile_id": target_mediafile_id,
+                "is_public": True,
+                "attachment_ids": ["motion/13"],
+            }
+
+        mapped_mediafile_ids = {}
+        expected_mediaservice_calls = []
+        directory_ids = set(nested_files_ids.keys())
+        for origin_id, target_id in zip(origin_mediafile_ids, target_mediafile_ids):
+            mapped_mediafile_ids[origin_id] = target_id
+            if origin_id != target_id and origin_id not in directory_ids:
+                expected_mediaservice_calls.append(call(origin_id, target_id))
+
+        if nested_files_ids:
+            ORGA_WIDE_MEDIAFILES = {2, 5, 6}
+            for origin_parent_id, origin_child_ids in nested_files_ids.items():
+                if origin_parent_id not in ORGA_WIDE_MEDIAFILES:
+                    target_parent_id = mapped_mediafile_ids[origin_parent_id]
+                    target_child_ids = [
+                        mapped_mediafile_ids[child_id] for child_id in origin_child_ids
+                    ]
+                else:
+                    target_parent_id = origin_parent_id
+                    target_child_ids = origin_child_ids
+                expected_models[f"mediafile/{target_parent_id}"][
+                    "child_ids"
+                ] = target_child_ids
+                for child_id in target_child_ids:
+                    expected_models[f"mediafile/{child_id}"][
+                        "parent_id"
+                    ] = target_parent_id
+
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=expected_mediaservice_calls, any_order=True
+        )
+
+        for fqid, expected_data in expected_models.items():
+            self.assert_model_exists(fqid, expected_data)
+
+    def set_test_data_for_forwarding_with_attachments(
+        self,
+        with_attachments: bool,
+        origin_mediafile_ids: list[int],
+        custom_models_data: dict[str, dict[str, Any]],
+    ) -> tuple[Response, list[int], list[int], list[int]]:
+        """
+        Prepares test data and performs a forwarding request, optionally including attachments (based on the with_attachments value).
+
+        Returns a tuple containing:
+            - origin_meeting_mediafile_ids (list[int]): The computed meeting mediafile IDs for the given origin mediafiles IDs.
+            - target_mediafile_ids (list[int]): The expected IDs of the mediafiles related to the forwarded motion.
+            - target_meeting_mediafile_ids (list[int]): The expected meeting mediafiles IDs used as attachments in the forwarded motion.
+        """
+
+        ORGA_WIDE_MEDIAFILES = {2, 5, 6}
+        origin_meeting_mediafile_ids = [
+            mediafile_id + 10 for mediafile_id in origin_mediafile_ids
+        ]
+
+        total_mediafiles_count = 6
+        target_mediafile_ids = []
+        for origin_id in origin_mediafile_ids:
+            if origin_id in ORGA_WIDE_MEDIAFILES:
+                target_mediafile_ids.append(origin_id)
+            else:
+                total_mediafiles_count += 1
+                target_mediafile_ids.append(total_mediafiles_count)
+
+        target_meeting_mediafile_ids = [
+            max(origin_meeting_mediafile_ids) + i
+            for i in range(1, len(origin_mediafile_ids) + 1)
+        ]
+
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "admin_group_id": 112,
+                    "meeting_mediafile_ids": origin_meeting_mediafile_ids,
+                },
+                "meeting/2": {
+                    "admin_group_id": 112,
+                },
+                "motion/12": {
+                    "attachment_meeting_mediafile_ids": origin_meeting_mediafile_ids
+                },
+            }
+        )
+
+        for mediafile_id, meeting_mediafile_id in zip(
+            origin_mediafile_ids, origin_meeting_mediafile_ids
+        ):
+            self.set_models(
+                {
+                    f"meeting_mediafile/{meeting_mediafile_id}": {
+                        "meeting_id": 1,
+                        "mediafile_id": mediafile_id,
+                        "is_public": True,
+                        "attachment_ids": ["motion/12"],
+                    },
+                    f"mediafile/{mediafile_id}": {
+                        "meeting_mediafile_ids": [meeting_mediafile_id],
+                    },
+                }
+            )
+
+        if custom_models_data:
+            self.set_models(custom_models_data)
+
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": with_attachments,
+            },
+        )
+
+        return (
+            response,
+            origin_meeting_mediafile_ids,
+            target_mediafile_ids,
+            target_meeting_mediafile_ids,
+        )
+
+    def base_test_preserve_existing_meeting_attachments_ids(
+        self, with_attachments: bool
+    ) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting_mediafile/11": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "is_public": True,
+                },
+                "meeting_mediafile/12": {
+                    "meeting_id": 2,
+                    "mediafile_id": 2,
+                    "is_public": True,
+                },
+                "meeting/1": {
+                    "admin_group_id": 112,
+                    "meeting_mediafile_ids": [11],
+                },
+                "meeting/2": {
+                    "admin_group_id": 112,
+                    "meeting_mediafile_ids": [12],
+                },
+                "motion/12": {"attachment_meeting_mediafile_ids": [11]},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": with_attachments,
+            },
+        )
+
+        expected_meeting_mediafile_ids = [12]
+        if with_attachments:
+            expected_meeting_mediafile_ids.append(13)
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "meeting_mediafile_ids": expected_meeting_mediafile_ids,
+            },
+        )

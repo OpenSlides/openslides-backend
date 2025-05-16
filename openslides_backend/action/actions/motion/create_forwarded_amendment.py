@@ -34,6 +34,11 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         },
     )
 
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.with_attachments = False
+        super().update_instance(instance)
+        return instance
+
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
 
