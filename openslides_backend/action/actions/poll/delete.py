@@ -1,5 +1,8 @@
+from collections.abc import Callable
+
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
+from ....shared.exceptions import VoteServiceException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -85,3 +88,13 @@ class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
             ),
         ]
         self.datastore.get_many(requests, use_changed_models=False)
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        def on_success() -> None:
+            for instance in action_data:
+                try:
+                    self.vote_service.clear(instance["id"])
+                except VoteServiceException as e:
+                    self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
+
+        return on_success

@@ -1,3 +1,5 @@
+from unittest.mock import Mock, patch
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -6,7 +8,14 @@ from .poll_test_mixin import PollTestMixin
 
 
 class PollDeleteTest(PollTestMixin, BasePollTestCase):
-    def test_delete_correct(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_delete_correct(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.set_models(
             {
                 "poll/111": {"meeting_id": 1, "content_object_id": "motion/1"},
@@ -18,6 +27,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/111")
         self.assert_history_information("motion/1", ["Voting deleted"])
+        assert clear_called_on == [111]
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(
