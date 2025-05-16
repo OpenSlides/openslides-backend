@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import call, MagicMock
+from unittest.mock import MagicMock, call
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
@@ -1840,7 +1840,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
 
-        expected_models = {
+        expected_models: dict[str, dict[str, Any]] = {
             "motion/13": {
                 "title": "Mot 1",
                 "meeting_id": 2,

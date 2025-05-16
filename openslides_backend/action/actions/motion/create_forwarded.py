@@ -56,6 +56,9 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return self.with_amendments
 
+    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
+        return self.with_attachments
+
     def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),

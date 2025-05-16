@@ -4,7 +4,9 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
+from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.typing import HistoryInformation
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
@@ -16,8 +18,6 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion_change_recommendation.create import MotionChangeRecommendationCreateAction
 from .create_base import MotionCreateBase
-from openslides_backend.shared.interfaces.event import Event, EventType
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 
 class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
@@ -302,9 +302,9 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "amendment_result_data": [],
             }
 
-        if self.with_attachments:
+        if self.should_forward_attachments(instance):
             events_data = self.forward_mediafiles(instance)
-            if events_data.keys():
+            if events_data:
                 instance["attachment_meeting_mediafile_ids"] = [
                     id_ for id_ in events_data["meeting_mediafile"]
                 ]
@@ -393,6 +393,9 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         return committee
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
+        raise ActionException("Not implemented")
+
+    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
         raise ActionException("Not implemented")
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
