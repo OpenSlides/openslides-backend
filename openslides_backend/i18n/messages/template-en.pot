@@ -49,9 +49,6 @@ msgid "OpenSlides access data"
 msgstr ""
 
 msgid "Presentation and assembly system"
-msgstr ""\
-
-msgid "Public"
 msgstr ""
 
 msgid "Public"
