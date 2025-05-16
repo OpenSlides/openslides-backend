@@ -1475,6 +1475,7 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         self.set_models(
             {
+                "committee/2": {"organization_id": 1},
                 "user/1": {
                     "committee_management_ids": [1, 2],
                     "committee_ids": [2],
@@ -1491,26 +1492,7 @@ class MeetingClone(BaseActionTestCase):
             "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
         )
         self.assert_model_exists(
-            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 1}
-        )
-
-    def test_permissions_foreign_committee_cml_error(self) -> None:
-        self.set_models(self.test_models)
-        self.set_models(
-            {
-                "committee/2": {"organization_id": 1},
-                "user/1": {
-                    "committee_management_ids": [1],
-                    "committee_ids": [1],
-                    "organization_management_level": None,
-                },
-            }
-        )
-        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action meeting.clone. Missing permission: CommitteeManagementLevel can_manage in committee 2",
-            response.json["message"],
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
         )
 
     def test_permissions_foreign_committee_cml_error(self) -> None:
