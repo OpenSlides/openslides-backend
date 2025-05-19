@@ -36,12 +36,18 @@ class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
                         "projection_ids",
                         "meta_deleted",
                         "meta_position",
+                        "state",
                     ],
                 ),
             ],
             use_changed_models=False,
         )
         polls = result["poll"].values()
+        self.started_polls = [
+            id_
+            for id_, poll in result["poll"].items()
+            if poll.get("state") == "started"
+        ]
         meeting_ids = list({poll["meeting_id"] for poll in polls})
         group_ids = list(
             {
@@ -92,9 +98,10 @@ class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
             for instance in action_data:
-                try:
-                    self.vote_service.clear(instance["id"])
-                except VoteServiceException as e:
-                    self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
+                if (id_ := instance["id"]) in self.started_polls:
+                    try:
+                        self.vote_service.clear(id_)
+                    except VoteServiceException as e:
+                        self.logger.error(f"Error clearing vote {id_}: {str(e)}")
 
         return on_success
