@@ -215,6 +215,19 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 400)
         assert "organization_tags must contain unique items" in response.json["message"]
 
+    def test_json_upload_organization_tag_created_once(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "n1", "organization_tags": ["ot1", "ot2"]},
+                    {"name": "n2", "organization_tags": ["ot1"]},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_statistics(response, {"organization_tags_created": 2})
+
     def test_json_upload_managers(self) -> None:
         response = self.request(
             "committee.json_upload",
