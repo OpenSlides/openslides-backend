@@ -17,7 +17,7 @@ ENV IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"}
 ### Query based on context value
 ENV CONTEXT_INSTALLS=${tests:+""}${prod:+"libc-dev"}${dev:+"make vim bash-completion"}
 ### Requirements file will be autoselected, unless an overwrite is given via ARG REQUIEREMENTS_FILE_OVERWRITE
-ENV REQUIREMENTS_FILE=${REQUIREMENTS_FILE_OVERWRITE:+$REQUIREMENTS_FILE_OVERWRITE}${REQUIREMENTS_FILE_OVERWRITE:-${tests:+"tests"}${prod:+"production"}${dev:+"development"}}
+ENV REQUIREMENTS_FILE=${REQUIREMENTS_FILE_OVERWRITE:+$REQUIREMENTS_FILE_OVERWRITE}${REQUIREMENTS_FILE_OVERWRITE:-${tests:+"development"}${prod:+"production"}${dev:+"development"}}
 RUN if [ -z $REQUIREMENTS_FILE_OVERWRITE ]; then REQUIREMENTS_FILE=$REQUIREMENTS_FILE_OVERWRITE; fi
 
 ## Install

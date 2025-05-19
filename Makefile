@@ -102,7 +102,7 @@ run-dev-attach:
 run-dev run-bash: | start-dev run-dev-attach
 
 run-tests:
-	dev/run-tests.sh
+	bash dev/run-tests.sh
 
 
 # Build and run development container with local datastore in use
