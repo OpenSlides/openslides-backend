@@ -227,6 +227,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
         self.assert_status_code(response, 200)
         self.assert_statistics(response, {"organization_tags_created": 2})
+        self.assert_model_exists("organization_tag/1", {"name": "ot1"})
+        self.assert_model_exists("organization_tag/2", {"name": "ot2"})
+        self.assert_model_not_exists("organization_tag/3")
 
     def test_json_upload_managers(self) -> None:
         response = self.request(
