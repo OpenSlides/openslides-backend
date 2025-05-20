@@ -44,8 +44,10 @@ LABEL org.opencontainers.image.description="Backend service for OpenSlides which
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
 
-HEALTHCHECK CMD (curl --fail http://localhost:9002/system/action/health/ && curl --fail http://localhost:9003/system/presenter/health/) || exit 1
-HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/healthx/ || exit 1
+ HEALTHCHECK CMD (curl --fail http://localhost:9002/system/action/health/ && curl --fail http://localhost:9003/system/presenter/health/) || exit 1
+
+#HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
+#   CMD (curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9002/system/action/health/xxx" && curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9003/system/presenter/health/") || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
 
 EXPOSE 9002
 EXPOSE 9003
