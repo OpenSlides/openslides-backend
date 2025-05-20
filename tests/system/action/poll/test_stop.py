@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import Mock, patch
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
@@ -31,7 +32,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
-    def test_stop_correct(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_stop_correct(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.create_meeting()
         self.set_models(
             {
@@ -145,6 +153,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
+        assert clear_called_on == [1]
 
     def test_stop_assignment_poll(self) -> None:
         self.create_meeting()
@@ -441,10 +450,19 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             in response.json["message"]
         )
 
-    def test_stop_no_permissions(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_stop_no_permissions(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.set_models(self.test_models)
         self.start_poll(1)
         self.base_permission_test({}, "poll.stop", {"id": 1})
+
+        assert clear_called_on == []
 
     def test_stop_permissions(self) -> None:
         self.set_models(self.test_models)

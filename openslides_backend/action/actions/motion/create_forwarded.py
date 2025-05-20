@@ -25,6 +25,7 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
             "use_original_number": {"type": "boolean"},
             "with_change_recommendations": {"type": "boolean"},
             "with_amendments": {"type": "boolean"},
+            "mark_amendments_as_forwarded": {"type": "boolean"},
         },
     )
 

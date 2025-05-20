@@ -258,6 +258,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
             self.instance_committee_meeting_ids,
+            self.user_in_archived_meetings_only,
             self.instance_home_committee_id,
         ) = self.get_user_scope(instance.get("id") or instance)
 
@@ -321,23 +322,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                 self.permission: self.instance_user_scope_id,
             }
-        if missing_permissions and (
-            self.instance_home_committee_id
-            or not self.check_for_admin_in_all_meetings(instance.get("id", 0))
-        ):
-            if not self.instance_home_committee_id:
-                missing_permissions.update(
-                    {
-                        Permissions.User.CAN_UPDATE: {
-                            meeting_id
-                            for meeting_ids in self.instance_committee_meeting_ids.values()
-                            if meeting_ids is not None
-                            for meeting_id in meeting_ids
-                            if meeting_id is not None
-                        },
-                    }
-                )
-            raise MissingPermission(missing_permissions)
+        if missing_permissions:
+            self._check_missing_permissions_groups_AF(instance, missing_permissions)
 
     def check_group_B(
         self, fields: list[str], instance: dict[str, Any], locked_from_inside: bool
@@ -459,23 +445,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                 self.permission: self.instance_user_scope_id,
             }
-        if missing_permissions and (
-            self.instance_home_committee_id
-            or not self.check_for_admin_in_all_meetings(instance.get("id", 0))
-        ):
-            if not self.instance_home_committee_id:
-                missing_permissions.update(
-                    {
-                        Permissions.User.CAN_UPDATE: {
-                            meeting_id
-                            for meeting_ids in self.instance_committee_meeting_ids.values()
-                            if meeting_ids is not None
-                            for meeting_id in meeting_ids
-                            if meeting_id is not None
-                        },
-                    }
-                )
-            raise MissingPermission(missing_permissions)
+        if missing_permissions:
+            self._check_missing_permissions_groups_AF(instance, missing_permissions)
 
     def check_group_G(self, fields: list[str]) -> None:
         """Group G: OML SUPERADMIN necessary"""
@@ -569,6 +540,30 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 raise PermissionDenied(
                     f"Your organization management level is not high enough to change a user with a Level of {self.instance_user_oml_permission}!"
                 )
+
+    def _check_missing_permissions_groups_AF(
+        self,
+        instance: dict[str, Any],
+        missing_permissions: dict[AnyPermission, int | set[int]],
+    ) -> None:
+        if self.instance_home_committee_id or not self.check_for_admin_in_all_meetings(
+            instance.get("id", 0)
+        ):
+            if not self.instance_home_committee_id:
+                missing_permissions.update(
+                    {
+                        Permissions.User.CAN_UPDATE: {
+                            meeting_id
+                            for meeting_ids in self.instance_committee_meeting_ids.values()
+                            if meeting_ids is not None
+                            for meeting_id in meeting_ids
+                            if meeting_id is not None
+                        },
+                    }
+                )
+            raise MissingPermission(missing_permissions)
+        elif self.user_in_archived_meetings_only:
+            raise MissingPermission(missing_permissions)
 
     def _get_actual_grouping_from_instance(
         self, instance: dict[str, Any]
@@ -675,6 +670,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
             self.instance_committee_meeting_ids,
+            self.user_in_archived_meetings_only,
             self.instance_home_committee_id,
         ) = self.get_user_scope(instance.get("id") or instance)
 

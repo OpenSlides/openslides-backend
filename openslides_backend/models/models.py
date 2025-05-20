@@ -1388,6 +1388,11 @@ class Motion(Model):
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     additional_submitter = fields.CharField()
+    marked_forwarded = fields.BooleanField(
+        constraints={
+            "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
+        }
+    )
     lead_motion_id = fields.RelationField(
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
