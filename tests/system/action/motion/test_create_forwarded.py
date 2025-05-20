@@ -121,7 +121,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
             "mediafile/3": {
                 "owner_id": "meeting/1",
-                "mimetype": "text/plain",
                 "is_directory": True,
                 "child_ids": [4],
             },
@@ -133,7 +132,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "mediafile/5": {
                 "owner_id": ONE_ORGANIZATION_FQID,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                "mimetype": "text/plain",
                 "is_directory": True,
                 "child_ids": [6],
             },
@@ -1730,19 +1728,25 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_forward_with_nested_mediafiles_with_attachments_true(self) -> None:
         self.base_test_forward_with_attachments_true(
             origin_mediafile_ids=[1, 2, 3, 4, 5, 6],
-            nested_files_ids={3: [1, 4], 2: [5], 5: [6]},
+            nested_files_ids={1: [3, 4], 2: [5], 5: [6]},
             custom_models_data={
-                "mediafile/3": {
-                    "child_ids": [1, 4],
-                },
                 "mediafile/1": {
-                    "parent_id": 3,
+                    "is_directory": True,
+                    "mimetype": None,
+                    "child_ids": [3, 4],
+                },
+                "mediafile/3": {
+                    "is_directory": False,
+                    "mimetype": "text/plain",
+                    "parent_id": 1,
+                    "child_ids": None,
                 },
                 "mediafile/4": {
-                    "parent_id": 3,
+                    "parent_id": 1,
                 },
                 "mediafile/2": {
                     "is_directory": True,
+                    "mimetype": None,
                     "child_ids": [5],
                 },
                 "mediafile/5": {
@@ -1914,10 +1918,15 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     expected_models[f"mediafile/{child_id}"][
                         "parent_id"
                     ] = target_parent_id
-
+                expected_models[f"mediafile/{target_parent_id}"].pop("mimetype")
+        all_ = self.datastore.get_everything()
         self.media.duplicate_mediafile.assert_has_calls(
             calls=expected_mediaservice_calls, any_order=True
         )
+        for id_, m in all_["mediafile"].items():
+            fqid = f"mediafile/{id_}"
+            expected_data = expected_models.get(fqid)
+            expected_data = expected_data
 
         for fqid, expected_data in expected_models.items():
             self.assert_model_exists(fqid, expected_data)
