@@ -371,6 +371,19 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/1", {"name": "this", "organization_tag_ids": [12, 14]}
         )
 
+    def test_import_with_duplicated_organization_tags(self) -> None:
+        self.json_upload_with_duplicated_organization_tags()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "organization_tag/1",
+            {"name": "ot1", "tagged_ids": ["committee/1", "committee/2"]},
+        )
+        self.assert_model_exists(
+            "organization_tag/2", {"name": "ot2", "tagged_ids": ["committee/1"]}
+        )
+        self.assert_model_not_exists("organization_tag/3")
+
     def test_import_managers(self) -> None:
         self.set_models(
             {
