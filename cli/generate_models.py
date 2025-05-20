@@ -1,14 +1,16 @@
 import os
 import string
+from argparse import Namespace
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
 from cli.util.util import (
     ROOT,
+    SOURCE_META,
     assert_equal,
+    get_merged_models_yml,
     open_output,
-    open_yml_file,
     parse_arguments,
 )
 from openslides_backend.models.base import Model as BaseModel
@@ -19,8 +21,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -93,9 +93,9 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    args = parse_arguments(SOURCE)
     global MODELS
-    MODELS = open_yml_file(args.filename)
+    MODELS = get_merged_models_yml()
+    args: Namespace = parse_arguments(SOURCE_META)
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
