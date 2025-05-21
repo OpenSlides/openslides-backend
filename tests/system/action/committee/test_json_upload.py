@@ -915,3 +915,39 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             },
         }
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
+
+    def json_upload_with_duplicated_organization_tags(
+        self,
+    ) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "n1", "organization_tags": ["ot1", "ot2"]},
+                    {"name": "n2", "organization_tags": ["ot1"]},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_statistics(response, {"organization_tags_created": 2})
+        assert self.get_row(response, 0) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "n1", "info": ImportState.NEW},
+                "organization_tags": [
+                    {"value": "ot1", "info": ImportState.NEW},
+                    {"value": "ot2", "info": ImportState.NEW},
+                ],
+            },
+        }
+        assert self.get_row(response, 1) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "n2", "info": ImportState.NEW},
+                "organization_tags": [
+                    {"value": "ot1", "info": ImportState.DONE},
+                ],
+            },
+        }
