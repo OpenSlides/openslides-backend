@@ -30,12 +30,9 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         }
 
     def test_create(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
-                "meeting/1333": {
-                    "name": "name_JhlFOAfK",
-                    "is_active_in_organization_id": 1,
-                },
                 "user/110": {"username": "test_Xcdfgee"},
                 "meeting_user/110": {
                     "meeting_id": 1133,
@@ -91,12 +88,9 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_finished(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
-                "meeting/1333": {
-                    "name": "name_JhlFOAfK",
-                    "is_active_in_organization_id": 1,
-                },
                 "user/110": {"username": "test_Xcdfgee"},
                 "meeting_user/110": {
                     "meeting_id": 1133,

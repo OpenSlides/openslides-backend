@@ -10,9 +10,11 @@ class MotionStateSort(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"active_meeting_ids": [1]},
+            "committee/1": {"meeting_ids": [1]},
             "meeting/1": {
                 "motion_state_ids": [1, 2, 3],
                 "is_active_in_organization_id": 1,
+                "committee_id": 1,
             },
             "motion_workflow/1": {"state_ids": [1, 2, 3], "meeting_id": 1},
             "motion_state/1": {"workflow_id": 1, "meeting_id": 1},

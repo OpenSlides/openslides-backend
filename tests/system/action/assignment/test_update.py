@@ -9,6 +9,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 "meeting/110": {
                     "name": "name_sdurqw12",
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
             }
@@ -27,6 +28,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [11],
                     "assignment_poll_add_candidates_to_list_of_speakers": True,
+                    "committee_id": 1,
                 },
                 "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
                 "mediafile/1": {
@@ -86,6 +88,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_ids": [1],
                     "assignment_candidate_ids": ids,
                     "assignment_poll_add_candidates_to_list_of_speakers": True,
+                    "committee_id": 1,
                 },
                 "assignment/1": {
                     "title": "assignment_with_candidates",

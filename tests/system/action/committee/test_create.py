@@ -404,3 +404,187 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "external_id": external_id,
             },
         )
+
+    def test_create_with_parent(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "Committee 1",
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "enable_electronic_voting": True,
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.create",
+            {"name": "Committee 2", "organization_id": 1, "parent_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": "Committee 2",
+                "organization_id": 1,
+                "parent_id": 1,
+                "all_parent_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "committee/1", {"child_ids": [2], "all_child_ids": [2]}
+        )
+
+    def test_create_with_parent_as_committee_admin(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "Committee 1",
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "enable_electronic_voting": True,
+                },
+            }
+        )
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+
+        response = self.request(
+            "committee.create",
+            {"name": "Committee 2", "organization_id": 1, "parent_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": "Committee 2",
+                "organization_id": 1,
+                "parent_id": 1,
+                "all_parent_ids": [1],
+            },
+        )
+
+    def test_create_with_parent_as_grandparent_committee_admin(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "Committee 1",
+                    "child_ids": [2],
+                    "all_child_ids": [2],
+                },
+                "committee/2": {
+                    "organization_id": 1,
+                    "name": "Committee 2",
+                    "parent_id": 1,
+                    "all_parent_ids": [1],
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "enable_electronic_voting": True,
+                },
+            }
+        )
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+
+        response = self.request_multi(
+            "committee.create",
+            [
+                {"name": "Committee 3", "organization_id": 1, "parent_id": 2},
+                {"name": "Committee 4", "organization_id": 1, "parent_id": 2},
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "child_ids": [2],
+                "all_child_ids": [2, 3, 4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [3, 4],
+                "all_child_ids": [3, 4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "name": "Committee 3",
+                "organization_id": 1,
+                "parent_id": 2,
+                "all_parent_ids": [1, 2],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {
+                "name": "Committee 4",
+                "organization_id": 1,
+                "parent_id": 2,
+                "all_parent_ids": [1, 2],
+            },
+        )
+
+    def test_create_with_parent_wrong_committee_admin(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "Committee 1",
+                },
+                "committee/2": {
+                    "organization_id": 1,
+                    "name": "Committee 2",
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "enable_electronic_voting": True,
+                },
+            }
+        )
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+
+        response = self.request(
+            "committee.create",
+            {"name": "Committee 3", "organization_id": 1, "parent_id": 1},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.create. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )
+
+    def test_create_with_parent_not_committee_admin(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "Committee 1",
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "enable_electronic_voting": True,
+                },
+            }
+        )
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.create",
+            {"name": "Committee 2", "organization_id": 1, "parent_id": 1},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.create. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )

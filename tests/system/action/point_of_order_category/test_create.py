@@ -4,14 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class PointOfOrderCategoryCreate(BaseActionTestCase):
     def test_create_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/110": {
-                    "name": "name_meeting_110",
-                    "is_active_in_organization_id": 1,
-                },
-            }
-        )
+        self.create_meeting(110)
         response = self.request(
             "point_of_order_category.create",
             {"text": "blablabla", "rank": 11, "meeting_id": 110},

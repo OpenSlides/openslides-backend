@@ -7,11 +7,11 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorMessageUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(2)
         self.set_models(
             {
                 "meeting/2": {
                     "projector_message_ids": [2],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector_message/2": {"meeting_id": 2, "message": "test1"},
             }

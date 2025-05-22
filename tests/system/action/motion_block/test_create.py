@@ -11,6 +11,7 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "name": "test",
                 "agenda_item_creation": "always",
                 "is_active_in_organization_id": 1,
+                "committee_id": 1,
             },
         )
         response = self.request(

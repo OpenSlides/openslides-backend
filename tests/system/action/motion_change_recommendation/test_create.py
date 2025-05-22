@@ -6,9 +6,10 @@ from tests.util import Response
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [233], "is_active_in_organization_id": 1},
+                "meeting/1": {"motion_ids": [233]},
                 "motion/233": {"meeting_id": 1},
             }
         )
@@ -130,9 +131,10 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.crid = 0
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [233], "is_active_in_organization_id": 1},
+                "meeting/1": {"motion_ids": [233]},
                 "motion/233": {"meeting_id": 1},
             }
         )

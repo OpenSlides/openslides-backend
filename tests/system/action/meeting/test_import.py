@@ -239,6 +239,7 @@ class MeetingImport(BaseActionTestCase):
                         {
                             "meeting_user_ids": [11],
                             "is_active": True,
+                            "home_committee_id": 5,
                         },
                     ),
                 },
