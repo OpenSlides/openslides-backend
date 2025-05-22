@@ -144,9 +144,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         Useful when an action is just executed for the end result and not for testing it.
         """
         ActionClass = actions_map[action_name]
-        # # with self.datastore.get_database_context():
-        # with get_new_os_conn() as conn:
-        #     self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
         action = ActionClass(
             self.services,
             self.datastore,
@@ -175,8 +172,14 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "motions_default_workflow_id": base,
+                    "motions_default_amendment_workflow_id": base,
+                    'reference_projector_id': base,
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
+                },
+                f"projector/{base}": {
+                    "sequential_number": base,
+                    "meeting_id": base
                 },
                 f"group/{base}": {
                     "meeting_id": base,
@@ -193,12 +196,17 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "name": f"group{base+2}",
                 },
                 f"motion_workflow/{base}": {
+                    "name": "flo",
+                    "sequential_number": base,
                     "meeting_id": base,
                     "default_workflow_meeting_id": base,
+                    "default_amendment_workflow_meeting_id": base,
                     "state_ids": [base],
                     "first_state_id": base,
                 },
                 f"motion_state/{base}": {
+                    "name": "stasis",
+                    "weight": 36,
                     "meeting_id": base,
                     "workflow_id": base,
                     "first_state_of_workflow_id": base,
@@ -338,7 +346,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         return user_id
 
-    @with_database_context
+    # @with_database_context
     def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
         """
         Sets the users groups, returns the meeting_user_ids
@@ -397,7 +405,8 @@ class BaseActionTestCase(BaseSystemTestCase):
         )["meeting"]
         user = self.datastore.get(
             f"user/{user_id}",
-            ["user_meeting_ids", "meeting_ids"],
+            # TODO here was a wrong field 'user_meeting_ids' check if there can be performance improvements by now using 'meeting_user_ids'
+            ["meeting_user_ids", "meeting_ids"], 
             lock_result=False,
             use_changed_models=False,
         )
@@ -412,7 +421,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         for group in groups.values():
             meeting_id = group["meeting_id"]
             meeting_user_id = meeting_users[meeting_id]["id"]
-            meetings[meeting_id]["id"] = meeting_id
+            # meetings[meeting_id]["id"] = meeting_id
             add_to_list(meeting_users[meeting_id], "group_ids", group["id"])
             add_to_list(group, "meeting_user_ids", meeting_user_id)
             add_to_list(meetings[meeting_id], "meeting_user_ids", meeting_user_id)
@@ -431,7 +440,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         return [mu["id"] for mu in meeting_users.values()]
 
-    @with_database_context
+    # @with_database_context
     def _fetch_groups(self, group_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
         """
         Helper method to partition the groups by their meeting id.
@@ -510,7 +519,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             True,
         )
 
-    @with_database_context
+    # @with_database_context
     def assert_history_information(
         self, fqid: FullQualifiedId, information: list[str] | None
     ) -> None:
@@ -529,7 +538,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             assert informations
             self.assertEqual(last_information[fqid], information)
 
-    @with_database_context
+    # @with_database_context
     def assert_history_information_contains(
         self, fqid: FullQualifiedId, information: str
     ) -> None:

@@ -18,68 +18,8 @@ from tests.database.writer.system.util import (
     create_models,
     create_write_requests,
     get_data,
+    get_group_base_data,
 )
-
-
-def get_group_base_data() -> list[dict[str, Any]]:
-    return [
-        {
-            "events": [
-                {
-                    "type": EventType.Create,
-                    "fqid": "group/1",
-                    "fields": {"name": "1", "meeting_id": 1},
-                },
-                {
-                    "type": EventType.Create,
-                    "fqid": "committee/1",
-                    "fields": {"name": "1"},
-                },
-                {
-                    "type": EventType.Create,
-                    "fqid": "projector/1",
-                    "fields": {
-                        "name": "1",
-                        "sequential_number": 1,
-                        "meeting_id": 1,
-                    },
-                },
-                {
-                    "type": EventType.Create,
-                    "fqid": "motion_state/1",
-                    "fields": {
-                        "weight": 1,
-                        "name": "1",
-                        "meeting_id": 1,
-                        "workflow_id": 1,
-                    },
-                },
-                {
-                    "type": EventType.Create,
-                    "fqid": "motion_workflow/1",
-                    "fields": {
-                        "name": "1",
-                        "meeting_id": 1,
-                        "sequential_number": 1,
-                        "first_state_id": 1,
-                    },
-                },
-                {
-                    "type": EventType.Create,
-                    "fqid": "meeting/1",
-                    "fields": {
-                        "name": "1",
-                        "language": "it",
-                        "motions_default_workflow_id": 1,
-                        "motions_default_amendment_workflow_id": 1,
-                        "committee_id": 1,
-                        "reference_projector_id": 1,
-                        "default_group_id": 1,
-                    },
-                },
-            ]
-        }
-    ]
 
 
 def test_update() -> None:

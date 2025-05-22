@@ -36,18 +36,15 @@ def assert_model(fqid: FullQualifiedId, fields: Model) -> None:
             .get(id_)
         )
         assert model, "No model returned from database."
-        failing_fields = {k: v for k, v in fields.items() if v != model[k]}
+        expected_fields = {k:v for k,v in fields.items() if v is not None}
+        failing_fields = {k: v for k, v in expected_fields.items() if v != model[k]}
         assert not failing_fields, (
             f"failing fields: {dict({k: model[k] for k in failing_fields})} expected fields: {failing_fields}"
             ""
         )
         assert (
-            fields == model
+            expected_fields == model
         ), f"fields not expected in model: {dict({k: v for k, v in model.items() if k not in fields})}"
-
-        # assert fields == database_reader.get_many(
-        #     [GetManyRequest(collection, [id_], [field for field in fields.keys()])]
-        # ).get(collection, dict()).get(id_).items()
 
 
 def assert_no_model(fqid: FullQualifiedId) -> None:
@@ -86,6 +83,67 @@ def get_data(data_part: dict[str, Any] = dict()) -> list[dict[str, Any]]:
         }
     ]
 
+
+
+def get_group_base_data() -> list[dict[str, Any]]:
+    return [
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "fqid": "group/1",
+                    "fields": {"name": "1", "meeting_id": 1},
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": "committee/1",
+                    "fields": {"name": "1"},
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": "projector/1",
+                    "fields": {
+                        "name": "1",
+                        "sequential_number": 1,
+                        "meeting_id": 1,
+                    },
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": "motion_state/1",
+                    "fields": {
+                        "weight": 1,
+                        "name": "1",
+                        "meeting_id": 1,
+                        "workflow_id": 1,
+                    },
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": "motion_workflow/1",
+                    "fields": {
+                        "name": "1",
+                        "meeting_id": 1,
+                        "sequential_number": 1,
+                        "first_state_id": 1,
+                    },
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": "meeting/1",
+                    "fields": {
+                        "name": "1",
+                        "language": "it",
+                        "motions_default_workflow_id": 1,
+                        "motions_default_amendment_workflow_id": 1,
+                        "committee_id": 1,
+                        "reference_projector_id": 1,
+                        "default_group_id": 1,
+                    },
+                },
+            ]
+        }
+    ]
 
 def create_write_requests(data: list[dict[str, Any]]) -> list[WriteRequest]:
     return [

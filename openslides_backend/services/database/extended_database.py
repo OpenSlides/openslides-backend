@@ -5,7 +5,7 @@ from typing import Any, cast
 from psycopg import Connection, rows
 
 from openslides_backend.models.base import model_registry
-from openslides_backend.models.fields import ArrayField, Field
+from openslides_backend.models.fields import ArrayField, Field, RelationListField, GenericRelationListField
 from openslides_backend.services.database.interface import (
     COLLECTION_MAX_LEN,
     FQID_MAX_LEN,
@@ -234,6 +234,12 @@ class ExtendedDatabase(Database):
                         results.setdefault(collection, {}).setdefault(id_, {}).update(
                             model
                         )
+                # delete fields set to None in changed models
+                for collection, mapped_fields_per_id in mapped_fields_per_collection_and_id.items():
+                    for id_, mapped_fields in mapped_fields_per_id.items():
+                        for field in mapped_fields:
+                            if collection in results and id_ in results[collection] and field in results[collection][id_] and results[collection][id_][field] is None:
+                                del results[collection][id_][field]
         else:
             results = self.database_reader.get_many(get_many_requests, lock_result)
         return results
@@ -378,6 +384,37 @@ class ExtendedDatabase(Database):
     ) -> bool:
         return self.count(collection, filter_, lock_result, use_changed_models) > 0
 
+    def aggregate(
+        self,
+        method: str,
+        collection: Collection,
+        filter_: Filter | None,
+        field_or_star: str,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> int | None:
+        if use_changed_models and self._changed_models[collection]:
+            match method:
+                case "count":
+                    return len(
+                        self.filter(collection, filter_, [], lock_result, use_changed_models)
+                    )
+                case "min" | "max":
+                    response = self.filter(
+                        collection, filter_, [field_or_star], lock_result, use_changed_models
+                    )
+                    if response:
+                        if method == "max":
+                            return max(model[field_or_star] for model in response.values())
+                        else:
+                            return min(model[field_or_star] for model in response.values())
+                    else:
+                        return None
+        else:
+            return self.database_reader.aggregate(
+                collection, filter_, method, field_or_star, lock_result
+            )
+
     def count(
         self,
         collection: Collection,
@@ -385,14 +422,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int:
-        if use_changed_models and self._changed_models[collection]:
-            return len(
-                self.filter(collection, filter_, [], lock_result, use_changed_models)
-            )
-        else:
-            return self.database_reader.aggregate(
-                collection, filter_, "count", "*", lock_result
-            )
+        return self.aggregate("count", collection, filter_, "*", lock_result, use_changed_models)
 
     def min(
         self,
@@ -402,15 +432,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        if use_changed_models and self._changed_models[collection]:
-            response = self.filter(
-                collection, filter_, [field], lock_result, use_changed_models
-            )
-            return min(model[field] for model in response.values())
-        else:
-            return self.database_reader.aggregate(
-                collection, filter_, "min", field, lock_result
-            )
+        return self.aggregate("min", collection, filter_, field, lock_result, use_changed_models)
 
     def max(
         self,
@@ -420,15 +442,7 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        if use_changed_models and self._changed_models[collection]:
-            response = self.filter(
-                collection, filter_, [field], lock_result, use_changed_models
-            )
-            return max(model[field] for model in response.values())
-        else:
-            return self.database_reader.aggregate(
-                collection, filter_, "max", field, lock_result
-            )
+        return self.aggregate("max", collection, filter_, field, lock_result, use_changed_models)
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         collection, id_ = collection_and_id_from_fqid(fqid)
@@ -497,7 +511,8 @@ class ExtendedDatabase(Database):
                             field: Field = model_registry[collection]().get_field(
                                 field_name
                             )
-                            if not isinstance(field, ArrayField):
+                            # TODO how to handle Relationlistfields
+                            if not isinstance(field, (ArrayField, RelationListField, GenericRelationListField)):
                                 raise InvalidFormat(
                                     f"'{field_name}' used for 'list_fields' 'remove' or 'add' is no array in database."
                                 )

@@ -10,7 +10,7 @@ from openslides_backend.shared.interfaces.event import EventType
 from tests.database.writer.system.util import assert_no_model, create_models, get_data
 
 
-def test_truncate_simple(db_connection: Connection) -> None:
+def test_truncate_simple() -> None:
     data = get_data()
     create_models(data)
     fqid = "user/1"

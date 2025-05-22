@@ -20,6 +20,7 @@ from tests.database.writer.system.util import (
     create_models,
     create_write_requests,
     get_data,
+    get_group_base_data,
 )
 
 
@@ -79,6 +80,33 @@ def test_create_view_field() -> None:
         "user/1",
         {"id": 1, "username": "1", "first_name": "1", "meeting_user_ids": None},
     )
+
+def test_create_11_field_as_1n() -> None:
+    create_models(get_group_base_data())
+    create_models([{
+        "events": [
+            {'type': EventType.Create, 'fqid': 'topic/1', 'fields': {'title': "2", "meeting_id": 1, "sequential_number": 1}}, 
+            {'type': EventType.Create, 'fqid': 'topic/2', 'fields': {'title': "2", "meeting_id": 1, "sequential_number": 2}}, 
+        ]
+        }
+    ])
+    write_requests = create_write_requests([{
+        "events": [
+            # TODO These two should not be able to write because of the same topic
+            {'type': EventType.Create, 'fqid': 'agenda_item/1', 'fields': {'content_object_id': 'topic/1', 'id': 1, 'closed': False, 'type': 'common', 'meeting_id': 1, 'level': 0, 'is_hidden': False, 'is_internal': False, 'weight': 1}}, 
+            {'type': EventType.Create, 'fqid': 'agenda_item/2', 'fields': {'content_object_id': 'topic/1', 'id': 2, 'closed': False, 'type': 'common', 'meeting_id': 1, 'level': 0, 'is_hidden': False, 'is_internal': False, 'weight': 2}}, 
+            {'type': EventType.Update, 'fqid': 'topic/1', 'fields': {'agenda_item_id': 2}}, 
+            {'type': EventType.Update, 'fqid': 'meeting/1', 'fields': {'agenda_item_ids': [1, 2]}}
+        ]
+        }
+    ])
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(write_requests)
+    assert_model("topic/2", {'title': "2", "meeting_id": 1, "id":2})
+    assert_model("topic/1", {'title': "2", "meeting_id": 1,'agenda_item_id': 2, "id":1})
+    assert_model("agenda_item/1", {'content_object_id': 'topic/1', 'id': 1})
+    assert_model("agenda_item/2", {'content_object_id': 'topic/1', 'id': 2})
 
 
 def test_create_nm_field_simple() -> None:

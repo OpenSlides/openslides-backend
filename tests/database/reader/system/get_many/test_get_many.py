@@ -203,12 +203,10 @@ def test_changed_models_new(db_connection: Connection) -> None:
             1: {
                 "id": 1,
                 "name": "23",
-                "description": None,
             },
             3: {
                 "id": 3,
                 "name": "3",
-                "description": None,
             },
         },
     }

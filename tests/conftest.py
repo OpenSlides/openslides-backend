@@ -24,8 +24,6 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     """applies the login and auth-service mocker
     truncates all database tables for initialization of tests
     """
-    # connection_pool = get_current_os_conn_pool()
-    # with connection_pool:
     login_patch.start()
     auth_http_adapter_patch.start()
     with get_new_os_conn() as conn:

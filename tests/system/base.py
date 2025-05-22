@@ -1,10 +1,11 @@
 import threading
 from collections.abc import Callable
+from typing import defaultdict
 from copy import deepcopy
 from typing import Any, cast
-from unittest import TestCase
+from unittest import TestCase, TestResult
 from unittest.mock import MagicMock, _patch
-
+from psycopg import sql, Connection
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 
@@ -16,7 +17,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.env import Environment
-from openslides_backend.shared.exceptions import ActionException, DatastoreException
+from openslides_backend.shared.exceptions import ActionException, DatastoreException, ModelDoesNotExist
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -24,6 +25,7 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
     id_from_fqid,
+    collection_and_id_from_fqid,
     is_reserved_field,
 )
 from openslides_backend.shared.util import (
@@ -72,31 +74,29 @@ class BaseSystemTestCase(TestCase):
 
         self.created_fqids = set()
         if self.init_with_login:
-            self.create_model(
-                "user/1",
+            self.set_models(
                 {
-                    "username": ADMIN_USERNAME,
-                    "password": self.auth.hash(ADMIN_PASSWORD),
-                    "default_password": ADMIN_PASSWORD,
-                    "is_active": True,
-                    "organization_management_level": "superadmin",
-                    "organization_id": ONE_ORGANIZATION_ID,
-                },
-            )
-            self.create_model(
-                "theme/1",
-                {
-                    "name": "OpenSlides Organization",
-                },
-            )
-            self.create_model(
-                ONE_ORGANIZATION_FQID,
-                {
-                    "name": "OpenSlides Organization",
-                    "default_language": "en",
-                    "user_ids": [1],
-                    "theme_id": 1,
-                },
+                    ONE_ORGANIZATION_FQID:
+                    {
+                        "name": "OpenSlides Organization",
+                        "default_language": "en",
+                        "user_ids": [1],
+                        "theme_id": 1,
+                    },
+                    "theme/1":
+                    {
+                        "name": "OpenSlides Organization",
+                    },
+                    "user/1":
+                    {
+                        "username": ADMIN_USERNAME,
+                        "password": self.auth.hash(ADMIN_PASSWORD),
+                        "default_password": ADMIN_PASSWORD,
+                        "is_active": True,
+                        "organization_management_level": "superadmin",
+                        "organization_id": ONE_ORGANIZATION_ID,
+                    },
+                }
             )
         self.client = self.create_client(self.update_vote_service_auth_data)
         self.client.auth = self.auth  # type: ignore
@@ -120,6 +120,16 @@ class BaseSystemTestCase(TestCase):
         timeout = -2: Deacticates threading alltogether. The action is executed in the main thread.
         """
         self.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
+
+    def run(self, result: TestResult | None=None) -> TestResult:
+        """
+        Overrides the TestCases run method.
+        Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
+        """
+        with get_new_os_conn() as conn:
+            self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            self.connection = conn
+            return super().run(result)
 
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
@@ -205,16 +215,17 @@ class BaseSystemTestCase(TestCase):
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        with get_new_os_conn() as conn:  # TODO I think this can be still used directly from the self variable
-            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
+        self.datastore.write(write_request)
+        self.connection.commit()
+        self.adjust_id_sequences()
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        with get_new_os_conn() as conn:
-            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
+        self.datastore.write(write_request)
+        self.connection.commit()
 
     def get_create_events(
         self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
@@ -234,7 +245,7 @@ class BaseSystemTestCase(TestCase):
     def get_write_request(self, events: list[Event]) -> WriteRequest:
         return WriteRequest(events, user_id=0)
 
-    def set_models(self, models: dict[str, dict[str, Any]]) -> None:
+    def set_models(self, models: dict[FullQualifiedId, dict[str, Any]]) -> None:
         """
         Can be used to set multiple models at once, independent of create or update.
         Uses self.created_fqids to determine which models are already created. If you want to update
@@ -251,8 +262,26 @@ class BaseSystemTestCase(TestCase):
         if self.check_auth_mockers_started():
             for event in write_request.events:
                 self.auth.create_update_user_session(event)  # type: ignore
-        with get_new_os_conn() as conn:
-            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(write_request)
+        self.datastore.write(write_request)
+        self.connection.commit()
+        self.adjust_id_sequences()
+
+    def adjust_id_sequences(self) -> None:
+        for collection in {
+            collection_from_fqid(fqid)
+            for fqid in self.created_fqids
+        }:
+            self.connection.commit()
+            maximum = self.datastore.max(collection, None, "id")
+            with self.connection.cursor() as curs:                
+                curs.execute(
+                    sql.SQL(
+                        """SELECT setval('{collection}_t_id_seq', {maximum})"""
+                    ).format(
+                        collection=sql.SQL(collection),
+                        maximum=sql.Literal(maximum),
+                    )
+                )
 
     def check_auth_mockers_started(self) -> bool:
         if (
@@ -273,14 +302,15 @@ class BaseSystemTestCase(TestCase):
                 raise JsonSchemaException(e.message)
 
     def get_model(self, fqid: str) -> dict[str, Any]:
-        with get_new_os_conn() as conn:
-            model = ExtendedDatabase(conn, MagicMock(), MagicMock()).get(
-                fqid,
-                mapped_fields=[],
-                lock_result=False,
-                use_changed_models=False,
-            )
+        self.connection.commit()
+        model = self.datastore.get(
+            fqid,
+            mapped_fields=[],
+            lock_result=False,
+            use_changed_models=False,
+        )
         self.assertTrue(model)
+        assert model
         self.assertEqual(model.get("id"), id_from_fqid(fqid))
         return model
 
@@ -290,7 +320,7 @@ class BaseSystemTestCase(TestCase):
         return self._assert_fields(fqid, fields)
 
     def assert_model_not_exists(self, fqid: str) -> None:
-        with self.assertRaises(DatastoreException):
+        with self.assertRaises(ModelDoesNotExist):
             self.get_model(fqid)
 
     def assert_model_deleted(
@@ -324,10 +354,10 @@ class BaseSystemTestCase(TestCase):
                 )
 
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
-        with get_new_os_conn() as conn:
-            db_count = ExtendedDatabase(conn, MagicMock(), MagicMock()).count(
-                collection,
-                FilterOperator("meeting_id", "=", meeting_id),
-                lock_result=False,
-            )
-            self.assertEqual(db_count, count)
+        self.connection.commit()
+        db_count = self.datastore.count(
+            collection,
+            FilterOperator("meeting_id", "=", meeting_id),
+            lock_result=False,
+        )
+        self.assertEqual(db_count, count)

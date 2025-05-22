@@ -215,9 +215,10 @@ class DatabaseReader:
             if not mapped_fields.needs_whole_model and mapped_fields.unique_fields:
                 if not (model := collection_result_part.get(id_, dict())):
                     collection_result_part[id_] = model
+                # TODO is this nec3essary or obsolete by what has to be done after applying changed models anyway?
                 for field in mapped_fields.unique_fields:
-                    if row.get(field) is not None:
-                        model[field] = row[field]
+                    if row[field] is not None:
+                        model[field] = row.get(field, None)
             else:
                 collection_result_part[id_] = row
 
