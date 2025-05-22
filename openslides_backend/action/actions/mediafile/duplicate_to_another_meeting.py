@@ -20,7 +20,6 @@ FIELDS = [
     "mimetype",
     "pdf_information",
 ]
-#
 
 
 @register_action(
