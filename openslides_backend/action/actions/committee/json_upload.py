@@ -96,6 +96,7 @@ class CommitteeJsonUpload(
         data = instance.pop("data")
         self.setup_lookups(data)
         self.names = {entry["name"] for entry in data}
+        self.related_instances_created: dict[str, set[str]] = {}
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # check meeting_template afterwards to ensure each committee has an id
@@ -330,7 +331,11 @@ class CommitteeJsonUpload(
                         # the matched committee is currently being imported and therefore has no id
                         pass
                     elif create:
-                        obj["info"] = ImportState.NEW
+                        if name not in self.related_instances_created.get(field, {}):
+                            obj["info"] = ImportState.NEW
+                            self.related_instances_created.setdefault(field, set()).add(
+                                name
+                            )
                     else:
                         obj["info"] = ImportState.WARNING
                         missing.append(name)

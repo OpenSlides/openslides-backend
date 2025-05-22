@@ -98,21 +98,21 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
 
     def create_models(self, rows: list[ImportRow]) -> None:
         # create tags & update row data
-        create_tag_data: list[dict[str, Any]] = []
+        create_tag_data: dict[str, dict[str, Any]] = {}
         for row in rows:
             for tag in row["data"].get("organization_tags", []):
-                if isinstance(tag, str):
-                    create_tag_data.append(
-                        {
-                            "name": tag,
-                            "color": DEFAULT_TAG_COLOR,
-                            "organization_id": ONE_ORGANIZATION_ID,
-                        }
-                    )
-        if create_tag_data:
-            results = self.execute_other_action(OrganizationTagCreate, create_tag_data)
+                if isinstance(tag, str) and tag not in create_tag_data:
+                    create_tag_data[tag] = {
+                        "name": tag,
+                        "color": DEFAULT_TAG_COLOR,
+                        "organization_id": ONE_ORGANIZATION_ID,
+                    }
+        if create_tag_data_values := list(create_tag_data.values()):
+            results = self.execute_other_action(
+                OrganizationTagCreate, create_tag_data_values
+            )
             self.update_rows_from_results(
-                rows, create_tag_data, results, "organization_tags"
+                rows, create_tag_data_values, results, "organization_tags"
             )
 
         # create missing committees & update row data
