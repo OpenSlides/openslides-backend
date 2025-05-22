@@ -2,7 +2,7 @@ from typing import Any
 
 from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, ProtectedModelsException
 from ....shared.patterns import id_from_fqid
 from ...generics.delete import DeleteAction

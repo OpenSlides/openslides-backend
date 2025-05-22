@@ -3,7 +3,7 @@ from typing import Any
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Mediafile
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID

@@ -13,14 +13,14 @@ from ..models.fields import (
     RelationListField,
 )
 from ..models.models import Meeting, User
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
 
-def export_meeting(datastore: DatastoreService, meeting_id: int) -> dict[str, Any]:
+def export_meeting(datastore: Database, meeting_id: int) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
     # fetch meeting
@@ -136,7 +136,7 @@ def add_users(
     user_ids: list[int],
     export_data: dict[str, Any],
     meeting_id: int,
-    datastore: DatastoreService,
+    datastore: Database,
 ) -> None:
     if not user_ids:
         return

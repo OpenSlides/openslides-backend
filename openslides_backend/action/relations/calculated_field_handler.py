@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
 from ...models.fields import Field
-from ...services.datastore.interface import DatastoreService
+from ...services.database.interface import Database
 from .typing import RelationUpdates
 
 
@@ -14,9 +14,9 @@ class CalculatedFieldHandlerCall(TypedDict):
 
 
 class CalculatedFieldHandler(ABC):
-    datastore: DatastoreService
+    datastore: Database
 
-    def __init__(self, datastore: DatastoreService) -> None:
+    def __init__(self, datastore: Database) -> None:
         self.datastore = datastore
 
     @abstractmethod

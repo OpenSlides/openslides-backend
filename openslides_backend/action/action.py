@@ -16,8 +16,8 @@ from ..permissions.management_levels import (
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
 from ..presenter.base import BasePresenter
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -107,7 +107,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def __init__(
         self,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,

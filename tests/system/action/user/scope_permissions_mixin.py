@@ -40,8 +40,8 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         if scope == UserScope.Organization:
             self.set_models(
                 {
-                    "committee/1": {"meeting_ids": [1]},
-                    "committee/2": {"meeting_ids": [2]},
+                    "committee/1": {"name": "com1", "meeting_ids": [1]},
+                    "committee/2": {"name": "com2", "meeting_ids": [2]},
                     "meeting/1": {
                         "user_ids": [111],
                         "committee_id": 1,
@@ -55,6 +55,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
+                        "username": "user111",
                         "meeting_ids": [1, 2],
                         "committee_ids": [1, 2],
                         "meeting_user_ids": [11, 22],
@@ -76,7 +77,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "committee/1": {"meeting_ids": [1, 2]},
+                    "committee/1": {"name": "com", "meeting_ids": [1, 2]},
                     "meeting/1": {
                         "user_ids": [111],
                         "committee_id": 1,
@@ -90,6 +91,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
+                        "username": "user111",
                         "meeting_ids": [1, 2],
                         "committee_ids": [1],
                         "meeting_user_ids": [11, 22],
@@ -111,8 +113,12 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         elif scope == UserScope.Meeting:
             self.set_models(
                 {
-                    "committee/1": {"meeting_ids": [1]},
+                    "committee/1": {"name": "com", "meeting_ids": [1]},
                     "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                    "user/111": {"meeting_ids": [1], "committee_ids": [1]},
+                    "user/111": {
+                        "username": "user111",
+                        "meeting_ids": [1],
+                        "committee_ids": [1],
+                    },
                 }
             )

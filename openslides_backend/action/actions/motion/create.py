@@ -4,7 +4,7 @@ from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import (

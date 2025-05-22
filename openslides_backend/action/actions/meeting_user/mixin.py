@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....action.util.typing import ActionData, ActionResults

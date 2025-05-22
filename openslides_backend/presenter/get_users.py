@@ -3,8 +3,6 @@ from typing import Any
 
 import fastjsonschema
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import MissingPermission
@@ -90,7 +88,6 @@ class GetUsers(BasePresenter):
             self.datastore.get_all(
                 "user",
                 fields,
-                DeletedModelsBehaviour.NO_DELETED,
             ).values()
         )
 

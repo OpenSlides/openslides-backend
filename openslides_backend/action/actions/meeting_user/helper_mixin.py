@@ -1,6 +1,5 @@
 from typing import Any
 
-from ....shared.util import fqid_from_collection_and_id
 from ...action import Action
 from ...mixins.meeting_user_helper import get_groups_from_meeting_user, get_meeting_user
 from .create import MeetingUserCreate
@@ -17,9 +16,7 @@ class MeetingUserHelperMixin(Action):
                 [{"meeting_id": meeting_id, "user_id": user_id}],
             )
             id_ = action_results[0]["id"]  # type: ignore
-            self.datastore.changed_models.get(
-                fqid_from_collection_and_id("meeting_user", id_), {}
-            ).pop("meta_new", None)
+            self.datastore.get_changed_model("meeting_user", id_).pop("meta_new", None)
             return id_
 
     def get_meeting_user(

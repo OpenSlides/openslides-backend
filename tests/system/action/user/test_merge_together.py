@@ -326,13 +326,15 @@ class UserMergeTogether(BaseActionTestCase):
         or else in the corresponding mixin class.
         """
         action = actions_map["user.merge_together"]
-        merge_together = action(
-            self.services,
-            self.datastore,
-            RelationManager(self.datastore),
-            self.get_application().logging,
-            self.env,
-        )
+        with get_new_os_conn() as conn:
+            ex_db = ExtendedDatabase(conn, self.logging, self.env)
+            merge_together = action(
+                self.services,
+                ex_db,
+                RelationManager(ex_db),
+                self.get_application().logging,
+                self.env,
+            )
         field_groups = merge_together._collection_field_groups  # type: ignore
         collection_fields = merge_together._all_collection_fields  # type: ignore
         broken = []
@@ -1842,7 +1844,7 @@ class UserMergeTogether(BaseActionTestCase):
             for meeting_id in range(1, 4)
         }
         structure_level_data: dict[str, dict[str, Any]] = {
-            f"structure_level/{(s_level_id := (meeting_id -1)*2 + s_level_index)}": {
+            f"structure_level/{(s_level_id := (meeting_id - 1)*2 + s_level_index)}": {
                 "id": s_level_id,
                 "name": name,
                 "meeting_user_ids": meeting_user_ids,

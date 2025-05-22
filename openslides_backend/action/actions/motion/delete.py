@@ -7,7 +7,7 @@ from openslides_backend.shared.typing import HistoryInformation
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction

@@ -6,7 +6,7 @@ from openslides_backend.action.actions.organization_tag.create import (
     OrganizationTagCreate,
 )
 from openslides_backend.action.util.typing import ActionData, ActionResults
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....permissions.management_levels import OrganizationManagementLevel

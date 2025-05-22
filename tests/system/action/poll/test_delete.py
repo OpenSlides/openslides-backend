@@ -130,6 +130,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
 
     @performance
     def test_delete_performance(self) -> None:
+        # TODO this needs a different idea
         user_ids = self.prepare_users_and_poll(1000)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
