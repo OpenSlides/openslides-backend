@@ -1184,3 +1184,22 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "committee/4", {"parent_id": None, "all_parent_ids": []}
         )
+
+    def test_update_set_ancestor_as_parent_with_ancestor_perm(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([2])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2", {"child_ids": [3, 4], "all_child_ids": [3, 4]}
+        )
+        self.assert_model_exists("committee/4", {"parent_id": 2, "all_parent_ids": [2]})

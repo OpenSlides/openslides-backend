@@ -179,11 +179,13 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
         if "parent_id" in instance:
+            child_id = instance["id"]
+            parent_id = instance["parent_id"]
             data = self.datastore.get_many(
                 [
                     GetManyRequest(
                         "committee",
-                        [instance["parent_id"], instance["id"]],
+                        [parent_id, child_id],
                         ["all_parent_ids"],
                     ),
                     GetManyRequest(
@@ -192,11 +194,10 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 ],
                 lock_result=False,
             )
-            committee_ancestors = [
-                com.get("all_parent_ids", []) for com in data["committee"].values()
-            ]
-            parent_intersection = set(committee_ancestors[0]).intersection(
-                committee_ancestors[1]
+            parent_intersection = set(
+                data["committee"][child_id].get("all_parent_ids", [])
+            ).intersection(
+                [*data["committee"][parent_id].get("all_parent_ids", []), parent_id]
             )
             if not len(parent_intersection):
                 raise MissingPermission(
