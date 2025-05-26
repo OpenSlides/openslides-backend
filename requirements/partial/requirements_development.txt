@@ -9,7 +9,7 @@ pip-check==3.0
 pytest==8.3.5
 pytest-cov==6.1.1
 pytest-profiling==1.8.1
-pyupgrade==3.19.1
+pyupgrade==3.20.0
 pyyaml==6.0.2
 
 # typing
