@@ -26,6 +26,7 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             "text",
             "amendment_paragraphs",
             "marked_forwarded",
+            "attachment_meeting_mediafile_ids",
         ],
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},
@@ -54,4 +55,4 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         return True
 
     def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
-        return False
+        return True
