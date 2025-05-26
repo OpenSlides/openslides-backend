@@ -2312,6 +2312,35 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_forward_with_attachments_true_with_amendments_false(self) -> None:
+        self.base_forward_with_attachments_true_without_amendments(
+            with_amendments=False, allow_amendment_forwarding=True
+        )
+
+    def test_forward_with_attachments_true_allow_amendment_forwarding_false(
+        self,
+    ) -> None:
+        self.base_forward_with_attachments_true_without_amendments(
+            with_amendments=True, allow_amendment_forwarding=False
+        )
+
+    def test_forward_with_attachments_true_amendment_allow_motion_forwarding_false(
+        self,
+    ) -> None:
+        self.base_forward_with_attachments_true_without_amendments(
+            with_amendments=True, allow_amendment_forwarding=True
+        )
+
+    def base_forward_with_attachments_true_without_amendments(
+        self, with_amendments: bool, allow_amendment_forwarding: bool
+    ) -> None:
+        """
+        Verify that only mediafiles from the lead motion are forwarded.
+
+        Check 2 cases:
+        - with_amendments=False
+        - with_amendments=True, amendment motion_state has allow_motion_forwarding=False
+        - with_amendments=True, lead motion motion_state has allow_amendment_forwarding=False
+        """
         expected_mediaservice_calls = [(6, 20)]
         expected_models: dict[str, dict[str, Any]] = {
             "meeting/2": {
@@ -2340,6 +2369,22 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
             "motion/14": {"attachment_meeting_mediafile_ids": [26, 25]},
         }
+        custom_model_data: dict[str, dict[str, Any]] = {}
+        if not allow_amendment_forwarding:
+            custom_model_data = {
+                "motion_state/30": {"motion_ids": [13]},
+                "motion_state/34": {
+                    "motion_ids": [12],
+                    "allow_motion_forwarding": True,
+                },
+                "motion/12": {"state_id": 34},
+                "motion/13": {"state_id": 30},
+            }
+        elif with_amendments:
+            custom_model_data = {
+                "motion_state/34": {"motion_ids": [13]},
+                "motion/13": {"state_id": 34},
+            }
         expected_models_do_not_exist = [
             "motion/15",
             "mediafile/21",
@@ -2352,7 +2397,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             expected_mediaservice_calls,
             expected_models_do_not_exist,
             with_attachments=True,
-            with_amendments=False,
+            with_amendments=with_amendments,
+            custom_model_data=custom_model_data,
         )
 
     def test_forward_with_attachments_false_with_amendments_true(self) -> None:
@@ -2399,6 +2445,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         expected_models_do_not_exist: list[str] = [],
         with_attachments: bool = False,
         with_amendments: bool = False,
+        custom_model_data: dict[str, dict[str, Any]] = {},
     ) -> None:
         """
         Verify that:
@@ -2451,6 +2498,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "motion_state/30": {"motion_ids": [12, 13]},
             }
         )
+        if custom_model_data:
+            self.set_models(custom_model_data)
         self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
