@@ -7,6 +7,10 @@ from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.patterns import (
     CollectionField,
     fqid_from_collection_and_id,

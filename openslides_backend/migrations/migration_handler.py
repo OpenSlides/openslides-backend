@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from io import StringIO
 from threading import Lock, Thread
 from typing import Any
@@ -17,7 +17,7 @@ from . import MigrationWrapper
 THREAD_WAIT_TIME = 0.1
 
 
-# class MigrationState(str, Enum):
+# class MigrationState(StrEnum):
 #     """
 #     All possible migration states, ordered by priority. E.g. a running migration implicates that
 #     migrations are required and required migration implicates that finalization is also required.
@@ -29,7 +29,7 @@ THREAD_WAIT_TIME = 0.1
 #     NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
 
 
-class MigrationCommand(str, Enum):
+class MigrationCommand(StrEnum):
     MIGRATE = "migrate"
     FINALIZE = "finalize"
     RESET = "reset"

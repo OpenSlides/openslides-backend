@@ -14,6 +14,7 @@ class CalculatedFieldHandlerCall(TypedDict):
 
 
 class CalculatedFieldHandler(ABC):
+    # TODO use Extended Database correctly (directly instead of the Protocol?)
     datastore: Database
 
     def __init__(self, datastore: Database) -> None:

@@ -106,7 +106,9 @@ class MotionCommentCreate(MotionCommentMixin, CreateActionWithInferredMeeting):
             FilterOperator("motion_id", "=", instance["motion_id"]),
             FilterOperator("meeting_id", "=", instance["meeting_id"]),
         )
-        exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
+        exists = self.datastore.exists(
+            collection=self.model.collection, filter_=filter_
+        )
         if exists:
             raise ActionException(
                 "There already exists a comment for this section, please update it instead."

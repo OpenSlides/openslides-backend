@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 from typing_extensions import NotRequired
@@ -6,7 +6,7 @@ from typing_extensions import NotRequired
 from ..patterns import FullQualifiedId
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     Create = "create"
     Update = "update"
     Delete = "delete"

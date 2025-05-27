@@ -98,15 +98,19 @@ class InvalidFormat(DatabaseException):
     pass
 
 
+class RelationException(DatabaseException):
+    pass
+
+
 class ModelDoesNotExist(DatabaseException):
     def __init__(self, fqid: str) -> None:
-        super().__init__("")
+        super().__init__(f"Model '{fqid}' does not exist.")
         self.fqid = fqid
 
 
 class ModelExists(DatabaseException):
     def __init__(self, fqid: str) -> None:
-        super().__init__("")
+        super().__init__(f"Model '{fqid}' exists.")
         self.fqid = fqid
 
 
@@ -124,16 +128,11 @@ class DatastoreNotEmpty(DatabaseException):
     pass
 
 
-# TODO delete
-class DatastoreException(ServiceException):
+class DatastoreConnectionException(DatabaseException):
     pass
 
 
-class DatastoreConnectionException(DatastoreException):
-    pass
-
-
-class DatastoreLockedException(DatastoreException):
+class DatastoreLockedException(DatabaseException):
     pass
 
 

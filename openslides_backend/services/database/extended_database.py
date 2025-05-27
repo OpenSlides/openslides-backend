@@ -5,7 +5,12 @@ from typing import Any, cast
 from psycopg import Connection, rows
 
 from openslides_backend.models.base import model_registry
-from openslides_backend.models.fields import ArrayField, Field, RelationListField, GenericRelationListField
+from openslides_backend.models.fields import (
+    ArrayField,
+    Field,
+    GenericRelationListField,
+    RelationListField,
+)
 from openslides_backend.services.database.interface import (
     COLLECTION_MAX_LEN,
     FQID_MAX_LEN,
@@ -48,6 +53,7 @@ from .database_writer import DatabaseWriter
 from .mapped_fields import MappedFields
 
 MappedFieldsPerCollectionAndId = dict[str, dict[Id, list[str]]]
+VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 
 
 class ExtendedDatabase(Database):
@@ -107,7 +113,7 @@ class ExtendedDatabase(Database):
         Automatically adds missing id field.
         """
         collection, id_ = collection_and_id_from_fqid(fqid)
-        if replace:
+        if replace or isinstance(instance, DeletedModel):
             self._changed_models[collection][id_] = instance
         else:
             self._changed_models[collection][id_].update(instance)
@@ -145,16 +151,29 @@ class ExtendedDatabase(Database):
         if use_changed_models and (
             changed_model := self._changed_models[collection][id_]
         ):
+            if self.is_deleted(fqid):
+                raise ModelDoesNotExist(fqid)
+            # TODO do deep copy instead
+            # TODO check if the id is always wanted in case of mapped fields
+            changed_model_copy = (
+                {
+                    k: changed_model[k]
+                    for k in mapped_fields + ["id"]
+                    if k in changed_model
+                }
+                if mapped_fields
+                else dict(changed_model)
+            )
             # fetch result from changed models
             if mapped_fields:
                 missing_fields = [
-                    field for field in mapped_fields if field not in changed_model
+                    field for field in mapped_fields if field not in changed_model_copy
                 ]
             else:
-                missing_fields = [field for field in changed_model.keys()]
+                missing_fields = [field for field in changed_model_copy.keys()]
             if not missing_fields:
                 # nothing to do, we've got the full model
-                return changed_model
+                return changed_model_copy
             else:
                 # overwrite params and fetch missing fields from db
                 mapped_fields = missing_fields
@@ -163,9 +182,10 @@ class ExtendedDatabase(Database):
                     raise_exception and id_ not in self._changed_models[collection]
                 )
         else:
-            changed_model = dict()
+            changed_model_copy = dict()
 
         try:
+            # TODO use these functions in other places of the ExtendedDatabase too
             if self.is_new(fqid):
                 # if the model is new, we know it does not exist in the datastore and can directly throw
                 # an exception or return an empty result
@@ -173,7 +193,7 @@ class ExtendedDatabase(Database):
                     error_message = f"fqid: {fqid} is new."
                     # logger.debug(error_message)
                     raise DatabaseException(error_message)
-                return changed_model
+                return changed_model_copy
             else:
                 result = (
                     self.database_reader.get_many(
@@ -192,8 +212,8 @@ class ExtendedDatabase(Database):
                 raise e
             else:
                 return dict()
-        result.update(changed_model)
-        return result
+        result.update(changed_model_copy)
+        return {k: v for k, v in result.items() if v is not None}
 
     def get_many(
         self,
@@ -235,10 +255,18 @@ class ExtendedDatabase(Database):
                             model
                         )
                 # delete fields set to None in changed models
-                for collection, mapped_fields_per_id in mapped_fields_per_collection_and_id.items():
+                for (
+                    collection,
+                    mapped_fields_per_id,
+                ) in mapped_fields_per_collection_and_id.items():
                     for id_, mapped_fields in mapped_fields_per_id.items():
                         for field in mapped_fields:
-                            if collection in results and id_ in results[collection] and field in results[collection][id_] and results[collection][id_][field] is None:
+                            if (
+                                collection in results
+                                and id_ in results[collection]
+                                and field in results[collection][id_]
+                                and results[collection][id_][field] is None
+                            ):
                                 del results[collection][id_][field]
         else:
             results = self.database_reader.get_many(get_many_requests, lock_result)
@@ -265,9 +293,11 @@ class ExtendedDatabase(Database):
             models_mapped_fields,
         ) in mapped_fields_per_collection_and_id.items():
             for id_, mapped_fields in models_mapped_fields.items():
-                if (
-                    changed_model := self._changed_models[collection].get(id_, dict())
-                ) and not changed_model.get("meta_deleted"):
+                if self.is_deleted(fqid_from_collection_and_id(collection, id_)):
+                    raise ModelDoesNotExist(
+                        fqid_from_collection_and_id(collection, id_)
+                    )
+                if changed_model := self._changed_models[collection].get(id_, dict()):
                     results[collection][id_]["id"] = id_
                     if mapped_fields:
                         for field in mapped_fields:
@@ -283,7 +313,7 @@ class ExtendedDatabase(Database):
                         # assuming that whole model is needed and we want that?
                         results[collection][id_] = changed_model
                         missing_fields_per_collection_and_id[collection][id_] = []
-                elif not changed_model.get("meta_deleted"):
+                else:
                     missing_fields_per_collection_and_id[collection][
                         id_
                     ] = mapped_fields
@@ -315,21 +345,32 @@ class ExtendedDatabase(Database):
             if use_changed_models and (
                 changed_models_collection := self._changed_models[collection]
             ):
-                # identify and get models that could lead to matches in conjunction with the database
-                # we are currently slightly overmatching but we filter again on the full model
+                fully_matched_ids = []
                 partially_matched_ids = []
                 except_by_changed_models = set()
+                # collect all relevant fields from the filter operators
+                filter_fields = set()
+                filter_visitor(filter_, lambda fo: filter_fields.add(fo.field))
+                # identify and get models that could lead to matches in conjunction with the database
+                # we are currently slightly overmatching but we filter again on the full model
                 for id_, changed_model in changed_models_collection.items():
-                    if "meta_deleted" in changed_model or self._model_fails_filter(
+                    if isinstance(
+                        changed_model, DeletedModel
+                    ) or self._model_fails_filter(
                         changed_model,
                         filter_,
                     ):
                         except_by_changed_models.add(id_)
+                    # TODO decide whether it would be on average faster to not do the full
+                    # check here and continue with more partially_matched_ids instead
+                    elif all(
+                        filter_field in changed_model for filter_field in filter_fields
+                    ):
+                        if self._model_fits_filter(changed_model, filter_):
+                            fully_matched_ids.append(id_)
                     elif self._model_fits_subfilter(changed_model, filter_):
                         partially_matched_ids.append(id_)
                 if partially_matched_ids:
-                    filter_fields = set()
-                    filter_visitor(filter_, lambda fo: filter_fields.add(fo.field))
                     partially_matched_models = self.database_reader.get_many(
                         [
                             GetManyRequest(
@@ -339,7 +380,6 @@ class ExtendedDatabase(Database):
                         lock_result,
                     ).get(collection, dict())
                 # update db models and calculate exact matching
-                fully_matched_ids = []
                 for id_ in partially_matched_ids:
                     # TODO update seems unnecassary and should be treated by ex_dbs get_many
                     if id_ in partially_matched_models:
@@ -393,23 +433,39 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
+        if method not in VALID_AGGREGATE_FUNCTIONS:
+            raise BadCodingException(f"Invalid aggregate function: {method}")
         if use_changed_models and self._changed_models[collection]:
             match method:
                 case "count":
                     return len(
-                        self.filter(collection, filter_, [], lock_result, use_changed_models)
+                        self.filter(
+                            collection, filter_, [], lock_result, use_changed_models
+                        )
                     )
                 case "min" | "max":
                     response = self.filter(
-                        collection, filter_, [field_or_star], lock_result, use_changed_models
+                        collection,
+                        filter_,
+                        [field_or_star],
+                        lock_result,
+                        use_changed_models,
                     )
                     if response:
                         if method == "max":
-                            return max(model[field_or_star] for model in response.values())
+                            return max(
+                                model[field_or_star] for model in response.values()
+                            )
                         else:
-                            return min(model[field_or_star] for model in response.values())
+                            return min(
+                                model[field_or_star] for model in response.values()
+                            )
                     else:
                         return None
+                case _:
+                    raise BadCodingException(
+                        f"Invalid aggregate function: {method} frfr"
+                    )
         else:
             return self.database_reader.aggregate(
                 collection, filter_, method, field_or_star, lock_result
@@ -422,7 +478,12 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int:
-        return self.aggregate("count", collection, filter_, "*", lock_result, use_changed_models)
+        return cast(
+            int,
+            self.aggregate(
+                "count", collection, filter_, "*", lock_result, use_changed_models
+            ),
+        )
 
     def min(
         self,
@@ -432,7 +493,9 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        return self.aggregate("min", collection, filter_, field, lock_result, use_changed_models)
+        return self.aggregate(
+            "min", collection, filter_, field, lock_result, use_changed_models
+        )
 
     def max(
         self,
@@ -442,7 +505,9 @@ class ExtendedDatabase(Database):
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None:
-        return self.aggregate("max", collection, filter_, field, lock_result, use_changed_models)
+        return self.aggregate(
+            "max", collection, filter_, field, lock_result, use_changed_models
+        )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         collection, id_ = collection_and_id_from_fqid(fqid)
@@ -506,17 +571,24 @@ class ExtendedDatabase(Database):
                     if not (event.get("fields") or (event.get("list_fields"))):
                         raise InvalidFormat("No fields given.")
                 if list_fields := event.get("list_fields", ListFields()):
+                    # TODO there should be a performance improvement by generating a tuple with the field that can then be used by the database_writer
+                    collection_cls = model_registry[collection]()
                     for add_or_remove_dict in list_fields.values():
                         for field_name in cast(dict, add_or_remove_dict):
-                            field: Field = model_registry[collection]().get_field(
-                                field_name
-                            )
-                            # TODO how to handle Relationlistfields
-                            if not isinstance(field, (ArrayField, RelationListField, GenericRelationListField)):
+                            field: Field = collection_cls.get_field(field_name)
+                            # TODO in future we should assert that RelationLists will not be sent anymore
+                            if not isinstance(
+                                field,
+                                (
+                                    ArrayField,
+                                    RelationListField,
+                                    GenericRelationListField,
+                                ),
+                            ):
                                 raise InvalidFormat(
                                     f"'{field_name}' used for 'list_fields' 'remove' or 'add' is no array in database."
                                 )
-
+        # TODO there should be an improvement by sending each event directly to the database_writers write_event
         fqids = self.database_writer.write(write_requests)
         self.logger.debug(
             f"Start WRITE request to database with the following data: "

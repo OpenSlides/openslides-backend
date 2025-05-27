@@ -1,7 +1,7 @@
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
-from pytest import raises
+
 
 class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_simple(self) -> None:
@@ -33,7 +33,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
-                "agenda_item/42": {"comment": "test", "meeting_id": 1, "content_object_id": "topic/1"},
+                "agenda_item/42": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                },
                 "tag/561": {"meeting_id": 1, "name": "Tag 1 von 365"},
             }
         )
@@ -85,7 +89,12 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
                 "topic/3": {"meeting_id": 1, "title": "feever", "sequential_number": 3},
-                "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10, "content_object_id": "topic/1"},
+                "agenda_item/42": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "content_object_id": "topic/1",
+                },
             }
         )
         response = self.request_multi(
@@ -131,7 +140,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
         self.assert_model_not_exists("agenda_item/2")
         topic = self.get_model("topic/1")
-        self.assertEqual(topic["agenda_item_id"], None)
+        self.assertEqual(topic.get("agenda_item_id"), None)
 
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
@@ -145,7 +154,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
-                "agenda_item/1": {"comment": "test", "meeting_id": 1, "content_object_id": "topic/1"},
+                "agenda_item/1": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                },
             }
         )
         response = self.request(
@@ -330,7 +343,12 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_meeting(1)
         self.set_models(
             {
-                "assignment/1": {"meeting_id": 1, "agenda_item_id": 1, "title": "just do it", "sequential_number": 1},
+                "assignment/1": {
+                    "meeting_id": 1,
+                    "agenda_item_id": 1,
+                    "title": "just do it",
+                    "sequential_number": 1,
+                },
                 "agenda_item/1": {"meeting_id": 1, "content_object_id": "assignment/1"},
             }
         )

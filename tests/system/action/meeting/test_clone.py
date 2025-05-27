@@ -4,6 +4,10 @@ from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
     ONE_ORGANIZATION_ID,

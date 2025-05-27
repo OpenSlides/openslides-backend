@@ -51,7 +51,7 @@ class PermissionVarStore:
             lock_result=False,
         )
         self.user_oml = OrganizationManagementLevel(
-            self.user.get("organization_management_level")
+            self.user.get("organization_management_level", "")
         )
         self._user_committees: set[int] | None = None
         self._user_meetings: set[int] | None = None
@@ -351,7 +351,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN and fields:
             expected_oml = max(
                 OrganizationManagementLevel(
-                    instance.get("organization_management_level")
+                    instance.get("organization_management_level", "")
                 ),
                 OrganizationManagementLevel.CAN_MANAGE_USERS,
             )

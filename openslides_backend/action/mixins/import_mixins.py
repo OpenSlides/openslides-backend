@@ -3,7 +3,7 @@ import csv
 from collections import defaultdict
 from collections.abc import Callable
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, StrEnum
 from time import mktime, strptime, time
 from typing import Any, TypedDict, Union, cast
 
@@ -30,7 +30,7 @@ FALSE_VALUES = ("0", "false", "no", "n", "f")
 SearchFieldType = Union[str, tuple[str, ...]]
 
 
-class ImportState(str, Enum):
+class ImportState(StrEnum):
     WARNING = "warning"
     NEW = "new"
     DONE = "done"

@@ -105,7 +105,7 @@ class SpeakerCreateAction(
             )
             speakers = self.datastore.filter(
                 self.model.collection,
-                filter=filter,
+                filter_=filter,
                 mapped_fields=[
                     "id",
                     "weight",
@@ -169,7 +169,7 @@ class SpeakerCreateAction(
         )
         speakers = self.datastore.filter(
             self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id", "weight"],
         )
         los = sorted(speakers.values(), key=lambda k: k["weight"])
@@ -183,7 +183,7 @@ class SpeakerCreateAction(
     def _get_max_weight(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.max(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("begin_time", "=", None),
                 FilterOperator("meeting_id", "=", meeting_id),
@@ -194,7 +194,7 @@ class SpeakerCreateAction(
     def _get_no_poo_min(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.min(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 Or(
                     FilterOperator("point_of_order", "=", False),
@@ -211,7 +211,7 @@ class SpeakerCreateAction(
     ) -> int | None:
         return self.datastore.min(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 Or(
                     FilterOperator("speech_state", "=", None),

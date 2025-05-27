@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Self, cast
 
 from .base_classes import VerbosePermission
 
 
-class CompareRightLevel(str, VerbosePermission, Enum):
+class CompareRightLevel(VerbosePermission, StrEnum):
     @classmethod
     def _missing_(cls, _: object) -> Self:
         """

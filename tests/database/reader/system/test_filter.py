@@ -20,7 +20,7 @@ from openslides_backend.shared.filters import (
     Or,
 )
 from openslides_backend.shared.patterns import Id
-from openslides_backend.shared.typing import Model
+from openslides_backend.shared.typing import DeletedModel, Model
 from tests.database.reader.system.util import (
     setup_data,
     standard_data,
@@ -339,7 +339,7 @@ def test_changed_models(
         ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
         ex_db.apply_changed_model("user/1", {"username": "3", "meeting_ids": None})
         ex_db.apply_changed_model("user/2", {"username": "3", "is_demo_user": True})
-        ex_db.apply_changed_model("user/3", {"meta_deleted": True})
+        ex_db.apply_changed_model("user/3", DeletedModel())
         ex_db.apply_changed_model(
             "user/4", {"username": "3", "meta_new": True, "meeting_ids": [3]}
         )

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from email.headerregistry import Address
-from enum import Enum
+from enum import StrEnum
 from smtplib import (
     SMTPAuthenticationError,
     SMTPDataError,
@@ -23,7 +23,7 @@ from ....permissions.permission_helper import (
     has_perm,
 )
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import DatastoreException, MissingPermission
+from ....shared.exceptions import DatabaseException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
@@ -35,7 +35,7 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 
 
-class EmailErrorType(str, Enum):
+class EmailErrorType(StrEnum):
     USER_ERROR = "user_error"
     SETTINGS_ERROR = "settings_error"
     CONFIGURATION_ERROR = "configuration_error"
@@ -93,8 +93,8 @@ class UserSendInvitationMail(UpdateAction):
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
-                    except DatastoreException as e:
-                        result["message"] = f"DatastoreException: {str(e)}"
+                    except DatabaseException as e:
+                        result["message"] = f"DatabaseException: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message

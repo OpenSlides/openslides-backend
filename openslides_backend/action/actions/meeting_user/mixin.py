@@ -27,7 +27,7 @@ class MeetingUserGroupMixin(Action):
             "group",
             And(
                 FilterOperator("anonymous_group_for_meeting_id", "!=", None),
-                Or(FilterOperator("id", "=", id_) for id_ in group_ids),
+                FilterOperator("id", "in", group_ids),
             ),
         ):
             raise ActionException(

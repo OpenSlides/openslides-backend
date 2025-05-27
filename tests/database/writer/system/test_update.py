@@ -1,4 +1,3 @@
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -93,6 +92,48 @@ def test_update_nm_field_simple() -> None:
         "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": [1]}
     )
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": [1]})
+
+
+def test_update_nm_field_null() -> None:
+    data = get_data()
+    data[0]["events"][0]["fields"]["committee_ids"] = [1]
+    data.append(
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "committee",
+                    "fields": {"name": "com1", "user_ids": [1]},
+                }
+            ]
+        }
+    )
+    user_id, committee_id = create_models(data)
+
+    data = [
+        {
+            "events": [
+                {
+                    "type": EventType.Update,
+                    "fqid": f"committee/{committee_id}",
+                    "fields": {"user_ids": None},
+                },
+                {
+                    "type": EventType.Update,
+                    "fqid": f"user/{user_id}",
+                    "fields": {"committee_ids": None},
+                },
+            ]
+        }
+    ]
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(
+        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": None}
+    )
+    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
 
 
 def test_update_nm_field_remove() -> None:

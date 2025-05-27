@@ -36,7 +36,7 @@ def assert_model(fqid: FullQualifiedId, fields: Model) -> None:
             .get(id_)
         )
         assert model, "No model returned from database."
-        expected_fields = {k:v for k,v in fields.items() if v is not None}
+        expected_fields = {k: v for k, v in fields.items() if v is not None}
         failing_fields = {k: v for k, v in expected_fields.items() if v != model[k]}
         assert not failing_fields, (
             f"failing fields: {dict({k: model[k] for k in failing_fields})} expected fields: {failing_fields}"
@@ -82,7 +82,6 @@ def get_data(data_part: dict[str, Any] = dict()) -> list[dict[str, Any]]:
             ]
         }
     ]
-
 
 
 def get_group_base_data() -> list[dict[str, Any]]:
@@ -144,6 +143,7 @@ def get_group_base_data() -> list[dict[str, Any]]:
             ]
         }
     ]
+
 
 def create_write_requests(data: list[dict[str, Any]]) -> list[WriteRequest]:
     return [

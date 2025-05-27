@@ -8,7 +8,8 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import InvalidFormat
+from openslides_backend.shared.exceptions import InvalidFormat, ModelDoesNotExist
+from openslides_backend.shared.typing import DeletedModel
 from tests.database.reader.system.util import (
     setup_data,
     standard_data,
@@ -212,14 +213,16 @@ def test_changed_models_new(db_connection: Connection) -> None:
     }
 
 
-def test_changed_models_no_deleted(db_connection: Connection) -> None:
+def test_changed_models_deleted(db_connection: Connection) -> None:
     """This should throw an Exception."""
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:
         ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        ex_db.apply_changed_model("committee/1", {"meta_deleted": True})
-        response = ex_db.get_many(changed_models_request, use_changed_models=True)
-    assert response == {}
+        ex_db.apply_changed_model("committee/1", DeletedModel())
+        with pytest.raises(ModelDoesNotExist) as e_info:
+            ex_db.get_many(changed_models_request, use_changed_models=True)
+    assert e_info.value.msg == "Model 'committee/1' does not exist."
+    assert e_info.value.fqid == "committee/1"
 
 
 def test_use_changed_models_missing_field(db_connection: Connection) -> None:

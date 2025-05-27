@@ -230,7 +230,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][1][4]["type"], EmailErrorType.OTHER_ERROR
         )
         self.assertIn(
-            "DatastoreException:  Model 'user/8' does not exist.",
+            "DatabaseException:  Model 'user/8' does not exist.",
             response.json["results"][1][4]["message"],
         )
 

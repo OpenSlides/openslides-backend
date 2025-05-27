@@ -1,4 +1,5 @@
 import threading
+from typing import Any
 
 from psycopg import Connection, rows, sql
 from psycopg.errors import (
@@ -27,12 +28,13 @@ from openslides_backend.shared.exceptions import (
     ModelDoesNotExist,
     ModelExists,
     ModelLocked,
+    RelationException,
 )
 from openslides_backend.shared.interfaces.event import (
     Event,
     EventType,
     ListField,
-    ListFields,
+    ListFieldsDict,
 )
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.otel import make_span
@@ -181,7 +183,9 @@ class DatabaseWriter:
         id_ = self.execute_sql(
             statement, list(simple_fields.values()), collection, simple_fields.get("id")
         )
-        self.write_to_intermediate_tables(event_fields, intermediate_tables, id_)
+        self.write_to_intermediate_tables(
+            event_fields, intermediate_tables, id_, collection
+        )
         return fqid_from_collection_and_id(collection, id_)
 
     def delete_model(self, event: Event) -> FullQualifiedId:
@@ -212,12 +216,34 @@ class DatabaseWriter:
             self.get_simple_fields_intermediate_table(event_fields, collection)
         )
 
-        self.delete_from_intermediate_tables(intermediate_tables, id_)
-        # TODO there may be an improvement by doing a subselect and except with new values to only delete those which are removed from the list.
-        self.write_to_intermediate_tables(event_fields, intermediate_tables, id_)
+        self.delete_from_intermediate_tables(
+            event_fields, intermediate_tables, id_, collection, directly=False
+        )
+        self.write_to_intermediate_tables(
+            event_fields, intermediate_tables, id_, collection
+        )
+
+        list_fields = event.get("list_fields") or dict()
+        add_dict = list_fields.get("add", dict())
+        remove_dict = list_fields.get("remove", dict())
+        list_types, nm_relation_list_fields = (
+            self.get_list_types_and_nm_relation_list_fields(
+                collection, add_dict, remove_dict
+            )
+        )
+
+        for field_name in nm_relation_list_fields:
+            if field_name in add_dict:
+                self.write_to_intermediate_tables(
+                    add_dict, nm_relation_list_fields, id_, collection
+                )
+            if field_name in remove_dict:
+                self.delete_from_intermediate_tables(
+                    remove_dict, nm_relation_list_fields, id_, collection, directly=True
+                )
 
         array_statements_per_field, array_values = self.get_array_values(
-            table, set_fields_dict, event.get("list_fields") or dict()
+            collection, table, set_fields_dict, add_dict, remove_dict, list_types
         )
 
         statement += sql.SQL(", ").join(
@@ -264,84 +290,144 @@ class DatabaseWriter:
         self, event_fields: PartialModel, collection: Collection
     ) -> tuple[dict, dict]:
         """
-        returns the fields that do not need special handling within an intermediate table.
+        returns in the first dict the fields that do not need special handling within an intermediate table.
         returns in the second dict the other fields with their field representation from the model_registry.
         """
+        collection_cls = model_registry[collection]()
         return {
             field_name: value
             for field_name, value in event_fields.items()
-            if (field := model_registry[collection]().get_field(field_name))
+            if (field := collection_cls.get_field(field_name))
             if not field.is_view_field
             if not field_name == "organization_id"
         }, {
             field_name: field
             for field_name in event_fields
-            if (field := model_registry[collection]().get_field(field_name))
-            and field.is_primary and field.write_fields
+            if (field := collection_cls.get_field(field_name))
+            and field.is_primary
+            and field.write_fields
             if any(
                 isinstance(field, type_)
                 for type_ in [RelationListField, GenericRelationListField]
             )
         }
 
+    def get_list_types_and_nm_relation_list_fields(
+        self,
+        collection: Collection,
+        add_dict: ListFieldsDict,
+        remove_dict: ListFieldsDict,
+    ) -> tuple[dict[Collection, type], dict[Collection, Field]]:
+        """
+        used for 'add' and 'remove' list fields
+        returns in the tuple a dict of all fields that are just list fields with the field information
+        returns in the second dict all fields that are relation fields
+        """
+        collection_cls = model_registry[collection]()
+        lists_type_dict = dict()
+        nm_relation_list_fields = dict()
+        for dictionary in [add_dict, remove_dict]:
+            for field_name, value_list in dictionary.items():
+                if field := collection_cls.get_field(field_name):
+                    if value_list and not field.is_view_field:
+                        lists_type_dict[field_name] = type(value_list[0])
+                    if (
+                        field.is_primary
+                        and field.write_fields
+                        and any(
+                            isinstance(field, type_)
+                            for type_ in [RelationListField, GenericRelationListField]
+                        )
+                    ):
+                        nm_relation_list_fields[field_name] = field
+        return (lists_type_dict, nm_relation_list_fields)
+
     def write_to_intermediate_tables(
-        self, event_fields: PartialModel, intermediate_tables: dict[str, Field], id_: Id
+        self,
+        event_fields: PartialModel,
+        intermediate_tables: dict[str, Field],
+        id_: Id,
+        collection: Collection,
     ) -> None:
+        """writes a row to the intermediate table with the own id and the relationfield from the event."""
         for field_name, field in intermediate_tables.items():
             if not field.write_fields:
                 raise BadCodingException(
                     f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
                 )
             intermediate_table, close_side, far_side, _ = field.write_fields
-            for other_id in event_fields[field_name]:
+            if event_fields[field_name]:
                 statement = sql.SQL(
                     """
                     INSERT INTO {table_name} ({columns})
-                    VALUES (%s, %s)
+                    VALUES {placeholders}
+                    ON CONFLICT ({columns}) DO NOTHING
                     """
                 ).format(
                     table_name=sql.Identifier(intermediate_table),
                     columns=sql.Identifier(close_side)
                     + sql.SQL(", ")
                     + sql.Identifier(far_side),
+                    placeholders=sql.SQL(", ").join(
+                        sql.SQL(f"({id_}, %s)")
+                        for _ in range(len(event_fields[field_name]))
+                    ),
                 )
                 self.execute_sql(
                     statement,
-                    [id_, other_id],
-                    # TODO to much unnecessary calculation
-                    "intermediate table " + intermediate_table,
-                    None,
+                    event_fields[field_name],
+                    collection,
+                    id_,
                     return_id=False,
                 )
 
     def delete_from_intermediate_tables(
-        self, intermediate_tables: dict[str, Field], id_: Id
+        self,
+        event_fields: PartialModel,
+        intermediate_tables: dict[str, Field],
+        id_: Id,
+        collection: Collection,
+        directly: bool,
     ) -> None:
+        """Deletes all rows with the given id_ from the given intermediate tables and the mapped field."""
         for field_name, field in intermediate_tables.items():
             if not field.write_fields:
                 raise BadCodingException(
                     f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
                 )
-            intermediate_table, close_side, *_ = field.write_fields
+            intermediate_table, own_column, other_column, *_ = field.write_fields
             statement = sql.SQL(
                 """
-                DELETE FROM {table_name} WHERE {column} = {id}
+                DELETE FROM {table_name}
+                WHERE ({own_column} = {id} AND {negation}({other_column} = ANY(%s)))
                 """
             ).format(
                 table_name=sql.Identifier(intermediate_table),
-                column=sql.Identifier(close_side),
+                own_column=sql.Identifier(own_column),
+                other_column=sql.Identifier(other_column),
+                negation=sql.SQL("") if directly else sql.SQL("NOT "),
                 id=id_,
             )
+            if isinstance((values := event_fields[field_name]), list | None):
+                other_column_values: list[int] = values or []
+            else:
+                other_column_values = [values]
             self.execute_sql(
                 statement,
-                [],
-                "",
-                None,
+                [other_column_values],
+                collection,
+                id_,
                 return_id=False,
             )
 
     def get_array_values(
-        self, table: sql.Identifier, set_dict: PartialModel, list_fields: ListFields
+        self,
+        collection: Collection,
+        table: sql.Identifier,
+        set_dict: PartialModel,
+        add_dict: ListFieldsDict,
+        remove_dict: ListFieldsDict,
+        field_list_types: dict[str, type],
     ) -> tuple[
         dict[str, sql.Composed],
         list[tuple[ListField, ListField, ListField] | tuple[ListField, ListField]],
@@ -349,14 +435,6 @@ class DatabaseWriter:
         """
         returns the composed array calculation strings and the lists/arrays to be inserted as arguments
         """
-        add_dict = list_fields.get("add", dict())
-        remove_dict = list_fields.get("remove", dict())
-        lists_type_dict = {
-            field_name: type(value_list[0])
-            for dictionary in [add_dict, remove_dict]
-            for field_name, value_list in dictionary.items()
-            if value_list
-        }
         return (
             {
                 field_name: sql.SQL(
@@ -372,7 +450,7 @@ class DatabaseWriter:
                     row_or_placeholder=(
                         sql.Placeholder()
                         if field_name in set_dict
-                        else table + sql.SQL(".") + sql.Identifier(field_name)
+                        else sql.Identifier(field_name)
                     ),
                     nothing_or_table=(
                         sql.SQL("")
@@ -391,7 +469,7 @@ class DatabaseWriter:
                         list_type, remove_dict.get(field_name, [])
                     ),
                 )
-                for field_name, list_type in lists_type_dict.items()
+                for field_name, list_type in field_list_types.items()
             },
             [
                 (
@@ -406,14 +484,14 @@ class DatabaseWriter:
                         add_dict.get(field_name, []),
                     )
                 )
-                for field_name in lists_type_dict.keys()
+                for field_name in field_list_types.keys()
             ],
         )
 
     def execute_sql(
         self,
         statement: sql.Composed,
-        arguments: list[int],
+        arguments: list[Any],
         collection: Collection,
         target_id: Id | None,
         return_id: bool = True,
@@ -439,11 +517,18 @@ class DatabaseWriter:
                     return id_
         except UniqueViolation as e:
             if "duplicate key value violates unique constraint" in e.args[0]:
-                raise ModelExists(
-                    fqid_from_collection_and_id(collection, target_id or id_)
-                )
+                if "Key (id)" in e.args[0]:
+                    raise ModelExists(
+                        fqid_from_collection_and_id(collection, target_id or id_)
+                    )
+                else:
+                    raise RelationException(
+                        f"Relation from {fqid_from_collection_and_id(collection, target_id or id_)} violates UNIQUE constraint: {e}"
+                    )
         except NotNullViolation as e:
-            raise BadCodingException(f"Missing fields in {collection}/{target_id}. Ooopsy Daisy! {e}")
+            raise BadCodingException(
+                f"Missing fields in {collection}/{target_id}. Ooopsy Daisy! {e}"
+            )
         except GeneratedAlways as e:
             raise BadCodingException(
                 f"Used a field that must only be generated by the database: {e}"
@@ -501,10 +586,9 @@ class DatabaseWriter:
                 )
             collection = collection_from_fqid(events[0]["fqid"])
             ids_per_collection[collection].add(id_from_fqid(event["fqid"]))
-
         return {
             collection: self.database_reader.get_many(
-                [GetManyRequest(collection, list(ids))]
+                [GetManyRequest(collection, sorted(ids))]
             )
             for collection, ids in ids_per_collection.items()
         }

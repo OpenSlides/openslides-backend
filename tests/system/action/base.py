@@ -17,9 +17,6 @@ from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
-from openslides_backend.services.database.with_database_context import (
-    with_database_context,
-)
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.patterns import FullQualifiedId
@@ -173,14 +170,11 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "admin_group_id": base + 1,
                     "motions_default_workflow_id": base,
                     "motions_default_amendment_workflow_id": base,
-                    'reference_projector_id': base,
+                    "reference_projector_id": base,
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
                 },
-                f"projector/{base}": {
-                    "sequential_number": base,
-                    "meeting_id": base
-                },
+                f"projector/{base}": {"sequential_number": base, "meeting_id": base},
                 f"group/{base}": {
                     "meeting_id": base,
                     "default_group_for_meeting_id": base,
@@ -258,12 +252,12 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_committee_management_level(
         self, committee_ids: list[int], user_id: int = 1
     ) -> None:
-        d1 = {
-            "committee_ids": committee_ids,
-            "committee_management_ids": committee_ids,
-        }
-
-        self.set_models({f"user/{user_id}": d1})
+        self.set_models(
+            {
+                f"committee/{committee_id}": {"manager_ids": [user_id]}
+                for committee_id in committee_ids
+            }
+        )
 
     def add_group_permissions(
         self, group_id: int, permissions: list[Permission]
@@ -292,6 +286,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Create a user with the given username, groups and organization management level.
         """
+        # TODO question the sense of getting the groups from datastore here as they stay unsused.
         partitioned_groups = self._fetch_groups(group_ids)
         id = 1
         while f"user/{id}" in self.created_fqids:
@@ -406,7 +401,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         user = self.datastore.get(
             f"user/{user_id}",
             # TODO here was a wrong field 'user_meeting_ids' check if there can be performance improvements by now using 'meeting_user_ids'
-            ["meeting_user_ids", "meeting_ids"], 
+            ["meeting_user_ids", "meeting_ids"],
             lock_result=False,
             use_changed_models=False,
         )
@@ -453,7 +448,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 GetManyRequest(
                     "group",
                     group_ids,
-                    ["id", "meeting_id", "user_ids"],
+                    ["id", "meeting_id"],  # fields currently unused
                 )
             ],
             lock_result=False,

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 from openslides_backend.shared.patterns import (
@@ -10,7 +10,7 @@ from openslides_backend.shared.patterns import (
 from .set_number_mixin import SetNumberMixin
 
 
-class MotionErrorType(str, Enum):
+class MotionErrorType(StrEnum):
     UNIQUE_NUMBER = "number_unique"
     RECO_EXTENSION = "recommendation_extension"
     STATE_EXTENSION = "state_extension"

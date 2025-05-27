@@ -66,7 +66,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.datastore.filter(
             collection=self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id"],
         )
 

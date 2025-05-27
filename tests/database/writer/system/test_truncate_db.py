@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock
 
-from psycopg import Connection
-
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,

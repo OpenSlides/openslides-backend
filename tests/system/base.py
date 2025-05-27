@@ -1,13 +1,13 @@
 import threading
 from collections.abc import Callable
-from typing import defaultdict
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase, TestResult
 from unittest.mock import MagicMock, _patch
-from psycopg import sql, Connection
+
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
+from psycopg import sql
 
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
@@ -17,7 +17,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.env import Environment
-from openslides_backend.shared.exceptions import ActionException, DatastoreException, ModelDoesNotExist
+from openslides_backend.shared.exceptions import ActionException, ModelDoesNotExist
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -25,7 +25,6 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
     id_from_fqid,
-    collection_and_id_from_fqid,
     is_reserved_field,
 )
 from openslides_backend.shared.util import (
@@ -76,19 +75,16 @@ class BaseSystemTestCase(TestCase):
         if self.init_with_login:
             self.set_models(
                 {
-                    ONE_ORGANIZATION_FQID:
-                    {
+                    ONE_ORGANIZATION_FQID: {
                         "name": "OpenSlides Organization",
                         "default_language": "en",
                         "user_ids": [1],
                         "theme_id": 1,
                     },
-                    "theme/1":
-                    {
+                    "theme/1": {
                         "name": "OpenSlides Organization",
                     },
-                    "user/1":
-                    {
+                    "user/1": {
                         "username": ADMIN_USERNAME,
                         "password": self.auth.hash(ADMIN_PASSWORD),
                         "default_password": ADMIN_PASSWORD,
@@ -121,7 +117,7 @@ class BaseSystemTestCase(TestCase):
         """
         self.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
 
-    def run(self, result: TestResult | None=None) -> TestResult:
+    def run(self, result: TestResult | None = None) -> TestResult | None:
         """
         Overrides the TestCases run method.
         Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
@@ -267,13 +263,10 @@ class BaseSystemTestCase(TestCase):
         self.adjust_id_sequences()
 
     def adjust_id_sequences(self) -> None:
-        for collection in {
-            collection_from_fqid(fqid)
-            for fqid in self.created_fqids
-        }:
+        for collection in {collection_from_fqid(fqid) for fqid in self.created_fqids}:
             self.connection.commit()
             maximum = self.datastore.max(collection, None, "id")
-            with self.connection.cursor() as curs:                
+            with self.connection.cursor() as curs:
                 curs.execute(
                     sql.SQL(
                         """SELECT setval('{collection}_t_id_seq', {maximum})"""

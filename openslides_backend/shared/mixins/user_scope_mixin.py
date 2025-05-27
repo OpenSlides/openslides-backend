@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
@@ -19,7 +19,7 @@ from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
 
 
-class UserScope(str, Enum):
+class UserScope(StrEnum):
     Meeting = "meeting"
     Committee = "committee"
     Organization = "organization"

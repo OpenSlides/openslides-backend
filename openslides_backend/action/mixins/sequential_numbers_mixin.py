@@ -19,7 +19,7 @@ class SequentialNumbersMixin(CreateAction):
 
         number = self.datastore.max(
             collection=self.model.collection,
-            filter=filter,
+            filter_=filter,
             field="sequential_number",
         )
         number = 1 if number is None else number + 1

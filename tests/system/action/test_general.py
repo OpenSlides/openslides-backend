@@ -4,6 +4,10 @@ from unittest.mock import patch
 import pytest
 
 from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.interfaces.write_request import (
     WriteRequestWithMigrationIndex,
 )

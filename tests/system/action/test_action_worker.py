@@ -6,6 +6,10 @@ from typing import Any
 import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import fqid_from_collection_and_id

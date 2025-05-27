@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class EVENT_TYPE(str, Enum):
+class EVENT_TYPE(StrEnum):
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"

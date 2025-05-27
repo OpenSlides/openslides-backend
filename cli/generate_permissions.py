@@ -26,7 +26,7 @@ FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
-    from enum import Enum
+    from enum import StrEnum
 
     from .base_classes import Permission
     """
@@ -60,7 +60,7 @@ def main() -> None:
     with open_output(DESTINATION, args.check) as dest:
         dest.write(FILE_TEMPLATE)
         for collection, permissions in all_permissions.items():
-            dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
+            dest.write(f"\nclass _{collection}(Permission, StrEnum):\n")
             for permission in sorted(permissions):
                 _, perm_str = get_permission_parts(permission)
                 dest.write(f"    {perm_str} = '{permission}'\n")

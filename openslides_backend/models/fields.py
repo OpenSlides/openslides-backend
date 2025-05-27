@@ -1,5 +1,5 @@
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 import fastjsonschema
@@ -24,7 +24,7 @@ from ..shared.util import (
 )
 
 
-class OnDelete(str, Enum):
+class OnDelete(StrEnum):
     PROTECT = "PROTECT"
     CASCADE = "CASCADE"
     SET_NULL = "SET_NULL"

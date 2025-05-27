@@ -1,11 +1,14 @@
+from decimal import Decimal
 from typing import Any
+
+import pytest
 
 from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
-import pytest
+
 from ..test_internal_actions import BaseInternalActionTest
 
 
@@ -115,7 +118,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "pronoun": "Test",
                 "username": "test_Xcdfgee",
-                "default_vote_weight": "1.500000",
+                "default_vote_weight": Decimal("1.500000"),
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "default_password": "password",
                 "committee_management_ids": [78],
@@ -189,7 +192,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "meeting_user_ids": [1],
                 },
                 "meeting_user/1": {"meeting_id": 1, "user_id": 222},
-                "structure_level/31": {"meeting_id": 1},
+                "structure_level/31": {"name": "Gondor", "meeting_id": 1},
             }
         )
         response = self.request(
@@ -212,7 +215,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/223",
             {
                 "committee_management_ids": [2],
-                "committee_ids": [1, 2],
+                "committee_ids": [2, 60],
                 "meeting_user_ids": [2],
                 "meeting_ids": [1],
             },
@@ -228,7 +231,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "number": "number1",
                 "structure_level_ids": [31],
                 "about_me": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
             },
         )
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
@@ -276,9 +279,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/60": {"meeting_ids": [1, 4]},
-                "meeting/4": {
-                    "committee_id": 60
-                },
+                "meeting/4": {"committee_id": 60},
             }
         )
         response = self.request(
@@ -509,7 +510,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user_id": 3,
                 "meeting_id": 1,
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
                 "group_ids": [1],
             },
         )
@@ -518,7 +519,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user_id": 3,
                 "meeting_id": 1,
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
                 "group_ids": [1],
             },
         )
@@ -598,12 +599,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.create_meeting(base=4)
         self.set_models(
             {
-                f"user/{self.user_id}": {
-                    "committee_management_ids": [60],
-                    "committee_ids": [60],
-                },
+                f"user/{self.user_id}": {"committee_ids": [60]},
                 "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
-                "committee/60": {"name": "minish council", "meeting_ids": [1, 4]},
+                "committee/60": {
+                    "name": "minish council",
+                    "meeting_ids": [1, 4],
+                    "manager_ids": [self.user_id],
+                },
             }
         )
 
@@ -674,12 +676,14 @@ class UserCreateActionTest(BaseActionTestCase):
         """May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
-        self.update_model(
-            f"user/{self.user_id}",
+        self.set_models(
             {
-                "committee_management_ids": [60, 63],
-                "committee_ids": [60, 63],
-            },
+                f"user/{self.user_id}": {
+                    "committee_ids": [60, 63],
+                },
+                "committee/60": {"manager_ids": [self.user_id]},
+                "committee/63": {"manager_ids": [self.user_id]},
+            }
         )
 
         response = self.request(
@@ -706,7 +710,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "structure_level_ids": [31],
                 },
-                "structure_level/31": {"meeting_id": 1},
+                "structure_level/31": {"name": "user 4 alone", "meeting_id": 1},
             }
         )
         self.set_user_groups(5, [1])
@@ -745,7 +749,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "user_id": 7,
                 "number": "number1",
                 "structure_level_ids": [31],
-                "vote_weight": "12.002345",
+                "vote_weight": Decimal("12.002345"),
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
                 "vote_delegations_from_ids": [2, 3],
@@ -1325,7 +1329,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "committee_management_ids": [1],
+                "committee_management_ids": [60],
                 "meeting_id": 4,
                 "group_ids": [22],
             },
@@ -1336,7 +1340,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee_management_ids": [60],
                 "meeting_ids": [4],
-                "committee_ids": [60,63],
+                "committee_ids": [60, 63],
                 "meeting_user_ids": [1],
             },
         )
@@ -1515,8 +1519,8 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"group_ids": [1, 2, 3, 4]},
-                "group/4": {"anonymous_group_for_meeting_id": 1, "name": "anonymous", "meeting_id": 1},
+                "meeting/1": {"group_ids": [1, 2, 3, 4], "anonymous_group_id": 4},
+                "group/4": {"name": "anonymous", "meeting_id": 1},
             }
         )
         response = self.request(
@@ -1533,7 +1537,7 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
             response.json["message"],
         )
 
-    @pytest.mark.skip(reason="in the testing") #TODO remove
+    @pytest.mark.skip(reason="in the testing")  # TODO remove
     def test_create_permission_as_locked_out(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")

@@ -1,6 +1,6 @@
 import logging
 import threading
-from enum import Enum
+from enum import StrEnum
 from http import HTTPStatus
 from time import sleep, time
 from typing import Any, cast
@@ -17,7 +17,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 # from ..services.datastore.interface import DatastoreService
-from ..shared.exceptions import ActionException, DatastoreException
+from ..shared.exceptions import ActionException, DatabaseException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
@@ -25,7 +25,7 @@ from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
 
 
-class ActionWorkerState(str, Enum):
+class ActionWorkerState(StrEnum):
     RUNNING = "running"
     END = "end"
     ABORTED = "aborted"
@@ -143,7 +143,7 @@ class ActionWorkerWriting:
             extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
             message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
             self.written = True
-        except DatastoreException as e:
+        except DatabaseException as e:
             message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
         self.logger.info(f"action_worker: {message}")
         return message

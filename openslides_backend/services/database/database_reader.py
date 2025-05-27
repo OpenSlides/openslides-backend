@@ -6,11 +6,7 @@ from psycopg.errors import UndefinedColumn, UndefinedFunction, UndefinedTable
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
 )
-from openslides_backend.shared.exceptions import (
-    BadCodingException,
-    DatabaseException,
-    InvalidFormat,
-)
+from openslides_backend.shared.exceptions import DatabaseException, InvalidFormat
 from openslides_backend.shared.filters import And, Filter, Not, Or
 from openslides_backend.shared.patterns import Collection, Id
 from openslides_backend.shared.typing import LockResult, Model, PartialModel
@@ -22,7 +18,6 @@ from .mapped_fields import MappedFields
 from .query_helper import SqlArguments, SqlQueryHelper
 
 SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
-VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
 
 
 class DatabaseReader:
@@ -157,8 +152,6 @@ class DatabaseReader:
         field_or_star should be "*" if count is used else the field to be aggregated on.
         Returns only the aggregate.
         """
-        if agg_function not in VALID_AGGREGATE_FUNCTIONS:
-            raise BadCodingException(f"Invalid aggregate function: {agg_function}")
         aggregate_function = sql.SQL("{aggregate_function}({agg_field})").format(
             agg_field=(
                 sql.Identifier(field_or_star)

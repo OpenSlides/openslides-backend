@@ -190,7 +190,7 @@ class UserSaveSamlAccount(
 
         meetings = self.datastore.filter(
             collection="meeting",
-            filter=FilterOperator("external_id", "=", external_id),
+            filter_=FilterOperator("external_id", "=", external_id),
             mapped_fields=["id", "default_group_id"],
         )
         if len(meetings) == 1:
@@ -204,7 +204,7 @@ class UserSaveSamlAccount(
         if external_group_id := meeting_info.get("external_group_id"):
             groups = self.datastore.filter(
                 collection="group",
-                filter=And(
+                filter_=And(
                     [
                         FilterOperator("external_id", "=", external_group_id),
                         FilterOperator("meeting_id", "=", meeting.get("id")),
