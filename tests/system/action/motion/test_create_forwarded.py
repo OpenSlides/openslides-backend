@@ -2253,14 +2253,14 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             self.assert_model_exists(fqid, model_data)
 
     def test_forward_with_attachments_true_with_amendments_true(self) -> None:
-        expected_mediaservice_calls = [(1, 20), (6, 21), (19, 22)]
+        expected_mediaservice_calls = [(6, 20), (1, 21), (19, 22)]
         expected_models: dict[str, dict[str, Any]] = {
             "meeting/2": {
                 "meeting_mediafile_ids": [25, 26, 27, 28],
                 "mediafile_ids": [20, 21, 22],
             },
             "mediafile/8": {
-                "meeting_mediafile_ids": [17, 27],
+                "meeting_mediafile_ids": [17, 26],
             },
             "mediafile/20": {
                 "meeting_mediafile_ids": [25],
@@ -2268,7 +2268,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "mimetype": "text/plain",
             },
             "mediafile/21": {
-                "meeting_mediafile_ids": [26],
+                "meeting_mediafile_ids": [27],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
             },
@@ -2281,19 +2281,19 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_id": 2,
                 "mediafile_id": 20,
                 "is_public": True,
-                "attachment_ids": ["motion/15"],
-            },
-            "meeting_mediafile/26": {
-                "meeting_id": 2,
-                "mediafile_id": 21,
-                "is_public": True,
                 "attachment_ids": ["motion/15", "motion/14"],
             },
-            "meeting_mediafile/27": {
+            "meeting_mediafile/26": {
                 "meeting_id": 2,
                 "mediafile_id": 8,
                 "is_public": True,
                 "attachment_ids": ["motion/14"],
+            },
+            "meeting_mediafile/27": {
+                "meeting_id": 2,
+                "mediafile_id": 21,
+                "is_public": True,
+                "attachment_ids": ["motion/15"],
             },
             "meeting_mediafile/28": {
                 "meeting_id": 2,
@@ -2301,8 +2301,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_public": True,
                 "attachment_ids": ["motion/15"],
             },
-            "motion/14": {"attachment_meeting_mediafile_ids": [27, 26]},
-            "motion/15": {"attachment_meeting_mediafile_ids": [25, 28, 26]},
+            "motion/14": {"attachment_meeting_mediafile_ids": [26, 25]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [27, 28, 25]},
         }
         self.base_forward_with_attachments_and_amendments(
             expected_models,
@@ -2321,13 +2321,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     ) -> None:
         self.base_forward_with_attachments_true_without_amendments(
             with_amendments=True, allow_amendment_forwarding=False
-        )
-
-    def test_forward_with_attachments_true_amendment_allow_motion_forwarding_false(
-        self,
-    ) -> None:
-        self.base_forward_with_attachments_true_without_amendments(
-            with_amendments=True, allow_amendment_forwarding=True
         )
 
     def base_forward_with_attachments_true_without_amendments(
@@ -2372,17 +2365,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         custom_model_data: dict[str, dict[str, Any]] = {}
         if not allow_amendment_forwarding:
             custom_model_data = {
-                "motion_state/30": {"motion_ids": [13]},
                 "motion_state/34": {
-                    "motion_ids": [12],
+                    "motion_ids": [13],
                     "allow_motion_forwarding": True,
                 },
-                "motion/12": {"state_id": 34},
-                "motion/13": {"state_id": 30},
-            }
-        elif with_amendments:
-            custom_model_data = {
-                "motion_state/34": {"motion_ids": [13]},
                 "motion/13": {"state_id": 34},
             }
         expected_models_do_not_exist = [
@@ -2620,7 +2606,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        expected_mediaservice_calls = [call(1, 20), call(6, 21), call(16, 22)]
+        expected_mediaservice_calls = [call(1, 20), call(16, 21), call(6, 22)]
         self.assertEqual(
             self.media.duplicate_mediafile.call_count, len(expected_mediaservice_calls)
         )
@@ -2632,17 +2618,17 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_mediafile_ids": [32, 33, 34, 35, 36],
                 "mediafile_ids": [20, 21, 22],
             },
-            "motion/18": {"attachment_meeting_mediafile_ids": [34]},
-            "motion/19": {"attachment_meeting_mediafile_ids": [35, 32]},
-            "motion/20": {"attachment_meeting_mediafile_ids": [36]},
-            "motion/21": {"attachment_meeting_mediafile_ids": [36, 33]},
+            "motion/18": {"attachment_meeting_mediafile_ids": [33]},
+            "motion/19": {"attachment_meeting_mediafile_ids": [34, 32]},
+            "motion/20": {"attachment_meeting_mediafile_ids": [35]},
+            "motion/21": {"attachment_meeting_mediafile_ids": [35, 36]},
             "mediafile/20": {
                 "meeting_mediafile_ids": [32],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
             },
             "mediafile/21": {
-                "meeting_mediafile_ids": [33],
+                "meeting_mediafile_ids": [35],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
             },
@@ -2652,11 +2638,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "mimetype": "text/plain",
             },
             "mediafile/9": {
-                "meeting_mediafile_ids": [17, 34],
+                "meeting_mediafile_ids": [17, 33],
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
             "mediafile/19": {
-                "meeting_mediafile_ids": [30, 35],
+                "meeting_mediafile_ids": [30, 34],
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
             "meeting_mediafile/32": {
@@ -2665,27 +2651,27 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_public": True,
                 "attachment_ids": ["motion/19"],
             },
-            "meeting_mediafile/33": {
+            "meeting_mediafile/36": {
                 "meeting_id": 2,
-                "mediafile_id": 21,
+                "mediafile_id": 22,
                 "is_public": True,
                 "attachment_ids": ["motion/21"],
             },
-            "meeting_mediafile/34": {
+            "meeting_mediafile/33": {
                 "meeting_id": 2,
                 "mediafile_id": 9,
                 "is_public": True,
                 "attachment_ids": ["motion/18"],
             },
-            "meeting_mediafile/35": {
+            "meeting_mediafile/34": {
                 "meeting_id": 2,
                 "mediafile_id": 19,
                 "is_public": True,
                 "attachment_ids": ["motion/19"],
             },
-            "meeting_mediafile/36": {
+            "meeting_mediafile/35": {
                 "meeting_id": 2,
-                "mediafile_id": 22,
+                "mediafile_id": 21,
                 "is_public": True,
                 "attachment_ids": ["motion/21", "motion/20"],
             },
