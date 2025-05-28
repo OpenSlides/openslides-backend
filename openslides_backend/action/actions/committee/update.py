@@ -159,6 +159,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             )
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.check_forwarding_fields(instance)
         if has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -166,16 +167,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         ):
             return
 
-        if any(
-            [
-                field in instance
-                for field in [
-                    "forward_to_committee_ids",
-                    "receive_forwardings_from_committee_ids",
-                    "manager_ids",
-                ]
-            ]
-        ) or ("parent_id" in instance and not instance["parent_id"]):
+        if "parent_id" in instance and not instance["parent_id"]:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
         if "parent_id" in instance:

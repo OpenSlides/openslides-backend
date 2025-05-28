@@ -108,6 +108,48 @@ def has_organization_management_level(
     return False
 
 
+def get_failing_committee_management_levels(
+    datastore: DatastoreService,
+    user_id: int,
+    expected_level: CommitteeManagementLevel,
+    committee_ids: list[int],
+) -> list[int]:
+    """
+    Checks whether a user has the minimum necessary
+    CommitteeManagementLevel for the committees in the list and
+    returns the ids of all that fail.
+    """
+    if user_id > 0:
+        cml_fields = ["committee_management_ids"]
+        user = datastore.get(
+            fqid_from_collection_and_id("user", user_id),
+            ["organization_management_level", *cml_fields],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        if user.get("organization_management_level") in (
+            OrganizationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        ):
+            return []
+        not_trivial = set(committee_ids).difference(
+            user.get("committee_management_ids", [])
+        )
+        if not_trivial:
+            committees = datastore.get_many(
+                [GetManyRequest("committee", list(not_trivial), ["all_parent_ids"])]
+            )["committee"]
+            return [
+                id_
+                for id_, committee in committees.items()
+                if not any(
+                    parent_id in user.get("committee_management_ids", [])
+                    for parent_id in committee.get("all_parent_ids", [])
+                )
+            ]
+    return []
+
+
 def has_committee_management_level(
     datastore: DatastoreService,
     user_id: int,

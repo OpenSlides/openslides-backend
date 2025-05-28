@@ -12,8 +12,8 @@
     organization_tag_ids: Id[];
     external_id: string;
 
-// Group B
     manager_ids: Id[];
+// Group B
     forward_to_committee_ids: Id[];
     receive_forwardings_from_committee_ids: Id[];
 
@@ -30,5 +30,5 @@ Re-calculates `committee/all_parent_ids` from the new `parent_id` for this and a
 
 ## Permissions
 - Group A: The user needs the CML `can_manage` or the OML `can_manage_organization`
-- Group B: The user needs the OML `can_manage_organization`
+- Group B: The user needs the OML `can_manage_organization` or the CML `can_manage` for all target committees that were added/removed from the list
 - Group C: The user needs the OML `can_manage_organization` or the CML `can_manage` for a committee that is an _ancestor_ of the intended child committee and either the intended parent committee or one of its ancestors. Only organization managers may set this field to `None`.

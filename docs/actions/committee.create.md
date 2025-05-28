@@ -11,8 +11,9 @@
     external_id: string;
     parent_id: Id;
 
-    // Only with can_manage_organization
     manager_ids: Id[];
+
+    // Needs manage rights for all target committees
     forward_to_committee_ids: Id[];
     receive_forwardings_from_committee_ids: Id[];
 }

@@ -37,14 +37,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        if (parent_id := instance.get("parent_id")) and not any(
-            field in instance
-            for field in [
-                "forward_to_committee_ids",
-                "receive_forwardings_from_committee_ids",
-                "manager_ids",
-            ]
-        ):
+        if parent_id := instance.get("parent_id"):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
@@ -58,6 +51,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
                     }
                 )
             return
+        self.check_forwarding_fields(instance)
         return super().check_permissions(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
