@@ -44,6 +44,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "locked_from_inside": True,
                 },
                 "committee/1": {
+                    "name": "Ent council",
                     "meeting_ids": [456],
                     "user_ids": [111],
                     "manager_ids": [111],
@@ -74,13 +75,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "user/111": {
                     "username": "username_srtgb123",
                     "meeting_user_ids": [1111],
+                    "is_present_in_meeting_ids": [1],
                 },
                 "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
                     "speaker_ids": [15, 16],
                 },
-                "meeting/1": {},
+                "meeting/1": {"present_user_ids": [111]},
                 "speaker/15": {
                     "meeting_user_id": 1111,
                     "meeting_id": 1,
@@ -95,13 +97,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/111")
+        self.assert_model_deleted("user/111", {"is_present_in_meeting_ids": []})
         self.assert_model_deleted("meeting_user/1111")
         self.assert_model_exists(
             "speaker/15",
             {"meeting_user_id": None, "meeting_id": 1, "begin_time": 12345678},
         )
         self.assert_model_deleted("speaker/16")
+        self.assert_model_exists("meeting/1", {"present_user_ids": []})
 
     def test_delete_with_candidate(self) -> None:
         self.set_models(
@@ -427,7 +430,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
             response.json["message"],
         )
 
@@ -442,8 +445,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
+                "committee/1": {"name": "CoMtTe", "meeting_ids": [1]},
+                "committee/2": {"name": "KommmitTee", "meeting_ids": [2]},
                 "meeting/1": {
                     "committee_id": 1,
                     "is_active_in_organization_id": 1,
@@ -477,7 +480,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
             response.json["message"],
         )
 
@@ -513,7 +516,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "committee_id": 2,
                 },
                 "group/1": {"name": "test default group", "meeting_id": 1},
-                "committee/2": {"meeting_ids": [1]},
+                "committee/2": {"name": "intern", "meeting_ids": [1]},
             }
         )
         response = self.request(

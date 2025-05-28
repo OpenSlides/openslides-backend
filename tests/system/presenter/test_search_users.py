@@ -604,3 +604,29 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertCountEqual(data.get(f"uSer{4+quantity}/", []), [])
         assert len(data[f"uSer{4+quantity}/userX6@Test.de"]) == 2
+
+    def test_special_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
+            }
+        )
+        self.update_model(
+            "user/1",
+            {
+                "organization_management_level": None,
+                "committee_management_ids": [1],
+            },
+        )
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
+                "search": [
+                    {"username": "Jehova"},
+                ],
+            },
+        )
+        self.assertEqual(status_code, 400)
+        assert data["message"] == "Oooh! He said it again! Oooh!..."

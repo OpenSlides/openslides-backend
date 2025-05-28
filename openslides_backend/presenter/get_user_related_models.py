@@ -5,7 +5,7 @@ import fastjsonschema
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
 from openslides_backend.shared.schema import id_list_schema
 
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version

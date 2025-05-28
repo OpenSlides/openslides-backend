@@ -2,7 +2,7 @@ from typing import Any
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ....shared.exceptions import ActionException
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -27,14 +27,15 @@ class MotionStateUpdateAction(UpdateAction):
             "allow_support",
             "allow_create_poll",
             "allow_submitter_edit",
+            "allow_motion_forwarding",
+            "allow_amendment_forwarding",
             "set_number",
+            "set_workflow_timestamp",
             "show_state_extension_field",
-            "merge_amendment_into_final",
             "show_recommendation_extension_field",
+            "merge_amendment_into_final",
             "next_state_ids",
             "previous_state_ids",
-            "set_workflow_timestamp",
-            "allow_motion_forwarding",
             "submitter_withdraw_state_id",
         ]
     )

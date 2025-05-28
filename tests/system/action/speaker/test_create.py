@@ -353,7 +353,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("speaker/1")
         self.assertIn(
-            "Only present users can be on the lists of speakers.",
+            "Only present users can be on the list of speakers.",
             response.json["message"],
         )
 

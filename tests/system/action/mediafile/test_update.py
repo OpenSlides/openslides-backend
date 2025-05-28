@@ -909,6 +909,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "data must not contain {'filename'} properties", response.json["message"]
         )
 
+    def test_update_title_with_orga_owner_meeting_id_none(self) -> None:
+        self.set_models(self.orga_permission_test_models)
+        response = self.request(
+            "mediafile.update", {"id": 111, "title": "blob.txt", "meeting_id": None}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("data.meeting_id must be integer", response.json["message"])
+
     def test_update_access_group_with_orga_owner(self) -> None:
         self.set_models(self.orga_permission_test_models)
         response = self.request(

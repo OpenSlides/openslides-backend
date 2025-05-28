@@ -1,5 +1,5 @@
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 import fastjsonschema
@@ -23,8 +23,11 @@ from ..shared.util import (
     validate_html,
 )
 
+TRUE_VALUES = ("1", "true", "yes", "t", "y")
+FALSE_VALUES = ("0", "false", "no", "f", "n")
 
-class OnDelete(str, Enum):
+
+class OnDelete(StrEnum):
     PROTECT = "PROTECT"
     CASCADE = "CASCADE"
     SET_NULL = "SET_NULL"
@@ -143,8 +146,6 @@ class BooleanField(Field):
         return instance[self.own_field_name] is None
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
-        TRUE_VALUES = ("1", "true", "yes", "t", "y")
-        FALSE_VALUES = ("0", "false", "no", "f", "n")
         if isinstance(value, bool):
             return value
         elif isinstance(value, str):

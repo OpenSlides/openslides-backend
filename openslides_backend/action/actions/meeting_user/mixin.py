@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....action.util.typing import ActionData, ActionResults
@@ -27,7 +27,7 @@ class MeetingUserGroupMixin(Action):
             "group",
             And(
                 FilterOperator("anonymous_group_for_meeting_id", "!=", None),
-                Or(FilterOperator("id", "=", id_) for id_ in group_ids),
+                FilterOperator("id", "in", group_ids),
             ),
         ):
             raise ActionException(

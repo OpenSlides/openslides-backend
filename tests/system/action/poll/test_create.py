@@ -276,6 +276,7 @@ class CreatePoll(BasePollTestCase):
         response = self.request(
             "poll.create",
             {
+                "content_object_id": "assignment/1",
                 "title": "test_title_ahThai4pae1pi4xoogoo",
                 "pollmethod": "YN",
                 "type": "pseudoanonymous",
@@ -799,10 +800,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "Creation of poll/1: You try to set following required fields to an empty value: ['content_object_id']"
-        )
+        assert response.json["message"] == "No 'content_object_id' was given"
 
     def test_create_no_permissions_assignment(self) -> None:
         self.base_permission_test(
@@ -984,6 +982,47 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_max_votes_per_option_smaller_max_votes_amount(self) -> None:
+        """Also asserts that default values are respected."""
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "max_votes_per_option": 2,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The maximum votes per option cannot be higher than the maximum amount of votes in total."
+        )
+        self.assert_model_not_exists("poll/1")
+
+    def test_max_votes_amount_smaller_min(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "min_votes_amount": 5,
+                "max_votes_amount": 2,
+                "max_votes_per_option": 2,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The minimum amount of votes cannot be higher than the maximum amount of votes."
+        )
         self.assert_model_not_exists("poll/1")
 
     def test_create_poll_candidate_list(self) -> None:

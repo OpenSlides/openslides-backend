@@ -29,7 +29,6 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_change_recommendation",
             "motion_state",
             "motion_workflow",
-            "motion_statute_paragraph",
             "poll",
             "option",
             "vote",
@@ -118,9 +117,11 @@ class TestExportMeeting(BasePresenterTestCase):
                     "present_user_ids": [1],
                     "meeting_user_ids": [1],
                 },
+                "gender/1": {"name": "male"},
                 "user/1": {
                     "is_present_in_meeting_ids": [1],
                     "meeting_user_ids": [1],
+                    "gender_id": 1,
                 },
                 "meeting_user/1": {
                     "meeting_id": 1,
@@ -141,6 +142,7 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["is_active"] is True
         assert data["user"]["1"]["meeting_ids"] == [1]
         assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
+        assert data["user"]["1"]["gender"] == "male"
         assert data["meeting_user"]["1"]["group_ids"] == [11]
 
     def test_add_users_in_2_meetings(self) -> None:

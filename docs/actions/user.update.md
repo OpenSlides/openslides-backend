@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
@@ -14,7 +14,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);

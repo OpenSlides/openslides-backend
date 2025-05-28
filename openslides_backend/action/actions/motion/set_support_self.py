@@ -2,7 +2,7 @@ from typing import Any
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction

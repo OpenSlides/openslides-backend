@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     content_object_id: Fqid;

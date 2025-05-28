@@ -128,7 +128,12 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
                     "max_votes_per_option": 1,
                     "type": "named",
                     "backend": "long",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "Y",
+                    "content_object_id": "topic/1",
                 },
+                "topic/1": {"meeting_id": 1, "poll_ids": [1], "title": "Tim the topic"},
             }
         )
         self.vote_service.start(1)
@@ -155,6 +160,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
 
     @performance
     def test_reset_performance(self) -> None:
+        # TODO this needs a different idea
         self.prepare_users_and_poll(100)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)

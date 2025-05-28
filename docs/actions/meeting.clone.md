@@ -3,7 +3,8 @@
 ```js
 {
   meeting_id: Id;    // required
-  committee_id: Id;  // optional: target committee for cloned meeting
+  // optional
+  committee_id: Id;  // target committee for cloned meeting 
   welcome_title: str;
   description: str;
   start_time: timestamp;
@@ -11,6 +12,7 @@
   location: str;
   organization_tag_ids: List[Id];
   name: str;
+  external_id: str;  // prevent duplicate external ids
   user_ids: Id[];
   admin_ids: Id[];
   set_as_template: boolean;  // default False
@@ -29,14 +31,15 @@ will be cloned untouched.
 
 If an archived meeting is cloned, the created meeting will be active.
 
-It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids.
+Checks whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids and raises an exception otherwise.
 
 Meetings that have `locked_from_inside` set to true can not be cloned.
 
 ### Pre Updating fields
 
-The fields `welcome_title, description, start_time, end_time, location, organization_tag_ids, name` could be updated for the 
+The fields `welcome_title, description, start_time, end_time, location, organization_tag_ids, name, external_id` could be updated for the 
 cloned meeting. If name is not updated this way, it gets the suffix _- Copy_.
+If `external_id` is not given, the `external_id` will be set to None in the new meeting.
 If set_as_template is given, template_for_organization_id has to be set to 1.
 
 ## Permission

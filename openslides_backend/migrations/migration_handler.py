@@ -1,9 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 from io import StringIO
 from threading import Lock, Thread
 from typing import Any
-
-from openslides_backend.migrations import MigrationState as DatastoreMigrationState
 
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler
@@ -12,23 +10,26 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from . import MigrationWrapper
 
+# from openslides_backend.migrations import MigrationState as DatastoreMigrationState
+
+
 # Amount of time that should be waited for a result from the migrate thread before returning an empty result
-THREAD_WAIT_TIME = 0.1
+THREAD_WAIT_TIME = 0.2
 
 
-class MigrationState(str, Enum):
-    """
-    All possible migration states, ordered by priority. E.g. a running migration implicates that
-    migrations are required and required migration implicates that finalization is also required.
-    """
+# class MigrationState(StrEnum):
+#     """
+#     All possible migration states, ordered by priority. E.g. a running migration implicates that
+#     migrations are required and required migration implicates that finalization is also required.
+#     """
 
-    MIGRATION_RUNNING = "migration_running"
-    MIGRATION_REQUIRED = DatastoreMigrationState.MIGRATION_REQUIRED.value
-    FINALIZATION_REQUIRED = DatastoreMigrationState.FINALIZATION_REQUIRED.value
-    NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
+#     MIGRATION_RUNNING = "migration_running"
+#     MIGRATION_REQUIRED = DatastoreMigrationState.MIGRATION_REQUIRED.value
+#     FINALIZATION_REQUIRED = DatastoreMigrationState.FINALIZATION_REQUIRED.value
+#     NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
 
 
-class MigrationCommand(str, Enum):
+class MigrationCommand(StrEnum):
     MIGRATE = "migrate"
     FINALIZE = "finalize"
     RESET = "reset"
@@ -72,9 +73,9 @@ class MigrationHandler(BaseHandler):
 
             verbose = payload.get("verbose", False)
             if command == "stats":
-                stats = self.migration_wrapper.handler.get_stats()
+                # stats = self.migration_wrapper.handler.get_stats()
                 return {
-                    "stats": stats,
+                    # "stats": stats,
                 }
             elif command in iter(MigrationCommand):
                 MigrationHandler.migrate_thread_stream = StringIO()
@@ -86,7 +87,7 @@ class MigrationHandler(BaseHandler):
                 if thread.is_alive():
                     # Migration still running. Report current progress and return
                     return {
-                        "status": MigrationState.MIGRATION_RUNNING,
+                        # "status": MigrationState.MIGRATION_RUNNING,
                         "output": MigrationHandler.migrate_thread_stream.getvalue(),
                     }
                 else:
@@ -111,7 +112,7 @@ class MigrationHandler(BaseHandler):
             if MigrationHandler.migrate_thread_stream:
                 # Migration still running
                 return {
-                    "status": MigrationState.MIGRATION_RUNNING,
+                    # "status": MigrationState.MIGRATION_RUNNING,
                     "output": MigrationHandler.migrate_thread_stream.getvalue(),
                 }
             else:
@@ -120,7 +121,7 @@ class MigrationHandler(BaseHandler):
             return self.get_migration_result()
 
     def get_migration_result(self) -> dict[str, Any]:
-        stats = self.migration_wrapper.handler.get_stats()
+        # stats = self.migration_wrapper.handler.get_stats()
         if MigrationHandler.migrate_thread_stream:
             # Migration finished and the full output can be returned. Do not remove the
             # output in case the response is lost and must be delivered again, but set
@@ -134,14 +135,14 @@ class MigrationHandler(BaseHandler):
             else:
                 exception_data = {}
             return {
-                "status": stats["status"],
+                # "status": stats["status"],
                 "output": MigrationHandler.migrate_thread_stream.getvalue(),
                 **exception_data,
             }
         else:
             # Nothing to report
             return {
-                "status": stats["status"],
+                # "status": stats["status"],
             }
 
     def write_line(self, message: str) -> None:

@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     motion_id: Id;
     motion_editor_ids: Id[];

@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Any, cast
 
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
@@ -14,7 +13,7 @@ from ...mixins.import_mixins import (
 from ...mixins.send_email_mixin import EmailUtils
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixins import UsernameMixin, check_gender_helper
+from .user_mixins import UsernameMixin
 
 
 class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
@@ -61,7 +60,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "email",
                                 "title",
                                 "pronoun",
-                                "gender",
                                 "default_password",
                                 "is_active",
                                 "is_physical_person",
@@ -69,6 +67,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "member_number",
                             ),
                             **additional_user_fields,
+                            "gender": {"type": "string"},
                         },
                         "additionalProperties": False,
                     },
@@ -355,10 +354,20 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.handle_default_password(entry)
 
         if gender := entry.get("gender"):
-            try:
-                check_gender_helper(self.datastore, entry)
-                entry["gender"] = {"info": ImportState.DONE, "value": gender}
-            except ActionException:
+            if gender_model := next(
+                (
+                    model
+                    for model in self.gender_dict.values()
+                    if model["name"] == gender
+                ),
+                None,
+            ):
+                entry["gender"] = {
+                    "info": ImportState.DONE,
+                    "value": gender,
+                    "id": gender_model["id"],
+                }
+            else:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
 
@@ -488,6 +497,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             ],
             field="member_number",
             mapped_fields=["username", "member_number", "saml_id"],
+        )
+        self.gender_dict = self.datastore.get_all(
+            "gender", ["id", "name"], lock_result=False
         )
 
         self.all_id_mapping: dict[int, list[SearchFieldType]] = defaultdict(list)

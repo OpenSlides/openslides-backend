@@ -3,8 +3,8 @@ from openslides_backend.action.mixins.meeting_user_helper import (
     get_meeting_user,
 )
 
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
@@ -12,7 +12,7 @@ from .permissions import Permission, Permissions, permission_parents
 
 
 def has_perm(
-    datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
+    datastore: Database, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
@@ -31,10 +31,10 @@ def has_perm(
                 ],
                 lock_result=False,
             )
-            if (
-                user.get("organization_management_level")
-                == OrganizationManagementLevel.SUPERADMIN
-            ):
+            if user.get("organization_management_level") in [
+                OrganizationManagementLevel.SUPERADMIN,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            ]:
                 return True
 
         meeting_user = get_meeting_user(
@@ -93,7 +93,7 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
 
 
 def has_organization_management_level(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     expected_level: OrganizationManagementLevel,
 ) -> bool:
@@ -104,13 +104,13 @@ def has_organization_management_level(
             ["organization_management_level"],
         )
         return expected_level <= OrganizationManagementLevel(
-            user.get("organization_management_level")
+            user.get("organization_management_level", "")
         )
     return False
 
 
 def has_committee_management_level(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     expected_level: CommitteeManagementLevel,
     committee_id: int,
@@ -135,7 +135,7 @@ def has_committee_management_level(
 
 
 def get_shared_committee_management_levels(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     expected_level: CommitteeManagementLevel,
     committee_ids: list[int],
@@ -175,14 +175,14 @@ def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permis
     return reduced_permissions
 
 
-def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
+def is_admin(datastore: Database, user_id: int, meeting_id: int) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
         ["admin_group_id", "locked_from_inside"],
         lock_result=False,
     )
     if not meeting.get("locked_from_inside") and has_organization_management_level(
-        datastore, user_id, OrganizationManagementLevel.SUPERADMIN
+        datastore, user_id, OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     ):
         return True
 
@@ -193,9 +193,9 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
 anonymous_perms_whitelist: set[Permission] = {
     Permissions.AgendaItem.CAN_SEE,
     Permissions.AgendaItem.CAN_SEE_INTERNAL,
-    Permissions.AgendaItem.CAN_SEE_MODERATOR_NOTES,
     Permissions.Assignment.CAN_SEE,
     Permissions.ListOfSpeakers.CAN_SEE,
+    Permissions.ListOfSpeakers.CAN_SEE_MODERATOR_NOTES,
     Permissions.Mediafile.CAN_SEE,
     Permissions.Meeting.CAN_SEE_AUTOPILOT,
     Permissions.Meeting.CAN_SEE_FRONTPAGE,
@@ -206,6 +206,7 @@ anonymous_perms_whitelist: set[Permission] = {
     Permissions.Projector.CAN_SEE,
     Permissions.User.CAN_SEE,
     Permissions.User.CAN_SEE_SENSITIVE_DATA,
+    Permissions.Poll.CAN_SEE_PROGRESS,
 }
 
 

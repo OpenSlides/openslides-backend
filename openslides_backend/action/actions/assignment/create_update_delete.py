@@ -1,5 +1,9 @@
+from typing import Any
+
 from ....models.models import Assignment
 from ....permissions.permissions import Permissions
+from ....services.database.commands import GetManyRequest
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...action_set import ActionSet
 from ...generics.update import UpdateAction
@@ -17,6 +21,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
 from ..meeting_mediafile.attachment_mixin import AttachmentMixin
+from ..speaker.create import SpeakerCreateAction
 
 
 class AssignmentCreate(
@@ -30,7 +35,58 @@ class AssignmentCreate(
 
 
 class AssignmentUpdate(AttachmentMixin, UpdateAction):
-    pass
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if instance.get("phase") == "voting":
+            assignment = self.datastore.get(
+                fqid_from_collection_and_id("assignment", instance["id"]),
+                ["meeting_id", "candidate_ids", "list_of_speakers_id", "phase"],
+            )
+            if (
+                assignment.get("phase") != "voting"
+                and (candidate_ids := assignment.get("candidate_ids"))
+                and self.datastore.get(
+                    fqid_from_collection_and_id("meeting", assignment["meeting_id"]),
+                    ["assignment_poll_add_candidates_to_list_of_speakers"],
+                ).get("assignment_poll_add_candidates_to_list_of_speakers")
+            ):
+                speaker_ids = self.datastore.get(
+                    fqid_from_collection_and_id(
+                        "list_of_speakers", assignment["list_of_speakers_id"]
+                    ),
+                    ["speaker_ids"],
+                ).get("speaker_ids", [])
+                pre_existing_speakers_meeting_user_ids = [
+                    pre_existing_speaker["meeting_user_id"]
+                    for pre_existing_speaker in self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "speaker",
+                                speaker_ids,
+                                ["meeting_user_id"],
+                            )
+                        ]
+                    )["speaker"].values()
+                ]
+                payloads = [
+                    {
+                        "list_of_speakers_id": assignment["list_of_speakers_id"],
+                        "meeting_user_id": candidate["meeting_user_id"],
+                    }
+                    for candidate in self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "assignment_candidate",
+                                candidate_ids,
+                                ["meeting_user_id"],
+                            )
+                        ]
+                    )["assignment_candidate"].values()
+                    if candidate["meeting_user_id"]
+                    not in pre_existing_speakers_meeting_user_ids
+                ]
+                for payload in payloads:
+                    self.execute_other_action(SpeakerCreateAction, [payload])
+        return super().update_instance(instance)
 
 
 @register_action_set("assignment")

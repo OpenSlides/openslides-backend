@@ -36,10 +36,6 @@ class MotionCreateBase(
         if workflow_id is None:
             if instance.get("lead_motion_id"):
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
-            elif instance.get("statute_paragraph_id"):
-                workflow_id = meeting.get(
-                    "motions_default_statute_amendment_workflow_id"
-                )
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if workflow_id:
@@ -54,8 +50,8 @@ class MotionCreateBase(
             )
 
     def create_submitters(self, instance: dict[str, Any]) -> None:
-        submitter_ids = instance.pop("submitter_ids", None)
-        if not submitter_ids:
+        submitter_ids = instance.pop("submitter_ids", [])
+        if not submitter_ids and not instance.get("additional_submitter"):
             submitter_ids = [self.user_id]
         self.apply_instance(instance)
         weight = 1
@@ -79,10 +75,7 @@ class MotionCreateBase(
         )
 
     def set_created_last_modified_and_number(self, instance: dict[str, Any]) -> None:
-        timestamp = round(time.time())
-        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
-        instance["last_modified"] = timestamp
-        instance["created"] = timestamp
+        self.set_created_last_modified(instance)
         self.set_number(
             instance,
             instance["meeting_id"],
@@ -90,3 +83,9 @@ class MotionCreateBase(
             instance.get("lead_motion_id"),
             instance.get("category_id"),
         )
+
+    def set_created_last_modified(self, instance: dict[str, Any]) -> None:
+        timestamp = round(time.time())
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
+        instance["last_modified"] = timestamp
+        instance["created"] = timestamp

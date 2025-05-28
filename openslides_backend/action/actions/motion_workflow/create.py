@@ -55,7 +55,6 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
         [
             "default_workflow_meeting_id",
             "default_amendment_workflow_meeting_id",
-            "default_statute_amendment_workflow_meeting_id",
         ],
     )
 
@@ -126,7 +125,6 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
         [
             "default_workflow_meeting_id",
             "default_amendment_workflow_meeting_id",
-            "default_statute_amendment_workflow_meeting_id",
         ],
     )
 

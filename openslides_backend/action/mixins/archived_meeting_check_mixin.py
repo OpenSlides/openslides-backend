@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ...models import fields
 from ...models.base import model_registry
-from ...services.datastore.commands import GetManyRequest
+from ...services.database.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ..action import Action
 
@@ -17,6 +17,8 @@ class CheckForArchivedMeetingMixin(Action):
 
     def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         """check all instance fields for their meeting and if the meeting is active"""
+        if self.skip_archived_meeting_check:
+            return
         model = model_registry[self.model.collection]()
         meeting_ids: set[int] = set()
         if "meeting_id" in instance:
@@ -51,7 +53,7 @@ class CheckForArchivedMeetingMixin(Action):
                 if not value.get("is_active_in_organization_id")
             ]
 
-            if archived_meetings and not self.skip_archived_meeting_check:
+            if archived_meetings:
                 raise ActionException(
                     f'Meetings {", ".join(archived_meetings)} cannot be changed, because they are archived.'
                 )

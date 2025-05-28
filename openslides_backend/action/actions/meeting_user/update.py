@@ -1,6 +1,5 @@
 from typing import Any
 
-from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ....models.models import MeetingUser
@@ -22,7 +21,6 @@ class MeetingUserUpdate(
     UpdateAction,
     MeetingUserGroupMixin,
     CheckLockOutPermissionMixin,
-    ExtendHistoryMixin,
 ):
     """
     Action to update a meeting_user.
@@ -45,7 +43,6 @@ class MeetingUserUpdate(
             *merge_fields,
         ],
     )
-    extend_history_to = "user_id"
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         m_user = self.datastore.get(

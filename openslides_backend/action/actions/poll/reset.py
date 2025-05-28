@@ -4,7 +4,7 @@ from typing import Any
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
 from ....models.models import Poll
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema

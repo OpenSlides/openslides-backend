@@ -1,10 +1,11 @@
 ## Payload
-```
+```js
 {id: Id}
 ```
 
 ## Action
 Deletes the given speaker.
+Resets the projector_countdown if he was speaking.
 
 ## Permissions
 If the `speaker/meeting_user_id` doesn't belong to the request user, he needs `list_of_speakers.can_manage`

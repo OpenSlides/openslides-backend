@@ -26,6 +26,8 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "agenda_item_id": 333,
                     "projection_ids": [1],
                     "meeting_id": 110,
+                    "phase": "finished",
+                    "candidate_ids": [1111],
                 },
                 "list_of_speakers/222": {
                     "closed": False,
@@ -46,6 +48,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "current_projection_ids": [1],
                     "meeting_id": 110,
                 },
+                "assignment_candidate/1111": {"assignment_id": 111, "meeting_id": 110},
             }
         )
         response = self.request("assignment.delete", {"id": 111})
@@ -54,6 +57,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("agenda_item/333")
         self.assert_model_deleted("list_of_speakers/222")
         self.assert_model_deleted("projection/1")
+        self.assert_model_deleted("assignment_candidate/1111")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

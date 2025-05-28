@@ -1,6 +1,6 @@
 from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
 
-from ...services.datastore.interface import DatastoreService
+from ...services.database.interface import Database
 from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     KEYSEPARATOR,
@@ -11,7 +11,7 @@ from ...shared.patterns import (
 
 
 def assert_belongs_to_meeting(
-    datastore: DatastoreService,
+    datastore: Database,
     fqids: FullQualifiedId | list[FullQualifiedId],
     meeting_id: int,
 ) -> None:

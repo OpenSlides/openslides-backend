@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     name: string;
     meeting_id: Id;

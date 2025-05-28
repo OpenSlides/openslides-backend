@@ -117,7 +117,7 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
             try:
                 pyg_mimetypes = guess_lexer_for_filename(
                     filename_, decoded_file.decode()
-                ).mimetypes
+                ).mimetypes  # type: ignore
             except ClassNotFound:
                 pyg_mimetypes = guess_lexer(decoded_file).mimetypes  # type: ignore
             if use_mimetype in pyg_mimetypes:

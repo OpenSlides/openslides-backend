@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.models.models import MeetingUser
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import required_id_schema, str_list_schema
@@ -103,6 +103,9 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         )
 
         payload_index = entry.pop("payload_index", None)
+        # swapping needed for get_failing_fields and setting import states not to fail
+        if entry.get("gender"):
+            entry["gender_id"] = entry.pop("gender")
         failing_fields = self.permission_check.get_failing_fields(entry)
         entry.pop("group_ids")
         entry.pop("structure_level_ids")
@@ -115,7 +118,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 failing_fields.remove("member_number")
         if failing_fields:
             messages.append(
-                f"Following fields were removed from payload, because the user has no permissions to change them: {', '.join(failing_fields)}"
+                f"Account is added to the meeting, but changes to the following field(s) are not possible: {', '.join(failing_fields)}"
             )
         field_to_fail = (
             set(entry.keys()) & self.permission_check.get_all_checked_fields()
@@ -152,6 +155,8 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
 
         if payload_index:
             entry["payload_index"] = payload_index
+        if entry.get("gender_id"):
+            entry["gender"] = entry.pop("gender_id")
 
         return results
 

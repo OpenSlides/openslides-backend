@@ -2,8 +2,6 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, Union, cast
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-
 from ...models.base import model_registry
 from ...models.fields import (
     BaseGenericRelationField,
@@ -13,7 +11,7 @@ from ...models.fields import (
     RelationField,
     RelationListField,
 )
-from ...services.datastore.interface import DatastoreService, PartialModel
+from ...services.database.interface import Database, PartialModel
 from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     Collection,
@@ -41,7 +39,7 @@ class SingleRelationHandler:
 
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         field: BaseRelationField,
         field_name: str,
         instance: dict[str, Any],
@@ -133,7 +131,6 @@ class SingleRelationHandler:
                 related_model = self.datastore.get(
                     fqid,
                     [related_name],
-                    get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
                     raise_exception=False,
                 )
                 # again, we transform everything to lists of fqids

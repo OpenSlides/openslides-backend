@@ -60,6 +60,8 @@ class Environment(Env):
         "DATABASE_PORT": "5432",
         "DATABASE_NAME": "openslides",
         "DATABASE_USER": "openslides",
+        "DATABASE_RETRY_TIMEOUT": "0.4",
+        "DATABASE_MAX_RETRIES": "10",
         "PGPASSWORD": "openslides",
         "DATABASE_PASSWORD_FILE": "",
         # psycopg.ConnectionPool attributes with DB_POOL-prefix

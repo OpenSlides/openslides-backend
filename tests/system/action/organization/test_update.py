@@ -6,7 +6,11 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
-    saml_attr_mapping: dict[str, str | dict[str, str]] = {
+    ListOfDicts = list[dict[str, str]]
+    MeetingMappers = list[
+        dict[str, str | ListOfDicts | dict[str, str | dict[str, str] | ListOfDicts]]
+    ]
+    saml_attr_mapping: dict[str, str | MeetingMappers] = {
         "saml_id": "username",
         "title": "title",
         "first_name": "firstName",
@@ -16,6 +20,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         "pronoun": "pronoun",
         "is_active": "is_active",
         "is_physical_person": "is_person",
+        "member_number": "member_number",
     }
 
     def setUp(self) -> None:
@@ -48,6 +53,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -57,12 +63,52 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
             },
         )
 
     def test_update_with_meeting(self) -> None:
         self.saml_attr_mapping.update(
-            {"meeting": {"external_id": "Landtag", "external_group_id": "Delegated"}}
+            {
+                "meeting_mappers": [
+                    {
+                        "name": "Mapper-Name",
+                        "external_id": "Landtag",
+                        "allow_update": "false",
+                        "conditions": [
+                            {"attribute": "membernumber", "condition": r"1426\d{4,6}$"},
+                            {"attribute": "function", "condition": "board"},
+                        ],
+                        "mappings": {
+                            "groups": [
+                                {
+                                    "attribute": "membership",
+                                    "default": "admin, standard",
+                                }
+                            ],
+                            "structure_levels": [
+                                {
+                                    "attribute": "ovname",
+                                    "default": "struct1, struct2",
+                                }
+                            ],
+                            "number": {"attribute": "p_number"},
+                            "comment": {
+                                "attribute": "idp_comment",
+                                "default": "Group set via SSO",
+                            },
+                            "vote_weight": {
+                                "attribute": "vote",
+                                "default": "1.000000",
+                            },
+                            "present": {
+                                "attribute": "present_key",
+                                "default": "True",
+                            },
+                        },
+                    }
+                ]
+            }
         ),
         response = self.request(
             "organization.update",
@@ -83,9 +129,9 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_with_meeting_error(self) -> None:
+    def test_update_with_meeting_missing_ext_id(self) -> None:
         self.saml_attr_mapping.update(
-            {"meeting": {"external_idx": "Landtag", "external_group_id": "Delegated"}}
+            {"meeting_mappers": [{"external_idx": "Landtag"}]}
         ),
         response = self.request(
             "organization.update",
@@ -98,7 +144,98 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "data.saml_attr_mapping.meeting must not contain {'external_idx'} properties"
+            "data.saml_attr_mapping.meeting_mappers[0] must contain ['external_id'] properties"
+            in response.json["message"]
+        )
+
+    def test_update_with_meeting_wrong_attr(self) -> None:
+        self.saml_attr_mapping.update(
+            {"meeting_mappers": [{"external_id": "Landtag", "unknown_field": " "}]}
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0] must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {"external_id": "Landtag", "mappings": {"unknown_field": " "}}
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {
+                        "external_id": "Landtag",
+                        "mappings": {"vote_weight": {"unknown_field": " "}},
+                    }
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings.vote_weight must not contain {'unknown_field'} properties"
+            in response.json["message"]
+        )
+
+        self.saml_attr_mapping.update(
+            {
+                "meeting_mappers": [
+                    {
+                        "external_id": "Landtag",
+                        "mappings": {"groups": [{"unknown_field": " "}]},
+                    }
+                ]
+            }
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting_mappers[0].mappings.groups[0] must not contain {'unknown_field'} properties"
             in response.json["message"]
         )
 
@@ -145,7 +282,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                     """
                 ),
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
             },
         )
         self.assert_status_code(response, 200)
@@ -171,7 +307,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
             },
         )
         assert (
@@ -316,40 +451,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"default_language": "it"})
-
-    def test_update_genders_remove(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"username": "with_test_gender", "gender": "test"},
-                "user/7": {"username": "not_changed", "gender": "male"},
-            }
-        )
-        response = self.request(
-            "organization.update", {"id": 1, "genders": ["male", "female"]}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": ["male", "female"]})
-        self.assert_model_exists(
-            "user/6", {"username": "with_test_gender", "gender": None}
-        )
-        self.assert_model_exists(
-            "user/7", {"username": "not_changed", "gender": "male"}
-        )
-
-    def test_update_genders_empty(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"gender": "test"},
-                "user/7": {"gender": "male"},
-            }
-        )
-        response = self.request("organization.update", {"id": 1, "genders": []})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": []})
-        self.assert_model_exists("user/6", {"gender": None})
-        self.assert_model_exists("user/7", {"gender": None})
 
     def test_update_group_a_no_permissions(self) -> None:
         self.set_organization_management_level(

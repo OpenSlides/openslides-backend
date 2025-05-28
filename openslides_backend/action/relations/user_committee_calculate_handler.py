@@ -1,12 +1,11 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ...models.fields import Field
 from ...shared.filters import And, FilterOperator, Not
 from ...shared.patterns import (
     FullQualifiedId,
-    collection_from_fqid,
     fqfield_from_collection_and_id_and_field,
     fqid_from_collection_and_id,
     id_from_fqid,
@@ -23,8 +22,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     A user belongs to a committee, if he is member of a meeting in the committee via group or
     he has rights on CommitteeManagementLevel.
     Problem: The changes come from 2 different collections, both could add or remove user/committee_relations.
-    This method will calculate additions and removals by comparing the instances of datastore.changed_models and
-    the stored db-content.
+    This method will calculate additions and removals by comparing the instances of extended databases
+    changed_models and the stored db-content.
     Calculates per user on
     1. user.committee_managment_ids, if changed
     2. MeetingUser.group_ids of all changes
@@ -40,8 +39,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         ):
             return {}
         assert (
-            changed_model := self.datastore.changed_models.get(
-                fqid_from_collection_and_id(field.own_collection, instance["id"])
+            changed_model := self.datastore.get_changed_model(
+                field.own_collection, instance["id"]
             )
         )
         assert changed_model.get(field_name) == instance.get(field_name)
@@ -61,11 +60,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         else:
             if action != "user.delete":
                 self.fill_meeting_user_changed_models_with_user_and_meeting_id()
-            fqid_meeting_user = fqid_from_collection_and_id(
-                field.own_collection, instance["id"]
-            )
             user_id = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any],
+                self.datastore.get_changed_model(field.own_collection, instance["id"]),
             ).get("user_id")
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             fqid_user = fqid_from_collection_and_id("user", user_id)
@@ -91,7 +88,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     ) -> RelationUpdates:
         user_id = id_from_fqid(fqid)
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
-        changed_user = self.datastore.changed_models[fqid]
+        changed_user = self.datastore.get_changed_model(fqid)
         if "committee_management_ids" in changed_user:
             new_committees_ids = set(changed_user["committee_management_ids"] or [])
         else:
@@ -153,10 +150,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
     def fill_meeting_user_changed_models_with_user_and_meeting_id(self) -> None:
         meeting_user_ids: list[int] = [
-            id_from_fqid(key)
-            for key, data in self.datastore.changed_models.items()
-            if collection_from_fqid(key) == "meeting_user"
-            and (not data.get("user_id") or not data.get("meeting_id"))
+            id_
+            for id_, data in self.datastore.get_changed_models("meeting_user").items()
+            if (not data.get("user_id") or not data.get("meeting_id"))
         ]
         if meeting_user_ids:
             results = self.datastore.get_many(
@@ -170,9 +166,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 use_changed_models=False,
             ).get("meeting_user", {})
             for key, value in results.items():
-                changed_model = self.datastore.changed_models[
+                changed_model = self.datastore.get_changed_model(
                     fqid_from_collection_and_id("meeting_user", key)
-                ]
+                )
                 changed_model["user_id"] = value["user_id"]
                 changed_model["meeting_id"] = value["meeting_id"]
 
@@ -201,8 +197,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         self, user_id: int
     ) -> dict[int, dict[str, Any]]:
         return {
-            id_from_fqid(key): data
-            for key, data in self.datastore.changed_models.items()
-            if collection_from_fqid(key) == "meeting_user"
-            and (data.get("user_id") == user_id or isinstance(data, DeletedModel))
+            id_: data
+            for id_, data in self.datastore.get_changed_models("meeting_user").items()
+            if (data.get("user_id") == user_id or isinstance(data, DeletedModel))
         }

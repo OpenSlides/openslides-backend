@@ -30,6 +30,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "name": "test_Xcdfgee",
                 "workflow_id": 42,
                 "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
             },
         )
@@ -41,6 +42,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("merge_amendment_into_final") == "undefined"
         assert model.get("css_class") == "lightblue"
         assert model.get("allow_motion_forwarding") is True
+        assert model.get("allow_amendment_forwarding") is True
         assert model.get("set_workflow_timestamp") is True
 
     def test_create_as_new_first_state(self) -> None:

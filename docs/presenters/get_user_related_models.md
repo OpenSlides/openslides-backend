@@ -2,7 +2,7 @@
 
 ```js
 {
-    user_ids: Id[];
+    user_ids: Id[] // required
 }
 ```
 
@@ -12,16 +12,16 @@
 {
   [user_id: Id]: {
     organization_management_level: OML-String,
-    committees: [{ id: Id; name: String; cml: CML-String; }],
+    committees: [{ id: Id, name: String, cml: CML-String }],
     meetings: [{
-      id: Id;
-      name: String;
-      is_active_in_organization_id: Id;
-      is_locked: boolean;
-      motion_submitter_ids: Id[];
-      assignment_candidate_ids: Id[];
-      speaker_ids: Id[];
-      locked_out: boolean;
+      id: Id,
+      name: String,
+      is_active_in_organization_id: Id,
+      is_locked: boolean,
+      motion_submitter_ids: Id[],
+      assignment_candidate_ids: Id[],
+      speaker_ids: Id[],
+      locked_out: boolean
     }]
   }
 }

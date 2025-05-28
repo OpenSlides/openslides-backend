@@ -6,7 +6,11 @@ import simplejson as json
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
+from openslides_backend.shared.util import (
+    INITIAL_DATA_FILE,
+    ONE_ORGANIZATION_FQID,
+    get_initial_data_file,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -472,9 +476,7 @@ l,m,n,"""
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
         filename = "test.json"
-        data = json.dumps(
-            get_initial_data_file("global/data/initial-data.json")
-        ).encode()
+        data = json.dumps(get_initial_data_file(INITIAL_DATA_FILE)).encode()
         json_content = base64.b64encode(data).decode()
         response = self.request(
             "mediafile.upload",

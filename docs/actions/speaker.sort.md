@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     list_of_speakers_id: Id;
     speaker_ids: Id[];

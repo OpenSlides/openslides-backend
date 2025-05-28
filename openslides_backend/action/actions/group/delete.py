@@ -6,7 +6,7 @@ from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import Group
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
 from ....shared.interfaces.event import Event, EventType, ListFields
 from ....shared.patterns import (

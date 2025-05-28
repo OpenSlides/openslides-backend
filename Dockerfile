@@ -1,4 +1,4 @@
-FROM python:3.10.15-slim-bookworm
+FROM python:3.12.9-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y curl ncat git mime-support gcc libc-dev libpq-dev libmagic1
@@ -18,7 +18,8 @@ ENV PYTHONPATH /app
 COPY --chown=appuser:appuser scripts scripts
 COPY --chown=appuser:appuser entrypoint.sh ./
 COPY --chown=appuser:appuser openslides_backend openslides_backend
-COPY --chown=appuser:appuser global global
+COPY --chown=appuser:appuser meta meta
+COPY --chown=appuser:appuser data data
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt

@@ -13,14 +13,18 @@ from ..models.fields import (
     RelationListField,
 )
 from ..models.models import Meeting, User
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
+NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candidate_ids"]
 
-def export_meeting(datastore: DatastoreService, meeting_id: int) -> dict[str, Any]:
+
+def export_meeting(
+    datastore: Database, meeting_id: int, internal_target: bool = False
+) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
     # fetch meeting
@@ -128,7 +132,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> dict[str, An
                     elif collection_from_fqid(entry[field_name]) == "meeting_user":
                         id_ = id_from_fqid(entry[field_name])
                         user_ids.add(results["meeting_user"][id_]["user_id"])
-    add_users(list(user_ids), export, meeting_id, datastore)
+    add_users(list(user_ids), export, meeting_id, datastore, internal_target)
     return export
 
 
@@ -136,7 +140,8 @@ def add_users(
     user_ids: list[int],
     export_data: dict[str, Any],
     meeting_id: int,
-    datastore: DatastoreService,
+    datastore: Database,
+    internal_target: bool,
 ) -> None:
     if not user_ids:
         return
@@ -161,6 +166,9 @@ def add_users(
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
+        if not internal_target and (gender_id := user.pop("gender_id", None)):
+            gender_dict = datastore.get_all("gender", ["name"], lock_result=False)
+            user["gender"] = gender_dict.get(gender_id, {}).get("name")
         # limit user fields to exported objects
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),
@@ -193,10 +201,12 @@ def remove_meta_fields(res: dict[str, Any]) -> dict[str, Any]:
 
 def get_relation_fields() -> Iterable[RelationListField]:
     for field in Meeting().get_relation_fields():
-        if (
-            isinstance(field, RelationListField)
-            and field.on_delete == OnDelete.CASCADE
-            and field.get_own_field_name().endswith("_ids")
+        if isinstance(field, RelationListField) and (
+            (
+                field.on_delete == OnDelete.CASCADE
+                and field.get_own_field_name().endswith("_ids")
+            )
+            or field.get_own_field_name() in NON_CASCADING_MEETING_RELATION_LISTS
         ):
             yield field
 
