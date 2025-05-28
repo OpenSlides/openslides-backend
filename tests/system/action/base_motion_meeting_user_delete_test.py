@@ -29,11 +29,11 @@ def build_motion_meeting_user_delete_test(collection: str) -> type[BaseActionTes
             }
 
         def test_delete_correct(self) -> None:
+            self.create_meeting(98)
             self.set_models(
                 {
                     "meeting/98": {
                         f"{collection}_ids": [111],
-                        "is_active_in_organization_id": 1,
                     },
                     "motion/12": {
                         "meeting_id": 98,

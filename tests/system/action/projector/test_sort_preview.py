@@ -5,9 +5,9 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorSortPreview(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/1": {"meeting_id": 1, "preview_projection_ids": [1, 2, 3]},
                 "projection/1": {
                     "meeting_id": 1,

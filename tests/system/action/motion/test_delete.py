@@ -8,10 +8,12 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
+            "committee/1": {"meeting_ids": [1]},
             "meeting/1": {
                 "motion_ids": [111, 112],
                 "is_active_in_organization_id": 1,
                 "meeting_user_ids": [5],
+                "committee_id": 1,
             },
             "user/1": {"meeting_user_ids": [5]},
             "motion/111": {
@@ -50,9 +52,10 @@ class MotionDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting(98)
         self.set_models(
             {
-                "meeting/98": {"motion_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/98": {"motion_ids": [111]},
                 "motion/111": {"title": "title_srtgb123", "meeting_id": 98},
             }
         )
@@ -85,12 +88,12 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("motion/112")
 
     def test_delete_correct_cascading(self) -> None:
+        self.create_meeting(98)
         self.set_models(
             {
                 "meeting/98": {
                     "motion_ids": [111],
                     "all_projection_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion/111": {
                     "title": "title_srtgb123",
@@ -138,8 +141,16 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [110], "is_active_in_organization_id": 1},
-                "meeting/2": {"motion_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "motion_ids": [110],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
+                "meeting/2": {
+                    "motion_ids": [111],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion/110": {
                     "meeting_id": 1,
                     "derived_motion_ids": [111],
@@ -160,8 +171,16 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_with_forwardings_all_derived_motion_ids(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [110], "is_active_in_organization_id": 1},
-                "meeting/2": {"motion_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "motion_ids": [110],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
+                "meeting/2": {
+                    "motion_ids": [111],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion/110": {
                     "meeting_id": 1,
                     "derived_motion_ids": [111],
@@ -182,8 +201,16 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_with_forwardings_complex(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [110], "is_active_in_organization_id": 1},
-                "meeting/2": {"motion_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "motion_ids": [110],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
+                "meeting/2": {
+                    "motion_ids": [111],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion/110": {
                     "meeting_id": 1,
                     "derived_motion_ids": [111],
@@ -227,9 +254,10 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_with_submodels(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [110], "is_active_in_organization_id": 1},
+                "meeting/1": {"motion_ids": [110]},
                 "motion/110": {
                     "meeting_id": 1,
                     "submitter_ids": [1],

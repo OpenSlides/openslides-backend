@@ -6,9 +6,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting(222)
 
     def test_create_correct_and_defaults(self) -> None:
         response = self.request(

@@ -8,11 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class TopicJsonUpload(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting(22)
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -187,11 +183,7 @@ class TopicJsonUpload(BaseActionTestCase):
 class TopicJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting(22)
 
     def json_upload_agenda_data(self) -> None:
         start_time = int(time())

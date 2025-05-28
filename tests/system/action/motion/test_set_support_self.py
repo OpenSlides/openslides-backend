@@ -23,6 +23,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "motion_ids": [1],
                 "motions_supporters_min_amount": 1,
                 "is_active_in_organization_id": 1,
+                "committee_id": 1,
             },
             "motion_state/1": {
                 "name": "state_1",
@@ -30,6 +31,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "motion_ids": [1],
                 "meeting_id": 1,
             },
+            "committee/1": {"meeting_ids": [1]},
         }
 
     def test_meeting_support_system_deactivated(self) -> None:
@@ -45,6 +47,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 0,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -75,6 +78,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -104,6 +108,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -143,6 +148,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -174,6 +180,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -222,6 +229,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "motion/1": {
                     "title": "motion_1",
                     "meeting_id": 1,
@@ -248,6 +256,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                         else {"users_enable_vote_delegations": True}
                     ),
                     delegator_setting: True,
+                    "committee_id": 1,
                 },
             }
         )
@@ -279,6 +288,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "users_forbid_delegator_as_submitter": True,
                     "users_enable_vote_delegations": True,
+                    "committee_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",

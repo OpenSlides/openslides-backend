@@ -13,9 +13,9 @@ class ProjectorToggle(BaseActionTestCase):
         }
 
     def setup_models(self, stable: bool) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/23": {"meeting_id": 1, "current_projection_ids": [33]},
                 "projection/33": {
                     "meeting_id": 1,
@@ -59,9 +59,9 @@ class ProjectorToggle(BaseActionTestCase):
         assert projector.get("history_projection_ids") == [33]
 
     def test_correct_add_projection(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/23": {"meeting_id": 1, "current_projection_ids": []},
                 "poll/788": {"meeting_id": 1},
             }

@@ -18,11 +18,9 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 "option_id": 57,
             },
         }
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                },
                 "topic/1": {
                     "meeting_id": 1,
                 },

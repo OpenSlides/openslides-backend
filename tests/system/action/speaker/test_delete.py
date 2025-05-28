@@ -38,11 +38,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -67,11 +67,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -124,11 +124,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_delete_correct_on_closed_los(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -152,11 +152,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("speaker/890")
 
     def test_delete_with_removed_user(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -182,11 +182,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_with_deleted_user(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 111},
                 "speaker/890": {
@@ -277,11 +277,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("speaker/890")
 
     def test_with_active_structure_level_speaker(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_default_structure_level_time": 30,
                 },
                 "user/7": {
@@ -340,11 +340,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         assert sllos["remaining_time"] < 30
 
     def test_with_paused_structure_level_speaker(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_default_structure_level_time": 30,
                 },
                 "user/7": {
@@ -425,6 +425,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         return now
 
     def test_delete_update_countdown(self) -> None:
+        self.create_meeting()
         self.set_models(self.permission_test_models)
         self.add_coupled_countdown()
         response = self.request("speaker.delete", {"id": 890})
@@ -434,6 +435,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assertAlmostEqual(countdown["countdown_time"], 100, delta=200)
 
     def test_delete_dont_update_countdown(self) -> None:
+        self.create_meeting()
         self.set_models(self.permission_test_models)
         self.set_models(
             {

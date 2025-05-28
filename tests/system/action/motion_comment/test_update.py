@@ -23,6 +23,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -31,7 +32,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "group_ids": [2],
                 },
-                "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
+                "meeting/1": {"admin_group_id": 2},
                 "group/2": {
                     "meeting_id": 1,
                     "admin_group_for_meeting_id": 1,

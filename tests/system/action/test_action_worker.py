@@ -18,12 +18,9 @@ class ActionWorkerTest(BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,

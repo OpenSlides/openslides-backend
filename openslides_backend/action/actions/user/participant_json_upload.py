@@ -98,41 +98,18 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             )
 
         # validate structure level
-        _, structure_level_objects = self.validate_with_lookup(
-            entry, "structure_level", messages, True
-        )
-
-        payload_index = entry.pop("payload_index", None)
-        # swapping needed for get_failing_fields and setting import states not to fail
-        if entry.get("gender"):
-            entry["gender_id"] = entry.pop("gender")
-        failing_fields = self.permission_check.get_failing_fields(entry)
-        entry.pop("group_ids")
-        entry.pop("structure_level_ids")
-        entry.pop("meeting_id")
-
-        if not entry.get("id"):
-            if "username" in failing_fields:
-                failing_fields.remove("username")
-            if "member_number" in failing_fields:
-                failing_fields.remove("member_number")
-        if failing_fields:
-            messages.append(
-                f"Account is added to the meeting, but changes to the following field(s) are not possible: {', '.join(failing_fields)}"
+        if "structure_level" in entry:
+            _, structure_level_objects = self.validate_with_lookup(
+                entry, "structure_level", messages, True
             )
-        field_to_fail = (
-            set(entry.keys()) & self.permission_check.get_all_checked_fields()
+        else:
+            structure_level_objects = []
+
+        self.check_field_failures(
+            entry,
+            messages,
+            "Account is added to the meeting, but changes to the following field(s) are not possible:",
         )
-        for field in field_to_fail:
-            if field in failing_fields:
-                if isinstance(entry[field], dict):
-                    if entry[field]["info"] != ImportState.ERROR:
-                        entry[field]["info"] = ImportState.REMOVE
-                else:
-                    entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
-            else:
-                if not isinstance(entry[field], dict):
-                    entry[field] = {"value": entry[field], "info": ImportState.DONE}
 
         # validate locking
         self.validate_locked_out_status(entry, messages, group_objects, results)
@@ -153,12 +130,14 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 messages.append("vote_weight must be bigger than or equal to 0.000001.")
                 results["state"] = ImportState.ERROR
 
-        if payload_index:
-            entry["payload_index"] = payload_index
-        if entry.get("gender_id"):
-            entry["gender"] = entry.pop("gender_id")
-
         return results
+
+    def remove_helper_fields_from_entry_in_field_failure_check(
+        self, entry: dict[str, Any]
+    ) -> None:
+        entry.pop("group_ids")
+        entry.pop("structure_level_ids", None)
+        entry.pop("meeting_id")
 
     def validate_with_lookup(
         self,

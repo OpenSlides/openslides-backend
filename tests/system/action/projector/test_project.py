@@ -9,7 +9,7 @@ class ProjectorProject(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1, "committee_id": 60},
                 "projector/23": {
                     "meeting_id": 1,
                     "current_projection_ids": [105, 106],

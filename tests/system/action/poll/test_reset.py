@@ -31,7 +31,8 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
             "vote/1": {"option_id": 1, "meeting_id": 1},
             "vote/2": {"option_id": 1, "meeting_id": 1},
             "vote/3": {"option_id": 2, "meeting_id": 1},
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/1": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
     def test_reset_correct(self) -> None:
