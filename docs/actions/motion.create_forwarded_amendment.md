@@ -14,6 +14,7 @@
     use_original_submitter: boolean;
     use_original_number: boolean;
     with_change_recommendations: boolean;
+    with_attachments: boolean;
 }
 ```
 

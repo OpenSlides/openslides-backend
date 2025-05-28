@@ -149,8 +149,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         self, action_data: ActionData, user_id: int, internal: bool = False
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.id_to_result_extra_data: dict[int, dict[str, Any]] = {}
-        self.user_id = user_id
-        self.duplicate_mediafiles(action_data)
         return super().perform(action_data, user_id, internal)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -229,14 +227,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             self.execute_other_action(
                 MotionChangeRecommendationCreateAction, change_reco_data
             )
-
-        if self.should_forward_attachments(instance) and hasattr(
-            self, "meeting_mediafile_replace_map"
-        ):
-            instance = self.forward_mediafiles(
-                instance=instance, replace_map=self.meeting_mediafile_replace_map
-            )
-
         amendment_ids = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["origin_id"]),
             ["amendment_ids"],
@@ -299,17 +289,11 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "use_original_number": use_original_number,
                         "with_change_recommendations": with_change_recommendations,
                         "marked_forwarded": self.mark_amendments,
+                        "with_attachments": self.should_forward_attachments(instance),
                     }
                 )
                 amendment.pop("meta_position", 0)
                 amendment.pop("id")
-                if self.should_forward_attachments(instance) and hasattr(
-                    self, "meeting_mediafile_replace_map"
-                ):
-                    amendment = self.forward_mediafiles(
-                        instance=amendment,
-                        replace_map=self.meeting_mediafile_replace_map,
-                    )
             amendment_results = self.create_amendments(list(amendment_data)) or []
             self.id_to_result_extra_data[instance["id"]] = {
                 "non_forwarded_amendment_amount": total - len(amendment_results),
@@ -320,7 +304,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "non_forwarded_amendment_amount": len(amendment_ids),
                 "amendment_result_data": [],
             }
-
         return instance
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
@@ -417,82 +400,124 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
 
-    def duplicate_mediafiles(self, action_data: ActionData) -> None:
-        """
-        Duplicates the meeting-wide mediafile models that must be forwarded to
-        the target motion along with the corresponding mediafiles in the
-        mediaservice.
+    def duplicate_mediafiles(
+        self, action_data: ActionData, is_lead_motions_data: bool
+    ) -> None:
+        if not hasattr(self, "meeting_mediafile_replace_map"):
+            self.meeting_mediafile_replace_map: dict[int, dict[int, int]] = defaultdict(
+                dict
+            )
+        if is_lead_motions_data:
+            self.lead_motions_meeting_mm_ids_map: dict[int, list[int]] = defaultdict(
+                list
+            )
+        motion_target_meeting_ids_map: dict[int, set[int]] = (
+            self._extract_motion_target_meeting_ids(action_data)
+        )
+        origin_attachments_data: dict[int, dict[str, Any]] = (
+            self._fetch_origin_attachments_data(
+                list(motion_target_meeting_ids_map.keys())
+            )
+        )
+        target_meeting_id_mm_ids_map, mm_id_target_meeting_ids_map = (
+            self._build_target_meeting_and_mm_maps(
+                motion_target_meeting_ids_map, origin_attachments_data
+            )
+        )
+        mediafiles, mediafile_new_mm_map_by_meeting, new_mm_instances_data = (
+            self._fetch_and_map_mediafiles(mm_id_target_meeting_ids_map)
+        )
+        duplicate_mediafiles_data, mediafile_replace_map_by_meeting = (
+            self._build_duplication_data_and_mediafile_replace_map(
+                mediafiles,
+                mediafile_new_mm_map_by_meeting,
+                mm_id_target_meeting_ids_map,
+            )
+        )
+        if duplicate_mediafiles_data:
+            self.execute_other_action(
+                MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
+            )
+        self._duplicate_meeting_mediafiles(
+            new_mm_instances_data, mediafile_replace_map_by_meeting
+        )
+        if is_lead_motions_data:
+            self.lead_motions_meeting_mm_ids_map = target_meeting_id_mm_ids_map
 
-        Builds meeting_mediafiles replace map for each meeting where the motions
-        are forwarded.
+    def _extract_motion_target_meeting_ids(
+        self, action_data: ActionData
+    ) -> dict[int, set[int]]:
         """
-        # Fetch origin data
-        motions_with_attachments = [
-            instance for instance in action_data if instance.get("with_attachments")
-        ]
-        if not motions_with_attachments:
-            return
+        Builds mapping: origin_id -> set of meeting_ids (only for motions with attachments).
+        """
+        motion_target_meeting_ids_map: dict[int, set[int]] = defaultdict(set)
+        for instance in action_data:
+            if instance.get("with_attachments"):
+                motion_target_meeting_ids_map[instance["origin_id"]].add(
+                    instance["meeting_id"]
+                )
+        return motion_target_meeting_ids_map
 
-        origin_ids = {instance["origin_id"] for instance in motions_with_attachments}
-        origin_lead_motions = self.datastore.get_many(
+    def _fetch_origin_attachments_data(
+        self, origin_ids: list[int]
+    ) -> dict[int, dict[str, Any]]:
+        return self.datastore.get_many(
             [
                 GetManyRequest(
-                    "motion",
-                    list(origin_ids),
-                    ["attachment_meeting_mediafile_ids", "amendment_ids"],
+                    "motion", origin_ids, ["attachment_meeting_mediafile_ids"]
                 )
             ],
             lock_result=False,
         )["motion"]
 
-        amendment_ids: set[int] = set()
-        amendments: dict[int, dict[str, Any]] = {}
-        for motion in motions_with_attachments:
-            if motion.get("with_amendments"):
-                amendment_ids.update(
-                    set(
-                        origin_lead_motions.get(motion["origin_id"], {}).get(
-                            "amendment_ids", []
-                        )
+    def _build_target_meeting_and_mm_maps(
+        self,
+        motion_target_meeting_ids_map: dict[int, set[int]],
+        origin_attachments_data: dict[int, dict[str, Any]],
+    ) -> tuple[dict[int, list[int]], dict[int, set[int]]]:
+        """
+        Build 2 maps:
+        1. target meeting_id -> list of attachment_meeting_mediafile_ids
+        that should be forwarded to this meeting.
+        2. meeting_mediafile_id -> set of target meeting_ids.
+
+        If duplicate_mediafile was called with amendment_data,
+        skips mediafiles attached to the lead motion.
+        """
+        target_meeting_id_mm_ids_map: dict[int, list[int]] = defaultdict(list)
+        for origin_id, meeting_ids in motion_target_meeting_ids_map.items():
+            origin_motion_data = origin_attachments_data.get(origin_id, {})
+            attachments = set(
+                origin_motion_data.get("attachment_meeting_mediafile_ids", [])
+            )
+            for meeting_id in meeting_ids:
+                target_meeting_id_mm_ids_map[meeting_id] = sorted(
+                    list(
+                        set(target_meeting_id_mm_ids_map[meeting_id])
+                        | attachments
+                        - set(self.lead_motions_meeting_mm_ids_map.get(meeting_id, []))
                     )
                 )
-        if amendment_ids:
-            amendments = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "motion",
-                        list(amendment_ids),
-                        ["attachment_meeting_mediafile_ids"],
-                    )
-                ],
-                lock_result=False,
-            )["motion"]
-        meeting_mm_ids_map: dict[int, list[int]] = defaultdict(list)
-        for instance in motions_with_attachments:
-            meeting_id = instance["meeting_id"]
-            origin_data = origin_lead_motions.get(instance["origin_id"], {})
-            attachments = set(origin_data.get("attachment_meeting_mediafile_ids", []))
-            if instance.get("with_amendments"):
-                for amendment_id in origin_data.get("amendment_ids", []):
-                    attachments.update(
-                        amendments.get(amendment_id, {}).get(
-                            "attachment_meeting_mediafile_ids", []
-                        )
-                    )
-            meeting_mm_ids_map[meeting_id] = sorted(
-                list(set(meeting_mm_ids_map[meeting_id]) | attachments)
-            )
-
-        mm_id_meeting_map: dict[int, set[int]] = defaultdict(set)
-        for meeting_id, attachment_ids in meeting_mm_ids_map.items():
+        mm_id_target_meeting_ids_map: dict[int, set[int]] = defaultdict(set)
+        for meeting_id, attachment_ids in target_meeting_id_mm_ids_map.items():
             for mm_id in attachment_ids:
-                mm_id_meeting_map[mm_id].add(meeting_id)
+                mm_id_target_meeting_ids_map[mm_id].add(meeting_id)
+        return target_meeting_id_mm_ids_map, mm_id_target_meeting_ids_map
 
+    def _fetch_and_map_mediafiles(
+        self, mm_id_target_meeting_ids_map: dict[int, set[int]]
+    ) -> tuple[dict, dict[int, dict[int, dict[str, Any]]], list[dict[str, Any]]]:
+        """
+        Retrieves data based on the data from mm_id_target_meeting_ids_map:
+        1. Dict of related mediafiles.
+        2. Map:target_meeting_ids -> forwarded mediafile id -> target meeting_mediafile data
+        3. List with target meeting_mediafile data.
+        """
         meeting_mediafiles = self.datastore.get_many(
             [
                 GetManyRequest(
                     "meeting_mediafile",
-                    list(mm_id_meeting_map.keys()),
+                    list(mm_id_target_meeting_ids_map.keys()),
                     [
                         "mediafile_id",
                         "is_public",
@@ -508,12 +533,12 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         mediafile_new_mm_map_by_meeting: dict[int, dict[int, dict[str, Any]]] = (
             defaultdict(dict)
         )
-        mm_instances_to_forward: list[dict[str, Any]] = []
+        new_mm_instances_data: list[dict[str, Any]] = []
         for mm_id, mm_data in meeting_mediafiles.items():
-            for meeting_id in mm_id_meeting_map[mm_id]:
+            for meeting_id in mm_id_target_meeting_ids_map[mm_id]:
                 mm = {**mm_data, "meeting_id": meeting_id, "old_id": mm_id}
                 mediafile_new_mm_map_by_meeting[meeting_id][mm["mediafile_id"]] = mm
-                mm_instances_to_forward.append(mm)
+                new_mm_instances_data.append(mm)
 
         mediafile_ids = {
             meeting_mediafile["mediafile_id"]
@@ -530,7 +555,19 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             lock_result=False,
         )["mediafile"]
 
-        # Build mediafile replace map
+        return mediafiles, mediafile_new_mm_map_by_meeting, new_mm_instances_data
+
+    def _build_duplication_data_and_mediafile_replace_map(
+        self,
+        mediafiles: dict,
+        mediafile_new_mm_map_by_meeting: dict[int, dict[int, dict[str, Any]]],
+        mm_id_target_meeting_map: dict[int, set[int]],
+    ) -> tuple[list[dict[str, Any]], dict[int, dict[int, int]]]:
+        """
+        Builds:
+        - action_data for MediafileDuplicateToAnotherMeetingAction
+        - Map: meeting_id -> origin mediafile id -> target_mediafile_id
+        """
         if meeting_wide_mediafiles := {
             mediafile_id: mediafile
             for mediafile_id, mediafile in mediafiles.items()
@@ -540,15 +577,15 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 self.datastore.reserve_ids(
                     "mediafile",
                     sum(
-                        len(mm_id_meeting_map.get(id_, []))
+                        len(mm_id_target_meeting_map.get(id_, []))
                         for mediafile in meeting_wide_mediafiles.values()
                         for id_ in mediafile.get("meeting_mediafile_ids", [])
                     ),
                 )
             )
 
-        mediafile_replace_map_by_meeting: dict[int, dict[int, int]] = {}
         duplicate_mediafiles_data: list[dict[str, Any]] = []
+        mediafile_replace_map_by_meeting: dict[int, dict[int, int]] = {}
         for meeting_id, mm_map in mediafile_new_mm_map_by_meeting.items():
             replace_map = mediafile_replace_map_by_meeting.setdefault(meeting_id, {})
             for origin_mediafile_id in mm_map.keys():
@@ -557,7 +594,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 else:
                     replace_map[origin_mediafile_id] = origin_mediafile_id
 
-            # Duplicate meeting-wide mediafiles
             meeting_fqid = fqid_from_collection_and_id("meeting", meeting_id)
             for origin_id, target_id in replace_map.items():
                 if origin_id != target_id:
@@ -569,45 +605,49 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     if parent_id := mediafiles.get(origin_id, {}).get("parent_id"):
                         new_mediafile["parent_id"] = replace_map.get(parent_id)
                     duplicate_mediafiles_data.append(new_mediafile)
+        return duplicate_mediafiles_data, mediafile_replace_map_by_meeting
 
-        if duplicate_mediafiles_data:
-            self.execute_other_action(
-                MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
-            )
-
-        # Duplicate meeting_mediafiles
-        new_mm_instances = []
-        for meeting_mediafile in mm_instances_to_forward:
+    def _duplicate_meeting_mediafiles(
+        self,
+        new_mm_instances_data: list[dict[str, Any]],
+        mediafile_replace_map_by_meeting: dict[int, dict[int, int]],
+    ) -> None:
+        """
+        Duplicates meeting_mediafiles and creates a replace_map for assigning
+        meeting_mediafiles to the target motions.
+        """
+        new_mm_instances: list[dict[str, Any]] = []
+        for meeting_mediafile in new_mm_instances_data:
             new_mm = {**meeting_mediafile}
             new_mm.pop("old_id")
             new_mm["mediafile_id"] = mediafile_replace_map_by_meeting[
                 new_mm["meeting_id"]
             ][new_mm["mediafile_id"]]
             new_mm_instances.append(new_mm)
+
         results = cast(
             list[dict[str, Any]],
             self.execute_other_action(MeetingMediafileCreate, new_mm_instances),
         )
-        self.meeting_mediafile_replace_map: dict[int, dict[int, int]] = defaultdict(
-            dict
-        )
-        for origin_mm, mm in zip(mm_instances_to_forward, results):
+        for origin_mm, mm in zip(new_mm_instances_data, results):
             self.meeting_mediafile_replace_map[origin_mm["meeting_id"]].update(
                 {origin_mm["old_id"]: mm["id"]}
             )
 
     def forward_mediafiles(
-        self, instance: dict[str, Any], replace_map: dict[int, dict[int, int]] = {}
+        self, instance: dict[str, Any], replace_map: dict[int, int] = {}
     ) -> dict[str, Any]:
-        attachment_ids = self.datastore.get(
-            fqid_from_collection_and_id("motion", instance["origin_id"]),
-            ["attachment_meeting_mediafile_ids"],
-            lock_result=False,
-        ).get("attachment_meeting_mediafile_ids", [])
+        if replace_map:
+            attachment_ids = self.datastore.get(
+                fqid_from_collection_and_id("motion", instance["origin_id"]),
+                ["attachment_meeting_mediafile_ids"],
+                lock_result=False,
+            ).get("attachment_meeting_mediafile_ids", [])
 
-        if attachment_ids:
             instance["attachment_meeting_mediafile_ids"] = [
-                replace_map[instance["meeting_id"]][id_] for id_ in attachment_ids
+                mapped_id
+                for id_ in attachment_ids
+                if (mapped_id := replace_map.get(id_))
             ]
         return instance
 

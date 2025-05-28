@@ -32,8 +32,19 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             "use_original_submitter": {"type": "boolean"},
             "use_original_number": {"type": "boolean"},
             "with_change_recommendations": {"type": "boolean"},
+            "with_attachments": {"type": "boolean"},
+            "meeting_mediafiles_replace_map": {"type": "object"},
         },
     )
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.with_attachments = instance.pop("with_attachments", False)
+        if self.with_attachments:
+            self.meeting_mediafiles_replace_map = instance.pop(
+                "meeting_mediafiles_replace_map", {}
+            )
+            self.forward_mediafiles(instance, self.meeting_mediafiles_replace_map)
+        return super().update_instance(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
@@ -55,4 +66,4 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         return True
 
     def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
-        return True
+        return self.with_attachments
