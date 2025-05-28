@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id // The primary user the others will be merged into
@@ -13,7 +13,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     default_password: string;
-    gender: string;
+    gender_id: Id;
     email: string;
     default_vote_weight: decimal(6);
     pronoun: string;
@@ -57,7 +57,7 @@ An error is thrown if:
 ### Functionality
 The primary user is updated with the information from the secondary users using the following rules:
 - `organization_management_level` is set to highest oml among the users.
-- `can_change_own_password` is set to true if it is true on any selected user.
+- `can_change_own_password` is set to true if it is true on any selected user, unless the primary user has a `saml_id`, in which case it is ignored.
 - relation-lists are set to the union of their content among all selected users, except the `is_present_in_meeting_ids`- and `meeting_user_ids`-relation, which are handled separately
 - login data (`saml_id`, `username`, `password`) remains untouched
 - If any user has a`member_number` it is used
@@ -108,8 +108,8 @@ This is usually necessary in cases where the relation is set to cascade-delete
 Equivalence is determined via `meeting_id`: All meeting_users with the same `meeting_id` are grouped together.
 
 The primary model is updated/re-created with the information from the secondary models using the following rules:
-- `assignment_candidate_ids`, `motion_editor_ids` and `motion_working_group_speaker_ids` are update-merged
-- `motion_submitter_ids`, `personal_note_ids` and `speaker_ids` are create-merged
+- `assignment_candidate_ids` is update-merged
+- `motion_editor_ids`, `motion_submitter_ids`, `motion_working_group_speaker_ids`, `personal_note_ids` and `speaker_ids` are create-merged
 - other relation-lists are set to the union of their content among all selected users
 - `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
 - `locked_out` is set to whatever the primary model of the sub-merge has

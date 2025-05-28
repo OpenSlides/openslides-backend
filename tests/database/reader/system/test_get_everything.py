@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 from psycopg import Connection
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
@@ -13,6 +14,7 @@ from tests.database.reader.system.util import (
 )
 
 
+@pytest.mark.skip(reason="this can only work if called explicitly")
 def test_simple(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     with get_new_os_conn() as conn:

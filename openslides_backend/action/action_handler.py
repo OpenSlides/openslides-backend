@@ -126,7 +126,7 @@ class ActionHandler(BaseHandler):
                 else:
 
                     def transform_to_list(
-                        tuple: tuple[WriteRequest | None, ActionResults | None]
+                        tuple: tuple[WriteRequest | None, ActionResults | None],
                     ) -> tuple[list[WriteRequest], ActionResults | None]:
                         return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 

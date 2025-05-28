@@ -11,6 +11,7 @@ from .set_number_mixin import SetNumberMixin
 
 
 class MotionErrorType(StrEnum):
+    ADDITIONAL_SUBMITTER = "addtional_submitter"
     UNIQUE_NUMBER = "number_unique"
     RECO_EXTENSION = "recommendation_extension"
     STATE_EXTENSION = "state_extension"
@@ -110,14 +111,7 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
                 {"type": MotionErrorType.TITLE, "message": "Title is required"}
             )
         if instance.get("lead_motion_id"):
-            if instance.get("statute_paragraph_id"):
-                errors.append(
-                    {
-                        "type": MotionErrorType.MOTION_TYPE,
-                        "message": "You can't give both of lead_motion_id and statute_paragraph_id.",
-                    }
-                )
-            elif not instance.get("text") and not instance.get("amendment_paragraphs"):
+            if not instance.get("text") and not instance.get("amendment_paragraphs"):
                 errors.append(
                     {
                         "type": MotionErrorType.TEXT,
@@ -147,6 +141,16 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             errors.append(
                 {"type": MotionErrorType.REASON, "message": "Reason is required"}
             )
+        if "additional_submitter" in instance and not self.datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["motions_create_enable_additional_submitter_text"],
+        ).get("motions_create_enable_additional_submitter_text"):
+            errors.append(
+                {
+                    "type": MotionErrorType.ADDITIONAL_SUBMITTER,
+                    "message": "This meeting doesn't allow additional_submitter to be set in creation",
+                }
+            )
         return errors
 
     def _create_conduct_after_checks(
@@ -157,17 +161,12 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             [
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
-                "motions_default_statute_amendment_workflow_id",
             ],
         )
         workflow_id = instance.get("workflow_id", None)
         if workflow_id is None:
             if instance.get("lead_motion_id"):
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
-            elif instance.get("statute_paragraph_id"):
-                workflow_id = meeting.get(
-                    "motions_default_statute_amendment_workflow_id"
-                )
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if not workflow_id:

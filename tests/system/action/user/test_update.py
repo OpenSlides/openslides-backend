@@ -7,6 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserUpdateActionTest(BaseActionTestCase):
+
     def permission_setup(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
@@ -15,6 +16,136 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/111": {"username": "User111"},
             }
+        )
+
+    def two_meetings_test_fail_ADEFGH(
+        self, committee_id: None | int = None, group_B_success: bool = False
+    ) -> None:
+        # test group A
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm not gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": None,
+            },
+        )
+        # test group D
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "committee_management_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        if committee_id:
+            self.assertIn(
+                f"You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {committee_id}",
+                response.json["message"],
+            )
+            self.assert_model_exists(
+                "user/111",
+                {
+                    "committee_management_ids": [committee_id],
+                },
+            )
+        else:
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee ",
+                response.json["message"],
+            )
+            self.assert_model_exists(
+                "user/111",
+                {
+                    "committee_management_ids": None,
+                },
+            )
+        # test group E
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Your organization management level is not high enough to set a Level of can_manage_users.",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "organization_management_level": None,
+            },
+        )
+        # test group F
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "I'm not gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": None,
+            },
+        )
+        # test group G
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "is_demo_user": True,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing OrganizationManagementLevel: superadmin",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "is_demo_user": None,
+            },
+        )
+        # test group H
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "saml_id": "I'm not gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The field 'saml_id' can only be used in internal action calls",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "saml_id": None,
+            },
         )
 
     def test_update_correct(self) -> None:
@@ -155,10 +286,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/22",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
+                "meeting/1",
+                "Participant added to group {} and structure level {} in meeting {}.",
+                "group/11",
+                "structure_level/31",
+                "meeting/1",
+                "Proxy voting rights for {} received in meeting {}",
+                "user/23",
                 "meeting/1",
                 "Committee management changed",
             ],
+        )
+        self.assert_history_information(
+            "user/23", ["Vote delegated to {} in meeting {}", "user/22", "meeting/1"]
         )
 
     def test_update_set_and_reset_vote_forwarded(self) -> None:
@@ -725,7 +866,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(111, [1, 6])
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request(
@@ -739,7 +886,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -756,7 +903,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -848,12 +995,123 @@ class UserUpdateActionTest(BaseActionTestCase):
         user111 = self.get_model("user/111")
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
-    def test_perm_group_A_meeting_manage_user(self) -> None:
-        """May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee"""
+    def test_perm_group_A_meeting_manage_user_with_only_archived_meeting_no_permission(
+        self,
+    ) -> None:
+        """
+        May not update group A fields on meeting scope. User belongs to 1 archived meeting.
+        """
         self.permission_setup()
-        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(self.user_id, [1])
+        self.set_user_groups(111, [1])
+        self.set_models(
+            {
+                "group/1": {"permissions": [Permissions.User.CAN_UPDATE]},
+                "user/111": {"committee_ids": [60], "meeting_ids": [1]},
+                "meeting/1": {"is_active_in_organization_id": None},
+            },
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+            response.json["message"],
+        )
+
+    def test_perm_group_A_cml_manage_user_with_only_archived_meeting(
+        self,
+    ) -> None:
+        """May update group A fields on committee scope. User belongs to 1 archived meeting in 1 committee"""
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(111, [1])
+        self.set_models(
+            {
+                "user/111": {"committee_ids": [60], "meeting_ids": [1]},
+                "meeting/1": {"is_active_in_organization_id": None},
+            },
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "meeting_ids": [1],
+                "committee_ids": [60],
+            },
+        )
+
+    def test_perm_group_A_meeting_manage_user(self) -> None:
+        """
+        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee.
+        Testing various scenarios:
+        * both default group
+        * default group has user.can_update permission
+        * requesting user is in admin group
+        """
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [1])
         self.set_user_groups(111, [1])
 
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+                "pronoun": "pronoun",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60 or Permission user.can_update in meeting {1}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "User111",
+                "pronoun": None,
+                "meeting_ids": [1],
+                "committee_ids": None,
+            },
+        )
+
+        self.update_model("group/1", {"permissions": ["user.can_update"]})
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_user",
+                "pronoun": "pro",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_user",
+                "pronoun": "pro",
+                "meeting_ids": [1],
+                "committee_ids": None,
+            },
+        )
+
+        self.set_user_groups(self.user_id, [2])
         response = self.request(
             "user.update",
             {
@@ -870,6 +1128,172 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": "pronoun",
                 "meeting_ids": [1],
                 "committee_ids": None,
+            },
+        )
+
+    def test_perm_group_A_belongs_to_same_meetings(self) -> None:
+        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. See issue 2522."""
+        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.create_meeting(4)  # meeting 4
+        # Admin groups of meeting/1 and meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [1, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
+        # Admin group of meeting/1 and default group for meeting/4 for request user
+        self.set_user_groups(self.user_id, [2, 4])
+        # 111 into both meetings (admin group for meeting/4)
+        self.set_user_groups(111, [1, 5])
+        self.two_meetings_test_fail_ADEFGH()
+        # test group B and C
+        response = self.request(
+            "user.update",
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
+        )
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
+            response.json["message"],
+        )
+        self.assert_status_code(response, 403)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "number": None,
+            },
+        )
+        # Admin groups of meeting/1 and meeting/4 for request user
+        self.set_user_groups(self.user_id, [2, 5])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+
+    def test_perm_group_A_belongs_to_same_meetings_can_update(self) -> None:
+        """
+        May update group A fields on any scope as long as requesting user has
+        user.can_update rights in requested users meetings.
+        Also makes sure being in multiple groups of a single meeting is no problem.
+        """
+        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.create_meeting(4)  # meeting 4
+        self.update_model(
+            "group/6",
+            {"permissions": ["user.can_update"]},
+        )
+        # Admin group of meeting/1 and default group of meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [2, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
+        # Admin groups of meeting/1 and meeting/4 (via group permission) for requesting user
+        self.set_user_groups(self.user_id, [2, 4, 6])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+
+    def test_perm_group_A_belongs_to_same_meetings_can_manage(self) -> None:
+        """
+        May update group A fields on any scope as long as requesting user has
+        user.can_update rights in requested users meetings.
+        Also makes sure being in multiple groups of a single meeting is no problem.
+        """
+        self.permission_setup()  # meeting 1 + logged in requesting user + user 111
+        self.create_meeting(4)  # meeting 4
+        self.update_model(
+            "group/6",
+            {"permissions": ["user.can_manage"]},
+        )
+        # Admin group of meeting/1 and default group of meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [2, 4])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        self.two_meetings_test_fail_ADEFGH()
+        # Admin groups of meeting/1 and meeting/4 (via group permission) for requesting user
+        self.set_user_groups(self.user_id, [1, 2, 4, 6])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+
+    def test_perm_group_A_belongs_to_same_meetings_committee_admin(self) -> None:
+        """May not update group A fields on any scope as long as admin user Ann belongs
+        to all meetings user Ben belongs to but Ben is committee admin. See issue 2522.
+        """
+        self.permission_setup()  # meeting 1 + logged in requesting user + user 111
+        self.create_meeting(4)  # meeting 4
+        # Admin groups of meeting/1 and meeting/4 for requesting user
+        self.set_user_groups(self.user_id, [2, 5])
+        # 111 into both meetings
+        self.set_user_groups(111, [1, 4])
+        # 111 is committee admin
+        committee_id = 60
+        self.set_committee_management_level([committee_id], 111)
+        self.two_meetings_test_fail_ADEFGH(committee_id)
+        # test group B and C
+        response = self.request(
+            "user.update",
+            {"id": 111, "number": "I'm not gonna get updated.", "meeting_id": 4},
+        )
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            "Actions handled successfully",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "number": None,
+            },
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm not gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": None,
             },
         )
 
@@ -920,6 +1344,53 @@ class UserUpdateActionTest(BaseActionTestCase):
         user111 = self.get_model("user/111")
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
+    def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+            Permissions.User.CAN_UPDATE
+        )
+
+    def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee_with_parent_permission(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+            Permissions.User.CAN_MANAGE
+        )
+
+    def perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
+        self, permission: Permission
+    ) -> None:
+        """
+        May update group A fields on meeting scope. User belongs to 1 active meeting.
+        User is member of an archived meeting in the same committee, but this doesn't may affect the result.
+        """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(111, [1, 4])
+        self.set_models(
+            {
+                "meeting/4": {
+                    "is_active_in_organization_id": None,
+                    "committee_id": 60,
+                },
+                "group/2": {"permissions": [permission]},
+                "user/111": {"committee_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"username": "new_username"})
+        user111 = self.get_model("user/111")
+        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+
     def test_perm_group_A_no_permission(self) -> None:
         """May not update group A fields on organization scope, although having both committee permissions"""
         self.permission_setup()
@@ -935,7 +1406,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
             response.json["message"],
         )
 
@@ -949,9 +1420,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(111, [1, 6])
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [2]},
+                "gender/2": {"name": "female"},
                 "meeting/4": {"locked_from_inside": True},
             }
         )
@@ -967,7 +1437,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -999,13 +1469,157 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_F_cml_manage_user_with_two_committees(self) -> None:
-        """May update group A fields on committee scope. User belongs to 1 meeting in 1 committee"""
+        """May update group F fields on committee scope. User belongs to two meetings."""
         self.permission_setup()
         self.create_meeting(4)
         self.set_committee_management_level([60], self.user_id)
         self.set_user_groups(111, [1, 4])
         self.set_models({"user/111": {"committee_ids": [60, 63]}})
 
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "new_one",
+            },
+        )
+
+    def test_perm_group_F_with_meeting_scope(self) -> None:
+        """
+        Test user update with various scenarios (admin in different meeting and committee no interference)
+            * not in same meeting fails
+            * same meeting but requesting user not in admin or permission group fails
+            * same meeting requesting user with permission user.can_update works
+            * same meeting both admin works
+            * same meeting requesting user is committee admin works
+        """
+        self.permission_setup()
+        self.create_meeting(4)
+        self.set_user_groups(111, [2])
+        self.set_user_groups(self.user_id, [5])
+        self.set_committee_management_level([63], self.user_id)
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60 or Permission user.can_update in meeting {1}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": None,
+            },
+        )
+
+        self.set_user_groups(self.user_id, [1, 5])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": None,
+            },
+        )
+
+        self.update_model("group/1", {"permissions": ["user.can_update"]})
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "new_one",
+            },
+        )
+
+        self.set_user_groups(self.user_id, [2, 5])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "newer_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "newer_one",
+            },
+        )
+
+        self.set_committee_management_level([60], self.user_id)
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "newest_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "newest_one",
+            },
+        )
+
+    def test_perm_group_F_with_two_meeting_across_committees(self) -> None:
+        """
+        May not update group F fields unless requesting user has admin rights in
+        all of requested users meetings. Also requested user can be admin himself.
+        """
+        self.permission_setup()
+        self.create_meeting(4)
+        self.set_user_groups(111, [1, 4])
+        self.set_user_groups(self.user_id, [2, 4])
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meetings {1, 4}",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": None,
+            },
+        )
+        # assert meeting admin can change normal user
+        self.set_user_groups(111, [1, 5])
+        self.set_user_groups(self.user_id, [2, 5])
         response = self.request(
             "user.update",
             {
@@ -1778,22 +2392,25 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
-        response = self.request("user.update", {"id": 111, "gender": "test"})
+        response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
-        assert (
-            "Gender 'test' is not in the allowed gender list."
-            in response.json["message"]
-        )
+        assert "Model 'gender/5' does not exist." in response.json["message"]
 
-        response = self.request("user.update", {"id": 111, "gender": "diverse"})
+        response = self.request("user.update", {"id": 111, "gender_id": 3})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "diverse"})
+        self.assert_model_exists("user/111", {"gender_id": 3})
 
-        response = self.request("user.update", {"id": 111, "gender": "non-binary"})
+        response = self.request("user.update", {"id": 111, "gender_id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "non-binary"})
+        self.assert_model_exists("user/111", {"gender_id": 4})
 
     def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
         self.create_model(
@@ -1934,6 +2551,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"is_active": True})
         self.assert_history_information("user/4", ["Set active"])
+
+    def test_update_clear_user_sessions(self) -> None:
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        response = self.request(
+            "user.update",
+            {
+                "id": self.user_id,
+                "is_active": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(f"user/{self.user_id}", {"is_active": False})
+        self.assert_logged_out()
 
     def test_update_negative_default_vote_weight(self) -> None:
         self.create_model("user/111", {"username": "user111"})
@@ -2116,6 +2747,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_OML_set(self) -> None:
+        """Testing also that user is not locked out when is_active is set to True."""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
         self.create_user("dummy", [2])
@@ -2126,9 +2758,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": self.user_id,
                 "meeting_id": 1,
                 "group_ids": [1],
+                "is_active": True,
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_logged_in()
 
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(
@@ -2364,7 +2998,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
             ],
         )
@@ -2405,9 +3039,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/2",
-                "Participant added to meeting {}",
+                "Participant added to meeting {}.",
                 "meeting/3",
             ],
         )
@@ -2446,6 +3080,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/1234": {
                     "username": "username_abcdefgh123",
                     "meeting_user_ids": [4444, 5555],
+                    "is_present_in_meeting_ids": [4, 5],
                 },
                 "meeting_user/4444": {
                     "meeting_id": 4,
@@ -2463,11 +3098,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [4444],
                     "committee_id": 1,
+                    "present_user_ids": [1234],
                 },
                 "meeting/5": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5555],
                     "committee_id": 1,
+                    "present_user_ids": [1234],
                 },
                 "committee/1": {"name": "action", "meeting_ids": [4, 5]},
                 "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
@@ -2491,6 +3128,19 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "username_abcdefgh123",
                 "meeting_user_ids": [4444, 5555],
+                "is_present_in_meeting_ids": [5],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/4",
+            {
+                "present_user_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/5",
+            {
+                "present_user_ids": [1234],
             },
         )
         self.assert_model_exists(
@@ -3111,4 +3761,27 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
+        )
+
+    def test_add_participant_as_orga_admin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_user_groups(self.user_id, [])
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [3],
+                "vote_delegations_from_ids": [],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/111")
+        assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
         )

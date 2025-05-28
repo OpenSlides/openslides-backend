@@ -163,7 +163,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def count_warnings_in_payload(
-        data: list[dict[str, str] | list[Any]] | dict[str, Any]
+        data: list[dict[str, str] | list[Any]] | dict[str, Any],
     ) -> int:
         count = 0
         for col in data:
@@ -176,7 +176,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def get_value_from_union_str_object(
-        field: str | dict[str, Any] | None
+        field: str | dict[str, Any] | None,
     ) -> str | None:
         if type(field) is dict:
             return field.get("value", "")

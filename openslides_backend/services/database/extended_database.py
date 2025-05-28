@@ -90,7 +90,7 @@ class ExtendedDatabase(Database):
         `meeting_id`, `list_of_speakers_id` etc. So this should not be a problem.
     """
 
-    changed_models: ModelMap
+    _changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
 
     def __init__(
@@ -98,9 +98,7 @@ class ExtendedDatabase(Database):
     ) -> None:
         self.env = env
         self.logger = logging.getLogger(__name__)
-        self._changed_models: dict[Collection, dict[Id, PartialModel]] = defaultdict(
-            lambda: defaultdict(dict)
-        )
+        self._changed_models = defaultdict(lambda: defaultdict(dict))
         self.connection = connection
         self.database_reader = DatabaseReader(self.connection, logging, env)
         self.database_writer = DatabaseWriter(self.connection, logging, env)
@@ -126,6 +124,9 @@ class ExtendedDatabase(Database):
         if not id_:
             collection_or_fqid, id_ = collection_and_id_from_fqid(collection_or_fqid)
         return self._changed_models[collection_or_fqid][id_]
+
+    def get_changed_models(self, collection: str) -> dict[Id, PartialModel]:
+        return self._changed_models.get(collection, dict())
 
     def get(
         self,

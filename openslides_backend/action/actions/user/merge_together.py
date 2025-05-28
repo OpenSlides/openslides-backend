@@ -19,11 +19,11 @@ from ...util.typing import ActionData
 from ..assignment_candidate.delete import AssignmentCandidateDelete
 from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
-from ..motion_editor.delete import MotionEditorDeleteAction
+from ..motion_editor.create import MotionEditorCreateAction
 from ..motion_editor.update import MotionEditorUpdateAction
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
-from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
+from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreateAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
@@ -57,7 +57,7 @@ class UserMergeTogether(
             "is_active",
             "is_physical_person",
             "default_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "pronoun",
@@ -90,16 +90,12 @@ class UserMergeTogether(
                     "title",
                     "first_name",
                     "last_name",
-                    "gender",
+                    "gender_id",
                     "email",
                     "default_vote_weight",
                 ],
-                "highest": [
-                    "can_change_own_password",
-                ],
                 "error": [
                     "is_demo_user",
-                    "forwarding_committee_ids",
                 ],
                 "merge": [
                     "committee_ids",
@@ -118,6 +114,7 @@ class UserMergeTogether(
                     "organization_management_level",
                     "saml_id",  # error if set on secondary users, otherwise ignore the field
                     "member_number",
+                    "can_change_own_password",  # ignore on secondary users if primary has a saml_id, else highest
                 ],
             },
         )
@@ -354,11 +351,11 @@ class UserMergeTogether(
                 },
                 "motion_editor": {
                     "update": MotionEditorUpdateAction,
-                    "delete": MotionEditorDeleteAction,
+                    "create": MotionEditorCreateAction,
                 },
                 "motion_working_group_speaker": {
                     "update": MotionWorkingGroupSpeakerUpdateAction,
-                    "delete": MotionWorkingGroupSpeakerDeleteAction,
+                    "create": MotionWorkingGroupSpeakerCreateAction,
                 },
             }
 
@@ -394,14 +391,14 @@ class UserMergeTogether(
                         [{"id": id_} for id_ in to_delete],
                     )
 
-            if main_user_payload.get("default_vote_weight") == "0.000000":
-                main_user_payload["default_vote_weight"] = "0.000001"
-            self.execute_other_action(UserUpdate, [main_user_payload])
-            if len(to_delete := update_operations["user"]["delete"]):
-                self.execute_other_action(
-                    UserDelete,
-                    [{"id": id_} for id_ in to_delete],
-                )
+        if main_user_payload.get("default_vote_weight") == "0.000000":
+            main_user_payload["default_vote_weight"] = "0.000001"
+        self.execute_other_action(UserUpdate, [main_user_payload])
+        if len(to_delete := update_operations["user"]["delete"]):
+            self.execute_other_action(
+                UserDelete,
+                [{"id": id_} for id_ in to_delete],
+            )
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]
@@ -589,6 +586,19 @@ class UserMergeTogether(
                     self.check_equality(
                         collection, into_, ranked_others, into_["id"], field
                     )
+                    return None
+                case "can_change_own_password":
+                    if into_.get("saml_id"):
+                        return None
+                    if len(
+                        comp_data := [
+                            date
+                            for model in [into_, *ranked_others]
+                            if (date := model.get("can_change_own_password"))
+                            is not None
+                        ]
+                    ):
+                        return any(comp_data)
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations

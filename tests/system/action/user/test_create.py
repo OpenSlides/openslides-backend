@@ -1,8 +1,6 @@
 from decimal import Decimal
 from typing import Any
 
-import pytest
-
 from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
@@ -143,7 +141,14 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_history_information(
             "user/2",
-            ["Account created", "Participant added to meeting {}", "meeting/114"],
+            [
+                "Account created",
+                "Participant added to meeting {}.",
+                "meeting/114",
+                "Participant added to group {} in meeting {}.",
+                "group/111",
+                "meeting/114",
+            ],
         )
 
     def test_create_comment(self) -> None:
@@ -532,7 +537,13 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request_json(
@@ -548,7 +559,7 @@ class UserCreateActionTest(BaseActionTestCase):
                             "is_active": True,
                             "is_physical_person": True,
                             "default_password": "new default_password",
-                            "gender": "female",
+                            "gender_id": 2,
                             "email": "info@openslides.com",
                             "default_vote_weight": "1.234000",
                             "can_change_own_password": False,
@@ -581,9 +592,9 @@ class UserCreateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
-                "default_vote_weight": "1.234000",
+                "default_vote_weight": Decimal("1.234000"),
                 "can_change_own_password": False,
                 "committee_ids": [60, 63],
                 "meeting_ids": [1, 4],
@@ -802,7 +813,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
         self.set_organization_management_level(
-            OrganizationManagementLevel.SUPERADMIN, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
         )
         self.create_meeting(4)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
@@ -822,6 +833,28 @@ class UserCreateActionTest(BaseActionTestCase):
             "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
+
+    def test_create_permission_group_B_locked_meeting_with_perm(self) -> None:
+        """Group B fields needs explicit user.can_manage permission for meeting"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.create_meeting(4)
+        self.set_user_groups(self.user_id, [5])
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+                "is_present_in_meeting_ids": [4],
+                "number": "number1",
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_permission_group_C_oml_manager(self) -> None:
         """May create group C group_ids by OML permission"""
@@ -1168,6 +1201,34 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_participant_as_orga_admin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_user_groups(self.user_id, [])
+        response = self.request(
+            "user.create",
+            {
+                "first_name": "",
+                "last_name": "",
+                "is_active": True,
+                "is_physical_person": True,
+                "email": "",
+                "username": "username3",
+                "meeting_id": 1,
+                "group_ids": [3],
+                "vote_delegations_from_ids": [],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/3", {"username": "username3"})
+        assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
+        )
+
     def test_create_forbidden_username(self) -> None:
         response = self.request(
             "user.create",
@@ -1190,19 +1251,16 @@ class UserCreateActionTest(BaseActionTestCase):
         assert "Username may not contain spaces" in response.json["message"]
 
     def test_create_gender(self) -> None:
-        self.set_models({"organization/1": {"genders": ["male", "female"]}})
+        self.set_models({"organization/1": {"gender_ids": [1, 2]}})
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "gender": "test",
+                "gender_id": 5,
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Gender 'test' is not in the allowed gender list."
-            in response.json["message"]
-        )
+        assert "Model 'gender/5' does not exist." in response.json["message"]
 
     def test_exceed_limit_of_users(self) -> None:
         self.set_models(
@@ -1272,18 +1330,6 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert "default_vote_weight" not in user
-
-    def test_create_forwarding_committee_ids_not_allowed(self) -> None:
-        self.create_meeting()
-        response = self.request(
-            "user.create",
-            {
-                "username": "test_Xcdfgee",
-                "forwarding_committee_ids": [],
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "forwarding_committee_ids is not allowed." in response.json["message"]
 
     def test_create_negative_vote_weight(self) -> None:
         self.create_meeting()
@@ -1537,7 +1583,6 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
             response.json["message"],
         )
 
-    @pytest.mark.skip(reason="in the testing")  # TODO remove
     def test_create_permission_as_locked_out(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")

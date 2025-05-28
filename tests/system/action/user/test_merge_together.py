@@ -7,10 +7,6 @@ from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.services.database.extended_database import ExtendedDatabase
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 from openslides_backend.shared.patterns import (
     CollectionField,
     fqid_from_collection_and_id,
@@ -18,6 +14,7 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.poll.test_vote import BaseVoteTestCase
+from tests.util import Response
 
 
 class UserMergeTogether(BaseActionTestCase):
@@ -80,7 +77,23 @@ class UserMergeTogether(BaseActionTestCase):
                 "enable_electronic_voting": True,
                 "committee_ids": [1, 2, 3],
                 "user_ids": [2, 3, 4, 5, 6],
-                "genders": ["male", "female", "diverse", "non-binary"],
+                "gender_ids": [1, 2, 3, 4],
+            },
+            "gender/1": {
+                "name": "male",
+                "organization_id": 1,
+            },
+            "gender/2": {
+                "name": "female",
+                "organization_id": 1,
+            },
+            "gender/3": {
+                "name": "diverse",
+                "organization_id": 1,
+            },
+            "gender/4": {
+                "name": "non-binary",
+                "organization_id": 1,
             },
             "committee/1": {
                 "organization_id": 1,
@@ -94,7 +107,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
-                "motions_default_statute_amendment_workflow_id": 1,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [1, 2, 3],
@@ -147,7 +159,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 2,
                 "motions_default_amendment_workflow_id": 2,
-                "motions_default_statute_amendment_workflow_id": 2,
                 "users_enable_vote_delegations": True,
                 "committee_id": 1,
                 "group_ids": [4, 5, 6],
@@ -206,7 +217,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 3,
                 "motions_default_amendment_workflow_id": 3,
-                "motions_default_statute_amendment_workflow_id": 3,
                 "users_enable_vote_delegations": True,
                 "committee_id": 2,
                 "group_ids": [7, 8, 9],
@@ -259,7 +269,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "language": "en",
                 "motions_default_workflow_id": 4,
                 "motions_default_amendment_workflow_id": 4,
-                "motions_default_statute_amendment_workflow_id": 4,
                 "users_enable_vote_delegations": True,
                 "committee_id": 3,
                 "group_ids": [10, 11, 12],
@@ -325,20 +334,18 @@ class UserMergeTogether(BaseActionTestCase):
         If this test fails, it is likely because new fields have been added
         to the collections listed in the AssertionError without considering
         the necessary changes to the user merge.
-        This can be fixed by editing the collection_field_groups in the
+        This can be fixed by editing the _collection_field_groups in the
         action class if it is the 'user' collection,
-        or else in the corresponding mixin class.
+        or else in the corresponding merge mixin class in merge_mixins.py.
         """
         action = actions_map["user.merge_together"]
-        with get_new_os_conn() as conn:
-            ex_db = ExtendedDatabase(conn, self.logging, self.env)
-            merge_together = action(
-                self.services,
-                ex_db,
-                RelationManager(ex_db),
-                self.get_application().logging,
-                self.env,
-            )
+        merge_together = action(
+            self.services,
+            self.datastore,
+            RelationManager(self.datastore),
+            self.get_application().logging,
+            self.env,
+        )
         field_groups = merge_together._collection_field_groups  # type: ignore
         collection_fields = merge_together._all_collection_fields  # type: ignore
         broken = []
@@ -447,6 +454,35 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_deleted("user/3")
         self.assert_model_deleted("user/4")
 
+    def test_merge_with_saml_id_with_password_change_rights(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "password": None,
+                    "saml_id": "user2",
+                },
+                "user/3": {"can_change_own_password": True},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "is_active": True,
+                "username": "user2",
+                "meeting_ids": [1, 2, 3],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+                "default_password": "user2",
+                "meeting_user_ids": [12, 22, 46],
+                "password": None,
+                "saml_id": "user2",
+            },
+        )
+        self.assert_model_deleted("user/3")
+        self.assert_model_deleted("user/4")
+
     def test_merge_with_saml_id_error(self) -> None:
         self.set_models(
             {
@@ -469,20 +505,6 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot merge user models that have is_demo_user set: Problem in user/2",
-            response.json["message"],
-        )
-
-    def test_merge_forwarding_committee_ids_error(self) -> None:
-        self.set_models(
-            {
-                "committee/3": {"forwarding_user_id": 3},
-                "user/3": {"forwarding_committee_ids": [3]},
-            }
-        )
-        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Cannot merge user models that have forwarding_committee_ids set: Problem in user/3",
             response.json["message"],
         )
 
@@ -528,7 +550,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "first_name": "Nick",
                     "is_active": False,
                     "can_change_own_password": True,
-                    "gender": "male",
+                    "gender_id": 1,
                     "email": "nick.everything@rob.banks",
                     "last_email_sent": 123456789,
                     "committee_management_ids": [1],
@@ -548,7 +570,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                     "is_active": True,
                     "is_physical_person": False,
-                    "gender": "female",
+                    "gender_id": 2,
                     "last_email_sent": 234567890,
                     "is_present_in_meeting_ids": [2, 3],
                     "member_number": "souperadmin",
@@ -622,7 +644,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "first_name": "Nick",
                 "is_active": False,
                 "can_change_own_password": True,
-                "gender": "male",
+                "gender_id": 1,
                 "email": "nick.everything@rob.banks",
                 "is_present_in_meeting_ids": [3, 4],
                 "committee_management_ids": [1, 3],
@@ -734,7 +756,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -752,11 +774,38 @@ class UserMergeTogether(BaseActionTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
                 "default_vote_weight": "0.424242",
+            },
+        )
+        self.assert_model_exists(
+            "gender/2",
+            {"id": 2, "name": "female", "user_ids": [2], "organization_id": 1},
+        )
+
+    def test_gender_not_changed(self) -> None:
+        self.setup_complex_user_fields()
+        response = self.request(
+            "user.merge_together",
+            {
+                "id": 3,
+                "user_ids": [2, 4, 5, 6],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "gender_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "gender/1",
+            {
+                "user_ids": None,
             },
         )
 
@@ -773,7 +822,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -791,7 +840,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "pronoun": "for",
                 "member_number": "this",
                 "default_password": "now",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
                 "is_physical_person": None,
@@ -1053,7 +1102,7 @@ class UserMergeTogether(BaseActionTestCase):
         def build_expected_user_dates(
             voted_present_user_delegated_merged: list[
                 tuple[bool, bool, int, int | None, int | None, int | None]
-            ]
+            ],
         ) -> list[dict[str, Any]]:
             return [
                 {
@@ -1282,7 +1331,7 @@ class UserMergeTogether(BaseActionTestCase):
         }
 
         wherein None is used instead of the data tuple if the model is
-        supposed to have been deleteded
+        supposed to have been deleted
         """
         for meeting_id, expected_sub_models in expected.items():
             self.assert_model_exists(
@@ -1401,31 +1450,22 @@ class UserMergeTogether(BaseActionTestCase):
             collection, sub_collection, back_relation, expected
         )
 
-    def test_merge_with_assignment_candidates(self) -> None:
-        self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
-        self.assert_history_information(
-            "user/2", ["Updated with data from {} and {}", "user/3", "user/4"]
-        )
-        for id_ in range(2, 10):
-            self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
-
-    def test_merge_with_motion_working_group_speakers(self) -> None:
-        self.base_assignment_or_motion_model_test(
-            "motion", "motion_working_group_speaker"
-        )
-
-    def test_merge_with_motion_editor(self) -> None:
-        self.base_assignment_or_motion_model_test("motion", "motion_editor")
-
-    def test_merge_with_motion_submitters_and_supporters(
-        self,
+    def base_deep_copy_create_motion_test(
+        self, sub_collection: str, back_relation: CollectionField
     ) -> None:
+        self.set_models(self.get_deep_create_base_data(sub_collection, back_relation))
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_deep_create_base_test(response, sub_collection, back_relation)
+
+    def get_deep_create_base_data(
+        self, sub_collection: str, back_relation: CollectionField
+    ) -> dict[str, Any]:
         data: dict[str, Any] = {}
         self.add_assignment_or_motion_models_for_meetings(
             data,
             "motion",
-            "motion_submitter",
-            "submitter_ids",
+            sub_collection,
+            back_relation,
             {
                 1: [
                     [12, 15],
@@ -1440,7 +1480,105 @@ class UserMergeTogether(BaseActionTestCase):
                 4: [[45]],
             },
         )
-        self.set_models(data)
+        return data
+
+    def assert_deep_create_base_test(
+        self,
+        response: Response,
+        sub_collection: str,
+        back_relation: CollectionField,
+    ) -> None:
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
+            1: {
+                1: (1, 12, 1),
+                2: (1, 15, 2),
+                3: (2, 15, 1),
+                4: None,
+                5: None,
+                6: (3, 12, 1),
+                7: (4, 12, 1),
+                8: None,
+                9: (4, 15, 3),
+                10: None,
+                11: (5, 12, 1),
+                12: (5, 15, 3),
+                13: (6, 15, 1),
+                14: None,
+                15: (6, 12, 2),
+                22: (2, 12, 2),  # created to replace 4
+            },
+            2: {
+                16: None,
+                17: (7, 22, 1),
+                18: None,
+            },
+            3: {
+                19: None,
+                20: None,
+                23: (9, 46, 1),  # created to replace 20
+                24: (8, 46, 1),  # created to replace 19
+            },
+            4: {
+                21: (10, 45, 1),
+            },
+        }
+        self.assert_assignment_or_motion_model_test_was_correct(
+            "motion", sub_collection, back_relation, expected
+        )
+
+    def test_merge_with_assignment_candidates(self) -> None:
+        self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
+        self.assert_history_information(
+            "user/2", ["Updated with data from {} and {}", "user/3", "user/4"]
+        )
+        for id_ in range(2, 10):
+            self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
+
+    def test_merge_with_assignment_candidates_in_finished_assignment(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "assignment_ids": [11],
+                    "assignment_candidate_ids": [112, 114],
+                },
+                "assignment/11": {
+                    "meeting_id": 1,
+                    "phase": "finished",
+                    "candidate_ids": [112, 114],
+                },
+                "assignment_candidate/112": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 12,
+                },
+                "assignment_candidate/114": {
+                    "meeting_id": 1,
+                    "assignment_id": 11,
+                    "meeting_user_id": 14,
+                },
+                "meeting_user/12": {"assignment_candidate_ids": [112]},
+                "meeting_user/14": {"assignment_candidate_ids": [114]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+
+    def test_merge_with_motion_working_group_speakers(self) -> None:
+        self.base_deep_copy_create_motion_test(
+            "motion_working_group_speaker", "working_group_speaker_ids"
+        )
+
+    def test_merge_with_motion_editor(self) -> None:
+        self.base_deep_copy_create_motion_test("motion_editor", "editor_ids")
+
+    def test_merge_with_motion_submitters_and_supporters(
+        self,
+    ) -> None:
+        self.set_models(
+            self.get_deep_create_base_data("motion_submitter", "submitter_ids")
+        )
         supporter_ids_per_motion: dict[int, list[int]] = {
             # meeting/1
             1: [14],
@@ -1481,45 +1619,7 @@ class UserMergeTogether(BaseActionTestCase):
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_status_code(response, 200)
-        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
-            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
-            1: {
-                1: (1, 12, 1),
-                2: (1, 15, 2),
-                3: (2, 15, 1),
-                4: None,
-                5: None,
-                6: (3, 12, 1),
-                7: (4, 12, 1),
-                8: None,
-                9: (4, 15, 3),
-                10: None,
-                11: (5, 12, 1),
-                12: (5, 15, 3),
-                13: (6, 15, 1),
-                14: None,
-                15: (6, 12, 2),
-                22: (2, 12, 2),  # created to replace 4
-            },
-            2: {
-                16: None,
-                17: (7, 22, 1),
-                18: None,
-            },
-            3: {
-                19: None,
-                20: None,
-                23: (9, 46, 1),  # created to replace 20
-                24: (8, 46, 1),  # created to replace 19
-            },
-            4: {
-                21: (10, 45, 1),
-            },
-        }
-        self.assert_assignment_or_motion_model_test_was_correct(
-            "motion", "motion_submitter", "submitter_ids", expected
-        )
+        self.assert_deep_create_base_test(response, "motion_submitter", "submitter_ids")
 
         def get_motions(*m_user_ids: int) -> list[int]:
             return list(
@@ -2460,8 +2560,11 @@ class UserMergeTogether(BaseActionTestCase):
 
     def test_merge_no_meetings(self) -> None:
         self.create_user("user7")
+        self.set_models({"user/7": {"can_change_own_password": True}})
         response = self.request("user.merge_together", {"id": 6, "user_ids": [7]})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/6", {"can_change_own_password": True})
+        self.assert_model_deleted("user/7")
 
     def test_merge_only_update_meeting_users(self) -> None:
         response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})

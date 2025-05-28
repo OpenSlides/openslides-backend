@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
 from ...models.fields import Field
+# from ...services.database.extended_database import ExtendedDatabase
 from ...services.database.interface import Database
 from .typing import RelationUpdates
 
@@ -14,11 +15,11 @@ class CalculatedFieldHandlerCall(TypedDict):
 
 
 class CalculatedFieldHandler(ABC):
-    # TODO use Extended Database correctly (directly instead of the Protocol?)
+    # TODO we still use a type ignore. Maybe cast or maybe there is a solution with Database? Problem is the direct access of _changed_models
     datastore: Database
 
     def __init__(self, datastore: Database) -> None:
-        self.datastore = datastore
+        self.datastore = datastore  # type: ignore
 
     @abstractmethod
     def process_field(

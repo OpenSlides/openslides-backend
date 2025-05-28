@@ -151,9 +151,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def fill_meeting_user_changed_models_with_user_and_meeting_id(self) -> None:
         meeting_user_ids: list[int] = [
             id_
-            for id_, data in self.datastore._changed_models.get(
-                "meeting_user", dict()
-            ).items()
+            for id_, data in self.datastore.get_changed_models("meeting_user").items()
             if (not data.get("user_id") or not data.get("meeting_id"))
         ]
         if meeting_user_ids:
@@ -200,8 +198,6 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     ) -> dict[int, dict[str, Any]]:
         return {
             id_: data
-            for id_, data in self.datastore._changed_models.get(
-                "meeting_user", dict()
-            ).items()
+            for id_, data in self.datastore.get_changed_models("meeting_user").items()
             if (data.get("user_id") == user_id or isinstance(data, DeletedModel))
         }

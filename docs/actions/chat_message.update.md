@@ -2,11 +2,11 @@
 
 ```js
 {
-  // Required fields
+  // Required
   id: Id;
 
-  // Optional fields
-  content?: Html;
+  // Optional
+  content: Html;
 }
 ```
 

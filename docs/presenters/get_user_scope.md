@@ -2,7 +2,7 @@
 
 ```js
 {
-  user_ids: Id[];
+  user_ids: Id[] // required
 }
 ```
 
@@ -11,11 +11,13 @@
 ```js
 {
   user_id: Id: {
-    collection: String,  # one of "meeting", "committee" or "organization"
+    collection: String,  // one of "meeting", "committee" or "organization"
     id: Id,
-    user_oml: String, # one of "superadmin", "can_manage_organization", "can_manage_users", ""
-    committee_ids: int[] // Ids of all committees the user is part of
-  }
+    user_oml: String, // one of "superadmin", "can_manage_organization", "can_manage_users", ""
+    committee_ids: Id[] // Ids of all committees the user is part of
+    user_in_archived_meetings_only: Bool // True if total number of meeting_ids for user is more than 0 and number of active meetings is 0
+  },
+  ...
 }
 ```
 

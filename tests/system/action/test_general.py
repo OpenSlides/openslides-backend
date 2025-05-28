@@ -4,10 +4,6 @@ from unittest.mock import patch
 import pytest
 
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.services.database.extended_database import ExtendedDatabase
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 from openslides_backend.shared.interfaces.write_request import (
     WriteRequestWithMigrationIndex,
 )
@@ -112,8 +108,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             user_id=0,
             migration_index=5,
         )
-        with get_new_os_conn() as conn:
-            ExtendedDatabase(conn, self.logging, self.env).write(write_request)
+        self.datastore.write(write_request)
         gbmi.return_value = 6
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)
@@ -130,8 +125,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             migration_index=6,
         )
         write_request.migration_index = 6
-        with get_new_os_conn() as conn:
-            ExtendedDatabase(conn, self.logging, self.env).write(write_request)
+        self.datastore.write(write_request)
         gbmi.return_value = 5
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)

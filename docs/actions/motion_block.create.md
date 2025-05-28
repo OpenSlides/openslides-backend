@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     title: string;
     internal: boolean;
@@ -12,6 +12,7 @@
     agenda_comment: string;
     agenda_duration: number;
     agenda_weight: number;
+    agenda_tag_ids: Id[];
 }
 ```
 

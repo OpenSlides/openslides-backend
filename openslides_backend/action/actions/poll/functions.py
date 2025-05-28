@@ -1,8 +1,8 @@
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.database.interface import Database
-from ....shared.exceptions import MissingPermission
-from ....shared.patterns import KEYSEPARATOR
+from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.patterns import KEYSEPARATOR, collection_from_fqid
 
 
 def check_poll_or_option_perms(
@@ -15,7 +15,11 @@ def check_poll_or_option_perms(
         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
         perm = Permissions.Assignment.CAN_MANAGE
-    else:
+    elif content_object_id.startswith("topic" + KEYSEPARATOR):
         perm = Permissions.Poll.CAN_MANAGE
+    else:
+        raise ActionException(
+            f"'{collection_from_fqid(content_object_id)}' is not a valid poll collection."
+        )
     if not has_perm(datastore, user_id, perm, meeting_id):
         raise MissingPermission(perm)

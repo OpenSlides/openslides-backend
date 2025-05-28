@@ -20,7 +20,7 @@ singular_schema = fastjsonschema.compile(
 
 class SingularActionMixin(Action):
     """
-    Mixin to ensure that the action data contains only on object.
+    Mixin to ensure that the action data contains only one object.
     """
 
     is_singular = True

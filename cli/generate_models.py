@@ -1,9 +1,15 @@
 import os
 import string
-import sys
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
+
+from src.helper_get_names import (
+    FieldSqlErrorType,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
+)
 
 from cli.util.util import (
     ROOT,
@@ -21,16 +27,7 @@ from openslides_backend.models.mixins import (
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
-sys.path.append("global")
-
-from meta.dev.src.helper_get_names import (  # type: ignore # noqa
-    FieldSqlErrorType,
-    HelperGetNames,
-    InternalHelper,
-    TableFieldType,
-)
-
-SOURCE = "./global/meta/models.yml"
+SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -309,7 +306,7 @@ class Attribute(Node):
 
     def get_view_field_state_write_fields(
         self, collection_name: str, field_name: str, value: dict[str, Any]
-    ) -> tuple[bool, bool, tuple[str, str, str, list[TableFieldType]] | None]:
+    ) -> tuple[bool, bool, tuple[str, str, str, list[str]] | None]:
         """
         Purpose:
             Checks whether a field is a view field and if other fields need to be written in an intermediate
@@ -374,27 +371,27 @@ class Attribute(Node):
                 write_fields = (table_name, field1, field2, [])
 
             elif foreign_type == "generic-relation-list":
-                table_name = HelperGetNames.get_gm_table_name(own)
-                field1 = f"{own.table}_{own.ref_column}"
-                field2 = own.column[:-1]
-                for n, field in enumerate(foreign_fields):
-                    foreign_fields[n] = (
-                        field2 + "_" + f"{field.table}_{field.ref_column}"
-                    )
-                write_fields = (table_name, field1, field2, foreign_fields)
+                write_fields = self.get_write_fields_for_generic(own, foreign_fields)
 
         elif field_type == "generic-relation-list":
-            table_name = HelperGetNames.get_gm_table_name(own)
-            field1 = f"{own.table}_{own.ref_column}"
-            field2 = own.column[:-1]
-            for n, field in enumerate(foreign_fields):
-                foreign_fields[n] = field2 + "_" + f"{field.table}_{field.ref_column}"
-
-            write_fields = (table_name, field1, field2, foreign_fields)
+            write_fields = self.get_write_fields_for_generic(own, foreign_fields)
 
         assert error == "", error
 
         return is_view_field, primary, write_fields
+
+    def get_write_fields_for_generic(
+        self, own: TableFieldType, foreign_fields: list[TableFieldType]
+    ) -> tuple[str, str, str, list[str]] | None:
+        table_name = HelperGetNames.get_gm_table_name(own)
+        field1 = f"{own.table}_{own.ref_column}"
+        field2 = own.intermediate_column
+        return (
+            table_name,
+            field1,
+            field2,
+            [f"{field2}_{field.table}_{field.ref_column}" for field in foreign_fields],
+        )
 
 
 class To(Node):

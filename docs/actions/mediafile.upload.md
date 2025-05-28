@@ -25,11 +25,11 @@ Additional fields to set:
 - `create_timestamp` must be set to the current timestamp.
 - `mimetype` is guessed by the ~~`filename`~~ `filecontent` (since 4.0.16)
 - `pdf_information`: If the mimetype is `aplication/pdf` this object needs to be filled:
-    ```
-    {
-        pages: number;
-        encrypted: boolean;
-    }
+    ```js
+        {
+            pages: number;
+            encrypted: boolean;
+        }
     ```
     It is tried to get the amount of pages from the pdf. If it is encrypted or the extraction fails `pages` will be set to 0 and `entrypted` to true.
 - `filesize`: Size of the file in bytes.

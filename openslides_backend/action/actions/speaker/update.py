@@ -136,7 +136,12 @@ class SpeakerUpdate(
             )
         result = self.datastore.get_many(requests)
         meeting = result["meeting"][speaker["meeting_id"]]
-        user_id = result.get("meeting_user", {}).get(meeting_user_id, {}).get("user_id")
+        if meeting_user_id:
+            user_id = (
+                result.get("meeting_user", {}).get(meeting_user_id, {}).get("user_id")
+            )
+        else:
+            user_id = None
         self.check_point_of_order_fields(
             instance, meeting, user_id, speaker.get("point_of_order")
         )

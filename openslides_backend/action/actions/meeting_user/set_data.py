@@ -4,18 +4,18 @@ from ....models.models import MeetingUser
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
-from ...mixins.extend_history_mixin import ExtendHistoryMixin
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .helper_mixin import MeetingUserHelperMixin
+from .history_mixin import MeetingUserHistoryMixin
 from .mixin import MeetingUserGroupMixin, MeetingUserMixin
 
 
 @register_action("meeting_user.set_data", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingUserSetData(
     MeetingUserMixin,
-    ExtendHistoryMixin,
+    MeetingUserHistoryMixin,
     MeetingUserHelperMixin,
     UpdateAction,
     MeetingUserGroupMixin,
@@ -41,7 +41,6 @@ class MeetingUserSetData(
             "locked_out",
         ],
     )
-    extend_history_to = "user_id"
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting_id = instance.get("meeting_id")

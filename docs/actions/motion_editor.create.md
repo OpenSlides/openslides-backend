@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // required
     meeting_user_id: Id;

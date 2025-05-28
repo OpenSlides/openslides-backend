@@ -5,6 +5,10 @@ from .base_classes import VerbosePermission
 
 
 class CompareRightLevel(VerbosePermission, StrEnum):
+    def __init__(self, arg: str | None) -> None:
+        """This is to make mypy understand that None values are okay and should be tested."""
+        super().__init__()
+
     @classmethod
     def _missing_(cls, _: object) -> Self:
         """

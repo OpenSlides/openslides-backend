@@ -26,11 +26,13 @@ class MeetingImport(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
+                    "gender_ids": [1, 4],
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
                     "committee_id": 1,
                     "group_ids": [1],
+                    "external_id": "ext_id",
                     "is_active_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "group/1": {"meeting_id": 1, "name": "group1_m1"},
@@ -40,6 +42,8 @@ class MeetingImport(BaseActionTestCase):
                     "sequential_number": 26,
                     "number_value": 31,
                 },
+                "gender/1": {"name": "male", "organization_id": 1},
+                "gender/4": {"name": "diverse", "organization_id": 1},
             }
         )
 
@@ -59,7 +63,6 @@ class MeetingImport(BaseActionTestCase):
                         "admin_group_id": 1,
                         "default_group_id": 2,
                         "motions_default_amendment_workflow_id": 1,
-                        "motions_default_statute_amendment_workflow_id": 1,
                         "motions_default_workflow_id": 1,
                         "projector_countdown_default_time": 60,
                         "projector_countdown_warning_time": 60,
@@ -123,6 +126,8 @@ class MeetingImport(BaseActionTestCase):
                         "motions_default_line_numbering": "none",
                         "motions_line_length": 90,
                         "motions_reason_required": False,
+                        "motions_origin_motion_toggle_default": True,
+                        "motions_enable_origin_motion_display": True,
                         "motions_enable_text_on_projector": True,
                         "motions_enable_reason_on_projector": True,
                         "motions_enable_sidebox_on_projector": True,
@@ -130,13 +135,11 @@ class MeetingImport(BaseActionTestCase):
                         "motions_show_referring_motions": True,
                         "motions_show_sequential_number": True,
                         "motions_recommendations_by": "ABK",
-                        "motions_statute_recommendations_by": "Statute ABK",
                         "motions_recommendation_text_mode": "original",
                         "motions_default_sorting": "number",
                         "motions_number_type": "per_category",
                         "motions_number_min_digits": 3,
                         "motions_number_with_blank": False,
-                        "motions_statutes_enabled": True,
                         "motions_amendments_enabled": True,
                         "motions_amendments_in_main_list": True,
                         "motions_amendments_of_amendments": True,
@@ -208,7 +211,6 @@ class MeetingImport(BaseActionTestCase):
                         "motion_category_ids": [],
                         "motion_block_ids": [],
                         "motion_workflow_ids": [1],
-                        "motion_statute_paragraph_ids": [],
                         "motion_change_recommendation_ids": [],
                         "poll_ids": [],
                         "option_ids": [],
@@ -268,7 +270,6 @@ class MeetingImport(BaseActionTestCase):
                         "name": "blup",
                         "first_state_id": 1,
                         "default_amendment_workflow_meeting_id": 1,
-                        "default_statute_amendment_workflow_meeting_id": 1,
                         "default_workflow_meeting_id": 1,
                         "state_ids": [1],
                         "sequential_number": 1,
@@ -354,7 +355,6 @@ class MeetingImport(BaseActionTestCase):
             "is_physical_person": True,
             "default_password": "admin",
             "can_change_own_password": True,
-            "gender": "male",
             "email": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
@@ -448,6 +448,16 @@ class MeetingImport(BaseActionTestCase):
             "attachment_ids": [],
             **data,
         }
+
+    def replace_migrated_projector_fields(self, data: dict[str, Any]) -> None:
+        data["meeting"]["meeting"]["1"][
+            "default_projector_current_list_of_speakers_ids"
+        ] = data["meeting"]["meeting"]["1"].pop("default_projector_current_los_ids")
+        data["meeting"]["projector"]["1"][
+            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"
+        ] = data["meeting"]["projector"]["1"].pop(
+            "used_as_default_projector_for_current_los_in_meeting_id"
+        )
 
     def test_no_meeting_collection(self) -> None:
         response = self.request(
@@ -834,35 +844,6 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/3")
-
-    def test_with_forwarding_committees(self) -> None:
-        request_data = self.create_request_data(
-            {
-                "user": {
-                    "2": self.get_user_data(
-                        2,
-                        {
-                            "username": "user2",
-                            "last_name": "new user",
-                            "email": "tesT@email.de",
-                            "forwarding_committee_ids": [4],
-                        },
-                    )
-                }
-            }
-        )
-
-        response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 200)
-        user2 = self.assert_model_exists(
-            "user/3",
-            {
-                "username": "user2",
-                "last_name": "new user",
-                "email": "tesT@email.de",
-            },
-        )
-        assert not user2.get("forwarding_committee_ids")
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})
@@ -1451,6 +1432,10 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_motion_all_origin_ids(self) -> None:
+        """
+        This case is unrealistic, since usually you can't forward to the same meeting.
+        We should test it regardless, since json-files can be edited.
+        """
         request_data = self.create_request_data(
             {
                 "motion": {
@@ -1497,10 +1482,48 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1, 2]
         response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert (
-            "Motion all_origin_ids and all_derived_motion_ids should be empty."
-            in response.json["message"]
+        self.assert_status_code(response, 200)
+        motion = self.assert_model_exists("motion/2", {"meeting_id": 2})
+        assert motion.get("all_origin_ids") is None
+        motion = self.assert_model_exists("motion/3", {"meeting_id": 2})
+        assert motion.get("all_derived_motion_ids") is None
+
+    def test_foreign_motion_all_origin_ids(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": {
+                    "2": self.get_motion_data(
+                        2,
+                        {
+                            "all_origin_ids": [1],
+                            "list_of_speakers_id": 2,
+                            "state_id": 1,
+                            "origin_meeting_id": 3,
+                        },
+                    ),
+                },
+                "list_of_speakers": {
+                    "2": {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/2",
+                        "closed": False,
+                        "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [2]
+        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [2]
+        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [2]
+        request_data["meeting"]["meeting"]["1"]["forwarded_motion_ids"] = [12, 13]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {"meeting_id": 2, "all_origin_ids": None, "origin_meeting_id": None},
         )
 
     def test_missing_required_field(self) -> None:
@@ -1524,6 +1547,16 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "motion/1/list_of_speakers_id: Field required but empty."
+            in response.json["message"]
+        )
+
+    def test_duplicate_external_id(self) -> None:
+        request_data = self.create_request_data({})
+        request_data["meeting"]["meeting"]["1"]["external_id"] = "ext_id"
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request."
             in response.json["message"]
         )
 
@@ -2136,7 +2169,10 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_with_listfields_from_migration(self) -> None:
-        """test for listFields in event.data after migration. Uses migration 0035 to create one"""
+        """
+        Test for listFields in event.data after migration. Uses migration 0035 to create one
+        Additionally adds a gender to user 1 to show that migration 0057 does not interfere with the import.
+        """
         data = self.create_request_data(
             {
                 "motion": {
@@ -2181,7 +2217,9 @@ class MeetingImport(BaseActionTestCase):
         data["meeting"]["meeting"]["1"]["motion_ids"] = [5, 6]
         data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
         data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["user"]["1"]["gender"] = "male"
         data["meeting"]["_migration_index"] = 35
+        self.replace_migrated_projector_fields(data)
         assert (
             data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"]
             == []
@@ -2236,7 +2274,7 @@ class MeetingImport(BaseActionTestCase):
             "assignment_poll_default_100_percent_base"
         ] = "YN"
         data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
-
+        self.replace_migrated_projector_fields(data)
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
@@ -2269,7 +2307,7 @@ class MeetingImport(BaseActionTestCase):
     @performance
     def test_big_file(self) -> None:
         data = {
-            "meeting": get_initial_data_file("global/data/put_your_file.json"),
+            "meeting": get_initial_data_file("data/put_your_file.json"),
             "committee_id": 1,
         }
         with Profiler("test_meeting_import.prof"):
@@ -2389,6 +2427,143 @@ class MeetingImport(BaseActionTestCase):
             },
         )
 
+    def test_gender_import(self) -> None:
+        """
+        Each user represents different cases. The user number belongs to the request data, NOT the pre-existing-users.
+        User 1 shows that a new user will be created with gender_id (also with a new gender).
+        User 2 shows that a new user will be created with gender_id, but the same like User 1.
+        User 3 shows that the gender is not being updated on existing user with id=2 (same name etc.).
+        User 4 shows that a new user with empty gender can be created.
+        User 5 shows that a new user with a second new gender will be created.
+        User 6 shows that a new user will be added to an existing gender with filled user_ids.
+        User 7 shows the same as User 3 but with a new gender which should not be created.
+        """
+        data = self.create_request_data({})
+        self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
+        self.update_model("gender/4", {"user_ids": [2]})
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "other_user",
+                    "first_name": "other",
+                    "last_name": "user",
+                    "email": "other@us.er",
+                    "organization_id": 1,
+                    "gender_id": 4,
+                }
+            }
+        )
+        data["meeting"]["user"]["1"]["gender"] = "needs_to_be_created"
+        other_users_request_data = {
+            "2": {
+                "id": 2,
+                "username": "newer_user",
+                "first_name": "newer",
+                "last_name": "user",
+                "gender": "needs_to_be_created",
+                "organization_id": 1,
+            },
+            "3": {
+                "id": 3,
+                "username": "other_user",
+                "first_name": "other",
+                "last_name": "user",
+                "email": "other@us.er",
+                "gender": "male",
+                "organization_id": 1,
+            },
+            "4": {
+                "id": 4,
+                "username": "new_user",
+                "first_name": "new",
+                "last_name": "user",
+                "gender": "",
+                "organization_id": 1,
+            },
+            "5": {
+                "id": 5,
+                "username": "newest_user",
+                "first_name": "newest",
+                "last_name": "user",
+                "gender": "needs_to_be_created_too",
+                "organization_id": 1,
+            },
+            "6": {
+                "id": 6,
+                "username": "ultra_newest_user",
+                "first_name": "ultra newest",
+                "last_name": "user",
+                "gender": "diverse",
+                "organization_id": 1,
+            },
+            "7": {
+                "id": 7,
+                "username": "other_user",
+                "first_name": "other",
+                "last_name": "user",
+                "email": "other@us.er",
+                "gender": "not_to_be_created",
+                "organization_id": 1,
+            },
+        }
+        data["meeting"]["user"].update(other_users_request_data)
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "other_user",
+                "gender": None,
+                "gender_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "user/3", {"username": "test", "gender": None, "gender_id": 5}
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "username": "newer_user",
+                "gender": None,
+                "gender_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "user/5",
+            {
+                "username": "new_user",
+                "gender": None,
+                "gender_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "user/6",
+            {
+                "username": "newest_user",
+                "gender": None,
+                "gender_id": 6,
+            },
+        )
+        self.assert_model_exists(
+            "user/7",
+            {
+                "username": "ultra_newest_user",
+                "gender": None,
+                "gender_id": 4,
+            },
+        )
+        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2, 7]})
+        self.assert_model_exists(
+            "gender/5", {"name": "needs_to_be_created", "user_ids": [3, 4]}
+        )
+        self.assert_model_exists(
+            "gender/6", {"name": "needs_to_be_created_too", "user_ids": [6]}
+        )
+        self.assert_model_exists(
+            "organization/1",
+            {"user_ids": [1, 2, 3, 4, 5, 6, 7], "gender_ids": [1, 4, 5, 6]},
+        )
+
     def test_import_existing_user_with_vote(self) -> None:
         self.set_models(
             {
@@ -2468,9 +2643,45 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_not_exists("user/2")
 
+    def test_delete_statutes(self) -> None:
+        """test for deleted statute motions in event.data after migration. Uses migrations 0055 and onwards."""
+        data = self.create_request_data()
+        data["meeting"]["meeting"]["1"][
+            "motions_default_statute_amendment_workflow_id"
+        ] = 1
+        data["meeting"]["meeting"]["1"][
+            "motions_statute_recommendations_by"
+        ] = "Statute ABK"
+        data["meeting"]["meeting"]["1"]["motions_statutes_enabled"] = True
+        data["meeting"]["meeting"]["1"]["motion_statute_paragraph_ids"] = []
+
+        data["meeting"]["motion_workflow"]["1"][
+            "default_statute_amendment_workflow_meeting_id"
+        ] = 1
+        data["meeting"]["_migration_index"] = 55
+        self.replace_migrated_projector_fields(data)
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion_workflow/2")
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "motions_default_statute_amendment_workflow_id": None,
+                "motions_statute_recommendations_by": None,
+                "motions_statutes_enabled": None,
+                "motion_statute_paragraph_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "motion_workflow/1",
+            {
+                "default_statute_amendment_workflow_meeting_id": None,
+            },
+        )
+
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:
-        data_raw = get_initial_data_file("global/data/export-OS3-demo.json")
+        data_raw = get_initial_data_file("data/export-OS3-demo.json")
         data = {"committee_id": 1, "meeting": data_raw}
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)

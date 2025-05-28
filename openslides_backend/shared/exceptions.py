@@ -167,16 +167,29 @@ AnyPermission = Union[Permission, OrganizationManagementLevel, CommitteeManageme
 class MissingPermission(PermissionDenied):
     def __init__(
         self,
-        permissions: AnyPermission | dict[AnyPermission, int],
+        permissions: AnyPermission | dict[AnyPermission, int | set[int]],
     ) -> None:
         if isinstance(permissions, dict):
-            self.message = (
-                "Missing permission" + ("s" if len(permissions) > 1 else "") + ": "
-            )
+            to_remove = []
+            for permission, id_or_ids in permissions.items():
+                if isinstance(id_or_ids, set) and not id_or_ids:
+                    to_remove.append(permission)
+            for permission in to_remove:
+                del permissions[permission]
+            self.message = "Missing permission" + self._plural_s(permissions) + ": "
             self.message += " or ".join(
-                f"{permission.get_verbose_type()} {permission} in {permission.get_base_model()} {id}"
-                for permission, id in permissions.items()
+                f"{permission.get_verbose_type()} {permission} in {permission.get_base_model()}{self._plural_s(id_or_ids)} {id_or_ids}"
+                for permission, id_or_ids in permissions.items()
             )
         else:
             self.message = f"Missing {permissions.get_verbose_type()}: {permissions}"
         super().__init__(self.message)
+
+    def _plural_s(self, permission_or_id_or_ids: dict | int | set[int]) -> str:
+        if (
+            isinstance(permission_or_id_or_ids, set)
+            or (isinstance(permission_or_id_or_ids, dict))
+        ) and len(permission_or_id_or_ids) > 1:
+            return "s"
+        else:
+            return ""

@@ -9,8 +9,7 @@ from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId
-from ...shared.typing import ModelMap
+from ...shared.patterns import Collection, FullQualifiedId, Id
 from .commands import GetManyRequest
 
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
@@ -30,7 +29,6 @@ class Database(Protocol):
     Database defines the interface to the database.
     """
 
-    changed_models: ModelMap
     locked_fields: dict[str, CollectionFieldLock]
 
     @abstractmethod
@@ -40,8 +38,11 @@ class Database(Protocol):
 
     @abstractmethod
     def get_changed_model(
-        self, collection_or_fqid: str, id_: int | None = None
+        self, collection_or_fqid: str, id_: Id | None = None
     ) -> PartialModel: ...
+
+    @abstractmethod
+    def get_changed_models(self, collection: str) -> dict[Id, PartialModel]: ...
 
     @abstractmethod
     def get(

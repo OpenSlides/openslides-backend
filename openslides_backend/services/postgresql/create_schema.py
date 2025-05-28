@@ -41,7 +41,7 @@ def create_schema() -> None:
                 )
                 return
             path = os.path.realpath(
-                os.path.join("global", "meta", "dev", "sql", "schema_relational.sql")
+                os.path.join("meta", "dev", "sql", "schema_relational.sql")
             )
             try:
                 cursor.execute(open(path).read())

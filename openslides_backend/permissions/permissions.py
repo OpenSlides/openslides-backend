@@ -7,10 +7,8 @@ from .base_classes import Permission
 
 class _AgendaItem(Permission, StrEnum):
     CAN_MANAGE = "agenda_item.can_manage"
-    CAN_MANAGE_MODERATOR_NOTES = "agenda_item.can_manage_moderator_notes"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
-    CAN_SEE_MODERATOR_NOTES = "agenda_item.can_see_moderator_notes"
 
 
 class _Assignment(Permission, StrEnum):
@@ -27,7 +25,9 @@ class _Chat(Permission, StrEnum):
 class _ListOfSpeakers(Permission, StrEnum):
     CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
     CAN_MANAGE = "list_of_speakers.can_manage"
+    CAN_MANAGE_MODERATOR_NOTES = "list_of_speakers.can_manage_moderator_notes"
     CAN_SEE = "list_of_speakers.can_see"
+    CAN_SEE_MODERATOR_NOTES = "list_of_speakers.can_see_moderator_notes"
 
 
 class _Mediafile(Permission, StrEnum):
@@ -59,6 +59,7 @@ class _Motion(Permission, StrEnum):
 
 class _Poll(Permission, StrEnum):
     CAN_MANAGE = "poll.can_manage"
+    CAN_SEE_PROGRESS = "poll.can_see_progress"
 
 
 class _Projector(Permission, StrEnum):
@@ -71,6 +72,7 @@ class _Tag(Permission, StrEnum):
 
 
 class _User(Permission, StrEnum):
+    CAN_EDIT_OWN_DELEGATION = "user.can_edit_own_delegation"
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
@@ -94,14 +96,9 @@ class Permissions:
 
 # Holds the corresponding parent for each permission.
 permission_parents: dict[Permission, list[Permission]] = {
-    _AgendaItem.CAN_SEE: [
-        _AgendaItem.CAN_SEE_INTERNAL,
-        _AgendaItem.CAN_SEE_MODERATOR_NOTES,
-    ],
+    _AgendaItem.CAN_SEE: [_AgendaItem.CAN_SEE_INTERNAL],
     _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_MANAGE],
     _AgendaItem.CAN_MANAGE: [],
-    _AgendaItem.CAN_SEE_MODERATOR_NOTES: [_AgendaItem.CAN_MANAGE_MODERATOR_NOTES],
-    _AgendaItem.CAN_MANAGE_MODERATOR_NOTES: [],
     _Assignment.CAN_SEE: [
         _Assignment.CAN_NOMINATE_OTHER,
         _Assignment.CAN_NOMINATE_SELF,
@@ -113,6 +110,10 @@ permission_parents: dict[Permission, list[Permission]] = {
     _ListOfSpeakers.CAN_SEE: [_ListOfSpeakers.CAN_MANAGE],
     _ListOfSpeakers.CAN_MANAGE: [],
     _ListOfSpeakers.CAN_BE_SPEAKER: [],
+    _ListOfSpeakers.CAN_SEE_MODERATOR_NOTES: [
+        _ListOfSpeakers.CAN_MANAGE_MODERATOR_NOTES
+    ],
+    _ListOfSpeakers.CAN_MANAGE_MODERATOR_NOTES: [],
     _Mediafile.CAN_SEE: [_Mediafile.CAN_MANAGE],
     _Mediafile.CAN_MANAGE: [],
     _Meeting.CAN_MANAGE_SETTINGS: [],
@@ -140,13 +141,19 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Motion.CAN_MANAGE: [],
     _Motion.CAN_SUPPORT: [],
     _Motion.CAN_SEE_ORIGIN: [],
+    _Poll.CAN_SEE_PROGRESS: [_Poll.CAN_MANAGE],
     _Poll.CAN_MANAGE: [],
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE, _User.CAN_SEE_SENSITIVE_DATA],
+    _User.CAN_SEE: [
+        _User.CAN_MANAGE_PRESENCE,
+        _User.CAN_SEE_SENSITIVE_DATA,
+        _User.CAN_EDIT_OWN_DELEGATION,
+    ],
     _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
     _User.CAN_SEE_SENSITIVE_DATA: [_User.CAN_UPDATE],
     _User.CAN_UPDATE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
+    _User.CAN_EDIT_OWN_DELEGATION: [],
 }

@@ -10,6 +10,7 @@ msgstr ""
 msgid "Complex Workflow"
 msgstr ""
 
+#, python-brace-format
 msgid ""
 "Dear {name},\n"
 "\n"
@@ -50,6 +51,9 @@ msgstr ""
 msgid "Presentation and assembly system"
 msgstr ""
 
+msgid "Public"
+msgstr ""
+
 msgid "Referral to"
 msgstr ""
 
@@ -80,6 +84,7 @@ msgstr ""
 msgid "Welcome to OpenSlides"
 msgstr ""
 
+#, python-brace-format
 msgid ""
 "You are receiving this email because you have requested a new password "
 "for your OpenSlides account.\n"

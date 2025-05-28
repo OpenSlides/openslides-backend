@@ -13,7 +13,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
 from .base import base_check_onehundred_percent_base
-from .mixins import PollHistoryMixin, PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin, PollValidationMixin
 
 options_schema = {
     "description": "A option inside a poll create schema",
@@ -32,6 +32,7 @@ options_schema = {
 
 @register_action("poll.create")
 class PollCreateAction(
+    PollValidationMixin,
     SequentialNumbersMixin,
     CreateAction,
     PollPermissionMixin,

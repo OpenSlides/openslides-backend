@@ -35,6 +35,11 @@ Use `meeting/users_email_subject` (if a meeting is given by `meeting_id`); other
 - `event_name` as `meeting/name` (if a meeting is given, otherwise `organization/name`) and
 - `username` as `user/username`
 - `name` as the users short name
+- `title` as `user/title`
+- `given_name` as `user/first_name`
+- `surname` as `user/last_name`
+- `groups` as a listing of the names of the users groups in the meeting
+- `structure_levels` as a listing of the names of the users structure_levels in the meeting
 to be replaced in the template (see [here](https://github.com/OpenSlides/OpenSlides/blob/7315626e18c0515b6ff61551c705156cbd5056cb/server/openslides/users/models.py#L266))
 
 ### Body
@@ -44,6 +49,11 @@ It does an equal string formatting  as for the subject. Use `meeting/users_email
 - `url` as `meeting/users_pdf_url` (this can only be used, if a meeting is given; otherwise it's the `organization/url`)
 - `username` as `user/username` 
 - `password` as `user/default_password`
+- `title` as `user/title`
+- `first_name` as `user/first_name`
+- `last_name` as `user/last_name`
+- `groups` as a listing of the names of the users groups in the meeting.
+- `structure_levels` as a listing of the names of the users structure_levels.
 
 ### Unknown keywords in Subject or Body
 Sending email is no longer refused, the wrong keyword will be injected instead.

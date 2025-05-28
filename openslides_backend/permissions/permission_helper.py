@@ -31,10 +31,10 @@ def has_perm(
                 ],
                 lock_result=False,
             )
-            if (
-                user.get("organization_management_level")
-                == OrganizationManagementLevel.SUPERADMIN
-            ):
+            if user.get("organization_management_level") in [
+                OrganizationManagementLevel.SUPERADMIN,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            ]:
                 return True
 
         meeting_user = get_meeting_user(
@@ -104,7 +104,7 @@ def has_organization_management_level(
             ["organization_management_level"],
         )
         return expected_level <= OrganizationManagementLevel(
-            user.get("organization_management_level")
+            user.get("organization_management_level", "")
         )
     return False
 
@@ -182,7 +182,7 @@ def is_admin(datastore: Database, user_id: int, meeting_id: int) -> bool:
         lock_result=False,
     )
     if not meeting.get("locked_from_inside") and has_organization_management_level(
-        datastore, user_id, OrganizationManagementLevel.SUPERADMIN
+        datastore, user_id, OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     ):
         return True
 
@@ -193,9 +193,9 @@ def is_admin(datastore: Database, user_id: int, meeting_id: int) -> bool:
 anonymous_perms_whitelist: set[Permission] = {
     Permissions.AgendaItem.CAN_SEE,
     Permissions.AgendaItem.CAN_SEE_INTERNAL,
-    Permissions.AgendaItem.CAN_SEE_MODERATOR_NOTES,
     Permissions.Assignment.CAN_SEE,
     Permissions.ListOfSpeakers.CAN_SEE,
+    Permissions.ListOfSpeakers.CAN_SEE_MODERATOR_NOTES,
     Permissions.Mediafile.CAN_SEE,
     Permissions.Meeting.CAN_SEE_AUTOPILOT,
     Permissions.Meeting.CAN_SEE_FRONTPAGE,
@@ -206,6 +206,7 @@ anonymous_perms_whitelist: set[Permission] = {
     Permissions.Projector.CAN_SEE,
     Permissions.User.CAN_SEE,
     Permissions.User.CAN_SEE_SENSITIVE_DATA,
+    Permissions.Poll.CAN_SEE_PROGRESS,
 }
 
 

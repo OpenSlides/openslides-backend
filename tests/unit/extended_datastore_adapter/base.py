@@ -1,11 +1,14 @@
 # TODO consider to delete all tests of this directory
 from collections import defaultdict
 from typing import Any
-from unittest import TestCase
-from unittest.mock import patch
+from unittest import TestCase, TestResult
+from unittest.mock import MagicMock, patch
 
-# from openslides_backend.datastore.shared.postgresql_backend import filter_models
 from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.patterns import Collection
 from openslides_backend.shared.typing import DeletedModel
 
@@ -32,17 +35,6 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
                 lambda *args, **kwargs: self.db_method_return_value
             )
 
-        # TODO this needs to be created on top of the call stack from where it is needed.
-        # self.adapter = ExtendedDatabase(MagicMock(), MagicMock())
-
-        # TODO: Make this work again?
-        # patcher = patch(
-        #     "openslides_backend.services.datastore.extended_adapter.filter_models",
-        #     side_effect=filter_models,
-        # )
-        # self.add_filter_mock = patcher.start()
-        # self.addCleanup(patcher.stop)
-
         self.add_get_many_mock = self.add_mock_to_method(
             "_get_many_from_changed_models"
         )
@@ -53,6 +45,16 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
                 2: {"f": 1, "unused": 2},
             }
         }
+
+    def run(self, result: TestResult | None = None) -> TestResult | None:
+        """
+        Overrides the TestCases run method.
+        Provides an ExtendedDatabase in self.adapter with an open psycopg connection.
+        """
+        with get_new_os_conn() as conn:
+            self.adapter = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            self.connection = conn
+            return super().run(result)
 
     def _get_many_mock(
         self, get_many_requests: list[GetManyRequest], *args: Any, **kwargs: Any

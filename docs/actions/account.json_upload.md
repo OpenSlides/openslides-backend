@@ -14,7 +14,7 @@ The types noted below are the internal types after conversion in the backend. Se
         member_number: string, // unique member_number, info: done (used as matching field), new (newly added) or error
         title: string,
         pronoun: string,
-        gender: string, // as defined in organization/genders, info: done or warning
+        gender: string, // info: done or warning
         default_password: string,  // info: generated, done or warning
         is_active: boolean,
         is_physical_person: boolean,

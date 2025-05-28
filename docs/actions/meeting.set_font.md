@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     id: Id;
     mediafile_id: Id;

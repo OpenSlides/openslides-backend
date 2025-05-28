@@ -65,5 +65,6 @@ class SpeakerDeleteAction(
             and not speaker.get("pause_time")
         ):
             self.decrease_structure_level_countdown(self.end_time, speaker)
-        self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
+        if speaker.get("begin_time") and not speaker.get("end_time"):
+            self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
         return super().update_instance(instance)

@@ -802,7 +802,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "motion_workflow_ids": [2],
                     "motion_state_ids": [2],
                     "motions_default_amendment_workflow_id": 2,
-                    "motions_default_statute_amendment_workflow_id": 2,
                     **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
@@ -815,7 +814,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "motion_workflow/2": {
                     "name": "yay",
                     "default_amendment_workflow_meeting_id": 2,
-                    "default_statute_amendment_workflow_meeting_id": 2,
                     "sequential_number": 1,
                 },
                 "motion_state/2": {"weight": 1, "name": "dismissed"},
@@ -870,7 +868,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                     "motion_workflow_ids": [2],
                     "motion_state_ids": [2],
                     "motions_default_amendment_workflow_id": 2,
-                    "motions_default_statute_amendment_workflow_id": 2,
                     **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
@@ -883,7 +880,6 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "motion_workflow/2": {
                     "name": "yay",
                     "default_amendment_workflow_meeting_id": 2,
-                    "default_statute_amendment_workflow_meeting_id": 2,
                     "sequential_number": 1,
                 },
                 "motion_state/2": {"weight": 1, "name": "dismissed"},
@@ -919,3 +915,39 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             },
         }
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
+
+    def json_upload_with_duplicated_organization_tags(
+        self,
+    ) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "n1", "organization_tags": ["ot1", "ot2"]},
+                    {"name": "n2", "organization_tags": ["ot1"]},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_statistics(response, {"organization_tags_created": 2})
+        assert self.get_row(response, 0) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "n1", "info": ImportState.NEW},
+                "organization_tags": [
+                    {"value": "ot1", "info": ImportState.NEW},
+                    {"value": "ot2", "info": ImportState.NEW},
+                ],
+            },
+        }
+        assert self.get_row(response, 1) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "n2", "info": ImportState.NEW},
+                "organization_tags": [
+                    {"value": "ot1", "info": ImportState.DONE},
+                ],
+            },
+        }
