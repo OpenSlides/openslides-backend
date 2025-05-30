@@ -2311,6 +2311,102 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             with_amendments=True,
         )
 
+    def test_forward_with_attachments_true_with_amendments_true_with_nested_amendments(
+        self,
+    ) -> None:
+        self.create_mediafile(mediafile_id=20, owner_meeting_id=1)
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=20, mediafile_id=20, meeting_id=1, motion_ids=[14]
+        )
+        custom_model_data: dict[str, dict[str, Any]] = {
+            "meeting/1": {
+                "meeting_mediafile_ids": [11, 14, 17, 20, 24],
+                "mediafile_ids": [1, 6, 19, 20],
+            },
+            "mediafile/20": {"meeting_mediafile_ids": [20]},
+            "meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]},
+            "motion/13": {
+                "amendment_ids": [14],
+            },
+            "motion/14": {
+                "title": "Amendment 14",
+                "meeting_id": 1,
+                "state_id": 30,
+                "lead_motion_id": 13,
+                "attachment_meeting_mediafile_ids": [20, 11],
+            },
+        }
+        expected_mediaservice_calls = [(6, 21), (1, 22), (19, 23), (20, 24)]
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {
+                "meeting_mediafile_ids": [25, 26, 27, 28, 29],
+                "mediafile_ids": [21, 22, 23, 24],
+            },
+            "mediafile/8": {
+                "meeting_mediafile_ids": [17, 26],
+            },
+            "mediafile/21": {
+                "meeting_mediafile_ids": [25],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+            },
+            "mediafile/22": {
+                "meeting_mediafile_ids": [27],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+            },
+            "mediafile/23": {
+                "meeting_mediafile_ids": [28],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+            },
+            "mediafile/24": {
+                "meeting_mediafile_ids": [29],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+            },
+            "meeting_mediafile/25": {
+                "meeting_id": 2,
+                "mediafile_id": 21,
+                "is_public": True,
+                "attachment_ids": ["motion/16", "motion/15"],
+            },
+            "meeting_mediafile/26": {
+                "meeting_id": 2,
+                "mediafile_id": 8,
+                "is_public": True,
+                "attachment_ids": ["motion/15"],
+            },
+            "meeting_mediafile/27": {
+                "meeting_id": 2,
+                "mediafile_id": 22,
+                "is_public": True,
+                "attachment_ids": ["motion/17", "motion/16"],
+            },
+            "meeting_mediafile/28": {
+                "meeting_id": 2,
+                "mediafile_id": 23,
+                "is_public": True,
+                "attachment_ids": ["motion/16"],
+            },
+            "meeting_mediafile/29": {
+                "meeting_id": 2,
+                "mediafile_id": 24,
+                "is_public": True,
+                "attachment_ids": ["motion/17"],
+            },
+            "motion/15": {"attachment_meeting_mediafile_ids": [26, 25]},
+            "motion/16": {"attachment_meeting_mediafile_ids": [27, 28, 25]},
+            "motion/17": {"attachment_meeting_mediafile_ids": [29, 27]},
+        }
+        self.base_forward_with_attachments_and_amendments(
+            expected_models,
+            expected_mediaservice_calls,
+            with_attachments=True,
+            with_amendments=True,
+            custom_model_data=custom_model_data,
+        )
+
     def test_forward_with_attachments_true_with_amendments_false(self) -> None:
         self.base_forward_with_attachments_true_without_amendments(
             with_amendments=False, allow_amendment_forwarding=True
