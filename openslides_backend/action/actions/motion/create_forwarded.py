@@ -2,6 +2,7 @@ from typing import Any
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import original_instances
 from ...util.default_schema import DefaultSchema
@@ -31,9 +32,15 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
         },
     )
 
+    def perform(
+        self, action_data: ActionData, user_id: int, internal: bool = False
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
+        self.reset_forwarded_state()
+        return super().perform(action_data, user_id, internal)
+
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.duplicate_mediafiles(action_data, is_lead_motions_data=True)
+        self.duplicate_mediafiles(action_data)
         return action_data
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -50,12 +57,6 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
             raise PermissionDenied(msg)
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
-        self.duplicate_mediafiles(amendment_data, is_lead_motions_data=False)
-        for instance in amendment_data:
-            if instance.get("with_attachments"):
-                instance["meeting_mediafiles_replace_map"] = (
-                    self.meeting_mediafile_replace_map.get(instance["meeting_id"])
-                )
         return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -64,10 +65,7 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
         self.check_state_allow_forwarding(instance)
         super().update_instance(instance)
         if self.with_attachments:
-            return self.forward_mediafiles(
-                instance,
-                self.meeting_mediafile_replace_map.get(instance["meeting_id"], {}),
-            )
+            return self.forward_mediafiles(instance)
         return instance
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:

@@ -3,6 +3,7 @@ from typing import Any
 from ....models.models import Motion
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
+from ...action import original_instances
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -33,17 +34,18 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             "use_original_number": {"type": "boolean"},
             "with_change_recommendations": {"type": "boolean"},
             "with_attachments": {"type": "boolean"},
-            "meeting_mediafiles_replace_map": {"type": "object"},
         },
     )
+
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.duplicate_mediafiles(action_data)
+        return action_data
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_attachments = instance.pop("with_attachments", False)
         if self.with_attachments:
-            self.meeting_mediafiles_replace_map = instance.pop(
-                "meeting_mediafiles_replace_map", {}
-            )
-            self.forward_mediafiles(instance, self.meeting_mediafiles_replace_map)
+            self.forward_mediafiles(instance)
         return super().update_instance(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
