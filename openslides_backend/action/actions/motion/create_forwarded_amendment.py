@@ -62,6 +62,8 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             raise PermissionDenied(msg)
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
+        for amendment in amendment_data:
+            amendment["with_attachments"] = self.with_attachments
         return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
