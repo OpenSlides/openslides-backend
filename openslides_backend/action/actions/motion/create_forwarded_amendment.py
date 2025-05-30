@@ -3,6 +3,7 @@ from typing import Any
 from ....models.models import Motion
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
+from ...action import original_instances
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -26,13 +27,26 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             "text",
             "amendment_paragraphs",
             "marked_forwarded",
+            "attachment_meeting_mediafile_ids",
         ],
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},
             "use_original_number": {"type": "boolean"},
             "with_change_recommendations": {"type": "boolean"},
+            "with_attachments": {"type": "boolean"},
         },
     )
+
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.duplicate_mediafiles(action_data)
+        return action_data
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.with_attachments = instance.pop("with_attachments", False)
+        if self.with_attachments:
+            self.forward_mediafiles(instance)
+        return super().update_instance(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
@@ -48,7 +62,12 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             raise PermissionDenied(msg)
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
+        for amendment in amendment_data:
+            amendment["with_attachments"] = self.with_attachments
         return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return True
+
+    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
+        return self.with_attachments
