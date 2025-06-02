@@ -1,3 +1,17 @@
+SERVICE=backend
+
+# Build images for different contexts
+
+build-dev:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev
+
+build-prod:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod
+
+build-test:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+
+
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
 paths = openslides_backend/ tests/ cli/ meta/dev/src/
@@ -77,9 +91,6 @@ extract-translations:
 
 # Build and run production docker container (not usable inside the docker container)
 
-build-prod:
-	docker build . --tag=openslides-backend
-
 run-prod: | build-prod
 	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
@@ -137,27 +148,6 @@ run-dev-attach-otel:
 	docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
-
-
-# Build standalone development container (not usable inside the docker container)
-
-build-aio:
-	@if [ -z "${submodule}" ] ; then \
-		echo "Please provide the name of the submodule service to build (submodule=<submodule service name>)"; \
-		exit 1; \
-	fi
-
-	@if [ "${context}" != "prod" -a "${context}" != "dev" -a "${context}" != "tests" ] ; then \
-		echo "Please provide a context for this build (context=<desired_context> , possible options: prod, dev, tests)"; \
-		exit 1; \
-	fi
-
-	echo "Building submodule '${submodule}' for ${context} context"
-
-	@docker build -f ./Dockerfile.AIO ./ --tag openslides-${submodule}-${context} --build-arg CONTEXT=${context} --target ${context} ${args}
-
-build-dev:
-	make build-aio context=dev submodule=backend
 
 #	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
 

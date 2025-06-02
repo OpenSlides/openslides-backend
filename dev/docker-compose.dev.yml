@@ -3,7 +3,9 @@ services:
     backend:
         build:
             context: ..
-            dockerfile: dev/Dockerfile.dev
+            dockerfile: Dockerfile
+            args:
+                CONTEXT: "dev"
         image: openslides-backend-dev
         user: $USER_ID:$GROUP_ID
         ports:

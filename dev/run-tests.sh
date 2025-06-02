@@ -12,7 +12,7 @@ export COMPOSE_DOCKER_CLI_BUILD=0
 
 DC="docker compose -f dev/docker-compose.tests.yml"
 
-docker build -f ./Dockerfile.AIO ./ --tag openslides-backend-tests --target tests --build-arg CONTEXT=tests || CATCH=1
+make build-test || CATCH=1
 $DC up --build --detach || CATCH=1
 $DC exec -T backend scripts/wait.sh datastore-writer 9011 || CATCH=1
 $DC exec -T backend scripts/wait.sh datastore-reader 9010 || CATCH=1
