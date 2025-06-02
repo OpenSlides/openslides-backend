@@ -35,7 +35,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, Any], bool, int | None]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns in the tuple:
@@ -45,6 +45,7 @@ class UserScopeMixin(BaseServiceProvider):
         * the OML level of the user as string (empty string if the user has none)
         * the ids of all committees that the user is either a manager in or a member
             of together with the respective meetings the user is part of
+        * whether the user is only in archived meetings
         * his home_committee_id.
         A committee can have no meetings if the user just has committee management rights and is
         not part of any of its meetings.

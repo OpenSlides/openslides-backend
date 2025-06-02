@@ -36,9 +36,7 @@ class CommitteeCommonCreateUpdateMixin(
             if field in instance:
                 field_set = set(instance.get(field, []))
                 field_difference.update(
-                    {*field_set, *committee.get(field, [])}.difference(
-                        field_set.intersection(committee.get(field, []))
-                    )
+                    field_set.symmetric_difference(committee.get(field, []))
                 )
         if field_difference:
             if fails := get_failing_committee_management_levels(

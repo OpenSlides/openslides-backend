@@ -120,10 +120,9 @@ def get_failing_committee_management_levels(
     returns the ids of all that fail.
     """
     if user_id > 0:
-        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["organization_management_level", *cml_fields],
+            ["organization_management_level", "committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )
@@ -158,10 +157,9 @@ def has_committee_management_level(
 ) -> bool:
     """Checks whether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["organization_management_level", *cml_fields],
+            ["organization_management_level", "committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )
@@ -189,10 +187,9 @@ def get_shared_committee_management_levels(
 ) -> list[int]:
     """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            [*cml_fields],
+            ["committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )
