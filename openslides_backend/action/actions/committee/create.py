@@ -50,8 +50,9 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
                         CommitteeManagementLevel.CAN_MANAGE: instance["parent_id"],
                     }
                 )
+            self.check_forwarding_fields(instance)
             return
-        self.check_forwarding_fields(instance)
+
         return super().check_permissions(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
