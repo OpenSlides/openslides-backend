@@ -15,6 +15,7 @@ handler_to_field_map: dict[type[CalculatedFieldHandler], list[Field]] = {
     UserCommitteeCalculateHandler: [
         MeetingUser.group_ids,
         User.committee_management_ids,
+        User.home_committee_id,
     ],  # calcs user.committee_ids and committee.user_ids
 }
 calculated_field_handlers_map: dict[Field, list[type[CalculatedFieldHandler]]] = (
