@@ -66,7 +66,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             )
             user_id = cast(
                 dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
-            ).get("user_id")
+            )["user_id"]
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             fqid_user = fqid_from_collection_and_id("user", user_id)
             db_user = self.datastore.get(

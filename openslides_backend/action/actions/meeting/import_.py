@@ -2,7 +2,7 @@ import re
 import time
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
@@ -43,6 +43,7 @@ from ....shared.util import (
 )
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
+from ...relations.typing import ListUpdateElement
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -731,8 +732,8 @@ class MeetingImport(
         entries_to_remove: list[str] = []
         for field, entry in relations.items():
             if regex.search(field):
-                if entry["add"]:
-                    entry["remove"] = []
+                if cast(ListUpdateElement, entry)["add"]:
+                    cast(ListUpdateElement, entry)["remove"] = []
                 else:
                     entries_to_remove.append(field)
         for field in entries_to_remove:
