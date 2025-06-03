@@ -546,6 +546,14 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         instance: dict[str, Any],
         missing_permissions: dict[AnyPermission, int | set[int]],
     ) -> None:
+        """
+        Conditionally raises MissingPermission exceptions based on shared conditions between groups A and F.
+        It functions as follows:
+        * If the called user has a home committee it throws an exception with the precalulated missing_permissions that were passed.
+        * Else if the caller is not admin in all meetings of the instance user, it throws an exception with the precalulated
+           missing_permissions and additionally user.can_update for every one of the related meetings.
+        * Else if the user is only in archived meetings it again throws an exception with the precalulated missing_permissions.
+        """
         if self.instance_home_committee_id or not self.check_for_admin_in_all_meetings(
             instance.get("id", 0)
         ):
