@@ -341,9 +341,11 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
                 {"vote_delegated_to_id": instance["vote_delegated_to_id"]}
             )
 
-        user_id_self = meeting_user_self.get("user_id", instance.get("user_id"))
-        meeting_id_self = meeting_user_self.get(
-            "meeting_id", instance.get("meeting_id")
+        user_id_self = cast(
+            int, meeting_user_self.get("user_id", instance.get("user_id"))
+        )
+        meeting_id_self = cast(
+            int, meeting_user_self.get("meeting_id", instance.get("meeting_id"))
         )
 
         if "vote_delegated_to_id" in instance:
