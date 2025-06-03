@@ -3,7 +3,6 @@
 set -e
 
 source scripts/export_database_variables.sh
-scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
 
 printf "\nOpenslides Database:\n"
 python cli/create_schema.py

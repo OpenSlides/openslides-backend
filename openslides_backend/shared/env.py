@@ -27,14 +27,6 @@ class Environment(Env):
 
     vars = {
         "ACTION_PORT": "9002",
-        "DATASTORE_READER_HOST": "localhost",
-        "DATASTORE_READER_PATH": "/internal/datastore/reader",
-        "DATASTORE_READER_PORT": "9010",
-        "DATASTORE_READER_PROTOCOL": "http",
-        "DATASTORE_WRITER_HOST": "localhost",
-        "DATASTORE_WRITER_PATH": "/internal/datastore/writer",
-        "DATASTORE_WRITER_PORT": "9011",
-        "DATASTORE_WRITER_PROTOCOL": "http",
         "INTERNAL_AUTH_PASSWORD_FILE": "",
         "MEDIA_HOST": "localhost",
         "MEDIA_PATH": "/internal/media",
@@ -109,7 +101,7 @@ class Environment(Env):
     def get_service_url(self) -> dict[str, str]:
         service_url = {}
         # Extend the vars attribute with the lower case properties for the service URLs.
-        for service in ("datastore_reader", "datastore_writer", "media", "vote"):
+        for service in ("media", "vote"):
             key = service + "_url"
             service_url[key] = self.get_endpoint(service.upper())
         return service_url
