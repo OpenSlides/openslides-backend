@@ -9,11 +9,13 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
+            "committee/1": {"meeting_ids": [1]},
             "meeting/1": {
                 "name": "meeting_1",
                 "motion_category_ids": [111],
                 "motion_ids": [69],
                 "is_active_in_organization_id": 1,
+                "committee_id": 1,
             },
             "motion_category/111": {
                 "name": "name_MKKAcYQu",
@@ -44,15 +46,14 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_history_information("motion/69", ["Number set"])
 
     def test_two_motions(self) -> None:
+        self.create_meeting(35)
         self.set_models(
             {
                 "meeting/35": {
-                    "name": "name_meeting35",
                     "motions_number_with_blank": True,
                     "motions_number_min_digits": 3,
                     "motion_ids": [78, 85],
                     "motion_category_ids": [111, 78, 114],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion/78": {
                     "title": "title_NAZOknoM",
@@ -97,13 +98,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         assert motion_85.get("number") == "prefix_A 002"
 
     def test_check_amendments_error_case(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "meeting_1",
                     "motion_ids": [78, 85, 666],
                     "motion_category_ids": [111, 78, 114],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion/78": {"title": "title_NAZOknoM", "meeting_id": 1},
                 "motion/85": {
@@ -143,16 +143,15 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_3_categories_5_motions_some_with_lead_motion_ids(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_meeting_1",
                     "motions_number_with_blank": True,
                     "motions_number_min_digits": 3,
                     "motions_amendments_prefix": "X",
                     "motion_category_ids": [1, 2, 3],
                     "motion_ids": [1, 2, 3, 4, 5],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "name_category_1",
@@ -221,13 +220,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.check_helper("motion/5", "B 003 X 002")
 
     def test_already_existing_number(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "meeting_1",
                     "motion_category_ids": [111],
                     "motion_ids": [69, 70],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/111": {
                     "name": "name_MKKAcYQu",
@@ -260,13 +258,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_sort_categories(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_meeting_1",
                     "motion_category_ids": [1, 2, 3, 4],
                     "motion_ids": [1, 2, 3],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -323,13 +320,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         assert motion.get("number") == excepted_number
 
     def test_sort_motions(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_meeting_1",
                     "motion_category_ids": [1],
                     "motion_ids": [1, 2, 3],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -370,13 +366,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.check_helper("motion/3", "1")
 
     def test_stop_prefix_lookup_at_main_category(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_meeting_1",
                     "motion_category_ids": [1, 2],
                     "motion_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -412,13 +407,12 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.check_helper("motion/1", "1")
 
     def test_invalid_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_meeting_1",
                     "motion_category_ids": [1, 2],
                     "motion_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",

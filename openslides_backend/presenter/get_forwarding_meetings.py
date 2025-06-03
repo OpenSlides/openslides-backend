@@ -48,10 +48,6 @@ class GetForwardingMeetings(BasePresenter):
             fqid_from_collection_and_id("meeting", self.data["meeting_id"]),
             ["committee_id", "is_active_in_organization_id", "name"],
         )
-        if not meeting.get("committee_id"):
-            raise PresenterException(
-                f"There is no committee given for meeting/{self.data['meeting_id']} {meeting.get('name', 'nameless')}."
-            )
         if not meeting.get("is_active_in_organization_id"):
             raise PresenterException(
                 "Your sender meeting is an archived meeting, which can not forward motions."

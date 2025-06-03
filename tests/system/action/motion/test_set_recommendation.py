@@ -8,6 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/34": {
                 "meeting_id": 1,
@@ -29,7 +30,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -60,7 +60,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_missing_recommendation_label(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -84,7 +83,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -112,7 +110,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_history_multiple_actions(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -145,7 +142,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_history_multiple_actions_different_states(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },

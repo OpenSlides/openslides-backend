@@ -7,6 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_category/22": {"meeting_id": 1},
         }
@@ -14,10 +15,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/22": {"meeting_id": 222},
             }
         )
@@ -35,10 +32,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/22": {"meeting_id": 222},
                 "motion_category/23": {"meeting_id": 222},
             }
@@ -52,10 +45,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_complex_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/1": {"meeting_id": 222},
                 "motion_category/11": {"meeting_id": 222},
                 "motion_category/12": {"meeting_id": 222},
@@ -90,10 +79,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_not_a_tree(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/1": {"meeting_id": 222},
                 "motion_category/11": {"meeting_id": 222},
                 "motion_category/12": {"meeting_id": 222},
@@ -116,10 +101,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_circle_fail(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/1": {"meeting_id": 222},
                 "motion_category/11": {"meeting_id": 222},
                 "motion_category/12": {"meeting_id": 222},
@@ -144,10 +125,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
     def test_small_tree_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/1": {"meeting_id": 222},
                 "motion_category/11": {"meeting_id": 222},
                 "motion_category/12": {"meeting_id": 222},
@@ -177,9 +154,10 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert model_12.get("level") == 1
 
     def test_with_deleted_model(self) -> None:
-        self.create_model(
-            "meeting/222",
-            {"motion_category_ids": [2, 3], "is_active_in_organization_id": 1},
+        self.set_models(
+            {
+                "meeting/222": {"motion_category_ids": [2, 3]},
+            }
         )
         self.create_model("motion_category/1", {"meeting_id": 222}, deleted=True)
         self.set_models(

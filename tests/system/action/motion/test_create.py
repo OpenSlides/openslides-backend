@@ -220,6 +220,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
                     "motions_default_workflow_id": 12,
+                    "committee_id": 1,
                 },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
@@ -257,7 +258,9 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("state_id") == 1
 
     def test_create_missing_default_workflow(self) -> None:
-        self.set_models({"meeting/42": {"is_active_in_organization_id": 1}})
+        self.set_models(
+            {"meeting/42": {"is_active_in_organization_id": 1, "committee_id": 1}}
+        )
         response = self.request(
             "motion.create",
             {"title": "test_Xcdfgee", "meeting_id": 42, "text": "text"},

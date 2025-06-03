@@ -22,9 +22,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/25": {
                     "title": "title_pheK0Ja3ai",
                     "meeting_id": 1,
@@ -61,9 +61,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_update_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/25": {
                     "title": "title_pheK0Ja3ai",
                     "meeting_id": 1,

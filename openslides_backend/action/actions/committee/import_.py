@@ -26,13 +26,16 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     import_name = "committee"
 
     field_map = {
-        field: field[:-1] + "_ids"
-        for field in (
-            "forward_to_committees",
-            "managers",
-            "meeting_admins",
-            "organization_tags",
-        )
+        **{
+            field: field[:-1] + "_ids"
+            for field in (
+                "forward_to_committees",
+                "managers",
+                "meeting_admins",
+                "organization_tags",
+            )
+        },
+        "parent": "parent_id",
     }
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -40,6 +43,8 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
         self.setup_lookups()
         for row in self.rows:
             self.validate_entry(row)
+        if self.check_parents_for_circles(self.rows):
+            self.import_state = ImportState.ERROR
 
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(self.handle_relation_fields)
@@ -50,6 +55,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     def validate_entry(self, row: ImportRow) -> None:
         self.validate_with_lookup(row, self.committee_lookup)
         self.validate_field(row, self.meeting_map, "meeting_template", False)
+        self.validate_field(row, self.committee_map, "parent", False)
         self.validate_field(row, self.committee_map, "forward_to_committees")
         self.validate_field(row, self.user_map, "managers")
         self.validate_field(row, self.user_map, "meeting_admins")
@@ -80,25 +86,33 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                 entry.pop("meeting_template")
             else:
                 entry["meeting_template"] = template["id"]
+        if parent := entry.get("parent"):
+            if parent["value"] in ["", None]:
+                entry.pop("parent")
+            else:
+                entry["parent"] = parent["value"]
+                if parent_id := parent.get("id"):
+                    entry["parent_id"] = parent_id
+                    entry.pop("parent")
         return entry
 
     def create_models(self, rows: list[ImportRow]) -> None:
         # create tags & update row data
-        create_tag_data: list[dict[str, Any]] = []
+        create_tag_data: dict[str, dict[str, Any]] = {}
         for row in rows:
             for tag in row["data"].get("organization_tags", []):
-                if isinstance(tag, str):
-                    create_tag_data.append(
-                        {
-                            "name": tag,
-                            "color": DEFAULT_TAG_COLOR,
-                            "organization_id": ONE_ORGANIZATION_ID,
-                        }
-                    )
-        if create_tag_data:
-            results = self.execute_other_action(OrganizationTagCreate, create_tag_data)
+                if isinstance(tag, str) and tag not in create_tag_data:
+                    create_tag_data[tag] = {
+                        "name": tag,
+                        "color": DEFAULT_TAG_COLOR,
+                        "organization_id": ONE_ORGANIZATION_ID,
+                    }
+        if create_tag_data_values := list(create_tag_data.values()):
+            results = self.execute_other_action(
+                OrganizationTagCreate, create_tag_data_values
+            )
             self.update_rows_from_results(
-                rows, create_tag_data, results, "organization_tags"
+                rows, create_tag_data_values, results, "organization_tags"
             )
 
         # create missing committees & update row data
@@ -112,7 +126,18 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
         if create_committee_data:
             results = self.execute_other_action(CommitteeCreate, create_committee_data)
             self.update_rows_from_results(
-                rows, create_committee_data, results, "forward_to_committees", True
+                rows,
+                create_committee_data,
+                results,
+                "forward_to_committees",
+                True,
+            )
+            self.update_rows_from_results(
+                rows,
+                create_committee_data,
+                results,
+                "parent",
+                True,
             )
 
         # rename relation fields
@@ -134,6 +159,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     "forward_to_committee_ids",
                     "manager_ids",
                     "organization_tag_ids",
+                    "parent_id",
                 )
                 if field in entry
             }
@@ -188,15 +214,23 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
             entry = row["data"]
             if update_ids and "id" not in entry:
                 entry["id"] = name_map[entry["name"]]
-            if values := entry.pop(field, None):  # pop field to rename it
+            if val := entry.pop(field, None):  # pop field to rename it
                 # replace names with ids
-                for i in range(len(values)):
-                    if isinstance(values[i], str):
-                        if values[i] not in name_map:
-                            values[i] = None
+                if isinstance(val, list):
+                    for i in range(len(val)):
+                        if isinstance(val[i], str):
+                            if val[i] not in name_map:
+                                val[i] = None
+                            else:
+                                val[i] = name_map[val[i]]
+                    entry[self.field_map.get(field, field)] = list(filter(None, val))
+                else:
+                    if isinstance(val, str):
+                        if val not in name_map:
+                            val = None
                         else:
-                            values[i] = name_map[values[i]]
-                entry[self.field_map.get(field, field)] = list(filter(None, values))
+                            val = name_map[val]
+                    entry[self.field_map.get(field, field)] = val
 
     def get_organization_language(self) -> str:
         organization = self.datastore.get(
@@ -224,7 +258,10 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                     [
                         id
                         for row in self.rows
-                        for committee in row["data"].get("forward_to_committees", [])
+                        for committee in [
+                            row["data"].get("parent", {}),
+                            *row["data"].get("forward_to_committees", []),
+                        ]
                         if (id := committee.get("id"))
                     ],
                     ["name"],
