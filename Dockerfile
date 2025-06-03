@@ -3,26 +3,18 @@ ARG PYTHON_IMAGE_VERSION=3.10.15
 
 FROM python:${PYTHON_IMAGE_VERSION}-slim-bookworm as base
 
+## Setup
 ARG CONTEXT
 ARG PYTHON_IMAGE_VERSION
 ARG REQUIREMENTS_FILE_OVERWRITE=""
-
 WORKDIR /app
-
-## Context-based setup
-### Add context value as a helper env variable
 ENV ${CONTEXT}=1
 
-ENV IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"}
 ### Query based on context value
+ENV IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"}
 ENV CONTEXT_INSTALLS=${tests:+""}${prod:+"libc-dev"}${dev:+"make vim bash-completion"}
-### Requirements file will be autoselected, unless an overwrite is given via ARG REQUIEREMENTS_FILE_OVERWRITE
-ENV REQUIREMENTS_FILE=${REQUIREMENTS_FILE_OVERWRITE:+$REQUIREMENTS_FILE_OVERWRITE}${REQUIREMENTS_FILE_OVERWRITE:-${tests:+"development"}${prod:+"production"}${dev:+"development"}}
-RUN if [ -z $REQUIREMENTS_FILE_OVERWRITE ]; then REQUIREMENTS_FILE=$REQUIREMENTS_FILE_OVERWRITE; fi
 
-## Install
-RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
+RUN apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
     git \
     gcc \
@@ -30,7 +22,12 @@ RUN apt-get -y update && apt-get -y upgrade && \
     libmagic1 \
     mime-support \
     ncat \
-    ${CONTEXT_INSTALLS}
+    ${CONTEXT_INSTALLS} && \
+    rm -rf /var/lib/apt/lists/*
+
+### Requirements file will be autoselected, unless an overwrite is given via ARG REQUIEREMENTS_FILE_OVERWRITE
+ENV REQUIREMENTS_FILE=${REQUIREMENTS_FILE_OVERWRITE:+$REQUIREMENTS_FILE_OVERWRITE}${REQUIREMENTS_FILE_OVERWRITE:-${tests:+"development"}${prod:+"production"}${dev:+"development"}}
+RUN if [ -z $REQUIREMENTS_FILE_OVERWRITE ]; then REQUIREMENTS_FILE=$REQUIREMENTS_FILE_OVERWRITE; fi
 
 COPY requirements/ requirements/
 RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/requirements_${REQUIREMENTS_FILE}.txt
@@ -39,28 +36,32 @@ ENV PYTHONPATH /app
 
 ENV EMAIL_HOST postfix
 ENV EMAIL_PORT 25
-# ENV EMAIL_HOST_USER username
-# ENV EMAIL_HOST_PASSWORD secret
-# EMAIL_CONNECTION_SECURITY use NONE, STARTTLS or SSL/TLS
 ENV EMAIL_CONNECTION_SECURITY NONE
 ENV EMAIL_TIMEOUT 5
 ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
 ENV DEFAULT_FROM_EMAIL noreply@example.com
 
+## External Information
 LABEL org.opencontainers.image.title="OpenSlides Backend Service"
 LABEL org.opencontainers.image.description="Backend service for OpenSlides which provides actions and presenters."
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
+
+EXPOSE 9002
+EXPOSE 9003
+
+## Command
+COPY ./dev/command.sh ./
+RUN chmod +x command.sh
+CMD ["./command.sh"]
 
 HEALTHCHECK CMD (curl --fail http://localhost:9002/system/action/health/ && curl --fail http://localhost:9003/system/presenter/health/) || exit 1
 
 #HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
 #   CMD (curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9002/system/action/health/xxx" && curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9003/system/presenter/health/") || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
 
-EXPOSE 9002
-EXPOSE 9003
-
 ENTRYPOINT ["./entrypoint.sh"]
+
 
 
 # Development Image
@@ -86,7 +87,6 @@ ENV OPENSLIDES_DEVELOPMENT 1
 EXPOSE 5678
 
 STOPSIGNAL SIGKILL
-CMD exec python -m debugpy --listen 0.0.0.0:5678 openslides_backend
 
 
 # Test Image (same as dev)
@@ -110,6 +110,4 @@ COPY --chown=appuser:appuser data data
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt
-
-CMD exec python -m openslides_backend
 
