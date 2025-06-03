@@ -79,7 +79,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
-        data = self.add_payload_index_to_action_data(data)
+        data = list(self.add_payload_index_to_action_data(data))
         self.setup_lookups(data)
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
