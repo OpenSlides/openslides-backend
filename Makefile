@@ -1,3 +1,17 @@
+SERVICE=backend
+
+# Build images for different contexts
+
+build-dev:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev
+
+build-prod:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod
+
+build-test:
+	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+
+
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
 paths = openslides_backend/ tests/ cli/ meta/dev/src/
@@ -77,9 +91,6 @@ extract-translations:
 
 # Build and run production docker container (not usable inside the docker container)
 
-build-prod:
-	docker build . --tag=openslides-backend
-
 run-prod: | build-prod
 	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
@@ -102,7 +113,7 @@ run-dev-attach:
 run-dev run-bash: | start-dev run-dev-attach
 
 run-tests:
-	dev/run-tests.sh
+	bash dev/run-tests.sh
 
 
 # Build and run development container with local datastore in use
@@ -138,11 +149,7 @@ run-dev-attach-otel:
 
 run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
 
-
-# Build standalone development container (not usable inside the docker container)
-
-build-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
+#	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
 
 rebuild-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
