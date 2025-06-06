@@ -6,9 +6,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class ChatMessageCreate(BaseActionTestCase):
     def test_no_permission(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "chat_group/2": {"meeting_id": 1, "write_group_ids": [3]},
                 "group/3": {"meeting_id": 1, "meeting_user_ids": []},
                 "user/1": {"organization_management_level": None},
@@ -52,10 +52,10 @@ class ChatMessageCreate(BaseActionTestCase):
         self.assert_model_exists("chat_group/2", {"chat_message_ids": [1]})
 
     def test_create_correct_with_right_can_manage(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
                 "chat_group/2": {"meeting_id": 1, "write_group_ids": []},

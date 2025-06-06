@@ -12,9 +12,11 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "account",
@@ -53,8 +55,8 @@ class AccountJsonImport(BaseActionTestCase):
                                         "value": "email@test.com",
                                         "info": ImportState.DONE,
                                     },
-                                    "gender": {
-                                        "value": "male",
+                                    "gender_id": {
+                                        "value": 1,
                                         "info": ImportState.DONE,
                                     },
                                 },
@@ -71,8 +73,8 @@ class AccountJsonImport(BaseActionTestCase):
                                 "state": ImportState.ERROR,
                                 "messages": ["test"],
                                 "data": {
-                                    "gender": {
-                                        "value": "male",
+                                    "gender_id": {
+                                        "value": 1,
                                         "info": ImportState.DONE,
                                     }
                                 },
@@ -163,8 +165,8 @@ class AccountJsonImport(BaseActionTestCase):
                                         "id": 1,
                                     },
                                     "first_name": "Testy",
-                                    "gender": {
-                                        "value": "non-binary",
+                                    "gender_id": {
+                                        "value": 4,
                                         "info": ImportState.DONE,
                                     },
                                 },
@@ -176,9 +178,7 @@ class AccountJsonImport(BaseActionTestCase):
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/1", {"first_name": "Testy", "gender": "non-binary"}
-        )
+        self.assert_model_exists("user/1", {"first_name": "Testy", "gender_id": 4})
 
     def test_ignore_unknown_gender(self) -> None:
         self.set_models(
@@ -194,7 +194,7 @@ class AccountJsonImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [
-                                    "Gender 'notAGender' is not in the allowed gender list."
+                                    "GenderId '5' is not in the allowed gender list."
                                 ],
                                 "data": {
                                     "id": 1,
@@ -203,8 +203,8 @@ class AccountJsonImport(BaseActionTestCase):
                                         "info": ImportState.DONE,
                                         "id": 1,
                                     },
-                                    "gender": {
-                                        "value": "notAGender",
+                                    "gender_id": {
+                                        "value": 5,
                                         "info": ImportState.WARNING,
                                     },
                                 },
@@ -217,7 +217,7 @@ class AccountJsonImport(BaseActionTestCase):
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
         user = self.assert_model_exists("user/1")
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_names_and_email_and_create(self) -> None:
         response = self.request("account.import", {"id": 3, "import": True})
@@ -227,7 +227,7 @@ class AccountJsonImport(BaseActionTestCase):
             {
                 "username": "TestyTester",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
             },
@@ -663,7 +663,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
@@ -854,14 +854,14 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender" not in user.keys()
+        assert "gender_id" not in user.keys()
 
     def test_json_upload_wrong_gender_2(self) -> None:
         self.json_upload_wrong_gender_2()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender" not in user.keys()
+        assert "gender_id" not in user.keys()
 
     def test_json_upload_legacy_username(self) -> None:
         self.json_upload_legacy_username()
@@ -992,4 +992,165 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test",
                 "member_number": "M3MNUM",
             },
+        )
+
+    def test_json_upload_set_home_committee(self) -> None:
+        self.json_upload_set_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false(self) -> None:
+        self.json_upload_set_home_committee(guest=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_home_committee(self) -> None:
+        self.json_upload_update_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 2,
+                "guest": False,
+                "first_name": "alice",
+            },
+        )
+
+    def test_json_upload_set_guest_to_true(self) -> None:
+        self.json_upload_set_guest_to_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee(self) -> None:
+        self.json_upload_update_guest_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_with_home_committee(self) -> None:
+        self.json_upload_update_guest_true(with_home_committee=True)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": None, "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_with_home_committee(self) -> None:
+        self.json_upload_update_guest_false_with_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_true(
+            with_home_committee=True, has_home_committee_perms=False
+        )
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice", "guest": None},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None},
+        )
+
+    def test_json_upload_set_home_committee_no_perms(self) -> None:
+        self.json_upload_set_home_committee(has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+            },
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false_no_perms(self) -> None:
+        self.json_upload_set_home_committee(guest=False, has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": None},
+        )
+
+    def test_json_upload_update_home_committee_no_perms_old(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_update_home_committee_no_perms_both(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False, new_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )
+
+    def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_guest_false_no_perms_new()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": 1},
+        )
+
+    def test_json_upload_with_gender_as_orga_admin(self) -> None:
+        self.json_upload_with_gender_as_orga_admin()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "man", "gender_id": 1},
         )

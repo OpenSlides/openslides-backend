@@ -41,17 +41,13 @@ class GetForwardingMeetings(BasePresenter):
             self.data["meeting_id"],
         ):
             msg = "You are not allowed to perform presenter get_forwarding_meetings"
-            msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
+            msg += f" Missing permission: {Permissions.Motion.CAN_FORWARD}"
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", self.data["meeting_id"]),
             ["committee_id", "is_active_in_organization_id", "name"],
         )
-        if not meeting.get("committee_id"):
-            raise PresenterException(
-                f"There is no committee given for meeting/{self.data['meeting_id']} {meeting.get('name', 'nameless')}."
-            )
         if not meeting.get("is_active_in_organization_id"):
             raise PresenterException(
                 "Your sender meeting is an archived meeting, which can not forward motions."

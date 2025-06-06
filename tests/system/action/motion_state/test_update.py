@@ -7,6 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/110": {
                 "name": "name_Ycefgee",
@@ -23,7 +24,6 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112],
@@ -48,6 +48,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "name": "name_Xcdfgee",
                 "is_internal": True,
                 "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
                 "submitter_withdraw_state_id": 112,
             },
@@ -58,13 +59,13 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("name") == "name_Xcdfgee"
         assert model.get("is_internal") is True
         assert model.get("allow_motion_forwarding") is True
+        assert model.get("allow_amendment_forwarding") is True
         assert model.get("set_workflow_timestamp") is True
         assert model.get("submitter_withdraw_state_id") == 112
 
     def test_update_correct_plus_next_previous(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112, 113],
@@ -103,7 +104,6 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_wrong_workflow_mismatch(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112],
@@ -148,7 +148,6 @@ class MotionStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/111": {"name": "name_srtgb123", "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(

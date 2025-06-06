@@ -7,14 +7,13 @@ from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.filters import FilterOperator, Or
+from ....shared.filters import FilterOperator
 from ....shared.schema import optional_str_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..user.save_saml_account import allowed_user_fields
-from ..user.update import UserUpdate
 
 
 @register_action("organization.update")
@@ -37,13 +36,13 @@ class OrganizationUpdate(
         "users_email_replyto",
         "users_email_subject",
         "users_email_body",
-        "genders",
         "require_duplicate_from",
     )
 
     group_B_fields = (
         "enable_electronic_voting",
         "enable_chat",
+        "enable_anonymous",
         "reset_password_verbose_errors",
         "limit_of_meetings",
         "limit_of_users",
@@ -61,13 +60,73 @@ class OrganizationUpdate(
         field: {**optional_str_schema, "max_length": 256}
         for field in allowed_user_fields
     }
-    saml_props["meeting"] = {
-        "type": ["object", "null"],
-        "properties": {
-            field: {**optional_str_schema, "max_length": 256}
-            for field in ("external_id", "external_group_id")
+    saml_props["meeting_mappers"] = {
+        "type": ["array", "null"],
+        "items": {
+            "type": "object",
+            "properties": {
+                **{
+                    field: {**optional_str_schema, "max_length": 256}
+                    for field in ("external_id", "name", "allow_update")
+                },
+                "conditions": {
+                    "type": ["array", "null"],
+                    "items": {
+                        "type": ["object", "null"],
+                        "properties": {
+                            **{
+                                field: {**optional_str_schema, "max_length": 256}
+                                for field in ("attribute", "condition")
+                            },
+                        },
+                    },
+                },
+                "mappings": {
+                    "type": ["object", "null"],
+                    "properties": {
+                        **{
+                            mapping_field: {
+                                "type": ["object", "null"],
+                                "properties": {
+                                    field: {**optional_str_schema, "max_length": 256}
+                                    for field in ("attribute", "default")
+                                },
+                                "additionalProperties": False,
+                            }
+                            for mapping_field in [
+                                "number",
+                                "comment",
+                                "vote_weight",
+                                "present",
+                            ]
+                        },
+                        **{
+                            mapping_field: {
+                                "type": ["array", "null"],
+                                "items": {
+                                    "type": ["object", "null"],
+                                    "properties": {
+                                        field: {
+                                            **optional_str_schema,
+                                            "max_length": 256,
+                                        }
+                                        for field in ("attribute", "default")
+                                    },
+                                    "additionalProperties": False,
+                                },
+                            }
+                            for mapping_field in [
+                                "groups",
+                                "structure_levels",
+                            ]
+                        },
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            "required": ["external_id"],
+            "additionalProperties": False,
         },
-        "additionalProperties": False,
     }
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,
@@ -123,25 +182,4 @@ class OrganizationUpdate(
                 raise ActionException(
                     f"Active users: {count_active_users}. You cannot set the limit lower."
                 )
-        if "genders" in instance:
-            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
-            removed_genders = [
-                gender
-                for gender in organization.get("genders", [])
-                if gender not in instance["genders"]
-            ]
-
-            if removed_genders:
-                filter__ = Or(
-                    *[
-                        FilterOperator("gender", "=", gender)
-                        for gender in removed_genders
-                    ]
-                )
-                users = self.datastore.filter("user", filter__, ["id"]).values()
-                payload_remove_gender = [
-                    {"id": entry["id"], "gender": None} for entry in users
-                ]
-                if payload_remove_gender:
-                    self.execute_other_action(UserUpdate, payload_remove_gender)
         return instance

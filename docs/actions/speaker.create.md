@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     list_of_speakers_id: Id;

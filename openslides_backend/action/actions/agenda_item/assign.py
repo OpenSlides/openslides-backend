@@ -1,6 +1,6 @@
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
@@ -66,7 +66,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.datastore.filter(
             collection=self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id"],
         )
 

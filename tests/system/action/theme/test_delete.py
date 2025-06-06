@@ -25,7 +25,7 @@ class ThemeDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("theme.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("theme/1")
+        self.assert_model_not_exists("theme/1")
 
     def test_delete_fail_to_delete_theme_from_orga(self) -> None:
         self.set_models(
@@ -68,4 +68,4 @@ class ThemeDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("theme.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("theme/1")
+        self.assert_model_not_exists("theme/1")

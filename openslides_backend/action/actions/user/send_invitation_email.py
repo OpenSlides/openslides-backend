@@ -1,6 +1,6 @@
 from collections import defaultdict
 from email.headerregistry import Address
-from enum import Enum
+from enum import StrEnum
 from smtplib import (
     SMTPAuthenticationError,
     SMTPDataError,
@@ -16,6 +16,7 @@ from fastjsonschema import JsonSchemaException
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
@@ -23,7 +24,8 @@ from ....permissions.permission_helper import (
     has_perm,
 )
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import DatastoreException, MissingPermission
+from ....services.database.commands import GetManyRequest
+from ....shared.exceptions import DatabaseException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
@@ -35,7 +37,7 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 
 
-class EmailErrorType(str, Enum):
+class EmailErrorType(StrEnum):
     USER_ERROR = "user_error"
     SETTINGS_ERROR = "settings_error"
     CONFIGURATION_ERROR = "configuration_error"
@@ -93,8 +95,8 @@ class UserSendInvitationMail(UpdateAction):
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
-                    except DatastoreException as e:
-                        result["message"] = f"DatastoreException: {str(e)}"
+                    except DatabaseException as e:
+                        result["message"] = f"DatabaseException: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
@@ -214,8 +216,35 @@ class UserSendInvitationMail(UpdateAction):
                 "event_name": mail_data.get("name", ""),
                 "name": self.get_verbose_username(user),
                 "username": user.get("username", ""),
+                "title": user.get("title", ""),
+                "first_name": user.get("first_name", ""),
+                "last_name": user.get("last_name", ""),
             },
         )
+        if meeting_id:
+            m_user = get_meeting_user(
+                self.datastore,
+                meeting_id,
+                user_id,
+                ["structure_level_ids", "group_ids"],
+            )
+            gmr = [
+                GetManyRequest(coll, coll_ids, ["name"])
+                for coll in ["group", "structure_level"]
+                if m_user and (coll_ids := m_user.get(coll + "_ids"))
+            ]
+            gm_result: dict[str, dict[int, dict[str, Any]]] = {}
+            if len(gmr):
+                gm_result = self.datastore.get_many(gmr, lock_result=False)
+            subject_format.update(
+                {
+                    coll
+                    + "s": ", ".join(
+                        [model["name"] for model in gm_result.get(coll, {}).values()]
+                    )
+                    for coll in ["group", "structure_level"]
+                }
+            )
         body_dict = {
             "password": user.get("default_password", ""),
             "url": mail_data.get("url", ""),

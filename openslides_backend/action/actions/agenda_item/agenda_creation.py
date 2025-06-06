@@ -90,7 +90,7 @@ class CreateActionWithAgendaItemMixin(Action):
 
     @staticmethod
     def remove_agenda_prefix_from_fieldnames(
-        instance: dict[str, Any]
+        instance: dict[str, Any],
     ) -> dict[str, Any]:
         prefix_len = len(AGENDA_PREFIX)
         extra_field = f"{AGENDA_PREFIX}create"  # This field should not be provided to the AgendaItemCreate action.

@@ -5,11 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorCountdownDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
                     "projector_countdown_ids": [1, 2, 3],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector_countdown/1": {"meeting_id": 1, "title": "test1"},
                 "projector_countdown/2": {
@@ -28,7 +28,7 @@ class ProjectorCountdownDelete(BaseActionTestCase):
     def test_delete(self) -> None:
         response = self.request("projector_countdown.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector_countdown/1")
+        self.assert_model_not_exists("projector_countdown/1")
         meeting = self.get_model("meeting/1")
         assert meeting.get("projector_countdown_ids") == [2, 3]
 
@@ -55,10 +55,8 @@ class ProjectorCountdownDelete(BaseActionTestCase):
 
         response = self.request("projector_countdown.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector_countdown/1", {"projection_ids": [1]})
-        self.assert_model_deleted(
-            "projection/1", {"content_object_id": "projector_countdown/1"}
-        )
+        self.assert_model_not_exists("projector_countdown/1")
+        self.assert_model_not_exists("projection/1")
         self.assert_model_exists("meeting/1", {"all_projection_ids": []})
 
     def test_delete_not_allowed_1(self) -> None:

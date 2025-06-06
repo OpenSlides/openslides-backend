@@ -30,8 +30,8 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("list_of_speakers/111")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("list_of_speakers/111")
+        self.assert_model_not_exists("projection/1")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

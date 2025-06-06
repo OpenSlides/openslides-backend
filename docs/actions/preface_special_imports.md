@@ -49,7 +49,7 @@ The is_hidden property is only important in so far as it designates columns that
 
 ## The special type `object`
 This type will be used, if we need to give more information than just a value (or a list of values) for one column. It will include the value, but in `info` it gives one of the predefined ImportStates, which the client can use to format the cell output. Also the type of the value is given and optionally the `id` of a found or created database object like an user. The format:
-```
+```js
 {
   value: boolean | number | integer | string | date;
   info: ImportState;
@@ -115,7 +115,7 @@ The internal types will be created by the backend service from the CSV-strings
 - **boolean** for `True` use one of "True", "true", "T", "t", "Yes", "yes", "Y", "y" or "1", for `False` one of "False", "false", "F", "f", "No", "no", "N", "n" or "0"
 - **integer** Use something like "1234" without fraction
 - **number** means a `,` (comma) or `.` (point) separated value like `3123,45` or `3123.45`, but not `3.123,45` or `3,123.45`
-- **decimal** A floating point number with exactly 6 digits, e.g. `1.500000`
+- **decimal** A decimal number with exactly 6 digits after the decimal seperator dot, e.g. `1.500000`
 - **date** Use a string in Isoformat "YYYY-MM-DD", for example "2023-04-26"  
 
 ## Import_Preview to store the data to import in database

@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
     motion_id: Id;
     motion_working_group_speaker_ids: Id[];

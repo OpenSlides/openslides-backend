@@ -5,6 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "projector/111": {
@@ -21,7 +22,6 @@ class ProjectorDelete(BaseActionTestCase):
                     "reference_projector_id": 113,
                     "default_projector_motion_ids": [111],
                     "projector_ids": [111, 113],
-                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -29,7 +29,7 @@ class ProjectorDelete(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         response = self.request("projector.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector/111")
+        self.assert_model_not_exists("projector/111")
         meeting = self.get_model("meeting/1")
         assert meeting.get("default_projector_motion_ids") == [113]
         self.assert_model_exists(
@@ -67,10 +67,10 @@ class ProjectorDelete(BaseActionTestCase):
         )
         response = self.request("projector.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector/111")
-        self.assert_model_deleted("projection/1")
-        self.assert_model_deleted("projection/2")
-        self.assert_model_deleted("projection/3")
+        self.assert_model_not_exists("projector/111")
+        self.assert_model_not_exists("projection/1")
+        self.assert_model_not_exists("projection/2")
+        self.assert_model_not_exists("projection/3")
 
     def test_delete_prevent_if_used_as_reference(self) -> None:
         response = self.request("projector.delete", {"id": 113})

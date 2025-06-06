@@ -40,9 +40,9 @@ class PollCandidateListDeleteTest(BaseActionTestCase):
         )
         response = self.request("poll_candidate_list.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll_candidate_list/2")
+        self.assert_model_not_exists("poll_candidate_list/2")
         for poll_candidate_id in range(3, 6):
-            self.assert_model_deleted(f"poll_candidate/{poll_candidate_id}")
+            self.assert_model_not_exists(f"poll_candidate/{poll_candidate_id}")
         for user_id in range(1, 4):
             self.assert_model_exists(f"user/{user_id}", {"poll_candidate_ids": []})
         self.assert_model_exists(

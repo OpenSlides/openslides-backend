@@ -16,10 +16,10 @@ class PointOfOrderCategoryDelete(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting(110)
         self.set_models(
             {
                 "meeting/110": {
-                    "is_active_in_organization_id": 1,
                     "point_of_order_category_ids": [45],
                 },
                 "point_of_order_category/45": {
@@ -31,7 +31,7 @@ class PointOfOrderCategoryDelete(BaseActionTestCase):
         )
         response = self.request("point_of_order_category.delete", {"id": 45})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("point_of_order_category/45")
+        self.assert_model_not_exists("point_of_order_category/45")
         self.assert_model_exists("meeting/110", {"point_of_order_category_ids": []})
 
     def test_delete_no_permission(self) -> None:

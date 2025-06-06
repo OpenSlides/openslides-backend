@@ -5,6 +5,11 @@ from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
+
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
@@ -103,47 +108,52 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            self.user_id = user_id
-            self.internal = internal
+            with get_new_os_conn() as db_connection:
+                self.db_connection = db_connection
+                self.user_id = user_id
+                self.internal = internal
 
-            try:
-                payload_schema(payload)
-            except fastjsonschema.JsonSchemaException as exception:
-                raise ActionException(exception.message)
+                try:
+                    payload_schema(payload)
+                except fastjsonschema.JsonSchemaException as exception:
+                    raise ActionException(exception.message)
 
-            results: ActionsResponseResults = []
-            if atomic:
-                results = self.execute_write_requests(self.parse_actions, payload)
-            else:
+            with get_new_os_conn() as conn:
+                self.datastore = ExtendedDatabase(conn, self.logging, self.env)
+                results: ActionsResponseResults = []
+                if atomic:
+                    results = self.execute_write_requests(self.parse_actions, payload)
+                else:
 
-                def transform_to_list(
-                    tuple: tuple[WriteRequest | None, ActionResults | None]
-                ) -> tuple[list[WriteRequest], ActionResults | None]:
-                    return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
+                    def transform_to_list(
+                        tuple: tuple[WriteRequest | None, ActionResults | None],
+                    ) -> tuple[list[WriteRequest], ActionResults | None]:
+                        return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
-                for element in payload:
-                    try:
-                        result = self.execute_write_requests(
-                            lambda e: transform_to_list(self.perform_action(e)), element
-                        )
-                        results.append(result)
-                    except ActionException as exception:
-                        error = cast(ActionError, exception.get_json())
-                        results.append(error)
-                    self.datastore.reset()
+                    for element in payload:
+                        try:
+                            result = self.execute_write_requests(
+                                lambda e: transform_to_list(self.perform_action(e)),
+                                element,
+                            )
+                            results.append(result)
+                        except ActionException as exception:
+                            error = cast(ActionError, exception.get_json())
+                            results.append(error)
+                        self.datastore.reset()
 
-            # execute cleanup methods
-            for on_success in self.on_success:
-                on_success()
+                # execute cleanup methods
+                for on_success in self.on_success:
+                    on_success()
 
-            # Return action result
-            self.logger.info("Request was successful. Send response now.")
-            return ActionsResponse(
-                status_code=HTTPStatus.OK.value,
-                success=True,
-                message="Actions handled successfully",
-                results=results,
-            )
+                # Return action result
+                self.logger.info("Request was successful. Send response now.")
+                return ActionsResponse(
+                    status_code=HTTPStatus.OK.value,
+                    success=True,
+                    message="Actions handled successfully",
+                    results=results,
+                )
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
         """Helper function to execute an internal action with user id -1."""
@@ -190,7 +200,7 @@ class ActionHandler(BaseHandler):
         relation_manager = RelationManager(self.datastore)
         action_name_list = []
         for i, element in enumerate(payload):
-            with make_span(self.env, f"parse action: { element['action'] }"):
+            with make_span(self.env, f"parse action: {element['action']}"):
                 action_name = element["action"]
                 if (action := actions_map.get(action_name)) and action.is_singular:
                     if action_name in action_name_list:
@@ -249,19 +259,19 @@ class ActionHandler(BaseHandler):
         action_data = deepcopy(action_payload_element["data"])
 
         try:
-            with self.datastore.get_database_context():
-                with make_span(self.env, "action.perform"):
-                    write_request, results = action.perform(
-                        action_data, self.user_id, internal=self.internal
-                    )
+            # with self.datastore.get_database_context():
+            with make_span(self.env, "action.perform"):
+                write_request, results = action.perform(
+                    action_data, self.user_id, internal=self.internal
+                )
             if write_request:
                 action.validate_write_request(write_request)
 
-                # add locked_fields to request
-                write_request.locked_fields = self.datastore.locked_fields
-                # reset locked fields, but not changed models - these might be needed
-                # by another action
-                self.datastore.reset(hard=False)
+                # # add locked_fields to request
+                # write_request.locked_fields = self.datastore.locked_fields
+                # # reset locked fields, but not changed models - these might be needed
+                # # by another action
+                # self.datastore.reset(hard=False)
 
             # add on_success routine
             if on_success := action.get_on_success(action_data):

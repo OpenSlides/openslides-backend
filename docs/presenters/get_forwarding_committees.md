@@ -1,14 +1,14 @@
 # Payload
 
-```
+```js
 {
-    meeting_id: Id
+    meeting_id: Id // required
 }
 ```
 
 # Returns
 
-```
+```js
 string[]
 ```
 

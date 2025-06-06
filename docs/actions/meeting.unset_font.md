@@ -1,6 +1,6 @@
 ## Payload
 Payload:
-```
+```js
 {
     id: Id;
     place: string;

@@ -196,7 +196,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": None,
                 },
             )
-            self.assert_model_deleted(f"meeting_mediafile/1{id_}")
+            self.assert_model_not_exists(f"meeting_mediafile/1{id_}")
 
     def test_publish_wrong_payload(self) -> None:
         self.set_models(self.test_models)

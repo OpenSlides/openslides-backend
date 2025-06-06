@@ -646,6 +646,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
+        self.set_organization_management_level(None)
         response = self.request(
             "committee.update",
             {
@@ -656,6 +657,64 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_parent_committee_admin(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_grandparent_committee_admin(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_manager_ids_committee_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                },
+                "committee/1": {
+                    "user_ids": [1],
+                    "manager_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "manager_ids": [1, 20],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1", {"manager_ids": [1, 20]})
 
     def test_update_group_b_no_permission(self) -> None:
         self.create_data()
@@ -677,12 +736,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.update",
             {
                 "id": 1,
-                "manager_ids": [1, 20],
+                "forward_to_committee_ids": [2],
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing OrganizationManagementLevel: can_manage_organization"
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee {2}"
             in response.json["message"]
         )
 
@@ -806,13 +865,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
         # don't remove relations from deleted object!!!
         # user_id is empty, user management fields filled
-        self.assert_model_deleted(
-            "committee/1",
-            {
-                "user_ids": [1],
-                "manager_ids": [1],
-            },
-        )
+        self.assert_model_not_exists("committee/1")
 
         response = self.request(
             "committee.update",
@@ -865,4 +918,394 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "The external_id of the committee is not unique.", response.json["message"]
+        )
+
+    def test_update_parent_id(self) -> None:
+        self.create_committee(100)
+        self.create_committee(200)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 200,
+                "parent_id": 100,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/100", {"child_ids": [200], "all_child_ids": [200]}
+        )
+        self.assert_model_exists(
+            "committee/200", {"parent_id": 100, "all_parent_ids": [100]}
+        )
+
+    def test_update_multiple_parent_ids(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+        def create_children(
+            parent_id: int = 1, next_id: int = 2, levels: int = 1
+        ) -> int:
+            for i in range(2):
+                self.create_committee(next_id, parent_id)
+                next_id += 1
+                if levels > 1:
+                    next_id = create_children(next_id - 1, next_id, levels - 1)
+            return next_id
+
+        self.create_committee()
+        next_id = create_children(1, 2, 4)
+        last_id = next_id - 1
+        assert last_id == 1 + 2 + 4 + 8 + 16
+        response = self.request_multi(
+            "committee.update",
+            [
+                {"id": 2, "parent_id": None},
+                {"id": 4, "parent_id": None},
+                {"id": 14, "parent_id": 18},
+                {"id": 15, "parent_id": 9},
+                {"id": 24, "parent_id": 26},
+                {"id": 31, "name": "Renamed committee"},
+            ],
+        )
+        self.assert_status_code(response, 200)
+        expected: dict[
+            int, tuple[int | None, list[int] | None, list[int] | None, list[int] | None]
+        ] = {
+            1: (None, [17], None, [14, 16, *range(17, 32)]),
+            2: (None, [3, 10], [], [3, 7, 8, 9, 10, 11, 12, 13, 15]),
+            3: (2, [7], [2], [7, 8, 9, 15]),
+            4: (None, [5, 6], [], [5, 6]),
+            5: (4, None, [4], None),
+            6: (4, None, [4], None),
+            7: (3, [8, 9], [2, 3], [8, 9, 15]),
+            8: (7, None, [2, 3, 7], None),
+            9: (7, [15], [2, 3, 7], [15]),
+            10: (2, [11], [2], [11, 12, 13]),
+            11: (10, [12, 13], [2, 10], [12, 13]),
+            12: (11, None, [2, 10, 11], None),
+            13: (11, None, [2, 10, 11], None),
+            14: (18, [16], [1, 17, 18], [16]),
+            15: (9, None, [2, 3, 7, 9], None),
+            16: (14, None, [1, 17, 18, 14], None),
+            17: (
+                1,
+                [18, 25],
+                [1],
+                [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 14, 16],
+            ),
+            18: (17, [19, 22, 14], [1, 17], [19, 20, 21, 22, 23, 14, 16]),
+            19: (18, [20, 21], [1, 17, 18], [20, 21]),
+            20: (19, None, [1, 17, 18, 19], None),
+            21: (19, None, [1, 17, 18, 19], None),
+            22: (18, [23], [1, 17, 18], [23]),
+            23: (22, None, [1, 17, 18, 22], None),
+            24: (26, None, [1, 17, 25, 26], None),
+            25: (17, [26, 29], [1, 17], [26, 27, 28, 29, 30, 31, 24]),
+            26: (25, [27, 28, 24], [1, 17, 25], [27, 28, 24]),
+            27: (26, None, [1, 17, 25, 26], None),
+            28: (26, None, [1, 17, 25, 26], None),
+            29: (25, [30, 31], [1, 17, 25], [30, 31]),
+            30: (29, None, [1, 17, 25, 29], None),
+        }
+        for id_, (
+            parent_id,
+            child_ids,
+            all_parent_ids,
+            all_child_ids,
+        ) in expected.items():
+            self.assert_model_exists(
+                f"committee/{id_}",
+                {
+                    "parent_id": parent_id,
+                    "child_ids": child_ids,
+                    "all_parent_ids": all_parent_ids,
+                    "all_child_ids": all_child_ids,
+                },
+            )
+        self.assert_model_exists(
+            "committee/31",
+            {
+                "parent_id": 29,
+                "child_ids": None,
+                "all_parent_ids": [1, 17, 25, 29],
+                "all_child_ids": None,
+                "name": "Renamed committee",
+            },
+        )
+
+    def test_update_parent_circle_error(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=2)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "parent_id": 3,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot perform parent updates, as it would create circles for the following committees: {1, 2, 3}",
+            response.json["message"],
+        )
+
+    def test_update_set_parent_with_child_perm(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=1)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([3])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 3,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee {1}",
+            response.json["message"],
+        )
+
+    def test_update_set_parent_committee_perm_not_of_shared_parents(self) -> None:
+        self.create_committee()
+        self.create_committee(4, parent_id=1)
+        self.create_committee(2, parent_id=4)
+        self.create_committee(3, parent_id=4)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([3])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 3,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committees {1, 4}",
+            response.json["message"],
+        )
+
+    def test_update_set_parent_committee_perm_in_shared_parent(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=1)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([1, 2])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 3,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/3", {"parent_id": 2, "all_parent_ids": [1, 2]}
+        )
+
+    def test_update_set_parent_committee_perm_one_of_shared_parents(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        self.create_committee(5, parent_id=4)
+        self.create_committee(6, parent_id=4)
+        self.create_committee(7, parent_id=6)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([2, 7])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 7,
+                "parent_id": 5,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/7", {"parent_id": 5, "all_parent_ids": [1, 2, 3, 4, 5]}
+        )
+
+    def test_update_set_parent_committee_perms_no_shared_parent(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([1, 3])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_update_set_parent_orga_perm_no_shared_parent(self) -> None:
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/4", {"parent_id": 2})
+
+    def test_update_unset_parent_with_committee_parent_perm(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([3])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": None,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_update_unset_parent_with_orga_perm(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/4", {"parent_id": None, "all_parent_ids": []}
+        )
+
+    def test_update_set_ancestor_as_parent_with_ancestor_perm(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([2])
+        response = self.request(
+            "committee.update",
+            {
+                "id": 4,
+                "parent_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2", {"child_ids": [3, 4], "all_child_ids": [3, 4]}
+        )
+        self.assert_model_exists("committee/4", {"parent_id": 2, "all_parent_ids": [2]})
+
+    def test_update_add_forwarding_relations(
+        self,
+        fail_forward_from: bool = False,
+        fail_forward_to: bool = False,
+        fail_remove: bool = False,
+    ) -> None:
+        self.create_committee()
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_committee(4)
+        self.create_committee(5)
+        self.create_committee(6, parent_id=5)
+        self.set_models(
+            {
+                "committee/1": {
+                    "forward_to_committee_ids": [2],
+                    "receive_forwardings_from_committee_ids": [2],
+                },
+                "committee/2": {
+                    "forward_to_committee_ids": [1],
+                    "receive_forwardings_from_committee_ids": [1],
+                },
+            }
+        )
+        cmls = [1]
+        to_fail = {2, 3, 4, 6}
+        if not fail_remove:
+            cmls.append(2)
+            to_fail.remove(2)
+        if not fail_forward_to:
+            cmls.extend([3, 5])
+            to_fail.remove(3)
+            to_fail.remove(6)
+        if not fail_forward_from:
+            cmls.append(4)
+            to_fail.remove(4)
+        self.set_committee_management_level(cmls)
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_to_committee_ids": [3, 6],
+                "receive_forwardings_from_committee_ids": [2, 4],
+            },
+        )
+        if to_fail:
+            self.assert_status_code(response, 403)
+            msg: str = response.json["message"]
+            self.assertIn(
+                "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee",
+                msg,
+            )
+            numbers = {
+                int(numstr.strip())
+                for numstr in msg.split("{")[1].split("}")[0].split(",")
+            }
+            assert len(numbers.intersection(to_fail)) == len(to_fail)
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                "committee/1",
+                {
+                    "forward_to_committee_ids": [3, 6],
+                    "receive_forwardings_from_committee_ids": [2, 4],
+                },
+            )
+
+    def test_update_add_forwarding_relations_fail_forward_to(self) -> None:
+        self.test_update_add_forwarding_relations(fail_forward_to=True)
+
+    def test_update_add_forwarding_relations_fail_forward_from(self) -> None:
+        self.test_update_add_forwarding_relations(fail_forward_from=True)
+
+    def test_update_add_forwarding_relations_fail_forward_to_and_from(self) -> None:
+        self.test_update_add_forwarding_relations(
+            fail_forward_to=True, fail_forward_from=True
+        )
+
+    def test_update_add_forwarding_relations_fail_remove_a_forward(self) -> None:
+        self.test_update_add_forwarding_relations(fail_remove=True)
+
+    def test_update_add_forwarding_relations_fail_forward_all(self) -> None:
+        self.test_update_add_forwarding_relations(
+            fail_forward_to=True, fail_forward_from=True, fail_remove=True
         )

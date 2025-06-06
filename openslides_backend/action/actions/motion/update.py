@@ -7,7 +7,7 @@ from openslides_backend.shared.typing import HistoryInformation
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
@@ -32,7 +32,6 @@ from .mixins import (
     set_workflow_timestamp_helper,
 )
 from .payload_validation_mixin import MotionUpdatePayloadValidationMixin
-from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.update")
@@ -40,7 +39,6 @@ class MotionUpdate(
     MotionUpdatePayloadValidationMixin,
     AmendmentParagraphHelper,
     PermissionHelperMixin,
-    SetNumberMixin,
     TextHashMixin,
     AttachmentMixin,
     UpdateAction,

@@ -1,7 +1,7 @@
 from typing import Any
 
 from ....models.helper import calculate_inherited_groups_helper
-from ....services.datastore.interface import DatastoreService
+from ....services.database.interface import Database
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
@@ -81,7 +81,7 @@ class MediafileCalculatedFieldsMixin(Action):
 
 
 def calculate_inherited_groups_helper_with_parent_id(
-    datastore: DatastoreService,
+    datastore: Database,
     access_group_ids: list[int] | None,
     parent_id: int | None,
     meeting_id: int,
@@ -104,7 +104,7 @@ def calculate_inherited_groups_helper_with_parent_id(
 
 
 def calculate_inherited_groups_helper_with_parent_meeting_mediafile_id(
-    datastore: DatastoreService,
+    datastore: Database,
     access_group_ids: list[int] | None,
     parent_meeting_mediafile_id: int | None,
 ) -> tuple[bool, list[int] | None]:

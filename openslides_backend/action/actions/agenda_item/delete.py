@@ -25,6 +25,7 @@ class AgendaItemDelete(DeleteAction):
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        """Deletes the topic before the relation handling can try to create a faulty update to it."""
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         agenda_item = self.datastore.get(
             fqid,

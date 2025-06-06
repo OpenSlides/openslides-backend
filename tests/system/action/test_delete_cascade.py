@@ -98,8 +98,8 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("fake_model_cd_a/1")
-        self.assert_model_deleted("fake_model_cd_b/1")
+        self.assert_model_not_exists("fake_model_cd_a/1")
+        self.assert_model_not_exists("fake_model_cd_b/1")
 
     def test_double_cascade(self) -> None:
         self.set_models(
@@ -114,9 +114,9 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("fake_model_cd_a/1")
-        self.assert_model_deleted("fake_model_cd_b/1")
-        self.assert_model_deleted("fake_model_cd_c/1")
+        self.assert_model_not_exists("fake_model_cd_a/1")
+        self.assert_model_not_exists("fake_model_cd_b/1")
+        self.assert_model_not_exists("fake_model_cd_c/1")
 
     def test_simple_protect(self) -> None:
         self.set_models(
@@ -146,7 +146,7 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_b.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("fake_model_cd_b/1")
+        self.assert_model_not_exists("fake_model_cd_b/1")
 
     def test_cascade_protect(self) -> None:
         self.set_models(
@@ -185,9 +185,9 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("fake_model_cd_a/1")
-        self.assert_model_deleted("fake_model_cd_b/1")
-        self.assert_model_deleted("fake_model_cd_c/1")
+        self.assert_model_not_exists("fake_model_cd_a/1")
+        self.assert_model_not_exists("fake_model_cd_b/1")
+        self.assert_model_not_exists("fake_model_cd_c/1")
 
     def test_set_null(self) -> None:
         self.set_models(
@@ -200,7 +200,7 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("fake_model_cd_a/1")
+        self.assert_model_not_exists("fake_model_cd_a/1")
         self.assert_model_exists(
             "fake_model_cd_b/1", {"fake_model_cd_a_set_null": None}
         )

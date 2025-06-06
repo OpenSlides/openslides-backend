@@ -7,11 +7,11 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorMessageDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(2)
         self.set_models(
             {
                 "meeting/2": {
                     "projector_message_ids": [2],
-                    "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                 },
                 "projector_message/2": {
@@ -38,8 +38,8 @@ class ProjectorMessageDelete(BaseActionTestCase):
         response = self.request("projector_message.delete", {"id": 2})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector_message/2")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("projector_message/2")
+        self.assert_model_not_exists("projection/1")
 
     def test_delete_wrong_id(self) -> None:
         response = self.request("projector_message.delete", {"id": 3})

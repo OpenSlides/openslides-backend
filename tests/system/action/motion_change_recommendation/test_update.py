@@ -10,7 +10,6 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion/25": {
                 "title": "title_pheK0Ja3ai",
-                "statute_paragraph_id": None,
                 "meeting_id": 1,
             },
             "motion_change_recommendation/111": {
@@ -23,12 +22,11 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/25": {
                     "title": "title_pheK0Ja3ai",
-                    "statute_paragraph_id": None,
                     "meeting_id": 1,
                 },
                 "motion_change_recommendation/111": {
@@ -63,12 +61,11 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_update_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/25": {
                     "title": "title_pheK0Ja3ai",
-                    "statute_paragraph_id": None,
                     "meeting_id": 1,
                 },
                 "motion_change_recommendation/111": {

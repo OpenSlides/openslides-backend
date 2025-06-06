@@ -3,8 +3,8 @@ from typing import Any
 
 import simplejson as json
 
-from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
+from ....services.database.commands import GetManyRequest
+from ....services.database.interface import Database
 from ....shared.filters import And, FilterOperator
 from ....shared.html import get_text_from_html
 from ....shared.patterns import fqid_from_collection_and_id
@@ -49,7 +49,7 @@ class AmendmentParagraphHelper:
 
 
 def set_workflow_timestamp_helper(
-    datastore: DatastoreService, instance: dict[str, Any], timestamp: int
+    datastore: Database, instance: dict[str, Any], timestamp: int
 ) -> None:
     state = datastore.get(
         fqid_from_collection_and_id("motion_state", instance["state_id"]),

@@ -15,7 +15,7 @@ class OptionDeleteTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         response = self.request("option.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("option/111")
+        self.assert_model_not_exists("option/111")
         self.assert_model_exists("motion/1")
 
     def test_delete_wrong_id(self) -> None:
@@ -38,5 +38,5 @@ class OptionDeleteTest(BaseActionTestCase):
         )
         response = self.request("option.delete", {"id": 112})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("option/112")
-        self.assert_model_deleted("vote/42")
+        self.assert_model_not_exists("option/112")
+        self.assert_model_not_exists("vote/42")

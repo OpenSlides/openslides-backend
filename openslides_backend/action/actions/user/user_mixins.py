@@ -2,13 +2,13 @@ import re
 from copy import deepcopy
 from typing import Any
 
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....presenter.search_users import SearchUsers
-from ....services.datastore.interface import DatastoreService
+from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
 from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
@@ -90,6 +90,11 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
         "locked_out": {"type": "boolean"},
     }
+    skip_archived_meeting_checks: bool = True
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.assert_not_anonymous()
+        super().check_permissions(instance)
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -142,10 +147,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def check_meeting_and_users(
         self, instance: dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        if instance.get("meeting_id") is not None:
-            self.datastore.apply_changed_model(
-                user_fqid, {"meeting_id": instance.get("meeting_id")}
-            )
+        if (meeting_id := instance.get("meeting_id")) is not None:
+            self.datastore.apply_changed_model(user_fqid, {"meeting_id": meeting_id})
 
     def meeting_user_set_data(self, instance: dict[str, Any]) -> None:
         meeting_user_data = {}
@@ -272,14 +275,17 @@ class DuplicateCheckMixin(Action):
         return []
 
 
-def check_gender_helper(datastore: DatastoreService, instance: dict[str, Any]) -> None:
-    if instance.get("gender"):
-        organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
-        if organization.get("genders"):
-            if not instance["gender"] in organization["genders"]:
-                raise ActionException(
-                    f"Gender '{instance['gender']}' is not in the allowed gender list."
-                )
+def check_gender_exists(datastore: Database, instance: dict[str, Any]) -> None:
+    """raises ActionException if the gender is non existant"""
+    if gender_id := instance.get("gender_id"):
+        if not datastore.get(
+            fqid_from_collection_and_id("gender", gender_id),
+            ["id", "name"],
+            lock_result=False,
+        ):
+            raise ActionException(
+                f"GenderId '{gender_id}' is not in the allowed gender list."
+            )
 
 
 class AdminIntegrityCheckMixin(Action):

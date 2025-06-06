@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -52,7 +53,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
+        self.assert_model_not_exists("meeting/1")
 
     def test_delete_permissions_can_manage_committee(self) -> None:
         self.set_models(
@@ -65,7 +66,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
+        self.assert_model_not_exists("meeting/1")
 
     def test_delete_full_meeting(self) -> None:
         self.load_example_data()
@@ -87,62 +88,60 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "meeting/1", {"committee_id": 1, "group_ids": [1, 2, 3, 4, 5]}
-        )
+        self.assert_model_not_exists("meeting/1")
         self.assert_model_exists("committee/1", {"meeting_ids": []})
         # assert all related models are deleted
         for i in range(5):
-            self.assert_model_deleted(f"group/{i+1}", {"meeting_id": 1})
-        self.assert_model_deleted("personal_note/1")
+            self.assert_model_not_exists(f"group/{i+1}")
+        self.assert_model_not_exists("personal_note/1")
         for i in range(3):
-            self.assert_model_deleted(f"tag/{i+1}")
+            self.assert_model_not_exists(f"tag/{i+1}")
         for i in range(15):
-            self.assert_model_deleted(f"agenda_item/{i+1}")
+            self.assert_model_not_exists(f"agenda_item/{i+1}")
         for i in range(16):
-            self.assert_model_deleted(f"list_of_speakers/{i+1}")
+            self.assert_model_not_exists(f"list_of_speakers/{i+1}")
         for i in range(13):
-            self.assert_model_deleted(f"speaker/{i+1}")
+            self.assert_model_not_exists(f"speaker/{i+1}")
         for i in range(8):
-            self.assert_model_deleted(f"topic/{i+1}")
+            self.assert_model_not_exists(f"topic/{i+1}")
         for i in range(4):
-            self.assert_model_deleted(f"motion/{i+1}")
+            self.assert_model_not_exists(f"motion/{i+1}")
         for i in range(4):
-            self.assert_model_deleted(f"motion_submitter/{i+1}")
-        self.assert_model_deleted("motion_comment/1")
-        self.assert_model_deleted("motion_comment_section/1")
+            self.assert_model_not_exists(f"motion_submitter/{i+1}")
+        self.assert_model_not_exists("motion_comment/1")
+        self.assert_model_not_exists("motion_comment_section/1")
         for i in range(2):
-            self.assert_model_deleted(f"motion_category/{i+1}")
-        self.assert_model_deleted("motion_block/1")
+            self.assert_model_not_exists(f"motion_category/{i+1}")
+        self.assert_model_not_exists("motion_block/1")
         for i in range(2):
-            self.assert_model_deleted(f"motion_change_recommendation/{i+4}")
+            self.assert_model_not_exists(f"motion_change_recommendation/{i+4}")
         for i in range(14):
-            self.assert_model_deleted(f"motion_state/{i+1}")
+            self.assert_model_not_exists(f"motion_state/{i+1}")
         for i in range(2):
-            self.assert_model_deleted(f"motion_workflow/{i+1}")
+            self.assert_model_not_exists(f"motion_workflow/{i+1}")
         for i in range(5):
-            self.assert_model_deleted(f"poll/{i+1}")
+            self.assert_model_not_exists(f"poll/{i+1}")
         for i in range(13):
-            self.assert_model_deleted(f"option/{i+1}")
+            self.assert_model_not_exists(f"option/{i+1}")
         for i in range(9):
-            self.assert_model_deleted(f"vote/{i+1}")
+            self.assert_model_not_exists(f"vote/{i+1}")
         for i in range(2):
-            self.assert_model_deleted(f"assignment/{i+1}")
+            self.assert_model_not_exists(f"assignment/{i+1}")
         for i in range(5):
-            self.assert_model_deleted(f"assignment_candidate/{i+1}")
+            self.assert_model_not_exists(f"assignment_candidate/{i+1}")
         for i in range(1):
-            self.assert_model_deleted(f"mediafile/{i+1}")
+            self.assert_model_not_exists(f"mediafile/{i+1}")
         for i in range(1):
-            self.assert_model_deleted(f"meeting_mediafile/{i+1}")
+            self.assert_model_not_exists(f"meeting_mediafile/{i+1}")
         for i in range(2):
-            self.assert_model_deleted(f"projector/{i+1}")
+            self.assert_model_not_exists(f"projector/{i+1}")
         for i in range(5):
-            self.assert_model_deleted(f"projection/{i+1}")
-        self.assert_model_deleted("projector_message/1")
+            self.assert_model_not_exists(f"projection/{i+1}")
+        self.assert_model_not_exists("projector_message/1")
         for i in range(2):
-            self.assert_model_deleted(f"projector_countdown/{i+1}")
+            self.assert_model_not_exists(f"projector_countdown/{i+1}")
         for i in range(2):
-            self.assert_model_deleted(f"chat_group/{i+1}")
+            self.assert_model_not_exists(f"chat_group/{i+1}")
 
     def test_delete_with_tag_and_motion(self) -> None:
         self.set_models(
@@ -158,11 +157,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/1", {"meeting_ids": []})
-        self.assert_model_deleted("meeting/1", {"committee_id": 1, "tag_ids": [42]})
-        self.assert_model_deleted(
-            "tag/42", {"meeting_id": 1, "tagged_ids": ["motion/1"]}
-        )
-        self.assert_model_deleted("motion/1", {"meeting_id": 1, "tag_ids": [42]})
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("tag/42")
+        self.assert_model_not_exists("motion/1")
 
     def test_delete_with_history_projection(self) -> None:
         self.set_models(
@@ -189,22 +186,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/1", {"meeting_ids": []})
-        self.assert_model_deleted(
-            "meeting/1",
-            {"committee_id": 1, "all_projection_ids": [42], "projector_ids": [1]},
-        )
-        self.assert_model_deleted(
-            "projector/1", {"meeting_id": 1, "history_projection_ids": [42]}
-        )
-        self.assert_model_deleted(
-            "projection/42",
-            {
-                "meeting_id": 1,
-                "content_object_id": "meeting/1",
-                "history_projector_id": 1,
-                "stable": False,
-            },
-        )
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("projector/1")
+        self.assert_model_not_exists("projection/42")
 
     def test_delete_meeting_with_relations(self) -> None:
         self.set_models(
@@ -238,20 +222,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        meeting1 = self.assert_model_deleted(
-            "meeting/1",
-            {
-                "meeting_user_ids": [2],
-                "user_ids": [],
-                "group_ids": [11],
-                "committee_id": 1,
-                "is_active_in_organization_id": 1,
-            },
-        )
-        # One would expect the user_ids is still filled with user_ids = [2],
-        # but relation user_ids will be reseted in an execute_other_action
-        # group.delete without context of meeting.delete
-        self.assertCountEqual(meeting1.get("user_ids", []), [])
+        self.assert_model_not_exists("meeting/1")
 
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID, {"active_meeting_ids": [], "committee_ids": [1]}
@@ -264,9 +235,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "manager_ids": [1],
             },
         )
-        self.assert_model_deleted(
-            "group/11", {"meeting_user_ids": [2], "meeting_id": 1}
-        )
+        self.assert_model_not_exists("group/11")
         self.assert_model_exists(
             "user/1",
             {
@@ -277,9 +246,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2", {"meeting_user_ids": [], "committee_ids": []}
         )
-        self.assert_model_deleted(
-            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [11]}
-        )
+        self.assert_model_not_exists("meeting_user/2")
 
     def test_delete_archived_meeting(self) -> None:
         self.set_models(
@@ -314,7 +281,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
+        self.assert_model_not_exists("meeting/1")
 
     def test_delete_with_poll_candidates_and_speakers(self) -> None:
         data: dict[str, dict[str, Any]] = {
@@ -415,7 +382,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 100})
         self.assert_status_code(response, 200)
         for fqid in data:
-            self.assert_model_deleted(fqid)
+            self.assert_model_not_exists(fqid)
         for i in range(220, 222):
             self.assert_model_exists(f"user/{i}", {})
 
@@ -428,6 +395,67 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             False,
             lock_meeting=True,
         )
+
+    def test_delete_permissions_oml_locked_meeting_not_allowed(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_organization"},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot delete locked meeting.",
+            response.json["message"],
+        )
+
+    def test_delete_permissions_committee_admin_locked_meeting_not_allowed(
+        self,
+    ) -> None:
+        self.set_committee_management_level([1])
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot delete locked meeting.",
+            response.json["message"],
+        )
+
+    def test_delete_permissions_committee_admin_locked_meeting_with_oml(
+        self,
+    ) -> None:
+        self.set_committee_management_level([1])
+        self.set_models(
+            {
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting/1")
+
+    def test_delete_permissions_oml_locked_meeting_with_can_manage_settings(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_organization"},
+                "meeting/1": {"locked_from_inside": True},
+            }
+        )
+        self.set_group_permissions(11, [Permissions.Meeting.CAN_MANAGE_SETTINGS])
+        self.set_user_groups(1, [11])
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting/1")
 
     def test_delete_with_public_orga_file(self) -> None:
         self.set_models(
@@ -447,6 +475,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting_mediafile/2")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting_mediafile/2")
         self.assert_model_exists("mediafile/1")

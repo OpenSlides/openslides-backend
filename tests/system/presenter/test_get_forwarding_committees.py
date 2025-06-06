@@ -83,7 +83,8 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
                     "user_id": 3,
                     "group_ids": [3],
                 },
-                "meeting/3": {"group_ids": [3]},
+                "meeting/3": {"group_ids": [3], "committee_id": 1},
+                "committee/1": {"meeting_ids": [1]},
                 "group/3": {"meeting_id": 3},
             }
         )
@@ -95,7 +96,12 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
     def test_with_locked_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/3": {"group_ids": [3], "locked_from_inside": True},
+                "meeting/3": {
+                    "group_ids": [3],
+                    "locked_from_inside": True,
+                    "committee_id": 1,
+                },
+                "committee/1": {"meeting_ids": [1]},
                 "group/3": {"meeting_id": 3},
             }
         )

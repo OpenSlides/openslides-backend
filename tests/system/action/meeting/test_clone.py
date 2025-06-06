@@ -3,7 +3,9 @@ from typing import Any, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
     ONE_ORGANIZATION_ID,
@@ -28,7 +30,8 @@ class MeetingClone(BaseActionTestCase):
                 "color": "#eeeeee",
                 "organization_id": 1,
             },
-            "committee/1": {"organization_id": 1},
+            "committee/1": {"organization_id": 1, "meeting_ids": [1]},
+            "committee/2": {"organization_id": 1},
             "meeting/1": {
                 "template_for_organization_id": 1,
                 "committee_id": 1,
@@ -37,7 +40,6 @@ class MeetingClone(BaseActionTestCase):
                 "default_group_id": 1,
                 "admin_group_id": 2,
                 "motions_default_amendment_workflow_id": 1,
-                "motions_default_statute_amendment_workflow_id": 1,
                 "motions_default_workflow_id": 1,
                 "reference_projector_id": 1,
                 "projector_countdown_default_time": 60,
@@ -66,7 +68,6 @@ class MeetingClone(BaseActionTestCase):
                 "name": "blup",
                 "first_state_id": 1,
                 "default_amendment_workflow_meeting_id": 1,
-                "default_statute_amendment_workflow_meeting_id": 1,
                 "default_workflow_meeting_id": 1,
                 "state_ids": [1],
                 "sequential_number": 1,
@@ -122,7 +123,6 @@ class MeetingClone(BaseActionTestCase):
                 "default_group_id": 3,
                 "admin_group_id": 4,
                 "motions_default_amendment_workflow_id": 2,
-                "motions_default_statute_amendment_workflow_id": 2,
                 "motions_default_workflow_id": 2,
                 "reference_projector_id": 2,
                 "projector_countdown_default_time": 60,
@@ -577,23 +577,52 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
-    def test_clone_with_duplicate_external_id(self) -> None:
-        self.test_models["meeting/1"][
+    def test_clone_with_differing_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
             "template_for_organization_id"
         ] = ONE_ORGANIZATION_ID
-        self.test_models["meeting/1"]["external_id"] = "external_id"
-        self.set_models(self.test_models)
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        new_ext_id = external_id + "_something"
         response = self.request(
             "meeting.clone",
             {
                 "meeting_id": 1,
-                "external_id": "external_id",
+                "committee_id": 2,
+                "external_id": new_ext_id,
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The external_id of the meeting is not unique in the committee scope.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": new_ext_id,
+                "template_for_organization_id": None,
+            },
+        )
+
+    def test_clone_with_duplicate_external_id(self) -> None:
+        external_id = "external_id"
+        self.test_models_with_admin["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.test_models_with_admin["meeting/1"]["external_id"] = external_id
+        self.set_models(self.test_models_with_admin)
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "committee_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "external_id": None,
+                "template_for_organization_id": None,
+            },
         )
 
     def test_clone_with_recommendation_extension(self) -> None:
@@ -785,10 +814,12 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_user_ids": [2],
                     "meeting_ids": [1],
                     "organization_id": 1,
+                    "gender_id": 1,
                 },
+                "gender/1": {"name": "male", "organization_id": 1, "user_ids": [3]},
                 "group/1": {"meeting_user_ids": [2]},
                 "committee/2": {"organization_id": 1},
-                "organization/1": {"committee_ids": [1, 2]},
+                "organization/1": {"committee_ids": [1, 2], "gender_ids": [1]},
                 "meeting/1": {"user_ids": [1, 13], "meeting_user_ids": [1, 2]},
                 "meeting_user/2": {
                     "meeting_id": 1,
@@ -818,6 +849,7 @@ class MeetingClone(BaseActionTestCase):
                 "committee_ids": [1, 2],
                 "meeting_ids": [1, 2],
                 "meeting_user_ids": [2, 4],
+                "gender_id": 1,
             },
         )
         self.assert_model_exists(
@@ -1153,6 +1185,8 @@ class MeetingClone(BaseActionTestCase):
             "motions_default_line_numbering": "inline",
             "motions_line_length": 42,
             "motions_reason_required": True,
+            "motions_origin_motion_toggle_default": True,
+            "motions_enable_origin_motion_display": True,
             "motions_enable_text_on_projector": True,
             "motions_enable_reason_on_projector": True,
             "motions_enable_sidebox_on_projector": True,
@@ -1160,13 +1194,11 @@ class MeetingClone(BaseActionTestCase):
             "motions_show_referring_motions": True,
             "motions_show_sequential_number": True,
             "motions_recommendations_by": "rec",
-            "motions_statute_recommendations_by": "rec",
             "motions_recommendation_text_mode": "original",
             "motions_default_sorting": "weight",
             "motions_number_type": "manually",
             "motions_number_min_digits": 42,
             "motions_number_with_blank": True,
-            "motions_statutes_enabled": True,
             "motions_amendments_enabled": True,
             "motions_amendments_in_main_list": True,
             "motions_amendments_of_amendments": True,
@@ -2010,7 +2042,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 33
+        assert counter.calls == 34
 
     @performance
     def test_clone_performance(self) -> None:
@@ -2077,11 +2109,33 @@ class MeetingClone(BaseActionTestCase):
                     "template_for_organization_id": 1,
                 },
                 ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+                "user/1": {
+                    "organization_management_level": "can_manage_organization",
+                },
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 400)
         assert "Cannot clone locked meeting." in response.json["message"]
+
+    def test_permissions_oml_locked_meeting_with_can_manage_settings(self) -> None:
+        self.set_models(self.test_models)
+        bob_id = self.create_user("bob")
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "template_for_organization_id": 1,
+                },
+                ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
+            }
+        )
+        self.set_group_permissions(1, [Permissions.Meeting.CAN_MANAGE_SETTINGS])
+        self.set_user_groups(1, [1])
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "admin_ids": [bob_id]}
+        )
+        self.assert_status_code(response, 200)
 
     def test_clone_require_duplicate_from_allowed(self) -> None:
         self.set_models(self.test_models_with_admin)
@@ -2141,3 +2195,145 @@ class MeetingClone(BaseActionTestCase):
             response.json["message"]
             == "Cannot clone meeting to a different committee if it is a non-template meeting."
         )
+
+    def test_clone_with_list_election(self) -> None:
+        self.create_meeting()
+        self.set_user_groups(1, [2])
+        self.create_user("Huey", [3])
+        self.create_user("Dewey", [3])
+        self.create_user("Louie", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [1],
+                },
+                "user/3": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [2],
+                },
+                "user/4": {
+                    "organization_id": 1,
+                    "poll_candidate_ids": [3],
+                },
+                "organization/1": {
+                    "user_ids": [1, 2, 3, 4],
+                },
+                "motion_workflow/1": {
+                    "name": "Workflow",
+                    "sequential_number": 1,
+                    "default_amendment_workflow_meeting_id": 1,
+                },
+                "motion_state/1": {
+                    "name": "State",
+                    "weight": 1,
+                },
+                "projector/1": {
+                    "name": "default",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "sequential_number": 1,
+                    **{
+                        key: 1 for key in MeetingModelMixin.reverse_default_projectors()
+                    },
+                },
+                "list_of_speakers/1": {
+                    "id": 1,
+                    "closed": False,
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "sequential_number": 1,
+                },
+                "meeting/1": {
+                    "id": 1,
+                    "name": "Duckburg town government",
+                    "poll_ids": [1],
+                    "option_ids": [1, 2],
+                    "projector_ids": [1],
+                    "assignment_ids": [1],
+                    "poll_candidate_ids": [1, 2, 3],
+                    "list_of_speakers_ids": [1],
+                    "reference_projector_id": 1,
+                    "poll_candidate_list_ids": [1],
+                    **{key: [1] for key in MeetingModelMixin.all_default_projectors()},
+                    "motions_default_amendment_workflow_id": 1,
+                },
+                "assignment/1": {
+                    "id": 1,
+                    "phase": "search",
+                    "title": "Duckburg town council",
+                    "poll_ids": [1],
+                    "meeting_id": 1,
+                    "open_posts": 0,
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 1,
+                },
+                "poll_candidate/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate/2": {
+                    "id": 2,
+                    "weight": 2,
+                    "user_id": 3,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate/3": {
+                    "id": 3,
+                    "weight": 3,
+                    "user_id": 4,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate_list/1": {
+                    "id": 1,
+                    "option_id": 1,
+                    "meeting_id": 1,
+                    "poll_candidate_ids": [1, 2, 3],
+                },
+                "option/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "poll_id": 1,
+                    "meeting_id": 1,
+                    "content_object_id": "poll_candidate_list/1",
+                },
+                "option/2": {
+                    "id": 2,
+                    "text": "global option",
+                    "weight": 1,
+                    "meeting_id": 1,
+                    "used_as_global_option_in_poll_id": 1,
+                },
+                "poll/1": {
+                    "id": 1,
+                    "type": "pseudoanonymous",
+                    "state": "created",
+                    "title": "First election",
+                    "backend": "fast",
+                    "global_no": False,
+                    "votescast": "0.000000",
+                    "global_yes": False,
+                    "meeting_id": 1,
+                    "option_ids": [1],
+                    "pollmethod": "YNA",
+                    "votesvalid": "0.000000",
+                    "votesinvalid": "0.000000",
+                    "global_abstain": False,
+                    "global_option_id": 2,
+                    "max_votes_amount": 1,
+                    "min_votes_amount": 1,
+                    "content_object_id": "assignment/1",
+                    "sequential_number": 1,
+                    "is_pseudoanonymized": True,
+                    "max_votes_per_option": 1,
+                    "onehundred_percent_base": "disabled",
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)

@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
@@ -105,7 +105,7 @@ class SpeakerCreateAction(
             )
             speakers = self.datastore.filter(
                 self.model.collection,
-                filter=filter,
+                filter_=filter,
                 mapped_fields=[
                     "id",
                     "weight",
@@ -169,7 +169,7 @@ class SpeakerCreateAction(
         )
         speakers = self.datastore.filter(
             self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id", "weight"],
         )
         los = sorted(speakers.values(), key=lambda k: k["weight"])
@@ -183,7 +183,7 @@ class SpeakerCreateAction(
     def _get_max_weight(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.max(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("begin_time", "=", None),
                 FilterOperator("meeting_id", "=", meeting_id),
@@ -194,7 +194,7 @@ class SpeakerCreateAction(
     def _get_no_poo_min(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.min(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 Or(
                     FilterOperator("point_of_order", "=", False),
@@ -211,7 +211,7 @@ class SpeakerCreateAction(
     ) -> int | None:
         return self.datastore.min(
             collection="speaker",
-            filter=And(
+            filter_=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 Or(
                     FilterOperator("speech_state", "=", None),
@@ -294,7 +294,7 @@ class SpeakerCreateAction(
                 user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
                 if meeting_id not in user.get("is_present_in_meeting_ids", ()):
                     raise ActionException(
-                        "Only present users can be on the lists of speakers."
+                        "Only present users can be on the list of speakers."
                     )
 
             if not meeting.get("list_of_speakers_allow_multiple_speakers"):

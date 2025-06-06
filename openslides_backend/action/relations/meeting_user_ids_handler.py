@@ -69,8 +69,11 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     def get_user_ids(self, meeting_user_ids: set[int]) -> list[int]:
         user_ids: list[int] = []
         for id_ in meeting_user_ids:
+            fqid = fqid_from_collection_and_id("meeting_user", id_)
             meeting_user = self.datastore.get(
-                fqid_from_collection_and_id("meeting_user", id_), ["user_id"]
+                fqid,
+                ["user_id"],
+                use_changed_models=not self.datastore.is_deleted(fqid),
             )
             user_ids.append(meeting_user["user_id"])
         return user_ids

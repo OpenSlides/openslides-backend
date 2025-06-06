@@ -3,12 +3,11 @@ from tests.system.action.base import BaseActionTestCase
 
 class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
     def test_create_poo_in_only_talker_list(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [7844]},
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
@@ -49,12 +48,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
     def test_create_poo_after_existing_poo_before_standard(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "talking with poo",
@@ -148,12 +146,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_after_existing_poo_before_standard_and_more(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo1", "meeting_ids": [7844]},
                 "user/8": {"username": "waiting with poo2", "meeting_ids": [7844]},
@@ -264,12 +261,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_after_existing_poo_at_the_end(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo", "meeting_ids": [7844]},
                 "user/1": {
@@ -316,12 +312,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
     def test_create_poo_already_exist(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {
                     "username": "test_username1",
@@ -358,12 +353,9 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         assert list_of_speakers.get("speaker_ids") == [42]
 
     def test_create_poo_not_activated_in_meeting(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
-                "meeting/7844": {
-                    "name": "name_asdewqasd",
-                    "is_active_in_organization_id": 1,
-                },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
                 "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
             }
@@ -384,11 +376,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_without_user_id(self) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "is_active_in_organization_id": 1,
                 },
                 "list_of_speakers/23": {"meeting_id": 7844},
             }
@@ -407,13 +399,12 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def setup_create_poo_for_other_user(self, allow: bool = False) -> None:
+        self.create_meeting(7844)
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_can_create_point_of_order_for_others": allow,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/8": {"meeting_user_ids": [8]},
                 "meeting_user/8": {

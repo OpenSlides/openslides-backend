@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.relations.single_relation_handler import (
@@ -8,6 +10,10 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 
 
 class FakeModelA(Model):
@@ -116,5 +122,6 @@ class SingleRelationHandlerWithContext(SingleRelationHandler):
     """
 
     def perform(self) -> RelationFieldUpdates:
-        with self.datastore.get_database_context():
+        with get_new_os_conn() as conn:
+            self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
             return super().perform()

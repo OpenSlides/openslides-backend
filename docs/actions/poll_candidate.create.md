@@ -1,14 +1,14 @@
 ## Payload
 
-```
+```js
 {
    // Required
    user_id: Id;
    poll_candidate_list_id: Id;
    weight: number;
+   meeting_id: Id;
 }
 ```
 
-## Action
-
-Internal action to create a poll candidate with the `meeting_id` inferred from the `poll_candidate_list_id`.
+## Internal action
+Creates a poll candidate.

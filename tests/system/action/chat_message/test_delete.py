@@ -34,7 +34,7 @@ class ChatMessageDelete(BaseActionTestCase):
         )
         response = self.request("chat_message.delete", {"id": 101})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("chat_message/101")
+        self.assert_model_not_exists("chat_message/101")
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(self.test_models, "chat_message.delete", {"id": 101})
@@ -46,7 +46,7 @@ class ChatMessageDelete(BaseActionTestCase):
             {"id": 101},
             Permissions.Chat.CAN_MANAGE,
         )
-        self.assert_model_deleted("chat_message/101")
+        self.assert_model_not_exists("chat_message/101")
 
     def test_delete_correct_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(

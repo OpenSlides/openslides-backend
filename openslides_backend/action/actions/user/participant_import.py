@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ...mixins.import_mixins import ImportRow, ImportState
@@ -118,6 +118,10 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
+
+        if isinstance(entry.get("gender"), dict):
+            entry["gender_id"] = entry.pop("gender")
+
         if "groups" not in entry:
             raise ActionException(
                 f"There is no group in the data of user '{self.get_value_from_union_str_object(entry.get('username'))}'. Is there a default group for the meeting?"
@@ -133,29 +137,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 for structure_level in structure_levels
                 if (structure_level_id := structure_level.get("id"))
             ]
-
-        failing_fields = self.permission_check.get_failing_fields(entry)
-        failing_fields_jsonupload = {
-            field
-            for field in entry
-            if isinstance(entry[field], dict)
-            and entry[field]["info"] == ImportState.REMOVE
-        }
-        if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
-            less_ff.sort()
-            row["messages"].append(
-                f"In contrast to preview you may import field(s) '{', '.join(less_ff)}'"
-            )
-            for field in less_ff:
-                entry[field]["info"] = ImportState.DONE
-        if more_ff := list(set(failing_fields) - failing_fields_jsonupload):
-            more_ff.sort()
-            row["messages"].append(
-                f"Error: In contrast to preview you may not import field(s) '{', '.join(more_ff)}'"
-            )
+        if not self.check_field_failures(entry, row["messages"]):
             row["state"] = ImportState.ERROR
-            for field in more_ff:
-                entry[field]["info"] = ImportState.ERROR
         entry.pop("group_ids")
         entry.pop("structure_level_ids", None)
         entry["groups"] = groups
@@ -193,6 +176,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             entry, row["messages"], entry.get("groups", []), row
         )
 
+        if entry.get("gender_id"):
+            entry["gender"] = entry.pop("gender_id")
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR

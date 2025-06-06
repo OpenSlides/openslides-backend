@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 { id: Id; }
 ```
 
@@ -10,4 +10,4 @@ Deletes the given poll and all linked options with all votes, too.
 The request user needs:
 - `motion.can_manage_polls` if the poll's content object is a motion
 - `assignment.can_manage` if the poll's content object is an assignment
-- `poll.can_manage` else
+- `poll.can_manage` if the poll's content object is a topic

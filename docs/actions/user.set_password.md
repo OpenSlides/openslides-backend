@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
@@ -9,7 +9,6 @@
     set_as_default: boolean; // default false, if not given
 }
 ```
-
 ## Action
 Sets the password of the user given by `id` to `password`. If `set_as_default` is true, the `default_password` is also updated.
 

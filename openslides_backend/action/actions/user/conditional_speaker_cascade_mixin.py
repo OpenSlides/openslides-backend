@@ -2,10 +2,11 @@ from typing import Any
 
 from openslides_backend.shared.filters import And, FilterOperator
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
+from .set_present import UserSetPresentAction
 
 
 class ConditionalSpeakerCascadeMixinHelper(Action):
@@ -41,6 +42,18 @@ class ConditionalSpeakerCascadeMixinHelper(Action):
                 [{"id": speaker["id"]} for speaker in speakers_to_delete],
             )
 
+    def remove_presence(self, user_id: int, meeting_id: int) -> None:
+        self.execute_other_action(
+            UserSetPresentAction,
+            [
+                {
+                    "id": user_id,
+                    "meeting_id": meeting_id,
+                    "present": False,
+                }
+            ],
+        )
+
 
 class ConditionalSpeakerCascadeMixin(ConditionalSpeakerCascadeMixinHelper):
     """
@@ -65,6 +78,7 @@ class ConditionalSpeakerCascadeMixin(ConditionalSpeakerCascadeMixinHelper):
                 for speaker_id in val.get("speaker_ids", [])
             ]
             self.conditionally_delete_speakers(speaker_ids)
+            self.remove_presence(instance["id"], removed_meeting_id)
 
         return super().update_instance(instance)
 
