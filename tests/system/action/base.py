@@ -390,7 +390,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_user_groups(id, group_ids)
         return id
 
-    @with_database_context
     def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
         home_fqid = f"committee/{home_committee_id}"
         committee = self.datastore.get(

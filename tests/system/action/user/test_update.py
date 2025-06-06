@@ -4534,7 +4534,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 date["meeting_ids"] = meeting_ids
                 date["meeting_user_ids"] = [m_id * 100 + i for m_id in meeting_ids]
                 for m_id in meeting_ids:
-                    data[f"meeting_user/{m_id* 100 + i}"] = {
+                    data[f"meeting_user/{m_id * 100 + i}"] = {
                         "user_id": i,
                         "meeting_id": m_id,
                         "group_ids": [m_id],

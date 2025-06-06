@@ -109,7 +109,7 @@ def has_organization_management_level(
 
 
 def get_failing_committee_management_levels(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     expected_level: CommitteeManagementLevel,
     committee_ids: list[int],

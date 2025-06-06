@@ -4,19 +4,18 @@ from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
-from meta.dev.src.helper_get_names import (
-    FieldSqlErrorType,
-    HelperGetNames,
-    InternalHelper,
-    TableFieldType,
-)
-
 from cli.util.util import (
     ROOT,
     assert_equal,
     open_output,
     open_yml_file,
     parse_arguments,
+)
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
 )
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete

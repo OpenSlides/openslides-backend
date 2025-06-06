@@ -116,7 +116,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.set_organization_management_level(None)
         response = self.request("committee.delete", {"id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/4")
+        self.assert_model_not_exists("committee/4")
 
     def test_delete_with_committee_permission(self) -> None:
         self.create_committee(2)
@@ -126,7 +126,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.set_organization_management_level(None)
         response = self.request("committee.delete", {"id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/4")
+        self.assert_model_not_exists("committee/4")
 
     def test_delete_with_parent_committee_permission(self) -> None:
         self.create_committee(3)
@@ -136,7 +136,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
         response = self.request("committee.delete", {"id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/4")
+        self.assert_model_not_exists("committee/4")
 
     def test_delete_with_grandparent_committee_permission(self) -> None:
         self.create_committee(2)
@@ -147,7 +147,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
         response = self.request("committee.delete", {"id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/4")
+        self.assert_model_not_exists("committee/4")
 
     def test_delete_parent_committee(self) -> None:
         self.create_committee(2)

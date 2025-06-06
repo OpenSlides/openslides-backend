@@ -75,8 +75,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             if action != "user.delete":
                 self.fill_meeting_user_changed_models_with_user_and_meeting_id()
             user_id = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
-            ).get("user_id")
+                dict[str, Any],
+                self.datastore.get_changed_model(field.own_collection, instance["id"]),
+            )["user_id"]
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             fqid_user = fqid_from_collection_and_id("user", user_id)
             db_user = self.datastore.get(
