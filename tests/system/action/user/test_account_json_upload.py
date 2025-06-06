@@ -2465,3 +2465,83 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.DONE,
         }
         assert import_preview["result"]["rows"][0]["messages"] == []
+
+    def json_upload_multiple_with_same_home_committee(self) -> None:
+        self.create_committee(name="Entenhausen")
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Tick",
+                        "username": "Huey",
+                        "home_committee": "Entenhausen",
+                        "default_password": "Quack1",
+                    },
+                    {
+                        "first_name": "Trick",
+                        "username": "Dewey",
+                        "home_committee": "Entenhausen",
+                        "default_password": "Quack2",
+                    },
+                    {
+                        "first_name": "Track",
+                        "username": "Louie",
+                        "home_committee": "Entenhausen",
+                        "default_password": "Quack3",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "first_name": "Tick",
+            "username": {"info": "done", "value": "Huey"},
+            "home_committee": {"info": "done", "value": "Entenhausen", "id": 1},
+            "guest": {
+                "info": "generated",
+                "value": False,
+            },
+            "default_password": {
+                "info": "done",
+                "value": "Quack1",
+            },
+        }
+        assert import_preview["result"]["rows"][1]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][1]["messages"] == []
+        data = import_preview["result"]["rows"][1]["data"]
+        assert data == {
+            "first_name": "Trick",
+            "username": {"info": "done", "value": "Dewey"},
+            "home_committee": {"info": "done", "value": "Entenhausen", "id": 1},
+            "guest": {
+                "info": "generated",
+                "value": False,
+            },
+            "default_password": {
+                "info": "done",
+                "value": "Quack2",
+            },
+        }
+        assert import_preview["result"]["rows"][2]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][2]["messages"] == []
+        data = import_preview["result"]["rows"][2]["data"]
+        assert data == {
+            "first_name": "Track",
+            "username": {"info": "done", "value": "Louie"},
+            "home_committee": {"info": "done", "value": "Entenhausen", "id": 1},
+            "guest": {
+                "info": "generated",
+                "value": False,
+            },
+            "default_password": {
+                "info": "done",
+                "value": "Quack3",
+            },
+        }

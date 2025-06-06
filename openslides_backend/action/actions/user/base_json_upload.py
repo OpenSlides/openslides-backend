@@ -669,14 +669,15 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         ):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
+        home_committee_names: set[str] = {
+            home_committee
+            for entry in data
+            if (home_committee := entry.get("home_committee"))
+        }
         self.committee_lookup = Lookup(
             self.datastore,
             "committee",
-            [
-                (home_committee, {})
-                for entry in data
-                if (home_committee := entry.get("home_committee"))
-            ],
+            [(home_committee, {}) for home_committee in home_committee_names],
             mapped_fields=["username", "saml_id", "default_password"],
         )
 
