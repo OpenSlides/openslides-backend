@@ -2,6 +2,7 @@ from typing import Any
 
 from ....models.models import Motion
 from ....shared.exceptions import PermissionDenied
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import original_instances
 from ...util.action_type import ActionType
@@ -37,15 +38,32 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         },
     )
 
+    def perform(
+        self, action_data: ActionData, user_id: int, internal: bool = False
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
+        amendment_data = action_data.pop("amendment_data", [])  # type: ignore[attr-defined]
+        self.forwarded_attachments = action_data.pop("forwarded_attachments", {})  # type: ignore[attr-defined]
+        self.meeting_mediafile_replace_map = action_data.pop(  # type: ignore[attr-defined]
+            "meeting_mediafile_replace_map", {}
+        )
+        return super().perform(amendment_data, user_id, internal)
+
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.duplicate_mediafiles(action_data)
+        if self.meeting_mediafile_replace_map:
+            self.forwarded_attachments, self.meeting_mediafile_replace_map = (
+                self.duplicate_mediafiles(
+                    action_data,
+                    self.forwarded_attachments,
+                    self.meeting_mediafile_replace_map,
+                )
+            )
         return action_data
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_attachments = instance.pop("with_attachments", False)
         if self.with_attachments:
-            self.forward_mediafiles(instance)
+            self.forward_mediafiles(instance, self.meeting_mediafile_replace_map)
         return super().update_instance(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -64,7 +82,15 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         for amendment in amendment_data:
             amendment["with_attachments"] = self.with_attachments
-        return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
+        action_data = {"amendment_data": amendment_data}
+        if self.with_attachments:
+            action_data.update(
+                {
+                    "forwarded_attachments": self.forwarded_attachments,
+                    "meeting_mediafile_replace_map": self.meeting_mediafile_replace_map,
+                }
+            )
+        return self.execute_other_action(MotionCreateForwardedAmendment, action_data)  # type: ignore[arg-type]
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return True
