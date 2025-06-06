@@ -505,7 +505,11 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
 
     def _fetch_and_map_mediafiles(
         self, mm_id_target_meeting_ids_map: dict[int, set[int]]
-    ) -> tuple[dict, dict[int, dict[int, dict[str, Any]]], list[dict[str, Any]]]:
+    ) -> tuple[
+        dict[int, dict[str, Any]],
+        dict[int, dict[int, dict[str, Any]]],
+        list[dict[str, Any]],
+    ]:
         """
         Retrieves data based on the data from mm_id_target_meeting_ids_map:
         1. Dict of related mediafiles.
