@@ -323,7 +323,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         response = self.request("committee.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/1", {"user_ids": [1], "manager_ids": [1]})
+        self.assert_model_not_exists("committee/1")
 
         response = self.request(
             "committee.create",
@@ -334,7 +334,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("committee/1", {"user_ids": [1], "manager_ids": [1]})
+        self.assert_model_not_exists("committee/1")
         self.assert_model_exists(
             "committee/2",
             {

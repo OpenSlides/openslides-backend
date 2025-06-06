@@ -59,7 +59,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 110})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/1")
+        self.assert_model_not_exists("speaker/1")
 
     def test_1_los_2_speakers(self) -> None:
         self.set_models(
@@ -77,8 +77,8 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 110})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/1")
-        self.assert_model_deleted("speaker/2")
+        self.assert_model_not_exists("speaker/1")
+        self.assert_model_not_exists("speaker/2")
 
     def test_3_los(self) -> None:
         self.set_models(
@@ -100,9 +100,9 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
 
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 110})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/1")
-        self.assert_model_deleted("speaker/2")
-        self.assert_model_deleted("speaker/3")
+        self.assert_model_not_exists("speaker/1")
+        self.assert_model_not_exists("speaker/2")
+        self.assert_model_not_exists("speaker/3")
 
     def test_no_permissions(self) -> None:
         self.base_permission_test(

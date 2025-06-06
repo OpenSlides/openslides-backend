@@ -32,7 +32,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
+        self.assert_model_not_exists("poll/111")
         self.assert_history_information("motion/1", ["Voting deleted"])
         assert clear_called_on == [111]
 
@@ -86,9 +86,9 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
-        self.assert_model_deleted("option/42")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("poll/111")
+        self.assert_model_not_exists("option/42")
+        self.assert_model_not_exists("projection/1")
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
         assert clear_called_on == []
 
@@ -128,9 +128,9 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/111")
-        self.assert_model_deleted("option/42")
-        self.assert_model_deleted("poll_candidate_list/12")
+        self.assert_model_not_exists("poll/111")
+        self.assert_model_not_exists("option/42")
+        self.assert_model_not_exists("poll_candidate_list/12")
 
     @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
     def test_delete_no_permissions(self, clear: Mock) -> None:
@@ -179,7 +179,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             response = self.request("poll.delete", {"id": 1})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("poll/1")
+        self.assert_model_not_exists("poll/1")
         assert counter.calls == 7
 
     @performance

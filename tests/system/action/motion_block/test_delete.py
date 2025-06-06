@@ -12,7 +12,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         response = self.request("motion_block.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_block/111")
+        self.assert_model_not_exists("motion_block/111")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(
@@ -61,10 +61,10 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         response = self.request("motion_block.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_block/111")
-        self.assert_model_deleted("agenda_item/333")
-        self.assert_model_deleted("list_of_speakers/222")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("motion_block/111")
+        self.assert_model_not_exists("agenda_item/333")
+        self.assert_model_not_exists("list_of_speakers/222")
+        self.assert_model_not_exists("projection/1")
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permissions(self) -> None:

@@ -13,6 +13,8 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         """
         Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.
         """
+        self.create_meeting()
+        self.create_meeting(4)
         if scope is None:
             self.set_organization_management_level(None)
         elif scope == UserScope.Organization:
@@ -20,15 +22,16 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 OrganizationManagementLevel.CAN_MANAGE_USERS
             )
         elif scope == UserScope.Committee:
-            self.update_model(
-                "user/1",
+            self.set_models(
                 {
-                    "organization_management_level": None,
-                    "committee_management_ids": [1],
-                },
+                    "user/1": {
+                        "organization_management_level": None,
+                        "committee_management_ids": [60],
+                    },
+                    "committee/60": {"manager_ids": [1]},
+                }
             )
         elif scope == UserScope.Meeting:
-            self.create_meeting()
             self.set_organization_management_level(None)
             self.set_user_groups(1, [3])
             self.set_group_permissions(3, [meeting_permission])
@@ -45,11 +48,19 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 },
                 "meeting_user/667": {
                     "group_ids": [12, 23],
-                    "meeting_id": 2,
+                    "meeting_id": 4,
                     "user_id": 777,
                 },
-                "group/12": {"meeting_user_ids": [666]},
-                "group/23": {"meeting_user_ids": [667]},
+                "group/12": {
+                    "name": "group12",
+                    "meeting_user_ids": [666],
+                    "meeting_id": 1,
+                },
+                "group/23": {
+                    "name": "group23",
+                    "meeting_user_ids": [667],
+                    "meeting_id": 4,
+                },
             }
         )
 
@@ -60,26 +71,26 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         if scope == UserScope.Organization:
             self.set_models(
                 {
-                    "committee/1": {"name": "com1", "meeting_ids": [1]},
-                    "committee/2": {"name": "com2", "meeting_ids": [2]},
+                    "committee/60": {"name": "com1", "meeting_ids": [1]},
+                    "committee/63": {"name": "com2", "meeting_ids": [4]},
                     "meeting/1": {
                         "user_ids": [111],
-                        "committee_id": 1,
+                        "committee_id": 60,
                         "group_ids": [11, 12],
                         "admin_group_id": 12,
                         "is_active_in_organization_id": 1,
                     },
-                    "meeting/2": {
+                    "meeting/4": {
                         "user_ids": [111],
-                        "committee_id": 2,
+                        "committee_id": 63,
                         "group_ids": [22, 23],
                         "admin_group_id": 23,
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
                         "username": "user111",
-                        "meeting_ids": [1, 2],
-                        "committee_ids": [1, 2],
+                        "meeting_ids": [1, 4],
+                        "committee_ids": [60, 63],
                         "meeting_user_ids": [11, 22],
                     },
                     "meeting_user/11": {
@@ -92,32 +103,49 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "user_id": 111,
                         "group_ids": [22],
                     },
-                    "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
-                    "group/12": {"meeting_id": 1, "meeting_user_ids": [666]},
-                    "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
-                    "group/23": {"meeting_id": 2, "meeting_user_ids": [667]},
+                    "group/11": {
+                        "name": "group11",
+                        "meeting_id": 1,
+                        "meeting_user_ids": [11],
+                    },
+                    "group/12": {
+                        "name": "group12",
+                        "meeting_id": 1,
+                        "meeting_user_ids": [666],
+                    },
+                    "group/22": {
+                        "name": "group22",
+                        "meeting_id": 4,
+                        "meeting_user_ids": [22],
+                    },
+                    "group/23": {
+                        "name": "group23",
+                        "meeting_id": 4,
+                        "meeting_user_ids": [667],
+                    },
                 }
             )
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "committee/1": {"name": "com", "meeting_ids": [1, 2]},
+                    "committee/60": {"name": "com", "meeting_ids": [1, 4]},
+                    "committee/63": {"name": "com", "meeting_ids": []},
                     "meeting/1": {
                         "user_ids": [111],
-                        "committee_id": 1,
+                        "committee_id": 60,
                         "group_ids": [11],
                         "is_active_in_organization_id": 1,
                     },
-                    "meeting/2": {
+                    "meeting/4": {
                         "user_ids": [111],
-                        "committee_id": 1,
+                        "committee_id": 60,
                         "group_ids": [11],
                         "is_active_in_organization_id": 1,
                     },
                     "user/111": {
                         "username": "user111",
-                        "meeting_ids": [1, 2],
-                        "committee_ids": [1],
+                        "meeting_ids": [1, 4],
+                        "committee_ids": [60],
                         "meeting_user_ids": [11, 22],
                     },
                     "meeting_user/11": {
@@ -130,19 +158,30 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "user_id": 111,
                         "group_ids": [22],
                     },
-                    "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
-                    "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
+                    "group/11": {
+                        "name": "group11",
+                        "meeting_id": 1,
+                        "meeting_user_ids": [11],
+                    },
+                    "group/22": {
+                        "name": "group22",
+                        "meeting_id": 4,
+                        "meeting_user_ids": [22],
+                    },
                 }
             )
         elif scope == UserScope.Meeting:
             self.set_models(
                 {
-                    "committee/1": {"name": "com", "meeting_ids": [1]},
-                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                    "committee/60": {"name": "com", "meeting_ids": [1]},
+                    "meeting/1": {
+                        "committee_id": 60,
+                        "is_active_in_organization_id": 1,
+                    },
                     "user/111": {
                         "username": "user111",
                         "meeting_ids": [1],
-                        "committee_ids": [1],
+                        "committee_ids": [60],
                     },
                 }
             )

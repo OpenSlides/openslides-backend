@@ -155,6 +155,39 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.datastore.reset()
         return result
 
+    def create_motion(self, meeting_id: int, base: int = 1) -> None:
+        """
+        The meeting must already exist.
+        Creates a motion and all other models required for this with id 1.
+        You can specify another id by setting base.
+        """
+        self.set_models(
+            {
+                f"motion_workflow/{base}": {
+                    "name": f"motion_workflow{base}",
+                    "sequential_number": base,
+                    "default_workflow_meeting_id": base,
+                    "default_amendment_workflow_meeting_id": base,
+                    "state_ids": [base],
+                    "first_state_id": base,
+                    "meeting_id": meeting_id,
+                },
+                f"motion_state/{base}": {
+                    "name": f"motion_state{base}",
+                    "weight": 36,
+                    "workflow_id": base,
+                    "first_state_of_workflow_id": base,
+                    "meeting_id": meeting_id,
+                },
+                f"motion/{base}": {
+                    "title": f"motion{base}",
+                    "sequential_number": base,
+                    "state_id": base,
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
     def create_meeting(self, base: int = 1) -> None:
         """
         Creates meeting with id 1, committee 60 and groups with ids 1, 2, 3 by default.
@@ -209,7 +242,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "first_state_of_workflow_id": base,
                 },
                 f"committee/{committee_id}": {
-                    "organization_id": 1,
                     "name": f"Commitee{committee_id}",
                     "meeting_ids": [base],
                 },

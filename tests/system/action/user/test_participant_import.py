@@ -543,7 +543,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
@@ -827,8 +827,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             }
         )
         self.request_multi("group.delete", [{"id": 2}, {"id": 3}])
-        self.assert_model_deleted("group/2")
-        self.assert_model_deleted("group/3")
+        self.assert_model_not_exists("group/2")
+        self.assert_model_not_exists("group/3")
         self.set_models(
             {
                 "user/4": {"username": "user4_married"},

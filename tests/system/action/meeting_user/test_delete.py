@@ -11,7 +11,7 @@ class MeetingUserDelete(BaseActionTestCase):
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting_user/5")
+        self.assert_model_not_exists("meeting_user/5")
 
     def test_delete_with_speaker(self) -> None:
         """Also checks that the user is successfully removed from a meeting he was present in."""
@@ -47,8 +47,8 @@ class MeetingUserDelete(BaseActionTestCase):
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting_user/5")
-        self.assert_model_deleted("speaker/1")
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_not_exists("speaker/1")
         self.assert_model_exists("speaker/2", {"meeting_id": 10, "begin_time": 123456})
         self.assert_model_exists(
             "user/1", {"is_present_in_meeting_ids": [101], "meeting_user_ids": []}
@@ -86,9 +86,9 @@ class MeetingUserDelete(BaseActionTestCase):
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting_user/5")
-        self.assert_model_deleted("motion_editor/1")
-        self.assert_model_deleted("motion_working_group_speaker/2")
+        self.assert_model_not_exists("meeting_user/5")
+        self.assert_model_not_exists("motion_editor/1")
+        self.assert_model_not_exists("motion_working_group_speaker/2")
         self.assert_model_exists(
             "meeting/10",
             {"motion_editor_ids": [], "motion_working_group_speaker_ids": []},
@@ -130,6 +130,6 @@ class MeetingUserDelete(BaseActionTestCase):
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting_user/5", {"chat_message_ids": [1, 2]})
+        self.assert_model_not_exists("meeting_user/5")
         self.assert_model_exists("chat_message/1", {"meeting_user_id": None})
         self.assert_model_exists("chat_message/2", {"meeting_user_id": None})

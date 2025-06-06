@@ -58,7 +58,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion/111")
+        self.assert_model_not_exists("motion/111")
         self.assert_history_information("motion/111", ["Motion deleted"])
 
     def test_delete_amendment(self) -> None:
@@ -66,15 +66,15 @@ class MotionDeleteActionTest(BaseActionTestCase):
         response = self.request("motion.delete", {"id": 222})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/111")
-        self.assert_model_deleted("motion/222")
+        self.assert_model_not_exists("motion/222")
         self.assert_history_information("motion/222", ["Motion deleted"])
 
     def test_delete_motion_and_amendment(self) -> None:
         self.set_models(self.permission_test_models)
         response = self.request_multi("motion.delete", [{"id": 111}, {"id": 222}])
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion/111")
-        self.assert_model_deleted("motion/222")
+        self.assert_model_not_exists("motion/111")
+        self.assert_model_not_exists("motion/222")
         self.assert_history_information("motion/111", ["Motion deleted"])
         self.assert_history_information("motion/222", ["Motion deleted"])
 
@@ -128,11 +128,11 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion/111")
-        self.assert_model_deleted("agenda_item/333")
-        self.assert_model_deleted("list_of_speakers/222")
-        self.assert_model_deleted("projection/1")
-        self.assert_model_deleted("motion/112")
+        self.assert_model_not_exists("motion/111")
+        self.assert_model_not_exists("agenda_item/333")
+        self.assert_model_not_exists("list_of_speakers/222")
+        self.assert_model_not_exists("projection/1")
+        self.assert_model_not_exists("motion/112")
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
@@ -265,9 +265,9 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion.delete", {"id": 110})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_submitter/1")
-        self.assert_model_deleted("motion_editor/1")
-        self.assert_model_deleted("motion_working_group_speaker/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_not_exists("motion_editor/1")
+        self.assert_model_not_exists("motion_working_group_speaker/1")
         self.assert_history_information("motion/110", ["Motion deleted"])
 
     def test_delete_no_permission(self) -> None:

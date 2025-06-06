@@ -288,8 +288,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting/2")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting/2")
         self.assert_model_exists("committee/1", {"meeting_ids": []})
 
     def test_delete_1_2_events(self) -> None:
@@ -322,6 +322,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting/2")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting/2")
         self.assert_model_exists("committee/1", {"meeting_ids": []})

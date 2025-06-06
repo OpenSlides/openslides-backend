@@ -42,11 +42,7 @@ class GenderDeleteActionTest(BaseActionTestCase):
         response = self.request("gender.delete", {"id": self.gender_id})
 
         self.assert_status_code(response, 200)
-        gender1 = self.assert_model_deleted(
-            self.gender_fqid,
-            {"organization_id": 1, "name": self.gender_name},
-        )
-        self.assertCountEqual(gender1["user_ids"], [21])
+        self.assert_model_not_exists(self.gender_fqid)
 
         self.assert_model_exists("user/20", {"gender_id": 1})
         self.assert_model_exists("user/21", {"gender_id": None})
@@ -94,4 +90,4 @@ class GenderDeleteActionTest(BaseActionTestCase):
 
         response = self.request("gender.delete", {"id": self.gender_id})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(self.gender_fqid)
+        self.assert_model_not_exists(self.gender_fqid)

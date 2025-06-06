@@ -794,7 +794,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             },
         )
         for id_ in [2, 3, 6, 8, 9]:
-            self.assert_model_deleted(f"meeting_mediafile/{id_}")
+            self.assert_model_not_exists(f"meeting_mediafile/{id_}")
 
         self.assert_model_exists(
             "mediafile/3",

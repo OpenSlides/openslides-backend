@@ -3157,7 +3157,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "speaker/25", {"meeting_user_id": 5555, "meeting_id": 5}
         )
-        self.assert_model_deleted("speaker/14")
+        self.assert_model_not_exists("speaker/14")
 
     def test_partial_group_removal_with_speaker(self) -> None:
         self.set_models(

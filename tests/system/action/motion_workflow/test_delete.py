@@ -18,7 +18,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         response = self.request("motion_workflow.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_workflow/111")
+        self.assert_model_not_exists("motion_workflow/111")
 
     def test_delete_with_states(self) -> None:
         self.set_models(
@@ -34,8 +34,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         response = self.request("motion_workflow.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_workflow/2")
-        self.assert_model_deleted("motion_state/3")
+        self.assert_model_not_exists("motion_workflow/2")
+        self.assert_model_not_exists("motion_state/3")
 
     def test_delete_with_first_state(self) -> None:
         self.set_models(
@@ -59,8 +59,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         response = self.request("motion_workflow.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_workflow/2")
-        self.assert_model_deleted("motion_state/3")
+        self.assert_model_not_exists("motion_workflow/2")
+        self.assert_model_not_exists("motion_state/3")
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_workflow/112", {"name": "name_srtgb123"})

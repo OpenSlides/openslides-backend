@@ -806,13 +806,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
         # don't remove relations from deleted object!!!
         # user_id is empty, user management fields filled
-        self.assert_model_deleted(
-            "committee/1",
-            {
-                "user_ids": [1],
-                "manager_ids": [1],
-            },
-        )
+        self.assert_model_not_exists("committee/1")
 
         response = self.request(
             "committee.update",

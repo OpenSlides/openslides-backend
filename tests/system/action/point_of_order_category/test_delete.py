@@ -31,7 +31,7 @@ class PointOfOrderCategoryDelete(BaseActionTestCase):
         )
         response = self.request("point_of_order_category.delete", {"id": 45})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("point_of_order_category/45")
+        self.assert_model_not_exists("point_of_order_category/45")
         self.assert_model_exists("meeting/110", {"point_of_order_category_ids": []})
 
     def test_delete_no_permission(self) -> None:

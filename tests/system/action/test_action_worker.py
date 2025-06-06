@@ -164,7 +164,9 @@ class ActionWorkerTest(BaseActionTestCase):
             action_worker.join()
         self.assert_model_exists("chat_group/22", {"chat_message_ids": []})
         for id_ in chat_message_ids:
-            self.assert_model_deleted(fqid_from_collection_and_id("chat_message", id_))
+            self.assert_model_not_exists(
+                fqid_from_collection_and_id("chat_message", id_)
+            )
         self.assert_model_exists(
             "action_worker/1", {"state": ActionWorkerState.END, "user_id": -1}
         )

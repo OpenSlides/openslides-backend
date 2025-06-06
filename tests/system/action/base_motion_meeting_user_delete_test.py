@@ -49,7 +49,7 @@ def build_motion_meeting_user_delete_test(collection: str) -> type[BaseActionTes
             )
             response = self.request(self.action, {"id": 111})
             self.assert_status_code(response, 200)
-            self.assert_model_deleted(f"{collection}/111")
+            self.assert_model_not_exists(f"{collection}/111")
 
         def test_delete_wrong_id(self) -> None:
             self.create_model(f"{collection}/112", {"weight": 10})

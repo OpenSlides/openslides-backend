@@ -34,7 +34,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("personal_note.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("personal_note/1")
+        self.assert_model_not_exists("personal_note/1")
         self.assert_model_exists("meeting_user/1", {"personal_note_ids": []})
 
     def test_delete_wrong_user_id(self) -> None:

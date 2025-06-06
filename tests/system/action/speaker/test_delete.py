@@ -63,7 +63,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_wrong_id(self) -> None:
@@ -149,7 +149,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_delete_with_removed_user(self) -> None:
         self.set_models(
@@ -178,7 +178,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_with_deleted_user(self) -> None:
@@ -197,7 +197,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def create_delegator_test_data(
         self,
@@ -242,7 +242,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.create_delegator_test_data()
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_delegator_setting_with_delegation(self) -> None:
         self.create_delegator_test_data(is_delegator=True)
@@ -266,7 +266,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_with_irrelevant_delegator_setting(self) -> None:
         self.create_delegator_test_data(
@@ -274,7 +274,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_with_active_structure_level_speaker(self) -> None:
         self.set_models(
@@ -325,7 +325,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         sllos = self.assert_model_exists(
             "structure_level_list_of_speakers/9",
             {
@@ -388,7 +388,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         sllos = self.assert_model_exists(
             "structure_level_list_of_speakers/9",
             {

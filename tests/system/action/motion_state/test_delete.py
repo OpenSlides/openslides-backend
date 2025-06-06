@@ -20,7 +20,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         response = self.request("motion_state.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_state/111")
+        self.assert_model_not_exists("motion_state/111")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

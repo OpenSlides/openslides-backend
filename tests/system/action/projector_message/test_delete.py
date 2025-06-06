@@ -38,8 +38,8 @@ class ProjectorMessageDelete(BaseActionTestCase):
         response = self.request("projector_message.delete", {"id": 2})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector_message/2")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("projector_message/2")
+        self.assert_model_not_exists("projection/1")
 
     def test_delete_wrong_id(self) -> None:
         response = self.request("projector_message.delete", {"id": 3})

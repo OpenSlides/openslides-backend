@@ -27,12 +27,12 @@ class ProjectionDelete(BaseActionTestCase):
     def test_delete_current_correct(self) -> None:
         response = self.request("projection.delete", {"id": 12})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projection/12")
+        self.assert_model_not_exists("projection/12")
 
     def test_delete_preview_correct(self) -> None:
         response = self.request("projection.delete", {"id": 13})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projection/13")
+        self.assert_model_not_exists("projection/13")
 
     def test_delete_history_not_allowed(self) -> None:
         self.set_models(

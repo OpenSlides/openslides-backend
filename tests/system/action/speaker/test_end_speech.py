@@ -354,7 +354,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         )
         response = self.request("speaker.end_speech", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/891")
+        self.assert_model_not_exists("speaker/891")
 
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.end_speech", {"id": 890})

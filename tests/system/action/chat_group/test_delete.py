@@ -18,7 +18,7 @@ class ChatGroupDelete(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("chat_group.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("chat_group/1")
+        self.assert_model_not_exists("chat_group/1")
 
     def test_delete_not_enabled(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["enable_chat"] = False

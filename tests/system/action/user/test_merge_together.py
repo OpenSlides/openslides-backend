@@ -397,7 +397,7 @@ class UserMergeTogether(BaseActionTestCase):
             "user/1",
             {"meeting_ids": [1, 2], "meeting_user_ids": [46, 47], "committee_ids": [1]},
         )
-        self.assert_model_deleted("user/2")
+        self.assert_model_not_exists("user/2")
 
     def test_merge_self_into_other_error(self) -> None:
         response = self.request("user.merge_together", {"id": 2, "user_ids": [1]})
@@ -424,7 +424,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "password": password,
             },
         )
-        self.assert_model_deleted("user/3")
+        self.assert_model_not_exists("user/3")
 
     def test_merge_with_saml_id(self) -> None:
         self.set_models(
@@ -451,8 +451,8 @@ class UserMergeTogether(BaseActionTestCase):
                 "saml_id": "user2",
             },
         )
-        self.assert_model_deleted("user/3")
-        self.assert_model_deleted("user/4")
+        self.assert_model_not_exists("user/3")
+        self.assert_model_not_exists("user/4")
 
     def test_merge_with_saml_id_with_password_change_rights(self) -> None:
         self.set_models(
@@ -480,8 +480,8 @@ class UserMergeTogether(BaseActionTestCase):
                 "saml_id": "user2",
             },
         )
-        self.assert_model_deleted("user/3")
-        self.assert_model_deleted("user/4")
+        self.assert_model_not_exists("user/3")
+        self.assert_model_not_exists("user/4")
 
     def test_merge_with_saml_id_error(self) -> None:
         self.set_models(
@@ -657,9 +657,9 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         for id_ in range(3, 7):
-            self.assert_model_deleted(f"user/{id_}")
+            self.assert_model_not_exists(f"user/{id_}")
         for id_ in [23, 33, 14, 24, 34, 15, 45]:
-            self.assert_model_deleted(f"meeting_user/{id_}")
+            self.assert_model_not_exists(f"meeting_user/{id_}")
 
         self.assert_model_exists(
             "meeting_user/12",
@@ -1068,9 +1068,9 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_exists("committee/1", {"user_ids": [2, 5]})
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         for id_ in range(3, 5):
-            self.assert_model_deleted(f"user/{id_}")
+            self.assert_model_not_exists(f"user/{id_}")
         for id_ in [23, 33, 14, 24, 34, *range(46, 46 + add_to_creatable_ids)]:
-            self.assert_model_deleted(f"meeting_user/{id_}")
+            self.assert_model_not_exists(f"meeting_user/{id_}")
         for meeting_id, id_ in {1: 12, 2: 22, 3: 46 + add_to_creatable_ids}.items():
             self.assert_model_exists(
                 f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
@@ -1079,7 +1079,7 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/22",
             {"user_id": 2, "meeting_id": 2, "motion_submitter_ids": [2]},
         )
-        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_not_exists("motion_submitter/1")
         self.assert_model_exists(
             "motion_submitter/2",
             {"motion_id": 1, "meeting_user_id": 22, "meeting_id": 2, "weight": 1},
@@ -1354,7 +1354,7 @@ class UserMergeTogether(BaseActionTestCase):
                     sub_collection, sub_model_id
                 )
                 if sub_model is None:
-                    self.assert_model_deleted(sub_model_fqid)
+                    self.assert_model_not_exists(sub_model_fqid)
                 else:
                     model_id = sub_model[0]
                     meeting_user_id = sub_model[1]
@@ -1733,7 +1733,7 @@ class UserMergeTogether(BaseActionTestCase):
 
         # check results
         for note_id in [2, 5, 7, 8, 9, 10, 11, 12]:
-            self.assert_model_deleted(f"personal_note/{note_id}")
+            self.assert_model_not_exists(f"personal_note/{note_id}")
         self.assert_model_exists("personal_note/3")
 
         meeting_user_by_meeting_id = {1: 12, 2: 22, 3: 46}
@@ -2299,7 +2299,7 @@ class UserMergeTogether(BaseActionTestCase):
         replaced = [10, 12, 15, 23]
         deleted_ids = replaced + merged_away
         for id_ in deleted_ids:
-            self.assert_model_deleted(f"speaker/{id_}")
+            self.assert_model_not_exists(f"speaker/{id_}")
         for id_ in [4, 11, 13, 22]:
             self.assert_model_exists(f"speaker/{id_}", data[f"speaker/{id_}"])
         for id_ in [1, 9, 17, 18, 20]:
@@ -2339,7 +2339,7 @@ class UserMergeTogether(BaseActionTestCase):
         deleted_ids = replaced_meeting_1 + replaced_meeting_3
         for id_ in range(1, 24):
             if id_ in deleted_ids:
-                self.assert_model_deleted(f"speaker/{id_}")
+                self.assert_model_not_exists(f"speaker/{id_}")
             else:
                 self.assert_model_exists(f"speaker/{id_}", data[f"speaker/{id_}"])
         next_id = 24
@@ -2511,9 +2511,9 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_user_ids": [12, 22, 46]})
         self.assert_model_exists("user/4", {"meeting_user_ids": [14, 24, 34, 47]})
-        self.assert_model_deleted("user/3")
-        self.assert_model_deleted("user/5")
-        self.assert_model_deleted("user/6")
+        self.assert_model_not_exists("user/3")
+        self.assert_model_not_exists("user/5")
+        self.assert_model_not_exists("user/6")
 
         self.assert_model_exists("meeting_user/12", {"meeting_id": 1})
         self.assert_model_exists("meeting_user/22", {"meeting_id": 2})
@@ -2523,7 +2523,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_exists("meeting_user/34", {"meeting_id": 3})
         self.assert_model_exists("meeting_user/47", {"meeting_id": 4})
         for id_ in [23, 33, 15, 45]:
-            self.assert_model_deleted(f"meeting_user/{id_}")
+            self.assert_model_not_exists(f"meeting_user/{id_}")
 
         self.assert_history_information(
             "user/2", ["Updated with data from {}", "user/3"]
@@ -2564,7 +2564,7 @@ class UserMergeTogether(BaseActionTestCase):
         response = self.request("user.merge_together", {"id": 6, "user_ids": [7]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/6", {"can_change_own_password": True})
-        self.assert_model_deleted("user/7")
+        self.assert_model_not_exists("user/7")
 
     def test_merge_only_update_meeting_users(self) -> None:
         response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})

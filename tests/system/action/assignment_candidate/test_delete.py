@@ -72,7 +72,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         response = self.request("assignment_candidate.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment_candidate/111")
+        self.assert_model_not_exists("assignment_candidate/111")
         self.assert_history_information("assignment/111", ["Candidate removed"])
 
     def test_delete_correct_empty_user(self) -> None:
@@ -98,7 +98,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         response = self.request("assignment_candidate.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment_candidate/111")
+        self.assert_model_not_exists("assignment_candidate/111")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

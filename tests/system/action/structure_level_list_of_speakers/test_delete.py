@@ -28,7 +28,7 @@ class StructureLevelListOfSpeakersDeleteTest(BaseActionTestCase):
             }
         )
         self.request("structure_level_list_of_speakers.delete", {"id": 3})
-        self.assert_model_deleted("structure_level_list_of_speakers/3")
+        self.assert_model_not_exists("structure_level_list_of_speakers/3")
         self.assert_model_exists(
             "meeting/1",
             {

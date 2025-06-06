@@ -41,8 +41,8 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         response = self.request("mediafile.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/111")
-        self.assert_model_deleted("meeting_mediafile/111")
+        self.assert_model_not_exists("mediafile/111")
+        self.assert_model_not_exists("meeting_mediafile/111")
         self.assert_model_exists("meeting/34")
         assert response.json["results"] == [None]
 
@@ -100,10 +100,10 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/110")
-        self.assert_model_deleted("mediafile/112")
-        self.assert_model_deleted("meeting_mediafile/1110")
-        self.assert_model_deleted("meeting_mediafile/1112")
+        self.assert_model_not_exists("mediafile/110")
+        self.assert_model_not_exists("mediafile/112")
+        self.assert_model_not_exists("meeting_mediafile/1110")
+        self.assert_model_not_exists("meeting_mediafile/1112")
 
     def test_delete_directory_list_of_children(self) -> None:
         self.set_models(
@@ -151,12 +151,12 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/110")
-        self.assert_model_deleted("mediafile/112")
-        self.assert_model_deleted("mediafile/113")
-        self.assert_model_deleted("meeting_mediafile/1110")
-        self.assert_model_deleted("meeting_mediafile/1112")
-        self.assert_model_deleted("meeting_mediafile/1113")
+        self.assert_model_not_exists("mediafile/110")
+        self.assert_model_not_exists("mediafile/112")
+        self.assert_model_not_exists("mediafile/113")
+        self.assert_model_not_exists("meeting_mediafile/1110")
+        self.assert_model_not_exists("meeting_mediafile/1112")
+        self.assert_model_not_exists("meeting_mediafile/1113")
 
     def test_delete_directory_two_children(self) -> None:
         self.set_models(
@@ -204,12 +204,12 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/110")
-        self.assert_model_deleted("mediafile/112")
-        self.assert_model_deleted("mediafile/113")
-        self.assert_model_deleted("meeting_mediafile/1110")
-        self.assert_model_deleted("meeting_mediafile/1112")
-        self.assert_model_deleted("meeting_mediafile/1113")
+        self.assert_model_not_exists("mediafile/110")
+        self.assert_model_not_exists("mediafile/112")
+        self.assert_model_not_exists("mediafile/113")
+        self.assert_model_not_exists("meeting_mediafile/1110")
+        self.assert_model_not_exists("meeting_mediafile/1112")
+        self.assert_model_not_exists("meeting_mediafile/1113")
 
     def test_delete_check_relations(self) -> None:
         self.set_models(
@@ -245,9 +245,9 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         response = self.request("mediafile.delete", {"id": 222})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/222")
-        self.assert_model_deleted("meeting_mediafile/2222")
-        self.assert_model_deleted("projection/1")
+        self.assert_model_not_exists("mediafile/222")
+        self.assert_model_not_exists("meeting_mediafile/2222")
+        self.assert_model_not_exists("projection/1")
         meeting = self.get_model("meeting/111")
         assert meeting.get("logo_web_header_id") is None
 
@@ -278,9 +278,9 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("mediafile/110")
-        self.assert_model_deleted("mediafile/112")
-        self.assert_model_deleted("mediafile/113")
+        self.assert_model_not_exists("mediafile/110")
+        self.assert_model_not_exists("mediafile/112")
+        self.assert_model_not_exists("mediafile/113")
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

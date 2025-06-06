@@ -174,7 +174,7 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_exists("import_preview/3")
         response = self.request("topic.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("topic/1")
+        self.assert_model_not_exists("topic/1")
         response = self.request("topic.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -218,7 +218,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
     def test_import_done_switched_to_new(self) -> None:
         self.json_upload_duplicate_in_db()
         self.request("topic.delete", {"id": 3})
-        self.assert_model_deleted("topic/3")
+        self.assert_model_not_exists("topic/3")
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -231,7 +231,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
     def test_import_topic_switched_id(self) -> None:
         self.json_upload_duplicate_in_db()
         self.request("topic.delete", {"id": 3})
-        self.assert_model_deleted("topic/3", {"title": "test", "meeting_id": 22})
+        self.assert_model_not_exists("topic/3")
         self.create_model("topic/4", {"title": "test", "meeting_id": 22})
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)

@@ -21,7 +21,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
         response = self.request("motion_change_recommendation.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_change_recommendation/111")
+        self.assert_model_not_exists("motion_change_recommendation/111")
         self.assert_history_information(
             "motion/1", ["Motion change recommendation deleted"]
         )

@@ -663,7 +663,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]

@@ -50,18 +50,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
 
         self.assert_status_code(response, 200)
-        committee1 = self.assert_model_deleted(
-            self.COMMITTEE_FQID,
-            {
-                "organization_id": 1,
-                "organization_tag_ids": [12],
-                "manager_ids": [21],
-                "forward_to_committee_ids": [2],
-                "receive_forwardings_from_committee_ids": [3],
-                "meeting_ids": None,
-            },
-        )
-        self.assertCountEqual(committee1["user_ids"], [20, 21])
+        self.assert_model_not_exists(self.COMMITTEE_FQID)
         self.assert_model_exists("user/20", {"committee_ids": []})
         self.assert_model_exists(
             "user/21",
@@ -119,7 +108,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(self.COMMITTEE_FQID)
+        self.assert_model_not_exists(self.COMMITTEE_FQID)
 
     def test_delete_2_committees_with_forwarding(self) -> None:
         self.set_models(
@@ -145,22 +134,8 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         )
         response = self.request_multi("committee.delete", [{"id": 1}, {"id": 2}])
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "committee/1",
-            {
-                "manager_ids": [20],
-                "forward_to_committee_ids": [2],
-                "user_ids": [20],
-            },
-        )
-        self.assert_model_deleted(
-            "committee/2",
-            {
-                "manager_ids": [20],
-                "receive_forwardings_from_committee_ids": [],
-                "user_ids": [20],
-            },
-        )
+        self.assert_model_not_exists("committee/1")
+        self.assert_model_not_exists("committee/2")
         self.assert_model_exists(
             "user/20",
             {

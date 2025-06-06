@@ -12,7 +12,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("assignment.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment/111")
+        self.assert_model_not_exists("assignment/111")
 
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
@@ -53,11 +53,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("assignment.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment/111")
-        self.assert_model_deleted("agenda_item/333")
-        self.assert_model_deleted("list_of_speakers/222")
-        self.assert_model_deleted("projection/1")
-        self.assert_model_deleted("assignment_candidate/1111")
+        self.assert_model_not_exists("assignment/111")
+        self.assert_model_not_exists("agenda_item/333")
+        self.assert_model_not_exists("list_of_speakers/222")
+        self.assert_model_not_exists("projection/1")
+        self.assert_model_not_exists("assignment_candidate/1111")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

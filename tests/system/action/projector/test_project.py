@@ -343,7 +343,7 @@ class ProjectorProject(BaseActionTestCase):
                 "stable": False,
             },
         )
-        self.assert_model_deleted("projection/106")
+        self.assert_model_not_exists("projection/106")
 
     def test_try_to_store_second_stable_projection_keep_active(self) -> None:
         response = self.request(

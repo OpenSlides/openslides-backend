@@ -46,7 +46,7 @@ standard_data: dict[str, dict[int, Any]] = {
     },
 }
 
-standard_responses = {
+standard_responses: dict[str, dict[int, dict[str, Any]]] = {
     "user": {
         1: {
             "id": 1,
@@ -63,6 +63,8 @@ standard_responses = {
             "default_password": None,
             "can_change_own_password": True,
             "gender_id": None,
+            "guest": None,
+            "home_committee_id": None,
             "email": None,
             "default_vote_weight": Decimal("42"),
             "last_email_sent": None,
@@ -96,6 +98,8 @@ standard_responses = {
             "default_password": None,
             "can_change_own_password": True,
             "gender_id": None,
+            "guest": None,
+            "home_committee_id": None,
             "email": None,
             "default_vote_weight": Decimal("23"),
             "last_email_sent": None,
@@ -131,6 +135,8 @@ standard_responses = {
             "default_password": None,
             "can_change_own_password": True,
             "gender_id": None,
+            "guest": None,
+            "home_committee_id": None,
             "email": None,
             "default_vote_weight": Decimal("81"),
             "last_email_sent": None,
@@ -152,6 +158,9 @@ standard_responses = {
     },
     "committee": {
         1: {
+            "all_child_ids": None,
+            "all_parent_ids": None,
+            "child_ids": None,
             "id": 1,
             "name": "23",
             "description": None,
@@ -160,12 +169,17 @@ standard_responses = {
             "forward_to_committee_ids": None,
             "manager_ids": None,
             "meeting_ids": None,
+            "native_user_ids": None,
             "organization_tag_ids": None,
+            "parent_id": None,
             "receive_forwardings_from_committee_ids": None,
             "user_ids": None,
             "organization_id": 1,
         },
         2: {
+            "all_child_ids": None,
+            "all_parent_ids": None,
+            "child_ids": None,
             "id": 2,
             "name": "42",
             "description": None,
@@ -174,8 +188,10 @@ standard_responses = {
             "forward_to_committee_ids": None,
             "manager_ids": None,
             "meeting_ids": None,
+            "native_user_ids": None,
             "organization_id": 1,
             "organization_tag_ids": None,
+            "parent_id": None,
             "receive_forwardings_from_committee_ids": None,
             "user_ids": None,
         },

@@ -64,9 +64,9 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         assert poll.get("votescast") is None
 
         # check if the votes are deleted
-        self.assert_model_deleted("vote/1")
-        self.assert_model_deleted("vote/2")
-        self.assert_model_deleted("vote/3")
+        self.assert_model_not_exists("vote/1")
+        self.assert_model_not_exists("vote/2")
+        self.assert_model_not_exists("vote/3")
 
         # check if the option.vote_ids fields are cleared
         option_1 = self.get_model("option/1")

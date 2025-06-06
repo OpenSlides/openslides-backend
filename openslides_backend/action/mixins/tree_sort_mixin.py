@@ -32,7 +32,7 @@ class TreeSortMixin(Action):
 
         This function traverses this tree in preorder to assign the weight.
         """
-        # TODO: Check if instances exist in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
+        # TODO: Check if instances exist in DB and is not deleted.
 
         # Get all item ids to verify, that the user send all ids.
         filter = FilterOperator("meeting_id", "=", meeting_id)

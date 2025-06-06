@@ -342,7 +342,7 @@ class Attribute(Node):
 
         # create TableFieldType own out of collection_name, field_name, value as field_def
         own = TableFieldType(collection_name, field_name, value)
-        field_type = own.field_def.get("type", None)
+        field_type = own.field_def.get("type", "")
 
         # get the foreign field list and check the relations
         foreign_fields = InternalHelper.get_definitions_from_foreign_list(
@@ -355,7 +355,7 @@ class Attribute(Node):
 
         if field_type == "relation-list":
             foreign = foreign_fields[0]
-            foreign_type = foreign.field_def.get("type", None)
+            foreign_type = foreign.field_def.get("type", "")
 
             if foreign_type == "relation-list":
                 table_name = HelperGetNames.get_nm_table_name(own, foreign)

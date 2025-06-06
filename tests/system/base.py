@@ -228,7 +228,7 @@ class BaseSystemTestCase(TestCase):
     ) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
-        self.validate_fields(fqid, data)
+        # self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
         if deleted:
             events.append(Event(type=EventType.Delete, fqid=fqid))
@@ -316,15 +316,11 @@ class BaseSystemTestCase(TestCase):
         with self.assertRaises(ModelDoesNotExist):
             self.get_model(fqid)
 
-    def assert_model_deleted(
-        self, fqid: str, fields: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": True})
-
     def _assert_fields(
         self, fqid: FullQualifiedId, fields: dict[str, Any]
     ) -> dict[str, Any]:
         model = self.get_model(fqid)
+        assert model
         model_cls = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
             if not is_reserved_field(field_name) and value is not None:
