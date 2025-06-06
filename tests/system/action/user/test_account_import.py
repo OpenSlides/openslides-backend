@@ -1145,3 +1145,12 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "user/2",
             {"id": 2, "username": "Alice", "guest": None, "home_committee_id": 1},
         )
+
+    def test_json_upload_with_gender_as_orga_admin(self) -> None:
+        self.json_upload_with_gender_as_orga_admin()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "man", "gender_id": 1},
+        )
