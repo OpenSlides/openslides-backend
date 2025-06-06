@@ -13,7 +13,7 @@ USER appuser
 
 EXPOSE 9002
 EXPOSE 9003
-ENV PYTHONPATH /app
+ENV PYTHONPATH=/app
 
 COPY --chown=appuser:appuser scripts scripts
 COPY --chown=appuser:appuser entrypoint.sh ./
@@ -24,15 +24,15 @@ COPY --chown=appuser:appuser data data
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt
 
-ENV EMAIL_HOST postfix
-ENV EMAIL_PORT 25
-# ENV EMAIL_HOST_USER username
-# ENV EMAIL_HOST_PASSWORD secret
+ENV EMAIL_HOST=postfix
+ENV EMAIL_PORT=25
+# ENV EMAIL_HOST_USER=username
+# ENV EMAIL_HOST_PASSWORD=secret
 # EMAIL_CONNECTION_SECURITY use NONE, STARTTLS or SSL/TLS
-ENV EMAIL_CONNECTION_SECURITY NONE
-ENV EMAIL_TIMEOUT 5
-ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
-ENV DEFAULT_FROM_EMAIL noreply@example.com
+ENV EMAIL_CONNECTION_SECURITY=NONE
+ENV EMAIL_TIMEOUT=5
+ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE=false
+ENV DEFAULT_FROM_EMAIL=noreply@example.com
 
 LABEL org.opencontainers.image.title="OpenSlides Backend Service"
 LABEL org.opencontainers.image.description="Backend service for OpenSlides which provides actions and presenters."
