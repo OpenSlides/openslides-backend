@@ -1,6 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -29,14 +29,23 @@ class PollValidationMixin(Action):
                 fqid_from_collection_and_id("poll", poll_id),
                 ["max_votes_amount", "min_votes_amount", "max_votes_per_option"],
             )
-        max_votes_amount = instance.get(
-            "max_votes_amount", poll["max_votes_amount"] if poll_id else 1
+        max_votes_amount = cast(
+            int,
+            instance.get(
+                "max_votes_amount", poll["max_votes_amount"] if poll_id else 1
+            ),
         )
-        min_votes_amount = instance.get(
-            "min_votes_amount", poll["min_votes_amount"] if poll_id else 1
+        min_votes_amount = cast(
+            int,
+            instance.get(
+                "min_votes_amount", poll["min_votes_amount"] if poll_id else 1
+            ),
         )
-        max_votes_per_option = instance.get(
-            "max_votes_per_option", poll["max_votes_per_option"] if poll_id else 1
+        max_votes_per_option = cast(
+            int,
+            instance.get(
+                "max_votes_per_option", poll["max_votes_per_option"] if poll_id else 1
+            ),
         )
 
         if max_votes_amount < max_votes_per_option:

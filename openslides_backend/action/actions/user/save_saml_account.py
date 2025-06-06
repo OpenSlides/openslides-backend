@@ -320,13 +320,13 @@ class UserSaveSamlAccount(
         meeting_user_data: dict[int, dict[str, Any]],
         user_id: int,
         is_update: bool,
-    ) -> dict[int, dict[str, Any]] | None:
+    ) -> dict[int, dict[str, Any]]:
         if not (
             external_meeting_ids := sorted(
                 [ext_id for ext_id in meeting_user_data.keys()]
             )
         ):
-            return None
+            return {}
         meetings = {
             meeting_id: meeting
             for meeting_id, meeting in sorted(

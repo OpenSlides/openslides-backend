@@ -116,6 +116,7 @@ class User(Model):
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
+    guest = fields.BooleanField()
     gender_id = fields.RelationField(to={"gender": "user_ids"})
     organization_management_level = fields.CharField(
         constraints={
@@ -162,6 +163,7 @@ class User(Model):
     poll_candidate_ids = fields.RelationListField(
         to={"poll_candidate": "user_id"}, is_view_field=True
     )
+    home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -399,6 +401,34 @@ class Committee(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=("nm_committee_manager_ids_user", "committee_id", "user_id", []),
+    )
+    parent_id = fields.RelationField(to={"committee": "child_ids"})
+    child_ids = fields.RelationListField(
+        to={"committee": "parent_id"}, is_view_field=True
+    )
+    all_parent_ids = fields.RelationListField(
+        to={"committee": "all_child_ids"},
+        is_view_field=True,
+        write_fields=(
+            "nm_committee_all_child_ids_committee",
+            "all_parent_id",
+            "all_child_id",
+            [],
+        ),
+    )
+    all_child_ids = fields.RelationListField(
+        to={"committee": "all_parent_ids"},
+        is_view_field=True,
+        is_primary=True,
+        write_fields=(
+            "nm_committee_all_child_ids_committee",
+            "all_child_id",
+            "all_parent_id",
+            [],
+        ),
+    )
+    native_user_ids = fields.RelationListField(
+        to={"user": "home_committee_id"}, is_view_field=True
     )
     forward_to_committee_ids = fields.RelationListField(
         to={"committee": "receive_forwardings_from_committee_ids"},

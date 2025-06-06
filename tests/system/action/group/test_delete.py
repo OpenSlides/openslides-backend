@@ -5,12 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 class GroupDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(22)
         self.set_models(
             {
                 "meeting/22": {
-                    "name": "meeting",
-                    "group_ids": [111],
-                    "is_active_in_organization_id": 1,
+                    "group_ids": [22, 23, 24, 111],
                 },
                 "group/111": {"name": "group", "meeting_id": 22},
             }

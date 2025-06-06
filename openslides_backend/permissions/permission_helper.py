@@ -16,26 +16,25 @@ def has_perm(
 ) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        ["anonymous_group_id", "enable_anonymous", "locked_from_inside"],
+        [
+            "anonymous_group_id",
+            "enable_anonymous",
+            "locked_from_inside",
+            "committee_id",
+        ],
         lock_result=False,
     )
     not_locked_from_editing = not meeting.get("locked_from_inside")
     # anonymous cannot be fetched from db
     if user_id > 0:
-        # superadmins have all permissions if the meeting isn't locked from the inside
-        if not_locked_from_editing:
-            user = datastore.get(
-                fqid_from_collection_and_id("user", user_id),
-                [
-                    "organization_management_level",
-                ],
-                lock_result=False,
-            )
-            if user.get("organization_management_level") in [
-                OrganizationManagementLevel.SUPERADMIN,
-                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            ]:
-                return True
+        # committeeadmins, orgaadmins and superadmins have all permissions if the meeting isn't locked from the inside
+        if not_locked_from_editing and has_committee_management_level(
+            datastore,
+            user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            meeting["committee_id"],
+        ):
+            return True
 
         meeting_user = get_meeting_user(
             datastore, meeting_id, user_id, ["group_ids", "locked_out"]
@@ -109,18 +108,58 @@ def has_organization_management_level(
     return False
 
 
+def get_failing_committee_management_levels(
+    datastore: DatastoreService,
+    user_id: int,
+    expected_level: CommitteeManagementLevel,
+    committee_ids: list[int],
+) -> list[int]:
+    """
+    Checks whether a user has the minimum necessary
+    CommitteeManagementLevel for the committees in the list and
+    returns the ids of all that fail.
+    """
+    if user_id > 0:
+        user = datastore.get(
+            fqid_from_collection_and_id("user", user_id),
+            ["organization_management_level", "committee_management_ids"],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        if user.get("organization_management_level") in (
+            OrganizationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        ):
+            return []
+        not_trivial = set(committee_ids).difference(
+            user.get("committee_management_ids", [])
+        )
+        if not_trivial:
+            committees = datastore.get_many(
+                [GetManyRequest("committee", list(not_trivial), ["all_parent_ids"])]
+            )["committee"]
+            return [
+                id_
+                for id_, committee in committees.items()
+                if not any(
+                    parent_id in user.get("committee_management_ids", [])
+                    for parent_id in committee.get("all_parent_ids", [])
+                )
+            ]
+    return []
+
+
 def has_committee_management_level(
     datastore: Database,
     user_id: int,
     expected_level: CommitteeManagementLevel,
     committee_id: int,
 ) -> bool:
-    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
+    """Checks whether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["organization_management_level", *cml_fields],
+            ["organization_management_level", "committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )
@@ -129,7 +168,13 @@ def has_committee_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
-        if committee_id in user.get("committee_management_ids", []):
+        if committee_id in user.get("committee_management_ids", []) or any(
+            parent_id in user.get("committee_management_ids", [])
+            for parent_id in datastore.get(
+                fqid_from_collection_and_id("committee", committee_id),
+                ["all_parent_ids"],
+            ).get("all_parent_ids", [])
+        ):
             return True
     return False
 
@@ -142,10 +187,9 @@ def get_shared_committee_management_levels(
 ) -> list[int]:
     """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            [*cml_fields],
+            ["committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )

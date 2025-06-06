@@ -3,6 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(20)
+
     def test_delete_correct(self) -> None:
         self.create_meeting(20)
         self.set_models(

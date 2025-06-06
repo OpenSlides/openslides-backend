@@ -4,9 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionBlockActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
+        self.create_meeting(11)
         self.set_models(
             {
-                "meeting/11": {"is_active_in_organization_id": 1},
                 "motion_block/111": {"meeting_id": 11},
             }
         )
@@ -29,6 +29,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/12": {
+                    "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                 },

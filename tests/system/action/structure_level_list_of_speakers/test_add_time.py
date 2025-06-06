@@ -8,9 +8,9 @@ from tests.system.action.base import BaseActionTestCase
 class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
-                "is_active_in_organization_id": 1,
                 "list_of_speakers_default_structure_level_time": 1000,
                 "structure_level_ids": [1, 2, 3, 4],
                 "list_of_speakers_ids": [1, 2],

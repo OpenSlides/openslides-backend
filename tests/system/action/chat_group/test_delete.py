@@ -10,7 +10,8 @@ class ChatGroupDelete(BaseActionTestCase):
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"enable_chat": True},
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/2": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 2},
             "chat_group/1": {"meeting_id": 1, "name": "redekreis1"},
         }
 

@@ -28,7 +28,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(model.get("agenda_item_id"), 1)
 
     def test_create_more_fields(self) -> None:
-        self.create_meeting(1)
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
@@ -67,7 +67,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
 
     def test_create_twice_without_parent(self) -> None:
-        self.create_meeting(1)
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
@@ -83,7 +83,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
             self.assert_model_exists(f"agenda_item/{i}", {"weight": i})
 
     def test_create_parent_weight(self) -> None:
-        self.create_meeting(1)
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
@@ -119,7 +119,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 2)
 
     def test_create_same_content_object(self) -> None:
-        self.create_meeting(1)
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
@@ -148,15 +148,15 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_differing_meeting_ids(self) -> None:
-        self.create_meeting(1)
-        self.create_meeting(2)
+        self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/1": {
                     "comment": "test",
-                    "meeting_id": 1,
+                    "meeting_id": 4,
                     "content_object_id": "topic/1",
                 },
             }
@@ -233,7 +233,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "type": AgendaItem.AGENDA_ITEM,
                     "meeting_id": 2,
                     "is_internal": False,
@@ -245,7 +245,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         response = self.request(
             "agenda_item.create",
             {
-                "content_object_id": "topic/2",
+                "content_object_id": "topic/1",
                 "type": AgendaItem.INTERNAL_ITEM,
                 "parent_id": 3,
             },
@@ -263,7 +263,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "type": AgendaItem.INTERNAL_ITEM,
                     "meeting_id": 2,
                     "is_internal": True,
@@ -274,7 +274,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         response = self.request(
             "agenda_item.create",
             {
-                "content_object_id": "topic/2",
+                "content_object_id": "topic/1",
                 "type": AgendaItem.INTERNAL_ITEM,
                 "parent_id": 3,
             },
@@ -292,7 +292,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "type": AgendaItem.INTERNAL_ITEM,
                     "meeting_id": 2,
                     "is_internal": True,
@@ -304,7 +304,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         response = self.request(
             "agenda_item.create",
             {
-                "content_object_id": "topic/2",
+                "content_object_id": "topic/1",
                 "type": AgendaItem.HIDDEN_ITEM,
                 "parent_id": 3,
             },
@@ -340,7 +340,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_replace_reverse_of_multi_content_object_id_required_error(
         self,
     ) -> None:
-        self.create_meeting(1)
+        self.create_meeting()
         self.set_models(
             {
                 "assignment/1": {

@@ -8,11 +8,9 @@ from tests.system.action.base import BaseActionTestCase
 class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                },
                 "user/42": {"meeting_user_ids": [42]},
                 "user/43": {"meeting_user_ids": [43]},
                 "user/44": {"meeting_user_ids": [44]},

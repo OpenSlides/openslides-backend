@@ -12,7 +12,7 @@ from openslides_backend.migrations import (
 from openslides_backend.migrations.core.exceptions import MigrationException
 from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.shared.env import DEV_PASSWORD
-from tests.system.util import disable_dev_mode
+from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
 
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
@@ -23,7 +23,7 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     Uses the anonymous client to call the migration route.
     """
 
-    route = ActionView.migrations_route
+    route: RouteFunction = ActionView.migrations_route
 
     def setUp(self) -> None:
         MigrationHandler.migration_running = False

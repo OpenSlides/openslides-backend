@@ -12,10 +12,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/111": {"title": "title_srtgb123", "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("topic.delete", {"id": 111})
@@ -29,10 +29,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("topic/112")
 
     def test_delete_correct_cascading(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                 },
                 "topic/111": {
@@ -72,7 +72,7 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_create_delete(self) -> None:
-        self.create_model("meeting/1", {"is_active_in_organization_id": 1})
+        self.create_meeting()
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/1")
@@ -83,6 +83,7 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("list_of_speakers/1")
 
     def test_delete_with_agenda_item_and_filled_los(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
@@ -90,7 +91,6 @@ class TopicDeleteActionTest(BaseActionTestCase):
                     "list_of_speakers_ids": [3],
                     "topic_ids": [1],
                     "speaker_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1, 2],
                 },
                 "topic/1": {

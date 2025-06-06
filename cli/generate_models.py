@@ -4,7 +4,7 @@ from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
-from src.helper_get_names import (
+from meta.dev.src.helper_get_names import (
     FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,

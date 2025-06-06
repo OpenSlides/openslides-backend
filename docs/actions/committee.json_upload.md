@@ -13,6 +13,7 @@ The types noted below are the internal types after conversion in the backend. Se
         forward_to_committees: string[],
         organization_tags: string[],
         managers: string[],
+        parent: string;
         meeting_name: string,
         meeting_start_time: date,
         meeting_end_time: date,
@@ -37,6 +38,11 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
 - `managers`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.
+- `parent`:
+  - `done`: The committee was found in the datastore.
+  - `new`: The committee will be newly created as part of this import.
+  - `warning`: Committee could not be identified and therefore the field will be skipped.
+  - `error`: There is a parentage circle.
 - `meeting_admins`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.
@@ -66,7 +72,7 @@ See [common description](preface_special_imports.md#general-format-of-the-result
 ## Action
 
 The data will create or update committees. The committees will be identified by their exact name.
-The fields `description`, `forward_to_committees`,`managers` and `organization_tags` belong to the committee and will be updated in an existing committee. This way forwardings, managers and organization tags can be added or removed.
+The fields `description`, `forward_to_committees`,`managers`, `parent` and `organization_tags` belong to the committee and will be updated in an existing committee. This way forwardings, managers and organization tags can be added or removed.
 
 Giving a `meeting_name` will always create a new meeting in the committee with the given name. If a `meeting_template` is given, this will be cloned, otherwise a fresh meeting will be created.
 
@@ -75,6 +81,12 @@ The data, enriched with building some field values and a first new column "state
 ### User matching
 
 The users given in `managers` and `meeting_admins` will be matched only by username. The `saml_id` will not be used for the search.
+
+### Committee matching
+
+The `parent` field refers to the `committee/parent_id` field.
+If the row is creating a new committee, an existing committee by that name is found, that will be referenced, otherwise a match will be sought among the committees in the import.
+If no match is found when the field is filled on a create row, the row will be marked as error.
 
 ## Permission
 

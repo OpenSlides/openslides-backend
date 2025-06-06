@@ -12,11 +12,7 @@ class StructureLevelCreateTest(BaseActionTestCase):
         )
 
     def test_create_required_fields(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "structure_level.create",
             {
@@ -40,11 +36,7 @@ class StructureLevelCreateTest(BaseActionTestCase):
         )
 
     def test_create_all_fields(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "structure_level.create",
             {
@@ -66,10 +58,10 @@ class StructureLevelCreateTest(BaseActionTestCase):
         )
 
     def test_create_duplicate_name(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
                 },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
@@ -90,12 +82,13 @@ class StructureLevelCreateTest(BaseActionTestCase):
         self.assert_model_not_exists("structure_level/2")
 
     def test_create_duplicate_name_in_other_meeting(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/2": {
                     "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
+                    "committee_id": 60,
                 },
                 "structure_level/1": {"meeting_id": 2, "name": "test"},
             }

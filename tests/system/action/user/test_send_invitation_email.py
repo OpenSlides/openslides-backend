@@ -69,11 +69,9 @@ class SendInvitationMail(BaseActionTestCase):
         except user/2 => mail is sent and
                user/8, which doesn't exist
         """
+        self.create_meeting(4)
         self.set_models(
             {
-                "meeting/2": {
-                    "is_active_in_organization_id": 1,
-                },
                 "user/3": {
                     "username": "Testuser 3 no email",
                     "first_name": "Jim3",
@@ -153,7 +151,7 @@ class SendInvitationMail(BaseActionTestCase):
                         "action": "user.send_invitation_email",
                         "data": [
                             {"id": 4, "meeting_id": 1},
-                            {"id": 5, "meeting_id": 2},
+                            {"id": 5, "meeting_id": 4},
                             {"id": 6, "meeting_id": "1"},
                             {"id": 7, "meeting_id": 1},
                             {"id": 8, "meeting_id": 1},
@@ -199,7 +197,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][1][1]["type"], EmailErrorType.USER_ERROR
         )
         self.assertIn(
-            "'Testuser 5 wrong meeting' does not belong to meeting/2",
+            "'Testuser 5 wrong meeting' does not belong to meeting/4",
             response.json["results"][1][1]["message"],
         )
 

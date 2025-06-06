@@ -4,9 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionBlockActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
+        self.create_meeting(11)
         self.set_models(
             {
-                "meeting/11": {"is_active_in_organization_id": 1},
                 "motion_block/111": {"title": "title_srtgb123", "meeting_id": 11},
             }
         )

@@ -2,7 +2,7 @@ import re
 import time
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
@@ -42,6 +42,7 @@ from ....shared.util import (
 )
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
+from ...relations.typing import ListUpdateElement
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -142,7 +143,7 @@ class MeetingImport(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["committee_ids", "committee_management_ids"],
+                    ["committee_ids", "committee_management_ids", "home_committee_id"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -189,6 +190,7 @@ class MeetingImport(
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
+            user.pop("home_committee_id", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)
@@ -564,7 +566,13 @@ class MeetingImport(
             meeting["meeting_user_ids"].append(new_meeting_user_id)
             request_user = self.datastore.get(
                 fqid_user := fqid_from_collection_and_id("user", self.user_id),
-                ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"],
+                [
+                    "id",
+                    "meeting_user_ids",
+                    "committee_management_ids",
+                    "committee_ids",
+                    "home_committee_id",
+                ],
             )
             request_user.pop("meta_position", None)
             request_user["meeting_user_ids"] = (
@@ -730,8 +738,8 @@ class MeetingImport(
         entries_to_remove: list[str] = []
         for field, entry in relations.items():
             if regex.search(field):
-                if entry["add"]:
-                    entry["remove"] = []
+                if cast(ListUpdateElement, entry)["add"]:
+                    cast(ListUpdateElement, entry)["remove"] = []
                 else:
                     entries_to_remove.append(field)
         for field in entries_to_remove:

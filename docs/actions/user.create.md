@@ -15,6 +15,7 @@
     email: string;
     member_number: string;
     default_vote_weight: decimal(6);
+    guest: boolean;
 
 // Group B
     number: string;
@@ -48,6 +49,12 @@
 // Group H
     saml_id: boolean;
 
+// Group I
+    home_committee_id: Id;
+
+// Group J
+    guest: boolean;
+
 // Only internal
     forwarding_committee_ids
 }
@@ -65,6 +72,7 @@ Creates a user.
 * The `member_number` must be unique within all users.
 * Throws an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * Checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
+* `guest` can't be true if `home_committee_id` is set.
 
 ### Generate a username
 If no username is given, it is set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Joins all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.
@@ -122,3 +130,11 @@ The request user needs the OML superadmin.
 Group H:
 
 Group H fields are only allowed in internal requests or, exclusive for user.create, with OML permission `can_manage_users`
+
+Group I:
+
+CML `can_manage` for the `home_committee_id`. If there is none in the payload, no permission is required.
+
+Group J:
+
+Group I permissions and if there is no home committee Group A Permissions

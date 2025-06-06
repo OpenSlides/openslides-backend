@@ -3,6 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AssignmentDeleteActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(110)
+
     def test_delete_correct(self) -> None:
         self.set_models(
             {
