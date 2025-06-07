@@ -551,6 +551,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "state_id": 34,
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "committee_forwarder",
+                "marked_forwarded": False,
             },
         )
 
@@ -685,6 +686,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "with_amendments": True,
                 "use_original_submitter": True,
                 "use_original_number": True,
+                "mark_amendments_as_forwarded": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -742,6 +744,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "additional_submitter": "A man",
                 "sequential_number": 2,
                 "state_id": 35,
+                "marked_forwarded": True,
             },
         )
         self.assert_model_exists(
@@ -757,6 +760,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "additional_submitter": None,
                 "amendment_ids": [21],
                 "sequential_number": 3,
+                "marked_forwarded": True,
             },
         )
         self.assert_model_exists(
@@ -771,6 +775,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "amendment_paragraphs": {"0": "testssss"},
                 "additional_submitter": None,
                 "sequential_number": 4,
+                "marked_forwarded": True,
             },
         )
 

@@ -35,17 +35,24 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, Any]]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
-        Returns the scope of the given user id together with the relevant scope id (either meeting,
-        committee or organization), the OML level of the user as string (empty string if the user
-        has none) and the ids of all committees that the user is either a manager in or a member of
-        together with their respective meetings the user being part of. A committee can have no meetings if the
-        user just has committee management rights and is not part of any of its meetings.
+        Returns in the tuple:
+        * the scope of the given user id
+        * the relevant scope id (either meeting, committee or organization id
+            depending on scope)
+        * the OML level of the user as string (empty string if the user has none)
+        * the ids of all committees that the user is either a manager in or a member
+            of together with the respective meetings the user is part of
+        * whether the user is only in archived meetings
+        * his home_committee_id.
+        A committee can have no meetings if the user just has committee management rights and is
+        not part of any of its meetings.
         """
         meeting_ids: set[int] = set()
         committees_manager: set[int] = set()
+        home_committee_id: int | None
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
@@ -54,6 +61,7 @@ class UserScopeMixin(BaseServiceProvider):
                 set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
+            home_committee_id = id_or_instance.get("home_committee_id")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -61,12 +69,15 @@ class UserScopeMixin(BaseServiceProvider):
                     "meeting_ids",
                     "organization_management_level",
                     "committee_management_ids",
+                    "home_committee_id",
                 ],
                 lock_result=False,
             )
             meeting_ids.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
+            home_committee_id = user.get("home_committee_id")
+
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -77,34 +88,63 @@ class UserScopeMixin(BaseServiceProvider):
             ]
         ).get("meeting", {})
 
-        meetings_committee: dict[int, int] = {
-            meeting_id: meeting_data["committee_id"]
-            for meeting_id, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        }
-        committees = committees_manager | set(meetings_committee.values())
-        committee_meetings: dict[int, Any] = defaultdict(list)
-        for meeting, committee in meetings_committee.items():
-            committee_meetings[committee].append(meeting)
-        for committee in committees:
-            if committee not in committee_meetings.keys():
-                committee_meetings[committee] = None
+        meetings_committee: dict[int, int] = {}
+        active_meetings_committee: dict[int, int] = {}
 
-        if len(meetings_committee) == 1 and len(committees) == 1:
+        for meeting_id, meeting_data in result.items():
+            item = {meeting_id: meeting_data["committee_id"]}
+            meetings_committee.update(item)
+            if meeting_data.get("is_active_in_organization_id"):
+                active_meetings_committee.update(item)
+
+        committee_meetings, committees = self._get_committee_meetings_and_committees(
+            meetings_committee, committees_manager
+        )
+        active_committee_meetings, active_committees = (
+            self._get_committee_meetings_and_committees(
+                active_meetings_committee, committees_manager
+            )
+        )
+
+        user_in_archived_meetings_only = (
+            len(active_committee_meetings) == 0 and len(committee_meetings) > 0
+        )
+
+        if home_committee_id:
+            return (
+                UserScope.Committee,
+                home_committee_id,
+                oml_right,
+                active_committee_meetings,
+                user_in_archived_meetings_only,
+                home_committee_id,
+            )
+        if len(active_meetings_committee) == 1 and len(active_committees) == 1:
             return (
                 UserScope.Meeting,
-                next(iter(meetings_committee)),
+                next(iter(active_meetings_committee)),
                 oml_right,
-                committee_meetings,
+                active_committee_meetings,
+                user_in_archived_meetings_only,
+                home_committee_id,
             )
-        elif len(committees) == 1:
+        if len(committees) == 1:
             return (
                 UserScope.Committee,
                 next(iter(committees)),
                 oml_right,
                 committee_meetings,
+                user_in_archived_meetings_only,
+                home_committee_id,
             )
-        return UserScope.Organization, 1, oml_right, committee_meetings
+        return (
+            UserScope.Organization,
+            1,
+            oml_right,
+            committee_meetings,
+            user_in_archived_meetings_only,
+            home_committee_id,
+        )
 
     def check_permissions_for_scope(
         self,
@@ -119,9 +159,14 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml, committees_to_meetings = self.get_user_scope(
-            instance_id
-        )
+        (
+            scope,
+            scope_id,
+            user_oml,
+            committees_to_meetings,
+            user_in_archived_meetings_only,
+            _,
+        ) = self.get_user_scope(instance_id)
         if (
             always_check_user_oml
             and user_oml
@@ -193,6 +238,18 @@ class UserScopeMixin(BaseServiceProvider):
                         **{
                             Permissions.User.CAN_UPDATE: meeting_id
                             for meeting_id in meeting_ids
+                        },
+                    }
+                )
+            if (
+                self.check_for_admin_in_all_meetings(instance_id, meeting_ids)
+                and user_in_archived_meetings_only
+            ):
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: {
+                            ci for ci in committees_to_meetings.keys()
                         },
                     }
                 )
@@ -268,6 +325,18 @@ class UserScopeMixin(BaseServiceProvider):
             ],
             lock_result=False,
         ).get("meeting", {})
+
+    def _get_committee_meetings_and_committees(
+        self, meetings_committee: dict[int, int], committees_manager: set[int]
+    ) -> tuple[dict[int, list[int]], set[int]]:
+        committees = committees_manager | set(meetings_committee.values())
+        committee_meetings: dict[int, Any] = defaultdict(list)
+        for meeting, committee in meetings_committee.items():
+            committee_meetings[committee].append(meeting)
+        for committee in committees:
+            if committee not in committee_meetings.keys():
+                committee_meetings[committee] = None
+        return committee_meetings, committees
 
     def _collect_admin_meeting_users(self, meetings: dict[int, Any]) -> set[int]:
         """

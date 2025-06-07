@@ -12,9 +12,9 @@ class ProjectorUpdate(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -69,9 +69,9 @@ class ProjectorUpdate(BaseActionTestCase):
             assert model.get(bool_field) is True
 
     def test_update_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
         )
@@ -81,9 +81,9 @@ class ProjectorUpdate(BaseActionTestCase):
         assert model.get("name") == "name_srtgb123"
 
     def test_update_wrong_color(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
         )
@@ -94,12 +94,11 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_set_used_as_default_projector_in_meeting_id(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
                     "projector_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {"name": "Projector1", "meeting_id": 222},
             }
@@ -124,13 +123,12 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_add_used_as_default_projector_in_meeting_id(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
                     "projector_ids": [1],
                     "default_projector_topic_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "name": "Projector1",
@@ -166,12 +164,11 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_set_wrong_used_as_default_projector_in_meeting_id(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
                     "projector_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {"name": "Projector1", "meeting_id": 222},
             }
@@ -190,10 +187,10 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_reference_projector_internal_error(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "reference_projector_id": 111,
                 },
                 "projector/111": {
@@ -211,10 +208,10 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_reference_projector_internal_okay(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "reference_projector_id": 111,
                 },
                 "projector/111": {

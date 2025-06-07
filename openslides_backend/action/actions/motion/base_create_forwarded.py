@@ -63,7 +63,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     [
                         "meeting_id",
                         "lead_motion_id",
-                        "statute_paragraph_id",
                         "state_id",
                         "all_origin_ids",
                         "derived_motion_ids",
@@ -146,6 +145,9 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         return super().perform(action_data, user_id, internal)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.mark_amendments = instance.pop(
+            "mark_amendments_as_forwarded", False
+        ) or instance.get("marked_forwarded", False)
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["motions_default_workflow_id", "motions_default_amendment_workflow_id"],
@@ -279,6 +281,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "use_original_submitter": use_original_submitter,
                         "use_original_number": use_original_number,
                         "with_change_recommendations": with_change_recommendations,
+                        "marked_forwarded": self.mark_amendments,
                     }
                 )
                 amendment.pop("meta_position", 0)
