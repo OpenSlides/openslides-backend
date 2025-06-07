@@ -541,6 +541,7 @@ class Meeting(Model, MeetingModelMixin):
                 "YN",
                 "YNA",
                 "N",
+                "STV",
                 "valid",
                 "cast",
                 "entitled",
@@ -619,6 +620,7 @@ class Meeting(Model, MeetingModelMixin):
                 "YN",
                 "YNA",
                 "N",
+                "STV",
                 "valid",
                 "cast",
                 "entitled",
@@ -654,6 +656,7 @@ class Meeting(Model, MeetingModelMixin):
                 "YN",
                 "YNA",
                 "N",
+                "STV",
                 "valid",
                 "cast",
                 "entitled",
@@ -1841,7 +1844,7 @@ class Poll(Model, PollModelMixin):
     )
     is_pseudoanonymized = fields.BooleanField()
     pollmethod = fields.CharField(
-        required=True, constraints={"enum": ["Y", "YN", "YNA", "N"]}
+        required=True, constraints={"enum": ["Y", "YN", "YNA", "N", "STV"]}
     )
     state = fields.CharField(
         default="created",
@@ -1862,6 +1865,7 @@ class Poll(Model, PollModelMixin):
                 "YN",
                 "YNA",
                 "N",
+                "STV",
                 "valid",
                 "cast",
                 "entitled",
