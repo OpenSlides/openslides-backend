@@ -195,6 +195,33 @@ def test_create_nm_field_simple() -> None:
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": [1]})
 
 
+def test_create_nm_field_all_() -> None:
+    data = get_data({"committee_ids": [1]})
+    data.append(
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "committee",
+                    "fields": {"name": "com1", "all_child_ids": [2]},
+                },
+                {
+                    "type": EventType.Create,
+                    "fqid": None,
+                    "collection": "committee",
+                    "fields": {"name": "com2", "all_parent_ids": [1]},
+                },
+            ]
+        }
+    )
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))[0]
+    assert_model("committee/1", {"id": 1, "name": "com1", "all_child_ids": [2]})
+    assert_model("committee/2", {"id": 2, "name": "com2", "all_parent_ids": [1]})
+
+
 def test_create_nm_field_generic() -> None:
     data = [
         {

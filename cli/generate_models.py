@@ -367,7 +367,10 @@ class Attribute(Node):
                 if field1 == field2:
                     field1 += "_1"
                     field2 += "_2"
-                write_fields = (table_name, field1, field2, [])
+                if own.table == foreign.table:
+                    write_fields = (table_name, field2, field1, [])
+                else:
+                    write_fields = (table_name, field1, field2, [])
 
             elif foreign_type == "generic-relation-list":
                 write_fields = self.get_write_fields_for_generic(own, foreign_fields)

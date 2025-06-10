@@ -20,7 +20,8 @@ class DeleteHistoryInformation(Action):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        self.datastore.delete_history_information()
+        # TODO write history action
+        # self.datastore.delete_history_information()
         return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:

@@ -153,10 +153,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
+                "topic/2": {"meeting_id": 4, "title": "jungle", "sequential_number": 2},
                 "agenda_item/1": {
                     "comment": "test",
-                    "meeting_id": 4,
+                    "meeting_id": 1,
                     "content_object_id": "topic/1",
                 },
             }
@@ -166,7 +166,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 2: ['agenda_item/1']",
+            "The following models do not belong to meeting 4: ['agenda_item/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("agenda_item/2")

@@ -60,14 +60,14 @@ def test_update_nm_field_simple() -> None:
             "events": [
                 {
                     "type": EventType.Create,
-                    "fqid": None,
+                    "fqid": "committee/2",
                     "collection": "committee",
-                    "fields": {"name": "com1"},
+                    "fields": {"name": "com2"},
                 }
             ]
         }
     )
-    user_id, committee_id = create_models(data)
+    committee_id, user_id = create_models(data)
 
     data = [
         {
@@ -80,7 +80,7 @@ def test_update_nm_field_simple() -> None:
                 {
                     "type": EventType.Update,
                     "fqid": f"user/{user_id}",
-                    "fields": {"committee_ids": [1]},
+                    "fields": {"committee_ids": [2]},
                 },
             ]
         }
@@ -89,9 +89,9 @@ def test_update_nm_field_simple() -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_model(
-        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": [1]}
+        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": [2]}
     )
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": [1]})
+    assert_model("committee/2", {"id": 2, "name": "com2", "user_ids": [1]})
 
 
 def test_update_nm_field_null() -> None:

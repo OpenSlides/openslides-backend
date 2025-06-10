@@ -105,7 +105,7 @@ class DatabaseWriter:
 
         self.print_stats()
         self.print_summary()
-        return list(modified_models)
+        return sorted(modified_models)
 
     def print_stats(self) -> None:
         pass
@@ -389,7 +389,10 @@ class DatabaseWriter:
         collection: Collection,
         directly: bool,
     ) -> None:
-        """Deletes all rows with the given id_ from the given intermediate tables and the mapped field."""
+        """
+        Deletes all rows with the combination of the given id_ and the list from the intermediate tables.
+        If directly is True, the values of the list are used. Otherwise the negation of those is used.
+        """
         for field_name, field in intermediate_tables.items():
             if not field.write_fields:
                 raise BadCodingException(
