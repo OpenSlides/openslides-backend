@@ -19,7 +19,6 @@ COPY --chown=appuser:appuser scripts scripts
 COPY --chown=appuser:appuser entrypoint.sh ./
 COPY --chown=appuser:appuser openslides_backend openslides_backend
 COPY --chown=appuser:appuser meta meta
-COPY --chown=appuser:appuser data data
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt

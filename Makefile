@@ -40,7 +40,7 @@ test-unit-integration:
 test-file:
 	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
 
-check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
+check-all: validate-models-yml check-models check-permissions
 
 validate-models-yml:
 	make -C meta/dev validate-models
@@ -58,12 +58,6 @@ generate-permissions:
 
 check-permissions:
 	python cli/generate_permissions.py --check
-
-check-initial-data-json:
-	python cli/check_json.py data/initial-data.json
-
-check-example-data-json:
-	python cli/check_json.py data/example-data.json
 
 run-debug:
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
