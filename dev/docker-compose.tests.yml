@@ -1,6 +1,11 @@
 version: "3"
 services:
     backend:
+        build:
+            context: ..
+            dockerfile: Dockerfile
+            args:
+                CONTEXT: "tests"
         image: openslides-backend-tests
         user: $USER_ID:$GROUP_ID
         ports:

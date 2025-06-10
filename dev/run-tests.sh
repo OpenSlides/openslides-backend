@@ -21,5 +21,4 @@ $DC exec -T backend ./entrypoint.sh pytest --cov || CATCH=1
 
 if [ -z $PERSIST_CONTAINERS ]; then $DC down --volumes || CATCH=1; fi
 
-echo $CATCH
 exit $CATCH
