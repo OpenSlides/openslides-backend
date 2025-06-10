@@ -1,8 +1,7 @@
-import typing
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, TypeAlias, Union
+from typing import Any, Literal, Union
 
 from openslides_backend.shared.patterns import FIELD_PATTERN, Field
 
@@ -57,15 +56,6 @@ filter_definitions_schema = {
 
 FilterData = dict[str, Any]
 FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"]
-
-# Whoof, that's an ugly workaround... A bit of background:
-# - The `dacite` package cannot handle `collections.abc.Sequence` (the replacement for the
-#   deprecated `typing.Sequence`) correctly in python 3.10, therefore we need to use
-#   `typing.Sequence` here. (With python 3.11, this bug seems to be fixed.)
-# - On the other hand, `pyupgrade` automatically replaces `typing.Sequence` with
-#   `collections.abc.Sequence` and provides no way to exclude single lines. Therefore, we have to
-#   use this hack to be able to use `typing.Sequence` here.
-Sequence: TypeAlias = getattr(typing, "Sequence")  # type: ignore
 
 
 class _FilterBase(ABC):
