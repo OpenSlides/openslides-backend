@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
 from ...models.fields import Field
-# from ...services.database.extended_database import ExtendedDatabase
 from ...services.database.interface import Database
 from .typing import RelationUpdates
 
