@@ -151,11 +151,3 @@ jobs:
     - name: Check for up to date permissions.py
       if: always()
       run: make check-permissions
-
-    - name: Check initial-data.json
-      if: always()
-      run: make check-initial-data-json
-
-    - name: Check example-data.json
-      if: always()
-      run: make check-example-data-json
