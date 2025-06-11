@@ -9,6 +9,7 @@ from .base_poll_test import BasePollTestCase
 class VotePollBaseTestClass(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
@@ -16,8 +17,6 @@ class VotePollBaseTestClass(BasePollTestCase):
                     "name": "my meeting",
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 11,
-                    "is_active_in_organization_id": 1,
-                    "group_ids": [1],
                     "meeting_user_ids": [11],
                     "present_user_ids": [1],
                 },
@@ -56,6 +55,8 @@ class VotePollBaseTestClass(BasePollTestCase):
                     "votescast": "0.000000",
                     "backend": "fast",
                     **self.get_poll_data(),
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
             }
         )

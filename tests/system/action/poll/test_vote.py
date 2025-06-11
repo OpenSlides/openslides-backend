@@ -111,6 +111,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": True,
@@ -173,6 +175,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -223,6 +227,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -311,6 +317,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -356,6 +364,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -399,10 +410,12 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
-                    "max_votes_amount": 1,
+                    "max_votes_amount": 2,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -426,6 +439,55 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
 
+    def test_vote_no_votes_total_check_by_YNA_max_votes_error(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "group/1": {"meeting_user_ids": [11]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "title": "my test poll",
+                    "option_ids": [11, 12, 13],
+                    "pollmethod": "YNA",
+                    "meeting_id": 113,
+                    "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
+                },
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "poll.vote",
+            {
+                "id": 1,
+                "user_id": 1,
+                "value": {"11": "Y", "12": "A"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "You have to select between 1 and 1 options" in response.json["message"]
+
     def test_vote_no_votes_total_check_by_YN(self) -> None:
         self.set_models(
             {
@@ -445,11 +507,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -497,6 +559,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -565,6 +629,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "pollmethod": "YNA",
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
             }
         )
@@ -623,6 +689,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -658,6 +726,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -702,6 +773,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "YNA",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -731,8 +805,12 @@ class PollVoteTest(BaseVoteTestCase):
                 "motion/1": {
                     "meeting_id": 113,
                 },
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
                 "poll/1": {
                     "content_object_id": "motion/1",
+                    "option_ids": [11, 12, 13],
                     "title": "my test poll",
                     "type": "named",
                     "pollmethod": "YNA",
@@ -741,6 +819,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -805,6 +885,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
             }
         )
@@ -864,6 +946,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "YNA",
                 },
             }
         )
@@ -899,6 +984,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "backend": "fast",
                     "type": "named",
                     "pollmethod": "YNA",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
             }
         )
@@ -923,6 +1010,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "pollmethod": "Y",
                     "state": Poll.STATE_STARTED,
                     "backend": "fast",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -969,6 +1058,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -1032,6 +1123,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "Y",
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": False,
@@ -1148,6 +1241,8 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "YNA",
             },
         )
 
@@ -1342,6 +1437,8 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 
@@ -1566,6 +1663,8 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 5,
                 "max_votes_per_option": 3,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 
@@ -1676,6 +1775,8 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 
@@ -1879,6 +1980,8 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 
@@ -2042,6 +2145,8 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 
@@ -2193,6 +2298,8 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
+                "sequential_number": 1,
+                "onehundred_percent_base": "Y",
             },
         )
 

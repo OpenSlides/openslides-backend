@@ -21,9 +21,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         return handler
 
     def test_parse_actions_create_2_actions(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting()
         payload: Payload = [
             {
                 "action": "group.create",
@@ -58,7 +56,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "update")
-        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
+        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/4")
         self.assertEqual(str(write_requests[0].events[1]["fqid"]), "meeting/1")
         self.assertEqual(len(write_requests[1].events), 2)
         self.assertCountEqual(
@@ -69,9 +67,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
 
     def test_parse_actions_create_1_2_events(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting()
         payload: Payload = [
             {
                 "action": "group.create",
@@ -102,14 +98,12 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "create")
         self.assertEqual(write_requests[0].events[2]["type"], "update")
-        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
-        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "group/2")
+        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/4")
+        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "group/5")
         self.assertEqual(str(write_requests[0].events[2]["fqid"]), "meeting/1")
 
     def test_create_2_actions(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting()
         response = self.request_json(
             [
                 {
@@ -137,14 +131,12 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             "Datastore service sends HTTP 400. The following locks were broken: 'group/weight'",
             response.json["message"],
         )
-        self.assert_model_not_exists("group/1")
-        self.assert_model_not_exists("group/2")
-        self.assert_model_exists("meeting/1", {"group_ids": None})
+        self.assert_model_not_exists("group/4")
+        self.assert_model_not_exists("group/5")
+        self.assert_model_exists("meeting/1", {"group_ids": [1, 2, 3]})
 
     def test_create_1_2_events(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
-        )
+        self.create_meeting()
         response = self.request_multi(
             "group.create",
             [
@@ -159,8 +151,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/1", {"name": "group 1", "meeting_id": 1})
-        self.assert_model_exists("group/2", {"name": "group 2", "meeting_id": 1})
+        self.assert_model_exists("group/4", {"name": "group 1", "meeting_id": 1})
+        self.assert_model_exists("group/5", {"name": "group 2", "meeting_id": 1})
 
     def test_update_2_actions(self) -> None:
         self.set_models(
@@ -170,12 +162,14 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "meeting/2": {
                     "name": "name2",
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "committee/1": {"name": "test_committee"},
             }
@@ -216,12 +210,14 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "meeting/2": {
                     "name": "name2",
                     "committee_id": 1,
                     "welcome_title": "t",
                     "is_active_in_organization_id": 1,
+                    "language": "en",
                 },
                 "committee/1": {"name": "test_committee"},
             }
@@ -284,8 +280,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting/2")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting/2")
         self.assert_model_exists("committee/1", {"meeting_ids": []})
 
     def test_delete_1_2_events(self) -> None:
@@ -318,6 +314,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting/2")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting/2")
         self.assert_model_exists("committee/1", {"meeting_ids": []})

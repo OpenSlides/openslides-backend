@@ -18,9 +18,9 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
             }
 
         def test_sort_correct_1(self) -> None:
+            self.create_meeting(13)
             self.set_models(
                 {
-                    "meeting/13": {"is_active_in_organization_id": 1},
                     "motion/222": {"meeting_id": 13},
                     f"{collection}/31": {"motion_id": 222, "meeting_id": 13},
                     f"{collection}/32": {"motion_id": 222, "meeting_id": 13},
@@ -37,9 +37,9 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
             assert model_32.get("weight") == 1
 
         def test_sort_missing_model(self) -> None:
+            self.create_meeting(13)
             self.set_models(
                 {
-                    "meeting/13": {"is_active_in_organization_id": 1},
                     "motion/222": {"meeting_id": 13},
                     f"{collection}/31": {"motion_id": 222, "meeting_id": 13},
                 }
@@ -55,9 +55,9 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
             )
 
         def test_sort_another_section_db(self) -> None:
+            self.create_meeting(13)
             self.set_models(
                 {
-                    "meeting/13": {"is_active_in_organization_id": 1},
                     "motion/222": {"meeting_id": 13},
                     f"{collection}/31": {"motion_id": 222, "meeting_id": 13},
                     f"{collection}/32": {"motion_id": 222, "meeting_id": 13},

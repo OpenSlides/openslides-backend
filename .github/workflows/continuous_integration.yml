@@ -10,7 +10,7 @@ on:
     types: [checks_requested]
 
 env:
-  PYTHON_VERSION: 3.10.x
+  PYTHON_VERSION: 3.12.x
   AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
@@ -151,11 +151,3 @@ jobs:
     - name: Check for up to date permissions.py
       if: always()
       run: make check-permissions
-
-    - name: Check initial-data.json
-      if: always()
-      run: make check-initial-data-json
-
-    - name: Check example-data.json
-      if: always()
-      run: make check-example-data-json

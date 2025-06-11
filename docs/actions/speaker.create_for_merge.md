@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     list_of_speakers_id: Id;
@@ -19,7 +19,7 @@
 }
 ```
 
-## Action
-Internal action to create speakers with specific data.
+## Internal action
+Creates speakers with specific data.
 Unlike [speaker.create](speaker.create.md) this is a multi action with pretty much no checks. `meeting_id` is generated from the `list_of_speakers_id`
 Should only be called by [user.merge_together](user.merge_together.md).

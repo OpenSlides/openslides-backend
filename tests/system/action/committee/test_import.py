@@ -371,6 +371,19 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/1", {"name": "this", "organization_tag_ids": [12, 14]}
         )
 
+    def test_import_with_duplicated_organization_tags(self) -> None:
+        self.json_upload_with_duplicated_organization_tags()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "organization_tag/1",
+            {"name": "ot1", "tagged_ids": ["committee/1", "committee/2"]},
+        )
+        self.assert_model_exists(
+            "organization_tag/2", {"name": "ot2", "tagged_ids": ["committee/1"]}
+        )
+        self.assert_model_not_exists("organization_tag/3")
+
     def test_import_managers(self) -> None:
         self.set_models(
             {
@@ -437,7 +450,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "language": "en",
                     "default_group_id": 1,
                     "motions_default_amendment_workflow_id": 1,
-                    "motions_default_statute_amendment_workflow_id": 1,
                     "motions_default_workflow_id": 1,
                     "reference_projector_id": 1,
                     "projector_ids": [1],
@@ -465,7 +477,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                     "name": "blup",
                     "first_state_id": 1,
                     "default_amendment_workflow_meeting_id": 1,
-                    "default_statute_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
                     "sequential_number": 1,
@@ -833,3 +844,290 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert preview_row["state"] == "error"
         self.assert_model_not_exists("committee/1")
         self.assert_model_not_exists("meeting/1")
+
+    def test_json_upload_with_parents(self) -> None:
+        self.json_upload_with_parents()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_parents_test_result(response)
+        expected_structure: dict[
+            int,
+            tuple[
+                str, int | None, list[int] | None, list[int] | None, list[int] | None
+            ],
+        ] = {
+            1: ("one", None, None, None, None),
+            2: ("two", 6, [3, 10], [6], [3, 10]),
+            3: ("three", 2, None, [6, 2], None),
+            4: ("nine", 9, None, [6, 8, 9], None),
+            5: ("four", None, None, None, None),
+            6: ("five", None, [2, 7, 8], [], [2, 3, 4, 7, 8, 9, 10]),
+            7: ("six", 6, None, [6], None),
+            8: ("seven", 6, [9], [6], [4, 9]),
+            9: ("eight", 8, [4], [6, 8], [4]),
+            10: ("ten", 2, None, [6, 2], None),
+        }
+        for id_, (
+            name,
+            parent,
+            child_ids,
+            all_parent_ids,
+            all_child_ids,
+        ) in expected_structure.items():
+            self.assert_model_exists(
+                f"committee/{id_}",
+                {
+                    "name": name,
+                    "parent_id": parent,
+                    "child_ids": child_ids,
+                    "all_parent_ids": all_parent_ids,
+                    "all_child_ids": all_child_ids,
+                },
+            )
+
+    def test_json_upload_parent_changed_name(self) -> None:
+        self.json_upload_with_parents()
+        self.set_models({"committee/2": {"name": "Committee two"}})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert self.get_row(response, 1) == {
+            "data": {
+                "id": 2,
+                "name": {
+                    "id": 2,
+                    "info": ImportState.ERROR,
+                    "value": "two",
+                },
+                "parent": {
+                    "info": ImportState.NEW,
+                    "value": "five",
+                },
+            },
+            "messages": [
+                "Error: committee 2 not found anymore for updating committee 'two'.",
+            ],
+            "state": ImportState.ERROR,
+        }
+        assert self.get_row(response, 9) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "ten",
+                },
+                "parent": {
+                    "id": 2,
+                    "info": ImportState.WARNING,
+                    "value": "two",
+                },
+            },
+            "messages": ["Expected model '2 two' changed its name to 'Committee two'."],
+            "state": ImportState.NEW,
+        }
+
+    def test_json_upload_parent_changed_name_2(self) -> None:
+        self.json_upload_with_parent()
+        self.set_models({"committee/1": {"name": "Committee one"}})
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert self.get_row(response) == {
+            "data": {
+                "name": {
+                    "info": ImportState.NEW,
+                    "value": "two",
+                },
+                "parent": {"info": ImportState.WARNING, "value": "one", "id": 1},
+            },
+            "messages": ["Expected model '1 one' changed its name to 'Committee one'."],
+            "state": ImportState.NEW,
+        }
+        self.assert_model_exists("committee/2", {"name": "two", "parent_id": 1})
+
+    def test_json_upload_committee_with_new_committee_name_created(self) -> None:
+        self.json_upload_with_parents()
+        self.create_committee(4, name="ten")
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert self.get_row(response, 9) == {
+            "data": {
+                "name": {
+                    "info": ImportState.ERROR,
+                    "value": "ten",
+                },
+                "parent": {
+                    "id": 2,
+                    "info": ImportState.DONE,
+                    "value": "two",
+                },
+            },
+            "messages": ["Error: row state expected to be 'done', but it is 'new'."],
+            "state": ImportState.ERROR,
+        }
+        self.assert_model_not_exists("committee/5")
+
+    def test_json_upload_parent_deleted(self) -> None:
+        self.json_upload_with_parent()
+        response = self.request("committee.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 400)
+        assert "Model 'committee/1' does not exist." in response.json["message"]
+
+    def test_json_upload_update_parent_ids(self) -> None:
+        self.json_upload_update_parent_ids()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "parent_id": None,
+                "all_parent_ids": None,
+                "child_ids": [2, 9],
+                "all_child_ids": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            },
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [6],
+                "all_child_ids": [5, 6, 7, 8],
+            },
+        )
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "parent_id": 14,
+                "all_parent_ids": [1, 9, 13, 14],
+                "child_ids": [4],
+                "all_child_ids": [4, 10, 11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {
+                "parent_id": 3,
+                "all_parent_ids": [1, 9, 13, 14, 3],
+                "child_ids": [10],
+                "all_child_ids": [10, 11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/5",
+            {
+                "parent_id": 6,
+                "all_parent_ids": [1, 2, 6],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "committee/6",
+            {
+                "parent_id": 2,
+                "all_parent_ids": [1, 2],
+                "child_ids": [7, 8, 5],
+                "all_child_ids": [7, 8, 5],
+            },
+        )
+        for id_ in [7, 8]:
+            self.assert_model_exists(
+                f"committee/{id_}",
+                {
+                    "parent_id": 6,
+                    "all_parent_ids": [1, 2, 6],
+                    "child_ids": None,
+                    "all_child_ids": None,
+                },
+            )
+        self.assert_model_exists(
+            "committee/9",
+            {
+                "parent_id": 1,
+                "all_parent_ids": [1],
+                "child_ids": [13],
+                "all_child_ids": [10, 11, 12, 13, 14, 15, 3, 4],
+                "description": "Now this ain't just any ol' 'mittee, this is THE 'mittee I tell ya.",
+            },
+        )
+        self.assert_model_exists(
+            "committee/10",
+            {
+                "parent_id": 4,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4],
+                "child_ids": [11, 12],
+                "all_child_ids": [11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/11",
+            {
+                "parent_id": 10,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "child_ids": None,
+                "all_child_ids": None,
+                "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
+            },
+        )
+        self.assert_model_exists(
+            "committee/12",
+            {
+                "parent_id": 10,
+                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "committee/13",
+            {
+                "parent_id": 9,
+                "all_parent_ids": [1, 9],
+                "child_ids": [14, 15],
+                "all_child_ids": [14, 15, 3, 10, 11, 4, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/14",
+            {
+                "parent_id": 13,
+                "all_parent_ids": [1, 9, 13],
+                "child_ids": [3],
+                "all_child_ids": [3, 10, 11, 4, 12],
+            },
+        )
+        self.assert_model_exists(
+            "committee/15",
+            {
+                "parent_id": 13,
+                "all_parent_ids": [1, 9, 13],
+                "child_ids": None,
+                "all_child_ids": None,
+            },
+        )
+
+    def test_json_upload_parent_not_found(self) -> None:
+        self.json_upload_parent_not_found()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/5",
+            {
+                "parent_id": None,
+                "name": "National conference",
+            },
+        )
+
+    def test_json_upload_parent_multiple_found(self) -> None:
+        self.json_upload_parent_multiple_found()
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "parent_id": None,
+                "name": "Regional council",
+                "child_ids": [3],
+                "all_child_ids": [3, 4],
+            },
+        )

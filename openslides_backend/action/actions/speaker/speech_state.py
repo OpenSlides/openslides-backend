@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SpeechState(str, Enum):
+class SpeechState(StrEnum):
     CONTRIBUTION = "contribution"
     PRO = "pro"
     CONTRA = "contra"

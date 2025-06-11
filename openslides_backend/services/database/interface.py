@@ -1,20 +1,27 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, ContextManager, Protocol, Union
+from typing import Protocol
+
+from openslides_backend.shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+)
+from openslides_backend.shared.typing import LockResult, PartialModel
 
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId
-from ...shared.typing import ModelMap
+from ...shared.patterns import Collection, FullQualifiedId, Id
 from .commands import GetManyRequest
 
-PartialModel = dict[str, Any]
-
-
-LockResult = Union[bool, list[str]]
-
-
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
+
+# Max lengths of the important key parts:
+# collection: 32
+# id: 16
+# field: 207
+# -> collection + id + field = 255
+COLLECTION_MAX_LEN = 32
+FQID_MAX_LEN = 48  # collection + id
+COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 
 class Database(Protocol):
@@ -22,10 +29,7 @@ class Database(Protocol):
     Database defines the interface to the database.
     """
 
-    changed_models: ModelMap
-
-    @abstractmethod
-    def get_database_context(self) -> ContextManager[None]: ...
+    locked_fields: dict[str, CollectionFieldLock]
 
     @abstractmethod
     def apply_changed_model(
@@ -33,11 +37,18 @@ class Database(Protocol):
     ) -> None: ...
 
     @abstractmethod
+    def get_changed_model(
+        self, collection_or_fqid: str, id_: Id | None = None
+    ) -> PartialModel: ...
+
+    @abstractmethod
+    def get_changed_models(self, collection: str) -> dict[Id, PartialModel]: ...
+
+    @abstractmethod
     def get(
         self,
         fqid: FullQualifiedId,
         mapped_fields: list[str],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
         raise_exception: bool = True,
@@ -47,7 +58,6 @@ class Database(Protocol):
     def get_many(
         self,
         get_many_requests: list[GetManyRequest],
-        position: int | None = None,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
     ) -> dict[Collection, dict[int, PartialModel]]: ...
@@ -64,7 +74,7 @@ class Database(Protocol):
     def filter(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         mapped_fields: list[str],
         lock_result: bool = True,
         use_changed_models: bool = True,
@@ -74,7 +84,7 @@ class Database(Protocol):
     def exists(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> bool: ...
@@ -83,7 +93,7 @@ class Database(Protocol):
     def count(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int: ...
@@ -92,7 +102,7 @@ class Database(Protocol):
     def min(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,
@@ -102,14 +112,11 @@ class Database(Protocol):
     def max(
         self,
         collection: Collection,
-        filter: Filter,
+        filter_: Filter | None,
         field: str,
         lock_result: bool = True,
         use_changed_models: bool = True,
     ) -> int | None: ...
-
-    @abstractmethod
-    def history_information(self, fqids: list[str]) -> dict[str, list[dict]]: ...
 
     @abstractmethod
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]: ...
@@ -118,10 +125,9 @@ class Database(Protocol):
     def reserve_id(self, collection: Collection) -> int: ...
 
     @abstractmethod
-    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None: ...
-
-    @abstractmethod
-    def write_without_events(self, write_request: WriteRequest) -> None: ...
+    def write(
+        self, write_requests: list[WriteRequest] | WriteRequest
+    ) -> list[FullQualifiedId]: ...
 
     @abstractmethod
     def truncate_db(self) -> None: ...
@@ -130,10 +136,10 @@ class Database(Protocol):
     def is_deleted(self, fqid: FullQualifiedId) -> bool: ...
 
     @abstractmethod
+    def is_new(self, fqid: FullQualifiedId) -> bool: ...
+
+    @abstractmethod
     def reset(self, hard: bool = True) -> None: ...
 
     @abstractmethod
     def get_everything(self) -> dict[Collection, dict[int, PartialModel]]: ...
-
-    @abstractmethod
-    def delete_history_information(self) -> None: ...

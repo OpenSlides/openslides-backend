@@ -1,10 +1,10 @@
-from typing import Any, cast
+from typing import Any
 
 import fastjsonschema
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import PermissionDenied
 from ..shared.schema import required_fqid_schema, schema_version
 from .base import BasePresenter
@@ -38,16 +38,18 @@ class GetHistoryInformation(BasePresenter):
             raise PermissionDenied("You are not a superadmin")
 
         fqid = self.data["fqid"]
-        response = self.datastore.history_information([fqid])
-        information = cast(list[dict[str, Any]], response.get(fqid, []))
+        # response = self.datastore.history_information([fqid])
+        # information = cast(list[dict[str, Any]], response.get(fqid, []))
 
-        # get all users
-        user_ids = {position["user_id"] for position in information}
-        usernames = self.get_usernames(user_ids)
-        for position in information:
-            position["user"] = usernames[position["user_id"]]
-            del position["user_id"]
-        return information
+        # # get all users
+        # user_ids = {position["user_id"] for position in information}
+        # usernames = self.get_usernames(user_ids)
+        # for position in information:
+        #     position["user"] = usernames[position["user_id"]]
+        #     del position["user_id"]
+        # return information
+        # TODO write history model and its actions
+        return fqid
 
     def get_usernames(self, user_ids: set[int]) -> dict[int, str]:
         if not user_ids:

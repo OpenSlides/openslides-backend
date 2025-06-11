@@ -9,17 +9,18 @@ from openslides_backend.models.checker import (
     external_motion_fields,
 )
 from openslides_backend.models.models import Meeting, MeetingUser
-from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
+from openslides_backend.shared.util import ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .import_ import ONE_ORGANIZATION_ID, MeetingImport
+from .import_ import MeetingImport
 
 updatable_fields = [
     "committee_id",
@@ -49,6 +50,7 @@ class MeetingClone(MeetingImport):
             "set_as_template": {"type": "boolean"},
         },
     )
+    action_name = "clone"
 
     def prefetch(self, action_data: ActionData) -> None:
         self.datastore.get_many(
@@ -91,7 +93,7 @@ class MeetingClone(MeetingImport):
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        meeting_json = export_meeting(self.datastore, instance["meeting_id"])
+        meeting_json = export_meeting(self.datastore, instance["meeting_id"], True)
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
         additional_admin_ids = instance.pop("admin_ids", None) or []
@@ -108,9 +110,6 @@ class MeetingClone(MeetingImport):
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
 
-        if meeting.get("locked_from_inside"):
-            raise ActionException("Cannot clone locked meeting.")
-
         if committee_id := instance.get("committee_id"):
             meeting["committee_id"] = committee_id
 
@@ -126,6 +125,7 @@ class MeetingClone(MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
@@ -188,7 +188,6 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        meeting = self.get_meeting_from_json(meeting_json)
         meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
         if additional_user_ids:
@@ -245,11 +244,9 @@ class MeetingClone(MeetingImport):
         meeting_user_ids.update(additional_meeting_user_ids)
         group_id = group_in_instance["id"]
         for meeting_user_id in additional_meeting_user_ids:
-            fqid_meeting_user = fqid_from_collection_and_id(
-                "meeting_user", meeting_user_id
-            )
             meeting_user = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any],
+                self.datastore.get_changed_model("meeting_user", meeting_user_id),
             )
             group_ids = meeting_user.get("group_ids", [])
             if group_id not in group_ids:

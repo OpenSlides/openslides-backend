@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -11,11 +11,12 @@ from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .base import base_check_onehundred_percent_base
-from .mixins import PollHistoryMixin, PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin, PollValidationMixin
 
 
 @register_action("poll.update")
 class PollUpdateAction(
+    PollValidationMixin,
     ExtendHistoryMixin,
     UpdateAction,
     PollPermissionMixin,

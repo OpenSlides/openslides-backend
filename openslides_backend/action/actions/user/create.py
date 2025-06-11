@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -15,13 +18,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import SetPasswordMixin
-from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
+from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
 @register_action("user.create")
 class UserCreate(
+    UserMixin,
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
@@ -46,16 +49,17 @@ class UserCreate(
             "is_physical_person",
             "default_password",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "organization_management_level",
             "is_present_in_meeting_ids",
             "committee_management_ids",
             "is_demo_user",
-            "forwarding_committee_ids",
             "saml_id",
             "member_number",
+            "guest",
+            "home_committee_id",
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
@@ -96,7 +100,11 @@ class UserCreate(
                 instance["default_password"] = get_random_password()
             self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
-        check_gender_helper(self.datastore, instance)
+        check_gender_exists(self.datastore, instance)
+        if instance.get("guest") and instance.get("home_committee_id"):
+            raise ActionException(
+                "Cannot set guest to true and set a home committee at the same time."
+            )
         return instance
 
     def create_action_result_element(

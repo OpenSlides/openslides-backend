@@ -6,9 +6,9 @@ from tests.system.action.base import BaseActionTestCase
 class AgendaItemActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "topic/102": {"agenda_item_id": 1, "meeting_id": 1},
                 "agenda_item/111": {
                     "item_number": "101",
@@ -225,21 +225,4 @@ class AgendaItemActionTest(BaseActionTestCase):
             {},
             "agenda_item.update",
             {"id": 111, "duration": 1200},
-        )
-
-    def test_update_moderator_notes_no_permissions(self) -> None:
-        self.base_permission_test(
-            {},
-            "agenda_item.update",
-            {"id": 111, "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE,
-            fail=True,
-        )
-
-    def test_update_moderator_notes_permissions(self) -> None:
-        self.base_permission_test(
-            {},
-            "agenda_item.update",
-            {"id": 111, "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
         )

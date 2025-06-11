@@ -74,6 +74,14 @@ class TestPermissions(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
+    def test_orgaadmin(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        response = self.request("fake_model_p.create", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("fake_model_p/1")
+
     def test_user_in_admin_group(self) -> None:
         # 2 is admin group
         self.set_user_groups(self.user_id, [2])

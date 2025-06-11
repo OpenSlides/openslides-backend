@@ -44,6 +44,7 @@ class CommitteeJsonUpload(
                         },
                         "meeting_admins": str_list_schema,
                         "meeting_template": {"type": "string"},
+                        "parent": {"type": "string"},
                     },
                     "required": ["name"],
                     "additionalProperties": False,
@@ -84,6 +85,7 @@ class CommitteeJsonUpload(
             "is_list": True,
         },
         {"property": "meeting_template", "type": "string", "is_object": True},
+        {"property": "parent", "type": "string", "is_object": True},
     ]
     import_name = "committee"
 
@@ -93,10 +95,13 @@ class CommitteeJsonUpload(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
         self.setup_lookups(data)
+        self.names = {entry["name"] for entry in data}
+        self.related_instances_created: dict[str, set[str]] = {}
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # check meeting_template afterwards to ensure each committee has an id
         self.check_meetings()
+        self.check_parents_for_circles(self.rows)
 
         self.generate_statistics()
         return {}
@@ -124,7 +129,36 @@ class CommitteeJsonUpload(
                 "value": entry["name"],
                 "info": ImportState.ERROR,
             }
-            messages.append("Found multiple committees with the same name.")
+            messages.append("Error: Found multiple committees with the same name.")
+
+        if parent := entry.get("parent"):
+            result = self.committee_lookup.check_duplicate(parent)
+            if result == ResultType.FOUND_ID:
+                parent_id = self.committee_lookup.get_field_by_name(parent, "id")
+                entry["parent"] = {
+                    "value": parent,
+                    "info": ImportState.DONE,
+                    "id": parent_id,
+                }
+            elif result == ResultType.NOT_FOUND:
+                if parent in self.names:
+                    entry["parent"] = {"value": parent, "info": ImportState.NEW}
+                else:
+                    entry["parent"] = {
+                        "value": "",
+                        "info": ImportState.WARNING,
+                    }
+                    messages.append(
+                        f"Could not identify parent: Name '{parent}' not found, the field will therefore be ignored."
+                    )
+            elif result == ResultType.FOUND_MORE_IDS:
+                entry["parent"] = {
+                    "value": "",
+                    "info": ImportState.WARNING,
+                }
+                messages.append(
+                    f"Could not identify parent: Name '{parent}' found multiple times, the field will therefore be ignored."
+                )
 
         if not entry.get("meeting_name"):
             if any(
@@ -151,7 +185,7 @@ class CommitteeJsonUpload(
                     {},
                 )
             except ActionException as e:
-                messages.append(e.message)
+                messages.append("Error: " + e.message)
                 row_state = ImportState.ERROR
 
         self.validate_with_lookup(entry, "managers", self.username_lookup, messages)
@@ -232,7 +266,7 @@ class CommitteeJsonUpload(
                         for field in ("start_time", "end_time")
                     ):
                         row["messages"].append(
-                            "A meeting with this name and dates already exists."
+                            "Error: A meeting with this name and dates already exists."
                         )
                         row["state"] = ImportState.ERROR
                         break
@@ -297,7 +331,11 @@ class CommitteeJsonUpload(
                         # the matched committee is currently being imported and therefore has no id
                         pass
                     elif create:
-                        obj["info"] = ImportState.NEW
+                        if name not in self.related_instances_created.get(field, {}):
+                            obj["info"] = ImportState.NEW
+                            self.related_instances_created.setdefault(field, set()).add(
+                                name
+                            )
                     else:
                         obj["info"] = ImportState.WARNING
                         missing.append(name)
@@ -345,13 +383,15 @@ class CommitteeJsonUpload(
         committee_tuples: list[tuple[str | tuple[str, ...], dict[str, Any]]] = []
         usernames: set[str] = set()
         organization_tags: set[str] = set()
-        forward_committees: set[str] = set()
+        other_committees: set[str] = set()
 
         for entry in data:
             committee_names.add(entry["name"])
             committee_tuples.append((entry["name"], entry))
             if forwards := entry.get("forward_to_committees"):
-                forward_committees.update(forwards)
+                other_committees.update(forwards)
+            if parent := entry.get("parent"):
+                other_committees.add(parent)
             if managers := entry.get("managers"):
                 usernames.update(managers)
             if admins := entry.get("meeting_admins"):
@@ -363,9 +403,7 @@ class CommitteeJsonUpload(
             self.datastore,
             "committee",
             committee_tuples
-            + [
-                (name, {}) for name in forward_committees if name not in committee_names
-            ],
+            + [(name, {}) for name in other_committees if name not in committee_names],
         )
         self.username_lookup = Lookup(
             self.datastore, "user", [(name, {}) for name in usernames], field="username"

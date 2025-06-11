@@ -4,6 +4,8 @@ from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
 )
 
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....models.models import Meeting
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -94,26 +96,27 @@ meeting_settings_keys = [
     "list_of_speakers_intervention_time",
     "motions_default_workflow_id",
     "motions_default_amendment_workflow_id",
-    "motions_default_statute_amendment_workflow_id",
     "motions_preamble",
     "motions_default_line_numbering",
     "motions_line_length",
     "motions_reason_required",
+    "motions_origin_motion_toggle_default",
+    "motions_enable_origin_motion_display",
     "motions_enable_text_on_projector",
     "motions_enable_reason_on_projector",
     "motions_enable_sidebox_on_projector",
+    "motions_create_enable_additional_submitter_text",
+    "motions_hide_metadata_background",
     "motions_enable_recommendation_on_projector",
     "motions_show_referring_motions",
     "motions_show_sequential_number",
     "motions_recommendations_by",
     "motions_block_slide_columns",
-    "motions_statute_recommendations_by",
     "motions_recommendation_text_mode",
     "motions_default_sorting",
     "motions_number_type",
     "motions_number_min_digits",
     "motions_number_with_blank",
-    "motions_statutes_enabled",
     "motions_amendments_enabled",
     "motions_amendments_in_main_list",
     "motions_amendments_of_amendments",
@@ -134,6 +137,8 @@ meeting_settings_keys = [
     "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
+    "motion_poll_projection_name_order_first",
+    "motion_poll_projection_max_columns",
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_enable_vote_delegations",
@@ -205,10 +210,8 @@ class MeetingUpdate(
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                "The external_id of the meeting is not unique in the committee scope.",
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
                 instance["id"],
-                "committee_id",
-                self.get_committee_id(instance["id"]),
             )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -216,9 +219,15 @@ class MeetingUpdate(
         set_as_template = instance.pop("set_as_template", None)
         db_meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["id"]),
-            ["template_for_organization_id", "locked_from_inside", "admin_group_id"],
+            [
+                "template_for_organization_id",
+                "locked_from_inside",
+                "admin_group_id",
+                "language",
+            ],
             lock_result=False,
         )
+        Translator.set_translation_language(db_meeting["language"])
         lock_meeting = (
             instance.get("locked_from_inside")
             if instance.get("locked_from_inside") is not None
@@ -234,8 +243,16 @@ class MeetingUpdate(
             )
         self.check_locking(instance, set_as_template)
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "enable_anonymous"],
+            lock_result=False,
         )
+        if instance.get("enable_anonymous") and not organization.get(
+            "enable_anonymous"
+        ):
+            raise ActionException(
+                "Anonymous users can not be enabled in this organization."
+            )
         if (
             organization.get("require_duplicate_from")
             and set_as_template is not None
@@ -305,12 +322,7 @@ class MeetingUpdate(
         if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
-                [
-                    {
-                        "name": "Anonymous",
-                        "meeting_id": instance["id"],
-                    }
-                ],
+                [{"name": _("Public"), "weight": 0, "meeting_id": instance["id"]}],
             )
             instance["anonymous_group_id"] = anonymous_group_id = cast(
                 list[dict[str, Any]], group_result

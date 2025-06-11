@@ -44,9 +44,10 @@ class OrganizationInitialImport(BaseActionTestCase):
                 )
 
     def test_initial_import_with_example_data_file(self) -> None:
-        request_data = {"data": get_initial_data_file("global/data/example-data.json")}
+        self.datastore.truncate_db()
+        request_data = {"data": get_initial_data_file("data/example-data.json")}
         request_data["data"]["organization"]["1"]["default_language"] = "de"
-        with Profiler("global/data/test_initial_import_with_example_data_file.prof"):
+        with Profiler("data/test_initial_import_with_example_data_file.prof"):
             response = self.request(
                 "organization.initial_import",
                 request_data,

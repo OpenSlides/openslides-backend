@@ -2,7 +2,7 @@ from typing import Any
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id

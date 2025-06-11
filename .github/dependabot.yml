@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "luisa-beerboom"
     groups:
        opentelemetry-dependencies:
           patterns:
@@ -17,7 +17,7 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "rrenkert"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-minor"]
@@ -27,4 +27,4 @@ updates:
     schedule:
       interval: "daily"
     assignees:
-      - "r-peschke"
+      - "luisa-beerboom"

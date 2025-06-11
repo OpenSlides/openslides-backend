@@ -18,6 +18,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -26,7 +27,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "group_ids": [2],
                 },
-                "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
+                "meeting/1": {"admin_group_id": 2},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
                 "group/3": {"meeting_id": 1},
                 "motion/1": {"meeting_id": 1, "comment_ids": [111]},
@@ -44,7 +45,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion_comment.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_comment/111")
+        self.assert_model_not_exists("motion_comment/111")
         self.assert_history_information(
             "motion/1", ["Comment {} deleted", "motion_comment_section/78"]
         )
@@ -126,4 +127,4 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             {"id": 111},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_comment/111")
+        self.assert_model_not_exists("motion_comment/111")

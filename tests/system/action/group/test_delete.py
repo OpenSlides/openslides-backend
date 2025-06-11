@@ -5,12 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 class GroupDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(22)
         self.set_models(
             {
                 "meeting/22": {
-                    "name": "meeting",
-                    "group_ids": [111],
-                    "is_active_in_organization_id": 1,
+                    "group_ids": [22, 23, 24, 111],
                 },
                 "group/111": {"name": "group", "meeting_id": 22},
             }
@@ -19,7 +18,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         response = self.request("group.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("group/111")
+        self.assert_model_not_exists("group/111")
 
     def test_delete_wrong_id(self) -> None:
         response = self.request("group.delete", {"id": 112})
@@ -168,13 +167,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request("group.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "group/111",
-            {
-                "meeting_mediafile_access_group_ids": [1, 2],
-                "meeting_mediafile_inherited_access_group_ids": [1, 2],
-            },
-        )
+        self.assert_model_not_exists("group/111")
         self.assert_model_exists(
             "group/112",
             {
@@ -259,13 +252,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request("group.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "group/111",
-            {
-                "meeting_mediafile_access_group_ids": [1, 4],
-                "meeting_mediafile_inherited_access_group_ids": [1, 2, 3, 4],
-            },
-        )
+        self.assert_model_not_exists("group/111")
         self.assert_model_exists(
             "group/112",
             {
@@ -347,20 +334,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request_multi("group.delete", [{"id": 111}, {"id": 112}])
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "group/111",
-            {
-                "meeting_mediafile_access_group_ids": [1, 2],
-                "meeting_mediafile_inherited_access_group_ids": [1, 2],
-            },
-        )
-        self.assert_model_deleted(
-            "group/112",
-            {
-                "meeting_mediafile_access_group_ids": [2],
-                "meeting_mediafile_inherited_access_group_ids": [2],
-            },
-        )
+        self.assert_model_not_exists("group/111")
+        self.assert_model_not_exists("group/112")
         self.assert_model_exists(
             "mediafile/1",
             {

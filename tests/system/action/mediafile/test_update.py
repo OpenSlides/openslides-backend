@@ -10,10 +10,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
+            "committee/10": {"meeting_ids": [1]},
             "meeting/1": {
                 "name": "meeting_1",
                 "is_active_in_organization_id": 1,
                 "meeting_mediafile_ids": [1111],
+                "committee_id": 10,
             },
             "group/7": {
                 "name": "group_LxAHErRs",
@@ -28,10 +30,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111": {"mediafile_id": 111, "meeting_id": 1},
         }
         self.orga_permission_test_models: dict[str, dict[str, Any]] = {
+            "committee/10": {"meeting_ids": [1]},
             "meeting/1": {
                 "name": "meeting_1",
                 "is_active_in_organization_id": 1,
                 "admin_group_id": 8,
+                "committee_id": 10,
             },
             "group/7": {
                 "name": "group_LxAHErRs",
@@ -51,10 +55,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1111],
                 },
                 "group/7": {
@@ -92,10 +96,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_children(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
                 "group/7": {
@@ -142,10 +146,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_parent(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
                 "group/7": {
@@ -195,10 +199,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_parent_inherited_list(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
                 "group/7": {
@@ -255,10 +259,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_parent_case1(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110],
                     "admin_group_id": 2,
                 },
@@ -319,9 +323,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case2(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
+                    "committee_id": 1,
                 },
                 "group/2": {
                     "name": "group_LxAHErRs",
@@ -376,10 +382,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_parent_case3(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
                 "group/3": {
@@ -437,7 +443,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case4(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
+                    "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
@@ -501,7 +509,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case5(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
+                    "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111],
                 },
@@ -565,7 +575,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_inherited_true(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
+                    "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1111],
                 },
@@ -626,7 +638,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
+                    "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111, 1112],
                 },
@@ -695,9 +709,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_parent_and_children_2(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {
                     "name": "group_LxAHErRs",
                     "meeting_user_ids": [],
@@ -798,10 +812,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             )
 
     def test_update_parent_and_children_3(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110, 1111, 1112, 1113],
                 },
                 "group/7": {
@@ -882,10 +896,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             )
 
     def test_update_filename_error(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [1110],
                 },
                 "mediafile/110": {
@@ -908,6 +922,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "data must not contain {'filename'} properties", response.json["message"]
         )
+
+    def test_update_title_with_orga_owner_meeting_id_none(self) -> None:
+        self.set_models(self.orga_permission_test_models)
+        response = self.request(
+            "mediafile.update", {"id": 111, "title": "blob.txt", "meeting_id": None}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("data.meeting_id must be integer", response.json["message"])
 
     def test_update_access_group_with_orga_owner(self) -> None:
         self.set_models(self.orga_permission_test_models)
@@ -1219,10 +1241,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("mediafile/7", {"token": "token_1"})
 
     def test_update_title_parent_id_unique(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "mediafile_ids": [6, 7, 8],
                     "meeting_mediafile_ids": [16, 17, 18],
                 },

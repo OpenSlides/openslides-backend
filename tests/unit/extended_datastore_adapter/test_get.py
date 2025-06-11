@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from openslides_backend.shared.exceptions import DatastoreException
+from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
@@ -34,7 +34,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             else:
                 return model
         else:
-            raise DatastoreException("mock_db: model does not exist")
+            raise DatabaseException("mock_db: model does not exist")
 
     def test_get_use_changed_models(self) -> None:
         self.set_additional_models(
@@ -75,7 +75,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
 
     def test_get_use_changed_models_exception(self) -> None:
         self.mock_datastore_content = {}
-        with pytest.raises(DatastoreException):
+        with pytest.raises(DatabaseException):
             self.adapter.get(
                 fqid_from_collection_and_id(self.collection, 1),
                 ["f"],
@@ -105,7 +105,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         self.mock_datastore_content = {}
-        with pytest.raises(DatastoreException):
+        with pytest.raises(DatabaseException):
             self.adapter.get(
                 fqid_from_collection_and_id(self.collection, 1),
                 ["f"],

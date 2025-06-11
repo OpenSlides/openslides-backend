@@ -47,7 +47,7 @@ To generate a new models.py file run (inside the docker container)
 
     $ make generate-models
 
-The original models.yml is now included in this repository at global/meta/. If you do not want to generate from the current backend, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the main:
+The original models.yml is now included in this repository at meta/. If you do not want to generate from the current backend, you can provide either a local path or a URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the main:
 
     $ MODEL_PATH="local path or GitHub link" make generate-models
 
@@ -127,37 +127,19 @@ The action component listens to port 9002. The presenter component listens to po
   Set this variable to raise HTTP 400 and 403 as exceptions instead of valid HTTP responses.
 
 ### Connection to other services
-* `DATASTORE_READER_PROTOCOL`
+* `DATABASE_HOST`
 
-  Protocol of datastore reader service. Default: `http`
+  Host of database. Default: `postgres`
 
-* `DATASTORE_READER_HOST`
+* `DATABASE_PORT`
 
-  Host of datastore reader service. Default: `localhost`
+  Port of database. Default: `5432`
 
-* `DATASTORE_READER_PORT`
-
-  Port of datastore reader service. Default: `9010`
-
-* `DATASTORE_READER_PATH`
-
-  Path of datastore reader service. Default: `/internal/datastore/reader`
-
-* `DATASTORE_WRITER_PROTOCOL`
-
-  Protocol of datastore writer service. Default: `http`
-
-* `DATASTORE_WRITER_HOST`
-
-  Host of datastore writer service. Default: `localhost`
-
-* `DATASTORE_WRITER_PORT`
-
-  Port of datastore writer service. Default: `9011`
-
-* `DATASTORE_WRITER_PATH`
-
-  Path of datastore writer service. Default: `/internal/datastore/writer`
+  `DATABASE_USER`
+  User of database. Default: `openslides`
+  
+  `DATABASE_NAME`
+  Name of database. Default: `openslides`
 
 * `AUTH_HOST`
 

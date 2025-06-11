@@ -2,29 +2,29 @@
 ```js
 {
     // required
-    collection: string;
-    external_id: string;
-    context_id: Id;
+    collection: string,
+    external_id: string,
+    context_id: Id
 }
 ```
 ## Returns
 ```js
 {
-    id: Id;
+    id: Id
 }
 ```
 in the case one id is found.
 ```js
 {
-    id: null;
-    error: string;
+    id: null,
+    error: string
 }
 ```
 else.
 
 ## Logic
 
-It should be search for an `external_id` in the given collection (`group`, `meeting` or `committee`) in the respective context. `context_id` must point to the respective parent object: if the collection is `group`, this must be the `meeting_id`, for `meeting` it is the `committee_id` and for `committee` it must be `1` for the `orgnization_id`. If one id is found, return the id, else return an error and and `null` for the id.
+Searches for an `external_id` in the given collection (`group`, `meeting` or `committee`) in the respective context. `context_id` must point to the respective parent object: if the collection is `group`, this must be the `meeting_id`, for `meeting` it is the `committee_id` and for `committee` it must be `1` for the `orgnization_id`. If one id is found, return the id, else return an error and and `null` for the id.
 
 Following error cases could be encountered: "No item with 'external_id' was found" and "More then one item with 'external_id' were found".
 

@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
    // Required
    id: Id;
@@ -20,13 +20,12 @@ Go through all meetings:
 * If it doesn't find the group with the name `group_name` in the meeting and the user is not in the meeting, add the user to the default group.
 * If it doesn't find the group with the name `group_name` in the meeting and the user is already in the meeting, do nothing.
 
-If it doesn't find the `group_name` in at least one meeting, throw an `ActionException`.
 Returns dictionary with `"succeeded": [meeting_ids], "standard_group": [meeting_ids], "nothing": [meeting_ids]`.
 
 Will raise an error if some of the selected meetings are locked from the inside via the `locked_from_inside` setting.
 
 ## Permissions
-The request user needs OML `can_manage_users`
+The request user needs CML `can_manage` rights in all meetings committees.
 
 explanation: Usually the field `group_ids` can be changed also with committee- or meeting-rights for
 all related objects, see [user.update#permissions](user.update.md#permissions), field group C. Currently the client allows

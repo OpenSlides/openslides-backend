@@ -45,4 +45,11 @@ class AccountJsonUpload(BaseUserJsonUpload):
                     "info": ImportState.DONE,
                 }
 
+        self.check_field_failures(
+            entry,
+            messages,
+            "Account is updated, but changes to the following field(s) are not possible:",
+            field_groups="IJ",
+        )
+
         return results

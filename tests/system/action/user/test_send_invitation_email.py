@@ -69,11 +69,9 @@ class SendInvitationMail(BaseActionTestCase):
         except user/2 => mail is sent and
                user/8, which doesn't exist
         """
+        self.create_meeting(4)
         self.set_models(
             {
-                "meeting/2": {
-                    "is_active_in_organization_id": 1,
-                },
                 "user/3": {
                     "username": "Testuser 3 no email",
                     "first_name": "Jim3",
@@ -153,7 +151,7 @@ class SendInvitationMail(BaseActionTestCase):
                         "action": "user.send_invitation_email",
                         "data": [
                             {"id": 4, "meeting_id": 1},
-                            {"id": 5, "meeting_id": 2},
+                            {"id": 5, "meeting_id": 4},
                             {"id": 6, "meeting_id": "1"},
                             {"id": 7, "meeting_id": 1},
                             {"id": 8, "meeting_id": 1},
@@ -199,7 +197,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][1][1]["type"], EmailErrorType.USER_ERROR
         )
         self.assertIn(
-            "'Testuser 5 wrong meeting' does not belong to meeting/2",
+            "'Testuser 5 wrong meeting' does not belong to meeting/4",
             response.json["results"][1][1]["message"],
         )
 
@@ -230,7 +228,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][1][4]["type"], EmailErrorType.OTHER_ERROR
         )
         self.assertIn(
-            "DatastoreException:  Model 'user/8' does not exist.",
+            "DatabaseException:  Model 'user/8' does not exist.",
             response.json["results"][1][4]["message"],
         )
 
@@ -765,4 +763,80 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertIn(
             "Missing Permission: user.can_update Mail 1 from 1",
             response.json["results"][0][0]["message"],
+        )
+
+    def test_correct_modified_body_new_placeholders(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "title": "Mr.",
+                },
+                "meeting_user/2": {
+                    "structure_level_ids": [1, 2, 3],
+                },
+                "meeting/1": {
+                    "users_email_subject": "Instructions for {title} {last_name} of group(s) {groups}",
+                    "users_email_body": """Hello {first_name}!
+Your shopping list: {structure_levels}.
+Please ensure all of it is bought and brought over at least a week before new year's eve.""",
+                    "structure_level_ids": [1, 2, 3],
+                },
+                "structure_level/1": {"name": "Rock sugar", "meeting_user_ids": [2]},
+                "structure_level/2": {"name": "Anise", "meeting_user_ids": [2]},
+                "structure_level/3": {"name": "Cardamom", "meeting_user_ids": [2]},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Instructions for Mr. Beam of group(s) group1",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "Hello Jim!\r\nYour shopping list: Rock sugar, Anise, Cardamom.\r\nPlease ensure all of it is bought and brought over at least a week before new=\r\n year's eve.",
+            handler.emails[0]["data"],
+        )
+
+    def test_correct_organization_new_placeholders(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "title": "Mr.",
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Instructions for {title} {last_name} of group(s) {groups}",
+                    "users_email_body": """Hello {first_name}!
+Your shopping list: {structure_levels}.
+Please ensure all of it is bought and brought over at least a week before new year's eve.""",
+                },
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        print(response.json["results"])
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Instructions for Mr. Beam of group(s) 'groups'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "Hello Jim!\r\nYour shopping list: 'structure_levels'.\r\nPlease ensure all of it is bought and brought over at least a week before new=\r\n year's eve.",
+            handler.emails[0]["data"],
         )

@@ -2,12 +2,10 @@ from typing import Any
 
 import fastjsonschema
 
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-
 from ..models.checker import Checker, CheckException, external_motion_fields
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.interface import DatastoreService
+from ..services.database.interface import Database
 from ..shared.exceptions import PermissionDenied
 from ..shared.export_helper import export_meeting
 from ..shared.schema import optional_id_schema, schema_version
@@ -29,20 +27,16 @@ check_database_schema = fastjsonschema.compile(
 )
 
 
-def check_meetings(
-    datastore: DatastoreService, meeting_id: int | None
-) -> dict[int, str]:
+def check_meetings(datastore: Database, meeting_id: int | None) -> dict[int, str]:
     if meeting_id:
         meeting_ids = [meeting_id]
     else:
-        meetings = datastore.get_all(
-            "meeting", ["id"], DeletedModelsBehaviour.NO_DELETED
-        ).values()
+        meetings = datastore.get_all("meeting", ["id"]).values()
         meeting_ids = [meeting["id"] for meeting in meetings]
 
     errors: dict[int, str] = {}
     for meeting_id in meeting_ids:
-        export = export_meeting(datastore, meeting_id)
+        export = export_meeting(datastore, meeting_id, True)
         try:
             Checker(
                 data=export,

@@ -42,6 +42,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
                 "meeting/1333": {
@@ -72,10 +73,11 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         response = self.request("assignment_candidate.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment_candidate/111")
+        self.assert_model_not_exists("assignment_candidate/111")
         self.assert_history_information("assignment/111", ["Candidate removed"])
 
     def test_delete_correct_empty_user(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
                 "meeting/1333": {
@@ -98,9 +100,10 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         response = self.request("assignment_candidate.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment_candidate/111")
+        self.assert_model_not_exists("assignment_candidate/111")
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
                 "meeting/1333": {
@@ -140,6 +143,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         assert model.get("assignment_id") == 111
 
     def test_delete_finished(self) -> None:
+        self.create_meeting(1333)
         self.set_models(
             {
                 "meeting/1333": {

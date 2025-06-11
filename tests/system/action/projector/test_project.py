@@ -9,7 +9,7 @@ class ProjectorProject(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1, "committee_id": 60},
                 "projector/23": {
                     "meeting_id": 1,
                     "current_projection_ids": [105, 106],
@@ -343,7 +343,7 @@ class ProjectorProject(BaseActionTestCase):
                 "stable": False,
             },
         )
-        self.assert_model_deleted("projection/106")
+        self.assert_model_not_exists("projection/106")
 
     def test_try_to_store_second_stable_projection_keep_active(self) -> None:
         response = self.request(

@@ -1,13 +1,9 @@
-import typing
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, TypeAlias, Union
+from typing import Any, Literal, Union
 
-from openslides_backend.datastore.shared.util.self_validating_dataclass import (
-    SelfValidatingDataclass,
-)
-from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.patterns import FIELD_PATTERN, Field
 
 filter_definitions_schema = {
     "filter": {
@@ -25,7 +21,7 @@ filter_definitions_schema = {
             "value": {},
             "operator": {
                 "type": "string",
-                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%="],
+                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"],
             },
         },
         "required": ["field", "value", "operator"],
@@ -59,16 +55,7 @@ filter_definitions_schema = {
 
 
 FilterData = dict[str, Any]
-
-
-# Whoof, that's an ugly workaround... A bit of background:
-# - The `dacite` package cannot handle `collections.abc.Sequence` (the replacement for the
-#   deprecated `typing.Sequence`) correctly in python 3.10, therefore we need to use
-#   `typing.Sequence` here. (With python 3.11, this bug seems to be fixed.)
-# - On the other hand, `pyupgrade` automatically replaces `typing.Sequence` with
-#   `collections.abc.Sequence` and provides no way to exclude single lines. Therefore, we have to
-#   use this hack to be able to use `typing.Sequence` here.
-Sequence: TypeAlias = getattr(typing, "Sequence")  # type: ignore
+FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"]
 
 
 class _FilterBase(ABC):
@@ -108,10 +95,20 @@ class _ListFilterBase(_FilterBase, ABC):
 
 
 @dataclass
-class FilterOperator(_FilterBase, SelfValidatingDataclass):
+class FilterOperator(_FilterBase):
     field: Field
-    operator: Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
+    operator: FilterLiteral
     value: Any
+
+    def __post_init__(self) -> None:
+        if (
+            self.field
+            and isinstance(self.field, str)
+            and not FIELD_PATTERN.match(self.field)
+        ):
+            raise Exception(
+                f"Filter field {self.field} does not comply with field format."
+            )
 
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}

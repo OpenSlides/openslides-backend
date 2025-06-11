@@ -30,11 +30,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
         }
 
     def test_move_parent_none(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [2227, 2228, 2229, 2230],
                 },
                 "mediafile/7": {
@@ -124,12 +123,9 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_parent_set(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "mediafile/7": {
                     "title": "title_7",
                     "owner_id": "meeting/222",
@@ -191,12 +187,9 @@ class MediafileMoveActionTest(BaseActionTestCase):
             )
 
     def test_move_non_directory_parent_set(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "mediafile/7": {
                     "title": "title_7",
                     "owner_id": "meeting/222",
@@ -241,10 +234,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_multiple_action_data_items(self) -> None:
         """This test ensures that multi-requests are impossible"""
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [2227, 2228],
                 },
                 "mediafile/7": {
@@ -284,9 +277,9 @@ class MediafileMoveActionTest(BaseActionTestCase):
         assert mediafile_8.get("parent_id") is None
 
     def test_move_owner_mismatch(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
                 "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
             }
@@ -301,10 +294,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
         assert "Owner and parent don't match." in response.json["message"]
 
     def test_move_circle(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7, 8],
                 },
                 "mediafile/7": {
@@ -794,7 +787,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             },
         )
         for id_ in [2, 3, 6, 8, 9]:
-            self.assert_model_deleted(f"meeting_mediafile/{id_}")
+            self.assert_model_not_exists(f"meeting_mediafile/{id_}")
 
         self.assert_model_exists(
             "mediafile/3",

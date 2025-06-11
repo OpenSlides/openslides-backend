@@ -1,3 +1,5 @@
+from math import floor
+from time import time
 from typing import Any
 
 from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
@@ -36,11 +38,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -61,15 +63,15 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -122,11 +124,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_delete_correct_on_closed_los(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -147,14 +149,14 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_delete_with_removed_user(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {
                     "username": "test_username1",
@@ -176,15 +178,15 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
 
     def test_delete_with_deleted_user(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                 },
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 111},
                 "speaker/890": {
@@ -195,7 +197,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def create_delegator_test_data(
         self,
@@ -240,7 +242,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.create_delegator_test_data()
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_delegator_setting_with_delegation(self) -> None:
         self.create_delegator_test_data(is_delegator=True)
@@ -264,7 +266,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_with_irrelevant_delegator_setting(self) -> None:
         self.create_delegator_test_data(
@@ -272,14 +274,14 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
 
     def test_with_active_structure_level_speaker(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_default_structure_level_time": 30,
                 },
                 "user/7": {
@@ -323,7 +325,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         sllos = self.assert_model_exists(
             "structure_level_list_of_speakers/9",
             {
@@ -338,11 +340,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         assert sllos["remaining_time"] < 30
 
     def test_with_paused_structure_level_speaker(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "meeting/111": {
                     "speaker_ids": [890],
-                    "is_active_in_organization_id": 1,
                     "list_of_speakers_default_structure_level_time": 30,
                 },
                 "user/7": {
@@ -386,7 +388,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
+        self.assert_model_not_exists("speaker/890")
         sllos = self.assert_model_exists(
             "structure_level_list_of_speakers/9",
             {
@@ -399,3 +401,73 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
             },
         )
         assert sllos["remaining_time"] == 18
+
+    def add_coupled_countdown(self) -> int:
+        """Returns the current date that was used to set the countdown_time"""
+        now = floor(time())
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_countdown_id": 75,
+                },
+                "projector_countdown/75": {
+                    "running": True,
+                    "default_time": 200,
+                    "countdown_time": now + 100,
+                    "meeting_id": 1,
+                },
+                "speaker/890": {
+                    "begin_time": now + 100,
+                },
+            }
+        )
+        return now
+
+    def test_delete_update_countdown(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        self.add_coupled_countdown()
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/75")
+        assert countdown.get("running") is False
+        self.assertAlmostEqual(countdown["countdown_time"], 100, delta=200)
+
+    def test_delete_dont_update_countdown(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "speaker_ids": [890, 891],
+                    "meeting_user_ids": [7, 8],
+                },
+                "user/8": {
+                    "username": "test_username2",
+                    "meeting_user_ids": [8],
+                    "is_active": True,
+                    "default_password": DEFAULT_PASSWORD,
+                    "password": self.auth.hash(DEFAULT_PASSWORD),
+                },
+                "meeting_user/8": {"meeting_id": 1, "user_id": 8, "speaker_ids": [891]},
+                "list_of_speakers/23": {"speaker_ids": [890, 891]},
+                "speaker/891": {
+                    "meeting_user_id": 8,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        now = self.add_coupled_countdown()
+        response = self.request("speaker.delete", {"id": 891})
+        self.assert_status_code(response, 200)
+        countdown = self.assert_model_exists(
+            "projector_countdown/75",
+            {
+                "running": True,
+                "default_time": 200,
+                "meeting_id": 1,
+            },
+        )
+        self.assertAlmostEqual(countdown["countdown_time"], now, delta=200)

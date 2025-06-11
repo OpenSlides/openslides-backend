@@ -8,6 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionResetStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/1": {
                 "meeting_id": 1,
@@ -41,10 +42,6 @@ class MotionResetStateActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_workflow/1": {
                     "meeting_id": 222,
                     "name": "test1",
@@ -87,10 +84,6 @@ class MotionResetStateActionTest(BaseActionTestCase):
     def test_reset_state_correct_number_value(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_workflow/1": {
                     "name": "test1",
                     "state_ids": [76, 77],
@@ -131,10 +124,6 @@ class MotionResetStateActionTest(BaseActionTestCase):
     def test_reset_state_missing_first_state(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_workflow/1": {
                     "meeting_id": 222,
                     "name": "test1",

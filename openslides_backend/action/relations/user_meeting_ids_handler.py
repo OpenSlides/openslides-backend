@@ -20,7 +20,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if field_name != "group_ids":
             return {}
         fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
-        assert (changed_model := self.datastore.changed_models.get(fqid))
+        assert (changed_model := self.datastore.get_changed_model(fqid))
         assert changed_model.get(field_name) == instance.get(field_name)
         db_instance = self.datastore.get(
             fqid,
@@ -31,7 +31,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if not (meeting_id := instance.get("meeting_id")):
             if not (
                 meeting_id := cast(
-                    dict[str, Any], self.datastore.changed_models.get(fqid)
+                    dict[str, Any], self.datastore.get_changed_model(fqid)
                 ).get("meeting_id")
             ):
                 meeting_id = db_instance.get("meeting_id")
@@ -40,7 +40,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if not (user_id := instance.get("user_id")):
             if not (
                 user_id := cast(
-                    dict[str, Any], self.datastore.changed_models.get(fqid)
+                    dict[str, Any], self.datastore.get_changed_model(fqid)
                 ).get("user_id")
             ):
                 user_id = db_instance.get("user_id")
