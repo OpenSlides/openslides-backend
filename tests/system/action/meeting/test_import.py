@@ -5,7 +5,6 @@ from typing import Any
 import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
-from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import (
     ONE_ORGANIZATION_FQID,
@@ -14,8 +13,6 @@ from openslides_backend.shared.util import (
 )
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
-
-current_migration_index = get_backend_migration_index()
 
 
 class MeetingImport(BaseActionTestCase):
@@ -53,7 +50,6 @@ class MeetingImport(BaseActionTestCase):
         data: dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
-                "_migration_index": current_migration_index,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -467,7 +463,6 @@ class MeetingImport(BaseActionTestCase):
                 "committee_id": 1,
                 "meeting": {
                     "meeting": {},
-                    "_migration_index": current_migration_index,
                 },
             },
         )
@@ -484,7 +479,6 @@ class MeetingImport(BaseActionTestCase):
                 "committee_id": 1,
                 "meeting": {
                     "meeting": {"1": {"id": 1}, "2": {"id": 2}},
-                    "_migration_index": current_migration_index,
                 },
             },
         )
@@ -2169,142 +2163,6 @@ class MeetingImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_with_listfields_from_migration(self) -> None:
-        """
-        Test for listFields in event.data after migration. Uses migration 0035 to create one
-        Additionally adds a gender to user 1 to show that migration 0057 does not interfere with the import.
-        """
-        data = self.create_request_data(
-            {
-                "motion": {
-                    "5": self.get_motion_data(
-                        5,
-                        {
-                            "title": "motion/5",
-                            "referenced_in_motion_state_extension_ids": [],
-                        },
-                    ),
-                    "6": self.get_motion_data(
-                        6,
-                        {
-                            "title": "motion/6",
-                            "state_extension": "[motion/5]",
-                            "list_of_speakers_id": 2,
-                        },
-                    ),
-                },
-                "list_of_speakers": {
-                    "1": {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "content_object_id": "motion/5",
-                        "closed": False,
-                        "sequential_number": 1,
-                        "speaker_ids": [],
-                        "projection_ids": [],
-                    },
-                    "2": {
-                        "id": 2,
-                        "meeting_id": 1,
-                        "content_object_id": "motion/6",
-                        "closed": False,
-                        "sequential_number": 2,
-                        "speaker_ids": [],
-                        "projection_ids": [],
-                    },
-                },
-            }
-        )
-        data["meeting"]["meeting"]["1"]["motion_ids"] = [5, 6]
-        data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
-        data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
-        data["meeting"]["user"]["1"]["gender"] = "male"
-        data["meeting"]["_migration_index"] = 35
-        self.replace_migrated_projector_fields(data)
-        assert (
-            data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"]
-            == []
-        )
-
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/2",
-            {"title": "motion/5", "referenced_in_motion_state_extension_ids": [3]},
-        )
-        self.assert_model_exists(
-            "motion/3", {"title": "motion/6", "state_extension": "[motion/2]"}
-        )
-
-    def test_without_migration_index(self) -> None:
-        data = self.create_request_data({})
-        del data["meeting"]["_migration_index"]
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "data.meeting must contain ['_migration_index'] properties",
-            response.json["message"],
-        )
-
-    def test_with_negative_migration_index(self) -> None:
-        data = self.create_request_data({})
-        data["meeting"]["_migration_index"] = -1
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "data.meeting._migration_index must be bigger than or equal to 1",
-            response.json["message"],
-        )
-
-    def test_with_migration_index_to_high(self) -> None:
-        data = self.create_request_data({})
-        data["meeting"]["_migration_index"] = 12345678
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            f"Your data migration index '12345678' is higher than the migration index of this backend '{current_migration_index}'! Please, update your backend!",
-            response.json["message"],
-        )
-
-    def test_all_migrations(self) -> None:
-        data = self.create_request_data({})
-        data["meeting"]["_migration_index"] = 1
-        del data["meeting"]["user"]["1"]["organization_id"]
-        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "Y"
-        data["meeting"]["meeting"]["1"][
-            "assignment_poll_default_100_percent_base"
-        ] = "YN"
-        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
-        self.replace_migrated_projector_fields(data)
-        with CountDatastoreCalls(verbose=True) as counter:
-            response = self.request("meeting.import", data)
-        self.assert_status_code(response, 200)
-        assert counter.calls == 5
-        self.assert_model_exists("user/1", {"meeting_user_ids": [2]})
-        self.assert_model_exists(
-            "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
-        )
-        meeting = self.assert_model_exists(
-            "meeting/2",
-            {
-                "assignment_poll_enable_max_votes_per_option": False,
-                "motion_poll_default_onehundred_percent_base": "Y",
-                "assignment_poll_default_onehundred_percent_base": "YN",
-                "poll_default_onehundred_percent_base": "YNA",
-            },
-        )  # checker repair
-        self.assertCountEqual(meeting["user_ids"], [1, 2])
-        group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2["meeting_user_ids"], [1, 2])
-        committee1 = self.get_model("committee/1")
-        self.assertCountEqual(committee1["user_ids"], [1, 2])
-        self.assertCountEqual(committee1["meeting_ids"], [1, 2])
-        self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
-        self.assert_model_exists("projector/2", {"sequential_number": 1})
-        self.assert_model_exists(
-            "organization/1", {"user_ids": [1, 2], "active_meeting_ids": [1, 2]}
-        )
-
     @performance
     def test_big_file(self) -> None:
         data = {
@@ -2643,42 +2501,6 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/2")
-
-    def test_delete_statutes(self) -> None:
-        """test for deleted statute motions in event.data after migration. Uses migrations 0055 and onwards."""
-        data = self.create_request_data()
-        data["meeting"]["meeting"]["1"][
-            "motions_default_statute_amendment_workflow_id"
-        ] = 1
-        data["meeting"]["meeting"]["1"][
-            "motions_statute_recommendations_by"
-        ] = "Statute ABK"
-        data["meeting"]["meeting"]["1"]["motions_statutes_enabled"] = True
-        data["meeting"]["meeting"]["1"]["motion_statute_paragraph_ids"] = []
-
-        data["meeting"]["motion_workflow"]["1"][
-            "default_statute_amendment_workflow_meeting_id"
-        ] = 1
-        data["meeting"]["_migration_index"] = 55
-        self.replace_migrated_projector_fields(data)
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 200)
-        self.assert_model_not_exists("motion_workflow/2")
-        self.assert_model_exists(
-            "meeting/1",
-            {
-                "motions_default_statute_amendment_workflow_id": None,
-                "motions_statute_recommendations_by": None,
-                "motions_statutes_enabled": None,
-                "motion_statute_paragraph_ids": None,
-            },
-        )
-        self.assert_model_exists(
-            "motion_workflow/1",
-            {
-                "default_statute_amendment_workflow_meeting_id": None,
-            },
-        )
 
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:
