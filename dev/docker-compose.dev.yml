@@ -25,7 +25,8 @@ services:
             - DATABASE_HOST=postgres
         depends_on:
             - postgres
-            - redis
+            - auth
+            - vote
     auth:
         build:
             context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
