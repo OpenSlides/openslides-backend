@@ -118,7 +118,7 @@ def retry_on_db_failure(fn: Callable) -> Callable:
                     tries += 1
                     if tries < MAX_RETRIES:
                         # oe = e.base_exception
-                        logger.info(
+                        logger.warn(
                             "Retrying request to database because of the following error "
                             # f"({type(oe).__name__}, code {oe.pgcode}): {oe.pgerror}"
                         )
