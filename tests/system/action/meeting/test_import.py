@@ -12,7 +12,7 @@ from openslides_backend.shared.util import (
     get_initial_data_file,
 )
 from tests.system.action.base import BaseActionTestCase
-from tests.system.util import CountDatastoreCalls, Profiler, performance
+from tests.system.util import Profiler, performance
 
 
 class MeetingImport(BaseActionTestCase):
