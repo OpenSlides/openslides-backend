@@ -13,7 +13,11 @@ from openslides_backend.shared.exceptions import (
     ModelDoesNotExist,
 )
 from openslides_backend.shared.typing import DeletedModel
-from tests.database.reader.system.util import setup_data, standard_responses, standard_data
+from tests.database.reader.system.util import (
+    setup_data,
+    standard_data,
+    standard_responses,
+)
 
 ID = 1
 COLLECTION = "user"
@@ -47,15 +51,15 @@ def test_view_field_relation_list_ordered(db_connection: Connection) -> None:
     with get_new_os_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
-                f"INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (2, 1)"
+                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (2, 1)"
             )
             cursor.execute(
-                f"INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (1, 1)"
+                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (1, 1)"
             )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         response = extended_database.get("user/1")
-    assert response["committee_management_ids"] == [1, 2] 
+    assert response["committee_management_ids"] == [1, 2]
 
 
 def test_no_model(db_connection: Connection) -> None:
