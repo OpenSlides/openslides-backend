@@ -5,8 +5,8 @@ services:
             context: ..
             dockerfile: Dockerfile
             args:
-                CONTEXT: "dev"
-        image: openslides-backend-dev
+                CONTEXT: "tests"
+        image: openslides-backend-tests
         user: $USER_ID:$GROUP_ID
         ports:
             - "9002:9002"

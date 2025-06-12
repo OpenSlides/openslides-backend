@@ -14,8 +14,8 @@ services:
     datastore-writer:
         build:
             context: ../../openslides-datastore-service/
-            dockerfile: Dockerfile.dev
             args:
+                CONTEXT: "dev"
                 MODULE: "writer"
                 PORT: "9011"
         image: openslides-datastore-writer-dev
