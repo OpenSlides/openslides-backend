@@ -260,10 +260,4 @@ class DatabaseReader:
         except Exception as e:
             raise DatabaseException(f"Unexpected error reading from database: {e}")
 
-        # TODO write a test for this or fix it in the db
-        for result in results:
-            for field, value in result.items():
-                if isinstance(value, list):
-                    value.sort()
-                #     result[field] = sorted(value)
         return results
