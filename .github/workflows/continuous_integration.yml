@@ -53,8 +53,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Run tests
-      run: dev/run-tests.sh
+    - name: Run Test
+      uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
+      with:
+        service: backend
 
   test-local-setup:
     name: Build and test local dev setup
