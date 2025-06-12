@@ -3,16 +3,17 @@
 # Executes all tests. Should errors occur, CATCH will be set to 1, causing an erronous exit code.
 
 echo "########################################################################"
-echo "###################### Start full system tests #########################"
+echo "###################### Run Tests and Linters ###########################"
 echo "########################################################################"
 
+IMAGE_TAG=openslides-backend-tests
 CATCH=0
 PERSIST_CONTAINERS=$1
 export COMPOSE_DOCKER_CLI_BUILD=0
 
 DC="docker compose -f dev/docker-compose.tests.yml"
 
-make build-test || CATCH=1
+if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test || CATCH=1; fi
 $DC up --build --detach || CATCH=1
 $DC exec -T backend scripts/wait.sh datastore-writer 9011 || CATCH=1
 $DC exec -T backend scripts/wait.sh datastore-reader 9010 || CATCH=1
