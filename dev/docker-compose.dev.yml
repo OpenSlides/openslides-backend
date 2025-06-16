@@ -65,8 +65,7 @@ services:
     auth:
         build:
             context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
-            args:
-                CONTEXT: "dev"
+            dockerfile: "Dockerfile.dev"
         image: openslides-auth-dev
         ports:
             - "9004:9004"
