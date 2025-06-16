@@ -149,7 +149,5 @@ run-dev-attach-otel:
 
 run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
 
-#	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
-
 rebuild-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
+	docker build . --tag=openslides-backend-dev --no-cache --build-arg CONTEXT=dev
