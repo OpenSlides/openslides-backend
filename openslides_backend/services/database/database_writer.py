@@ -500,8 +500,9 @@ class DatabaseWriter:
         return_id: bool = True,
     ) -> Id:
         """
-        executes the statement with the arguments
-        returns the id if return_id is True else returns zero
+        Used for write events; except for those parts writing on intermediate tables.
+        Executes the statement with the arguments.
+        Returns the id if return_id is True else returns zero.
         """
         if return_id:
             statement += sql.SQL("""RETURNING id;""")
@@ -547,28 +548,29 @@ class DatabaseWriter:
             )
         except CheckViolation as e:
             _, table, _, constraint_name, _ = e.args[0].split('"')
-            record = False
+            # Fetch the generated constraint from the initially applied schema.
+            in_table_block = False
             with open("meta/dev/sql/schema_relational.sql") as f:
                 for line in f:
                     # search only in the table block to prevent finding duplicates of other tables
-                    if "CREATE TABLE" in line and table in line:
-                        record = True
-                    elif record and constraint_name in line:
+                    if f"CREATE TABLE {table}" in line:
+                        in_table_block = True
+                    elif in_table_block and constraint_name in line:
                         constraint = line
                         break
                     elif line == "":
                         break
+            # Using psycopgs inner working for a conversion into the real SQL.
             with self.connection.cursor() as curs:
-                # Using psycopg inner conversion of the SQL.
                 curs._tx = adapt.Transformer(curs)
-                filled_statement = curs._convert_query(statement, arguments)
+                real_statement = curs._convert_query(statement, arguments)
             raise InvalidFormat(
                 f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or id_)}'
         The psycopg arguments are: {arguments}
         The fields are: {statement.as_string().split('(')[1].split(')')[0]}
         The constraint from the relational schema:
-        {constraint}        The postgres statement: {filled_statement.query.decode()}"""
+        {constraint}        The postgres statement: {real_statement.query.decode()}"""
             )
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
