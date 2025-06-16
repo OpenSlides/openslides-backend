@@ -85,8 +85,6 @@ services:
     vote:
         build:
             context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
-            args:
-                CONTEXT: "dev"
         image: openslides-vote-dev
         ports:
             - "9013:9013"

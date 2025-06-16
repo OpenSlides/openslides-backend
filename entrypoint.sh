@@ -6,4 +6,6 @@ if [ ! $ANONYMOUS_ONLY ]; then
   scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
 fi
 
+echo "Test: This worked"
+
 exec "$@"
