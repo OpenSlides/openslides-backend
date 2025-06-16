@@ -550,12 +550,13 @@ class DatabaseWriter:
             _, table, _, constraint_name, _ = e.args[0].split('"')
             # Fetch the generated constraint from the initially applied schema.
             in_table_block = False
+            constraint = ""
             with open("meta/dev/sql/schema_relational.sql") as f:
                 for line in f:
                     # search only in the table block to prevent finding duplicates of other tables
-                    if f"CREATE TABLE {table}" in line:
+                    if "CREATE TABLE" in line and f" {table} " in line:
                         in_table_block = True
-                    elif in_table_block and constraint_name in line:
+                    elif in_table_block and f"CONSTRAINT {constraint_name} " in line:
                         constraint = line
                         break
                     elif line == "":
