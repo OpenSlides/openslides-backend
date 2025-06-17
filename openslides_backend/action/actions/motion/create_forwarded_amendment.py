@@ -66,12 +66,6 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             )
         return action_data
 
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        self.with_attachments = instance.pop("with_attachments", False)
-        if self.with_attachments:
-            self.forward_mediafiles(instance, self.meeting_mediafile_replace_map)
-        return super().update_instance(instance)
-
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
 
@@ -87,9 +81,9 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         for amendment in amendment_data:
-            amendment["with_attachments"] = self.with_attachments
+            amendment["with_attachments"] = self.should_forward_attachments()
         action_data = {"amendment_data": amendment_data}
-        if self.with_attachments:
+        if self.should_forward_attachments():
             action_data.update(
                 {
                     "forwarded_attachments": self.forwarded_attachments,
@@ -100,6 +94,3 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return True
-
-    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
-        return self.with_attachments

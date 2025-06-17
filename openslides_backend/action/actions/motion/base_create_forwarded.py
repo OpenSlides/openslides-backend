@@ -152,6 +152,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         return super().perform(action_data, user_id, internal)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.with_attachments = instance.pop("with_attachments", False)
         self.mark_amendments = instance.pop(
             "mark_amendments_as_forwarded", False
         ) or instance.get("marked_forwarded", False)
@@ -289,7 +290,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "use_original_number": use_original_number,
                         "with_change_recommendations": with_change_recommendations,
                         "marked_forwarded": self.mark_amendments,
-                        "with_attachments": self.should_forward_attachments(instance),
+                        "with_attachments": self.should_forward_attachments(),
                     }
                 )
                 amendment.pop("meta_position", 0)
@@ -304,6 +305,10 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "non_forwarded_amendment_amount": len(amendment_ids),
                 "amendment_result_data": [],
             }
+        if self.should_forward_attachments():
+            self.forward_mediafiles(
+                instance, getattr(self, "meeting_mediafile_replace_map", {})
+            )
         return instance
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
@@ -372,8 +377,8 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         raise ActionException("Not implemented")
 
-    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
-        raise ActionException("Not implemented")
+    def should_forward_attachments(self) -> bool:
+        return self.with_attachments
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
@@ -450,7 +455,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         """
         motion_target_meeting_ids_map: dict[int, set[int]] = defaultdict(set)
         for instance in action_data:
-            if instance.get("with_attachments"):
+            if instance.get("with_attachments", False):
                 motion_target_meeting_ids_map[instance["origin_id"]].add(
                     instance["meeting_id"]
                 )

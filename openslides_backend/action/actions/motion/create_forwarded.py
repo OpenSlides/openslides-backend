@@ -55,7 +55,7 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         action_data = {"amendment_data": amendment_data}
-        if self.with_attachments:
+        if self.should_forward_attachments():
             action_data.update(
                 {
                     "forwarded_attachments": cast(
@@ -70,18 +70,11 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_amendments = instance.pop("with_amendments", False)
-        self.with_attachments = instance.pop("with_attachments", False)
         self.check_state_allow_forwarding(instance)
-        super().update_instance(instance)
-        if self.with_attachments:
-            return self.forward_mediafiles(instance, self.meeting_mediafile_replace_map)
-        return instance
+        return super().update_instance(instance)
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return self.with_amendments
-
-    def should_forward_attachments(self, instance: dict[str, Any]) -> bool:
-        return self.with_attachments
 
     def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
