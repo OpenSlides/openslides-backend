@@ -9,6 +9,4 @@ printf "\nMigrations:\n"
 python openslides_backend/migrations/migrate.py finalize
 printf "\n"
 
-echo "This worked"
-
 exec "$@"

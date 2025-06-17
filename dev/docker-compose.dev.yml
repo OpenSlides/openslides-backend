@@ -1,12 +1,11 @@
-version: "3"
 services:
     backend:
         build:
             context: ..
-            dockerfile: Dockerfile
+            target: "$CONTEXT"
             args:
-                CONTEXT: "dev"
-        image: openslides-backend-dev
+                CONTEXT: "$CONTEXT"
+        image: openslides-backend-$CONTEXT
         user: $USER_ID:$GROUP_ID
         ports:
             - "9002:9002"
