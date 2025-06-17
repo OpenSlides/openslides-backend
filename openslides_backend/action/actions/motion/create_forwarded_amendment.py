@@ -41,16 +41,22 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
     ) -> tuple[WriteRequest | None, ActionResults | None]:
-        amendment_data = action_data.pop("amendment_data", [])  # type: ignore[attr-defined]
-        self.forwarded_attachments = action_data.pop("forwarded_attachments", {})  # type: ignore[attr-defined]
-        self.meeting_mediafile_replace_map = action_data.pop(  # type: ignore[attr-defined]
-            "meeting_mediafile_replace_map", {}
-        )
-        return super().perform(amendment_data, user_id, internal)
+        action_data_dict = list(action_data)[0]
+
+        if "meeting_mediafile_replace_map" in action_data_dict:
+            self.forwarded_attachments = action_data_dict.pop(
+                "forwarded_attachments", {}
+            )
+            self.meeting_mediafile_replace_map = action_data_dict.pop(
+                "meeting_mediafile_replace_map", {}
+            )
+        action_data = action_data_dict.pop("amendment_data", [])
+
+        return super().perform(action_data, user_id, internal)
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        if self.meeting_mediafile_replace_map:
+        if hasattr(self, "meeting_mediafile_replace_map"):
             self.forwarded_attachments, self.meeting_mediafile_replace_map = (
                 self.duplicate_mediafiles(
                     action_data,
@@ -90,7 +96,7 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
                     "meeting_mediafile_replace_map": self.meeting_mediafile_replace_map,
                 }
             )
-        return self.execute_other_action(MotionCreateForwardedAmendment, action_data)  # type: ignore[arg-type]
+        return self.execute_other_action(MotionCreateForwardedAmendment, [action_data])
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         return True

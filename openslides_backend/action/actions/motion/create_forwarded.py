@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, cast
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException, PermissionDenied
@@ -57,11 +58,15 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
         if self.with_attachments:
             action_data.update(
                 {
-                    "forwarded_attachments": self.forwarded_attachments,  # type: ignore[dict-item]
-                    "meeting_mediafile_replace_map": self.meeting_mediafile_replace_map,  # type: ignore[dict-item]
+                    "forwarded_attachments": cast(
+                        Iterable[dict[str, Any]], self.forwarded_attachments
+                    ),
+                    "meeting_mediafile_replace_map": cast(
+                        Iterable[dict[str, Any]], self.meeting_mediafile_replace_map
+                    ),
                 }
             )
-        return self.execute_other_action(MotionCreateForwardedAmendment, action_data)  # type: ignore[arg-type]
+        return self.execute_other_action(MotionCreateForwardedAmendment, [action_data])
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_amendments = instance.pop("with_amendments", False)
