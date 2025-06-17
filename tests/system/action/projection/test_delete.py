@@ -5,12 +5,12 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectionDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
                     "all_projection_ids": [12, 13, 14],
                     "projector_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "current_projection_ids": [12],

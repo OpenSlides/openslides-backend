@@ -3,9 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class TagDeleteTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/1": {"tag_ids": [111]},
                 "tag/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -14,9 +15,10 @@ class TagDeleteTest(BaseActionTestCase):
         self.assert_model_not_exists("tag/112")
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [112], "is_active_in_organization_id": 1},
+                "meeting/1": {"tag_ids": [112]},
                 "tag/112": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -25,9 +27,10 @@ class TagDeleteTest(BaseActionTestCase):
         self.assert_model_exists("tag/112")
 
     def test_delete_correct_2(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
+                "meeting/1": {"tag_ids": [111]},
                 "tag/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,

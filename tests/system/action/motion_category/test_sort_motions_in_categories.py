@@ -16,11 +16,11 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
         }
 
     def test_sort_correct_1(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
                     "motion_ids": [31, 32],
-                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/222": {"meeting_id": 1},
                 "motion/31": {"category_id": 222, "meeting_id": 1},
@@ -38,9 +38,9 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
         assert model_32.get("category_weight") == 1
 
     def test_sort_missing_model(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_category/222": {"meeting_id": 1},
                 "motion/31": {"category_id": 222, "meeting_id": 1},
             }
@@ -56,9 +56,9 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
         )
 
     def test_sort_another_section_db(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_category/222": {"meeting_id": 1},
                 "motion/31": {"category_id": 222, "meeting_id": 1},
                 "motion/32": {"category_id": 222, "meeting_id": 1},

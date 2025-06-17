@@ -106,6 +106,7 @@ class User(Model):
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
+    guest = fields.BooleanField()
     gender_id = fields.RelationField(to={"gender": "user_ids"})
     organization_management_level = fields.CharField(
         constraints={
@@ -130,6 +131,7 @@ class User(Model):
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
     delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
     poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
+    home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -308,6 +310,11 @@ class Committee(Model):
         constraints={"description": "Calculated field."},
     )
     manager_ids = fields.RelationListField(to={"user": "committee_management_ids"})
+    parent_id = fields.RelationField(to={"committee": "child_ids"})
+    child_ids = fields.RelationListField(to={"committee": "parent_id"})
+    all_parent_ids = fields.RelationListField(to={"committee": "all_child_ids"})
+    all_child_ids = fields.RelationListField(to={"committee": "all_parent_ids"})
+    native_user_ids = fields.RelationListField(to={"user": "home_committee_id"})
     forward_to_committee_ids = fields.RelationListField(
         to={"committee": "receive_forwardings_from_committee_ids"}
     )
@@ -1381,6 +1388,11 @@ class Motion(Model):
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     additional_submitter = fields.CharField()
+    marked_forwarded = fields.BooleanField(
+        constraints={
+            "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
+        }
+    )
     lead_motion_id = fields.RelationField(
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )

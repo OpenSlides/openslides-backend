@@ -11,6 +11,7 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
 
         def setUp(self) -> None:
             super().setUp()
+            self.create_meeting(111)
             self.permission_test_models: dict[str, dict[str, Any]] = {
                 "meeting/1": {"meeting_user_ids": [78]},
                 "motion/357": {
@@ -28,10 +29,6 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
         def test_create(self) -> None:
             self.set_models(
                 {
-                    "meeting/111": {
-                        "name": "name_m123etrd",
-                        "is_active_in_organization_id": 1,
-                    },
                     "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                     "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
                     "meeting_user/79": {"meeting_id": 111, "user_id": 78},
@@ -51,8 +48,6 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
             self.set_models(
                 {
                     "meeting/111": {
-                        "name": "name_m123etrd",
-                        "is_active_in_organization_id": 1,
                         "meeting_user_ids": [78, 79],
                     },
                     "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
@@ -91,10 +86,6 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
         def test_create_weight_double_action(self) -> None:
             self.set_models(
                 {
-                    "meeting/111": {
-                        "name": "name_m123etrd",
-                        "is_active_in_organization_id": 1,
-                    },
                     "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                     "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
                     "user/89": {"username": "username_ghjiuen2", "meeting_ids": [111]},
@@ -126,10 +117,6 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
         def test_create_not_unique(self) -> None:
             self.set_models(
                 {
-                    "meeting/111": {
-                        "name": "name_m123etrd",
-                        "is_active_in_organization_id": 1,
-                    },
                     "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                     "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
                     "meeting_user/78": {"meeting_id": 111, "user_id": 78},
@@ -172,16 +159,9 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
             )
 
         def test_create_not_matching_meeting_ids(self) -> None:
+            self.create_meeting(112)
             self.set_models(
                 {
-                    "meeting/111": {
-                        "name": "name_m123etrd",
-                        "is_active_in_organization_id": 1,
-                    },
-                    "meeting/112": {
-                        "name": "name_ewadetrd",
-                        "is_active_in_organization_id": 1,
-                    },
                     "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                     "user/78": {"username": "username_loetzbfg", "meeting_ids": [112]},
                     "meeting_user/78": {"meeting_id": 111, "user_id": 78},

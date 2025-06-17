@@ -46,10 +46,19 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "username": "meeting_and_archived_meeting",
                     "meeting_ids": [1, 2],
                 },
+                "user/8": {
+                    "username": "with_home_committee",
+                    "home_committee_id": 2,
+                },
+                "user/9": {
+                    "username": "with_home_committee_and_meeting",
+                    "home_committee_id": 1,
+                    "meeting_ids": [1, 2],
+                },
             }
         )
         status_code, data = self.request(
-            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7]}
+            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7, 8, 9]}
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(
@@ -60,36 +69,64 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "committee_ids": [],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
                 },
                 "3": {
                     "collection": "committee",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [1],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
                 },
                 "4": {
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [2],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
                 },
                 "5": {
                     "collection": "organization",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
                 },
                 "6": {
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
                     "committee_ids": [2],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
                 },
                 "7": {
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": "",
                     "committee_ids": [2],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": None,
+                },
+                "8": {
+                    "collection": "committee",
+                    "id": 2,
+                    "user_oml": "",
+                    "committee_ids": [],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": 2,
+                },
+                "9": {
+                    "collection": "committee",
+                    "id": 1,
+                    "user_oml": "",
+                    "committee_ids": [2],
+                    "user_in_archived_meetings_only": False,
+                    "home_committee_id": 1,
                 },
             },
         )

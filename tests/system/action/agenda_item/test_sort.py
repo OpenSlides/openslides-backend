@@ -3,6 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemSortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(222)
+
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
