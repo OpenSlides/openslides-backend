@@ -691,11 +691,9 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_home_committee_id,
         ) = self.get_user_scope(instance.get("id") or instance)
 
-        failing_groups: list[str] = []
-        if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
-            failing_groups = self._check_for_higher_OML(
-                actual_group_fields, instance, raise_exception=False
-            )
+        failing_groups = self._check_for_higher_OML(
+            actual_group_fields, instance, raise_exception=False
+        )
 
         instance_meeting_id = instance.get("meeting_id")
         locked_from_inside = False
