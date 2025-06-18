@@ -711,7 +711,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             field: None
             for group in failing_groups
             for field in actual_group_fields[group]
-            if field in instance
+            if field in instance and group in groups
         }
         """ group[H] fields are internal, but generally allowed in import.
         They have to be checked like group[A] fields"""
