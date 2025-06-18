@@ -81,9 +81,9 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         for amendment in amendment_data:
-            amendment["with_attachments"] = self.should_forward_attachments()
+            amendment["with_attachments"] = self.with_attachments
         action_data = {"amendment_data": amendment_data}
-        if self.should_forward_attachments():
+        if self.with_attachments:
             action_data.update(
                 {
                     "forwarded_attachments": self.forwarded_attachments,

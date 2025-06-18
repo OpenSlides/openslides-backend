@@ -290,7 +290,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "use_original_number": use_original_number,
                         "with_change_recommendations": with_change_recommendations,
                         "marked_forwarded": self.mark_amendments,
-                        "with_attachments": self.should_forward_attachments(),
+                        "with_attachments": self.with_attachments,
                     }
                 )
                 amendment.pop("meta_position", 0)
@@ -305,7 +305,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "non_forwarded_amendment_amount": len(amendment_ids),
                 "amendment_result_data": [],
             }
-        if self.should_forward_attachments():
+        if self.with_attachments:
             self.forward_mediafiles(
                 instance, getattr(self, "meeting_mediafile_replace_map", {})
             )
@@ -376,9 +376,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
 
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
         raise ActionException("Not implemented")
-
-    def should_forward_attachments(self) -> bool:
-        return self.with_attachments
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(

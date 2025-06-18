@@ -55,7 +55,7 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
 
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         action_data = {"amendment_data": amendment_data}
-        if self.should_forward_attachments():
+        if self.with_attachments:
             action_data.update(
                 {
                     "forwarded_attachments": cast(
