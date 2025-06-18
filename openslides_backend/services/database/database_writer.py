@@ -1,7 +1,7 @@
 import threading
 from typing import Any
 
-from psycopg import Connection, rows, sql
+from psycopg import Connection, adapt, rows, sql
 from psycopg.errors import (
     CheckViolation,
     GeneratedAlways,
@@ -500,8 +500,9 @@ class DatabaseWriter:
         return_id: bool = True,
     ) -> Id:
         """
-        executes the statement with the arguments
-        returns the id if return_id is True else returns zero
+        Used for write events; except for those parts writing on intermediate tables.
+        Executes the statement with the arguments.
+        Returns the id if return_id is True else returns zero.
         """
         if return_id:
             statement += sql.SQL("""RETURNING id;""")
@@ -546,7 +547,32 @@ class DatabaseWriter:
                 f"Collection '{collection}' does not exist in the database: {e}"
             )
         except CheckViolation as e:
-            raise e
+            _, table, _, constraint_name, _ = e.args[0].split('"')
+            # Fetch the generated constraint from the initially applied schema.
+            in_table_block = False
+            constraint = ""
+            with open("meta/dev/sql/schema_relational.sql") as f:
+                for line in f:
+                    # search only in the table block to prevent finding duplicates of other tables
+                    if "CREATE TABLE" in line and f" {table} " in line:
+                        in_table_block = True
+                    elif in_table_block and f"CONSTRAINT {constraint_name} " in line:
+                        constraint = line
+                        break
+                    elif line == "":
+                        break
+            # Using psycopgs inner working for a conversion into the real SQL.
+            with self.connection.cursor() as curs:
+                curs._tx = adapt.Transformer(curs)
+                real_statement = curs._convert_query(statement, arguments)
+            raise InvalidFormat(
+                f"""{e.args[0]}
+        Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or id_)}'
+        The psycopg arguments are: {arguments}
+        The fields are: {statement.as_string().split('(')[1].split(')')[0]}
+        The constraint from the relational schema:
+        {constraint}        The postgres statement: {real_statement.query.decode()}"""
+            )
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
                 raise ModelDoesNotExist(fqid_from_collection_and_id(collection, id_))
