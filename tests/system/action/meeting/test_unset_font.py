@@ -30,13 +30,12 @@ class MediafileUnsetFontActionTest(BaseActionTestCase):
         }
 
     def test_unset_font(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
                     "font_projector_h1_id": 7,
                     "font_projector_h2_id": 7,
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {

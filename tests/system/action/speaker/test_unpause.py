@@ -10,8 +10,8 @@ from tests.system.action.base import BaseActionTestCase
 class TestSpeakerUnpause(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
-            "meeting/1": {"is_active_in_organization_id": 1},
             "user/7": {"username": "test_username1"},
             "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
             "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},

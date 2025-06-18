@@ -68,7 +68,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     [
                         "meeting_id",
                         "lead_motion_id",
-                        "statute_paragraph_id",
                         "state_id",
                         "all_origin_ids",
                         "derived_motion_ids",

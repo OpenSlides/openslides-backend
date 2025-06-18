@@ -1,5 +1,11 @@
 from typing import Any, cast
 
+from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsFailingFields,
+    PermissionVarStore,
+)
+
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
 from .create import UserCreate
@@ -12,6 +18,22 @@ class BaseUserImport(BaseImportAction):
     """
 
     skip_archived_meeting_check = True
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+
+        permstore = PermissionVarStore(self.datastore, self.user_id)
+        self.permission_check = CreateUpdatePermissionsFailingFields(
+            self.user_id,
+            permstore,
+            self.services,
+            self.datastore,
+            self.relation_manager,
+            self.logging,
+            self.env,
+            self.skip_archived_meeting_check,
+            self.use_meeting_ids_for_archived_meeting_check,
+        )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().update_instance(instance)
@@ -37,7 +59,10 @@ class BaseUserImport(BaseImportAction):
         """
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
-        pass
+        """
+        Function for creating all non-user models that need to be created as part of the
+        import. Should be overwritten by subclasses if it is required.
+        """
 
     def handle_remove_and_group_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
         for field in ("groups", "structure_level"):
@@ -46,6 +71,13 @@ class BaseUserImport(BaseImportAction):
                 entry[relation_field] = [
                     id_ for instance in instances if (id_ := instance.get("id"))
                 ]
+        if (
+            "home_committee" in entry
+            and entry["home_committee"]["info"] != ImportState.REMOVE
+            and (committee_instance := entry.pop("home_committee"))
+        ):
+            if home_committee_id := committee_instance.get("id"):
+                entry["home_committee_id"] = home_committee_id
 
         # set fields empty/False if saml_id will be set
         field_values = (
@@ -132,8 +164,55 @@ class BaseUserImport(BaseImportAction):
             )
             self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
-        if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
-            self.import_state = ImportState.ERROR
+        self.validate_field(row, self.committee_map, "home_committee", False)
+
+    def check_field_failures(
+        self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEFGHIJ"
+    ) -> bool:
+        substitutions: dict[str, Any] = {}
+        for field in ["home_committee", "gender"]:
+            if content := entry.pop(field, None):
+                substitutions[field] = content
+                entry[f"{field}_id"] = content
+        failing_fields_jsonupload = {
+            field
+            for field in entry
+            if isinstance(entry[field], dict)
+            and entry[field]["info"] == ImportState.REMOVE
+        }
+        for field in substitutions:
+            entry[f"{field}_id"] = substitutions[field].get("id")
+
+        failing_fields = self.permission_check.get_failing_fields(entry, groups)
+        for field in substitutions:
+            entry[field] = substitutions[field]
+            entry.pop(f"{field}_id")
+        if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
+            less_ff.sort()
+            messages.append(
+                f"In contrast to preview you may import field(s) '{', '.join(less_ff)}'"
+            )
+            for field in less_ff:
+                actual_field = (
+                    field[:-3]
+                    if field not in entry and field.endswith("_id")
+                    else field
+                )
+                entry[actual_field]["info"] = ImportState.DONE
+        if more_ff := list(set(failing_fields) - failing_fields_jsonupload):
+            more_ff.sort()
+            messages.append(
+                f"Error: In contrast to preview you may not import field(s) '{', '.join(more_ff)}'"
+            )
+            for field in more_ff:
+                actual_field = (
+                    field[:-3]
+                    if field not in entry and field.endswith("_id")
+                    else field
+                )
+                entry[actual_field]["info"] = ImportState.ERROR
+            return False
+        return True
 
     def setup_lookups(self) -> None:
         self.username_lookup = Lookup(
@@ -176,3 +255,21 @@ class BaseUserImport(BaseImportAction):
                 "can_change_own_password",
             ],
         )
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "committee",
+                    [
+                        id
+                        for row in self.rows
+                        if (id := row["data"].get("home_committee", {}).get("id"))
+                    ],
+                    ["name"],
+                ),
+            ],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        self.committee_map = {
+            k: v["name"] for k, v in result.get("committee", {}).items()
+        }

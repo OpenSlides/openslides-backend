@@ -1,5 +1,6 @@
 from enum import Enum, auto
 from time import time
+from typing import cast
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
@@ -112,7 +113,7 @@ class CountdownControl(UpdateAction):
             and not speaker.get("point_of_order")
         ):
             # only update the level if the speaker was not paused and the speech state demands it
-            start_time = speaker.get("unpause_time", speaker["begin_time"])
+            start_time = cast(int, speaker.get("unpause_time", speaker["begin_time"]))
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
                 [

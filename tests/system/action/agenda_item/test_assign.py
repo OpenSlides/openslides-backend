@@ -6,12 +6,9 @@ from tests.system.util import CountDatastoreCalls
 
 class AgendaItemAssignActionTest(BaseActionTestCase):
     def test_assign_parent_none(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "agenda_item/7": {
                     "comment": "comment_7",
                     "meeting_id": 222,
@@ -53,12 +50,9 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         assert agenda_item_9.get("weight") == 10001
 
     def test_assign_parent_set(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "agenda_item/7": {
                     "comment": "comment_7",
                     "meeting_id": 222,
@@ -102,9 +96,9 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         assert agenda_item_9.get("weight") == 102
 
     def test_assign_multiple_action_data_items(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
                 "agenda_item/7": {"meeting_id": 222},
                 "agenda_item/8": {"meeting_id": 222},
             }
