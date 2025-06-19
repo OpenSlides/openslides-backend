@@ -24,11 +24,11 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_
     rm -rf /var/lib/apt/lists/*
 
 ### Requirements file will be autoselected, unless an overwrite is given via ARG REQUIEREMENTS_FILE_OVERWRITE
-ENV REQUIREMENTS_FILE=${REQUIREMENTS_FILE_OVERWRITE:+$REQUIREMENTS_FILE_OVERWRITE}${REQUIREMENTS_FILE_OVERWRITE:-${tests:+"development"}${prod:+"production"}${dev:+"development"}}
+ENV REQUIREMENTS_FILE=${tests:+"requirements_development.txt"}${prod:+"requirements_production.txt"}${dev:+"requirements_development.txt"}
 RUN if [ -z $REQUIREMENTS_FILE_OVERWRITE ]; then REQUIREMENTS_FILE=$REQUIREMENTS_FILE_OVERWRITE; fi
 
 COPY requirements/ requirements/
-RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/requirements_${REQUIREMENTS_FILE}.txt
+RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
 
 ENV PYTHONPATH /app
 
