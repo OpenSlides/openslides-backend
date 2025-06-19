@@ -35,17 +35,24 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, Any], bool]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
-        Returns the scope of the given user id together with the relevant scope id (either meeting,
-        committee or organization), the OML level of the user as string (empty string if the user
-        has none) and the ids of all committees that the user is either a manager in or a member of
-        together with their respective meetings the user being part of. A committee can have no meetings if the
-        user just has committee management rights and is not part of any of its meetings.
+        Returns in the tuple:
+        * the scope of the given user id
+        * the relevant scope id (either meeting, committee or organization id
+            depending on scope)
+        * the OML level of the user as string (empty string if the user has none)
+        * the ids of all committees that the user is either a manager in or a member
+            of together with the respective meetings the user is part of
+        * whether the user is only in archived meetings
+        * his home_committee_id.
+        A committee can have no meetings if the user just has committee management rights and is
+        not part of any of its meetings.
         """
         meeting_ids: set[int] = set()
         committees_manager: set[int] = set()
+        home_committee_id: int | None
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
@@ -54,6 +61,7 @@ class UserScopeMixin(BaseServiceProvider):
                 set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
+            home_committee_id = id_or_instance.get("home_committee_id")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -61,12 +69,15 @@ class UserScopeMixin(BaseServiceProvider):
                     "meeting_ids",
                     "organization_management_level",
                     "committee_management_ids",
+                    "home_committee_id",
                 ],
                 lock_result=False,
             )
             meeting_ids.update(user.get("meeting_ids", []))
             committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
+            home_committee_id = user.get("home_committee_id")
+
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -99,6 +110,15 @@ class UserScopeMixin(BaseServiceProvider):
             len(active_committee_meetings) == 0 and len(committee_meetings) > 0
         )
 
+        if home_committee_id:
+            return (
+                UserScope.Committee,
+                home_committee_id,
+                oml_right,
+                active_committee_meetings,
+                user_in_archived_meetings_only,
+                home_committee_id,
+            )
         if len(active_meetings_committee) == 1 and len(active_committees) == 1:
             return (
                 UserScope.Meeting,
@@ -106,6 +126,7 @@ class UserScopeMixin(BaseServiceProvider):
                 oml_right,
                 active_committee_meetings,
                 user_in_archived_meetings_only,
+                home_committee_id,
             )
         if len(committees) == 1:
             return (
@@ -114,6 +135,7 @@ class UserScopeMixin(BaseServiceProvider):
                 oml_right,
                 committee_meetings,
                 user_in_archived_meetings_only,
+                home_committee_id,
             )
         return (
             UserScope.Organization,
@@ -121,6 +143,7 @@ class UserScopeMixin(BaseServiceProvider):
             oml_right,
             committee_meetings,
             user_in_archived_meetings_only,
+            home_committee_id,
         )
 
     def check_permissions_for_scope(
@@ -142,6 +165,7 @@ class UserScopeMixin(BaseServiceProvider):
             user_oml,
             committees_to_meetings,
             user_in_archived_meetings_only,
+            _,
         ) = self.get_user_scope(instance_id)
         if (
             always_check_user_oml

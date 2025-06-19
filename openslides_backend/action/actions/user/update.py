@@ -74,6 +74,8 @@ class UserUpdate(
             "is_demo_user",
             "saml_id",
             "member_number",
+            "guest",
+            "home_committee_id",
             *internal_id_fields,
         ],
         additional_optional_fields={
@@ -83,6 +85,19 @@ class UserUpdate(
     )
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+        if instance.get("guest"):
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]),
+                mapped_fields=[
+                    "home_committee_id",
+                ],
+                lock_result=False,
+            )
+            if user.get("home_committee_id"):
+                self.check_group_I(["home_committee_id"], user)
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -100,6 +115,7 @@ class UserUpdate(
             instance.get("meeting_id"), instance, instance["id"], None
         )
         instance = super().update_instance(instance)
+        home_committee_id = instance.get("home_committee_id")
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
@@ -107,8 +123,17 @@ class UserUpdate(
                 "organization_management_level",
                 "saml_id",
                 "password",
+                "home_committee_id",
             ],
         )
+        if instance.get("guest"):
+            if home_committee_id:
+                raise ActionException(
+                    "Cannot set guest to true and set a home committee at the same time."
+                )
+            instance["home_committee_id"] = None
+        elif home_committee_id:
+            instance["guest"] = False
         if user.get("saml_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):

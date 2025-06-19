@@ -563,8 +563,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "error", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -579,8 +579,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "done", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -806,8 +806,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
-            "last_name": "Luther King",
-            "first_name": "Martin",
+            "last_name": {"value": "Luther King", "info": ImportState.DONE},
+            "first_name": {"value": "Martin", "info": ImportState.DONE},
             "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
@@ -991,5 +991,220 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_set_home_committee(self) -> None:
+        self.json_upload_set_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false(self) -> None:
+        self.json_upload_set_home_committee(guest=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_home_committee(self) -> None:
+        self.json_upload_update_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 2,
+                "guest": False,
+                "first_name": "alice",
+            },
+        )
+
+    def test_json_upload_set_guest_to_true(self) -> None:
+        self.json_upload_set_guest_to_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee(self) -> None:
+        self.json_upload_update_guest_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_with_home_committee(self) -> None:
+        self.json_upload_update_guest_true(with_home_committee=True)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": None, "guest": True},
+        )
+
+    def test_json_upload_update_guest_false_with_home_committee(self) -> None:
+        self.json_upload_update_guest_false_with_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "guest": False},
+        )
+
+    def test_json_upload_update_guest_true_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_true(
+            with_home_committee=True, has_home_committee_perms=False
+        )
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice", "guest": None},
+        )
+
+    def test_json_upload_update_guest_false_without_home_committee_perms(self) -> None:
+        self.json_upload_update_guest_false_without_home_committee_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None},
+        )
+
+    def test_json_upload_set_home_committee_no_perms(self) -> None:
+        self.json_upload_set_home_committee(has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+            },
+        )
+
+    def test_json_upload_set_home_committee_and_guest_false_no_perms(self) -> None:
+        self.json_upload_set_home_committee(guest=False, has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": None},
+        )
+
+    def test_json_upload_update_home_committee_no_perms_old(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_update_home_committee_no_perms_both(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False, new_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )
+
+    def test_json_upload_update_home_committee_and_guest_false_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_guest_false_no_perms_new()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "guest": None, "home_committee_id": 1},
+        )
+
+    def test_json_upload_with_gender_as_orga_admin(self) -> None:
+        self.json_upload_with_gender_as_orga_admin()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "man", "gender_id": 1},
+        )
+
+    def test_json_upload_multiple_with_same_home_committee(self) -> None:
+        self.json_upload_multiple_with_same_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "first_name": "Tick", "username": "Huey", "home_committee_id": 1},
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "first_name": "Trick",
+                "username": "Dewey",
+                "home_committee_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "Track",
+                "username": "Louie",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_multiple_with_x(self) -> None:
+        self.json_upload_multiple_with_x()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {"id": 3, "first_name": "Gustav", "username": "schwante"},
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "bib",
+                "last_name": "lib",
+                "username": "biblib",
+            },
+        )
+        self.assert_model_exists(
+            "user/5",
+            {
+                "id": 5,
+                "first_name": "Loki",
+                "username": "witz",
+                "email": "loki@asen.sk",
             },
         )

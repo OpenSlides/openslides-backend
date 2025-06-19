@@ -8,6 +8,7 @@ from .base_poll_test import BasePollTestCase
 class CreatePoll(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "assignment/1": {
@@ -15,7 +16,6 @@ class CreatePoll(BasePollTestCase):
                     "open_posts": 1,
                     "meeting_id": 1,
                 },
-                "meeting/1": {"is_active_in_organization_id": 1},
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
@@ -702,10 +702,10 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists("poll/1", {"state": "created"})
 
     def test_create_user_option_valid(self) -> None:
+        self.create_meeting(42)
         self.set_models(
             {
                 "meeting/42": {
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
                 "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
@@ -751,10 +751,11 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_user_option_invalid(self) -> None:
+        self.create_meeting(7)
+        self.create_meeting(42)
         self.set_models(
             {
                 "meeting/42": {"meeting_user_ids": [1]},
-                "meeting/7": {"is_active_in_organization_id": 1},
                 "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
                 "user/1": {
                     "meeting_user_ids": [1],

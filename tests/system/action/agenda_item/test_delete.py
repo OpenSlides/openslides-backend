@@ -3,10 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(20)
+
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/20": {"is_active_in_organization_id": 1},
                 "agenda_item/111": {"meeting_id": 20},
             }
         )
@@ -17,7 +20,6 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/20": {"is_active_in_organization_id": 1},
                 "agenda_item/112": {"meeting_id": 20},
             }
         )
@@ -28,7 +30,6 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_delete_topic(self) -> None:
         self.set_models(
             {
-                "meeting/20": {"is_active_in_organization_id": 1},
                 "topic/34": {"agenda_item_id": 111, "meeting_id": 20},
                 "agenda_item/111": {"content_object_id": "topic/34", "meeting_id": 20},
             }
@@ -41,7 +42,6 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_delete_with_motion(self) -> None:
         self.set_models(
             {
-                "meeting/20": {"is_active_in_organization_id": 1},
                 "motion/34": {"agenda_item_id": 111, "meeting_id": 20},
                 "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 20},
             }
@@ -55,7 +55,6 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/20": {
-                    "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                 },
                 "motion/34": {"agenda_item_id": 111, "meeting_id": 20},
