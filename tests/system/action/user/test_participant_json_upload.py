@@ -2018,6 +2018,75 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
         }
 
+    def json_upload_no_permissions_to_set_meeting_external_fields_on_superadmin(
+        self,
+    ) -> None:
+        """try to change users first_name, but missing rights for user_scope committee"""
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "user/2": {
+                    "username": "user2",
+                    "first_name": "John",
+                    "meeting_user_ids": [11, 44],
+                    "meeting_ids": [1, 4],
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "password": "secretcrypted",
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+                "meeting/1": {"meeting_user_ids": [11]},
+                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
+                "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
+                "group/1": {"meeting_user_ids": [11]},
+                "group/5": {"meeting_user_ids": [44]},
+            }
+        )
+        self.set_committee_management_level([60])
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "user2",  # group A, will be removed
+                        "first_name": "Jim",  # group A, will be removed
+                        "email": "Jim.Knopf@Lummer.land",  # group A, will be removed
+                        "vote_weight": "1.23456",  # group B
+                        "groups": ["group1", "group2", "group3", "group4"],  # group C
+                        "saml_id": "saml_id1",  # group E, will be removed
+                        "default_password": "def_password",  # group F, will be removed
+                    }
+                ],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "username": {"value": "user2", "info": "remove", "id": 2},
+            "first_name": {"value": "Jim", "info": "remove"},
+            "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
+            "vote_weight": {"value": "1.234560", "info": "done"},
+            "saml_id": {"value": "saml_id1", "info": "remove"},
+            "default_password": {"value": "", "info": "remove"},
+            "groups": [
+                {"value": "group1", "info": "done", "id": 1},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "new"},
+            ],
+        }
+
     def json_upload_not_sufficient_field_permission_update_with_member_number(
         self,
     ) -> None:

@@ -12,6 +12,7 @@
     use_original_submitter: boolean;
     use_original_number: boolean;
     with_amendments: boolean;
+    with_attachments: boolean;
     with_change_recommendations: boolean;
 }
 ```
@@ -31,8 +32,10 @@ The original motion is updated as well (this is done by the automatic relation h
 
 The optional flags `use_original_submitter` and `use_original_number` will cause the original submitters and original numbers to be used in the new motion respectively. In case of the submitters, the action will generate the full name of the submitters and write the entire list of them and the value of the origin motions `additional_submitter` comma separated into the new motions `additional_submitter` field. If `use_original_submitter` is false the name of the origin motions committee will be written into the `additional_submitter` field instead
 
+If `with_attachments` is set to True, all the attachments of the motion will also be forwarded to the target meeting and connected to the newly forwarded motion.
+
 If `with_amendments` is set to True, all amendments of the motion, that have a state that can forward, will also be forwarded to the target meeting and connected to the newly forwarded lead motion.
-The three boolean flags for extra rules will be applied to the amendments as well.
+The four boolean flags for extra rules will be applied to the amendments as well.
 
 If the forwarded amendments have amendments themselves, those will also be treated the same way
 
