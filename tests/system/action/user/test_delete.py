@@ -483,6 +483,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_delete_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
+        self,
+    ) -> None:
+        error_message = self.prepare_archived_meetings_in_different_commitees("delete")
+        response = self.request("user.delete", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(error_message, response.json["message"])
+
     def test_delete_superadmin_with_1_meeting_by_oml_usermanager(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Meeting)
