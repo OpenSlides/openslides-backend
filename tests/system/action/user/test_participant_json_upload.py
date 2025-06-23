@@ -1132,6 +1132,37 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }.items():
             assert data[key] == value
 
+    def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
+        """SUPERADMIN may not set himself inactive."""
+        self.create_committee()
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "admin", "is_active": "False", "groups": ["admin"]}
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["data"]["is_active"] == {
+            "value": False,
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "A superadmin is not allowed to set himself inactive."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+        data = import_preview["result"]["rows"][0]["data"]
+        for key, value in {
+            "id": 1,
+            "username": {"info": "done", "value": "admin", "id": 1},
+            "is_active": {"info": "error", "value": False},
+        }.items():
+            assert data[key] == value
+
     def test_json_upload_update_locked_out_on_other_oml_error(self) -> None:
         self.prepare_locked_out_test(
             "test", oml=OrganizationManagementLevel.CAN_MANAGE_USERS
