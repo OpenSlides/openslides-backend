@@ -172,12 +172,13 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
     def test_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
         self,
     ) -> None:
-        error_message = self.prepare_archived_meetings_in_different_commitees(
-            "generate_new_password"
-        )
+        message_template = self.prepare_archived_meetings_in_different_committees()
         response = self.request("user.generate_new_password", {"id": 111})
         self.assert_status_code(response, 403)
-        self.assertIn(error_message, response.json["message"])
+        self.assertIn(
+            message_template.substitute(action_name="generate_new_password"),
+            response.json["message"],
+        )
 
     def test_scope_superadmin_with_oml_usermanager(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Organization)

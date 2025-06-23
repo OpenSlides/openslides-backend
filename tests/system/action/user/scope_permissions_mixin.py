@@ -1,3 +1,5 @@
+from string import Template
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
@@ -141,7 +143,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 }
             )
 
-    def prepare_archived_meetings_in_different_committees(self, action_name: str) -> str:
+    def prepare_archived_meetings_in_different_committees(self) -> str:
         permission = Permissions.User.CAN_UPDATE
         self.create_meeting()
         self.create_meeting(base=4)
@@ -163,9 +165,9 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         self.set_user_groups(1, [2, 5])
         self.set_user_groups(111, [1, 4])
 
-        return (
-            f"You are not allowed to perform action user.{action_name}. "
-            f"Missing permissions: OrganizationManagementLevel "
-            f"can_manage_users in organization 1 or CommitteeManagementLevel "
-            f"can_manage in committees { {60, 63} }"
+        return Template(
+            "You are not allowed to perform action user.$action_name. "
+            "Missing permissions: OrganizationManagementLevel "
+            "can_manage_users in organization 1 or CommitteeManagementLevel "
+            "can_manage in committees {60, 63}"
         )
