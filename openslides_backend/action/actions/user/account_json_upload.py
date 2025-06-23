@@ -45,6 +45,15 @@ class AccountJsonUpload(BaseUserJsonUpload):
                     "info": ImportState.DONE,
                 }
 
+        if self.user_id == entry.get("id") and "is_active" in entry:
+            is_active = entry.get("is_active", False)
+            if is_active is not True:
+                entry["is_active"] = {
+                    "value": is_active,
+                    "info": ImportState.ERROR,
+                }
+                messages.append("A superadmin is not allowed to set himself inactive.")
+
         self.check_field_failures(
             entry,
             messages,
