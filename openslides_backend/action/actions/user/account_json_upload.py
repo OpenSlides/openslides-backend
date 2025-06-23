@@ -45,9 +45,7 @@ class AccountJsonUpload(BaseUserJsonUpload):
                     "info": ImportState.DONE,
                 }
 
-        if self.user_id == entry.get("id") and "is_active" in entry:
-            is_active = entry.get("is_active", False)
-            if is_active is not True:
+        if self.user_id == entry.get("id") and not (is_active := entry.get("is_active", True):
                 entry["is_active"] = {
                     "value": is_active,
                     "info": ImportState.ERROR,
