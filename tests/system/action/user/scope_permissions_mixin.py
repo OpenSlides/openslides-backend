@@ -143,7 +143,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 }
             )
 
-    def prepare_archived_meetings_in_different_committees(self) -> str:
+    def prepare_archived_meetings_in_different_committees(self) -> Template:
         permission = Permissions.User.CAN_UPDATE
         self.create_meeting()
         self.create_meeting(base=4)
