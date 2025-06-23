@@ -1286,7 +1286,7 @@ class AccountJsonUpload(BaseActionTestCase):
             "first_name": {"value": "alice", "info": ImportState.DONE},
         }
 
-    def test_json_upload_perm_superadmin_self_setting_inactive(self) -> None:
+    def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
         response = self.request(
             "account.json_upload",
