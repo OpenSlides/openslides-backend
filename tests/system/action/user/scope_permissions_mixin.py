@@ -147,7 +147,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         self.create_meeting(base=4)
         self.set_models(
             {
-                "user/1": {"username": "MeetingAdmin"},
                 "user/111": {"username": "User111", "password": "old_pw"},
                 "meeting/1": {
                     "is_active_in_organization_id": None,
