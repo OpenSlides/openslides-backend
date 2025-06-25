@@ -1134,7 +1134,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
-        self.create_committee()
         response = self.request(
             "participant.json_upload",
             {
