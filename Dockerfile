@@ -6,7 +6,9 @@ FROM python:3.10.17-slim-bookworm as base
 ARG CONTEXT
 ARG REQUIREMENTS_FILE_OVERWRITE=""
 WORKDIR /app
-ENV ${CONTEXT}=1
+# Used for easy target differentiation
+ARG ${CONTEXT}=1 
+ENV APP_CONTEXT=${CONTEXT}
 
 ### Query based on context value
 ENV IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"}
