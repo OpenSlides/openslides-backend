@@ -1134,13 +1134,12 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
+        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
                 "meeting_id": 1,
-                "data": [
-                    {"username": "admin", "is_active": "False", "groups": ["admin"]}
-                ],
+                "data": [{"username": "admin", "is_active": "False"}],
             },
         )
         self.assert_status_code(response, 200)
