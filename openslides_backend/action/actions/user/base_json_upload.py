@@ -463,6 +463,15 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     "info": ImportState.DONE,
                 }
 
+        if self.user_id == entry.get("id") and not (
+            is_active := entry.get("is_active", True)
+        ):
+            entry["is_active"] = {
+                "value": is_active,
+                "info": ImportState.ERROR,
+            }
+            messages.append("A superadmin is not allowed to set himself inactive.")
+
         return {"state": self.row_state, "messages": messages, "data": entry}
 
     def remove_helper_fields_from_entry_in_field_failure_check(
