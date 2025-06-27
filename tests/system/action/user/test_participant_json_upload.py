@@ -23,7 +23,11 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "structure_level_ids": [1],
                     "admin_group_id": 7,
                 },
-                "group/1": {"name": "testgroup", "meeting_id": 1},
+                "group/1": {
+                    "name": "testgroup",
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                },
                 "group/7": {
                     "name": "custom_admin_group",
                     "meeting_id": 1,
@@ -95,7 +99,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
     def test_json_upload_remove_last_admin(self) -> None:
         self.create_user("bob", [7])
-        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
@@ -124,7 +127,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
     def test_json_upload_remove_last_admins(self) -> None:
         self.create_user("bob", [7])
         self.create_user("alice", [7])
-        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
@@ -218,6 +220,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_no_default_group(self) -> None:
+        self.set_models({"group/1": {"default_group_for_meeting_id": None}})
         response = self.request(
             "participant.json_upload",
             {"data": [{"username": "testuser"}], "meeting_id": 1},
@@ -229,7 +232,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_results(self) -> None:
-        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
@@ -449,7 +451,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "email": "test@ntvtn.de",
                     "username": "test",
                 },
-                "group/1": {"default_group_for_meeting_id": 1},
                 "gender/1": {"name": "male"},
             }
         )
@@ -505,7 +506,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "first_name": "Max",
                     "last_name": "Mustermann",
                 },
-                "group/1": {"default_group_for_meeting_id": 1},
             }
         )
 
@@ -563,7 +563,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_invalid_vote_weight(self) -> None:
-        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
@@ -1134,7 +1133,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
-        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
             "participant.json_upload",
             {
@@ -2540,7 +2538,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "group/1": {
                     "name": "Default",
                     "meeting_id": 1,
-                    "default_group_for_meeting_id": 1,
                 },
                 "group/2": {
                     "name": "Admin",
@@ -2665,7 +2662,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         self.create_user("bob", [2])
         self.set_models(
             {
-                "group/1": {"default_group_for_meeting_id": 1},
                 "meeting/1": {"template_for_organization_id": 1},
                 "organization/1": {"template_meeting_ids": [1]},
             }
