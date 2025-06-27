@@ -66,7 +66,6 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         self, permission: Permission
     ) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting, permission)
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Meeting)
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
@@ -166,7 +165,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         assert self.auth.is_equal(self.password, model.get("password", ""))
         self.assert_logged_in()
 
-    def test_scope_organization_permission_in_meeting(self) -> None:
+    def test_scope_organization_permission_in_one_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Organization)
         response = self.request("user.reset_password_to_default", {"id": 111})
@@ -176,14 +175,22 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
             response.json["message"],
         )
 
+    def test_scope_organization_permission_in_all_meetings(self) -> None:
+        self.setup_scope_organization_with_permission_in_all_meetings()
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equal(self.password, model.get("password", ""))
+        self.assert_logged_in()
+
     def test_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
         self,
     ) -> None:
-        message_template = self.prepare_archived_meetings_in_different_committees()
+        self.setup_archived_meetings_in_different_committees()
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            message_template.substitute(action_name="reset_password_to_default"),
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committees {60, 63}",
             response.json["message"],
         )
 

@@ -140,7 +140,6 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self, permission: Permission
     ) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting, permission)
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Meeting)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
@@ -258,7 +257,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
         self.assert_logged_in()
 
-    def test_scope_organization_permission_in_meeting(self) -> None:
+    def test_scope_organization_permission_in_one_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Organization)
         response = self.request(
@@ -270,21 +269,31 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_scope_organization_permission_in_all_meetings(self) -> None:
+        self.setup_scope_organization_with_permission_in_all_meetings()
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
+
     def test_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
         self,
     ) -> None:
-        message_template = self.prepare_archived_meetings_in_different_committees()
+        self.setup_archived_meetings_in_different_committees()
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            message_template.substitute(action_name="set_password"),
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committees {60, 63}",
             response.json["message"],
         )
 
     def test_scope_superadmin_with_oml_usermanager(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Organization)
         self.set_models(
             {
