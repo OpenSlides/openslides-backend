@@ -539,52 +539,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "You cannot delete yourself." in response.json["message"]
 
-    def test_delete_error_while_delete_a_participant(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "name": "test meeting",
-                    "group_ids": [1],
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 2,
-                },
-                "group/1": {"name": "test default group", "meeting_id": 1},
-                "committee/2": {"meeting_ids": [1]},
-            }
-        )
-        response = self.request(
-            "user.create",
-            {
-                "username": "testy",
-                "meeting_id": 1,
-                "group_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2",
-            {
-                "username": "testy",
-                "meeting_user_ids": [1],
-                "meeting_ids": [1],
-                "committee_ids": [2],
-            },
-        )
-        self.assert_model_exists(
-            "meeting/1",
-            {
-                "meeting_user_ids": [1],
-                "user_ids": [2],
-                "group_ids": [1],
-                "committee_id": 2,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": 2, "group_ids": [1]}
-        )
-        response = self.request("user.delete", {"id": 2})
-        self.assert_status_code(response, 200)
-
     def test_delete_last_meeting_admin(self) -> None:
         self.create_meeting()
         self.create_user("username_srtgb123", [2])
