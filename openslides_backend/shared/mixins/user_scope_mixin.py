@@ -37,7 +37,7 @@ class UserScopeMixin(BaseServiceProvider):
         self, id_or_instance: int | dict[str, Any]
     ) -> tuple[UserScope, int, str, dict[int, list[int] | None], bool, int | None]:
         """
-        Parameter id_or_instance: id for existing user or instance for user to create
+        Parameter id_or_instance: id for existing user or instance for user-altering actions.
         Returns in the tuple:
         * the scope of the given user id
         * the relevant scope id (either meeting, committee or organization id
@@ -99,7 +99,7 @@ class UserScopeMixin(BaseServiceProvider):
     ) -> None:
         """
         Checks the permissions for user-altering actions depending on the user scope.
-        With check_user_oml_always=True it will be checked whether the request user
+        With always_check_user_oml=True it will be checked whether the request user
         has at minimum the same OML-level than the requested user to pass.
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
@@ -135,7 +135,7 @@ class UserScopeMixin(BaseServiceProvider):
         This function returns true if:
         * requested user is no committee manager and
         * requested user doesn't have any admin/user.can_update/user.can_manage rights in his meetings and
-        * requesting user has those permissions in all of those meetings
+        * request user has those permissions in all of those meetings
         """
         if not self._check_not_committee_manager(instance_id):
             return False
@@ -163,7 +163,9 @@ class UserScopeMixin(BaseServiceProvider):
     def _get_meetings_if_subset(self, b_meeting_ids: set[int] | None) -> dict[int, Any]:
         """
         Helper function used in method check_for_admin_in_all_meetings.
-        Gets the requested users meetings if these are subset of requesting user. Returns False if this is not possible.
+        Returns:
+        * Requested user's meetings if these are subset of request user's meetings.
+        * Empty dict if either user has no meetings or the subset condition is not met.
         """
         if not b_meeting_ids and not (
             b_meeting_ids := {
@@ -309,6 +311,12 @@ class UserScopeMixin(BaseServiceProvider):
     def _get_committee_meetings_and_committees(
         self, meetings_committee: dict[int, int], committees_manager: set[int]
     ) -> tuple[dict[int, list[int] | None], set[int]]:
+        """
+        Returns:
+        * committee_meetings: a mapping of user's committee IDs to the meeting IDs
+            he is a member of (if any).
+        * all_committees: set of all committee IDs where the user is a member or manager.
+        """
         all_committees = committees_manager | set(meetings_committee.values())
         committee_manager_without_meetings = committees_manager - set(
             meetings_committee.values()
@@ -346,8 +354,9 @@ class UserScopeMixin(BaseServiceProvider):
 
     def _collect_admin_meeting_users(self, meetings: dict[int, Any]) -> set[int]:
         """
-        Gets the admin groups and those groups with permission User.CAN_UPDATE and USER.CAN_MANAGE of the meetings.
-        Returns a set of the groups meeting_user_ids.
+        Returns meeting_user_ids from groups linked to the given meetings that are either:
+        * Admin groups for those meetings, or
+        * Have User.CAN_UPDATE or User.CAN_MANAGE permissions
         """
         group_ids = [
             group_id
@@ -387,8 +396,8 @@ class UserScopeMixin(BaseServiceProvider):
     ) -> bool:
         """
         Helper function used in method check_for_admin_in_all_meetings.
-        Compares the users of admin meeting users of all meetings with the ids of requested user and requesting user.
-        Requesting user must be admin in all meetings. Requested user cannot be admin in any.
+        Compares the users of admin meeting users of all meetings with the ids of requested user and request user.
+        Request user must be admin in all meetings. Requested user cannot be admin in any.
         """
         meeting_id_to_admin_user_ids: dict[int, set[int]] = {
             meeting_id: set() for meeting_id in all_meetings
