@@ -50,18 +50,13 @@ class UserScopeMixin(BaseServiceProvider):
         A committee can have no meetings if the user just has committee management rights and is
         not part of any of its meetings.
         """
-        meeting_ids: set[int] = set()
-        committees_manager: set[int] = set()
-        home_committee_id: int | None
         if isinstance(id_or_instance, dict):
-            if "group_ids" in id_or_instance:
-                if "meeting_id" in id_or_instance:
-                    meeting_ids.add(id_or_instance["meeting_id"])
-            committees_manager.update(
-                set(id_or_instance.get("committee_management_ids", []))
+            user = id_or_instance
+            meeting_ids = (
+                {user.get("meeting_id")}
+                if "group_ids" in user and "meeting_id" in user
+                else set()
             )
-            oml_right = id_or_instance.get("organization_management_level", "")
-            home_committee_id = id_or_instance.get("home_committee_id")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -73,10 +68,10 @@ class UserScopeMixin(BaseServiceProvider):
                 ],
                 lock_result=False,
             )
-            meeting_ids.update(user.get("meeting_ids", []))
-            committees_manager.update(set(user.get("committee_management_ids") or []))
-            oml_right = user.get("organization_management_level", "")
-            home_committee_id = user.get("home_committee_id")
+            meeting_ids = set(user.get("meeting_ids", []))
+        committees_manager = set(user.get("committee_management_ids") or [])
+        oml_right = user.get("organization_management_level", "")
+        home_committee_id: int | None = user.get("home_committee_id")
 
         (
             user_scope,
@@ -313,15 +308,19 @@ class UserScopeMixin(BaseServiceProvider):
 
     def _get_committee_meetings_and_committees(
         self, meetings_committee: dict[int, int], committees_manager: set[int]
-    ) -> tuple[dict[int, list[int]], set[int]]:
-        committees = committees_manager | set(meetings_committee.values())
+    ) -> tuple[dict[int, list[int] | None], set[int]]:
+        all_committees = committees_manager | set(meetings_committee.values())
+        committee_manager_without_meetings = committees_manager - set(
+            meetings_committee.values()
+        )
+
         committee_meetings: dict[int, Any] = defaultdict(list)
         for meeting, committee in meetings_committee.items():
             committee_meetings[committee].append(meeting)
-        for committee in committees:
-            if committee not in committee_meetings.keys():
-                committee_meetings[committee] = None
-        return committee_meetings, committees
+
+        for committee in committee_manager_without_meetings:
+            committee_meetings[committee] = None
+        return committee_meetings, all_committees
 
     def _get_user_scope_and_scope_id(
         self,
@@ -352,12 +351,12 @@ class UserScopeMixin(BaseServiceProvider):
         """
         group_ids = [
             group_id
-            for meeting_id, meeting_dict in meetings.items()
+            for meeting_dict in meetings.values()
             for group_id in meeting_dict.get("group_ids", [])
         ]
         return {
             mu_id
-            for group_id, group in self.datastore.get_many(
+            for group in self.datastore.get_many(
                 [
                     GetManyRequest(
                         "group",
@@ -372,7 +371,7 @@ class UserScopeMixin(BaseServiceProvider):
                 lock_result=False,
             )
             .get("group", {})
-            .items()
+            .values()
             if (
                 group.get("admin_group_for_meeting_id")
                 or "user.can_update" in group.get("permissions", [])
