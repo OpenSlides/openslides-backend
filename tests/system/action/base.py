@@ -1,6 +1,6 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,8 +22,10 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.patterns import FullQualifiedId
-from openslides_backend.shared.typing import HistoryInformation
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
@@ -137,7 +139,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def execute_action_internally(
-        self, action_name: str, data: dict[str, Any], user_id: int = 0
+        self, action_name: str, data: dict[str, Any], user_id: int = -1
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
@@ -591,17 +593,24 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Asserts that the last history information for the given model is the given information.
         """
-        informations = self.datastore.history_information([fqid]).get(fqid)
-        last_information = (
-            cast(HistoryInformation, informations[-1]["information"])
-            if informations
-            else {}
+        entry_id = self.datastore.max(
+            "history_entry",
+            FilterOperator("model_id", "=", fqid),
+            "id",
+            lock_result=False,
         )
-        if information is None:
-            assert not informations or fqid not in last_information, informations
+        if entry_id:
+            history_entry = self.datastore.get(
+                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
+            )
+            last_information = history_entry.get("entries")
         else:
-            assert informations
-            self.assertEqual(last_information[fqid], information)
+            last_information = None
+        if information is None:
+            assert not last_information
+        else:
+            assert last_information
+            self.assertEqual(last_information, information)
 
     @with_database_context
     def assert_history_information_contains(
@@ -610,14 +619,21 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Asserts that the last history information for the given model is the given information.
         """
-        informations = self.datastore.history_information([fqid]).get(fqid)
-        last_information = (
-            cast(HistoryInformation, informations[-1]["information"])
-            if informations
-            else {}
+        entry_id = self.datastore.max(
+            "history_entry",
+            FilterOperator("model_id", "=", fqid),
+            "id",
+            lock_result=False,
         )
-        assert informations
-        assert information in last_information[fqid]
+        if entry_id:
+            history_entry = self.datastore.get(
+                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
+            )
+            last_information = history_entry.get("entries")
+        else:
+            last_information = None
+        assert last_information
+        assert information in last_information
 
     def assert_logged_in(self) -> None:
         self.auth.authenticate()  # assert that no exception is thrown
