@@ -35,7 +35,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int] | None], bool, int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns in the tuple:
@@ -78,68 +78,18 @@ class UserScopeMixin(BaseServiceProvider):
             oml_right = user.get("organization_management_level", "")
             home_committee_id = user.get("home_committee_id")
 
-        result = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting",
-                    list(meeting_ids),
-                    ["committee_id", "is_active_in_organization_id"],
-                )
-            ]
-        ).get("meeting", {})
-
-        meetings_committee: dict[int, int] = {}
-        active_meetings_committee: dict[int, int] = {}
-
-        for meeting_id, meeting_data in result.items():
-            committee_id = meeting_data["committee_id"]
-            meetings_committee[meeting_id] = committee_id
-            if meeting_data.get("is_active_in_organization_id"):
-                active_meetings_committee[meeting_id] = committee_id
-
-        committee_meetings, committees = self._get_committee_meetings_and_committees(
-            meetings_committee, committees_manager
-        )
-        active_committee_meetings, active_committees = (
-            self._get_committee_meetings_and_committees(
-                active_meetings_committee, committees_manager
-            )
+        (
+            user_scope,
+            scope_id,
+            committee_meetings,
+            user_in_archived_meetings_only,
+        ) = self.calculate_scope_data(
+            meeting_ids, committees_manager, home_committee_id
         )
 
-        user_in_archived_meetings_only = (
-            len(active_committee_meetings) == 0 and len(committee_meetings) > 0
-        )
-
-        if home_committee_id:
-            return (
-                UserScope.Committee,
-                home_committee_id,
-                oml_right,
-                active_committee_meetings,
-                user_in_archived_meetings_only,
-                home_committee_id,
-            )
-        if len(active_meetings_committee) == 1 and len(active_committees) == 1:
-            return (
-                UserScope.Meeting,
-                next(iter(active_meetings_committee)),
-                oml_right,
-                active_committee_meetings,
-                user_in_archived_meetings_only,
-                home_committee_id,
-            )
-        if len(committees) == 1:
-            return (
-                UserScope.Committee,
-                next(iter(committees)),
-                oml_right,
-                committee_meetings,
-                user_in_archived_meetings_only,
-                home_committee_id,
-            )
         return (
-            UserScope.Organization,
-            1,
+            user_scope,
+            scope_id,
             oml_right,
             committee_meetings,
             user_in_archived_meetings_only,
@@ -323,6 +273,116 @@ class UserScopeMixin(BaseServiceProvider):
             lock_result=False,
         ).get("meeting", {})
 
+    def calculate_scope_data(
+        self,
+        meeting_ids: list[int],
+        committees_manager: set[int],
+        home_committee_id: int | None,
+    ) -> tuple[UserScope, int, dict[int, list[int] | None], bool]:
+        """
+        Helper function used in method get_user_scope.
+        Params and return values contain data about the requested user.
+
+        Based on the meeting_ids and committees_manager calculates user scope,
+        retrieves its id and defines value for user_in_archived_meetings_only.
+
+        If user is in the meeting scope, limits committee_meetings to the
+        active meetings only.
+        """
+        (
+            committee_meetings,
+            committees,
+            active_committee_meetings,
+            active_committees,
+            active_meetings_committee,
+        ) = self._get_meetings_committees_maps(meeting_ids, committees_manager)
+
+        user_scope, scope_id = self._get_user_scope_and_scope_id(
+            home_committee_id,
+            active_meetings_committee,
+            active_committees,
+            committees,
+        )
+        user_committee_meetings = (
+            active_committee_meetings
+            if user_scope == UserScope.Meeting
+            else committee_meetings
+        )
+        user_in_archived_meetings_only = bool(
+            not active_committee_meetings and committee_meetings
+        )
+
+        return (
+            user_scope,
+            scope_id,
+            user_committee_meetings,
+            user_in_archived_meetings_only,
+        )
+
+    def _get_meetings_committees_maps(
+        self, meeting_ids: list[int], committees_manager: set[int]
+    ) -> tuple[
+        dict[int, list[int] | None],
+        set[int],
+        dict[int, list[int] | None],
+        set[int],
+        dict[int, int],
+    ]:
+        """
+        Helper function used in method calculate_scope_data.
+
+        Generates data used for calculating scope details. Builds
+        committees-meetings maps and retrieves committees for user's
+        all and active meetings.
+        """
+        meetings_committees, active_meetings_committees = (
+            self._map_meetings_to_committees(meeting_ids)
+        )
+
+        committee_meetings, committees = self._get_committee_meetings_and_committees(
+            meetings_committees, committees_manager
+        )
+        active_committee_meetings, active_committees = (
+            self._get_committee_meetings_and_committees(
+                active_meetings_committees, committees_manager
+            )
+        )
+
+        return (
+            committee_meetings,
+            committees,
+            active_committee_meetings,
+            active_committees,
+            active_meetings_committees,
+        )
+
+    def _map_meetings_to_committees(
+        self, meeting_ids: list[int]
+    ) -> tuple[dict[int, int], dict[int, int]]:
+        """
+        Maps each meeting to its committee. Returns full and active meeting mappings.
+        """
+        meetings_committees: dict[int, int] = {}
+        active_meetings_committees: dict[int, int] = {}
+
+        raw_meetings_data = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting",
+                    meeting_ids,
+                    ["committee_id", "is_active_in_organization_id"],
+                )
+            ]
+        ).get("meeting", {})
+
+        for meeting_id, meeting_data in raw_meetings_data.items():
+            committee_id = meeting_data["committee_id"]
+            meetings_committees[meeting_id] = committee_id
+            if meeting_data.get("is_active_in_organization_id"):
+                active_meetings_committees[meeting_id] = committee_id
+
+        return meetings_committees, active_meetings_committees
+
     def _get_committee_meetings_and_committees(
         self, meetings_committee: dict[int, int], committees_manager: set[int]
     ) -> tuple[dict[int, list[int]], set[int]]:
@@ -334,6 +394,28 @@ class UserScopeMixin(BaseServiceProvider):
             if committee not in committee_meetings.keys():
                 committee_meetings[committee] = None
         return committee_meetings, committees
+
+    def _get_user_scope_and_scope_id(
+        self,
+        home_committee_id: int | None,
+        active_meetings_committee: dict[int, int],
+        active_committees: set[int],
+        committees: set[int],
+    ) -> tuple[UserScope, int]:
+        """
+        Helper function used in method calculate_scope_data.
+        Determines user's scope and scope ID.
+        """
+        if home_committee_id:
+            return UserScope.Committee, home_committee_id
+
+        if len(active_meetings_committee) == 1 and len(active_committees) == 1:
+            return UserScope.Meeting, next(iter(active_meetings_committee))
+
+        if len(committees) == 1:
+            return UserScope.Committee, next(iter(committees))
+
+        return UserScope.Organization, 1
 
     def _collect_admin_meeting_users(self, meetings: dict[int, Any]) -> set[int]:
         """
