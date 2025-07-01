@@ -165,13 +165,27 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         assert self.auth.is_equal(self.password, model.get("password", ""))
         self.assert_logged_in()
 
-    def test_scope_organization_permission_in_one_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
-        self.setup_scoped_user(UserScope.Organization)
+    def test_scope_organization_permission_in_one_meeting_one_shared_meeting(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2])
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_scope_organization_permission_in_one_meeting_two_shared_meetings(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2, 4])
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
 

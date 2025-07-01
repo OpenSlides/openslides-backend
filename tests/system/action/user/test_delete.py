@@ -490,13 +490,27 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")
 
-    def test_delete_scope_organization_permission_in_one_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
-        self.setup_scoped_user(UserScope.Organization)
+    def test_delete_scope_organization_permission_in_one_meeting_one_shared_meeting(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2])
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 2",
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_delete_scope_organization_permission_in_one_meeting_two_shared_meetings(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2, 4])
+        response = self.request("user.delete", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.delete. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
 
