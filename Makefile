@@ -1,60 +1,41 @@
-SERVICE=backend
+override SERVICE=backend
+override MAKEFILE_PATH=../dev/scripts/makefile
+override DOCKER_COMPOSE_FILE=./dev/docker-compose.dev.yml
+override paths = openslides_backend/ tests/ cli/ meta/dev/src/
+
 
 # Build images for different contexts
 
-build-dev:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) dev
+build build-prod build-dev build-tests:
+	bash $(MAKEFILE_PATH)/make-build-service.sh $@ $(SERVICE)
 
-build-prod:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) prod
+# Development
 
-build-test:
-	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
+run-dev run-dev-standalone run-dev-attached run-dev-detached run-dev-help run-dev-stop run-dev-clean run-dev-exec run-dev-enter:
+	bash $(MAKEFILE_PATH)/make-run-dev.sh "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)"
 
+# Tests
 
-# Development and testing inside docker container or without docker (only unit and integration tests)
+run-tests:
+	bash dev/run-tests.sh
 
-paths = openslides_backend/ tests/ cli/ meta/dev/src/
-
-all: pyupgrade black autoflake isort flake8 mypy
-
-pyupgrade:
+run-lint:
 	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
-
-check-pyupgrade:
-	pyupgrade --py310-plus $$(find . -name '*.py')
-
-black:
 	black $(paths)
-
-check-black:
-	black --check --diff $(paths)
-
-autoflake:
 	autoflake $(paths)
-
-isort:
 	isort $(paths)
-
-check-isort:
-	isort --check-only --diff $(paths)
-
-flake8:
 	flake8 $(paths)
-
-mypy:
 	mypy $(paths)
+
+coverage:
+	pytest --cov --cov-report html
 
 test:
 	pytest
 
-test-unit-integration:
-	pytest tests/unit tests/integration
-
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
-validate-models-yml:
-	make -C meta/dev validate-models
+# Models
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -62,6 +43,11 @@ generate-models:
 
 check-models:
 	python cli/generate_models.py --check
+
+validate-models-yml:
+	make -C meta/dev validate-models
+
+# Permissions
 
 generate-permissions:
 	python cli/generate_permissions.py $(MODELS_PATH)
@@ -76,78 +62,96 @@ check-initial-data-json:
 check-example-data-json:
 	python cli/check_json.py data/example-data.json
 
-run-debug:
+
+
+########################## Deprecation List ##########################
+
+deprecation-warning:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh
+
+all:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-lint"
+	make run-lint
+
+run-bash:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev"
+	run-dev
+
+run-dev-attach:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev-attached"
+	run-dev-attached
+
+stop-dev:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev-stop"
+	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml down --volumes
+
+check-black: | deprecation-warning
+	black --check --diff $(paths)
+
+check-pyupgrade: | deprecation-warning
+	pyupgrade --py310-plus $$(find . -name '*.py')
+
+test-unit-integration: | deprecation-warning
+	pytest tests/unit tests/integration
+
+run-debug: | deprecation-warning
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
 
-pip-check:
+pip-check: | deprecation-warning
 	pip-check -H
 
-coverage:
-	pytest --cov --cov-report html
 
-extract-translations:
+extract-translations: | deprecation-warning
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
 
 # Build and run production docker container (not usable inside the docker container)
 
-run-prod: | build-prod
+run-prod: | deprecation-warning build-prod
 	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
 
 # Build and run development docker container setup with docker compose (not usable inside docker container)
 
-start-dev:
+start-dev: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build --detach
 
-start-dev-attach start-dev-interactive:
+start-dev-attach start-dev-interactive: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build
-
-stop-dev:
-	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml down --volumes
-
-run-dev-attach:
-	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
-
-run-dev run-bash: | start-dev run-dev-attach
-
-run-tests:
-	bash dev/run-tests.sh
-
 
 # Build and run development container with local datastore in use
 
-start-dev-local:
+start-dev-local: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
 
-start-dev-attach-local start-dev-interactive-local:
+start-dev-attach-local start-dev-interactive-local: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
 
-stop-dev-local:
+stop-dev-local: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
 
-run-dev-attach-local:
+run-dev-attach-local: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-local run-bash-local: | start-dev-local run-dev-attach-local
+run-dev-local run-bash-local: | deprecation-warning start-dev-local run-dev-attach-local
 
 
 # Build and run development container. Additionally run OpenTelemetry services
 
-start-dev-otel:
+start-dev-otel: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build --detach
 
-start-dev-attach-otel start-dev-interactive-otel:
+start-dev-attach-otel start-dev-interactive-otel: | deprecation-warning
 	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build
 
-stop-dev-otel:
+stop-dev-otel: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml down --volumes
 
-run-dev-attach-otel:
+run-dev-attach-otel: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
+run-dev-otel run-bash-otel: | deprecation-warning start-dev-otel run-dev-attach-otel
 
-rebuild-dev:
+rebuild-dev: | deprecation-warning
 	docker build . --tag=openslides-backend-dev --no-cache --build-arg CONTEXT=dev
