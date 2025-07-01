@@ -117,89 +117,17 @@ class UserScopeMixin(BaseServiceProvider):
             user_in_archived_meetings_only,
             _,
         ) = self.get_user_scope(instance_id)
-        if (
-            always_check_user_oml
-            and user_oml
-            and not has_organization_management_level(
-                self.datastore,
-                self.user_id,
-                perm := OrganizationManagementLevel(user_oml),
-            )
-        ):
-            raise MissingPermission({perm: 1})
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
 
+        if self._check_oml_levels(always_check_user_oml, user_oml):
+            return
         if scope == UserScope.Committee:
-            if not has_committee_management_level(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                scope_id,
-            ):
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: scope_id,
-                    }
-                )
+            self._check_permissions_for_scope_committee(scope_id)
         elif scope == UserScope.Meeting:
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", scope_id),
-                ["committee_id"],
-                lock_result=False,
-            )
-            if not has_committee_management_level(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                meeting["committee_id"],
-            ) and not has_perm(
-                self.datastore, self.user_id, meeting_permission, scope_id
-            ):
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                        meeting_permission: scope_id,
-                    }
-                )
+            self._check_permissions_for_scope_meeting(scope_id, meeting_permission)
         else:
-            if get_shared_committee_management_levels(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                [ci for ci in committees_to_meetings.keys()],
-            ):
-                return
-            meeting_ids = {
-                meeting_id
-                for mids in committees_to_meetings.values()
-                for meeting_id in mids
-            }
-            if not meeting_ids or not self.check_for_admin_in_all_meetings(
-                instance_id, meeting_ids
-            ):
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        **{
-                            Permissions.User.CAN_UPDATE: meeting_id
-                            for meeting_id in meeting_ids
-                        },
-                    }
-                )
-            if user_in_archived_meetings_only:
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: {
-                            ci for ci in committees_to_meetings.keys()
-                        },
-                    }
-                )
+            self._check_permissions_for_scope_organization(
+                committees_to_meetings, instance_id, user_in_archived_meetings_only
+            )
 
     def check_for_admin_in_all_meetings(
         self,
@@ -487,3 +415,119 @@ class UserScopeMixin(BaseServiceProvider):
             self.user_id in admin_users
             for admin_users in meeting_id_to_admin_user_ids.values()
         )
+
+    def _check_oml_levels(self, always_check_user_oml: bool, user_oml: str) -> bool:
+        """
+        Raises error if always_check_user_oml=True and request user doesn't
+        have at least the same OML as requested user.
+        Otherwise passes without further scope-specific checks if request user
+        has OML can_manage_users.
+        """
+        if (
+            always_check_user_oml
+            and user_oml
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                perm := OrganizationManagementLevel(user_oml),
+            )
+        ):
+            raise MissingPermission({perm: 1})
+        if has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            return True
+        return False
+
+    def _check_permissions_for_scope_committee(self, scope_id: int) -> None:
+        """
+        Passes if request user has:
+        * CML can_manage in the committee of the requested user
+        """
+        if not has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            scope_id,
+        ):
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: scope_id,
+                }
+            )
+
+    def _check_permissions_for_scope_meeting(
+        self, scope_id: int, meeting_permission: Permission
+    ) -> None:
+        """
+        Passes if request user has one of:
+        * meeting_permission in the meeting of the requested user
+            (default - user.can_manage)
+        * CML can_manage in the meeting's committee
+        """
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", scope_id),
+            ["committee_id"],
+            lock_result=False,
+        )
+        if not has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            meeting["committee_id"],
+        ) and not has_perm(self.datastore, self.user_id, meeting_permission, scope_id):
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                    meeting_permission: scope_id,
+                }
+            )
+
+    def _check_permissions_for_scope_organization(
+        self,
+        committees_to_meetings: dict[int, list[int] | None],
+        instance_id: int,
+        user_in_archived_meetings_only: bool,
+    ) -> None:
+        """
+        Passes if request user has one of:
+        * CML can_manage in any committee of the requested user
+        * user.can_update in all the meetings of the requested user AND
+            requested user is not in archived meetings only
+        """
+        if get_shared_committee_management_levels(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            list(committees_to_meetings.keys()),
+        ):
+            return
+        meeting_ids = {
+            meeting_id
+            for m_ids in committees_to_meetings.values()
+            if m_ids
+            for meeting_id in m_ids
+        }
+        if not meeting_ids or not self.check_for_admin_in_all_meetings(
+            instance_id, meeting_ids
+        ):
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    **{
+                        Permissions.User.CAN_UPDATE: meeting_id
+                        for meeting_id in meeting_ids
+                    },
+                }
+            )
+        if user_in_archived_meetings_only:
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: set(
+                        list(committees_to_meetings.keys())
+                    ),
+                }
+            )
