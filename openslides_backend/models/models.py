@@ -2517,8 +2517,11 @@ class HistoryPosition(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     timestamp = fields.TimestampField(read_only=True)
+    original_user_id = fields.IntegerField(constant=True)
     user_id = fields.RelationField(to={"user": "history_position_ids"})
-    entry_ids = fields.RelationListField(to={"history_entry": "position_id"})
+    entry_ids = fields.RelationListField(
+        to={"history_entry": "position_id"}, on_delete=fields.OnDelete.CASCADE
+    )
 
 
 class HistoryEntry(Model):
@@ -2527,13 +2530,14 @@ class HistoryEntry(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     entries = fields.CharArrayField()
-    position_id = fields.RelationField(
-        to={"history_position": "entry_ids"}, required=True, constant=True
-    )
+    original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={
             "user": "history_entry_ids",
             "motion": "history_entry_ids",
             "assignment": "history_entry_ids",
         }
+    )
+    position_id = fields.RelationField(
+        to={"history_position": "entry_ids"}, required=True, constant=True
     )

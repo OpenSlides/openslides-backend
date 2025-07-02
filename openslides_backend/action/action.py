@@ -438,6 +438,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                 "entries": entries,
                                 "position_id": position_id,
                                 "model_id": fqid,
+                                "original_model_id": fqid,
                             },
                         )
                         for id_, fqid, entries in transformed_information
@@ -457,6 +458,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     "id": position_id,
                     "timestamp": round(time.time()),
                     "entry_ids": entry_ids,
+                    "original_user_id": self.user_id,
                 }
                 if self.user_id and self.user_id > 0:
                     events_by_type[EventType.Update].append(

@@ -158,6 +158,12 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         assert clear_called_on == []
 
     def test_delete_permissions(self) -> None:
+        self.set_models(
+            {
+                "topic/1": {"title": "The topic", "meeting_id": 1},
+                "meeting/1": {"topic_ids": [1]},
+            }
+        )
         self.base_permission_test(
             {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
             "poll.delete",
