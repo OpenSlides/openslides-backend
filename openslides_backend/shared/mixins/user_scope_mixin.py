@@ -50,13 +50,11 @@ class UserScopeMixin(BaseServiceProvider):
         A committee can have no meetings if the user just has committee management rights and is
         not part of any of its meetings.
         """
+        meeting_ids: list[int] = []
         if isinstance(id_or_instance, dict):
             user = id_or_instance
-            meeting_ids = (
-                {user.get("meeting_id")}
-                if "group_ids" in user and "meeting_id" in user
-                else set()
-            )
+            if "group_ids" in user and "meeting_id" in user:
+                meeting_ids.append(user["meeting_id"])
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
@@ -68,7 +66,7 @@ class UserScopeMixin(BaseServiceProvider):
                 ],
                 lock_result=False,
             )
-            meeting_ids = set(user.get("meeting_ids", []))
+            meeting_ids += user.get("meeting_ids", [])
         committees_manager = set(user.get("committee_management_ids") or [])
         oml_right = user.get("organization_management_level", "")
         home_committee_id: int | None = user.get("home_committee_id")
@@ -290,21 +288,22 @@ class UserScopeMixin(BaseServiceProvider):
         meetings_committees: dict[int, int] = {}
         active_meetings_committees: dict[int, int] = {}
 
-        raw_meetings_data = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting",
-                    meeting_ids,
-                    ["committee_id", "is_active_in_organization_id"],
-                )
-            ]
-        ).get("meeting", {})
+        if meeting_ids:
+            raw_meetings_data = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting",
+                        meeting_ids,
+                        ["committee_id", "is_active_in_organization_id"],
+                    )
+                ]
+            ).get("meeting", {})
 
-        for meeting_id, meeting_data in raw_meetings_data.items():
-            committee_id = meeting_data["committee_id"]
-            meetings_committees[meeting_id] = committee_id
-            if meeting_data.get("is_active_in_organization_id"):
-                active_meetings_committees[meeting_id] = committee_id
+            for meeting_id, meeting_data in raw_meetings_data.items():
+                committee_id = meeting_data["committee_id"]
+                meetings_committees[meeting_id] = committee_id
+                if meeting_data.get("is_active_in_organization_id"):
+                    active_meetings_committees[meeting_id] = committee_id
 
         return meetings_committees, active_meetings_committees
 
