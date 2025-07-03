@@ -1286,6 +1286,26 @@ class AccountJsonUpload(BaseActionTestCase):
             "first_name": {"value": "alice", "info": ImportState.DONE},
         }
 
+    def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
+        """SUPERADMIN may not set himself inactive."""
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [{"username": "admin", "is_active": "False"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["data"]["is_active"] == {
+            "value": False,
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "A superadmin is not allowed to set himself inactive."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+
 
 class AccountJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_saml_id_new(self) -> None:
