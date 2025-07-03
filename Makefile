@@ -21,12 +21,7 @@ run-tests:
 	bash dev/run-tests.sh
 
 run-lint:
-	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
-	black $(paths)
-	autoflake $(paths)
-	isort $(paths)
-	flake8 $(paths)
-	mypy $(paths)
+	bash dev/run-lint.sh -l
 
 coverage:
 	pytest --cov --cov-report html
