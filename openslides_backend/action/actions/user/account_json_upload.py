@@ -49,7 +49,7 @@ class AccountJsonUpload(BaseUserJsonUpload):
             entry,
             messages,
             "Account is updated, but changes to the following field(s) are not possible:",
-            field_groups="IJ",
+            field_groups="ADEFGHIJ",
         )
 
         return results

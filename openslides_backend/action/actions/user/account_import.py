@@ -15,7 +15,7 @@ class AccountImport(BaseUserImport):
 
     def validate_entry(self, row: ImportRow) -> None:
         super().validate_entry(row)
-        if not self.check_field_failures(row["data"], row["messages"], "IJ"):
+        if not self.check_field_failures(row["data"], row["messages"], "ADEFGHIJ"):
             row["state"] = ImportState.ERROR
 
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
