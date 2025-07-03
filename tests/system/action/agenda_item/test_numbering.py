@@ -15,26 +15,28 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2, 3],
-                    "is_active_in_organization_id": 1,
-                },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 10,
                     "parent_id": 1,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/3": {
                     "meeting_id": 1,
                     "parent_id": 1,
                     "weight": 11,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/3",
                 },
             }
         )
@@ -51,26 +53,30 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "agenda_item_ids": [1, 2, 3],
                     "agenda_number_prefix": "P-",
-                    "is_active_in_organization_id": 1,
                 },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 11,
                     "parent_id": 1,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/3": {
                     "meeting_id": 1,
                     "parent_id": 1,
                     "weight": 12,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/3",
                 },
             }
         )
@@ -87,26 +93,30 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "agenda_item_ids": [1, 2, 3],
                     "agenda_numeral_system": "roman",
-                    "is_active_in_organization_id": 1,
                 },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 11,
                     "parent_id": 1,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/3": {
                     "meeting_id": 1,
                     "parent_id": 1,
                     "weight": 12,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/3",
                 },
             }
         )
@@ -122,19 +132,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_without_parents(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
-                },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 11,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
             }
         )
@@ -148,19 +158,23 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_with_non_public_items(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {
+                    "meeting_id": 1,
+                    "title": "tropic Al",
+                    "sequential_number": 2,
                 },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.INTERNAL_ITEM,
+                    "content_object_id": "topic/2",
                 },
             }
         )
@@ -174,19 +188,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
-                },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
             },
             "agenda_item.numbering",
@@ -196,19 +210,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
-                },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
             },
             "agenda_item.numbering",
@@ -219,19 +233,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [1, 2],
-                    "is_active_in_organization_id": 1,
-                },
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
                     "weight": 10,
                     "type": AgendaItem.AGENDA_ITEM,
+                    "content_object_id": "topic/2",
                 },
             },
             "agenda_item.numbering",
