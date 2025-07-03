@@ -13,7 +13,7 @@ build build-prod build-dev build-tests:
 .PHONY: run-dev%
 
 run-dev%:
-	bash $(MAKEFILE_PATH)/make-run-dev.sh "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
+	bash $(MAKEFILE_PATH)/make-run-dev.sh -v "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
 
 # Tests
 
