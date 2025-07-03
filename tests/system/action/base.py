@@ -595,7 +595,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         entry_id = self.datastore.max(
             "history_entry",
-            FilterOperator("model_id", "=", fqid),
+            FilterOperator("original_model_id", "=", fqid),
             "id",
             lock_result=False,
         )
@@ -621,7 +621,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         entry_id = self.datastore.max(
             "history_entry",
-            FilterOperator("model_id", "=", fqid),
+            FilterOperator("original_model_id", "=", fqid),
             "id",
             lock_result=False,
         )

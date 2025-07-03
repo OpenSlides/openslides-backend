@@ -428,6 +428,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     (id_, fqid, entries)
                     for id_, (fqid, entries) in zip(entry_ids, information.items())
                 ]
+                date_to_deletion: set[str] = {
+                    event["fqid"] for event in events_by_type[EventType.Delete]
+                }
                 events_by_type[EventType.Create].extend(
                     [
                         Event(
@@ -437,8 +440,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                 "id": id_,
                                 "entries": entries,
                                 "position_id": position_id,
-                                "model_id": fqid,
                                 "original_model_id": fqid,
+                                "model_id": (
+                                    fqid if fqid not in date_to_deletion else None
+                                ),
                             },
                         )
                         for id_, fqid, entries in transformed_information
@@ -452,15 +457,15 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                             list_fields={"add": {"history_entry_ids": [id_]}},
                         )
                         for id_, fqid, entries in transformed_information
+                        if fqid not in date_to_deletion
                     ]
                 )
-                data = {
-                    "id": position_id,
-                    "timestamp": round(time.time()),
-                    "entry_ids": entry_ids,
-                    "original_user_id": self.user_id,
-                }
-                if self.user_id and self.user_id > 0:
+                if set_user := (
+                    self.user_id
+                    and self.user_id > 0
+                    and not fqid_from_collection_and_id("user", self.user_id)
+                    in date_to_deletion
+                ):
                     events_by_type[EventType.Update].append(
                         Event(
                             type=EventType.Update,
@@ -470,14 +475,19 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                             },
                         )
                     )
-                    data["user_id"] = self.user_id
                 events_by_type[EventType.Create].append(
                     Event(
                         type=EventType.Create,
                         fqid=fqid_from_collection_and_id(
                             "history_position", position_id
                         ),
-                        fields=data,
+                        fields={
+                            "id": position_id,
+                            "timestamp": round(time.time()),
+                            "entry_ids": entry_ids,
+                            "original_user_id": self.user_id,
+                            "user_id": self.user_id if set_user else None,
+                        },
                     )
                 )
             write_request.user_id = self.user_id
