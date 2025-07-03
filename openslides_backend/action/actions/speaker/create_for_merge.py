@@ -1,5 +1,7 @@
 from typing import Any
 
+from openslides_backend.models.fields import TimestampField
+
 from ....models.models import Speaker
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...action import ActionException, ActionType
@@ -29,6 +31,11 @@ class SpeakerCreateForMerge(CreateActionWithInferredMeeting):
         ],
     )
     permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
+    timestamp_fields = [
+        field.own_field_name
+        for field in model.get_fields()
+        if isinstance(field, TimestampField)
+    ]
 
     def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
         is_point_oo: bool = instance.get("point_of_order", False)

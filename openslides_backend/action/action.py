@@ -103,6 +103,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     results: ActionResults
     cascaded_actions_history: HistoryInformation
     internal: bool
+    timestamp_fields: list[str] = []
+    decimal_fields: list[str] = []
 
     def __init__(
         self,
@@ -300,10 +302,23 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Validates one instance of the action data according to schema class attribute.
         """
+        NoneType = type(None)
+        timestamp_dict = {
+            field_name: value.timestamp()
+            for field_name in self.timestamp_fields
+            if field_name in instance
+            if not isinstance(value := instance[field_name], (int, NoneType))
+        }
+        decimal_dict = {
+            field_name: str(value)
+            for field_name in self.decimal_fields
+            if field_name in instance
+            if not isinstance(value := instance[field_name], (str, NoneType))
+        }
         try:
-            type(self).schema_validator(instance)
+            type(self).schema_validator(instance | timestamp_dict | decimal_dict)
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(f"Action {self.name}: " + exception.message)
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """

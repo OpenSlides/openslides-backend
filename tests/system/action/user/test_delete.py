@@ -1,5 +1,5 @@
-import datetime
-import zoneinfo
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -30,9 +30,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "meeting_user_ids": [1111],
-                    "committee_ids": [1],
-                    "committee_management_ids": [1],
                 },
                 "meeting_user/1111": {
                     "meeting_id": 42,
@@ -45,15 +42,9 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_user_ids": [1111],
                 },
                 "meeting/42": {
-                    "group_ids": [456],
-                    "user_ids": [111],
-                    "meeting_user_ids": [1111],
                     "locked_from_inside": True,
                 },
-                "committee/1": {
-                    "name": "Ent council",
-                    "meeting_ids": [42],
-                    "user_ids": [111],
+                "committee/101": {
                     "manager_ids": [111],
                 },
             }
@@ -85,8 +76,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 },
                 "speaker/15": {
                     # "begin_time": 12345678,
-                    "begin_time": datetime.datetime(
-                        2012, 5, 31, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")
+                    "begin_time": datetime(
+                        2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
                     ),
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 1111,
@@ -119,8 +110,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "meeting_user_id": None,
                 "meeting_id": 1,
-                "begin_time": datetime.datetime(
-                    2012, 5, 31, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")
+                "begin_time": datetime(
+                    2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
                 ),
             },
         )
@@ -226,7 +217,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "active_meeting_ids": [1],
                     "enable_electronic_voting": True,
                 },
-                "meeting/1": {},
+                "meeting/1": {"name": "meaty"},
                 "group/1": {
                     "default_group_for_meeting_id": 1,
                     "meeting_user_ids": [12],

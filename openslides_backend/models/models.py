@@ -136,7 +136,6 @@ class User(Model):
         constraints={
             "description": "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
         },
-        write_fields=("nm_committee_user_ids_user", "user_id", "committee_id", []),
     )
     committee_management_ids = fields.RelationListField(
         to={"committee": "manager_ids"},
@@ -164,7 +163,9 @@ class User(Model):
         to={"poll_candidate": "user_id"}, is_view_field=True
     )
     home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
-    meeting_ids = fields.NumberArrayField(
+    meeting_ids = fields.RelationListField(
+        to={"meeting": "user_ids"},
+        is_view_field=True,
         read_only=True,
         constraints={
             "description": "Calculated. All ids from meetings calculated via meeting_user and group_ids as integers."
@@ -389,12 +390,10 @@ class Committee(Model):
     user_ids = fields.RelationListField(
         to={"user": "committee_ids"},
         is_view_field=True,
-        is_primary=True,
         read_only=True,
         constraints={
             "description": "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
         },
-        write_fields=("nm_committee_user_ids_user", "committee_id", "user_id", []),
     )
     manager_ids = fields.RelationListField(
         to={"user": "committee_management_ids"},
@@ -1059,7 +1058,9 @@ class Meeting(Model, MeetingModelMixin):
         is_primary=True,
         write_fields=("nm_meeting_present_user_ids_user", "meeting_id", "user_id", []),
     )
-    user_ids = fields.NumberArrayField(
+    user_ids = fields.RelationListField(
+        to={"user": "meeting_ids"},
+        is_view_field=True,
         read_only=True,
         constraints={
             "description": "Calculated. All user ids from all users assigned to groups of this meeting."
@@ -1292,12 +1293,6 @@ class Group(Model):
         is_primary=True,
         read_only=True,
         constraints={"description": "Calculated field."},
-        write_fields=(
-            "nm_group_mmiagi_meeting_mediafile",
-            "group_id",
-            "meeting_mediafile_id",
-            [],
-        ),
     )
     read_comment_section_ids = fields.RelationListField(
         to={"motion_comment_section": "read_group_ids"},

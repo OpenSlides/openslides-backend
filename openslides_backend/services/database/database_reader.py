@@ -20,9 +20,7 @@ from .query_helper import SqlArguments, SqlQueryHelper
 SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
 
 
-class DatabaseReader:
-
-    query_helper = SqlQueryHelper()
+class DatabaseReader(SqlQueryHelper):
 
     def __init__(
         self, connection: Connection[rows.DictRow], logging: LoggingModule, env: Env
@@ -52,9 +50,7 @@ class DatabaseReader:
                     "No collection supplied. Give at least one collection."
                 )
             if not (ids := get_many_request.ids):
-                raise DatabaseException(
-                    f"No id for collection '{collection}' supplied. Give at least one id."
-                )
+                continue
             for id_ in ids:
                 if not id_ > 0:
                     raise InvalidFormat("Id must be positive.")
@@ -65,9 +61,7 @@ class DatabaseReader:
             if "id" not in mapped_fields.unique_fields:
                 mapped_fields.unique_fields.append("id")
 
-            mapped_fields_sql = self.query_helper.build_select_from_mapped_fields(
-                mapped_fields
-            )
+            mapped_fields_sql = self.build_select_from_mapped_fields(mapped_fields)
             query = sql.SQL(
                 """SELECT {columns} FROM {view} WHERE id = ANY(%s)"""
             ).format(
@@ -89,9 +83,7 @@ class DatabaseReader:
     ) -> dict[Id, PartialModel]:
         if mapped_fields is None:
             mapped_fields = MappedFields()
-        mapped_fields_sql = self.query_helper.build_select_from_mapped_fields(
-            mapped_fields
-        )
+        mapped_fields_sql = self.build_select_from_mapped_fields(mapped_fields)
         query = sql.SQL("""SELECT {columns} FROM {collection}""").format(
             columns=mapped_fields_sql,
             collection=sql.Identifier(collection),
@@ -111,18 +103,16 @@ class DatabaseReader:
         mapped_fields: MappedFields,
         lock_result: bool,
     ) -> dict[Id, Model]:
-        query, arguments = self.query_helper.build_filter_query(
-            collection, filter_, mapped_fields
-        )
+        query, arguments = self.build_filter_query(collection, filter_, mapped_fields)
         try:
             return self.fetch_models(
                 collection, query, arguments, mapped_fields, lock_result
             )
         except InvalidFormat as e:
-            if '"' in e.msg:
-                part_one, field, *_ = e.msg.split('"')
+            if '"' in e.message:
+                part_one, field, *_ = e.message.split('"')
                 if "Field" in part_one and self.is_field_in_filter(field, filter_):
-                    e.msg += "\nCheck filter fields."
+                    e.message += "\nCheck filter fields."
             raise e
 
     def is_field_in_filter(self, field: str, filter_: Filter) -> bool:
@@ -160,7 +150,7 @@ class DatabaseReader:
             ),
             aggregate_function=sql.SQL(agg_function),
         )
-        query, arguments = self.query_helper.build_filter_query(
+        query, arguments = self.build_filter_query(
             collection, filter, None, aggregate_function
         )
         return self.execute_query(
@@ -246,7 +236,7 @@ class DatabaseReader:
         except UndefinedColumn as e:
             column = e.args[0].split('"')[1]
             error_msg = (
-                f"Field '{column}' does not exist in collection '{collection}': {e}"
+                f'Field "{column}" does not exist in collection "{collection}": {e}'
             )
             if mapped_fields and column in mapped_fields.unique_fields:
                 error_msg += "\nCheck mapped fields."

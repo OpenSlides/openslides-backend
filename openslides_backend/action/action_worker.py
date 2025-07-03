@@ -1,9 +1,11 @@
 import logging
 import threading
+from datetime import datetime
 from enum import StrEnum
 from http import HTTPStatus
-from time import sleep, time
+from time import sleep
 from typing import Any, cast
+from zoneinfo import ZoneInfo
 
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
@@ -107,7 +109,7 @@ class ActionWorkerWriting:
         # datastore: DatastoreService,
     ) -> None:
         self.user_id = user_id
-        self.start_time = round(time())
+        self.start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         self.logger = logging.getLogger(__name__)
         self.action_names = action_names
 
@@ -116,7 +118,7 @@ class ActionWorkerWriting:
         self.written: bool = False
 
     def initial_action_worker_write(self, extended_db: ExtendedDatabase) -> str:
-        current_time = round(time())
+        current_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         if not self.new_id:
             self.new_id = extended_db.reserve_id(collection="action_worker")
             self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
@@ -150,7 +152,7 @@ class ActionWorkerWriting:
         return message
 
     def continue_action_worker_write(self, extended_db: ExtendedDatabase) -> None:
-        current_time = round(time())
+        current_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         extended_db.write(
             WriteRequest(
                 events=[
@@ -173,7 +175,7 @@ class ActionWorkerWriting:
     def final_action_worker_write(
         self, extended_db: ExtendedDatabase, action_worker_thread: "ActionWorker"
     ) -> None:
-        current_time = round(time())
+        current_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         state = ActionWorkerState.END
         if hasattr(action_worker_thread, "exception"):
             if isinstance(action_worker_thread.exception, ActionException):

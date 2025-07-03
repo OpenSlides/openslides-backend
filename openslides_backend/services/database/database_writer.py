@@ -53,11 +53,12 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from .database_reader import DatabaseReader, GetManyRequest
 from .event_types import EVENT_TYPE
+from .query_helper import SqlQueryHelper
 
 EventData = tuple[FullQualifiedId, EVENT_TYPE, JSON, int]
 
 
-class DatabaseWriter:
+class DatabaseWriter(SqlQueryHelper):
     _lock = threading.Lock()
     database_reader: DatabaseReader
     env: Env
@@ -155,21 +156,30 @@ class DatabaseWriter:
                     )
             else:
                 collection = event["collection"]
+                id_ = None
 
             if event["type"] == EventType.Create:
-                models_created_or_updated.add(self.insert_model(event, collection))
+                models_created_or_updated.add(self.insert_model(event, collection, id_))
             if event["type"] == EventType.Update:
-                models_created_or_updated.add(self.update_model(event, collection))
+                assert id_
+                models_created_or_updated.add(self.update_model(event, collection, id_))
             if event["type"] == EventType.Delete:
-                models_created_or_updated.discard(self.delete_model(event))
+                assert id_
+                models_created_or_updated.discard(
+                    self.delete_model(event, collection, id_)
+                )
 
         return list(models_created_or_updated)
 
-    def insert_model(self, event: Event, collection: Collection) -> FullQualifiedId:
+    def insert_model(
+        self, event: Event, collection: Collection, id_: Id | None
+    ) -> FullQualifiedId:
         event_fields = event.get("fields", dict())
         simple_fields, intermediate_tables = self.get_simple_fields_intermediate_table(
             event_fields, collection
         )
+        if id_ and not simple_fields.get("id"):
+            simple_fields["id"] = id_
         statement = sql.SQL(
             """
             INSERT INTO {table_name} ({columns})
@@ -180,16 +190,15 @@ class DatabaseWriter:
             columns=sql.SQL(", ").join(map(sql.Identifier, simple_fields)),
             values=sql.SQL(", ").join(sql.SQL("%s") for _ in range(len(simple_fields))),
         )
-        id_ = self.execute_sql(
-            statement, list(simple_fields.values()), collection, simple_fields.get("id")
-        )
+        id_ = self.execute_sql(statement, list(simple_fields.values()), collection, id_)
         self.write_to_intermediate_tables(
             event_fields, intermediate_tables, id_, collection
         )
         return fqid_from_collection_and_id(collection, id_)
 
-    def delete_model(self, event: Event) -> FullQualifiedId:
-        collection, id_ = collection_and_id_from_fqid(event["fqid"])
+    def delete_model(
+        self, event: Event, collection: Collection, id_: Id
+    ) -> FullQualifiedId:
         statement = sql.SQL(
             """
             DELETE FROM {table_name} WHERE id = {id}
@@ -199,7 +208,9 @@ class DatabaseWriter:
             collection, self.execute_sql(statement, [], collection, id_)
         )
 
-    def update_model(self, event: Event, collection: Collection) -> FullQualifiedId:
+    def update_model(
+        self, event: Event, collection: Collection, id_: Id
+    ) -> FullQualifiedId:
         table = sql.Identifier(f"{collection}_t")
         statement = sql.SQL(
             """
@@ -209,9 +220,7 @@ class DatabaseWriter:
             table=table,
         )
 
-        # id always exists for updates
         event_fields = event["fields"]
-        id_ = event_fields["id"]
         set_fields_dict, intermediate_tables = (
             self.get_simple_fields_intermediate_table(event_fields, collection)
         )
@@ -276,6 +285,10 @@ class DatabaseWriter:
         for array_value in array_values:
             arguments.extend(array_value)
 
+        # to prevent missing exceptions and a malformed statement we construct a noop
+        if not arguments:
+            statement += sql.SQL("id = id")
+
         statement += sql.SQL(
             """
             WHERE id = {id}
@@ -283,7 +296,7 @@ class DatabaseWriter:
         ).format(id=id_)
         return fqid_from_collection_and_id(
             collection,
-            self.execute_sql(statement, arguments, collection, set_fields_dict["id"]),
+            self.execute_sql(statement, arguments, collection, id_),
         )
 
     def get_simple_fields_intermediate_table(
@@ -304,8 +317,7 @@ class DatabaseWriter:
             field_name: field
             for field_name in event_fields
             if (field := collection_cls.get_field(field_name))
-            and field.is_primary
-            and field.write_fields
+            if field.is_primary and field.write_fields
             if any(
                 isinstance(field, type_)
                 for type_ in [RelationListField, GenericRelationListField]
@@ -442,7 +454,7 @@ class DatabaseWriter:
             {
                 field_name: sql.SQL(
                     """ARRAY(
-                SELECT unnest({row_or_placeholder}{base_array_type}) AS list_element{nothing_or_table}
+                SELECT unnest({col_or_placeholder_plus_type}) AS list_element{nothing_or_table}
                 EXCEPT
                 SELECT unnest(%s{remove_list_type})
                 UNION
@@ -450,8 +462,9 @@ class DatabaseWriter:
                 ORDER BY list_element
             )"""
                 ).format(
-                    row_or_placeholder=(
+                    col_or_placeholder_plus_type=(
                         sql.Placeholder()
+                        + self.get_array_type(list_type, set_dict[field_name])
                         if field_name in set_dict
                         else sql.Identifier(field_name)
                     ),
@@ -459,11 +472,6 @@ class DatabaseWriter:
                         sql.SQL("")
                         if field_name in set_dict
                         else sql.SQL(" FROM ") + table
-                    ),
-                    base_array_type=(
-                        self.get_array_type(list_type, set_dict[field_name])
-                        if field_name in set_dict
-                        else sql.SQL("")
                     ),
                     add_list_type=self.get_array_type(
                         list_type, add_dict.get(field_name, [])
@@ -549,7 +557,9 @@ class DatabaseWriter:
             raise e
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
-                raise ModelDoesNotExist(fqid_from_collection_and_id(collection, id_))
+                raise ModelDoesNotExist(
+                    fqid_from_collection_and_id(collection, target_id or id_)
+                )
             else:
                 raise e
         except Exception as e:
@@ -560,21 +570,6 @@ class DatabaseWriter:
             )
 
         return 0
-
-    def get_array_type(
-        self,
-        list_type: type,
-        affected_list: list[int] | list[str],
-    ) -> sql.Composable:
-        if list_type == int:
-            if affected_list:
-                return sql.SQL("")
-            else:
-                return sql.SQL("::int2[]")
-        elif list_type == str:
-            return sql.SQL("::text[]")
-        else:
-            raise ValueError("Only integer or string lists are supported.")
 
     def get_models_from_database(
         self, events: list[Event]

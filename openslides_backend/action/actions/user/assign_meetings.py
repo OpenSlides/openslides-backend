@@ -171,6 +171,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
         return instance
 
     def check_meetings(self, instance: dict[str, Any]) -> None:
+        """Raises an exception if some meetings in `meeting_ids` are locked from inside."""
         if meeting_ids := instance.get("meeting_ids"):
             locked_meetings = [
                 str(id_)
