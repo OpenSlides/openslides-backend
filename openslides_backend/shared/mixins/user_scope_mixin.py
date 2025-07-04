@@ -214,17 +214,15 @@ class UserScopeMixin(BaseServiceProvider):
         """
         (
             committee_meetings,
-            committees,
             active_committee_meetings,
-            active_committees,
             active_meetings_committee,
         ) = self._get_meetings_committees_maps(meeting_ids, committees_manager)
 
         user_scope, scope_id = self._get_user_scope_and_scope_id(
             home_committee_id,
             active_meetings_committee,
-            active_committees,
-            committees,
+            set(active_committee_meetings.keys()),
+            set(committee_meetings.keys()),
         )
         user_committee_meetings = (
             active_committee_meetings
@@ -246,36 +244,29 @@ class UserScopeMixin(BaseServiceProvider):
         self, meeting_ids: list[int], committees_manager: set[int]
     ) -> tuple[
         dict[int, list[int] | None],
-        set[int],
         dict[int, list[int] | None],
-        set[int],
         dict[int, int],
     ]:
         """
         Helper function used in method calculate_scope_data.
 
         Generates data used for calculating scope details. Builds
-        committees-meetings maps and retrieves committees for user's
-        all and active meetings.
+        committees-meetings maps for user's all and active meetings.
         """
         meetings_committees, active_meetings_committees = (
             self._map_meetings_to_committees(meeting_ids)
         )
 
-        committee_meetings, committees = self._get_committee_meetings_and_committees(
+        committee_meetings = self._get_committee_meetings_map(
             meetings_committees, committees_manager
         )
-        active_committee_meetings, active_committees = (
-            self._get_committee_meetings_and_committees(
-                active_meetings_committees, committees_manager
-            )
+        active_committee_meetings = self._get_committee_meetings_map(
+            active_meetings_committees, committees_manager
         )
 
         return (
             committee_meetings,
-            committees,
             active_committee_meetings,
-            active_committees,
             active_meetings_committees,
         )
 
@@ -307,16 +298,13 @@ class UserScopeMixin(BaseServiceProvider):
 
         return meetings_committees, active_meetings_committees
 
-    def _get_committee_meetings_and_committees(
+    def _get_committee_meetings_map(
         self, meetings_committee: dict[int, int], committees_manager: set[int]
-    ) -> tuple[dict[int, list[int] | None], set[int]]:
+    ) -> dict[int, list[int] | None]:
         """
-        Returns:
-        * committee_meetings: a mapping of user's committee IDs to the meeting IDs
-            he is a member of (if any).
-        * all_committees: set of all committee IDs where the user is a member or manager.
+        Returns a mapping of user's committee IDs to the list with meeting IDs
+        he is a member of.
         """
-        all_committees = committees_manager | set(meetings_committee.values())
         committee_manager_without_meetings = committees_manager - set(
             meetings_committee.values()
         )
@@ -327,7 +315,7 @@ class UserScopeMixin(BaseServiceProvider):
 
         for committee in committee_manager_without_meetings:
             committee_meetings[committee] = None
-        return committee_meetings, all_committees
+        return committee_meetings
 
     def _get_user_scope_and_scope_id(
         self,
