@@ -37,7 +37,7 @@ class UserScopeMixin(BaseServiceProvider):
         self, id_or_instance: int | dict[str, Any]
     ) -> tuple[UserScope, int, str, dict[int, list[int] | None], bool, int | None]:
         """
-        Parameter id_or_instance: id for existing user or instance for user-altering actions.
+        Parameter id_or_instance: id for existing user or instance for user creating and altering actions.
         Returns in the tuple:
         * the scope of the given user id
         * the relevant scope id (either meeting, committee or organization id
