@@ -168,7 +168,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
     def setup_scope_organization_with_permission_in_all_meetings(
         self, permission: Permission = Permissions.User.CAN_UPDATE
     ) -> None:
-        self.setup_two_meetings_in_different_committees()
+        self.setup_two_meetings_in_different_committees(permission)
         self.set_user_groups(1, [2, 5])
 
     def setup_archived_meetings_in_different_committees(
