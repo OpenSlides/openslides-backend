@@ -1,4 +1,3 @@
-from collections import defaultdict
 from enum import Enum
 from typing import Any
 
@@ -35,7 +34,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str, dict[int, list[int] | None], bool, int | None]:
+    ) -> tuple[UserScope, int, str, dict[int, list[int]], bool, int | None]:
         """
         Parameter id_or_instance: id for existing user or instance for user creating and altering actions.
         Returns in the tuple:
@@ -201,7 +200,7 @@ class UserScopeMixin(BaseServiceProvider):
         meeting_ids: list[int],
         committees_manager: set[int],
         home_committee_id: int | None,
-    ) -> tuple[UserScope, int, dict[int, list[int] | None], bool]:
+    ) -> tuple[UserScope, int, dict[int, list[int]], bool]:
         """
         Helper function used in method get_user_scope.
         Params and return values contain data about the requested user.
@@ -242,11 +241,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def _get_meetings_committees_maps(
         self, meeting_ids: list[int], committees_manager: set[int]
-    ) -> tuple[
-        dict[int, list[int] | None],
-        dict[int, list[int] | None],
-        dict[int, int],
-    ]:
+    ) -> tuple[dict[int, list[int]], dict[int, list[int]], dict[int, int]]:
         """
         Helper function used in method calculate_scope_data.
 
@@ -300,21 +295,16 @@ class UserScopeMixin(BaseServiceProvider):
 
     def _get_committee_meetings_map(
         self, meetings_committee: dict[int, int], committees_manager: set[int]
-    ) -> dict[int, list[int] | None]:
+    ) -> dict[int, list[int]]:
         """
         Returns a mapping of user's committee IDs to the list with meeting IDs
         he is a member of.
         """
-        committee_manager_without_meetings = committees_manager - set(
-            meetings_committee.values()
-        )
-
-        committee_meetings: dict[int, Any] = defaultdict(list)
+        committee_meetings: dict[int, list[int]] = {
+            cid: [] for cid in committees_manager | set(meetings_committee.values())
+        }
         for meeting, committee in meetings_committee.items():
             committee_meetings[committee].append(meeting)
-
-        for committee in committee_manager_without_meetings:
-            committee_meetings[committee] = None
         return committee_meetings
 
     def _get_user_scope_and_scope_id(
@@ -482,7 +472,7 @@ class UserScopeMixin(BaseServiceProvider):
 
     def _check_permissions_for_scope_organization(
         self,
-        committees_to_meetings: dict[int, list[int] | None],
+        committees_to_meetings: dict[int, list[int]],
         instance_id: int,
         user_in_archived_meetings_only: bool,
     ) -> None:
