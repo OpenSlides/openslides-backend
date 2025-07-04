@@ -2083,6 +2083,71 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
 
+    def test_forward_to_the_same_meeting_with_orga_wide_mediafile(self) -> None:
+        """
+        Verify orga-wide mediafile is reused correctly when motion is forwarded
+        to the same meeting.
+        """
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "committee/53": {
+                    "forward_to_committee_ids": [52, 53],
+                    "receive_forwardings_from_committee_ids": [53],
+                    "meeting_ids": [1, 2],
+                },
+                "motion_workflow/33": {
+                    "name": "name_workflow1",
+                    "first_state_id": 30,
+                    "state_ids": [30],
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "motions_default_workflow_id": 33,
+                    "motions_default_amendment_workflow_id": 33,
+                },
+            }
+        )
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 1,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": True,
+                },
+            ]
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 1,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_not_called()
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/1": {"meeting_mediafile_ids": [1]},
+            "motion/13": {"attachment_meeting_mediafile_ids": [1]},
+            "mediafile/1": {
+                "meeting_mediafile_ids": [1],
+                "owner_id": ONE_ORGANIZATION_FQID,
+            },
+            "meeting_mediafile/1": {
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "is_public": True,
+                "attachment_ids": ["motion/12", "motion/13"],
+            },
+        }
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+
     def base_test_preserve_existing_meeting_attachments_ids(
         self, with_attachments: bool
     ) -> None:
@@ -2140,9 +2205,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_preserve_meeting_attachments_ids_with_attachments_true(self) -> None:
         self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=True)
 
-    def test_forward_2_motions_with_same_meeting_wide_mediafile_to_1_meeting(
-        self,
-    ) -> None:
+    def set_2_motions_with_same_attachement(self, is_orga_wide: bool) -> None:
         self.set_models(self.test_model)
         self.set_models(
             {
@@ -2161,11 +2224,20 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "mediafile_id": 1,
                     "meeting_id": 1,
                     "motion_ids": [12, 13],
-                    "is_orga_wide": False,
+                    "is_orga_wide": is_orga_wide,
                 },
             ]
         )
         self.media.duplicate_mediafile = MagicMock()
+
+    def test_forward_2_motions_to_1_meeting_1_transaction_shared_meeting_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify forwarding two motions with the same meeting-wide mediafile in one
+        transaction creates only 1 new mediafile and 1 new meeting_mediafile.
+        """
+        self.set_2_motions_with_same_attachement(is_orga_wide=False)
         response = self.request_multi(
             "motion.create_forwarded",
             [
@@ -2186,28 +2258,127 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_once_with(1, 2)
+
         expected_models: dict[str, dict[str, Any]] = {
             "meeting/2": {
                 "meeting_mediafile_ids": [12],
                 "mediafile_ids": [2],
             },
-            "mediafile/2": {
-                "meeting_mediafile_ids": [12],
-                "owner_id": "meeting/2",
-                "mimetype": "text/plain",
-            },
+            "mediafile/2": {"meeting_mediafile_ids": [12]},
             "meeting_mediafile/12": {
                 "meeting_id": 2,
                 "mediafile_id": 2,
+                "attachment_ids": ["motion/14", "motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+        }
+        expected_models_do_not_exist = ["mediafile/3", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_called_once_with(1, 2)
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
+
+    def test_forward_2_motions_to_1_meeting_1_transaction_shared_orga_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify forwarding two motions with the same orga-wide mediafile in one
+        transaction creates only one new meeting_mediafile.
+        """
+        self.set_2_motions_with_same_attachement(is_orga_wide=True)
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "Mot 1",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+                {
+                    "title": "Mot 2",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {"meeting_mediafile_ids": [12]},
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 1,
+                "attachment_ids": ["motion/14", "motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+        }
+        expected_models_do_not_exist = ["mediafile/2", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_not_called()
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
+
+    def test_forward_2_motions_separately_shared_orga_wide_mediafile(
+        self,
+    ) -> None:
+        """Verify orga-wide mediafile is reused across separate forwardings correctly."""
+        self.set_2_motions_with_same_attachement(is_orga_wide=True)
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {"meeting_mediafile_ids": [12]},
+            "mediafile/1": {
+                "meeting_mediafile_ids": [11, 12],
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "mimetype": "text/plain",
+                "title": "title_1",
+            },
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 1,
                 "is_public": True,
                 "attachment_ids": ["motion/14", "motion/15"],
             },
             "motion/14": {"attachment_meeting_mediafile_ids": [12]},
             "motion/15": {"attachment_meeting_mediafile_ids": [12]},
         }
+        expected_models_do_not_exist = ["mediafile/2", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_not_called()
         for fqid, model_data in expected_models.items():
             self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
 
     def test_forward_to_2_meetings_1_transaction_orga_wide_mediafiles(
         self,
