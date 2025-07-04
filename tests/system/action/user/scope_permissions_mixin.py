@@ -168,12 +168,29 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
     def setup_scope_organization_with_permission_in_all_meetings(
         self, permission: Permission = Permissions.User.CAN_UPDATE
     ) -> None:
+        """
+        Creates:
+        - 2 meetings in different committees with the default admin (not test
+            or target user)
+        - Target user 111 who is member of both meetings and doesn't
+            have admin rights in them
+        Test user has admin rights in meetings 1 and 4. He doesn't have CML or OML.
+        """
         self.setup_two_meetings_in_different_committees(permission)
         self.set_user_groups(1, [2, 5])
 
     def setup_archived_meetings_in_different_committees(
         self, permission: Permission = Permissions.User.CAN_MANAGE
     ) -> None:
+        """
+        Creates:
+        - 2 meetings in different committees with the default admin (not test
+            or target user)
+        - Target user 111 who is member of both meetings and doesn't
+            have admin rights in them
+        Test user has admin rights in meetings 1 and 4. He doesn't have CML or OML.
+        Meetings 1 and 4 are archived.
+        """
         self.setup_scope_organization_with_permission_in_all_meetings(permission)
         self.set_models(
             {
