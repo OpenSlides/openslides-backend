@@ -220,8 +220,8 @@ class UserScopeMixin(BaseServiceProvider):
         user_scope, scope_id = self._get_user_scope_and_scope_id(
             home_committee_id,
             active_meetings_committee,
-            set(active_committee_meetings.keys()),
-            set(committee_meetings.keys()),
+            active_committee_meetings,
+            committee_meetings,
         )
         user_committee_meetings = (
             active_committee_meetings
@@ -311,8 +311,8 @@ class UserScopeMixin(BaseServiceProvider):
         self,
         home_committee_id: int | None,
         active_meetings_committee: dict[int, int],
-        active_committees: set[int],
-        committees: set[int],
+        active_committee_meetings: dict[int, list[int]],
+        committee_meetings: dict[int, list[int]],
     ) -> tuple[UserScope, int]:
         """
         Helper function used in method calculate_scope_data.
@@ -321,11 +321,11 @@ class UserScopeMixin(BaseServiceProvider):
         if home_committee_id:
             return UserScope.Committee, home_committee_id
 
-        if len(active_meetings_committee) == 1 and len(active_committees) == 1:
+        if len(active_meetings_committee) == 1 and len(active_committee_meetings) == 1:
             return UserScope.Meeting, next(iter(active_meetings_committee))
 
-        if len(committees) == 1:
-            return UserScope.Committee, next(iter(committees))
+        if len(committee_meetings) == 1:
+            return UserScope.Committee, next(iter(committee_meetings))
 
         return UserScope.Organization, 1
 
