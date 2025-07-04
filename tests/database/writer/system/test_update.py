@@ -381,7 +381,7 @@ def test_list_update_add_wrong_field_type() -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.write(create_write_requests(data))
     assert (
-        e_info.value.msg
+        e_info.value.message
         == "'first_name' used for 'list_fields' 'remove' or 'add' is no array in database."
     )
     assert_model(f"user/{id_}", {"id": id_, "first_name": "1"})
@@ -465,7 +465,7 @@ def test_list_update_remove_no_array() -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.write(create_write_requests(data))
     assert (
-        e_info.value.msg
+        e_info.value.message
         == "'first_name' used for 'list_fields' 'remove' or 'add' is no array in database."
     )
     assert_model(f"user/{id_}", {"id": id_, "first_name": "1"})

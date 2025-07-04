@@ -164,7 +164,8 @@ def test_create_11_field_as_1n() -> None:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(write_requests)
     assert (
-        "Relation from agenda_item/2 violates UNIQUE constraint: " in e_info.value.msg
+        "Relation from agenda_item/2 violates UNIQUE constraint: "
+        in e_info.value.message
     )
     assert_model("topic/2", {"title": "2", "meeting_id": 1, "id": 2})
     assert_model("topic/1", {"title": "2", "meeting_id": 1, "id": 1})

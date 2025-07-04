@@ -1,7 +1,7 @@
-import datetime
-import zoneinfo
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
 from psycopg import Connection
@@ -36,7 +36,7 @@ expected_response_changed_models = {
 last_login_filter = FilterOperator(
     "last_login",
     "=",
-    datetime.datetime(2012, 5, 31, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")),
+    datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")),
 )
 
 
@@ -193,7 +193,7 @@ def test_invalid_mapped_fields() -> None:
                 FilterOperator("username", "=", "data"),
                 ["first_name", "not valid"],
             )
-    assert "Invalid fields: ['not valid']" in e.value.msg
+    assert "Invalid fields: ['not valid']" in e.value.message
 
 
 def test_invalid_mapped_fields2() -> None:
@@ -206,24 +206,26 @@ def test_invalid_mapped_fields2() -> None:
                 ["first_name", "not_valid"],
             )
     assert (
-        "Field 'not_valid' does not exist in collection 'user': column" in e.value.msg
+        "Field 'not_valid' does not exist in collection 'user': column"
+        in e.value.message
     )
-    assert "\nCheck mapped fields." in e.value.msg
+    assert "\nCheck mapped fields." in e.value.message
 
 
 def test_invalid_collection(db_connection: Connection) -> None:
     with pytest.raises(InvalidFormat) as e:
         base_test(db_connection, "usarr", FilterOperator("username", "=", "data"), 0)
-    assert "Collection 'usarr' does not exist in the database:" in e.value.msg
+    assert "Collection 'usarr' does not exist in the database:" in e.value.message
 
 
 def test_invalid_filter_field(db_connection: Connection) -> None:
     with pytest.raises(InvalidFormat) as e:
         base_test(db_connection, "user", FilterOperator("usarrname", "=", "data"), 0)
     assert (
-        "Field 'usarrname' does not exist in collection 'user': column" in e.value.msg
+        "Field 'usarrname' does not exist in collection 'user': column"
+        in e.value.message
     )
-    assert "\nCheck filter fields." in e.value.msg
+    assert "\nCheck filter fields." in e.value.message
 
 
 @pytest.mark.parametrize(

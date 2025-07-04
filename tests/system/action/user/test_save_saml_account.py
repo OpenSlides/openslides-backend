@@ -1,3 +1,7 @@
+from decimal import Decimal
+
+from psycopg.types.json import Jsonb
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,17 +12,19 @@ class UserBaseSamlAccount(BaseActionTestCase):
             {
                 "organization/1": {
                     "saml_enabled": True,
-                    "saml_attr_mapping": {
-                        "saml_id": "username",
-                        "title": "title",
-                        "first_name": "firstName",
-                        "last_name": "lastName",
-                        "email": "email",
-                        "gender": "gender",
-                        "pronoun": "pronoun",
-                        "is_active": "is_active",
-                        "is_physical_person": "is_person",
-                    },
+                    "saml_attr_mapping": Jsonb(
+                        {
+                            "saml_id": "username",
+                            "title": "title",
+                            "first_name": "firstName",
+                            "last_name": "lastName",
+                            "email": "email",
+                            "gender": "gender",
+                            "pronoun": "pronoun",
+                            "is_active": "is_active",
+                            "is_physical_person": "is_person",
+                        }
+                    ),
                     "gender_ids": [1, 2, 3, 4],
                 },
                 "gender/1": {"organization_id": 1, "name": "male"},
@@ -40,7 +46,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
 
     def test_saml_attr_mapping_empty(self) -> None:
-        self.update_model("organization/1", {"saml_attr_mapping": {}})
+        self.update_model("organization/1", {"saml_attr_mapping": Jsonb({})})
         response = self.request("user.save_saml_account", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -93,10 +99,12 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             {
                 "organization/1": {
                     "saml_enabled": True,
-                    "saml_attr_mapping": {
-                        "saml_id": "username",
-                        "default_number": "default_number",
-                    },
+                    "saml_attr_mapping": Jsonb(
+                        {
+                            "saml_id": "username",
+                            "default_number": "default_number",
+                        }
+                    ),
                 }
             }
         )
@@ -546,21 +554,22 @@ class UserAddToGroup(UserBaseSamlAccount):
                 },
             },
         ]
+        self.saml_attr_mapping = {
+            "member_number": "member_number",
+            "saml_id": "username",
+            "title": "title",
+            "first_name": "firstName",
+            "last_name": "lastName",
+            "email": "email",
+            "gender": "gender",
+            "pronoun": "pronoun",
+            "is_active": "is_active",
+            "is_physical_person": "is_person",
+            "meeting_mappers": self.meeting_mappers,
+        }
         self.organization = {
             "saml_enabled": True,
-            "saml_attr_mapping": {
-                "member_number": "member_number",
-                "saml_id": "username",
-                "title": "title",
-                "first_name": "firstName",
-                "last_name": "lastName",
-                "email": "email",
-                "gender": "gender",
-                "pronoun": "pronoun",
-                "is_active": "is_active",
-                "is_physical_person": "is_person",
-                "meeting_mappers": self.meeting_mappers,
-            },
+            "saml_attr_mapping": Jsonb(self.saml_attr_mapping),
         }
         self.create_meeting()
         self.create_meeting(4)
@@ -626,7 +635,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 1,
                 "group_ids": [2],
                 "structure_level_ids": [1],
-                "vote_weight": "42.000000",
+                "vote_weight": Decimal("42"),
                 "number": "MG_1254",
                 "comment": "normal data used",
             },
@@ -710,7 +719,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "user_id": 2,
                 "group_ids": [4, 5, 6],
                 "meeting_id": 4,
-                "vote_weight": "2.000000",
+                "vote_weight": Decimal("2"),
             },
         )
         self.assert_model_exists(
@@ -763,7 +772,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "user_id": 2,
                 "group_ids": [2],
                 "meeting_id": 1,
-                "vote_weight": "0.000001",
+                "vote_weight": Decimal("0.000001"),
             },
         )
         self.assert_model_exists(
@@ -777,7 +786,8 @@ class UserAddToGroup(UserBaseSamlAccount):
         self.assert_model_not_exists("meeting_user/2")
 
     def test_create_user_mapping_no_mapper(self) -> None:
-        del self.organization["saml_attr_mapping"]["meeting_mappers"]  # type: ignore
+        del self.saml_attr_mapping["meeting_mappers"]
+        self.organization["saml_attr_mapping"] = Jsonb(self.saml_attr_mapping)
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -808,13 +818,13 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_condition_non_string_condition_attribute(self) -> None:
         """Shows that the condition check works with numbers and lists and list entries are checked individually."""
-        self.organization["saml_attr_mapping"]["meeting_mappers"][0]["conditions"] = [  # type: ignore
+        self.meeting_mappers[0]["conditions"] = [
             {
                 "attribute": "membership-list",
                 "condition": "Del.*Admin",
             }
         ]
-        self.organization["saml_attr_mapping"]["meeting_mappers"][1]["conditions"] = [  # type: ignore
+        self.meeting_mappers[1]["conditions"] = [
             {
                 "attribute": "eery_number",
                 "condition": "5",
@@ -824,6 +834,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "condition": "Delegates",
             },
         ]
+        self.organization["saml_attr_mapping"] = Jsonb(self.saml_attr_mapping)
         self.set_models({"organization/1": self.organization})
         response = self.request(
             "user.save_saml_account",
@@ -862,7 +873,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "meeting_id": 4,
                 "group_ids": [4],
                 "structure_level_ids": [1],
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1"),
                 "number": "MG_1254",
                 "comment": "Vote weight, groups and structure levels set via SSO.",
             },
@@ -1218,7 +1229,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 1, "group_ids": [1, 3, 2], "meeting_id": 1}
+            "meeting_user/1", {"user_id": 1, "group_ids": [1, 2, 3], "meeting_id": 1}
         )
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "group_ids": [5], "meeting_id": 4}

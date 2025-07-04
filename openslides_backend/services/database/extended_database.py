@@ -205,9 +205,7 @@ class ExtendedDatabase(Database):
                     .get(id_)
                 )
                 if not result:
-                    raise ModelDoesNotExist(
-                        fqid_from_collection_and_id(collection, id_)
-                    )
+                    raise ModelDoesNotExist(fqid)
         except DatabaseException as e:
             if raise_exception:
                 raise e
@@ -453,14 +451,15 @@ class ExtendedDatabase(Database):
                         use_changed_models,
                     )
                     if response:
+                        response_values = [
+                            model[field_or_star]
+                            for model in response.values()
+                            if model[field_or_star] is not None
+                        ]
                         if method == "max":
-                            return max(
-                                model[field_or_star] for model in response.values()
-                            )
+                            return max(response_values)
                         else:
-                            return min(
-                                model[field_or_star] for model in response.values()
-                            )
+                            return min(response_values)
                     else:
                         return None
                 case _:
@@ -554,11 +553,6 @@ class ExtendedDatabase(Database):
                             f"fqid {fqid} is too long (max: {FQID_MAX_LEN})"
                         )
                     collection, id_ = collection_and_id_from_fqid(fqid)
-                    if event["type"] != EventType.Delete:
-                        if event.get("fields"):
-                            event["fields"]["id"] = id_
-                        else:
-                            event["fields"] = {"id": id_}
                 elif event["type"] == EventType.Create:
                     if event.get("collection"):
                         collection = event["collection"]
@@ -568,7 +562,12 @@ class ExtendedDatabase(Database):
                         )
                 else:
                     raise InvalidFormat("Event must contain fqid.")
+                if event["type"] != EventType.Delete:
+                    # TODO try to remove this if below TODO is completed
+                    if not event.get("fields"):
+                        event["fields"] = {}
                 if event["type"] == EventType.Update:
+                    # TODO does this lead to any unexpected and unwanted exceptions in the backend tests?
                     if not (event.get("fields") or (event.get("list_fields"))):
                         raise InvalidFormat("No fields given.")
                 if list_fields := event.get("list_fields", ListFields()):

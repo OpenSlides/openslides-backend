@@ -63,7 +63,7 @@ def test_wrong_format(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.reserve_ids("user", None)  # type:ignore
-    assert e_info.value.msg == ("Amount must be integer.")
+    assert e_info.value.message == ("Amount must be integer.")
 
 
 def test_negative_amount(db_connection: Connection) -> None:
@@ -71,7 +71,7 @@ def test_negative_amount(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.reserve_ids("user", -1)
-    assert e_info.value.msg == ("Amount must be >= 1, not -1.")
+    assert e_info.value.message == ("Amount must be >= 1, not -1.")
 
 
 def test_zero(db_connection: Connection) -> None:
@@ -79,7 +79,7 @@ def test_zero(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.reserve_ids("user", 0)
-    assert e_info.value.msg == ("Amount must be >= 1, not 0.")
+    assert e_info.value.message == ("Amount must be >= 1, not 0.")
 
 
 def test_too_long_collection(db_connection: Connection) -> None:
@@ -87,7 +87,7 @@ def test_too_long_collection(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.reserve_ids("x" * (COLLECTION_MAX_LEN + 1), 2)
-    assert e_info.value.msg == (
+    assert e_info.value.message == (
         f"Collection length must be between 1 and {COLLECTION_MAX_LEN}"
     )
 

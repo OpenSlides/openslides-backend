@@ -1,4 +1,3 @@
-from collections import defaultdict
 from copy import deepcopy
 from typing import Any
 from unittest.mock import MagicMock
@@ -17,7 +16,10 @@ from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
-from openslides_backend.shared.exceptions import AuthenticationException
+from openslides_backend.shared.exceptions import (
+    AuthenticationException,
+    BadCodingException,
+)
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -99,6 +101,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             results = response.json.get("results", [])
             assert len(results) == 1
             assert results[0] is None or len(results[0]) == len(data)
+        self.connection.commit()
         return response
 
     def request_json(
@@ -166,7 +169,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         data: dict[str, dict[str, Any]] = {
             committee_fqid: {
                 "organization_id": 1,
-                "name": name,
+                "name": name or f"com{committee_id}",
             }
         }
         if parent_id:
@@ -240,7 +243,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def create_meeting(self, base: int = 1) -> None:
         """
-        Creates meeting with id 1, committee 60 and groups with ids 1, 2, 3 by default.
+        Creates meeting with id 1, committee 60 and groups with ids 1(Default), 2(Admin), 3 by default.
         With base you can setup other meetings, but be cautious because of group-ids
         The groups have no permissions and no users by default.
         """
@@ -337,10 +340,42 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_committee_management_level(
         self, committee_ids: list[int], user_id: int = 1
     ) -> None:
+        """
+        Sets the user as the only committee manager of the given committees.
+        Removes all other committee managements of this user.
+        """
+        user = self.datastore.get(f"user/{user_id}", ["committee_management_ids"])
+        # TODO Use list add and remove fields instead of obtaining and recalculating the manager_ids here
+        db_committees = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "committee",
+                    user.get("committee_management_ids", []) + committee_ids,
+                    ["manager_ids"],
+                )
+            ]
+        ).get("committee", dict())
+
+        # remove removed ones
+        for db_committee_id, db_committee in db_committees.items():
+            if db_committee_id not in committee_ids and "manager_ids" in db_committee:
+                db_committee["manager_ids"].remove(user_id)
+        # add new relation
+        for committee_id in committee_ids:
+            if not (db_committee := db_committees.get(committee_id, {})):
+                raise BadCodingException(
+                    "Committee does not exist. This test should create the committee first before changing its managers."
+                )
+            if "manager_ids" not in db_committee:
+                db_committee["manager_ids"] = []
+            db_committee["manager_ids"].append(user_id)
+
         self.set_models(
             {
-                f"committee/{committee_id}": {"manager_ids": [user_id]}
-                for committee_id in committee_ids
+                f"committee/{committee_id}": {
+                    "manager_ids": committee.get("manager_ids", [])
+                }
+                for committee_id, committee in db_committees.items()
             }
         )
 
@@ -368,25 +403,25 @@ class BaseActionTestCase(BaseSystemTestCase):
         group_ids: list[int] = [],
         organization_management_level: OrganizationManagementLevel | None = None,
         home_committee_id: int | None = None,
+        meeting_user_ids: list[int] = [],
     ) -> int:
         """
         Create a user with the given username, groups and organization management level.
+        Returns the users id and stores meeting user ids in meeting_user_ids.
         """
-        # TODO question the sense of getting the groups from datastore here as they stay unsused.
-        partitioned_groups = self._fetch_groups(group_ids)
         id = 1
         while f"user/{id}" in self.created_fqids:
             id += 1
         self.set_models(
             {
                 f"user/{id}": self._get_user_data(
-                    username, partitioned_groups, organization_management_level
+                    username, organization_management_level
                 ),
             }
         )
         if home_committee_id:
             self.set_home_committee(id, home_committee_id)
-        self.set_user_groups(id, group_ids)
+        meeting_user_ids.extend(self.set_user_groups(id, group_ids))
         return id
 
     def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
@@ -406,7 +441,6 @@ class BaseActionTestCase(BaseSystemTestCase):
     def _get_user_data(
         self,
         username: str,
-        partitioned_groups: dict[int, list[dict[str, Any]]] = {},
         organization_management_level: OrganizationManagementLevel | None = None,
     ) -> dict[str, Any]:
         return {
@@ -415,7 +449,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             "is_active": True,
             "default_password": DEFAULT_PASSWORD,
             "password": self.auth.hash(DEFAULT_PASSWORD),
-            "meeting_ids": list(partitioned_groups.keys()),
         }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
@@ -437,10 +470,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             meeting["default_group_id"] = id
         user_id = self.create_user("user_" + get_random_string(6))
         self.set_user_groups(user_id, [meeting["default_group_id"]])
-        self.update_model(
-            f"meeting/{meeting_id}",
-            {"user_ids": list(set(meeting.get("user_ids", []) + [user_id]))},
-        )
         return user_id
 
     # @with_database_context
@@ -495,7 +524,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 GetManyRequest(
                     "meeting",
                     meeting_ids,
-                    ["id", "meeting_user_ids", "user_ids"],
+                    ["id", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
@@ -503,7 +532,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         user = self.datastore.get(
             f"user/{user_id}",
             # TODO here was a wrong field 'user_meeting_ids' check if there can be performance improvements by now using 'meeting_user_ids'
-            ["meeting_user_ids", "meeting_ids"],
+            ["meeting_user_ids"],
             lock_result=False,
             use_changed_models=False,
         )
@@ -522,9 +551,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             add_to_list(meeting_users[meeting_id], "group_ids", group["id"])
             add_to_list(group, "meeting_user_ids", meeting_user_id)
             add_to_list(meetings[meeting_id], "meeting_user_ids", meeting_user_id)
-            add_to_list(meetings[meeting_id], "user_ids", user_id)
             add_to_list(user, "meeting_user_ids", meeting_user_id)
-            add_to_list(user, "meeting_ids", meeting_id)
         self.set_models(
             {
                 f"user/{user_id}": user,
@@ -536,29 +563,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
         return [mu["id"] for mu in meeting_users.values()]
-
-    # @with_database_context
-    def _fetch_groups(self, group_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
-        """
-        Helper method to partition the groups by their meeting id.
-        """
-        if not group_ids:
-            return {}
-
-        response = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "group",
-                    group_ids,
-                    ["id", "meeting_id"],  # fields currently unused
-                )
-            ],
-            lock_result=False,
-        )
-        partitioned_groups: dict[int, list[dict[str, Any]]] = defaultdict(list)
-        for group in response.get("group", {}).values():
-            partitioned_groups[group["meeting_id"]].append(group)
-        return partitioned_groups
 
     def base_permission_test(
         self,

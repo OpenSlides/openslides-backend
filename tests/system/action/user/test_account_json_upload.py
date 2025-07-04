@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -10,7 +11,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class AccountJsonUpload(BaseActionTestCase):
     def test_json_upload_simple(self) -> None:
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
@@ -36,7 +37,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 ],
             },
         )
-        end_time = int(time())
+        end_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
@@ -1035,37 +1036,13 @@ class AccountJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_dont_recognize_empty_name_and_email(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "organization/1": {
-                    "user_ids": [1, 3, 4, 5],
                     "saml_enabled": False,
-                    "committee_ids": [1],
-                    "active_meeting_ids": [1],
                 },
-                "committee/1": {
-                    "name": "jk",
-                    "meeting_ids": [1],
-                    "organization_id": 1,
-                },
-                "meeting/1": {
-                    "name": "jk",
-                    "group_ids": [1, 2],
-                    "committee_id": 1,
-                    "admin_group_id": 2,
-                    "default_group_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "group/1": {
-                    "name": "Default",
-                    "meeting_id": 1,
-                    "default_group_for_meeting_id": 1,
-                },
-                "group/2": {
-                    "name": "Admin",
-                    "meeting_id": 1,
-                    "admin_group_for_meeting_id": 1,
-                },
+                "gender/4": {"name": "non-binary faun"},
                 "user/3": {
                     "email": "",
                     "default_password": "password",

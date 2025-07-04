@@ -65,7 +65,7 @@ def test_invalid(
         with pytest.raises(InvalidFormat) as e:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.exists(collection, filter_, use_changed_models=False)
-    assert expected_error in e.value.msg
+    assert expected_error in e.value.message
 
 
 def test_changed_models(db_connection: Connection) -> None:

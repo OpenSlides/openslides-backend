@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any, cast
@@ -236,22 +237,46 @@ class DecimalField(Field):
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
-            if (min := self.constraints.get("minimum")) is not None:
+            if (min_ := self.constraints.get("minimum")) is not None:
                 if isinstance(value, str):
                     assert Decimal(value) >= Decimal(
-                        min
-                    ), f"{self.own_field_name} must be bigger than or equal to {min}."
+                        min_
+                    ), f"{self.own_field_name} must be bigger than or equal to {min_}."
+                elif isinstance(value, Decimal):
+                    assert value >= Decimal(
+                        min_
+                    ), f"{self.own_field_name} must be bigger than or equal to {min_}."
                 else:
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
                     )
         return value
 
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: str | Decimal
+    ) -> None:
+        if isinstance(value, str | None):
+            super().validate_with_schema(fqid, field_name, value)
+        elif isinstance(value, Decimal):
+            super().validate_with_schema(fqid, field_name, str(value))
+        else:
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}"
+            )
+
 
 class TimestampField(IntegerField):
     """
     Used to represent a UNIX timestamp.
     """
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: datetime | int
+    ) -> None:
+        if isinstance(value, int | None):
+            super().validate_with_schema(fqid, field_name, value)
+        elif isinstance(value, datetime):
+            super().validate_with_schema(fqid, field_name, int(value.timestamp()))
 
 
 class ColorField(TextField):

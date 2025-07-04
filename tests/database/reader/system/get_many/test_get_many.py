@@ -143,7 +143,7 @@ def test_field_not_exists(db_connection: Connection) -> None:
             extended_database.get_many(request, use_changed_models=False)
     assert (
         "Field 'does_not_exist' does not exist in collection 'committee': column "
-        in e_info.value.msg
+        in e_info.value.message
     )
 
 
@@ -156,7 +156,7 @@ def test_negative_id(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get_many(request, use_changed_models=False)
-    assert "Id must be positive." in e_info.value.msg
+    assert "Id must be positive." in e_info.value.message
 
 
 def test_invalid_collection(db_connection: Connection) -> None:
@@ -170,7 +170,7 @@ def test_invalid_collection(db_connection: Connection) -> None:
             extended_database.get_many(request, use_changed_models=False)
     assert (
         "Collection 'committeee' does not exist in the database: relation"
-        in e_info.value.msg
+        in e_info.value.message
     )
 
 
@@ -221,7 +221,7 @@ def test_changed_models_deleted(db_connection: Connection) -> None:
         ex_db.apply_changed_model("committee/1", DeletedModel())
         with pytest.raises(ModelDoesNotExist) as e_info:
             ex_db.get_many(changed_models_request, use_changed_models=True)
-    assert e_info.value.msg == "Model 'committee/1' does not exist."
+    assert e_info.value.message == "Model 'committee/1' does not exist."
     assert e_info.value.fqid == "committee/1"
 
 

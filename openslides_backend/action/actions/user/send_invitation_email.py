@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 from email.headerregistry import Address
 from enum import StrEnum
 from smtplib import (
@@ -9,8 +10,8 @@ from smtplib import (
     SMTPServerDisconnected,
 )
 from ssl import SSLCertVerificationError
-from time import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from fastjsonschema import JsonSchemaException
 
@@ -96,7 +97,7 @@ class UserSendInvitationMail(UpdateAction):
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
                     except DatabaseException as e:
-                        result["message"] = f"DatabaseException: {str(e)}"
+                        result["message"] = f"DatabaseException: {e.message}"
                         result["type"] = EmailErrorType.OTHER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
@@ -263,7 +264,7 @@ class UserSendInvitationMail(UpdateAction):
             html=False,
         )
         result["sent"] = True
-        instance["last_email_sent"] = round(time())
+        instance["last_email_sent"] = datetime.now(ZoneInfo(key="Etc/UTC"))
         return super().update_instance(instance)
 
     def get_data_from_meeting_or_organization(

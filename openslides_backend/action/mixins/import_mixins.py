@@ -2,11 +2,14 @@ import copy
 import csv
 from collections import defaultdict
 from collections.abc import Callable
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum, StrEnum
-from time import mktime, strptime, time
+from time import mktime, strptime
 from typing import Any, TypedDict, Union, cast
+from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
 from typing_extensions import NotRequired
 
 from openslides_backend.action.action import Action
@@ -405,7 +408,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     def store_rows_in_the_import_preview(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
-        time_created = int(time())
+        time_created = datetime.now(ZoneInfo(key="Etc/UTC"))
         result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
@@ -418,7 +421,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": result,
+                            "result": Jsonb(result),
                             "created": time_created,
                             "state": self.import_state,
                         },
