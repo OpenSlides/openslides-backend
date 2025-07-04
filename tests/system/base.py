@@ -263,7 +263,6 @@ class BaseSystemTestCase(TestCase):
 
     def adjust_id_sequences(self) -> None:
         for collection in {collection_from_fqid(fqid) for fqid in self.created_fqids}:
-            self.connection.commit()
             maximum = self.datastore.max(collection, None, "id")
             with self.connection.cursor() as curs:
                 curs.execute(
@@ -274,6 +273,7 @@ class BaseSystemTestCase(TestCase):
                         maximum=sql.Literal(maximum),
                     )
                 )
+            self.connection.commit()
 
     def check_auth_mockers_started(self) -> bool:
         if (

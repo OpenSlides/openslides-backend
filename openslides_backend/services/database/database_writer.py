@@ -381,13 +381,19 @@ class DatabaseWriter(SqlQueryHelper):
                     + sql.SQL(", ")
                     + sql.Identifier(far_side),
                     placeholders=sql.SQL(", ").join(
-                        sql.SQL(f"({id_}, %s)")
-                        for _ in range(len(event_fields[field_name]))
+                        sql.SQL(f"(%(own_id)s, %({nr})s)")
+                        for nr in range(len(event_fields[field_name]))
                     ),
                 )
                 self.execute_sql(
                     statement,
-                    event_fields[field_name],
+                    {
+                        **{
+                            str(id_): val
+                            for id_, val in enumerate(event_fields[field_name])
+                        },
+                        "own_id": id_
+                    },
                     collection,
                     id_,
                     return_id=False,
