@@ -2328,6 +2328,218 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         for fqid in expected_models_do_not_exist:
             self.assert_model_not_exists(fqid)
 
+    def test_forward_3_motions_separately_shared_meeting_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify separately forwarded motions with the same attachment get mediafiles
+        with correct title suffixes.
+        """
+        self.set_2_motions_with_same_attachement(is_orga_wide=False)
+        self.set_models(
+            {
+                "motion/14": {
+                    "title": "Motion 14",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                    "attachment_meeting_mediafile_ids": [11],
+                },
+                "motion_state/30": {"motion_ids": [12, 13, 14]},
+                "meeting_mediafile/11": {
+                    "attachment_ids": ["motion/12", "motion/13", "motion/14"]
+                },
+            }
+        )
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response3 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 3",
+                "meeting_id": 2,
+                "origin_id": 14,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+        self.assert_status_code(response3, 200)
+
+        expected_mediaservice_calls = [call(1, 2), call(1, 3), call(1, 4)]
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {
+                "meeting_mediafile_ids": [12, 13, 14],
+                "mediafile_ids": [2, 3, 4],
+            },
+            "mediafile/2": {
+                "meeting_mediafile_ids": [12],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "title": "title_1",
+            },
+            "mediafile/3": {
+                "meeting_mediafile_ids": [13],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "title": "title_1 (#2)",
+            },
+            "mediafile/4": {
+                "meeting_mediafile_ids": [14],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "title": "title_1 (#3)",
+            },
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 2,
+                "is_public": True,
+                "attachment_ids": ["motion/15"],
+            },
+            "meeting_mediafile/13": {
+                "meeting_id": 2,
+                "mediafile_id": 3,
+                "is_public": True,
+                "attachment_ids": ["motion/16"],
+            },
+            "meeting_mediafile/14": {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+                "is_public": True,
+                "attachment_ids": ["motion/17"],
+            },
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/16": {"attachment_meeting_mediafile_ids": [13]},
+            "motion/17": {"attachment_meeting_mediafile_ids": [14]},
+        }
+
+        self.assertEqual(
+            self.media.duplicate_mediafile.call_count, len(expected_mediaservice_calls)
+        )
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=expected_mediaservice_calls, any_order=True
+        )
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+
+    def test_forward_mediafiles_with_same_title_different_parents(
+        self,
+    ) -> None:
+        """Verify identical titles in other directories don't trigger suffix addition."""
+        self.set_2_motions_with_same_attachement(is_orga_wide=False)
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 12,
+                    "mediafile_id": 2,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                    "is_directory": True,
+                },
+                {
+                    "meeting_mediafile_id": 13,
+                    "mediafile_id": 3,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                },
+            ]
+        )
+        self.set_models(
+            {
+                "motion/13": {"attachment_meeting_mediafile_ids": [12, 13]},
+                "meeting_mediafile/11": {"attachment_ids": ["motion/12"]},
+                "mediafile/2": {"child_ids": [3]},
+                "mediafile/3": {"parent_id": 2, "title": "title_1"},
+            }
+        )
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+
+        expected_mediaservice_calls = [call(1, 4), call(3, 6)]
+        expected_models: dict[str, dict[str, Any]] = {
+            "mediafile/4": {
+                "meeting_mediafile_ids": [14],
+                "owner_id": "meeting/2",
+                "title": "title_1",
+            },
+            "mediafile/5": {
+                "meeting_mediafile_ids": [15],
+                "owner_id": "meeting/2",
+                "title": "folder_2",
+            },
+            "mediafile/6": {
+                "meeting_mediafile_ids": [16],
+                "owner_id": "meeting/2",
+                "title": "title_1",
+            },
+            "meeting_mediafile/14": {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+                "attachment_ids": ["motion/14"],
+            },
+            "meeting_mediafile/15": {
+                "meeting_id": 2,
+                "mediafile_id": 5,
+                "attachment_ids": ["motion/15"],
+            },
+            "meeting_mediafile/16": {
+                "meeting_id": 2,
+                "mediafile_id": 6,
+                "attachment_ids": ["motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [14]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [15, 16]},
+        }
+
+        self.assertEqual(
+            self.media.duplicate_mediafile.call_count, len(expected_mediaservice_calls)
+        )
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=expected_mediaservice_calls, any_order=True
+        )
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+
     def test_forward_2_motions_separately_shared_orga_wide_mediafile(
         self,
     ) -> None:
