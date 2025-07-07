@@ -2238,7 +2238,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         Verify forwarding two motions with the same meeting-wide mediafile in one
         transaction creates only 1 new mediafile and 1 new meeting_mediafile.
         """
-        self.set_2_motions_with_same_attachement(is_orga_wide=False)
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
         response = self.request_multi(
             "motion.create_forwarded",
             [
@@ -2289,7 +2289,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         Verify forwarding two motions with the same orga-wide mediafile in one
         transaction creates only one new meeting_mediafile.
         """
-        self.set_2_motions_with_same_attachement(is_orga_wide=True)
+        self.set_2_motions_with_same_attachment(is_orga_wide=True)
         response = self.request_multi(
             "motion.create_forwarded",
             [
@@ -2336,7 +2336,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         Verify separately forwarded motions with the same attachment get mediafiles
         with correct title suffixes.
         """
-        self.set_2_motions_with_same_attachement(is_orga_wide=False)
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
         self.set_models(
             {
                 "motion/14": {
@@ -2445,7 +2445,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         """Verify identical titles in other directories don't trigger suffix addition."""
-        self.set_2_motions_with_same_attachement(is_orga_wide=False)
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
         self.create_mediafiles_from_dict(
             [
                 {
@@ -2545,7 +2545,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         """Verify orga-wide mediafile is reused across separate forwardings correctly."""
-        self.set_2_motions_with_same_attachement(is_orga_wide=True)
+        self.set_2_motions_with_same_attachment(is_orga_wide=True)
         response1 = self.request(
             "motion.create_forwarded",
             {
