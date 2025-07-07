@@ -436,11 +436,12 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
             )
-        meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
-            new_mm_instances_data,
-            mediafile_replace_map_by_meeting,
-            meeting_mediafile_replace_map,
-        )
+        if new_mm_instances_data:
+            meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
+                new_mm_instances_data,
+                mediafile_replace_map_by_meeting,
+                meeting_mediafile_replace_map,
+            )
         return forwarded_attachments, meeting_mediafile_replace_map
 
     def _extract_motion_target_meeting_ids(
@@ -619,9 +620,6 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         Collects existing meeting_mediafile entries that match the given instances
         by their (meeting_id, mediafile_id) combination.
         """
-        if not instances:
-            return {}
-
         filter_ = Or(
             *[
                 And(
