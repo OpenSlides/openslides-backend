@@ -183,7 +183,11 @@ def get_shared_committee_management_levels(
     user_id: int,
     committee_ids: list[int],
 ) -> list[int]:
-    """Checks wether a user has CommitteeManagementLevel 'can_manage'."""
+    """
+    Checks wether a user has CommitteeManagementLevel 'can_manage'.
+    Returns: list with the intersection of the given committee_ids and
+    ids of the committees where user has management rights.
+    """
     if user_id > 0:
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
