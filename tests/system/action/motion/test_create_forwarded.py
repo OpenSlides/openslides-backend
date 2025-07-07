@@ -1744,10 +1744,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         models_data = {fqid: model_data}
 
         if owner_meeting_id:
-            model_data["owner_id"] = f"meeting/{owner_meeting_id}"
+            owner_fqid = f"meeting/{owner_meeting_id}"
+            model_data["owner_id"] = owner_fqid
             self._update_list_field(
                 models_data,
-                f"meeting/{owner_meeting_id}",
+                owner_fqid,
                 "mediafile_ids",
                 mediafile_id,
             )
