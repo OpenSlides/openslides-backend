@@ -183,9 +183,8 @@ def get_shared_committee_management_levels(
     committee_ids: list[int],
 ) -> list[int]:
     """
-    Checks wether a user has CommitteeManagementLevel 'can_manage'.
-    Returns: list with the intersection of the given committee_ids and
-    ids of the committees where user has management rights.
+    Checks whether a user is manager in the given committees.
+    Returns a list where this is the case or all if the user is orga admin.
     """
     if user_id > 0:
         user = datastore.get(
