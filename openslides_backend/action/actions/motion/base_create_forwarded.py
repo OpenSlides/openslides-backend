@@ -619,19 +619,22 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         Collects existing meeting_mediafile entries that match the given instances
         by their (meeting_id, mediafile_id) combination.
         """
-        filters = [
-            And(
-                FilterOperator("mediafile_id", "=", entry["mediafile_id"]),
-                FilterOperator("meeting_id", "=", entry["meeting_id"]),
-            )
-            for entry in instances
-        ]
-        if not filters:
+        if not instances:
             return {}
+
+        filter_ = Or(
+            *[
+                And(
+                    FilterOperator("mediafile_id", "=", entry["mediafile_id"]),
+                    FilterOperator("meeting_id", "=", entry["meeting_id"]),
+                )
+                for entry in instances
+            ]
+        )
 
         return self.datastore.filter(
             "meeting_mediafile",
-            Or(*filters),
+            filter_,
             ["id", "mediafile_id", "meeting_id"],
             lock_result=False,
             use_changed_models=False,
