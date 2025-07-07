@@ -152,8 +152,7 @@ def has_committee_management_level(
     committee_id: int,
 ) -> bool:
     """
-    Checks whether a user has CommitteeManagementLevel 'can_manage'
-    in the given committee.
+    Checks whether a user is committee manager in the given committee.
     """
     if user_id > 0:
         user = datastore.get(
