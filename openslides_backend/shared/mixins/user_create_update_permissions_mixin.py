@@ -233,7 +233,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         "G": ["is_demo_user"],
         "H": ["saml_id"],
         "I": ["home_committee_id"],
-        "J": ["guest"],
+        "J": ["external"],
     }
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

@@ -183,7 +183,7 @@
             "id": 3,
             "user_id": 3,
             "meeting_id": 1,
-            "comment": "Test comment b as guest",
+            "comment": "Test comment b as an external user",
             "number": "12345-67892",
             "about_me": "What I want to say about me. B",
             "vote_weight": "1.000000",
