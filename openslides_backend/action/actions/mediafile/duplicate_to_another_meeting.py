@@ -66,13 +66,17 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
                 lock_result=False,
             )
         )
-        self.verify_title_parent_unique(instance)
+        self.ensure_unique_title_within_parent(instance)
         instance["create_timestamp"] = round(time())
         if not instance.get("is_directory"):
             self.media.duplicate_mediafile(origin_id, instance["id"])
         return instance
 
-    def verify_title_parent_unique(self, instance: dict[str, Any]) -> None:
+    def ensure_unique_title_within_parent(self, instance: dict[str, Any]) -> None:
+        """
+        If mediafile with the same title exists in the same directory,
+        makes the title unique by adding a suffix.
+        """
         title: str | None = instance.get("title")
         parent_id: int | None = instance.get("parent_id")
         owner_id: str = instance.get("owner_id", "")
