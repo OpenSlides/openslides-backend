@@ -2206,7 +2206,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_preserve_meeting_attachments_ids_with_attachments_true(self) -> None:
         self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=True)
 
-    def set_2_motions_with_same_attachement(self, is_orga_wide: bool) -> None:
+    def set_2_motions_with_same_attachment(self, is_orga_wide: bool) -> None:
         self.set_models(self.test_model)
         self.set_models(
             {
