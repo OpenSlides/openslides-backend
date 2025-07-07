@@ -1691,7 +1691,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         """
         existing = self.get_model(fqid).get(field, [])
         if isinstance(existing, list):
-            models_data[fqid] = {field: existing + [new_value]}
+            models_data.setdefault(fqid, {})[field] = existing + [new_value]
         return models_data
 
     def create_mediafiles_from_dict(
