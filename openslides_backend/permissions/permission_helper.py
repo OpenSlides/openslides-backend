@@ -113,7 +113,7 @@ def get_failing_committee_management_levels(
     committee_ids: list[int],
 ) -> list[int]:
     """
-    Checks whether a user has CommitteeManagementLevel 'can_manage' for the committees
+    Checks whether a user committee manager for the committees
     in the list and returns the ids of all that fail.
     """
     if user_id > 0:
