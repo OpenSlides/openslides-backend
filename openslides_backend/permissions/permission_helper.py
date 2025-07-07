@@ -187,7 +187,7 @@ def get_shared_committee_management_levels(
     if user_id > 0:
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["committee_management_ids"],
+            ["organization_management_level", "committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )
