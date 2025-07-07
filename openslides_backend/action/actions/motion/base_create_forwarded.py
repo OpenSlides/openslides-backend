@@ -621,13 +621,11 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         by their (meeting_id, mediafile_id) combination.
         """
         filter_ = Or(
-            *[
-                And(
-                    FilterOperator("mediafile_id", "=", entry["mediafile_id"]),
-                    FilterOperator("meeting_id", "=", entry["meeting_id"]),
-                )
-                for entry in instances
-            ]
+            And(
+                FilterOperator("mediafile_id", "=", entry["mediafile_id"]),
+                FilterOperator("meeting_id", "=", entry["meeting_id"]),
+            )
+            for entry in instances
         )
 
         return self.datastore.filter(
