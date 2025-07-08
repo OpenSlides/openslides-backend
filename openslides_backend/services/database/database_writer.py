@@ -158,16 +158,21 @@ class DatabaseWriter(SqlQueryHelper):
                 collection = event["collection"]
                 id_ = None
 
-            if event["type"] == EventType.Create:
-                models_created_or_updated.add(self.insert_model(event, collection, id_))
-            if event["type"] == EventType.Update:
-                assert id_
-                models_created_or_updated.add(self.update_model(event, collection, id_))
-            if event["type"] == EventType.Delete:
-                assert id_
-                models_created_or_updated.discard(
-                    self.delete_model(event, collection, id_)
-                )
+            match event["type"]:
+                case EventType.Create:
+                    models_created_or_updated.add(
+                        self.insert_model(event, collection, id_)
+                    )
+                case EventType.Update:
+                    assert id_
+                    models_created_or_updated.add(
+                        self.update_model(event, collection, id_)
+                    )
+                case EventType.Delete:
+                    assert id_
+                    models_created_or_updated.discard(
+                        self.delete_model(event, collection, id_)
+                    )
 
         return list(models_created_or_updated)
 
@@ -392,7 +397,7 @@ class DatabaseWriter(SqlQueryHelper):
                             str(id_): val
                             for id_, val in enumerate(event_fields[field_name])
                         },
-                        "own_id": id_
+                        "own_id": id_,
                     },
                     collection,
                     id_,
@@ -508,7 +513,7 @@ class DatabaseWriter(SqlQueryHelper):
     def execute_sql(
         self,
         statement: sql.Composed,
-        arguments: list[Any],
+        arguments: list[Any] | dict[str, Any],
         collection: Collection,
         target_id: Id | None,
         return_id: bool = True,
@@ -545,7 +550,7 @@ class DatabaseWriter(SqlQueryHelper):
                     )
         except NotNullViolation as e:
             raise BadCodingException(
-                f"Missing fields in {collection}/{target_id}. Ooopsy Daisy! {e}"
+                f"Missing fields in '{collection}/{target_id}'. Ooopsy Daisy! {e}"
             )
         except GeneratedAlways as e:
             raise BadCodingException(
