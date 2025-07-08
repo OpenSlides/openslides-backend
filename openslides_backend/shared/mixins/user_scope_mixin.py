@@ -186,7 +186,6 @@ class UserScopeMixin(BaseServiceProvider):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 scope_id,
             ):
                 raise MissingPermission(
@@ -204,7 +203,6 @@ class UserScopeMixin(BaseServiceProvider):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ) and not has_perm(
                 self.datastore, self.user_id, meeting_permission, scope_id
@@ -220,7 +218,6 @@ class UserScopeMixin(BaseServiceProvider):
             if get_shared_committee_management_levels(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 [ci for ci in committees_to_meetings.keys()],
             ):
                 return
