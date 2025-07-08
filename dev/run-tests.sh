@@ -6,13 +6,13 @@ echo "########################################################################"
 echo "###################### Run Tests and Linters ###########################"
 echo "########################################################################"
 
-# Parameters
-PERSIST_CONTAINERS=$1
-
 # Setup
 IMAGE_TAG=openslides-backend-tests
 CATCH=0
 export COMPOSE_DOCKER_CLI_BUILD=0
+
+# Safe Exit
+trap 'eval "$DC down --volumes' EXIT
 
 # Helpers
 USER_ID=$(id -u)
@@ -26,7 +26,5 @@ eval "$DC exec -T backend scripts/wait.sh datastore-writer 9011 || CATCH=1"
 eval "$DC exec -T backend scripts/wait.sh datastore-reader 9010 || CATCH=1"
 eval "$DC exec -T backend scripts/wait.sh auth 9004 || CATCH=1"
 eval "$DC exec -T backend ./entrypoint.sh pytest --cov  || CATCH=1"
-
-if [ -z "$PERSIST_CONTAINERS" ]; then eval "$DC down --volumes || CATCH=1"; fi
 
 exit $CATCH
