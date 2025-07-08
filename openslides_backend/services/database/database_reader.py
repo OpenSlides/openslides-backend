@@ -236,7 +236,7 @@ class DatabaseReader(SqlQueryHelper):
         except UndefinedColumn as e:
             column = e.args[0].split('"')[1]
             error_msg = (
-                f'Field "{column}" does not exist in collection "{collection}": {e}'
+                f"Field '{column}' does not exist in collection '{collection}': {e}"
             )
             if mapped_fields and column in mapped_fields.unique_fields:
                 error_msg += "\nCheck mapped fields."
