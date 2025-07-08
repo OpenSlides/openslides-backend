@@ -3,10 +3,8 @@ from copy import deepcopy
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.models.fields import DecimalField, TimestampField
 from openslides_backend.shared.interfaces.event import Event, EventType
 
-from ....models.models import MeetingUser
 from ....services.database.interface import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.typing import HistoryInformation
@@ -15,11 +13,6 @@ from ...action import Action
 
 class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
     extend_history_to = "user_id"
-    for field in MeetingUser().get_fields():
-        if isinstance(field, TimestampField):
-            Action.timestamp_fields.append(field.own_field_name)
-        elif isinstance(field, DecimalField):
-            Action.decimal_fields.append(field.own_field_name)
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         yield from super().create_events(instance)

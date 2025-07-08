@@ -1,9 +1,12 @@
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from copy import deepcopy
+from datetime import datetime
+from decimal import Decimal
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -103,8 +106,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     results: ActionResults
     cascaded_actions_history: HistoryInformation
     internal: bool
-    timestamp_fields: list[str] = []
-    decimal_fields: list[str] = []
 
     def __init__(
         self,
@@ -302,21 +303,20 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Validates one instance of the action data according to schema class attribute.
         """
-        NoneType = type(None)
-        timestamp_dict = {
-            field_name: value.timestamp()
-            for field_name in self.timestamp_fields
-            if field_name in instance
-            if not isinstance(value := instance[field_name], (int, NoneType))
-        }
-        decimal_dict = {
-            field_name: str(value)
-            for field_name in self.decimal_fields
-            if field_name in instance
-            if not isinstance(value := instance[field_name], (str, NoneType))
-        }
+        timestamp_dict: dict[str, Any] = {}
+        decimal_dict: dict[str, Any] = {}
+        json_dict: dict[str, Any] = {}
+        for field, value in instance.items():
+            if isinstance(value, datetime):
+                timestamp_dict[field] = value.timestamp()
+            elif isinstance(value, Decimal):
+                decimal_dict[field] = str(value)
+            elif isinstance(value, Jsonb):
+                json_dict[field] = value.obj
         try:
-            type(self).schema_validator(instance | timestamp_dict | decimal_dict)
+            type(self).schema_validator(
+                instance | timestamp_dict | decimal_dict | json_dict
+            )
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(f"Action {self.name}: " + exception.message)
 

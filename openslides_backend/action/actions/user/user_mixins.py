@@ -2,14 +2,11 @@ import re
 from copy import deepcopy
 from typing import Any
 
-from openslides_backend.models.fields import DecimalField, TimestampField
-from openslides_backend.models.models import User
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....models.models import MeetingUser
 from ....presenter.search_users import SearchUsers
 from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
@@ -94,11 +91,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "locked_out": {"type": "boolean"},
     }
     skip_archived_meeting_checks: bool = True
-    for field in [*User().get_fields(), *MeetingUser().get_fields()]:
-        if isinstance(field, TimestampField):
-            Action.timestamp_fields.append(field.own_field_name)
-        elif isinstance(field, DecimalField):
-            Action.decimal_fields.append(field.own_field_name)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         self.assert_not_anonymous()
