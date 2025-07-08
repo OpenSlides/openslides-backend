@@ -61,7 +61,29 @@ class Migration(BaseModelMigration):
                                         "id": next_entry_id,
                                         "entries": info,
                                         "original_model_id": fqid,
-                                        "model_id": fqid if do_relation else [None],
+                                        "model_id": fqid if do_relation else None,
+                                        "position_id": position_nr,
+                                    },
+                                )
+                            )
+                            if do_relation:
+                                model_fqid_to_entry_ids[fqid].append(next_entry_id)
+                            next_entry_id += 1
+                else:
+                    assert isinstance(info, dict)
+                    for fqid, information in info.items():
+                        if collection_from_fqid(fqid) in collections:
+                            do_relation = fqid in all_current_fqids
+                            events.append(
+                                RequestCreateEvent(
+                                    fqid_from_collection_and_id(
+                                        "history_entry", next_entry_id
+                                    ),
+                                    {
+                                        "id": next_entry_id,
+                                        "entries": information,
+                                        "original_model_id": fqid,
+                                        "model_id": fqid if do_relation else None,
                                         "position_id": position_nr,
                                     },
                                 )
@@ -89,9 +111,10 @@ class Migration(BaseModelMigration):
                     user_fqid_to_position_ids[
                         fqid_from_collection_and_id("user", position["user_id"])
                     ].append(position_nr)
-        all_update_fqids: set[str] = set(
-            *model_fqid_to_entry_ids, *user_fqid_to_position_ids
-        )
+        all_update_fqids: set[str] = {
+            *model_fqid_to_entry_ids,
+            *user_fqid_to_position_ids,
+        }
         for fqid in all_update_fqids:
             payload: dict[str, Any] = {}
             if posit_ids := user_fqid_to_position_ids.get(fqid):
