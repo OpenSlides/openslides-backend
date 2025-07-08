@@ -2,10 +2,7 @@ from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
-from ....permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
@@ -100,7 +97,6 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ):
                 return
