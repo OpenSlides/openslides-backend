@@ -38,7 +38,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         self.set_models(
             {
                 "user/777": {
-                    # admin in meetings: 1, 4
                     "username": "admin_group_filler",
                 },
             }
@@ -53,16 +52,12 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "meeting/1": {
-                        # "users": [111],
                         "group_ids": [1, 2, 3, 11],
                     },
                     "meeting/4": {
-                        # "users": [111],
                         "group_ids": [4, 5, 6, 22],
                     },
                     "user/111": {
-                        # "meetings": [1, 4],
-                        # "committees": [60, 63],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -92,17 +87,13 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "meeting/1": {
-                        # "users": [111],
                         "group_ids": [11],
                     },
                     "meeting/4": {
-                        # "users": [111],
                         "committee_id": 60,
                         "group_ids": [11],
                     },
                     "user/111": {
-                        # "meetings": [1, 4],
-                        # "committees": [60],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -132,8 +123,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "user/111": {
-                        # "meetings": [1],
-                        # "committees": [60],
                         "username": "user111",
                     },
                     "meeting_user/1111": {

@@ -23,12 +23,10 @@ class SendInvitationMail(BaseActionTestCase):
                     "url": "https://example.com",
                 },
                 "meeting/1": {
-                    # users: 2
                     "name": "annual general meeting",
                     "users_email_sender": "Openslides",
                 },
                 "user/2": {
-                    # "meetings": [1],
                     "username": "Testuser 2",
                     "first_name": "Jim",
                     "last_name": "Beam",

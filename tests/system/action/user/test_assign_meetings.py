@@ -57,7 +57,6 @@ class UserAssignMeetings(BaseActionTestCase):
                     "meeting_user_ids": [5],
                 },
                 "user/1": {
-                    # "meetings": [1, 2, 5],
                     "meeting_user_ids": [1, 2, 5],
                 },
                 "meeting_user/1": {
@@ -168,7 +167,6 @@ class UserAssignMeetings(BaseActionTestCase):
                     "committee_id": 66,
                 },
                 "user/1": {
-                    # "meetings": [1, 2, 5],
                     "meeting_user_ids": [1, 2, 3],
                 },
                 "meeting_user/1": {
@@ -580,7 +578,6 @@ class UserAssignMeetings(BaseActionTestCase):
                     "meeting_user_ids": [5],
                 },
                 "user/1": {
-                    # "meetings": [1, 2, 5],
                     "meeting_user_ids": [1, 2, 5],
                 },
                 "meeting_user/1": {

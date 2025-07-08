@@ -1,5 +1,5 @@
-from collections.abc import Iterable
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal, cast
@@ -26,51 +26,46 @@ class UserMergeTogether(BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        for meeting_id in range(1, 11, 3):  # [1, 4, 7, 10]
+        for meeting_id in range(1, 11, 3):
             self.create_meeting(meeting_id)
         models: dict[str, dict[str, Any]] = {
             "user/2": {
-                # "meetings": [1, 4],
                 "username": "user2",
                 "is_active": True,
                 "default_password": "user2",
                 "password": self.auth.hash("user2"),
-                "meeting_user_ids": [12, 22],
+                "meeting_user_ids": [12, 42],
                 "committee_ids": [60],
                 "organization_id": 1,
             },
             "user/3": {
-                # "meetings": [4, 7],
                 "username": "user3",
                 "is_active": True,
                 "default_password": "user3",
                 "password": self.auth.hash("user3"),
-                "meeting_user_ids": [23, 33],
+                "meeting_user_ids": [43, 73],
                 "committee_ids": [60, 66],
                 "organization_id": 1,
             },
             "user/4": {
-                # "meetings": [1, 4, 7],
                 "username": "user4",
                 "is_active": True,
                 "default_password": "user4",
                 "password": self.auth.hash("user4"),
-                "meeting_user_ids": [14, 24, 34],
+                "meeting_user_ids": [14, 44, 74],
                 "committee_ids": [60, 66],
                 "organization_id": 1,
             },
             "user/5": {
-                # "meetings": [1, 10],
                 "username": "user5",
                 "is_active": True,
                 "default_password": "user5",
                 "password": self.auth.hash("user5"),
-                "meeting_user_ids": [15, 45],
+                "meeting_user_ids": [15, 105],
                 "committee_ids": [60, 69],
                 "organization_id": 1,
             },
             "user/6": {
-                # "meetings": None,
                 "username": "user6",
                 "is_active": True,
                 "default_password": "user6",
@@ -102,7 +97,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "organization_id": 1,
             },
             "meeting/1": {
-                # "users": [2, 4, 5],
                 "name": "Meeting 1",
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 1,
@@ -140,51 +134,49 @@ class UserMergeTogether(BaseActionTestCase):
                 "vote_weight": Decimal("1"),
             },
             "meeting/4": {
-                # "users": [2, 3, 4],
                 "name": "Meeting 2",
                 "users_enable_vote_delegations": True,
                 "committee_id": 60,  # same as in meeting/1
                 "admin_group_id": 4,
                 "default_group_id": 6,
-                "meeting_user_ids": [22, 23, 24],
+                "meeting_user_ids": [42, 43, 44],
             },
             "group/4": {
                 "name": "Group 4",
-                "meeting_user_ids": [24],
+                "meeting_user_ids": [44],
             },
             "group/5": {
                 "name": "Group 5",
-                "meeting_user_ids": [22, 23],
+                "meeting_user_ids": [42, 43],
             },
             "group/6": {
                 "name": "Group 6",
                 "meeting_user_ids": [],
             },
-            "meeting_user/22": {
+            "meeting_user/42": {
                 "user_id": 2,
                 "meeting_id": 4,
                 "group_ids": [5],
                 "vote_weight": Decimal("1"),
             },
-            "meeting_user/23": {
+            "meeting_user/43": {
                 "user_id": 3,
                 "meeting_id": 4,
                 "group_ids": [5],
                 "vote_weight": Decimal("1"),
             },
-            "meeting_user/24": {
+            "meeting_user/44": {
                 "user_id": 4,
                 "meeting_id": 4,
                 "group_ids": [4],
                 "vote_weight": Decimal("1"),
             },
             "meeting/7": {
-                # "users": [3, 4],
                 "name": "Meeting 3",
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 7,
                 "default_group_id": 9,
-                "meeting_user_ids": [33, 34],
+                "meeting_user_ids": [73, 74],
             },
             "group/7": {
                 "name": "Group 7",
@@ -192,35 +184,34 @@ class UserMergeTogether(BaseActionTestCase):
             },
             "group/8": {
                 "name": "Group 8",
-                "meeting_user_ids": [33],
+                "meeting_user_ids": [73],
             },
             "group/9": {
                 "name": "Group 9",
-                "meeting_user_ids": [34],
+                "meeting_user_ids": [74],
             },
-            "meeting_user/33": {
+            "meeting_user/73": {
                 "user_id": 3,
                 "meeting_id": 7,
                 "group_ids": [8],
                 "vote_weight": Decimal("1"),
             },
-            "meeting_user/34": {
+            "meeting_user/74": {
                 "user_id": 4,
                 "meeting_id": 7,
                 "group_ids": [9],
                 "vote_weight": Decimal("1"),
             },
             "meeting/10": {
-                # "users": [5],
                 "name": "Meeting 4",
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 10,
                 "default_group_id": 12,
-                "meeting_user_ids": [45],
+                "meeting_user_ids": [105],
             },
             "group/10": {
                 "name": "Group 10",
-                "meeting_user_ids": [45],
+                "meeting_user_ids": [105],
             },
             "group/11": {
                 "name": "Group 11",
@@ -230,7 +221,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "name": "Group 12",
                 "meeting_user_ids": [],
             },
-            "meeting_user/45": {
+            "meeting_user/105": {
                 "user_id": 5,
                 "meeting_id": 10,
                 "group_ids": [10],
@@ -308,7 +299,7 @@ class UserMergeTogether(BaseActionTestCase):
             "user/1",
             {
                 "meeting_ids": [1, 4],
-                "meeting_user_ids": [46, 47],
+                "meeting_user_ids": [106, 107],
                 "committee_ids": [60],
             },
         )
@@ -335,7 +326,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [60, 66],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46],
+                "meeting_user_ids": [12, 42, 106],
                 "password": password,
             },
         )
@@ -361,7 +352,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [60, 66],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46],
+                "meeting_user_ids": [12, 42, 106],
                 "password": None,
                 "saml_id": "user2",
             },
@@ -390,7 +381,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [60, 66],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46],
+                "meeting_user_ids": [12, 42, 106],
                 "password": None,
                 "saml_id": "user2",
             },
@@ -520,27 +511,27 @@ class UserMergeTogether(BaseActionTestCase):
                     "about_me": "I am a raging lunatic",
                     "number": "NomDiNom",
                 },
-                "meeting_user/22": {
+                "meeting_user/42": {
                     "number": "num?",
                     "vote_weight": "2.000000",
                 },
-                "meeting_user/23": {
+                "meeting_user/43": {
                     "comment": "Comment 1",
                     "vote_weight": "3.000000",
                 },
-                "meeting_user/24": {
+                "meeting_user/44": {
                     "number": "NOM!",
                     "comment": "Comment 2: Electric Boogaloo",
                 },
-                "meeting_user/33": {
+                "meeting_user/73": {
                     "about_me": "I have a long beard",
                     "vote_weight": "1.234567",
                 },
-                "meeting_user/34": {
+                "meeting_user/74": {
                     "about_me": "I am hairy",
                     "vote_weight": "1.000001",
                 },
-                "meeting_user/45": {
+                "meeting_user/105": {
                     "comment": "This is a comment",
                 },
             }
@@ -562,7 +553,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [60, 66, 69],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46, 47],
+                "meeting_user_ids": [12, 42, 106, 107],
                 "password": password,
                 "pronoun": "he",
                 "first_name": "Nick",
@@ -586,7 +577,7 @@ class UserMergeTogether(BaseActionTestCase):
         )
         for id_ in range(3, 7):
             self.assert_model_not_exists(f"user/{id_}")
-        for id_ in [23, 33, 14, 24, 34, 15, 45]:
+        for id_ in [43, 73, 14, 44, 74, 15, 105]:
             self.assert_model_not_exists(f"meeting_user/{id_}")
 
         self.assert_model_exists(
@@ -600,7 +591,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/22",
+            "meeting_user/42",
             {
                 "user_id": 2,
                 "meeting_id": 4,
@@ -610,7 +601,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/46",
+            "meeting_user/106",
             {
                 "user_id": 2,
                 "meeting_id": 7,
@@ -619,7 +610,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/47",
+            "meeting_user/107",
             {
                 "user_id": 2,
                 "meeting_id": 10,
@@ -632,15 +623,15 @@ class UserMergeTogether(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/4",
-            {"meeting_user_ids": [22], "user_ids": [2]},
+            {"meeting_user_ids": [42], "user_ids": [2]},
         )
         self.assert_model_exists(
             "meeting/7",
-            {"meeting_user_ids": [46], "user_ids": [2], "present_user_ids": [2]},
+            {"meeting_user_ids": [106], "user_ids": [2], "present_user_ids": [2]},
         )
         self.assert_model_exists(
             "meeting/10",
-            {"meeting_user_ids": [47], "user_ids": [2], "present_user_ids": [2]},
+            {"meeting_user_ids": [107], "user_ids": [2], "present_user_ids": [2]},
         )
         self.assert_model_exists("committee/60", {"user_ids": [2], "manager_ids": [2]})
         self.assert_model_exists("committee/66", {"user_ids": [2]})
@@ -780,17 +771,17 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 "meeting_user/15": {"vote_delegated_to_id": 14},
                 "meeting_user/14": {"vote_delegations_from_ids": [15]},
-                "meeting_user/23": {"vote_delegated_to_id": 24},
-                "meeting_user/24": {"vote_delegations_from_ids": [23]},
-                "meeting_user/33": {"vote_delegations_from_ids": [34]},
-                "meeting_user/34": {"vote_delegated_to_id": 33},
+                "meeting_user/43": {"vote_delegated_to_id": 44},
+                "meeting_user/44": {"vote_delegations_from_ids": [43]},
+                "meeting_user/73": {"vote_delegations_from_ids": [74]},
+                "meeting_user/74": {"vote_delegated_to_id": 73},
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/12", {"vote_delegations_from_ids": [15]})
-        self.assert_model_exists("meeting_user/22", {"vote_delegations_from_ids": [23]})
-        self.assert_model_exists("meeting_user/46", {"vote_delegated_to_id": 33})
+        self.assert_model_exists("meeting_user/42", {"vote_delegations_from_ids": [43]})
+        self.assert_model_exists("meeting_user/106", {"vote_delegated_to_id": 73})
 
     def set_up_polls_for_merge(self) -> None:
         self.set_models(
@@ -823,7 +814,7 @@ class UserMergeTogether(BaseActionTestCase):
                 },
                 "meeting_user/15": {"vote_delegated_to_id": 14},
                 "meeting_user/14": {"vote_delegations_from_ids": [15]},
-                "meeting_user/23": {"motion_submitter_ids": [1]},
+                "meeting_user/43": {"motion_submitter_ids": [1]},
                 "assignment/1": {
                     "id": 1,
                     "title": "Assignment 1",
@@ -843,7 +834,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "weight": 1,
                     "motion_id": 1,
                     "meeting_id": 4,
-                    "meeting_user_id": 23,
+                    "meeting_user_id": 43,
                 },
                 "topic/1": {
                     "id": 1,
@@ -983,7 +974,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [60, 66],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46 + add_to_creatable_ids],
+                "meeting_user_ids": [12, 42, 106 + add_to_creatable_ids],
                 "password": password,
                 "poll_candidate_ids": [2, 3],
                 "option_ids": [1, 8],
@@ -996,20 +987,20 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_exists("committee/66", {"user_ids": [2]})
         for id_ in range(3, 5):
             self.assert_model_not_exists(f"user/{id_}")
-        for id_ in [23, 33, 14, 24, 34, *range(46, 46 + add_to_creatable_ids)]:
+        for id_ in [43, 73, 14, 44, 74, *range(106, 106 + add_to_creatable_ids)]:
             self.assert_model_not_exists(f"meeting_user/{id_}")
-        for meeting_id, id_ in {1: 12, 2: 22, 3: 46 + add_to_creatable_ids}.items():
+        for meeting_id, id_ in {1: 12, 2: 42, 3: 106 + add_to_creatable_ids}.items():
             self.assert_model_exists(
                 f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
             )
         self.assert_model_exists(
-            "meeting_user/22",
+            "meeting_user/42",
             {"user_id": 2, "meeting_id": 4, "motion_submitter_ids": [2]},
         )
         self.assert_model_not_exists("motion_submitter/1")
         self.assert_model_exists(
             "motion_submitter/2",
-            {"motion_id": 1, "meeting_user_id": 22, "meeting_id": 4, "weight": 1},
+            {"motion_id": 1, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
         )
         self.assert_model_exists("poll_candidate/2", {"user_id": 2})
         self.assert_model_exists("poll_candidate/3", {"user_id": 2})
@@ -1336,9 +1327,9 @@ class UserMergeTogether(BaseActionTestCase):
                     [14, 12, 15],
                     [15, 14, 12],
                 ],
-                4: [[24, 22, 23]],
-                7: [[34, 33], [33]],
-                10: [[45]],
+                4: [[44, 42, 43]],
+                7: [[74, 73], [73]],
+                10: [[105]],
             },
         )
         self.set_models(data)
@@ -1365,16 +1356,16 @@ class UserMergeTogether(BaseActionTestCase):
             },
             4: {
                 16: None,
-                17: (7, 22, 1),
+                17: (7, 42, 1),
                 18: None,
             },
             7: {
                 19: None,
-                20: (8, 46, 1),
-                21: (9, 46, 1),
+                20: (8, 106, 1),
+                21: (9, 106, 1),
             },
             10: {
-                22: (10, 45, 1),
+                22: (10, 105, 1),
             },
         }
         self.assert_assignment_or_motion_model_test_was_correct(
@@ -1406,9 +1397,9 @@ class UserMergeTogether(BaseActionTestCase):
                     [14, 12, 15],
                     [15, 14, 12],
                 ],
-                4: [[24, 22, 23]],
-                7: [[34], [33]],
-                10: [[45]],
+                4: [[44, 42, 43]],
+                7: [[74], [73]],
+                10: [[105]],
             },
         )
         return data
@@ -1442,17 +1433,17 @@ class UserMergeTogether(BaseActionTestCase):
             },
             4: {
                 16: None,
-                17: (7, 22, 1),
+                17: (7, 42, 1),
                 18: None,
             },
             7: {
                 19: None,
                 20: None,
-                23: (9, 46, 1),  # created to replace 20
-                24: (8, 46, 1),  # created to replace 19
+                23: (9, 106, 1),  # created to replace 20
+                24: (8, 106, 1),  # created to replace 19
             },
             10: {
-                21: (10, 45, 1),
+                21: (10, 105, 1),
             },
         }
         self.assert_assignment_or_motion_model_test_was_correct(
@@ -1520,12 +1511,12 @@ class UserMergeTogether(BaseActionTestCase):
             4: [12, 14],
             5: [14, 15],
             # meeting/4
-            7: [23, 24],
+            7: [43, 44],
             # meeting/7
-            8: [33],
-            9: [34],
+            8: [73],
+            9: [74],
             # meeting/10
-            10: [45],
+            10: [105],
         }
         motion_ids_per_supporter: dict[int, list[int]] = {
             id_: [
@@ -1566,9 +1557,9 @@ class UserMergeTogether(BaseActionTestCase):
         new_motion_ids_per_supporter: dict[int, list[int]] = {
             12: get_motions(12, 14),
             15: motion_ids_per_supporter[15],
-            22: get_motions(22, 23, 24),
-            46: get_motions(33, 34),
-            45: motion_ids_per_supporter[45],
+            42: get_motions(42, 43, 44),
+            106: get_motions(73, 74),
+            105: motion_ids_per_supporter[105],
         }
         for meeting_user_id, motion_ids in new_motion_ids_per_supporter.items():
             self.assert_model_exists(
@@ -1580,12 +1571,12 @@ class UserMergeTogether(BaseActionTestCase):
             )
         self.assert_model_exists("motion/3", {"supporter_meeting_user_ids": [15]})
         self.assert_model_exists("motion/5", {"supporter_meeting_user_ids": [12, 15]})
-        self.assert_model_exists("motion/7", {"supporter_meeting_user_ids": [22]})
+        self.assert_model_exists("motion/7", {"supporter_meeting_user_ids": [42]})
         for motion_id in [8, 9]:
             self.assert_model_exists(
-                f"motion/{motion_id}", {"supporter_meeting_user_ids": [46]}
+                f"motion/{motion_id}", {"supporter_meeting_user_ids": [106]}
             )
-        self.assert_model_exists("motion/10", {"supporter_meeting_user_ids": [45]})
+        self.assert_model_exists("motion/10", {"supporter_meeting_user_ids": [105]})
         for id_ in range(2, 10):
             self.assert_history_information(f"motion/{id_}", ["Submitters merged"])
 
@@ -1622,12 +1613,10 @@ class UserMergeTogether(BaseActionTestCase):
                 }
                 for meeting_id, motion_ids in motion_ids_per_meeting_id.items()
                 for id_ in motion_ids
-                # for meeting_id in range(1, 8, 3)
-                # for id_ in range(int((meeting_id - 1) / 3) * 2 + 1, int((meeting_id - 1) / 3) * 2 + 1)
             },
             **{
                 f"meeting_user/{id_}": {"personal_note_ids": []}
-                for id_ in [12, 14, 15, 22, 23, 24, 33, 34]
+                for id_ in [12, 14, 15, 42, 43, 44, 73, 74]
             },
         }
 
@@ -1663,17 +1652,17 @@ class UserMergeTogether(BaseActionTestCase):
 
         add_personal_note(4, 2, 14, star=True)
 
-        add_personal_note(5, 3, 24, star=True)
-        add_personal_note(6, 3, 22, "", star=False)
-        add_personal_note(7, 3, 23, "User 3's note")
+        add_personal_note(5, 3, 44, star=True)
+        add_personal_note(6, 3, 42, "", star=False)
+        add_personal_note(7, 3, 43, "User 3's note")
 
-        add_personal_note(8, 4, 23, star=False)
-        add_personal_note(9, 4, 24, star=True)
+        add_personal_note(8, 4, 43, star=False)
+        add_personal_note(9, 4, 44, star=True)
 
-        add_personal_note(10, 5, 23, "User 3's note")
+        add_personal_note(10, 5, 43, "User 3's note")
 
-        add_personal_note(11, 6, 24, "User 4's note", star=False)
-        add_personal_note(12, 6, 23, "User 3's other note")
+        add_personal_note(11, 6, 44, "User 4's note", star=False)
+        add_personal_note(12, 6, 43, "User 3's other note")
         self.set_models(data)
 
         # merge users 3 and 4 into 2
@@ -1685,7 +1674,7 @@ class UserMergeTogether(BaseActionTestCase):
             self.assert_model_not_exists(f"personal_note/{note_id}")
         self.assert_model_exists("personal_note/3")
 
-        meeting_user_by_meeting_id = {1: 12, 4: 22, 7: 46}
+        meeting_user_by_meeting_id = {1: 12, 4: 42, 7: 106}
         note_base_data_by_motion_id = {
             id_: {
                 "meeting_id": meeting_id,
@@ -1694,8 +1683,6 @@ class UserMergeTogether(BaseActionTestCase):
             }
             for meeting_id, motion_ids in motion_ids_per_meeting_id.items()
             for id_ in motion_ids
-            # for meeting_id in range(1, 8, 3)
-            # for id_ in range((meeting_id - 1) * 2 + 1, meeting_id * 2 + 1)
         }
         self.assert_model_exists(
             "personal_note/1",
@@ -1813,9 +1800,9 @@ class UserMergeTogether(BaseActionTestCase):
                 3: (
                     "Serious conversation",
                     [
-                        (34, "Could someone change the current projection?"),
-                        (33, "I'll do it!"),
-                        (34, "Thanks."),
+                        (74, "Could someone change the current projection?"),
+                        (73, "I'll do it!"),
+                        (74, "Thanks."),
                     ],
                 )
             },
@@ -1827,7 +1814,7 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 4: (
                     "Announcements",
-                    [(23, "Lunch will be served soon."), (24, "Lunch is served.")],
+                    [(43, "Lunch will be served soon."), (44, "Lunch is served.")],
                 )
             },
             next_id,
@@ -1855,11 +1842,11 @@ class UserMergeTogether(BaseActionTestCase):
             {"chat_message_ids": [1, 3, 4, 5, 7, 9], "user_id": 2, "meeting_id": 1},
         )
         self.assert_model_exists(
-            "meeting_user/22",
+            "meeting_user/42",
             {"chat_message_ids": [14, 15], "user_id": 2, "meeting_id": 4},
         )
         self.assert_model_exists(
-            "meeting_user/46",
+            "meeting_user/106",
             {"chat_message_ids": [11, 12, 13], "user_id": 2, "meeting_id": 7},
         )
         for message_id, meeting_user_id, message in [
@@ -1875,12 +1862,12 @@ class UserMergeTogether(BaseActionTestCase):
             (9, 12, "Jane."),
             (10, 15, "Cool."),
             # meeting 2
-            (14, 22, "Lunch will be served soon."),
-            (15, 22, "Lunch is served."),
+            (14, 42, "Lunch will be served soon."),
+            (15, 42, "Lunch is served."),
             # meeting 3
-            (11, 46, "Could someone change the current projection?"),
-            (12, 46, "I'll do it!"),
-            (13, 46, "Thanks."),
+            (11, 106, "Could someone change the current projection?"),
+            (12, 106, "I'll do it!"),
+            (13, 106, "Thanks."),
         ]:
             fqid = f"chat_message/{message_id}"
             assert (date := data[fqid])["content"] == message
@@ -1889,8 +1876,8 @@ class UserMergeTogether(BaseActionTestCase):
     def test_merge_on_group_and_structure_level_ids(self) -> None:
         setup_data = [
             {"tall": [12, 15, 14], "small": [15]},
-            {"thin": [22], "fat": [23, 24]},
-            {"smart": [33], "dumb": [34]},
+            {"thin": [42], "fat": [43, 44]},
+            {"smart": [73], "dumb": [74]},
         ]
         meeting_id = 1
         structure_level_id = 1
@@ -1930,31 +1917,29 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/12", {"structure_level_ids": [1], "group_ids": [1, 2]}
         )
         self.assert_model_exists(
-            "meeting_user/22", {"structure_level_ids": [3, 4], "group_ids": [4, 5]}
+            "meeting_user/42", {"structure_level_ids": [3, 4], "group_ids": [4, 5]}
         )
         self.assert_model_exists(
-            "meeting_user/46", {"structure_level_ids": [5, 6], "group_ids": [8, 9]}
+            "meeting_user/106", {"structure_level_ids": [5, 6], "group_ids": [8, 9]}
         )
 
         self.assert_model_exists("structure_level/1", {"meeting_user_ids": [12, 15]})
         self.assert_model_exists("structure_level/2", {"meeting_user_ids": [15]})
-        self.assert_model_exists("structure_level/3", {"meeting_user_ids": [22]})
-        self.assert_model_exists("structure_level/4", {"meeting_user_ids": [22]})
-        self.assert_model_exists("structure_level/5", {"meeting_user_ids": [46]})
-        self.assert_model_exists("structure_level/6", {"meeting_user_ids": [46]})
+        self.assert_model_exists("structure_level/3", {"meeting_user_ids": [42]})
+        self.assert_model_exists("structure_level/4", {"meeting_user_ids": [42]})
+        self.assert_model_exists("structure_level/5", {"meeting_user_ids": [106]})
+        self.assert_model_exists("structure_level/6", {"meeting_user_ids": [106]})
 
         self.assert_model_exists("group/1", {"meeting_user_ids": [12]})
         self.assert_model_exists("group/2", {"meeting_user_ids": [12, 15]})
-        self.assert_model_exists("group/4", {"meeting_user_ids": [22]})
-        self.assert_model_exists("group/5", {"meeting_user_ids": [22]})
-        self.assert_model_exists("group/8", {"meeting_user_ids": [46]})
-        self.assert_model_exists("group/9", {"meeting_user_ids": [46]})
+        self.assert_model_exists("group/4", {"meeting_user_ids": [42]})
+        self.assert_model_exists("group/5", {"meeting_user_ids": [42]})
+        self.assert_model_exists("group/8", {"meeting_user_ids": [106]})
+        self.assert_model_exists("group/9", {"meeting_user_ids": [106]})
 
     def create_speakers_for_test(
         self, allow_multiple_speakers: bool = False
     ) -> dict[str, Any]:
-        # self.create_meeting()
-        # self.create_meeting(7)
         data: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "motion_block_ids": [],
@@ -2023,7 +2008,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
             **{
                 f"meeting_user/{id_}": {"speaker_ids": []}
-                for id_ in [12, 14, 15, 33, 34]
+                for id_ in [12, 14, 15, 73, 74]
             },
         }
         if allow_multiple_speakers:
@@ -2184,8 +2169,8 @@ class UserMergeTogether(BaseActionTestCase):
             4,
             7,
             [
-                (33, 2, SpeechState.CONTRA, None, None, None, {}),  # to merge into new
-                (34, 1, SpeechState.CONTRA, None, None, None, {}),  # to merge into new
+                (73, 2, SpeechState.CONTRA, None, None, None, {}),  # to merge into new
+                (74, 1, SpeechState.CONTRA, None, None, None, {}),  # to merge into new
             ],
             next_id,
         )
@@ -2262,7 +2247,7 @@ class UserMergeTogether(BaseActionTestCase):
                 f"speaker/{id_}", {**data[f"speaker/{id_}"], "weight": 2}
             )
         next_id = 24
-        for m_user_id, speaker_ids in {12: [10, 12, 23], 46: [15]}.items():
+        for m_user_id, speaker_ids in {12: [10, 12, 23], 106: [15]}.items():
             for speaker_id in speaker_ids:
                 self.assert_model_exists(
                     f"speaker/{next_id}",
@@ -2274,7 +2259,7 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/12",
             {"speaker_ids": [1, 5, 7, 9, 11, 13, 17, 18, 20, 22, 24, 25, 26]},
         )
-        self.assert_model_exists("meeting_user/46", {"speaker_ids": [27]})
+        self.assert_model_exists("meeting_user/106", {"speaker_ids": [27]})
 
     def test_with_speakers_multiple_speakers_allowed(self) -> None:
         data = self.create_speakers_for_test(allow_multiple_speakers=True)
@@ -2296,7 +2281,7 @@ class UserMergeTogether(BaseActionTestCase):
         next_id = 24
         for m_user_id, speaker_ids in {
             12: replaced_meeting_1,
-            46: replaced_meeting_3,
+            106: replaced_meeting_3,
         }.items():
             for speaker_id in speaker_ids:
                 self.assert_model_exists(
@@ -2324,7 +2309,7 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/46",
+            "meeting_user/106",
             {
                 "speaker_ids": list(
                     range(24 + len(replaced_meeting_1), 26 + len(replaced_meeting_1))
@@ -2466,20 +2451,20 @@ class UserMergeTogether(BaseActionTestCase):
             [{"id": 2, "user_ids": [3]}, {"id": 4, "user_ids": [5, 6]}],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"meeting_user_ids": [12, 22, 46]})
-        self.assert_model_exists("user/4", {"meeting_user_ids": [14, 24, 34, 47]})
+        self.assert_model_exists("user/2", {"meeting_user_ids": [12, 42, 106]})
+        self.assert_model_exists("user/4", {"meeting_user_ids": [14, 44, 74, 107]})
         self.assert_model_not_exists("user/3")
         self.assert_model_not_exists("user/5")
         self.assert_model_not_exists("user/6")
 
         self.assert_model_exists("meeting_user/12", {"meeting_id": 1})
-        self.assert_model_exists("meeting_user/22", {"meeting_id": 4})
-        self.assert_model_exists("meeting_user/46", {"meeting_id": 7})
+        self.assert_model_exists("meeting_user/42", {"meeting_id": 4})
+        self.assert_model_exists("meeting_user/106", {"meeting_id": 7})
         self.assert_model_exists("meeting_user/14", {"meeting_id": 1})
-        self.assert_model_exists("meeting_user/24", {"meeting_id": 4})
-        self.assert_model_exists("meeting_user/34", {"meeting_id": 7})
-        self.assert_model_exists("meeting_user/47", {"meeting_id": 10})
-        for id_ in [23, 33, 15, 45]:
+        self.assert_model_exists("meeting_user/44", {"meeting_id": 4})
+        self.assert_model_exists("meeting_user/74", {"meeting_id": 7})
+        self.assert_model_exists("meeting_user/107", {"meeting_id": 10})
+        for id_ in [43, 73, 15, 105]:
             self.assert_model_not_exists(f"meeting_user/{id_}")
 
         self.assert_history_information(
@@ -2536,7 +2521,7 @@ class UserMergeTogether(BaseActionTestCase):
             "motion",
             "motion_submitter",
             "submitter_ids",
-            {7: [[33]]},
+            {7: [[73]]},
         )
         self.set_models(data)
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
@@ -2545,7 +2530,7 @@ class UserMergeTogether(BaseActionTestCase):
             # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
             7: {
                 1: None,
-                2: (1, 46, 1),
+                2: (1, 106, 1),
             },
         }
         self.assert_assignment_or_motion_model_test_was_correct(
@@ -2570,16 +2555,16 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_user/12": {"locked_out": True, "group_ids": [2]},
                 "meeting_user/14": {"group_ids": [2]},
                 "meeting_user/15": {"group_ids": [2]},
-                "meeting_user/22": {"group_ids": [5]},
-                "meeting_user/23": {"locked_out": True, "group_ids": [5]},
-                "meeting_user/24": {"group_ids": [5]},
-                "meeting_user/33": {"group_ids": [8]},
-                "meeting_user/34": {"locked_out": True, "group_ids": [8]},
-                "meeting_user/45": {"locked_out": True, "group_ids": [11]},
+                "meeting_user/42": {"group_ids": [5]},
+                "meeting_user/43": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/44": {"group_ids": [5]},
+                "meeting_user/73": {"group_ids": [8]},
+                "meeting_user/74": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/105": {"locked_out": True, "group_ids": [11]},
                 "group/2": {"meeting_user_ids": [12, 14, 15]},
-                "group/5": {"meeting_user_ids": [22, 23, 24]},
-                "group/8": {"meeting_user_ids": [33, 34]},
-                "group/11": {"meeting_user_ids": [45]},
+                "group/5": {"meeting_user_ids": [42, 43, 44]},
+                "group/8": {"meeting_user_ids": [73, 74]},
+                "group/11": {"meeting_user_ids": [105]},
                 **{
                     f"group/{id_}": {"meeting_user_ids": None}
                     for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
@@ -2592,13 +2577,13 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/12", {"user_id": 2, "meeting_id": 1, "locked_out": True}
         )
         self.assert_model_exists(
-            "meeting_user/22", {"user_id": 2, "meeting_id": 4, "locked_out": None}
+            "meeting_user/42", {"user_id": 2, "meeting_id": 4, "locked_out": None}
         )
         self.assert_model_exists(
-            "meeting_user/46", {"user_id": 2, "meeting_id": 7, "locked_out": None}
+            "meeting_user/106", {"user_id": 2, "meeting_id": 7, "locked_out": None}
         )
         self.assert_model_exists(
-            "meeting_user/47", {"user_id": 2, "meeting_id": 10, "locked_out": True}
+            "meeting_user/107", {"user_id": 2, "meeting_id": 10, "locked_out": True}
         )
 
     def test_merge_with_locked_out_meetingadmin_error(self) -> None:
@@ -2607,17 +2592,17 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_user/12": {"locked_out": True, "group_ids": [2]},
                 "meeting_user/14": {"group_ids": [2]},
                 "meeting_user/15": {"group_ids": [2]},
-                "meeting_user/22": {"group_ids": [5]},
-                "meeting_user/23": {"locked_out": True, "group_ids": [5]},
-                "meeting_user/24": {"group_ids": [4]},
-                "meeting_user/33": {"group_ids": [8]},
-                "meeting_user/34": {"locked_out": True, "group_ids": [8]},
-                "meeting_user/45": {"locked_out": True, "group_ids": [10]},
+                "meeting_user/42": {"group_ids": [5]},
+                "meeting_user/43": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/44": {"group_ids": [4]},
+                "meeting_user/73": {"group_ids": [8]},
+                "meeting_user/74": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/105": {"locked_out": True, "group_ids": [10]},
                 "group/2": {"meeting_user_ids": [12, 14, 15]},
-                "group/4": {"meeting_user_ids": [24]},
-                "group/5": {"meeting_user_ids": [22, 23]},
-                "group/8": {"meeting_user_ids": [33, 34]},
-                "group/10": {"meeting_user_ids": [45]},
+                "group/4": {"meeting_user_ids": [44]},
+                "group/5": {"meeting_user_ids": [42, 43]},
+                "group/8": {"meeting_user_ids": [73, 74]},
+                "group/10": {"meeting_user_ids": [105]},
                 **{
                     f"group/{id_}": {"meeting_user_ids": None}
                     for id_ in [1, 3, 6, 7, 9, 11, 12]
@@ -2637,16 +2622,16 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_user/12": {"group_ids": [2]},
                 "meeting_user/14": {"group_ids": [2]},
                 "meeting_user/15": {"group_ids": [2]},
-                "meeting_user/22": {"locked_out": True, "group_ids": [5]},
-                "meeting_user/23": {"group_ids": [5]},
-                "meeting_user/24": {"group_ids": [5]},
-                "meeting_user/33": {"locked_out": True, "group_ids": [8]},
-                "meeting_user/34": {"group_ids": [8]},
-                "meeting_user/45": {"group_ids": [11]},
+                "meeting_user/42": {"locked_out": True, "group_ids": [5]},
+                "meeting_user/43": {"group_ids": [5]},
+                "meeting_user/44": {"group_ids": [5]},
+                "meeting_user/73": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/74": {"group_ids": [8]},
+                "meeting_user/105": {"group_ids": [11]},
                 "group/2": {"meeting_user_ids": [12, 14, 15]},
-                "group/5": {"meeting_user_ids": [22, 23, 24]},
-                "group/8": {"meeting_user_ids": [33, 34]},
-                "group/11": {"meeting_user_ids": [45]},
+                "group/5": {"meeting_user_ids": [42, 43, 44]},
+                "group/8": {"meeting_user_ids": [73, 74]},
+                "group/11": {"meeting_user_ids": [105]},
                 **{
                     f"group/{id_}": {"meeting_user_ids": None}
                     for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
@@ -2669,16 +2654,16 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_user/12": {"locked_out": True, "group_ids": [2]},
                 "meeting_user/14": {"group_ids": [2]},
                 "meeting_user/15": {"group_ids": [2]},
-                "meeting_user/22": {"group_ids": [5]},
-                "meeting_user/23": {"group_ids": [5]},
-                "meeting_user/24": {"group_ids": [5]},
-                "meeting_user/33": {"locked_out": True, "group_ids": [8]},
-                "meeting_user/34": {"group_ids": [8]},
-                "meeting_user/45": {"group_ids": [11]},
+                "meeting_user/42": {"group_ids": [5]},
+                "meeting_user/43": {"group_ids": [5]},
+                "meeting_user/44": {"group_ids": [5]},
+                "meeting_user/73": {"locked_out": True, "group_ids": [8]},
+                "meeting_user/74": {"group_ids": [8]},
+                "meeting_user/105": {"group_ids": [11]},
                 "group/2": {"meeting_user_ids": [12, 14, 15]},
-                "group/5": {"meeting_user_ids": [22, 23, 24]},
-                "group/8": {"meeting_user_ids": [33, 34]},
-                "group/11": {"meeting_user_ids": [45]},
+                "group/5": {"meeting_user_ids": [42, 43, 44]},
+                "group/8": {"meeting_user_ids": [73, 74]},
+                "group/11": {"meeting_user_ids": [105]},
                 **{
                     f"group/{id_}": {"meeting_user_ids": None}
                     for id_ in [1, 3, 4, 6, 7, 9, 10, 12]
