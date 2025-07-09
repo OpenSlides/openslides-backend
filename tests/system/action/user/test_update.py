@@ -3841,62 +3841,63 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
 
-    def test_update_with_guest_true(self) -> None:
+    def test_update_with_external_true(self) -> None:
         self.create_user("jonathan")
         response = self.request(
             "user.update",
-            {"id": 2, "guest": True},
+            {"id": 2, "external": True},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "jonathan", "guest": True})
+        self.assert_model_exists("user/2", {"username": "jonathan", "external": True})
 
-    def test_update_with_guest_true_unsets_home_committee(self) -> None:
+    def test_update_with_external_true_unsets_home_committee(self) -> None:
         self.create_committee()
         self.create_user("jonathan", home_committee_id=1)
         response = self.request(
             "user.update",
-            {"id": 2, "guest": True},
+            {"id": 2, "external": True},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "jonathan", "guest": True, "home_committee_id": None}
+            "user/2",
+            {"username": "jonathan", "external": True, "home_committee_id": None},
         )
 
-    def test_update_with_guest_false(self) -> None:
+    def test_update_with_external_false(self) -> None:
         self.create_user("jack")
         response = self.request(
             "user.update",
-            {"id": 2, "guest": False},
+            {"id": 2, "external": False},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "jack", "guest": False})
+        self.assert_model_exists("user/2", {"username": "jack", "external": False})
 
-    def test_update_with_guest_false_doesnt_unset_home_committee(self) -> None:
+    def test_update_with_external_false_doesnt_unset_home_committee(self) -> None:
         self.create_committee()
         self.create_user("jack", home_committee_id=1)
         response = self.request(
             "user.update",
-            {"id": 2, "guest": False},
+            {"id": 2, "external": False},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "jack", "guest": False, "home_committee_id": 1}
+            "user/2", {"username": "jack", "external": False, "home_committee_id": 1}
         )
 
-    def test_update_with_with_home_committee_and_guest_true(self) -> None:
+    def test_update_with_with_home_committee_and_external_true(self) -> None:
         self.create_committee(3)
         self.create_user("renfield")
         response = self.request(
             "user.update",
-            {"id": 2, "home_committee_id": 3, "guest": True},
+            {"id": 2, "home_committee_id": 3, "external": True},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot set guest to true and set a home committee at the same time.",
+            "Cannot set external to true and set a home committee at the same time.",
             response.json["message"],
         )
 
-    def test_update_with_home_committee_and_guest_false(self) -> None:
+    def test_update_with_home_committee_and_external_false(self) -> None:
         """Also tests for parent CML"""
         self.create_committee(2)
         self.create_committee(3, parent_id=2)
@@ -3905,11 +3906,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_organization_management_level(None)
         response = self.request(
             "user.update",
-            {"id": 2, "home_committee_id": 3, "guest": False},
+            {"id": 2, "home_committee_id": 3, "external": False},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "vanHelsing", "home_committee_id": 3, "guest": False}
+            "user/2",
+            {"username": "vanHelsing", "home_committee_id": 3, "external": False},
         )
 
     def test_update_with_home_committee_wrong_CML(self) -> None:

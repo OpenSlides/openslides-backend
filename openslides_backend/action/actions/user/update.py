@@ -74,7 +74,7 @@ class UserUpdate(
             "is_demo_user",
             "saml_id",
             "member_number",
-            "guest",
+            "external",
             "home_committee_id",
             *internal_id_fields,
         ],
@@ -88,7 +88,7 @@ class UserUpdate(
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
-        if instance.get("guest"):
+        if instance.get("external"):
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance["id"]),
                 mapped_fields=[
@@ -126,14 +126,14 @@ class UserUpdate(
                 "home_committee_id",
             ],
         )
-        if instance.get("guest"):
+        if instance.get("external"):
             if home_committee_id:
                 raise ActionException(
-                    "Cannot set guest to true and set a home committee at the same time."
+                    "Cannot set external to true and set a home committee at the same time."
                 )
             instance["home_committee_id"] = None
         elif home_committee_id:
-            instance["guest"] = False
+            instance["external"] = False
         if user.get("saml_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):

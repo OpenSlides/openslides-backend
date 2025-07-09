@@ -54,7 +54,7 @@
     home_committee_id: Id;
 
 // Group J
-    guest: boolean;
+    external: boolean;
 
 // only internal
     is_present_in_meeting_ids: Id[];
@@ -76,9 +76,9 @@ Updates a user.
 * The `member_number` must be unique within all users.
 * Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
-* `guest` can't be true if `home_committee_id` is set.
-    * When setting `home_committee_id`, `guest` will be set to `false`.
-    * When setting `guest` to `true`, if the user already has a home committee:
+* `external` can't be true if `home_committee_id` is set.
+    * When setting `home_committee_id`, `external` will be set to `false`.
+    * When setting `external` to `true`, if the user already has a home committee:
         * If the user has Group I permissions, automatically set `home_committee_id` to none
         * Else raise an exception.
 
