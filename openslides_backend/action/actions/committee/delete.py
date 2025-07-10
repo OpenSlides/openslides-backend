@@ -33,7 +33,6 @@ class CommitteeDeleteAction(DeleteAction):
         if not has_committee_management_level(
             self.datastore,
             self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
             instance["id"],
         ):
             raise MissingPermission(

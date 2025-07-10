@@ -211,7 +211,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         if has_committee_management_level(
             self.datastore,
             self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
             instance["id"],
         ):
             return
