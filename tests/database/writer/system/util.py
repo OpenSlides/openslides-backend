@@ -37,14 +37,16 @@ def assert_model(fqid: FullQualifiedId, fields: Model) -> None:
         )
         assert model, "No model returned from database."
         expected_fields = {k: v for k, v in fields.items() if v is not None}
-        failing_fields = {k: v for k, v in expected_fields.items() if v != model[k]}
+        failing_fields = {
+            k: v for k, v in expected_fields.items() if v != model.get(k, None)
+        }
         assert not failing_fields, (
-            f"failing fields: {dict({k: model[k] for k in failing_fields})} expected fields: {failing_fields}"
+            f"failing fields: {dict({k: model.get(k, None) for k in failing_fields})} expected fields: {failing_fields}"
             ""
         )
         assert (
             expected_fields == model
-        ), f"fields not expected in model: {dict({k: v for k, v in model.items() if k not in fields})}"
+        ), f"fields not expected in model: {dict({k: v for k, v in model.items() if k not in expected_fields})}"
 
 
 def assert_no_model(fqid: FullQualifiedId) -> None:
@@ -79,6 +81,37 @@ def get_data(data_part: dict[str, Any] = dict()) -> list[dict[str, Any]]:
                     "collection": None,
                     "fields": {"username": "1", "first_name": "1", **data_part},
                 }
+            ]
+        }
+    ]
+
+
+def get_two_users_with_committee(
+    data_part: dict[str, Any] = dict(),
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "collection": "user",
+                    "fields": {"username": "1", "first_name": "1"},
+                },
+                {
+                    "type": EventType.Create,
+                    "collection": "user",
+                    "fields": {"username": "2", "first_name": "2"},
+                },
+                {
+                    "type": EventType.Create,
+                    "collection": "committee",
+                    "fields": {"name": "com1", **data_part},
+                },
+                {
+                    "type": EventType.Create,
+                    "collection": "committee",
+                    "fields": {"name": "com2"},
+                },
             ]
         }
     ]
@@ -138,6 +171,7 @@ def get_group_base_data() -> list[dict[str, Any]]:
                         "committee_id": 1,
                         "reference_projector_id": 1,
                         "default_group_id": 1,
+                        "admin_group_id": 1,
                     },
                 },
             ]

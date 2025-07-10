@@ -306,10 +306,11 @@ class DatabaseWriter(SqlQueryHelper):
 
     def get_simple_fields_intermediate_table(
         self, event_fields: PartialModel, collection: Collection
-    ) -> tuple[dict, dict]:
+    ) -> tuple[dict[str, Any], dict[str, Field]]:
         """
-        returns in the first dict the fields that do not need special handling within an intermediate table.
-        returns in the second dict the other fields with their field representation from the model_registry.
+        returns in the tuple
+            * a dict of the fields that do not need special handling within an intermediate table.
+            * a dict of the other fields with their field representation from the model_registry.
         """
         collection_cls = model_registry[collection]()
         return {
@@ -334,11 +335,12 @@ class DatabaseWriter(SqlQueryHelper):
         collection: Collection,
         add_dict: ListFieldsDict,
         remove_dict: ListFieldsDict,
-    ) -> tuple[dict[Collection, type], dict[Collection, Field]]:
+    ) -> tuple[dict[str, type], dict[str, Field]]:
         """
         used for 'add' and 'remove' list fields
-        returns in the tuple a dict of all fields that are just list fields with the field information
-        returns in the second dict all fields that are relation fields
+        returns in the tuple
+            * a dict of all fields that are just list fields with the field list type
+            * a dict of all fields that are relation fields
         """
         collection_cls = model_registry[collection]()
         lists_type_dict = dict()
@@ -373,7 +375,7 @@ class DatabaseWriter(SqlQueryHelper):
                     f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
                 )
             intermediate_table, close_side, far_side, _ = field.write_fields
-            if event_fields[field_name]:
+            if values := event_fields.get(field_name):
                 statement = sql.SQL(
                     """
                     INSERT INTO {table_name} ({columns})
@@ -386,17 +388,13 @@ class DatabaseWriter(SqlQueryHelper):
                     + sql.SQL(", ")
                     + sql.Identifier(far_side),
                     placeholders=sql.SQL(", ").join(
-                        sql.SQL(f"(%(own_id)s, %({nr})s)")
-                        for nr in range(len(event_fields[field_name]))
+                        sql.SQL(f"(%(own_id)s, %({nr})s)") for nr in range(len(values))
                     ),
                 )
                 self.execute_sql(
                     statement,
                     {
-                        **{
-                            str(id_): val
-                            for id_, val in enumerate(event_fields[field_name])
-                        },
+                        **{str(id_): val for id_, val in enumerate(values)},
                         "own_id": id_,
                     },
                     collection,
@@ -421,6 +419,13 @@ class DatabaseWriter(SqlQueryHelper):
                 raise BadCodingException(
                     f"The field {field_name} should be in an n:m relation and thus have the corresponding table information."
                 )
+            if not (other_column_values := event_fields.get(field_name)):
+                if directly:
+                    continue
+                else:
+                    other_column_values = []
+            elif not isinstance(other_column_values, list):
+                other_column_values = [other_column_values]
             intermediate_table, own_column, other_column, *_ = field.write_fields
             statement = sql.SQL(
                 """
@@ -434,10 +439,6 @@ class DatabaseWriter(SqlQueryHelper):
                 negation=sql.SQL("") if directly else sql.SQL("NOT "),
                 id=id_,
             )
-            if isinstance((values := event_fields[field_name]), list | None):
-                other_column_values: list[int] = values or []
-            else:
-                other_column_values = [values]
             self.execute_sql(
                 statement,
                 [other_column_values],
@@ -474,8 +475,7 @@ class DatabaseWriter(SqlQueryHelper):
             )"""
                 ).format(
                     col_or_placeholder_plus_type=(
-                        sql.Placeholder()
-                        + self.get_array_type(list_type, set_dict[field_name])
+                        sql.Placeholder() + self.get_array_type(list_type)
                         if field_name in set_dict
                         else sql.Identifier(field_name)
                     ),
@@ -484,12 +484,8 @@ class DatabaseWriter(SqlQueryHelper):
                         if field_name in set_dict
                         else sql.SQL(" FROM ") + table
                     ),
-                    add_list_type=self.get_array_type(
-                        list_type, add_dict.get(field_name, [])
-                    ),
-                    remove_list_type=self.get_array_type(
-                        list_type, remove_dict.get(field_name, [])
-                    ),
+                    add_list_type=self.get_array_type(list_type),
+                    remove_list_type=self.get_array_type(list_type),
                 )
                 for field_name, list_type in field_list_types.items()
             },

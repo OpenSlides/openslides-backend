@@ -64,6 +64,32 @@ def test_create_twice(db_connection: Connection[rows.DictRow]) -> None:
     assert_no_db_entry(db_connection.cursor())
 
 
+def test_create_fqid_no_fqid(db_connection: Connection[rows.DictRow]) -> None:
+    """
+    `reserve_ids` must be called for usage of `fqid` to work properly in conjunction with
+    usage of `collection`.
+    """
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.reserve_id("user")
+    data = get_data()
+    data.append(
+        {
+            "events": [
+                {
+                    "type": EventType.Create,
+                    "collection": "user",
+                    "fields": {"username": "2", "first_name": "2"},
+                }
+            ]
+        }
+    )
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model("user/2", {"id": 2, "username": "2"})
+
+
 def test_create_empty_field() -> None:
     data = get_data({"last_name": None})
     with get_new_os_conn() as conn:
@@ -174,30 +200,31 @@ def test_create_11_field_as_1n() -> None:
 
 
 def test_create_nm_field_simple() -> None:
-    data = get_data({"committee_ids": [1]})
-    data.append(
+    create_models(get_data())
+    data = [
         {
             "events": [
                 {
                     "type": EventType.Create,
                     "fqid": None,
                     "collection": "committee",
-                    "fields": {"name": "com1", "user_ids": [1]},
+                    "fields": {"name": "com1", "manager_ids": [1]},
                 }
             ]
         }
-    )
+    ]
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model(
-        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": [1]}
+        "user/1",
+        {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": [1]},
     )
-    assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": [1]})
+    assert_model("committee/1", {"id": 1, "name": "com1", "manager_ids": [1]})
 
 
 def test_create_nm_field_all_() -> None:
-    data = get_data({"committee_ids": [1]})
+    data = get_data()
     data.append(
         {
             "events": [

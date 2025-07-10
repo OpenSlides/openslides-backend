@@ -14,6 +14,7 @@ from openslides_backend.shared.exceptions import (
 )
 from openslides_backend.shared.typing import DeletedModel
 from tests.database.reader.system.util import (
+    insert_into_intermediate_table,
     setup_data,
     standard_data,
     standard_responses,
@@ -23,15 +24,7 @@ ID = 1
 COLLECTION = "user"
 FQID = f"{COLLECTION}/{ID}"
 data = {
-    COLLECTION: {
-        ID: {
-            "id": ID,
-            "username": "data",
-            "default_vote_weight": "42.000000",
-            "meeting_ids": [1, 2, 3],
-            "is_demo_user": True,
-        },
-    },
+    COLLECTION: {ID: standard_data[COLLECTION][ID]},
 }
 standard_response = {
     k: v for k, v in standard_responses["user"][ID].items() if v is not None
@@ -48,14 +41,9 @@ def test_simple(db_connection: Connection) -> None:
 
 def test_view_field_relation_list_ordered(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
-    with get_new_os_conn() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (2, 1)"
-            )
-            cursor.execute(
-                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (1, 1)"
-            )
+    insert_into_intermediate_table(
+        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 1), (1, 1)]
+    )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         response = extended_database.get("user/1")

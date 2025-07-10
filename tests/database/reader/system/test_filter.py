@@ -22,6 +22,7 @@ from openslides_backend.shared.filters import (
 from openslides_backend.shared.patterns import Id
 from openslides_backend.shared.typing import DeletedModel, Model
 from tests.database.reader.system.util import (
+    insert_into_intermediate_table,
     setup_data,
     standard_data,
     standard_responses,
@@ -108,7 +109,6 @@ def test_ilike_case_insensitive(db_connection: Connection) -> None:
         pytest.param(FilterOperator("id", ">", 2), 3, id="int_greater"),
         pytest.param(FilterOperator("id", ">=", 1), "all", id="int_greater_equal"),
         pytest.param(FilterOperator("is_demo_user", "=", False), 2, id="bool"),
-        pytest.param(FilterOperator("meeting_ids", "=", [1, 3]), 2, id="list[int]"),
         pytest.param(FilterOperator("last_login", "=", "2012/05/31"), 2, id="date"),
         pytest.param(
             FilterOperator("default_vote_weight", "=", Decimal(42)), 1, id="decimal"
@@ -117,6 +117,25 @@ def test_ilike_case_insensitive(db_connection: Connection) -> None:
 )
 def test_types(db_connection: Connection, filter_: Filter, to_be_found_id: int) -> None:
     base_test(db_connection, "user", filter_, to_be_found_id)
+
+
+def test_types_int_list(db_connection: Connection) -> None:
+    setup_data(db_connection, standard_data)
+    insert_into_intermediate_table(
+        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 2), (1, 2)]
+    )
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.filter(
+            "user",
+            FilterOperator("committee_ids", "=", [1, 2]),
+            [],
+            use_changed_models=False,
+        )
+    assert response == {
+        2: standard_responses["user"][2]
+        | {"committee_ids": [1, 2], "committee_management_ids": [1, 2]}
+    }
 
 
 @pytest.mark.parametrize(
@@ -177,11 +196,36 @@ def test_mapped_fields(db_connection: Connection) -> None:
         "user",
         FilterOperator("username", "=", "data"),
         "no_check",
-        ["meeting_ids", "username", "first_name"],
+        ["last_login", "username", "first_name"],
     )
     assert response == {
-        1: {"first_name": None, "meeting_ids": [1, 2, 3], "username": "data"}
+        1: {
+            "first_name": None,
+            "last_login": datetime(
+                2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo(key="Etc/UTC")
+            ),
+            "username": "data",
+        }
     }
+
+
+def test_sql_view_field(db_connection: Connection) -> None:
+    """
+    Asserts that view fields on nm tables are used in filter method.
+    Asserts that views also contain databse calculated fields. In this case committee_ids.
+    """
+    setup_data(db_connection, standard_data)
+    insert_into_intermediate_table(
+        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 1), (1, 1)]
+    )
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.filter(
+            "user",
+            FilterOperator("committee_management_ids", "has", 2),
+            ["committee_ids"],
+        )
+    assert response == {1: {"committee_ids": [1, 2]}}
 
 
 def test_invalid_mapped_fields() -> None:
@@ -232,12 +276,16 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
     "filter_,to_be_found_ids",
     [
         pytest.param(last_login_filter, [2], id="operator"),
-        pytest.param(FilterOperator("last_login", "=", None), [1, 4], id="none_db"),
+        pytest.param(FilterOperator("last_name", "=", None), [1, 4], id="none_db"),
         pytest.param(
-            FilterOperator("meeting_ids", "!=", None), [2, 4], id="none_changed"
+            FilterOperator("committee_management_ids", "!=", None),
+            [2, 4],
+            id="none_changed",
         ),
         pytest.param(
-            FilterOperator("meeting_ids", "has", 3), [2, 4], id="none_with_has"
+            FilterOperator("committee_management_ids", "has", 1),
+            [2, 4],
+            id="none_with_has",
         ),
         pytest.param(Not(last_login_filter), [1, 4], id="not"),
         pytest.param(Not(FilterOperator("username", "=", "3")), [], id="not_name"),
@@ -271,17 +319,17 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             Not(
                 Or(
-                    FilterOperator("meeting_ids", "=", [1, 2, 3]),
+                    FilterOperator("committee_management_ids", "=", [1, 2]),
                     FilterOperator("first_name", "=", "daren"),
                 )
             ),
-            [1, 4],
+            [1],
             id="not_or",
         ),
         pytest.param(
             Not(
                 Or(
-                    FilterOperator("meeting_ids", "=", None),
+                    FilterOperator("committee_management_ids", "=", None),
                     FilterOperator("first_name", "=", "daren"),
                 )
             ),
@@ -291,7 +339,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             Not(
                 Or(
-                    FilterOperator("meeting_ids", "=", [1, 3]),
+                    FilterOperator("committee_management_ids", "=", [1]),
                     FilterOperator("default_vote_weight", "=", Decimal(81)),
                 )
             ),
@@ -301,7 +349,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             Not(
                 And(
-                    FilterOperator("meeting_ids", "=", None),
+                    FilterOperator("committee_management_ids", "=", None),
                     FilterOperator("default_vote_weight", "=", Decimal(42)),
                 )
             ),
@@ -311,7 +359,7 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
         pytest.param(
             Not(
                 And(
-                    FilterOperator("meeting_ids", "=", None),
+                    FilterOperator("committee_management_ids", "=", None),
                     FilterOperator("default_vote_weight", "=", Decimal(23)),
                 )
             ),
@@ -336,14 +384,27 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
 def test_changed_models(
     db_connection: Connection, filter_: Filter, to_be_found_ids: list[int]
 ) -> None:
+    """
+    Tests various combinations of data in changed models and the database.
+    `split` in the param id means that one representation of the same model matches
+    but the other won't.
+    """
     setup_data(db_connection, standard_data)
+    insert_into_intermediate_table(
+        "nm_committee_manager_ids_user",
+        ["committee_id", "user_id"],
+        [(2, 1), (1, 1), (1, 2), (2, 3), (1, 3)],
+    )
     with get_new_os_conn() as conn:
         ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        ex_db.apply_changed_model("user/1", {"username": "3", "meeting_ids": None})
+        ex_db.apply_changed_model(
+            "user/1", {"username": "3", "committee_management_ids": None}
+        )
         ex_db.apply_changed_model("user/2", {"username": "3", "is_demo_user": True})
         ex_db.apply_changed_model("user/3", DeletedModel())
         ex_db.apply_changed_model(
-            "user/4", {"username": "3", "meta_new": True, "meeting_ids": [3]}
+            "user/4",
+            {"username": "3", "meta_new": True, "committee_management_ids": [1, 2]},
         )
         response = ex_db.filter("user", filter_, ["username", "default_vote_weight"])
     for id_ in response:
@@ -359,18 +420,27 @@ def test_like_performance(db_connection: Connection) -> None:
     MODEL_COUNT = 100000
     data = {
         "user": {
-            i: {"username": f"{i}", "first_name": "2", "meeting_ids": [3]}
+            i: {"username": f"{i}", "first_name": "2"}
             for i in range(1, MODEL_COUNT + 1)
-        }
+        },
+        "committee": standard_data["committee"],
     }
     setup_data(db_connection, data)
+    for i in range(1, MODEL_COUNT + 1):
+        insert_into_intermediate_table(
+            "nm_committee_manager_ids_user",
+            ["committee_id", "user_id"],
+            [(2, i), (1, i)],
+        )
 
     print("\nEqual:\n")
     with get_new_os_conn() as conn:
         with TestPerformance(conn) as performance:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             result = extended_database.filter(
-                "user", FilterOperator("username", "=", "1337"), ["first_name"]
+                "user",
+                FilterOperator("username", "=", "1337"),
+                ["first_name", "committee_ids"],
             )
     print(f"{performance['total_time']} seconds")
     print(f"requests: {performance['requests_count']}")

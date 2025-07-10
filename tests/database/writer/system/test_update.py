@@ -8,7 +8,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.exceptions import InvalidFormat, ModelDoesNotExist
-from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.interfaces.event import EventType, ListFields
 from openslides_backend.shared.typing import PartialModel
 from tests.database.writer.system.test_create import test_create_nm_field_simple
 from tests.database.writer.system.util import (
@@ -18,6 +18,7 @@ from tests.database.writer.system.util import (
     create_write_requests,
     get_data,
     get_group_base_data,
+    get_two_users_with_committee,
 )
 
 
@@ -75,12 +76,12 @@ def test_update_nm_field_simple() -> None:
                 {
                     "type": EventType.Update,
                     "fqid": f"committee/{committee_id}",
-                    "fields": {"user_ids": [1]},
+                    "fields": {"manager_ids": [1]},
                 },
                 {
                     "type": EventType.Update,
                     "fqid": f"user/{user_id}",
-                    "fields": {"committee_ids": [2]},
+                    "fields": {"committee_management_ids": [2]},
                 },
             ]
         }
@@ -96,7 +97,6 @@ def test_update_nm_field_simple() -> None:
 
 def test_update_nm_field_null() -> None:
     data = get_data()
-    data[0]["events"][0]["fields"]["committee_ids"] = [1]
     data.append(
         {
             "events": [
@@ -104,7 +104,7 @@ def test_update_nm_field_null() -> None:
                     "type": EventType.Create,
                     "fqid": None,
                     "collection": "committee",
-                    "fields": {"name": "com1", "user_ids": [1]},
+                    "fields": {"name": "com1", "manager_ids": [1]},
                 }
             ]
         }
@@ -117,12 +117,12 @@ def test_update_nm_field_null() -> None:
                 {
                     "type": EventType.Update,
                     "fqid": f"committee/{committee_id}",
-                    "fields": {"user_ids": None},
+                    "fields": {"manager_ids": None},
                 },
                 {
                     "type": EventType.Update,
                     "fqid": f"user/{user_id}",
-                    "fields": {"committee_ids": None},
+                    "fields": {"committee_management_ids": None},
                 },
             ]
         }
@@ -131,26 +131,26 @@ def test_update_nm_field_null() -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_model(
-        "user/1", {"id": 1, "username": "1", "first_name": "1", "committee_ids": None}
+        "user/1",
+        {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": None},
     )
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
 
 
 def test_update_nm_field_remove() -> None:
     test_create_nm_field_simple()
-
     data = [
         {
             "events": [
                 {
                     "type": EventType.Update,
                     "fqid": f"committee/{1}",
-                    "fields": {"user_ids": []},
+                    "fields": {"manager_ids": []},
                 },
                 {
                     "type": EventType.Update,
                     "fqid": f"user/{1}",
-                    "fields": {"committee_ids": []},
+                    "fields": {"committee_management_ids": []},
                 },
             ]
         }
@@ -280,91 +280,117 @@ def test_update_non_existing_2(db_connection: Connection[rows.DictRow]) -> None:
     assert_no_db_entry(db_connection.cursor())
 
 
-def test_list_update_add_empty_1() -> None:
-    data = get_data()
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "first_name": "1", "meeting_ids": [1]})
-
-
-def test_list_update_add_empty_2() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "first_name": "1", "meeting_ids": [1]})
-
-
-def test_list_update_add_string() -> None:
+@pytest.mark.parametrize(
+    "setup_data,list_fields,expected_fields",
+    [
+        pytest.param(
+            {},
+            {"add": {"permissions": ["agenda_item.can_see"]}},
+            {"permissions": ["agenda_item.can_see"]},
+            id="add_empty",
+        ),
+        pytest.param(
+            {"permissions": []},
+            {"add": {"permissions": ["agenda_item.can_see"]}},
+            {"permissions": ["agenda_item.can_see"]},
+            id="add_empty_2",
+        ),
+        pytest.param(
+            {"permissions": ["user.can_manage"]},
+            {"add": {"permissions": ["agenda_item.can_see"]}},
+            {"permissions": ["agenda_item.can_see", "user.can_manage"]},
+            id="add_existing",
+        ),
+        pytest.param(
+            {"permissions": ["user.can_manage"]},
+            {"add": {"permissions": ["agenda_item.can_see", "user.can_manage"]}},
+            {"permissions": ["agenda_item.can_see", "user.can_manage"]},
+            id="add_duplicate",
+        ),
+        pytest.param(
+            {},
+            {"remove": {"permissions": ["agenda_item.can_see"]}},
+            {},
+            id="remove_empty",
+        ),
+        pytest.param(
+            {"permissions": []},
+            {"remove": {"permissions": ["agenda_item.can_see"]}},
+            {},
+            id="remove_empty_2",
+        ),
+        pytest.param(
+            {"permissions": ["user.can_manage"]},
+            {"remove": {"permissions": ["user.can_manage"]}},
+            {"permissions": []},
+            id="remove_existing",
+        ),
+        pytest.param(
+            {"permissions": ["user.can_manage"]},
+            {"remove": {"permissions": ["agenda_item.can_see"]}},
+            {"permissions": ["user.can_manage"]},
+            id="remove_not_existent",
+        ),
+        pytest.param(
+            {"permissions": ["agenda_item.can_see", "user.can_manage"]},
+            {"remove": {"permissions": ["user.can_manage"]}},
+            {"permissions": ["agenda_item.can_see"]},
+            id="remove_subset",
+        ),
+        pytest.param(
+            {"permissions": ["user.can_manage"]},
+            {"remove": {"permissions": ["agenda_item.can_see", "user.can_manage"]}},
+            {"permissions": []},
+            id="remove_partially_not_existent",
+        ),
+        pytest.param(
+            {"permissions": []},
+            {"add": {"permissions": []}, "remove": {"permissions": []}},
+            {"permissions": []},
+            id="add_remove_same_field_empty",
+        ),
+        pytest.param(
+            {"permissions": ["agenda_item.can_see"]},
+            {
+                "add": {"permissions": ["user.can_manage"]},
+                "remove": {"permissions": ["agenda_item.can_see"]},
+            },
+            {"permissions": ["user.can_manage"]},
+            id="add_remove_same_field_replace",
+        ),
+        pytest.param(
+            {},
+            {
+                "add": {"permissions": ["user.can_manage"]},
+                "remove": {"permissions": ["agenda_item.can_see"]},
+            },
+            {"permissions": ["user.can_manage"]},
+            id="add_remove_same_field_disjunct_empty",
+        ),
+    ],
+)
+def test_list_update(
+    setup_data: PartialModel, list_fields: ListFields, expected_fields: PartialModel
+) -> None:
+    """Currently no integer[] exists in any model also no model with two list fields."""
     data = get_group_base_data()
+    data[0]["events"][0]["fields"].update(setup_data)
     id_ = create_models(data)[0]
-
-    data[0]["events"] = [
+    data = [
         {
-            "type": EventType.Update,
-            "fqid": f"group/{id_}",
-            "list_fields": {"add": {"permissions": ["user.can_manage"]}},
+            "events": [
+                {
+                    "type": EventType.Update,
+                    "fqid": f"group/{id_}",
+                    "list_fields": list_fields,
+                }
+            ]
         }
     ]
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
-    assert_model(
-        f"group/{id_}", {"id": id_, "name": "1", "permissions": ["user.can_manage"]}
-    )
-
-
-def test_list_update_add_existing_number() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [42]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [1, 42]})
-
-
-def test_list_update_add_existing_string() -> None:
-    data = get_group_base_data()
-    data[0]["events"][0]["fields"]["permissions"] = ["user.can_update"]
-    id_ = create_models(data)[0]
-
-    data[0]["events"] = [
-        {
-            "type": EventType.Update,
-            "fqid": f"group/{id_}",
-            "list_fields": {"add": {"permissions": ["user.can_manage"]}},
-        }
-    ]
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(
-        f"group/{id_}",
-        {"id": id_, "name": "1", "permissions": ["user.can_manage", "user.can_update"]},
-    )
+    assert_model(f"group/{id_}", {"id": id_, "name": "1", **expected_fields})
 
 
 def test_list_update_add_wrong_field_type() -> None:
@@ -387,71 +413,7 @@ def test_list_update_add_wrong_field_type() -> None:
     assert_model(f"user/{id_}", {"id": id_, "first_name": "1"})
 
 
-def test_list_update_add_duplicate() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [1, 2]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [1, 2]})
-
-
-def test_list_update_remove_empty_1() -> None:
-    """Should do nothing, since the field is not filled."""
-    data = get_data()
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"remove": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_})
-
-
-def test_list_update_remove_empty_2() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"remove": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": []})
-
-
-def test_list_update_remove_existing() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [42]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"remove": {"meeting_ids": [42]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": []})
-
-
-def test_list_update_remove_no_array() -> None:
+def test_list_update_remove_wrong_field_type() -> None:
     data = get_data()
     id_ = create_models(data)[0]
 
@@ -471,99 +433,62 @@ def test_list_update_remove_no_array() -> None:
     assert_model(f"user/{id_}", {"id": id_, "first_name": "1"})
 
 
-def test_list_update_remove_not_existent() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_models(data)[0]
+@pytest.mark.parametrize(
+    "setup_data,list_fields,expected_fields",
+    [
+        pytest.param(
+            {"manager_ids": [1]},
+            {"add": {"forward_to_committee_ids": [2]}, "remove": {"manager_ids": [1]}},
+            {"manager_ids": None, "forward_to_committee_ids": [2]},
+            id="different_fields",
+        ),
+        pytest.param(
+            {"manager_ids": [1], "forward_to_committee_ids": [2]},
+            {"add": {"manager_ids": [2]}, "remove": {"forward_to_committee_ids": [2]}},
+            {"manager_ids": [1, 2], "forward_to_committee_ids": None},
+            id="different_fields_filled",
+        ),
+        pytest.param(
+            {"manager_ids": []},
+            {"add": {"manager_ids": []}, "remove": {"manager_ids": []}},
+            {"manager_ids": None},
+            id="same_field_empty",
+        ),
+        pytest.param(
+            {"manager_ids": [1]},
+            {"add": {"manager_ids": [2]}, "remove": {"manager_ids": [1]}},
+            {"manager_ids": [2]},
+            id="same_field",
+        ),
+        pytest.param(
+            {},
+            {"add": {"manager_ids": [2]}, "remove": {"manager_ids": [1]}},
+            {"manager_ids": [2]},
+            id="same_field_2",
+        ),
+    ],
+)
+def test_list_update_add_remove_nm_list(
+    setup_data: PartialModel, list_fields: ListFields, expected_fields: PartialModel
+) -> None:
+    data = get_two_users_with_committee(setup_data)
+    committee_id = create_models(data)[2]
 
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"remove": {"meeting_ids": [42]}},
-    }
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [1]})
-
-
-def test_list_update_remove_partially_not_existent() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"remove": {"meeting_ids": [1, 42]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": []})
-
-
-@pytest.mark.skip(reason="Currently no model with two list attributes exists.")
-def test_list_update_add_remove() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    data[0]["events"][0]["fields"]["last_name"] = ["1"]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [2]}, "remove": {"last_name": ["test"]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [1, 2], "last_name": []})
-
-
-def test_list_update_add_remove_same_field() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = [1]
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": [2]}, "remove": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [2]})
-
-
-def test_list_update_add_remove_same_field_2() -> None:
-    data = get_data()
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "fields": {"meeting_ids": [1]},
-        "list_fields": {"add": {"meeting_ids": [2]}, "remove": {"meeting_ids": [1]}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": [2]})
-
-
-def test_list_update_add_remove_same_field_empty() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"]["meeting_ids"] = []
-    id_ = create_models(data)[0]
-
-    data[0]["events"][0] = {
-        "type": EventType.Update,
-        "fqid": f"user/{id_}",
-        "list_fields": {"add": {"meeting_ids": []}, "remove": {"meeting_ids": []}},
-    }
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(f"user/{id_}", {"id": id_, "meeting_ids": []})
+        extended_database.write(
+            create_write_requests(
+                [
+                    {
+                        "events": [
+                            {
+                                "type": EventType.Update,
+                                "fqid": f"committee/{committee_id}",
+                                "list_fields": list_fields,
+                            }
+                        ]
+                    }
+                ]
+            )
+        )
+    assert_model(f"committee/{committee_id}", {"id": 1, **expected_fields})

@@ -136,7 +136,6 @@ class SqlQueryHelper:
                         filter_operator=sql.SQL(filter_.operator),
                         type=self.get_array_type(
                             type(next(iter(filter_.value))) if filter_.value else int,
-                            filter_.value,
                         ),
                     )
                 else:
@@ -149,16 +148,9 @@ class SqlQueryHelper:
         else:
             raise BadCodingException("Invalid filter type")
 
-    def get_array_type(
-        self,
-        list_type: type,
-        affected_list: list[int] | list[str],
-    ) -> sql.Composable:
+    def get_array_type(self, list_type: type) -> sql.Composable:
         if list_type == int:
-            if affected_list:
-                return sql.SQL("")
-            else:
-                return sql.SQL("::integer[]")
+            return sql.SQL("::integer[]")
         elif list_type == str:
             return sql.SQL("::text[]")
         else:
