@@ -12,7 +12,8 @@
 {
     information: {[fqid]: string[]}
     position: int;
-    user: string // username of user
+    user: string; // username of user
+    timestamp: number;
 }[]
 ```
 
