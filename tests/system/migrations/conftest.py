@@ -10,6 +10,7 @@ from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
+from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
@@ -66,10 +67,12 @@ def clear_datastore(setup) -> None:
 
 @pytest.fixture()
 def write(clear_datastore) -> None:
-    def _write(*events: dict[str, Any]):
+    def _write(
+        *events: dict[str, Any], information: HistoryInformation = {}, user_id: int = 1
+    ):
         payload = {
-            "user_id": 1,
-            "information": {},
+            "user_id": user_id,
+            "information": information,
             "locked_fields": {},
             "events": events,
         }
@@ -158,7 +161,9 @@ def assert_model(read_model):
                 expected[key] = model[key]
         assert model == expected
 
-    def _assert_model(fqid, _expected, position=None):
+    def _assert_model(
+        fqid, _expected, position=None, only_check_filled: list[str] = []
+    ):
         # try to fetch model and assert correct existance
         try:
             model = read_model(fqid, position=position)
@@ -178,6 +183,9 @@ def assert_model(read_model):
             expected["meta_position"] = model["meta_position"]
 
         if position is None:
+            for field in only_check_filled:
+                assert model.pop(field, None)
+
             # assert that current model is equal to expected
             compare_models(model, expected)
             # get max position
@@ -187,6 +195,9 @@ def assert_model(read_model):
 
             # additionally assert that the model at the max position is equal to expected
             model = read_model(fqid, position=position)
+
+        for field in only_check_filled:
+            assert model.pop(field, None)
 
         compare_models(model, expected)
 
