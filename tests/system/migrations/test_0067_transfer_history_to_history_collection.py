@@ -314,3 +314,154 @@ def test_migration(write, finalize, assert_model):
                 f"history_entry/{entry_id}",
                 data,
             )
+
+
+def test_migration_with_both_history_formats(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "user/1",
+            "fields": {"id": 1, "username": "admin"},
+        }
+    )
+    write(
+        {
+            "type": "create",
+            "fqid": "user/2",
+            "fields": {"id": 2, "username": "bob"},
+        },
+        {
+            "type": "create",
+            "fqid": "user/3",
+            "fields": {"id": 3, "username": "alice"},
+        },
+        {
+            "type": "create",
+            "fqid": "meeting/2",
+            "fields": {"id": 2, "name": "bobs club"},
+        },
+        information=["Users created", "Meeting created"],
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "user/2",
+            "fields": {"first_name": "bob"},
+        },
+        {
+            "type": "create",
+            "fqid": "user/4",
+            "fields": {"id": 4, "username": "jeff"},
+        },
+        {
+            "type": "update",
+            "fqid": "meeting/2",
+            "fields": {"description": "no girls allowed"},
+        },
+        information={
+            "user/2": ["User updated"],
+            "user/4": ["User created"],
+            "meeting/2": ["Meeting updated"],
+        },
+    )
+
+    finalize("0067_transfer_history_to_history_collections")
+
+    assert_model(
+        "user/1", {"id": 1, "username": "admin", "history_position_ids": [2, 3]}
+    )
+    assert_model(
+        "history_position/2",
+        {
+            "id": 2,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [1, 2],
+        },
+        only_check_filled=["timestamp"],
+    )
+    assert_model(
+        "history_entry/1",
+        {
+            "id": 1,
+            "position_id": 2,
+            "model_id": "user/2",
+            "original_model_id": "user/2",
+            "entries": ["Users created", "Meeting created"],
+        },
+    )
+    assert_model(
+        "history_entry/2",
+        {
+            "id": 2,
+            "position_id": 2,
+            "model_id": "user/3",
+            "original_model_id": "user/3",
+            "entries": ["Users created", "Meeting created"],
+        },
+    )
+    assert_model(
+        "history_position/3",
+        {
+            "id": 3,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [3, 4],
+        },
+        only_check_filled=["timestamp"],
+    )
+    assert_model(
+        "history_entry/3",
+        {
+            "id": 3,
+            "position_id": 3,
+            "model_id": "user/2",
+            "original_model_id": "user/2",
+            "entries": ["User updated"],
+        },
+    )
+    assert_model(
+        "history_entry/4",
+        {
+            "id": 4,
+            "position_id": 3,
+            "model_id": "user/4",
+            "original_model_id": "user/4",
+            "entries": ["User created"],
+        },
+    )
+    assert_model(
+        "user/2",
+        {
+            "id": 2,
+            "username": "bob",
+            "first_name": "bob",
+            "history_entry_ids": [1, 3],
+        },
+    )
+    assert_model(
+        "user/3",
+        {
+            "id": 3,
+            "username": "alice",
+            "history_entry_ids": [2],
+        },
+    )
+    assert_model(
+        "user/4",
+        {
+            "id": 4,
+            "username": "jeff",
+            "history_entry_ids": [4],
+        },
+    )
+    assert_model(
+        "meeting/2",
+        {
+            "id": 2,
+            "name": "bobs club",
+            "description": "no girls allowed",
+        },
+    )
+    for fqid in ["history_position/4", "history_entry/5"]:
+        assert_model(fqid, DoesNotExist())
