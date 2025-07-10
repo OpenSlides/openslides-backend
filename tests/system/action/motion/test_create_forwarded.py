@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock, call
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
@@ -31,9 +32,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "default_group_id": 112,
                 "group_ids": [112],
                 "meeting_user_ids": [2],
-                "user_ids": [
-                    1,
-                ],
+                "user_ids": [1],
             },
             "user/1": {
                 "meeting_ids": [1, 2],
@@ -1679,15 +1678,80 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_model_not_exists("motion/6")
 
+    def _update_list_field(
+        self,
+        models_data: dict[str, dict[str, Any]],
+        fqid: str,
+        field: str,
+        new_value: int,
+    ) -> dict[str, dict[str, Any]]:
+        """
+        For the models defined by fqid retrieves the value of the given field.
+        If its type is list, appends it with the new_value.
+        """
+        existing = self.get_model(fqid).get(field, [])
+        if isinstance(existing, list):
+            models_data.setdefault(fqid, {})[field] = existing + [new_value]
+        return models_data
+
+    def create_mediafiles_from_dict(
+        self, meeting_mediafiles: list[dict[str, int | list[int] | bool]]
+    ) -> None:
+        """
+        Accepts data for creating mediafile and meeting mediafile and creates
+        them with all the relations.
+        Skips mediafiles creation for instances that already exist.
+        """
+        for mediafile in meeting_mediafiles:
+            meeting_mediafile_id = cast(int, mediafile.get("meeting_mediafile_id", 0))
+            mediafile_id = cast(int, mediafile.get("mediafile_id", 0))
+            meeting_id = cast(int, mediafile.get("meeting_id", 0))
+            is_directory = bool(mediafile.get("is_directory", False))
+
+            raw_motion_ids = mediafile.get("motion_ids", [])
+            motion_ids = raw_motion_ids if isinstance(raw_motion_ids, list) else []
+
+            is_orga_wide = bool(mediafile.get("is_orga_wide", False))
+            owner_meeting_id: int = 0 if is_orga_wide else meeting_id
+
+            try:
+                fqid = f"mediafile/{mediafile_id}"
+                self.assert_model_exists(fqid)
+                self.set_models(
+                    self._update_list_field(
+                        {}, fqid, "meeting_mediafile_ids", meeting_mediafile_id
+                    )
+                )
+            except DatastoreException:
+                self.create_mediafile(mediafile_id, owner_meeting_id, is_directory)
+            self.create_meeting_mediafile(
+                meeting_mediafile_id, mediafile_id, meeting_id, motion_ids
+            )
+
     def create_mediafile(
         self,
         mediafile_id: int,
         owner_meeting_id: int = 0,
         is_directory: bool = False,
     ) -> None:
-        model_data: dict[str, bool | str | int] = {"is_directory": is_directory}
+        fqid = f"mediafile/{mediafile_id}"
+        model_data: dict[str, str | int | bool] = {
+            "is_directory": is_directory,
+            "title": (
+                f"folder_{mediafile_id}" if is_directory else f"title_{mediafile_id}"
+            ),
+        }
+        models_data = {fqid: model_data}
+
         if owner_meeting_id:
-            model_data["owner_id"] = f"meeting/{owner_meeting_id}"
+            owner_fqid = f"meeting/{owner_meeting_id}"
+            model_data["owner_id"] = owner_fqid
+            self._update_list_field(
+                models_data,
+                owner_fqid,
+                "mediafile_ids",
+                mediafile_id,
+            )
         else:
             model_data.update(
                 {
@@ -1695,9 +1759,13 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 }
             )
+            self._update_list_field(
+                models_data, ONE_ORGANIZATION_FQID, "mediafile_ids", mediafile_id
+            )
+
         if not is_directory:
             model_data["mimetype"] = "text/plain"
-        self.set_models({f"mediafile/{mediafile_id}": model_data})
+        self.set_models(models_data)
 
     def create_meeting_mediafile(
         self,
@@ -1706,16 +1774,31 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         meeting_id: int,
         motion_ids: list[int] = [],
     ) -> None:
+        mm_fqid = f"meeting_mediafile/{meeting_mediafile_id}"
         model_data: dict[str, int | bool | list[str]] = {
-            "meeting_id": 1,
+            "meeting_id": meeting_id,
             "mediafile_id": mediafile_id,
             "is_public": True,
         }
+        models_data = {mm_fqid: model_data}
+
+        for fqid in [f"meeting/{meeting_id}", f"mediafile/{mediafile_id}"]:
+            self._update_list_field(
+                models_data, fqid, "meeting_mediafile_ids", meeting_mediafile_id
+            )
+
         if motion_ids:
             model_data["attachment_ids"] = [
                 f"motion/{motion_id}" for motion_id in motion_ids
             ]
-        self.set_models({f"meeting_mediafile/{meeting_mediafile_id}": model_data})
+            for motion_id in motion_ids:
+                self._update_list_field(
+                    models_data,
+                    f"motion/{motion_id}",
+                    "attachment_meeting_mediafile_ids",
+                    meeting_mediafile_id,
+                )
+        self.set_models(models_data)
 
     def prepare_test_data_for_forwarding_with_attachments(
         self,
@@ -1727,6 +1810,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         Prepares test data and performs a forwarding request, optionally
         including attachments (based on the with_attachments value).
         """
+        self.set_models(self.test_model)
         for mediafile in origin_mediafiles:
             self.create_mediafile(**mediafile)
         ORGA_WIDE_MEDIAFILES: set[int] = set()
@@ -1753,35 +1837,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             for i in range(1, len(origin_mediafile_ids) + 1)
         ]
 
-        self.set_models(self.test_model)
-        self.set_models(
-            {
-                "meeting/1": {
-                    "meeting_mediafile_ids": origin_meeting_mediafile_ids,
-                    "mediafile_ids": [
-                        id_
-                        for id_ in origin_mediafile_ids
-                        if id_ not in ORGA_WIDE_MEDIAFILES
-                    ]
-                    or None,
-                },
-                "motion/12": {
-                    "attachment_meeting_mediafile_ids": origin_meeting_mediafile_ids
-                },
-            }
-        )
-
         for mediafile_id, meeting_mediafile_id in zip(
             origin_mediafile_ids, origin_meeting_mediafile_ids
         ):
             self.create_meeting_mediafile(meeting_mediafile_id, mediafile_id, 1, [12])
-            self.set_models(
-                {
-                    f"mediafile/{mediafile_id}": {
-                        "meeting_mediafile_ids": [meeting_mediafile_id],
-                    },
-                }
-            )
 
         if custom_models_data:
             self.set_models(custom_models_data)
@@ -2016,54 +2075,104 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             ],
             nested_files_ids={1: [3, 4], 2: [5], 5: [6]},
             custom_models_data={
-                "mediafile/1": {
-                    "child_ids": [3, 4],
-                },
-                "mediafile/3": {
-                    "parent_id": 1,
-                },
-                "mediafile/4": {
-                    "parent_id": 1,
-                },
-                "mediafile/2": {
-                    "child_ids": [5],
-                },
-                "mediafile/5": {
-                    "parent_id": 2,
-                    "child_ids": [6],
-                },
-                "mediafile/6": {
-                    "parent_id": 5,
-                },
+                "mediafile/1": {"child_ids": [3, 4]},
+                "mediafile/3": {"parent_id": 1},
+                "mediafile/4": {"parent_id": 1},
+                "mediafile/2": {"child_ids": [5]},
+                "mediafile/5": {"parent_id": 2, "child_ids": [6]},
+                "mediafile/6": {"parent_id": 5},
             },
         )
+
+    def test_forward_to_the_same_meeting_with_orga_wide_mediafile(self) -> None:
+        """
+        Verify orga-wide mediafile is reused correctly when motion is forwarded
+        to the same meeting.
+        """
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "committee/53": {
+                    "forward_to_committee_ids": [52, 53],
+                    "receive_forwardings_from_committee_ids": [53],
+                    "meeting_ids": [1, 2],
+                },
+                "motion_workflow/33": {
+                    "name": "name_workflow1",
+                    "first_state_id": 30,
+                    "state_ids": [30],
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "motions_default_workflow_id": 33,
+                    "motions_default_amendment_workflow_id": 33,
+                },
+            }
+        )
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 1,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": True,
+                },
+            ]
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 1,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_not_called()
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/1": {"meeting_mediafile_ids": [1]},
+            "motion/13": {"attachment_meeting_mediafile_ids": [1]},
+            "mediafile/1": {
+                "meeting_mediafile_ids": [1],
+                "owner_id": ONE_ORGANIZATION_FQID,
+            },
+            "meeting_mediafile/1": {
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "is_public": True,
+                "attachment_ids": ["motion/12", "motion/13"],
+            },
+        }
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
 
     def base_test_preserve_existing_meeting_attachments_ids(
         self, with_attachments: bool
     ) -> None:
+        """
+        Verify that forwarding new mediafiles doesn't impact existing mediafiles
+        in the target meeting.
+        """
         self.set_models(self.test_model)
-        self.create_mediafile(mediafile_id=1, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=2, owner_meeting_id=2)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=12, mediafile_id=2, meeting_id=2
-        )
-        self.set_models(
-            {
-                "mediafile/1": {"meeting_mediafile_ids": [11]},
-                "mediafile/2": {"meeting_mediafile_ids": [12]},
-                "meeting/1": {
-                    "meeting_mediafile_ids": [11],
-                    "mediafile_ids": [1],
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 11,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": False,
                 },
-                "meeting/2": {
-                    "meeting_mediafile_ids": [12],
-                    "mediafile_ids": [2],
+                {
+                    "meeting_mediafile_id": 12,
+                    "mediafile_id": 2,
+                    "meeting_id": 2,
+                    "is_orga_wide": False,
                 },
-                "motion/12": {"attachment_meeting_mediafile_ids": [11]},
-            }
+            ]
         )
         response = self.request(
             "motion.create_forwarded",
@@ -2097,32 +2206,39 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_preserve_meeting_attachments_ids_with_attachments_true(self) -> None:
         self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=True)
 
-    def test_forward_2_motions_with_same_meeting_wide_mediafile_to_1_meeting(
-        self,
-    ) -> None:
+    def set_2_motions_with_same_attachment(self, is_orga_wide: bool) -> None:
         self.set_models(self.test_model)
-        self.create_mediafile(mediafile_id=1, owner_meeting_id=1)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12, 13]
-        )
         self.set_models(
             {
-                "meeting/1": {
-                    "meeting_mediafile_ids": [11],
-                    "mediafile_ids": [1],
-                },
-                "mediafile/1": {"meeting_mediafile_ids": [11]},
-                "motion/12": {"attachment_meeting_mediafile_ids": [11]},
                 "motion/13": {
                     "title": "Motion 13",
                     "meeting_id": 1,
                     "state_id": 30,
-                    "attachment_meeting_mediafile_ids": [11],
                 },
                 "motion_state/30": {"motion_ids": [12, 13]},
             }
         )
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 11,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [12, 13],
+                    "is_orga_wide": is_orga_wide,
+                },
+            ]
+        )
         self.media.duplicate_mediafile = MagicMock()
+
+    def test_forward_2_motions_to_1_meeting_1_transaction_shared_meeting_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify forwarding two motions with the same meeting-wide mediafile in one
+        transaction creates only 1 new mediafile and 1 new meeting_mediafile.
+        """
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
         response = self.request_multi(
             "motion.create_forwarded",
             [
@@ -2143,48 +2259,360 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_once_with(1, 2)
+
         expected_models: dict[str, dict[str, Any]] = {
             "meeting/2": {
                 "meeting_mediafile_ids": [12],
                 "mediafile_ids": [2],
             },
+            "mediafile/2": {"meeting_mediafile_ids": [12]},
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 2,
+                "attachment_ids": ["motion/14", "motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+        }
+        expected_models_do_not_exist = ["mediafile/3", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_called_once_with(1, 2)
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
+
+    def test_forward_2_motions_to_1_meeting_1_transaction_shared_orga_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify forwarding two motions with the same orga-wide mediafile in one
+        transaction creates only one new meeting_mediafile.
+        """
+        self.set_2_motions_with_same_attachment(is_orga_wide=True)
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "Mot 1",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+                {
+                    "title": "Mot 2",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {"meeting_mediafile_ids": [12]},
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 1,
+                "attachment_ids": ["motion/14", "motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+        }
+        expected_models_do_not_exist = ["mediafile/2", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_not_called()
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
+
+    def test_forward_3_motions_separately_shared_meeting_wide_mediafile(
+        self,
+    ) -> None:
+        """
+        Verify separately forwarded motions with the same attachment get mediafiles
+        with correct title suffixes.
+        """
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
+        self.set_models(
+            {
+                "motion/14": {
+                    "title": "Motion 14",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                    "attachment_meeting_mediafile_ids": [11],
+                },
+                "motion_state/30": {"motion_ids": [12, 13, 14]},
+                "meeting_mediafile/11": {
+                    "attachment_ids": ["motion/12", "motion/13", "motion/14"]
+                },
+            }
+        )
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response3 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 3",
+                "meeting_id": 2,
+                "origin_id": 14,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+        self.assert_status_code(response3, 200)
+
+        expected_mediaservice_calls = [call(1, 2), call(1, 3), call(1, 4)]
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {
+                "meeting_mediafile_ids": [12, 13, 14],
+                "mediafile_ids": [2, 3, 4],
+            },
             "mediafile/2": {
                 "meeting_mediafile_ids": [12],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
+                "title": "title_1",
+            },
+            "mediafile/3": {
+                "meeting_mediafile_ids": [13],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "title": "title_1 (#2)",
+            },
+            "mediafile/4": {
+                "meeting_mediafile_ids": [14],
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "title": "title_1 (#3)",
             },
             "meeting_mediafile/12": {
                 "meeting_id": 2,
                 "mediafile_id": 2,
+                "is_public": True,
+                "attachment_ids": ["motion/15"],
+            },
+            "meeting_mediafile/13": {
+                "meeting_id": 2,
+                "mediafile_id": 3,
+                "is_public": True,
+                "attachment_ids": ["motion/16"],
+            },
+            "meeting_mediafile/14": {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+                "is_public": True,
+                "attachment_ids": ["motion/17"],
+            },
+            "motion/15": {"attachment_meeting_mediafile_ids": [12]},
+            "motion/16": {"attachment_meeting_mediafile_ids": [13]},
+            "motion/17": {"attachment_meeting_mediafile_ids": [14]},
+        }
+
+        self.assertEqual(
+            self.media.duplicate_mediafile.call_count, len(expected_mediaservice_calls)
+        )
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=expected_mediaservice_calls, any_order=True
+        )
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+
+    def test_forward_mediafiles_with_same_title_different_parents(
+        self,
+    ) -> None:
+        """Verify identical titles in other directories don't trigger suffix addition."""
+        self.set_2_motions_with_same_attachment(is_orga_wide=False)
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 12,
+                    "mediafile_id": 2,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                    "is_directory": True,
+                },
+                {
+                    "meeting_mediafile_id": 13,
+                    "mediafile_id": 3,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                },
+            ]
+        )
+        self.set_models(
+            {
+                "motion/13": {"attachment_meeting_mediafile_ids": [12, 13]},
+                "meeting_mediafile/11": {"attachment_ids": ["motion/12"]},
+                "mediafile/2": {"child_ids": [3]},
+                "mediafile/3": {"parent_id": 2, "title": "title_1"},
+            }
+        )
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+
+        expected_mediaservice_calls = [call(1, 4), call(3, 6)]
+        expected_models: dict[str, dict[str, Any]] = {
+            "mediafile/4": {
+                "meeting_mediafile_ids": [14],
+                "owner_id": "meeting/2",
+                "title": "title_1",
+            },
+            "mediafile/5": {
+                "meeting_mediafile_ids": [15],
+                "owner_id": "meeting/2",
+                "title": "folder_2",
+            },
+            "mediafile/6": {
+                "meeting_mediafile_ids": [16],
+                "owner_id": "meeting/2",
+                "title": "title_1",
+            },
+            "meeting_mediafile/14": {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+                "attachment_ids": ["motion/14"],
+            },
+            "meeting_mediafile/15": {
+                "meeting_id": 2,
+                "mediafile_id": 5,
+                "attachment_ids": ["motion/15"],
+            },
+            "meeting_mediafile/16": {
+                "meeting_id": 2,
+                "mediafile_id": 6,
+                "attachment_ids": ["motion/15"],
+            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [14]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [15, 16]},
+        }
+
+        self.assertEqual(
+            self.media.duplicate_mediafile.call_count, len(expected_mediaservice_calls)
+        )
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=expected_mediaservice_calls, any_order=True
+        )
+        for fqid, model_data in expected_models.items():
+            self.assert_model_exists(fqid, model_data)
+
+    def test_forward_2_motions_separately_shared_orga_wide_mediafile(
+        self,
+    ) -> None:
+        """Verify orga-wide mediafile is reused across separate forwardings correctly."""
+        self.set_2_motions_with_same_attachment(is_orga_wide=True)
+        response1 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        response2 = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 2",
+                "meeting_id": 2,
+                "origin_id": 13,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response1, 200)
+        self.assert_status_code(response2, 200)
+        expected_models: dict[str, dict[str, Any]] = {
+            "meeting/2": {"meeting_mediafile_ids": [12]},
+            "mediafile/1": {
+                "meeting_mediafile_ids": [11, 12],
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "mimetype": "text/plain",
+                "title": "title_1",
+            },
+            "meeting_mediafile/12": {
+                "meeting_id": 2,
+                "mediafile_id": 1,
                 "is_public": True,
                 "attachment_ids": ["motion/14", "motion/15"],
             },
             "motion/14": {"attachment_meeting_mediafile_ids": [12]},
             "motion/15": {"attachment_meeting_mediafile_ids": [12]},
         }
+        expected_models_do_not_exist = ["mediafile/2", "meeting_mediafile/13"]
+
+        self.media.duplicate_mediafile.assert_not_called()
         for fqid, model_data in expected_models.items():
             self.assert_model_exists(fqid, model_data)
+        for fqid in expected_models_do_not_exist:
+            self.assert_model_not_exists(fqid)
 
-    def test_forward_1_motion_with_attachments_to_2_meetings_in_1_transaction(
+    def test_forward_to_2_meetings_1_transaction_orga_wide_mediafiles(
         self,
     ) -> None:
         self.set_models(self.test_model)
         self.create_meeting(3)
-        self.create_mediafile(mediafile_id=1, owner_meeting_id=1)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 11,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": False,
+                },
+            ]
         )
         self.set_models(
             {
-                "meeting/1": {
-                    "meeting_mediafile_ids": [11],
-                    "mediafile_ids": [1],
-                },
                 "meeting/3": {"committee_id": 52},
                 "committee/52": {"meeting_ids": [2, 3]},
-                "mediafile/1": {"meeting_mediafile_ids": [11]},
-                "motion/12": {"attachment_meeting_mediafile_ids": [11]},
             }
         )
         self.media.duplicate_mediafile = MagicMock()
@@ -2271,49 +2699,52 @@ class MotionCreateForwardedTest(BaseActionTestCase):
           duplicated only once and referenced correctly in the meeting_mediafiles
         """
         self.set_models(self.test_model)
-        self.create_mediafile(mediafile_id=1, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=6, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=8)
-        self.create_mediafile(mediafile_id=19, owner_meeting_id=1)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[13]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[12, 13]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=17, mediafile_id=8, meeting_id=1, motion_ids=[12]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=24, mediafile_id=19, meeting_id=1, motion_ids=[12]
-        )
         self.set_models(
             {
-                "meeting/1": {
-                    "meeting_mediafile_ids": [11, 14, 17, 24],
-                    "mediafile_ids": [1, 6, 19],
-                },
-                "mediafile/1": {"meeting_mediafile_ids": [11]},
-                "mediafile/6": {"meeting_mediafile_ids": [14]},
-                "mediafile/8": {"meeting_mediafile_ids": [17]},
-                "mediafile/19": {"meeting_mediafile_ids": [24]},
-                "motion/12": {
-                    "state_id": 30,
-                    "amendment_ids": [13],
-                    "attachment_meeting_mediafile_ids": [17, 14],
-                },
+                "motion/12": {"amendment_ids": [13]},
                 "motion/13": {
                     "title": "Amendment 13",
                     "meeting_id": 1,
                     "state_id": 30,
                     "lead_motion_id": 12,
-                    "attachment_meeting_mediafile_ids": [11, 24, 14],
                 },
                 "motion_state/30": {"motion_ids": [12, 13]},
             }
         )
         if custom_model_data:
             self.set_models(custom_model_data)
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 11,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                },
+                {
+                    "meeting_mediafile_id": 14,
+                    "mediafile_id": 6,
+                    "meeting_id": 1,
+                    "motion_ids": [12, 13],
+                    "is_orga_wide": False,
+                },
+                {
+                    "meeting_mediafile_id": 17,
+                    "mediafile_id": 8,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": True,
+                },
+                {
+                    "meeting_mediafile_id": 24,
+                    "mediafile_id": 19,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                },
+            ]
+        )
         self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
@@ -2392,8 +2823,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_public": True,
                 "attachment_ids": ["motion/15"],
             },
-            "motion/14": {"attachment_meeting_mediafile_ids": [26, 25]},
-            "motion/15": {"attachment_meeting_mediafile_ids": [27, 28, 25]},
+            "motion/14": {"attachment_meeting_mediafile_ids": [25, 26]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [27, 25, 28]},
         }
         self.base_forward_with_attachments_and_amendments(
             expected_models,
@@ -2405,27 +2836,34 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_forward_with_attachments_true_with_amendments_true_with_nested_amendments(
         self,
     ) -> None:
-        self.create_mediafile(mediafile_id=20, owner_meeting_id=1)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=20, mediafile_id=20, meeting_id=1, motion_ids=[14]
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "motion/13": {
+                    "amendment_ids": [14],
+                },
+                "motion/14": {
+                    "title": "Amendment 14",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                    "lead_motion_id": 13,
+                },
+            }
+        )
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 20,
+                    "mediafile_id": 20,
+                    "meeting_id": 1,
+                    "motion_ids": [14],
+                    "is_orga_wide": False,
+                },
+            ]
         )
         custom_model_data: dict[str, dict[str, Any]] = {
-            "meeting/1": {
-                "meeting_mediafile_ids": [11, 14, 17, 20, 24],
-                "mediafile_ids": [1, 6, 19, 20],
-            },
-            "mediafile/20": {"meeting_mediafile_ids": [20]},
             "meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]},
-            "motion/13": {
-                "amendment_ids": [14],
-            },
-            "motion/14": {
-                "title": "Amendment 14",
-                "meeting_id": 1,
-                "state_id": 30,
-                "lead_motion_id": 13,
-                "attachment_meeting_mediafile_ids": [20, 11],
-            },
+            "motion/14": {"attachment_meeting_mediafile_ids": [20, 11]},
         }
         expected_mediaservice_calls = [(6, 21), (1, 22), (19, 23), (20, 24)]
         expected_models: dict[str, dict[str, Any]] = {
@@ -2486,8 +2924,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_public": True,
                 "attachment_ids": ["motion/17"],
             },
-            "motion/15": {"attachment_meeting_mediafile_ids": [26, 25]},
-            "motion/16": {"attachment_meeting_mediafile_ids": [27, 28, 25]},
+            "motion/15": {"attachment_meeting_mediafile_ids": [25, 26]},
+            "motion/16": {"attachment_meeting_mediafile_ids": [27, 25, 28]},
             "motion/17": {"attachment_meeting_mediafile_ids": [29, 27]},
         }
         self.base_forward_with_attachments_and_amendments(
@@ -2535,7 +2973,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_public": True,
                 "attachment_ids": ["motion/14"],
             },
-            "motion/14": {"attachment_meeting_mediafile_ids": [26, 25]},
         }
         custom_model_data: dict[str, dict[str, Any]] = {}
         if not allow_amendment_forwarding:
@@ -2615,64 +3052,67 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         self.set_models(self.test_model)
-        self.create_mediafile(mediafile_id=1, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=6, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=9)
-        self.create_mediafile(mediafile_id=16, owner_meeting_id=1)
-        self.create_mediafile(mediafile_id=19)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=8, mediafile_id=1, meeting_id=1, motion_ids=[16]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[13]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=17, mediafile_id=9, meeting_id=1, motion_ids=[12]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=31, mediafile_id=16, meeting_id=1, motion_ids=[13, 17]
-        )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=30, mediafile_id=19, meeting_id=1, motion_ids=[16]
-        )
         self.set_models(
             {
-                "meeting/1": {
-                    "meeting_mediafile_ids": [8, 14, 17, 30, 31],
-                    "mediafile_ids": [1, 6, 16],
-                },
-                "mediafile/1": {"meeting_mediafile_ids": [8]},
-                "mediafile/6": {"meeting_mediafile_ids": [14]},
-                "mediafile/9": {"meeting_mediafile_ids": [17]},
-                "mediafile/16": {"meeting_mediafile_ids": [31]},
-                "mediafile/19": {"meeting_mediafile_ids": [30]},
-                "motion/12": {
-                    "state_id": 30,
-                    "amendment_ids": [13],
-                    "attachment_meeting_mediafile_ids": [17],
-                },
+                "motion/12": {"amendment_ids": [13]},
                 "motion/13": {
                     "title": "Amendment 13",
                     "meeting_id": 1,
                     "state_id": 30,
                     "lead_motion_id": 12,
-                    "attachment_meeting_mediafile_ids": [31, 14],
                 },
                 "motion/16": {
                     "title": "Motion 16",
                     "meeting_id": 1,
                     "state_id": 30,
-                    "attachment_meeting_mediafile_ids": [30, 8],
                 },
                 "motion/17": {
-                    "title": "Motion 16",
+                    "title": "Motion 17",
                     "meeting_id": 1,
                     "state_id": 30,
-                    "attachment_meeting_mediafile_ids": [31],
                 },
-                "motion_state/30": {"motion_ids": [12, 13, 16, 17]},
             }
         )
+        self.create_mediafiles_from_dict(
+            [
+                {
+                    "meeting_mediafile_id": 8,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "motion_ids": [16],
+                    "is_orga_wide": False,
+                },
+                {
+                    "meeting_mediafile_id": 14,
+                    "mediafile_id": 6,
+                    "meeting_id": 1,
+                    "motion_ids": [13],
+                    "is_orga_wide": False,
+                },
+                {
+                    "meeting_mediafile_id": 17,
+                    "mediafile_id": 9,
+                    "meeting_id": 1,
+                    "motion_ids": [12],
+                    "is_orga_wide": True,
+                },
+                {
+                    "meeting_mediafile_id": 31,
+                    "mediafile_id": 16,
+                    "meeting_id": 1,
+                    "motion_ids": [13, 17],
+                    "is_orga_wide": False,
+                },
+                {
+                    "meeting_mediafile_id": 30,
+                    "mediafile_id": 19,
+                    "meeting_id": 1,
+                    "motion_ids": [16],
+                    "is_orga_wide": True,
+                },
+            ]
+        )
+        self.set_models({"motion_state/30": {"motion_ids": [12, 13, 16, 17]}})
         self.media.duplicate_mediafile = MagicMock()
         response = self.request_multi(
             "motion.create_forwarded",
@@ -2715,9 +3155,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "mediafile_ids": [20, 21, 22],
             },
             "motion/18": {"attachment_meeting_mediafile_ids": [33]},
-            "motion/19": {"attachment_meeting_mediafile_ids": [34, 32]},
+            "motion/19": {"attachment_meeting_mediafile_ids": [32, 34]},
             "motion/20": {"attachment_meeting_mediafile_ids": [35]},
-            "motion/21": {"attachment_meeting_mediafile_ids": [35, 36]},
+            "motion/21": {"attachment_meeting_mediafile_ids": [36, 35]},
             "mediafile/20": {
                 "meeting_mediafile_ids": [32],
                 "owner_id": "meeting/2",
