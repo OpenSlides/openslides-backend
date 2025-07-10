@@ -11,13 +11,13 @@ IMAGE_TAG=openslides-backend-tests
 CATCH=0
 export COMPOSE_DOCKER_CLI_BUILD=0
 
-# Safe Exit
-trap 'eval "$DC down --volumes' EXIT
-
 # Helpers
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
 DC="CONTEXT=tests USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose -f dev/docker-compose.dev.yml"
+
+# Safe Exit
+trap 'eval "$DC down --volumes"' EXIT
 
 # Execution
 make build-test
