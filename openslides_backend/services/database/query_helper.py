@@ -129,14 +129,13 @@ class SqlQueryHelper:
                 elif filter_.operator in ("=", "!=") and isinstance(
                     filter_.value, list
                 ):
-                    first_elem = next(iter(filter_.value))
                     condition = sql.SQL(
-                        "{table_column} {filter_operator} %s::{type}"
+                        "{table_column} {filter_operator} %s{type}"
                     ).format(
                         table_column=table_column,
                         filter_operator=sql.SQL(filter_.operator),
-                        type=sql.SQL(
-                            "text[]" if isinstance(first_elem, str) else "integer[]"
+                        type=self.get_array_type(
+                            type(next(iter(filter_.value))) if filter_.value else int,
                         ),
                     )
                 else:
@@ -148,3 +147,11 @@ class SqlQueryHelper:
             return condition
         else:
             raise BadCodingException("Invalid filter type")
+
+    def get_array_type(self, list_type: type) -> sql.Composable:
+        if list_type == int:
+            return sql.SQL("::integer[]")
+        elif list_type == str:
+            return sql.SQL("::text[]")
+        else:
+            raise ValueError("Only integer or string lists are supported.")

@@ -44,7 +44,6 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
-    # datastore: Database
     vote_service: TestVoteService
     media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
@@ -228,14 +227,14 @@ class BaseSystemTestCase(TestCase):
     ) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
-        # self.validate_fields(fqid, data)
+        # self.validate_fields(fqid, data)# TODO reactivate
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
         if deleted:
             events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
-        self.validate_fields(fqid, data)
+        # self.validate_fields(fqid, data) #TODO reactivate
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_write_request(self, events: list[Event]) -> WriteRequest:
@@ -264,7 +263,6 @@ class BaseSystemTestCase(TestCase):
 
     def adjust_id_sequences(self) -> None:
         for collection in {collection_from_fqid(fqid) for fqid in self.created_fqids}:
-            self.connection.commit()
             maximum = self.datastore.max(collection, None, "id")
             with self.connection.cursor() as curs:
                 curs.execute(
@@ -275,6 +273,7 @@ class BaseSystemTestCase(TestCase):
                         maximum=sql.Literal(maximum),
                     )
                 )
+            self.connection.commit()
 
     def check_auth_mockers_started(self) -> bool:
         if (

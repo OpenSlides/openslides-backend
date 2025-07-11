@@ -1,11 +1,14 @@
-import datetime
 import json
-import zoneinfo
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from psycopg import Connection
 
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.patterns import strip_reserved_fields
 
 standard_data: dict[str, dict[int, Any]] = {
@@ -14,8 +17,8 @@ standard_data: dict[str, dict[int, Any]] = {
             "id": 1,
             "username": "data",
             "default_vote_weight": "42.000000",
-            "meeting_ids": [1, 2, 3],
             "is_demo_user": True,
+            "last_login": "2042/11/19 9:53:20",
         },
         2: {
             "id": 2,
@@ -24,7 +27,6 @@ standard_data: dict[str, dict[int, Any]] = {
             "last_name": "nerad",
             "last_login": "2012/05/31",
             "default_vote_weight": "23.000000",
-            "meeting_ids": [1, 3],
             "is_demo_user": False,
         },
         3: {
@@ -32,7 +34,6 @@ standard_data: dict[str, dict[int, Any]] = {
             "username": "3",
             "first_name": "nerad",
             "default_vote_weight": "81.000000",
-            "meeting_ids": [1, 2, 3],
             "is_demo_user": True,
         },
     },
@@ -69,9 +70,11 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "default_vote_weight": Decimal("42"),
             "last_email_sent": None,
             "is_demo_user": True,
-            "last_login": None,
+            "last_login": datetime(
+                2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo(key="Etc/UTC")
+            ),
             "organization_management_level": None,
-            "meeting_ids": [1, 2, 3],
+            "meeting_ids": None,
             "is_present_in_meeting_ids": None,
             "meeting_user_ids": None,
             "option_ids": None,
@@ -104,11 +107,9 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "default_vote_weight": Decimal("23"),
             "last_email_sent": None,
             "is_demo_user": False,
-            "last_login": datetime.datetime(
-                2012, 5, 31, 0, 0, tzinfo=zoneinfo.ZoneInfo(key="Etc/UTC")
-            ),
+            "last_login": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")),
             "organization_management_level": None,
-            "meeting_ids": [1, 3],
+            "meeting_ids": None,
             "is_present_in_meeting_ids": None,
             "meeting_user_ids": None,
             "option_ids": None,
@@ -143,7 +144,7 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "is_demo_user": True,
             "last_login": None,
             "organization_management_level": None,
-            "meeting_ids": [1, 2, 3],
+            "meeting_ids": None,
             "is_present_in_meeting_ids": None,
             "meeting_user_ids": None,
             "option_ids": None,
@@ -210,3 +211,14 @@ def setup_data(connection: Connection, data: dict[str, dict[int, Any]]) -> None:
                     [val for val in model_data.values()],
                 )
     connection.commit()
+
+
+def insert_into_intermediate_table(
+    table: str, columns: list[str], data: list[tuple[int, int]]
+) -> None:
+    with get_new_os_conn() as connection:
+        with connection.cursor() as cursor:
+            for values in data:
+                cursor.execute(
+                    f"INSERT INTO {table} ({', '.join(columns)}) VALUES {values}"
+                )

@@ -31,7 +31,7 @@ class PollTestMixin(BaseActionTestCase):
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 **{
                     f"user/{i}": {
-                        **self._get_user_data(f"user{i}", {1: [{"id": 3}]}),
+                        **self._get_user_data(f"user{i}"),
                         "is_present_in_meeting_ids": [1],
                         "meeting_ids": [1],
                         "meeting_user_ids": [i + 10],

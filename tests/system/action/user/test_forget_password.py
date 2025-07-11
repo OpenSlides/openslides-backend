@@ -1,4 +1,5 @@
-from time import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -19,7 +20,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -35,7 +36,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -110,7 +111,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user/3": {"email": "user@ntvtn.de", "username": "test3"},
             }
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -151,7 +152,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user/2": {"email": id_to_email[2], "username": "test2"},
             }
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(

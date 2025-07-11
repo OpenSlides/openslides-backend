@@ -37,42 +37,60 @@ def test_create_update() -> None:
 
 def test_create_list_update() -> None:
     data = get_data()
-    data[0]["events"].append(
-        {
-            "type": EventType.Update,
-            "fqid": "user/1",
-            "list_fields": {"add": {"meeting_ids": [2]}},
-        },
-    )
-    with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))
-    assert_model(
-        "user/1", {"id": 1, "username": "1", "first_name": "1", "meeting_ids": [2]}
-    )
-
-
-def test_list_create_list_update() -> None:
-    data = get_data()
-    data[0]["events"][0]["fields"] = {
-        "username": "Some",
-        "first_name": "1",
-        "meeting_ids": [1],
-    }
-    data[0]["events"].append(
-        {
-            "type": EventType.Update,
-            "fqid": "user/1",
-            "fields": {"username": "Some42"},
-            "list_fields": {"add": {"meeting_ids": [2]}},
-        },
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": None,
+                "collection": "committee",
+                "fields": {"name": "com1"},
+            },
+            {
+                "type": EventType.Update,
+                "fqid": "committee/1",
+                "list_fields": {"add": {"manager_ids": [1]}},
+            },
+        ]
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(create_write_requests(data))
     assert_model(
         "user/1",
-        {"id": 1, "username": "Some42", "first_name": "1", "meeting_ids": [1, 2]},
+        {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": [1]},
+    )
+
+
+def test_list_create_list_update() -> None:
+    data = get_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "user/2",
+                "fields": {
+                    "username": "Some",
+                },
+            },
+            {
+                "type": EventType.Create,
+                "collection": "committee",
+                "fields": {"name": "com1", "manager_ids": [1]},
+            },
+            {
+                "type": EventType.Update,
+                "fqid": "committee/1",
+                "fields": {"name": "Some42"},
+                "list_fields": {"add": {"manager_ids": [2]}},
+            },
+        ]
+    )
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    assert_model(
+        "committee/1",
+        {"id": 1, "name": "Some42", "manager_ids": [1, 2]},
     )
 
 

@@ -1,4 +1,5 @@
-from time import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -10,6 +11,7 @@ from tests.system.action.base import BaseActionTestCase
 class ParticipantJsonUpload(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
@@ -18,23 +20,19 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "gender/3": {"name": "diverse"},
                 "gender/4": {"name": "non-binary"},
                 "meeting/1": {
-                    "name": "test",
-                    "group_ids": [1, 7],
-                    "structure_level_ids": [1],
                     "admin_group_id": 7,
                 },
-                "group/1": {"name": "testgroup", "meeting_id": 1},
+                "group/1": {"name": "testgroup"},
                 "group/7": {
                     "name": "custom_admin_group",
                     "meeting_id": 1,
-                    "admin_group_for_meeting_id": 1,
                 },
                 "structure_level/1": {"name": "testlevel", "meeting_id": 1},
             }
         )
 
     def test_json_upload_simple(self) -> None:
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         response = self.request(
             "participant.json_upload",
             {
@@ -56,7 +54,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         )
-        end_time = int(time())
+        end_time = datetime.now(ZoneInfo(key="Etc/UTC"))
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
@@ -217,17 +215,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             },
         }
 
-    def test_json_upload_no_default_group(self) -> None:
-        response = self.request(
-            "participant.json_upload",
-            {"data": [{"username": "testuser"}], "meeting_id": 1},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "No valid group given in import and no default_group for meeting defined!"
-            in response.json["message"]
-        )
-
     def test_json_upload_results(self) -> None:
         self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
         response = self.request(
@@ -374,7 +361,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         other_user_id = 3
         self.set_models(
             {
-                f"user/{other_user_id}": self._get_user_data("test", {1: [], 4: []}),
+                f"user/{other_user_id}": self._get_user_data("test"),
             }
         )
         self.set_user_groups(user_id, [2])
@@ -608,15 +595,12 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "username": "user2",
                     "first_name": "John",
                     "meeting_user_ids": [11, 44],
-                    "meeting_ids": [1, 4],
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "default_password": "secret",
                     "can_change_own_password": True,
                     "password": "secretcrypted",
                 },
-                "committee/60": {"meeting_ids": [1, 4]},
-                "meeting/1": {"meeting_user_ids": [11]},
-                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting/4": {"committee_id": 60},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
                 "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
                 "group/1": {"meeting_user_ids": [11]},
@@ -1392,9 +1376,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "user/2": {
                     "meeting_user_ids": [12],
                     "username": "wilhelm",
-                    "meeting_ids": [1],
                 },
                 "meeting_user/12": {"meeting_id": 1, "group_ids": [1], "user_id": 2},
+                "group/1": {"meeting_user_ids": [12]},
             }
         )
         response = self.request(
@@ -1956,15 +1940,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "username": "user2",
                     "first_name": "John",
                     "meeting_user_ids": [11, 44],
-                    "meeting_ids": [1, 4],
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "default_password": "secret",
                     "can_change_own_password": True,
                     "password": "secretcrypted",
                 },
-                "committee/60": {"meeting_ids": [1, 4]},
-                "meeting/1": {"meeting_user_ids": [11]},
-                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting/4": {"committee_id": 60},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
                 "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
                 "group/1": {"meeting_user_ids": [11]},
@@ -2029,16 +2010,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "username": "user2",
                     "member_number": "M3MNUM",
                     "first_name": "John",
-                    "meeting_user_ids": [11, 44],
-                    "meeting_ids": [1, 4],
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "default_password": "secret",
                     "can_change_own_password": True,
                     "password": "secretcrypted",
                 },
-                "committee/60": {"meeting_ids": [1, 4]},
-                "meeting/1": {"meeting_user_ids": [11]},
-                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting/4": {"committee_id": 60},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
                 "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
                 "group/1": {"meeting_user_ids": [11]},
@@ -2420,6 +2397,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_dont_recognize_empty_name_and_email(self) -> None:
         self.set_models(
             {
+                "gender/4": {"name": "non-binary"},
                 "organization/1": {
                     "user_ids": [1, 3, 4, 5],
                     "saml_enabled": False,

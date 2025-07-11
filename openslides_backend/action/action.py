@@ -1,9 +1,12 @@
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from copy import deepcopy
+from datetime import datetime
+from decimal import Decimal
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -301,9 +304,20 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validates one instance of the action data according to schema class attribute.
         """
         try:
-            type(self).schema_validator(instance)
+            type(self).schema_validator(
+                {
+                    # fmt: off
+                    field:
+                        value.timestamp() if isinstance(value, datetime)
+                        else str(value) if isinstance(value, Decimal)
+                        else value.obj if isinstance(value, Jsonb)
+                        else value
+                    for field, value in instance.items()
+                    # fmt: on
+                }
+            )
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(f"Action {self.name}: " + exception.message)
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """

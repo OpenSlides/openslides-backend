@@ -1,17 +1,9 @@
 from typing import Any, cast
 
-from ...models.base import Model, model_registry
-from ...models.fields import BaseRelationField, Field
+from ...models.base import Model
+from ...models.fields import BaseRelationField
 from ...services.database.interface import Database
-from ...shared.patterns import (
-    FullQualifiedField,
-    collection_from_fqfield,
-    field_from_fqfield,
-    fqid_from_fqfield,
-    id_from_fqfield,
-)
-from .calculated_field_handler import CalculatedFieldHandlerCall
-from .calculated_field_handlers_map import calculated_field_handlers_map
+from ...shared.patterns import FullQualifiedField, field_from_fqfield, fqid_from_fqfield
 from .single_relation_handler import SingleRelationHandler
 from .typing import (
     FieldUpdateElement,
@@ -35,26 +27,15 @@ class RelationManager:
         model: Model,
         instance: dict[str, Any],
         action: str,
-        process_calculated_fields_only: bool = False,
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
 
         relations: RelationUpdates = {}
-        calculated_field_handler_calls: list[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
             field = model.get_field(field_name)
-
-            calculated_field_handler_calls.append(
-                {
-                    "field": field,
-                    "field_name": field_name,
-                    "instance": instance,
-                    "action": action,
-                }
-            )
 
             # only relations are handled here
             if not isinstance(field, BaseRelationField):
@@ -67,47 +48,10 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                if not process_calculated_fields_only:
-                    self.process_relation_element(fqfield, relations_element, relations)
-
-                related_field_name = field_from_fqfield(fqfield)
-                related_model = model_registry[collection_from_fqfield(fqfield)]()
-                related_field = related_model.get_field(related_field_name)
-                related_instance = {
-                    "id": id_from_fqfield(fqfield),
-                    related_field_name: relations_element["value"],
-                }
-                calculated_field_handler_calls.append(
-                    {
-                        "field": related_field,
-                        "field_name": related_field_name,
-                        "instance": related_instance,
-                        "action": action,
-                    }
-                )
-        if not process_calculated_fields_only:
-            self.apply_relation_updates(relations)
-        for call in calculated_field_handler_calls:
-            self.call_calculated_field_handlers(relations, **call)
-        return relations
-
-    def call_calculated_field_handlers(
-        self,
-        relations: RelationUpdates,
-        instance: dict[str, Any],
-        field: Field,
-        field_name: str,
-        action: str,
-    ) -> None:
-        """
-        Calls all registered CalculatedFieldHandlers for the current field and adds the
-        resulting relation updates to the main map.
-        """
-        for calculated_field_handler_class in calculated_field_handlers_map[field]:
-            handler_instance = calculated_field_handler_class(self.datastore)
-            result = handler_instance.process_field(field, field_name, instance, action)
-            for fqfield, relations_element in result.items():
                 self.process_relation_element(fqfield, relations_element, relations)
+
+        self.apply_relation_updates(relations)
+        return relations
 
     def process_relation_element(
         self,

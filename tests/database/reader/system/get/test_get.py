@@ -14,6 +14,7 @@ from openslides_backend.shared.exceptions import (
 )
 from openslides_backend.shared.typing import DeletedModel
 from tests.database.reader.system.util import (
+    insert_into_intermediate_table,
     setup_data,
     standard_data,
     standard_responses,
@@ -23,15 +24,7 @@ ID = 1
 COLLECTION = "user"
 FQID = f"{COLLECTION}/{ID}"
 data = {
-    COLLECTION: {
-        ID: {
-            "id": ID,
-            "username": "data",
-            "default_vote_weight": "42.000000",
-            "meeting_ids": [1, 2, 3],
-            "is_demo_user": True,
-        },
-    },
+    COLLECTION: {ID: standard_data[COLLECTION][ID]},
 }
 standard_response = {
     k: v for k, v in standard_responses["user"][ID].items() if v is not None
@@ -48,14 +41,9 @@ def test_simple(db_connection: Connection) -> None:
 
 def test_view_field_relation_list_ordered(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
-    with get_new_os_conn() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (2, 1)"
-            )
-            cursor.execute(
-                "INSERT INTO nm_committee_manager_ids_user (committee_id, user_id) VALUES (1, 1)"
-            )
+    insert_into_intermediate_table(
+        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 1), (1, 1)]
+    )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         response = extended_database.get("user/1")
@@ -76,7 +64,8 @@ def test_no_collection(db_connection: Connection) -> None:
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get("doesntexist/1")
     assert (
-        "Collection 'doesntexist' does not exist in the database:" in e_info.value.msg
+        "Collection 'doesntexist' does not exist in the database:"
+        in e_info.value.message
     )
 
 
@@ -109,7 +98,7 @@ def test_mapped_fields_not_exists(db_connection: Connection) -> None:
             extended_database.get(FQID, ["that_doesnt_exist"])
     assert (
         "Field 'that_doesnt_exist' does not exist in collection 'user': column"
-        in e_info.value.msg
+        in e_info.value.message
     )
 
 
@@ -118,7 +107,7 @@ def test_invalid_fqid(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get("not valid")
-    assert "Invalid fqid format. list index out of range" == e_info.value.msg
+    assert "Invalid fqid format. list index out of range" == e_info.value.message
 
 
 def test_invalid_mapped_fields(db_connection: Connection) -> None:
@@ -126,7 +115,7 @@ def test_invalid_mapped_fields(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get(FQID, ["not valid"])
-    assert "Invalid fields: ['not valid']" == e_info.value.msg
+    assert "Invalid fields: ['not valid']" == e_info.value.message
 
 
 def test_invalid_mapped_fields2(db_connection: Connection) -> None:
@@ -135,7 +124,7 @@ def test_invalid_mapped_fields2(db_connection: Connection) -> None:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
             extended_database.get(FQID, [None])  # type: ignore
-    assert "Invalid fields: [None]" in e_info.value.msg
+    assert "Invalid fields: [None]" in e_info.value.message
 
 
 def test_none(db_connection: Connection) -> None:
@@ -188,7 +177,7 @@ def test_changed_models_without_db_instance_fail(db_connection: Connection) -> N
         ex_db.apply_changed_model(FQID, {"is_demo_user": True})
         with pytest.raises(ModelDoesNotExist) as e_info:
             ex_db.get(FQID, ["is_demo_user", "username"])
-    assert e_info.value.msg == "Model 'user/1' does not exist."
+    assert e_info.value.message == "Model 'user/1' does not exist."
     assert e_info.value.fqid == FQID
 
 
@@ -200,5 +189,5 @@ def test_changed_models_deleted(db_connection: Connection) -> None:
         ex_db.apply_changed_model(FQID, DeletedModel())
         with pytest.raises(ModelDoesNotExist) as e_info:
             ex_db.get(FQID)
-    assert e_info.value.msg == "Model 'user/1' does not exist."
+    assert e_info.value.message == "Model 'user/1' does not exist."
     assert e_info.value.fqid == FQID

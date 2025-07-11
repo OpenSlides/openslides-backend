@@ -2,7 +2,7 @@ import re
 import time
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, cast
+from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
@@ -40,9 +40,7 @@ from ....shared.util import (
     ONE_ORGANIZATION_ID,
     validate_html,
 )
-from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
-from ...relations.typing import ListUpdateElement
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -689,9 +687,6 @@ class MeetingImport(
             )
 
         self.append_extra_events(events, instance["meeting"])
-
-        # handle the calc fields.
-        events.extend(self.handle_calculated_fields(instance))
         return events
 
     def append_extra_events(
@@ -716,35 +711,6 @@ class MeetingImport(
                     },
                 )
             )
-
-    def handle_calculated_fields(self, instance: dict[str, Any]) -> Iterable[Event]:
-        regex = re.compile(
-            r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
-        )
-        json_data = instance["meeting"]
-        relations: RelationUpdates = {}
-        for collection in json_data:
-            for entry in json_data[collection].values():
-                model = model_registry[collection]()
-                relations.update(
-                    self.relation_manager.get_relation_updates(
-                        model,
-                        entry,
-                        "meeting.import",
-                        process_calculated_fields_only=True,
-                    )
-                )
-        # Fix bug in calculated fields, see #1367
-        entries_to_remove: list[str] = []
-        for field, entry in relations.items():
-            if regex.search(field):
-                if cast(ListUpdateElement, entry)["add"]:
-                    cast(ListUpdateElement, entry)["remove"] = []
-                else:
-                    entries_to_remove.append(field)
-        for field in entries_to_remove:
-            del relations[field]
-        return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
         self, instance: dict[str, Any]

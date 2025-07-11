@@ -89,9 +89,7 @@ class ServiceException(View400Exception):
 
 
 class DatabaseException(ServiceException):
-    def __init__(self, msg: str) -> None:
-        super().__init__(msg)
-        self.msg = msg
+    pass
 
 
 class InvalidFormat(DatabaseException):

@@ -677,7 +677,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 for entry in data
                 if (home_committee := entry.get("home_committee"))
             ],
-            mapped_fields=["username", "saml_id", "default_password"],
         )
 
     def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:

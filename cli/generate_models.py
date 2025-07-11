@@ -352,31 +352,34 @@ class Attribute(Node):
         )
         is_view_field = state == FieldSqlErrorType.SQL
 
-        if field_type == "relation-list":
-            foreign = foreign_fields[0]
-            foreign_type = foreign.field_def.get("type", "")
+        if not value.get("read_only"):
+            if field_type == "relation-list":
+                foreign = foreign_fields[0]
+                foreign_type = foreign.field_def.get("type", "")
 
-            if foreign_type == "relation-list":
-                table_name = HelperGetNames.get_nm_table_name(own, foreign)
-                field1 = HelperGetNames.get_field_in_n_m_relation_list(
-                    own, foreign.table
-                )
-                field2 = HelperGetNames.get_field_in_n_m_relation_list(
-                    foreign, own.table
-                )
-                if field1 == field2:
-                    field1 += "_1"
-                    field2 += "_2"
-                if own.table == foreign.table:
-                    write_fields = (table_name, field2, field1, [])
-                else:
-                    write_fields = (table_name, field1, field2, [])
+                if foreign_type == "relation-list":
+                    table_name = HelperGetNames.get_nm_table_name(own, foreign)
+                    field1 = HelperGetNames.get_field_in_n_m_relation_list(
+                        own, foreign.table
+                    )
+                    field2 = HelperGetNames.get_field_in_n_m_relation_list(
+                        foreign, own.table
+                    )
+                    if field1 == field2:
+                        field1 += "_1"
+                        field2 += "_2"
+                    if own.table == foreign.table:
+                        write_fields = (table_name, field2, field1, [])
+                    else:
+                        write_fields = (table_name, field1, field2, [])
 
-            elif foreign_type == "generic-relation-list":
+                elif foreign_type == "generic-relation-list":
+                    write_fields = self.get_write_fields_for_generic(
+                        own, foreign_fields
+                    )
+
+            elif field_type == "generic-relation-list":
                 write_fields = self.get_write_fields_for_generic(own, foreign_fields)
-
-        elif field_type == "generic-relation-list":
-            write_fields = self.get_write_fields_for_generic(own, foreign_fields)
 
         assert error == "", error
 
