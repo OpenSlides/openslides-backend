@@ -303,19 +303,18 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Validates one instance of the action data according to schema class attribute.
         """
-        timestamp_dict: dict[str, Any] = {}
-        decimal_dict: dict[str, Any] = {}
-        json_dict: dict[str, Any] = {}
-        for field, value in instance.items():
-            if isinstance(value, datetime):
-                timestamp_dict[field] = value.timestamp()
-            elif isinstance(value, Decimal):
-                decimal_dict[field] = str(value)
-            elif isinstance(value, Jsonb):
-                json_dict[field] = value.obj
         try:
             type(self).schema_validator(
-                instance | timestamp_dict | decimal_dict | json_dict
+                {
+                    # fmt: off
+                    field:
+                        value.timestamp() if isinstance(value, datetime)
+                        else str(value) if isinstance(value, Decimal)
+                        else value.obj if isinstance(value, Jsonb)
+                        else value
+                    for field, value in instance.items()
+                    # fmt: on
+                }
             )
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(f"Action {self.name}: " + exception.message)
