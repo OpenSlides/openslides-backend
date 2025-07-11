@@ -92,10 +92,10 @@ class UserScopeMixin(BaseServiceProvider):
         active_meetings_committee: dict[int, int] = {}
 
         for meeting_id, meeting_data in result.items():
-            item = {meeting_id: meeting_data["committee_id"]}
-            meetings_committee.update(item)
+            committee_id = meeting_data["committee_id"]
+            meetings_committee[meeting_id] = committee_id
             if meeting_data.get("is_active_in_organization_id"):
-                active_meetings_committee.update(item)
+                active_meetings_committee[meeting_id] = committee_id
 
         committee_meetings, committees = self._get_committee_meetings_and_committees(
             meetings_committee, committees_manager
@@ -186,7 +186,6 @@ class UserScopeMixin(BaseServiceProvider):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 scope_id,
             ):
                 raise MissingPermission(
@@ -204,7 +203,6 @@ class UserScopeMixin(BaseServiceProvider):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ) and not has_perm(
                 self.datastore, self.user_id, meeting_permission, scope_id
@@ -220,7 +218,6 @@ class UserScopeMixin(BaseServiceProvider):
             if get_shared_committee_management_levels(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 [ci for ci in committees_to_meetings.keys()],
             ):
                 return
@@ -241,10 +238,7 @@ class UserScopeMixin(BaseServiceProvider):
                         },
                     }
                 )
-            if (
-                self.check_for_admin_in_all_meetings(instance_id, meeting_ids)
-                and user_in_archived_meetings_only
-            ):
+            if user_in_archived_meetings_only:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,

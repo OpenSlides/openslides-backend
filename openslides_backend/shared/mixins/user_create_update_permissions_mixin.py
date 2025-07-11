@@ -508,7 +508,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
                 if not has_committee_management_level(
                     self.datastore,
                     self.user_id,
-                    CommitteeManagementLevel.CAN_MANAGE,
                     committee_id,
                 )
             }:
@@ -528,18 +527,26 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, BaseServiceProvider):
         self,
         fields: dict[str, list[str]],
         instance: dict[str, Any],
-    ) -> None:
+        raise_exception: bool = True,
+    ) -> list[str]:
+        """
+        If no exception is raised, it returns the list of failing groups, as a result of higher OML
+        """
         # groups B and C are meeting-specific and therefore allowed to be changed, even by lower-OML users
+        ignore_groups = ["B", "C"]
         if "id" in instance and any(
-            fields[group] for group in fields.keys() if group not in ["B", "C"]
+            fields[group] for group in fields.keys() if group not in ignore_groups
         ):
             if (
                 OrganizationManagementLevel(self.instance_user_oml_permission)
                 > self.permstore.user_oml
             ):
-                raise PermissionDenied(
-                    f"Your organization management level is not high enough to change a user with a Level of {self.instance_user_oml_permission}!"
-                )
+                if raise_exception:
+                    raise PermissionDenied(
+                        f"Your organization management level is not high enough to change a user with a Level of {self.instance_user_oml_permission}!"
+                    )
+                return [group for group in fields if group not in ignore_groups]
+        return []
 
     def _check_missing_permissions_groups_AF(
         self,
@@ -671,6 +678,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
         if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return []
+        actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
         # store scope, id and OML-permission for requested user
         (
@@ -682,6 +690,10 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_home_committee_id,
         ) = self.get_user_scope(instance.get("id") or instance)
 
+        failing_groups = self._check_for_higher_OML(
+            actual_group_fields, instance, raise_exception=False
+        )
+
         instance_meeting_id = instance.get("meeting_id")
         locked_from_inside = False
         if instance_meeting_id:
@@ -691,13 +703,17 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                 lock_result=False,
             ).get("locked_from_inside", False)
 
-        actual_group_fields = self._get_actual_grouping_from_instance(instance)
-
+        # dict to keep order while ignoring duplicates
+        failing_fields: dict[str, Any] = {
+            field: None
+            for group in failing_groups
+            for field in actual_group_fields[group]
+            if field in instance and group in groups
+        }
         """ group[H] fields are internal, but generally allowed in import.
         They have to be checked like group[A] fields"""
         if actual_group_fields["H"]:
             actual_group_fields["A"] += actual_group_fields["H"]
-        failing_fields: list[str] = []
         for method, group, inst_param, other_param in [
             tup
             for tup in [
@@ -710,7 +726,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                 (self.check_group_I, "I", instance, None),
                 (self.check_group_J, "J", instance, None),
             ]
-            if tup[1] in groups
+            if tup[1] in groups and tup[1] not in failing_groups
         ]:
             fields = actual_group_fields[group]
             try:
@@ -725,8 +741,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
                         fields, inst_param, other_param
                     )
             except PermissionDenied:
-                failing_fields += fields
-        return failing_fields
+                failing_fields.update({field: None for field in fields})
+        return list(failing_fields)
 
     def get_all_checked_fields(self, groups: str = "ABDEFGHIJ") -> set[str]:
         all_fields = set()

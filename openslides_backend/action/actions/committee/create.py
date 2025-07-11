@@ -41,7 +41,6 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 parent_id,
             ):
                 raise MissingPermission(

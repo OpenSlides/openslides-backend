@@ -134,7 +134,6 @@ class SearchUsers(BasePresenter):
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 permission_id,
             ):
                 return
@@ -158,7 +157,6 @@ class SearchUsers(BasePresenter):
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ):
                 return

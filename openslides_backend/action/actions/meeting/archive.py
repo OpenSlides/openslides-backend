@@ -1,10 +1,7 @@
 from typing import Any
 
 from ....models.models import Meeting
-from ....permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
@@ -67,7 +64,6 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
         if not has_committee_management_level(
             self.datastore,
             self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
             meeting["committee_id"],
         ) and not has_organization_management_level(
             self.datastore,

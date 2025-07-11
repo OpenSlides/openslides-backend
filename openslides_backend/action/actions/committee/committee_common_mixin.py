@@ -42,7 +42,6 @@ class CommitteeCommonCreateUpdateMixin(
             if fails := get_failing_committee_management_levels(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 list(field_difference),
             ):
                 raise MissingPermission(

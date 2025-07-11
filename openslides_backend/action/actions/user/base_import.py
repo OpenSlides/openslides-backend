@@ -169,21 +169,24 @@ class BaseUserImport(BaseImportAction):
     def check_field_failures(
         self, entry: dict[str, Any], messages: list[str], groups: str = "ABDEFGHIJ"
     ) -> bool:
-        if home_committee := entry.pop("home_committee", None):
-            entry["home_committee_id"] = home_committee
+        substitutions: dict[str, Any] = {}
+        for field in ["home_committee", "gender"]:
+            if content := entry.pop(field, None):
+                substitutions[field] = content
+                entry[f"{field}_id"] = content
         failing_fields_jsonupload = {
             field
             for field in entry
             if isinstance(entry[field], dict)
             and entry[field]["info"] == ImportState.REMOVE
         }
-        if home_committee:
-            entry["home_committee_id"] = home_committee.get("id")
+        for field in substitutions:
+            entry[f"{field}_id"] = substitutions[field].get("id")
 
         failing_fields = self.permission_check.get_failing_fields(entry, groups)
-        if home_committee:
-            entry["home_committee"] = home_committee
-            entry.pop("home_committee_id")
+        for field in substitutions:
+            entry[field] = substitutions[field]
+            entry.pop(f"{field}_id")
         if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
             less_ff.sort()
             messages.append(
