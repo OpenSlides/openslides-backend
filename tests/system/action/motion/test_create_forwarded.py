@@ -2349,6 +2349,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_mediafile/11": {
                     "attachment_ids": ["motion/12", "motion/13", "motion/14"]
                 },
+                "mediafile/1": {"title": "title_1 (12)"},
             }
         )
         response1 = self.request(
@@ -2395,19 +2396,19 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_mediafile_ids": [12],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
-                "title": "title_1",
+                "title": "title_1 (12)",
             },
             "mediafile/3": {
                 "meeting_mediafile_ids": [13],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
-                "title": "title_1 (#2)",
+                "title": "title_1 (12) (1)",
             },
             "mediafile/4": {
                 "meeting_mediafile_ids": [14],
                 "owner_id": "meeting/2",
                 "mimetype": "text/plain",
-                "title": "title_1 (#3)",
+                "title": "title_1 (12) (2)",
             },
             "meeting_mediafile/12": {
                 "meeting_id": 2,
