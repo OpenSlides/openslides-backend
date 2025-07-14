@@ -475,7 +475,8 @@ class BaseActionTestCase(BaseSystemTestCase):
     # @with_database_context
     def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
         """
-        Sets the users groups, returns the meeting_user_ids
+        Sets the users groups and corresponding meeting_users and meeting_ids.
+        Returns the meeting_user_ids.
         """
         assert isinstance(group_ids, list)
         groups = self.datastore.get_many(

@@ -596,8 +596,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "error", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -612,8 +612,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "done", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -839,8 +839,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
-            "last_name": "Luther King",
-            "first_name": "Martin",
+            "last_name": {"value": "Luther King", "info": ImportState.DONE},
+            "first_name": {"value": "Martin", "info": ImportState.DONE},
             "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
@@ -1186,4 +1186,58 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_model_exists(
             "user/2",
             {"id": 2, "username": "man", "gender_id": 1},
+        )
+
+    def test_json_upload_multiple_with_same_home_committee(self) -> None:
+        self.json_upload_multiple_with_same_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "first_name": "Tick", "username": "Huey", "home_committee_id": 1},
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "first_name": "Trick",
+                "username": "Dewey",
+                "home_committee_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "Track",
+                "username": "Louie",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_multiple_with_x(self) -> None:
+        self.json_upload_multiple_with_x()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {"id": 3, "first_name": "Gustav", "username": "schwante"},
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "bib",
+                "last_name": "lib",
+                "username": "biblib",
+            },
+        )
+        self.assert_model_exists(
+            "user/5",
+            {
+                "id": 5,
+                "first_name": "Loki",
+                "username": "witz",
+                "email": "loki@asen.sk",
+            },
         )

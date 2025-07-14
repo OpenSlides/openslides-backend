@@ -7,7 +7,7 @@ from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.patterns import fqid_from_collection_and_id
-from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
+from .management_levels import OrganizationManagementLevel
 from .permissions import Permission, Permissions, permission_parents
 
 
@@ -31,7 +31,6 @@ def has_perm(
         if not_locked_from_editing and has_committee_management_level(
             datastore,
             user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
             meeting["committee_id"],
         ):
             return True
@@ -111,13 +110,11 @@ def has_organization_management_level(
 def get_failing_committee_management_levels(
     datastore: Database,
     user_id: int,
-    expected_level: CommitteeManagementLevel,
     committee_ids: list[int],
 ) -> list[int]:
     """
-    Checks whether a user has the minimum necessary
-    CommitteeManagementLevel for the committees in the list and
-    returns the ids of all that fail.
+    Checks whether a user committee manager for the committees
+    in the list and returns the ids of all that fail.
     """
     if user_id > 0:
         user = datastore.get(
@@ -152,10 +149,11 @@ def get_failing_committee_management_levels(
 def has_committee_management_level(
     datastore: Database,
     user_id: int,
-    expected_level: CommitteeManagementLevel,
     committee_id: int,
 ) -> bool:
-    """Checks whether a user has the minimum necessary CommitteeManagementLevel"""
+    """
+    Checks whether a user is committee manager in the given committee.
+    """
     if user_id > 0:
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
@@ -182,14 +180,16 @@ def has_committee_management_level(
 def get_shared_committee_management_levels(
     datastore: Database,
     user_id: int,
-    expected_level: CommitteeManagementLevel,
     committee_ids: list[int],
 ) -> list[int]:
-    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
+    """
+    Checks whether a user is manager in the given committees.
+    Returns a list where this is the case or all if the user is orga admin.
+    """
     if user_id > 0:
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["committee_management_ids"],
+            ["organization_management_level", "committee_management_ids"],
             lock_result=False,
             use_changed_models=False,
         )

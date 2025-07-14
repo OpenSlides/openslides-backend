@@ -2502,6 +2502,42 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_not_exists("user/2")
 
+    def test_delete_statutes(self) -> None:
+        """test for deleted statute motions in event.data after migration. Uses migrations 0055 and onwards."""
+        data = self.create_request_data()
+        data["meeting"]["meeting"]["1"][
+            "motions_default_statute_amendment_workflow_id"
+        ] = 1
+        data["meeting"]["meeting"]["1"][
+            "motions_statute_recommendations_by"
+        ] = "Statute ABK"
+        data["meeting"]["meeting"]["1"]["motions_statutes_enabled"] = True
+        data["meeting"]["meeting"]["1"]["motion_statute_paragraph_ids"] = []
+
+        data["meeting"]["motion_workflow"]["1"][
+            "default_statute_amendment_workflow_meeting_id"
+        ] = 1
+        data["meeting"]["_migration_index"] = 55
+        self.replace_migrated_projector_fields(data)
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion_workflow/2")
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "motions_default_statute_amendment_workflow_id": None,
+                "motions_statute_recommendations_by": None,
+                "motions_statutes_enabled": None,
+                "motion_statute_paragraph_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "motion_workflow/1",
+            {
+                "default_statute_amendment_workflow_meeting_id": None,
+            },
+        )
+
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:
         data_raw = get_initial_data_file("data/export-OS3-demo.json")

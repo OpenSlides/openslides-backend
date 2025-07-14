@@ -1,5 +1,7 @@
 #!/bin/bash
 
-meta/dev/scripts/wait-for-database.sh
+if [ ! $ANONYMOUS_ONLY ]; then
+  meta/dev/scripts/wait-for-database.sh
+fi
 
 exec "$@"

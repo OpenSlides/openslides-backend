@@ -167,10 +167,12 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         ):
             return
 
-        if "parent_id" in instance and not instance["parent_id"]:
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
-
         if "parent_id" in instance:
+            if not instance["parent_id"]:
+                raise MissingPermission(
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                )
+
             child_id = instance["id"]
             parent_id = instance["parent_id"]
             data = self.datastore.get_many(
@@ -209,7 +211,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         if has_committee_management_level(
             self.datastore,
             self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
             instance["id"],
         ):
             return

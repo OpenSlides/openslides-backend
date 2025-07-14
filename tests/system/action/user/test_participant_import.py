@@ -967,7 +967,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         """fields in preview forbidden, in import allowed => okay"""
         self.json_upload_not_sufficient_field_permission_update()
         self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS, 1
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, 1
         )
         self.set_committee_management_level([60], 1)
         response = self.request("participant.import", {"id": 1, "import": True})
@@ -977,7 +977,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
-            "In contrast to preview you may import field(s) 'email, first_name, saml_id, username'",
+            "In contrast to preview you may import field(s) 'default_password, email, first_name, saml_id, username'",
         ]
         assert row["data"] == {
             "id": 2,
@@ -986,7 +986,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "first_name": {"info": "done", "value": "Jim"},
             "email": {"info": "done", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
-            "default_password": {"info": "remove", "value": ""},
+            "default_password": {"info": "done", "value": ""},
             "groups": [
                 {"id": 1, "info": "done", "value": "group1"},
                 {"id": 2, "info": "done", "value": "group2"},
@@ -1718,5 +1718,54 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "Alice",
                 "guest": False,
                 "home_committee_id": 2,
+            },
+        )
+
+    def test_json_upload_no_permissions_to_set_meeting_external_fields_on_superadmin(
+        self,
+    ) -> None:
+        self.json_upload_no_permissions_to_set_meeting_external_fields_on_superadmin()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Account is added to the meeting, but changes to the following field(s) are not possible: username, first_name, email, saml_id, default_password",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "saml_id": {"info": "remove", "value": "saml_id1"},
+            "username": {"id": 2, "info": "remove", "value": "user2"},
+            "first_name": {"info": "remove", "value": "Jim"},
+            "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
+            "groups": [
+                {"id": 1, "info": "done", "value": "group1"},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
+            ],
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "user2",
+                "first_name": "John",
+                "meeting_user_ids": [11, 44],
+                "meeting_ids": [1, 4],
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+                "default_password": "secret",
+                "can_change_own_password": True,
+                "password": "secretcrypted",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/11",
+            {
+                "user_id": 2,
+                "vote_weight": Decimal("1.23456"),
+                "group_ids": [1, 2, 3, 7],
             },
         )

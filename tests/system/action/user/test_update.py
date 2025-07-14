@@ -2998,15 +2998,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "group_ids": [7],
                 },
                 "meeting/4": {
-                    "committee_id": 1,
                     "present_user_ids": [1234],
                 },
                 "meeting/7": {
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 1,
+                    "committee_id": 63,
                     "present_user_ids": [1234],
                 },
-                "committee/1": {"name": "action", "meeting_ids": [4, 7]},
                 "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
                 "list_of_speakers/1": {
                     "meeting_id": 4,
