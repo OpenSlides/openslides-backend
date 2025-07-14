@@ -117,8 +117,8 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
             ).values()
         }
 
-        pattern = re.compile(rf"^{re.escape(origin_title)}(?:\s\(#(\d+)\))?$")
-        max_suffix = 1
+        pattern = re.compile(rf"^{re.escape(origin_title)}(?:\s\((\d+)\))?$")
+        max_suffix = 0
 
         for title in existing_titles:
             match = pattern.match(title)
@@ -131,4 +131,4 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
                     except ValueError:
                         continue
 
-        return f"{origin_title} (#{max_suffix + 1})"
+        return f"{origin_title} ({max_suffix + 1})"
