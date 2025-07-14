@@ -47,17 +47,14 @@ jobs:
     - name: Fire a test request to presenter component
       run: curl localhost:9003/system/presenter/health
 
-  # This setups and runs the dev/run-tests.sh script
-  run-test-script:
-    name: Run-tests.sh Script
+  build-and-test-dev-image:
+    name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Test
-        uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
-        with:
-          service: backend
+      - name: Run tests
+        run: dev/run-tests.sh
 
   test-local-setup:
     name: Build and test local dev setup
@@ -66,7 +63,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: openslides-backend
-    
+
     - name: Set env vars
       working-directory: openslides-backend/requirements
       run: |

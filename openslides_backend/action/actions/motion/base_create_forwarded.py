@@ -10,7 +10,7 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.typing import ActionData, ActionResultElement, ActionResults
@@ -436,11 +436,12 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
             )
-        meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
-            new_mm_instances_data,
-            mediafile_replace_map_by_meeting,
-            meeting_mediafile_replace_map,
-        )
+        if new_mm_instances_data:
+            meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
+                new_mm_instances_data,
+                mediafile_replace_map_by_meeting,
+                meeting_mediafile_replace_map,
+            )
         return forwarded_attachments, meeting_mediafile_replace_map
 
     def _extract_motion_target_meeting_ids(
@@ -611,6 +612,55 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     duplicate_mediafiles_data.append(new_mediafile)
         return duplicate_mediafiles_data, mediafile_replace_map_by_meeting
 
+    def _get_existing_mm_entries(
+        self, instances: list[dict[str, Any]]
+    ) -> dict[int, dict[str, Any]]:
+        """
+        Helper method for _duplicate_meeting_mediafiles.
+        Collects existing meeting_mediafile entries that match the given instances
+        by their (meeting_id, mediafile_id) combination.
+        """
+        filter_ = Or(
+            And(
+                FilterOperator("mediafile_id", "=", entry["mediafile_id"]),
+                FilterOperator("meeting_id", "=", entry["meeting_id"]),
+            )
+            for entry in instances
+        )
+
+        return self.datastore.filter(
+            "meeting_mediafile",
+            filter_,
+            ["id", "mediafile_id", "meeting_id"],
+            lock_result=False,
+            use_changed_models=False,
+        )
+
+    def _update_mm_replace_map(
+        self,
+        origin_data: list[dict[str, Any]],
+        forwarded_data: list[dict[str, Any]],
+        mediafile_replace_map_by_meeting: dict[int, dict[int, int]],
+        meeting_mediafile_replace_map: dict[int, dict[int, int]],
+        existing_mm_imstances: dict[tuple[int, int], int],
+    ) -> None:
+        """
+        Helper method for _duplicate_meeting_mediafiles.
+        Updates meeting_mediafile_replace_map with newly created instances where
+        no prior match existed in the target (meeting_id, mediafile_id).
+        """
+        for origin, forwarded in zip(origin_data, forwarded_data):
+            meeting_id = origin["meeting_id"]
+            new_mediafile_id = mediafile_replace_map_by_meeting[meeting_id][
+                origin["mediafile_id"]
+            ]
+            key = (meeting_id, new_mediafile_id)
+
+            if key not in existing_mm_imstances:
+                meeting_mediafile_replace_map[meeting_id].update(
+                    {origin["old_id"]: forwarded["id"]}
+                )
+
     def _duplicate_meeting_mediafiles(
         self,
         new_mm_instances_data: list[dict[str, Any]],
@@ -618,28 +668,47 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         meeting_mediafile_replace_map: dict[int, dict[int, int]],
     ) -> dict[int, dict[int, int]]:
         """
-        Duplicates meeting_mediafiles and creates a replace_map for assigning
-        meeting_mediafiles to the target motions.
-
-        Updates meeting_mediafile_replace_map.
+        Duplicates meeting_mediafiles and updates the replacement map for assigning them
+        to motions, avoiding duplicates based on (meeting_id, mediafile_id) combinations.
         """
-        new_mm_instances: list[dict[str, Any]] = []
-        for meeting_mediafile in new_mm_instances_data:
-            new_mm = {**meeting_mediafile}
-            new_mm.pop("old_id")
-            new_mm["mediafile_id"] = mediafile_replace_map_by_meeting[
-                new_mm["meeting_id"]
-            ][new_mm["mediafile_id"]]
-            new_mm_instances.append(new_mm)
+        retrieved_instances = self._get_existing_mm_entries(new_mm_instances_data)
+        existing_mm_imstances = {
+            (entry["meeting_id"], entry["mediafile_id"]): entry["id"]
+            for entry in retrieved_instances.values()
+        }
 
-        results = cast(
+        new_mm_action_data = []
+        for entry in new_mm_instances_data:
+            meeting_id = entry["meeting_id"]
+            old_mediafile_id = entry["mediafile_id"]
+            new_mediafile_id = mediafile_replace_map_by_meeting[meeting_id][
+                old_mediafile_id
+            ]
+            key = (meeting_id, new_mediafile_id)
+
+            if key in existing_mm_imstances:
+                meeting_mediafile_replace_map[meeting_id].update(
+                    {entry["old_id"]: existing_mm_imstances[key]}
+                )
+            else:
+                new_mm = {**entry}
+                new_mm.pop("old_id")
+                new_mm["mediafile_id"] = new_mediafile_id
+                new_mm_action_data.append(new_mm)
+
+        created_results = cast(
             list[dict[str, Any]],
-            self.execute_other_action(MeetingMediafileCreate, new_mm_instances),
+            self.execute_other_action(MeetingMediafileCreate, new_mm_action_data),
         )
-        for origin_mm, mm in zip(new_mm_instances_data, results):
-            meeting_mediafile_replace_map[origin_mm["meeting_id"]].update(
-                {origin_mm["old_id"]: mm["id"]}
-            )
+
+        self._update_mm_replace_map(
+            new_mm_instances_data,
+            created_results,
+            mediafile_replace_map_by_meeting,
+            meeting_mediafile_replace_map,
+            existing_mm_imstances,
+        )
+
         return meeting_mediafile_replace_map
 
     def forward_mediafiles(
