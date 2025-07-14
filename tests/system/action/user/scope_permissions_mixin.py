@@ -11,7 +11,9 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         meeting_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
         """
-        Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.
+        Helper function to setup permissions for different scopes for user 1.
+        If no scope is given, the user has no permissions.
+        Additionally creates a default admin for meetings 1 and 4 - user/777.
         """
         self.create_meeting()
         self.create_meeting(4)
@@ -35,14 +37,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_organization_management_level(None)
             self.set_user_groups(1, [3])
             self.set_group_permissions(3, [meeting_permission])
-        self.set_models(
-            {
-                "user/777": {
-                    # admin in meetings: 1, 4
-                    "username": "admin_group_filler",
-                },
-            }
-        )
+        self.set_models({"user/777": {"username": "admin_group_filler"}})
         self.set_user_groups(777, [2, 5])
 
     def setup_scoped_user(self, scope: UserScope) -> None:
