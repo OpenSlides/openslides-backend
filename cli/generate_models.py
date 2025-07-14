@@ -164,6 +164,8 @@ class Model(Node):
             if field.get("calculated"):
                 continue
             self.attributes[field_name] = Attribute(field)
+            if not field.get("required") and field.get("default") is not None:
+                print(f"{self.collection}/{field_name}: {field.get('default')}")
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
