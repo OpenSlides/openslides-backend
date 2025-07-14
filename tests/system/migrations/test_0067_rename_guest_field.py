@@ -15,4 +15,4 @@ def test_migration(write, finalize, assert_model):
 
     assert_model("user/1", {"id": 1, "external": True, "meta_deleted": False})
     assert_model("user/2", {"id": 2, "external": True, "meta_deleted": False})
-    assert_model("user/3", {"id": 3, "external": False, "meta_deleted": True})
+    assert_model("user/3", {"id": 3, "guest": False, "meta_deleted": True})
