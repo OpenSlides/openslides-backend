@@ -16,18 +16,21 @@ build-tests:
 
 # Development
 
-.PHONY: run-dev%
+.PHONY: dev%
 
-run-dev%:
-	bash $(MAKEFILE_PATH)/make-run-dev.sh -v "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
+dev%:
+	bash $(MAKEFILE_PATH)/make-dev.sh -v "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
 
 # Tests
 
 run-tests:
 	bash dev/run-tests.sh
 
-run-lint:
+lint:
 	bash dev/run-lint.sh -l
+
+test-file:
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
 
 coverage:
 	pytest --cov --cov-report html
@@ -76,15 +79,15 @@ all:
 	make run-lint
 
 run-bash:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev"
-	run-dev
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev"
+	dev
 
-run-dev-attach:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev-attached"
-	run-dev-attached
+dev-attach:
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev-attached"
+	dev-attached
 
 stop-dev:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-dev-stop"
+	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev-stop"
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml down --volumes
 
 check-black: | deprecation-warning
@@ -133,10 +136,10 @@ start-dev-attach-local start-dev-interactive-local: | deprecation-warning
 stop-dev-local: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
 
-run-dev-attach-local: | deprecation-warning
+dev-attach-local: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-local run-bash-local: | deprecation-warning start-dev-local run-dev-attach-local
+dev-local run-bash-local: | deprecation-warning start-dev-local dev-attach-local
 
 
 # Build and run development container. Additionally run OpenTelemetry services
@@ -150,10 +153,10 @@ start-dev-attach-otel start-dev-interactive-otel: | deprecation-warning
 stop-dev-otel: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml down --volumes
 
-run-dev-attach-otel: | deprecation-warning
+dev-attach-otel: | deprecation-warning
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-otel run-bash-otel: | deprecation-warning start-dev-otel run-dev-attach-otel
+dev-otel run-bash-otel: | deprecation-warning start-dev-otel dev-attach-otel
 
 rebuild-dev: | deprecation-warning
 	docker build . --tag=openslides-backend-dev --no-cache --build-arg CONTEXT=dev
