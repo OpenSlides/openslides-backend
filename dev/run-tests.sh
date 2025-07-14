@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Executes all tests. Should errors occur, CATCH will be set to 1, causing an erroneous exit code.
 
 echo "########################################################################"
@@ -34,4 +36,4 @@ eval "$DC exec -T backend scripts/wait.sh auth 9004"
 eval "$DC exec -T backend ./entrypoint.sh pytest --cov"
 
 # Linters
-bash "$LOCAL_PWD"/run-lint.sh -s -c
+bash "$LOCAL_PWD"/run-lint.sh

@@ -10,9 +10,6 @@ echo "########################################################################"
 while getopts "lscp" FLAG; do
     case "${FLAG}" in
     l) LOCAL=true ;;
-    s) SKIP_BUILD=true ;;
-    c) SKIP_CONTAINER_UP=true ;;
-    p) PERSIST_CONTAINERS=true ;;
     *) echo "Can't parse flag ${FLAG}" && break ;;
     esac
 done
@@ -21,33 +18,31 @@ done
 IMAGE_TAG=openslides-backend-tests
 
 # Helpers
-USER_ID=$(id -u)
-GROUP_ID=$(id -g)
-DC="CONTEXT=tests USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose -f dev/docker-compose.dev.yml"
+DC="CONTEXT=dev docker compose -f dev/docker-compose.dev.yml"
 PATHS="openslides_backend/ tests/ cli/ meta/dev/src/"
 
 # Safe Exit
-trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then eval "$DC down --volumes"; fi' EXIT
-
-# Optionally build & start
-if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
-if [ -z "$SKIP_CONTAINER_UP" ]; then eval "$DC up --build --detach"; fi
+trap 'if [ -z "$LOCAL" ]; then eval "$DC down --volumes"; fi' EXIT
 
 # Execution
-
-# No difference between local and container mode
-pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
-flake8 "$PATHS"
-mypy "$PATHS"
-
 if [ -z "$LOCAL" ]
 then
+    # Setup
+    make build-tests
+    eval "$DC up --build --detach"
+
     # Container Mode
-    black --check "$PATHS"
-    autoflake --check "$PATHS"
-    isort --check-only "$PATHS"
+    eval "$DC exec -T backend pyupgrade --py310-plus --exit-zero-even-if-changed $(find . -name '*.py')"
+    eval "$DC exec -T backend flake8 $PATHS"
+    eval "$DC exec -T backend mypy $PATHS"
+    eval "$DC exec -T backend black --check $PATHS"
+    eval "$DC exec -T backend autoflake --check $PATHS"
+    eval "$DC exec -T backend isort --check-only $PATHS"
 else
     # Local Mode
+    pyupgrade --py310-plus --exit-zero-even-if-changed $(find . -name '*.py')
+    flake8 "$PATHS"
+    mypy "$PATHS"
     black "$PATHS"
     autoflake "$PATHS"
     isort "$PATHS"
