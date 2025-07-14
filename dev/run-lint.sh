@@ -27,7 +27,7 @@ DC="CONTEXT=tests USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose -f dev/dock
 PATHS="openslides_backend/ tests/ cli/ meta/dev/src/"
 
 # Safe Exit
-trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then eval "$DC down --volumes"' EXIT
+trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then eval "$DC down --volumes"; fi' EXIT
 
 # Optionally build & start
 if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
