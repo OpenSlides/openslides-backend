@@ -102,9 +102,9 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
     ) -> str:
         """
         Scans for existing titles within the same folder (by `parent_id`) or root
-        (if None), matching 'base_title' or 'base_title (#n)'.
-        Returns a unique title like 'base_title (#n)'.
-        If only 'base_title' is present, returns 'base_title (#2)'.
+        (if None), matching 'base_title' or 'base_title (#)'.
+        Returns a unique title like 'base_title (#)' where: # = max found # + 1.
+        If only 'base_title' is present, returns 'base_title (1)'.
         """
         filter_ = And(
             FilterOperator("owner_id", "=", owner_id),
