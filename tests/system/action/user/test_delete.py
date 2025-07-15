@@ -497,7 +497,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.setup_scope_organization_with_permission_in_all_meetings(self.permission)
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/111")
+        self.assert_model_not_exists("user/111")
 
     def test_delete_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
         self,
