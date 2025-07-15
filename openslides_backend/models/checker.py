@@ -41,7 +41,12 @@ from openslides_backend.shared.schema import (
     number_string_json_schema,
     schema_version,
 )
-from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
+from openslides_backend.shared.util import (
+    ALLOWED_HTML_TAGS_STRICT,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    validate_html,
+)
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -553,13 +558,27 @@ class Checker:
             return
 
         source_model = self.find_model("mediafile", model["mediafile_id"])
+        meeting = self.find_model("meeting", model["meeting_id"])
+
+        # Specific validation for orga-wide mediafiles used in the meeting
+        is_published_orgawide_mediafile = (
+            source_model.get("owner_id") == ONE_ORGANIZATION_FQID
+            and source_model.get("published_to_meetings_in_organization_id")
+            == ONE_ORGANIZATION_ID
+        )
+        is_used_in_meeting = [
+            field for field in model if field.startswith("used_as")
+        ] and model.get("inherited_access_group_ids", []) == [
+            meeting.get("admin_group_id")
+        ]
+        if is_published_orgawide_mediafile and is_used_in_meeting:
+            return
 
         access_group_ids = model.get("access_group_ids")
         parent_is_public = None
         parent_inherited_access_group_ids = None
         if source_model and source_model.get("parent_id"):
             source_parent = self.find_model("mediafile", source_model["parent_id"])
-            meeting = self.find_model("meeting", model["meeting_id"])
             # relations are checked beforehand, so parent always exists
             assert source_parent
             assert meeting
@@ -593,8 +612,8 @@ class Checker:
                 f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
             )
 
-    def find_model(self, collection: str, id: int) -> dict[str, Any] | None:
-        return self.data.get(collection, {}).get(str(id))
+    def find_model(self, collection: str, id: int) -> dict[str, Any]:
+        return self.data.get(collection, {}).get(str(id), {})
 
     def check_reverse_relation(
         self,

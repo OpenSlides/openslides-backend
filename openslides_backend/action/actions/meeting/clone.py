@@ -153,6 +153,31 @@ class MeetingClone(MeetingImport):
                 if Decimal(value) < vote_weight_min:
                     user["default_vote_weight"] = "0.000001"
 
+        # Necessary for orga-wide mediafiles
+        mediafiles = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "mediafile",
+                    [
+                        mm.get("mediafile_id")
+                        for mm in meeting_json.get("meeting_mediafile", {}).values()
+                    ],
+                    [
+                        "id",
+                        "mimetype",
+                        "owner_id",
+                        "meeting_mediafile_ids",
+                        "published_to_meetings_in_organization_id",
+                    ],
+                ),
+            ],
+            use_changed_models=False,
+        )["mediafile"]
+        meeting_json["mediafile"] = {
+            str(id_): {k: v for k, v in data.items() if k != "meta_position"}
+            for id_, data in mediafiles.items()
+        }
+
         # check datavalidation
         checker = Checker(
             data=meeting_json,
