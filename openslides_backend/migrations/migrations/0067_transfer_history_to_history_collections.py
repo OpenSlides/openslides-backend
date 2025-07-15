@@ -1,15 +1,18 @@
 import json
 from collections import defaultdict
-from typing import Any
+from typing import Any, cast
 
 from datastore.migrations import BaseModelMigration
 from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import collection_from_fqid, fqid_from_collection_and_id
-from datastore.writer.core import (
+from datastore.writer.core.write_request import (
     BaseRequestEvent,
+    ListFieldsData,
     RequestCreateEvent,
     RequestUpdateEvent,
 )
+
+from ...shared.history_events import calculate_history_event_payloads
 
 
 class Migration(BaseModelMigration):
@@ -43,74 +46,123 @@ class Migration(BaseModelMigration):
                 cur_min_pos, cur_max_pos
             )
             for position in history_chunk:
-                start_entry_id = next_entry_id
+                # start_entry_id = next_entry_id
                 info = position["information"]
                 if isinstance(info, str):
                     info = json.loads(info)
                 position_nr: int = position["position"]
-                if isinstance(info, list):
-                    for fqid in position_to_fqids.get(position_nr, []):
-                        if collection_from_fqid(fqid) in collections:
-                            do_relation = fqid in all_current_fqids
-                            events.append(
-                                RequestCreateEvent(
-                                    fqid_from_collection_and_id(
-                                        "history_entry", next_entry_id
-                                    ),
-                                    {
-                                        "id": next_entry_id,
-                                        "entries": info,
-                                        "original_model_id": fqid,
-                                        "model_id": fqid if do_relation else None,
-                                        "position_id": position_nr,
-                                    },
-                                )
-                            )
-                            if do_relation:
-                                model_fqid_to_entry_ids[fqid].append(next_entry_id)
-                            next_entry_id += 1
-                else:
-                    assert isinstance(info, dict)
-                    for fqid, information in info.items():
-                        if collection_from_fqid(fqid) in collections:
-                            do_relation = fqid in all_current_fqids
-                            events.append(
-                                RequestCreateEvent(
-                                    fqid_from_collection_and_id(
-                                        "history_entry", next_entry_id
-                                    ),
-                                    {
-                                        "id": next_entry_id,
-                                        "entries": information,
-                                        "original_model_id": fqid,
-                                        "model_id": fqid if do_relation else None,
-                                        "position_id": position_nr,
-                                    },
-                                )
-                            )
-                            if do_relation:
-                                model_fqid_to_entry_ids[fqid].append(next_entry_id)
-                            next_entry_id += 1
-                do_relation = (
-                    fqid_from_collection_and_id("user", position["user_id"])
-                    in all_current_fqids
-                )
-                events.append(
-                    RequestCreateEvent(
-                        fqid_from_collection_and_id("history_position", position_nr),
-                        {
-                            "id": position_nr,
-                            "timestamp": position["timestamp"],
-                            "original_user_id": position["user_id"],
-                            "user_id": position["user_id"] if do_relation else None,
-                            "entry_ids": list(range(start_entry_id, next_entry_id)),
-                        },
+                models_to_entry_ids = {
+                    m_fqid: e_id
+                    for e_id, m_fqid in enumerate(
+                        sorted(
+                            [
+                                fqid
+                                for fqid in {
+                                    *position_to_fqids[position_nr],
+                                    *(info if isinstance(info, dict) else {}),
+                                }
+                                if collection_from_fqid(fqid) in collections
+                            ]
+                        ),
+                        start=next_entry_id,
                     )
+                }
+                if isinstance(info, list):
+                    use_info: dict[str, list[str]] = {
+                        mod_fqid: info for mod_fqid in models_to_entry_ids
+                    }
+                else:
+                    use_info = cast(dict[str, list[str]], info)
+                create_events, update_events = calculate_history_event_payloads(
+                    position.get("user_id"),
+                    {
+                        fqid: inf
+                        for fqid, inf in use_info.items()
+                        if collection_from_fqid(fqid) in collections
+                    },
+                    position_nr,
+                    models_to_entry_ids,
+                    all_current_fqids,
+                    position["timestamp"],
                 )
-                if do_relation:
-                    user_fqid_to_position_ids[
-                        fqid_from_collection_and_id("user", position["user_id"])
-                    ].append(position_nr)
+                next_entry_id += len(models_to_entry_ids)
+                # if isinstance(info, list):
+                #     for fqid in position_to_fqids.get(position_nr, []):
+                #         if collection_from_fqid(fqid) in collections:
+                #             do_relation = fqid in all_current_fqids
+                #             events.append(
+                #                 RequestCreateEvent(
+                #                     fqid_from_collection_and_id(
+                #                         "history_entry", next_entry_id
+                #                     ),
+                #                     {
+                #                         "id": next_entry_id,
+                #                         "entries": info,
+                #                         "original_model_id": fqid,
+                #                         "model_id": fqid if do_relation else None,
+                #                         "position_id": position_nr,
+                #                     },
+                #                 )
+                #             )
+                #             if do_relation:
+                #                 model_fqid_to_entry_ids[fqid].append(next_entry_id)
+                #             next_entry_id += 1
+                # else:
+                #     assert isinstance(info, dict)
+                #     for fqid, information in info.items():
+                #         if collection_from_fqid(fqid) in collections:
+                #             do_relation = fqid in all_current_fqids
+                #             events.append(
+                #                 RequestCreateEvent(
+                #                     fqid_from_collection_and_id(
+                #                         "history_entry", next_entry_id
+                #                     ),
+                #                     {
+                #                         "id": next_entry_id,
+                #                         "entries": information,
+                #                         "original_model_id": fqid,
+                #                         "model_id": fqid if do_relation else None,
+                #                         "position_id": position_nr,
+                #                     },
+                #                 )
+                #             )
+                #             if do_relation:
+                #                 model_fqid_to_entry_ids[fqid].append(next_entry_id)
+                #             next_entry_id += 1
+                # do_relation = (
+                #     fqid_from_collection_and_id("user", position["user_id"])
+                #     in all_current_fqids
+                # )
+                # events.append(
+                #     RequestCreateEvent(
+                #         fqid_from_collection_and_id("history_position", position_nr),
+                #         {
+                #             "id": position_nr,
+                #             "timestamp": position["timestamp"],
+                #             "original_user_id": position["user_id"],
+                #             "user_id": position["user_id"] if do_relation else None,
+                #             "entry_ids": list(range(start_entry_id, next_entry_id)),
+                #         },
+                #     )
+                # )
+                # if do_relation:
+                #     user_fqid_to_position_ids[
+                #         fqid_from_collection_and_id("user", position["user_id"])
+                #     ].append(position_nr)
+                events.extend(
+                    RequestCreateEvent(fqid, fields=cast(dict[str, Any], fields))
+                    for fqid, fields in create_events
+                )
+                events.extend(
+                    (
+                        RequestUpdateEvent(fqid, fields=cast(dict[str, Any], fields))
+                        if "id" in fields
+                        else RequestUpdateEvent(
+                            fqid, fields={}, list_fields=cast(ListFieldsData, fields)
+                        )
+                    )
+                    for fqid, fields in update_events
+                )
         all_update_fqids: set[str] = {
             *model_fqid_to_entry_ids,
             *user_fqid_to_position_ids,
