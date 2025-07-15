@@ -16,6 +16,8 @@ build-tests:
 
 # Development
 
+.PHONY: dev
+
 dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter:
 	bash $(MAKEFILE_PATH)/make-dev.sh -v "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
 
