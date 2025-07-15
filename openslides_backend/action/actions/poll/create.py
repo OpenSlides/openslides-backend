@@ -70,6 +70,7 @@ class PollCreateAction(
             "backend",
         ],
         additional_optional_fields={
+            "live_voting_enabled": {"type": "boolean"},
             "publish_immediately": {"type": "boolean"},
             "amount_global_yes": decimal_schema,
             "amount_global_no": decimal_schema,
@@ -92,6 +93,10 @@ class PollCreateAction(
             )
             if not organization.get("enable_electronic_voting"):
                 raise ActionException("Electronic voting is not allowed.")
+
+        # check named and live_voting_enabled
+        if instance["type"] != Poll.TYPE_NAMED and "live_voting_enabled" in instance and instance["live_voting_enabled"]:
+            raise ActionException("live_voting_enabled only allowed for named polls.")
 
         # check entitled_group_ids and analog
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:

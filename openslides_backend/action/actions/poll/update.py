@@ -53,6 +53,7 @@ class PollUpdateAction(
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
+            "live_voting_enabled": {"type": "boolean"},
         },
     )
     poll_history_information = "updated"
@@ -90,6 +91,7 @@ class PollUpdateAction(
                 "global_no",
                 "global_abstain",
                 "backend",
+                "live_voting_enabled",
             ):
                 if key in instance:
                     not_allowed.append(key)
@@ -114,6 +116,11 @@ class PollUpdateAction(
                 "Following options are not allowed in this state and type: "
                 + ", ".join(not_allowed)
             )
+
+        # check named and live_voting_enabled
+        if poll["type"] != Poll.TYPE_NAMED and instance.get("live_voting_enabled"):
+            raise ActionException("live_voting_enabled only allowed for named polls.")
+
         if poll["type"] == Poll.TYPE_ANALOG and (
             base := instance.get("onehundred_percent_base")
         ) in (
