@@ -25,6 +25,7 @@ from ..shared.exceptions import (
     PermissionDenied,
     RequiredFieldsException,
 )
+from ..shared.history_events import calculate_history_event_payloads
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
@@ -129,7 +130,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.cascaded_actions_history = {}
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Entrypoint to perform the action.
@@ -137,6 +142,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.user_id = user_id
         self.index = 0
         self.internal = internal
+        self.is_sub_call = is_sub_call
 
         # prefetch as much data as possible
         self.prefetch(action_data)
@@ -410,7 +416,133 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
-            write_request.information = self.get_full_history_information()
+            information = self.get_full_history_information()
+            if self.is_sub_call:
+                write_request.information = information
+            elif information:
+                position_id = self.datastore.reserve_id("history_position")
+                entry_ids = self.datastore.reserve_ids(
+                    "history_entry", len(information)
+                )
+                # transformed_information = [
+                #     (id_, fqid, entries)
+                #     for id_, (fqid, entries) in zip(entry_ids, information.items())
+                # ]
+                deleted_fqids: set[str] = {
+                    event["fqid"] for event in events_by_type[EventType.Delete]
+                }
+                touched_fqids: set[str] = {
+                    event["fqid"]
+                    for event in [
+                        *events_by_type[EventType.Create],
+                        *events_by_type[EventType.Update],
+                    ]
+                }
+                if self.user_id and self.user_id > 0:
+                    touched_fqids.add(fqid_from_collection_and_id("user", self.user_id))
+                create_events, update_events = calculate_history_event_payloads(
+                    self.user_id,
+                    information,
+                    position_id,
+                    {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
+                    touched_fqids - deleted_fqids,
+                    None,
+                )
+                events_by_type[EventType.Create].extend(
+                    [
+                        (
+                            Event(
+                                type=EventType.Create,
+                                fqid=fqid,
+                                fields=cast(dict[str, Any], fields),
+                            )
+                            if "id" in fields
+                            else Event(
+                                type=EventType.Create,
+                                fqid=fqid,
+                                list_fields=cast(ListFields, fields),
+                            )
+                        )
+                        for fqid, fields in create_events
+                    ]
+                )
+                events_by_type[EventType.Update].extend(
+                    [
+                        (
+                            Event(
+                                type=EventType.Update,
+                                fqid=fqid,
+                                fields=cast(dict[str, Any], fields),
+                            )
+                            if "id" in fields
+                            else Event(
+                                type=EventType.Update,
+                                fqid=fqid,
+                                list_fields=cast(ListFields, fields),
+                            )
+                        )
+                        for fqid, fields in update_events
+                    ]
+                )
+                # events_by_type[EventType.Create].extend(
+                #     [
+                #         Event(
+                #             type=EventType.Create,
+                #             fqid=fqid_from_collection_and_id("history_entry", id_),
+                #             fields={
+                #                 "id": id_,
+                #                 "entries": entries,
+                #                 "position_id": position_id,
+                #                 "original_model_id": fqid,
+                #                 "model_id": (
+                #                     fqid if fqid not in date_to_deletion else None
+                #                 ),
+                #             },
+                #         )
+                #         for id_, fqid, entries in transformed_information
+                #     ]
+                # )
+                # events_by_type[EventType.Update].extend(
+                #     [
+                #         Event(
+                #             type=EventType.Update,
+                #             fqid=fqid,
+                #             list_fields={"add": {"history_entry_ids": [id_]}},
+                #         )
+                #         for id_, fqid, entries in transformed_information
+                #         if fqid not in date_to_deletion
+                #     ]
+                # )
+                # if set_user := (
+                #     self.user_id
+                #     and self.user_id > 0
+                #     and not fqid_from_collection_and_id("user", self.user_id)
+                #     in date_to_deletion
+                # ):
+                #     events_by_type[EventType.Update].append(
+                #         Event(
+                #             type=EventType.Update,
+                #             fqid=fqid_from_collection_and_id("user", self.user_id),
+                #             list_fields={
+                #                 "add": {"history_position_ids": [position_id]}
+                #             },
+                #         )
+                #     )
+                # events_by_type[EventType.Create].append(
+                #     Event(
+                #         type=EventType.Create,
+                #         fqid=fqid_from_collection_and_id(
+                #             "history_position", position_id
+                #         ),
+                #         fields={
+                #             "id": position_id,
+                #             "timestamp": round(time.time()),
+                #             "entry_ids": entry_ids,
+                #             "original_user_id": self.user_id,
+                #             "user_id": self.user_id if set_user else None,
+                #         },
+                #     )
+                # )
             write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
@@ -686,7 +818,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 skip_archived_meeting_check,
             )
             write_request, action_results = action.perform(
-                action_data, self.user_id, internal=True
+                action_data, self.user_id, internal=True, is_sub_call=True
             )
             if write_request:
                 self.events.extend(write_request.events)

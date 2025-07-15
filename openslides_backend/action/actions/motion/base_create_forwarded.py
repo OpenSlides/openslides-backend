@@ -145,10 +145,14 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         return ", ".join(names)
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.id_to_result_extra_data: dict[int, dict[str, Any]] = {}
-        return super().perform(action_data, user_id, internal)
+        return super().perform(action_data, user_id, internal, is_sub_call)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_attachments = instance.pop("with_attachments", False)

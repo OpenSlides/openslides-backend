@@ -392,7 +392,11 @@ class BaseMergeMixin(Action):
         )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self._history_replacement_groups: dict[
             Collection,
@@ -400,7 +404,7 @@ class BaseMergeMixin(Action):
         ] = {}
         for collection in self._collection_field_groups:
             self._history_replacement_groups[collection] = []
-        return super().perform(action_data, user_id, internal)
+        return super().perform(action_data, user_id, internal, is_sub_call)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.main_fqid = fqid_from_collection_and_id(
