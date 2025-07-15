@@ -1582,35 +1582,35 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/2", {"username": "mina", "home_committee_id": 3, "committee_ids": [3]}
         )
 
-    def test_create_with_guest_true(self) -> None:
+    def test_create_with_external_true(self) -> None:
         response = self.request(
             "user.create",
-            {"username": "jonathan", "guest": True},
+            {"username": "jonathan", "external": True},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "jonathan", "guest": True})
+        self.assert_model_exists("user/2", {"username": "jonathan", "external": True})
 
-    def test_create_with_guest_false(self) -> None:
+    def test_create_with_external_false(self) -> None:
         response = self.request(
             "user.create",
-            {"username": "jack", "guest": False},
+            {"username": "jack", "external": False},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "jack", "guest": False})
+        self.assert_model_exists("user/2", {"username": "jack", "external": False})
 
-    def test_create_with_with_home_committee_and_guest_true(self) -> None:
+    def test_create_with_with_home_committee_and_external_true(self) -> None:
         self.create_committee(3)
         response = self.request(
             "user.create",
-            {"username": "renfield", "home_committee_id": 3, "guest": True},
+            {"username": "renfield", "home_committee_id": 3, "external": True},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot set guest to true and set a home committee at the same time.",
+            "Cannot set external to true and set a home committee at the same time.",
             response.json["message"],
         )
 
-    def test_create_with_home_committee_and_guest_false(self) -> None:
+    def test_create_with_home_committee_and_external_false(self) -> None:
         """Also tests for parent CML"""
         self.create_committee(2)
         self.create_committee(3, parent_id=2)
@@ -1618,7 +1618,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_organization_management_level(None)
         response = self.request(
             "user.create",
-            {"username": "vanHelsing", "home_committee_id": 3, "guest": False},
+            {"username": "vanHelsing", "home_committee_id": 3, "external": False},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1626,7 +1626,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "vanHelsing",
                 "home_committee_id": 3,
-                "guest": False,
+                "external": False,
                 "committee_ids": [3],
             },
         )

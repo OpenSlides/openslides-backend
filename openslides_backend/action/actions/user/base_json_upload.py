@@ -37,7 +37,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "saml_id", "type": "string", "is_object": True},
         {"property": "member_number", "type": "string", "is_object": True},
         {"property": "home_committee", "type": "string", "is_object": True},
-        {"property": "guest", "type": "boolean", "is_object": True},
+        {"property": "external", "type": "boolean", "is_object": True},
     ]
     skip_archived_meeting_check = True
     row_state: ImportState
@@ -73,7 +73,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "is_physical_person",
                                 "saml_id",
                                 "member_number",
-                                "guest",
+                                "external",
                             ),
                             **additional_user_fields,
                             "gender": {"type": "string"},
@@ -432,22 +432,22 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 messages.append(
                     "Error: Found multiple committees with the same name as the home committee."
                 )
-            if (guest := entry.get("guest")) is False:
-                entry["guest"] = {"value": False, "info": ImportState.DONE}
-            elif guest and entry["home_committee"]["info"] != ImportState.REMOVE:
+            if (external := entry.get("external")) is False:
+                entry["external"] = {"value": False, "info": ImportState.DONE}
+            elif external and entry["home_committee"]["info"] != ImportState.REMOVE:
                 self.row_state = ImportState.ERROR
-                entry["guest"] = {"value": guest, "info": ImportState.ERROR}
+                entry["external"] = {"value": external, "info": ImportState.ERROR}
                 messages.append(
-                    "Error: Cannot set guest to true while setting home committee."
+                    "Error: Cannot set external to true while setting home committee."
                 )
-            elif guest:
-                entry["guest"] = {"value": guest, "info": ImportState.DONE}
+            elif external:
+                entry["external"] = {"value": external, "info": ImportState.DONE}
             elif entry["home_committee"]["info"] != ImportState.REMOVE:
-                entry["guest"] = {"value": False, "info": ImportState.GENERATED}
-        elif (guest := entry.get("guest")) is not None:
-            if guest is True:
-                entry["guest"] = {
-                    "value": guest,
+                entry["external"] = {"value": False, "info": ImportState.GENERATED}
+        elif (external := entry.get("external")) is not None:
+            if external is True:
+                entry["external"] = {
+                    "value": external,
                     "info": ImportState.DONE,
                 }
                 entry["home_committee"] = {
@@ -455,11 +455,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     "info": ImportState.GENERATED,
                 }
                 messages.append(
-                    "If guest is set to true, any home_committee that was set will be removed."
+                    "If external is set to true, any home_committee that was set will be removed."
                 )
             else:
-                entry["guest"] = {
-                    "value": guest,
+                entry["external"] = {
+                    "value": external,
                     "info": ImportState.DONE,
                 }
 
@@ -499,8 +499,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 "value"
             ] is None:
                 entry["home_committee_id"] = home_committee_id
-        if guest := entry.pop("guest", None):
-            entry["guest"] = guest["value"]
+        if external := entry.pop("external", None):
+            entry["external"] = external["value"]
         failing_fields = self.permission_check.get_failing_fields(entry, field_groups)
         self.remove_helper_fields_from_entry_in_field_failure_check(entry)
 
@@ -522,8 +522,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         if home_committee:
             entry["home_committee"] = home_committee
             entry.pop("home_committee_id", None)
-        if guest:
-            entry["guest"] = guest
+        if external:
+            entry["external"] = external
         for field in field_to_fail:
             actual_field = (
                 field[:-3] if field not in entry and field.endswith("_id") else field

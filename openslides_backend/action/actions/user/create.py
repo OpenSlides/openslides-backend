@@ -58,7 +58,7 @@ class UserCreate(
             "is_demo_user",
             "saml_id",
             "member_number",
-            "guest",
+            "external",
             "home_committee_id",
         ],
         additional_optional_fields={
@@ -101,9 +101,9 @@ class UserCreate(
             self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
-        if instance.get("guest") and instance.get("home_committee_id"):
+        if instance.get("external") and instance.get("home_committee_id"):
             raise ActionException(
-                "Cannot set guest to true and set a home committee at the same time."
+                "Cannot set external to true and set a home committee at the same time."
             )
         return instance
 

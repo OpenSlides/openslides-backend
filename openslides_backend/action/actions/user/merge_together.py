@@ -96,7 +96,7 @@ class UserMergeTogether(
                     "gender_id",
                     "email",
                     "default_vote_weight",
-                    "guest",
+                    "external",
                     "home_committee_id",
                 ],
                 "error": [

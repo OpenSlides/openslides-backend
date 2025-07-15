@@ -476,7 +476,7 @@ class UserMergeTogether(BaseActionTestCase):
                         987654321, ZoneInfo("Etc/UTC")
                     ),
                     "is_present_in_meeting_ids": [7],
-                    "guest": True,
+                    "external": True,
                 },
                 "user/4": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
@@ -488,7 +488,7 @@ class UserMergeTogether(BaseActionTestCase):
                     ),
                     "is_present_in_meeting_ids": [4, 7],
                     "member_number": "souperadmin",
-                    "guest": False,
+                    "external": False,
                 },
                 "user/5": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -572,7 +572,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "default_vote_weight": Decimal(1),
                 "member_number": None,
                 "is_physical_person": True,
-                "guest": None,
+                "external": None,
             },
         )
         for id_ in range(3, 7):
@@ -717,7 +717,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
-            {"gender_id": None, "guest": True, "home_committee_id": None},
+            {"gender_id": None, "external": True, "home_committee_id": None},
         )
         self.assert_model_exists(
             "gender/1",

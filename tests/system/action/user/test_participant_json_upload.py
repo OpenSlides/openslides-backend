@@ -276,7 +276,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "member_number", "type": "string", "is_object": True},
                 {"property": "home_committee", "type": "string", "is_object": True},
-                {"property": "guest", "type": "boolean", "is_object": True},
+                {"property": "external", "type": "boolean", "is_object": True},
                 {
                     "property": "structure_level",
                     "type": "string",
@@ -1301,7 +1301,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"value": "BobWillFail", "info": ImportState.DONE},
             "home_committee": {"value": "Does not exist", "info": ImportState.ERROR},
             "default_password": {"value": "ouch", "info": ImportState.DONE},
-            "guest": {"value": False, "info": ImportState.GENERATED},
+            "external": {"value": False, "info": ImportState.GENERATED},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
 
@@ -1320,7 +1320,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         "username": "BobWillFail",
                         "home_committee": "There are two",
                         "default_password": "ouch",
-                        "guest": "0",
+                        "external": "0",
                         "groups": ["testgroup"],
                     }
                 ],
@@ -1341,11 +1341,11 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"id": 2, "value": "BobWillFail", "info": ImportState.DONE},
             "home_committee": {"value": "There are two", "info": ImportState.ERROR},
             "default_password": {"value": "ouch", "info": ImportState.DONE},
-            "guest": {"value": False, "info": ImportState.DONE},
+            "external": {"value": False, "info": ImportState.DONE},
             "groups": [{"id": 1, "value": "testgroup", "info": ImportState.DONE}],
         }
 
-    def test_json_upload_set_home_committee_and_set_guest_to_true(self) -> None:
+    def test_json_upload_set_home_committee_and_set_external_to_true(self) -> None:
         self.create_committee(1, name="Home")
         self.create_user("BobWillFail", group_ids=[1])
         response = self.request(
@@ -1359,7 +1359,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         "username": "BobWillFail",
                         "home_committee": "Home",
                         "default_password": "ouch",
-                        "guest": "1",
+                        "external": "1",
                         "groups": ["test"],
                     }
                 ],
@@ -1371,7 +1371,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Error: Cannot set guest to true while setting home committee."
+            "Error: Cannot set external to true while setting home committee."
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
@@ -1380,7 +1380,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "username": {"id": 2, "value": "BobWillFail", "info": ImportState.DONE},
             "home_committee": {"id": 1, "value": "Home", "info": ImportState.DONE},
             "default_password": {"value": "ouch", "info": ImportState.DONE},
-            "guest": {"value": True, "info": ImportState.ERROR},
+            "external": {"value": True, "info": ImportState.ERROR},
             "groups": [{"value": "test", "info": ImportState.NEW}],
         }
 
@@ -3017,7 +3017,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             []
             if has_perm
             else [
-                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, guest"
+                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
             ]
         )
         data = import_preview["result"]["rows"][0]["data"]
@@ -3027,7 +3027,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Home",
             "id": 1,
         }
-        assert data["guest"] == {
+        assert data["external"] == {
             "info": ImportState.GENERATED if has_perm else ImportState.REMOVE,
             "value": False,
         }
@@ -3067,7 +3067,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             assert import_preview["result"]["rows"][0]["messages"] == []
         else:
             assert import_preview["result"]["rows"][0]["messages"] == [
-                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, guest"
+                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
             ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3082,16 +3082,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "value": "Home",
                 "id": 2,
             }
-            assert data["guest"] == {"info": ImportState.GENERATED, "value": False}
+            assert data["external"] == {"info": ImportState.GENERATED, "value": False}
         else:
             assert data["home_committee"] == {
                 "info": ImportState.REMOVE,
                 "value": "Home",
                 "id": 2,
             }
-            assert data["guest"] == {"info": ImportState.REMOVE, "value": False}
+            assert data["external"] == {"info": ImportState.REMOVE, "value": False}
 
-    def json_upload_update_home_committee_and_guest_false(self) -> None:
+    def json_upload_update_home_committee_and_external_false(self) -> None:
         self.create_committee(1, name="Home")
         alice_id = self.create_user("Alice")
         response = self.request(
@@ -3099,7 +3099,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "data": [
-                    {"username": "Alice", "home_committee": "Home", "guest": "false"}
+                    {"username": "Alice", "home_committee": "Home", "external": "false"}
                 ],
             },
         )
@@ -3121,9 +3121,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Home",
             "id": 1,
         }
-        assert data["guest"] == {"info": ImportState.DONE, "value": False}
+        assert data["external"] == {"info": ImportState.DONE, "value": False}
 
-    def json_upload_update_guest_true(
+    def json_upload_update_external_true(
         self, with_home_committee: bool = False, has_home_committee_perms: bool = True
     ) -> None:
         if with_home_committee:
@@ -3140,7 +3140,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "participant.json_upload",
             {
                 "meeting_id": 1,
-                "data": [{"username": "Alice", "guest": "1", "first_name": "alice"}],
+                "data": [{"username": "Alice", "external": "1", "first_name": "alice"}],
             },
         )
         self.assert_status_code(response, 200)
@@ -3149,11 +3149,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         messages = [
-            "If guest is set to true, any home_committee that was set will be removed."
+            "If external is set to true, any home_committee that was set will be removed."
         ]
         if not has_home_committee_perms:
             messages.append(
-                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, guest"
+                "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
             )
         assert import_preview["result"]["rows"][0]["messages"] == messages
         data = import_preview["result"]["rows"][0]["data"]
@@ -3171,14 +3171,14 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ),
             "value": None,
         }
-        assert data["guest"] == {
+        assert data["external"] == {
             "info": (
                 ImportState.DONE if has_home_committee_perms else ImportState.REMOVE
             ),
             "value": True,
         }
 
-    def json_upload_update_home_committee_and_guest_false_no_perms_new(self) -> None:
+    def json_upload_update_home_committee_and_external_false_no_perms_new(self) -> None:
         self.create_committee(1, name="Old home")
         self.create_committee(2, name="Home")
         alice_id = self.create_user("Alice", home_committee_id=1)
@@ -3190,7 +3190,9 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "participant.json_upload",
             {
                 "meeting_id": 1,
-                "data": [{"username": "Alice", "home_committee": "Home", "guest": "0"}],
+                "data": [
+                    {"username": "Alice", "home_committee": "Home", "external": "0"}
+                ],
             },
         )
         self.assert_status_code(response, 200)
@@ -3199,7 +3201,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, guest"
+            "Account is added to the meeting, but changes to the following field(s) are not possible: home_committee, external"
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data["id"] == alice_id
@@ -3213,4 +3215,4 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "value": "Home",
             "id": 2,
         }
-        assert data["guest"] == {"info": ImportState.REMOVE, "value": False}
+        assert data["external"] == {"info": ImportState.REMOVE, "value": False}
