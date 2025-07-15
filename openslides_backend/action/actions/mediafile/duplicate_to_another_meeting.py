@@ -102,9 +102,9 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
     ) -> str:
         """
         Scans for existing titles within the same folder (by `parent_id`) or root
-        (if None), matching 'base_title' or 'base_title (#n)'.
-        Returns a unique title like 'base_title (#n)'.
-        If only 'base_title' is present, returns 'base_title (#2)'.
+        (if None), matching 'base_title' or 'base_title (#)'.
+        Returns a unique title like 'base_title (#)' where: # = max found # + 1.
+        If only 'base_title' is present, returns 'base_title (1)'.
         """
         filter_ = And(
             FilterOperator("owner_id", "=", owner_id),
@@ -117,8 +117,8 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
             ).values()
         }
 
-        pattern = re.compile(rf"^{re.escape(origin_title)}(?:\s\(#(\d+)\))?$")
-        max_suffix = 1
+        pattern = re.compile(rf"^{re.escape(origin_title)}(?:\s\((\d+)\))?$")
+        max_suffix = 0
 
         for title in existing_titles:
             match = pattern.match(title)
@@ -131,4 +131,4 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
                     except ValueError:
                         continue
 
-        return f"{origin_title} (#{max_suffix + 1})"
+        return f"{origin_title} ({max_suffix + 1})"
