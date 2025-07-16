@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.models.fields import TimestampField
@@ -61,3 +62,9 @@ class SpeakerCreateForMerge(CreateActionWithInferredMeeting):
                     + "Can not create finished speaker as the end_time is before the begin_time"
                 )
         return super().validate_fields(instance)
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        for field_name in ["begin_time", "end_time", "unpause_time"]:
+            if isinstance((value := instance.get(field_name)), int):
+                instance[field_name] = datetime.fromtimestamp(value)
+        return super().update_instance(instance)

@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from tests.system.action.base import BaseActionTestCase
 
@@ -8,8 +11,9 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
         self.create_meeting(1)
         self.set_models(
             {
-                "meeting/1": {"meeting_user_ids": [78]},
                 "motion/357": {
+                    "sequential_number": 357,
+                    "state_id": 1,
                     "title": "title_YIDYXmKj",
                     "meeting_id": 1,
                 },
@@ -20,15 +24,23 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
                 },
                 "meeting_user/78": {"meeting_id": 1, "user_id": 78},
                 "list_of_speakers/1": {
+                    "sequential_number": 1,
                     "content_object_id": "motion/357",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [1],
                 },
+                "structure_level/1": {"name": "PDF", "meeting_id": 1},
                 "structure_level_list_of_speakers/1": {
+                    "structure_level_id": 1,
                     "meeting_id": 1,
                     "list_of_speakers_id": 1,
+                    "initial_time": 100,
+                    "remaining_time": 100,
                 },
-                "point_of_order_category/1": {"meeting_id": 1},
+                "point_of_order_category/1": {
+                    "text": "seconded",
+                    "rank": 1,
+                    "meeting_id": 1,
+                },
             }
         )
 
@@ -53,9 +65,9 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
             {
                 "list_of_speakers_id": 1,
                 "meeting_user_id": 78,
-                "begin_time": 20,
-                "end_time": 40,
-                "unpause_time": 1,
+                "begin_time": datetime.fromtimestamp(20, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(40, ZoneInfo("UTC")),
+                "unpause_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
                 "total_pause": 10,
                 "weight": 1,
                 "speech_state": SpeechState.PRO,
@@ -95,9 +107,9 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
             {
                 "list_of_speakers_id": 1,
                 "meeting_user_id": 78,
-                "begin_time": 20,
-                "end_time": 40,
-                "unpause_time": 1,
+                "begin_time": datetime.fromtimestamp(20, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(40, ZoneInfo("UTC")),
+                "unpause_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
                 "total_pause": 10,
                 "weight": 1,
                 "speech_state": SpeechState.PRO,

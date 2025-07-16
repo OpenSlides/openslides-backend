@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.util.typing import ActionData
 
@@ -42,7 +43,7 @@ class SpeakerDeleteAction(
         super().check_permissions(instance)
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.end_time = round(time())
+        self.end_time = datetime.now(ZoneInfo("UTC"))
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
