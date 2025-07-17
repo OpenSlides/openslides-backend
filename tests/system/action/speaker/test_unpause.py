@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from math import ceil
+from math import ceil, floor
 from time import time
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -110,12 +110,12 @@ class TestSpeakerUnpause(BaseActionTestCase):
 
     def test_unpause_update_countdown(self) -> None:
         self.add_coupled_countdown()
-        now = datetime.now(ZoneInfo("UTC"))
+        now = floor(time())
         response = self.request("speaker.unpause", {"id": 890})
         self.assert_status_code(response, 200)
         countdown = self.get_model("projector_countdown/75")
         assert countdown.get("running") is True
-        assert now.timestamp() <= countdown["countdown_time"] - 100 <= ceil(time())
+        assert now <= countdown["countdown_time"] - 100 <= ceil(time())
 
     def setup_structure_level_with_speaker(self) -> None:
         self.set_models(
