@@ -4,6 +4,7 @@ from typing import Any
 from psycopg import Connection, adapt, rows, sql
 from psycopg.errors import (
     CheckViolation,
+    DatatypeMismatch,
     GeneratedAlways,
     NotNullViolation,
     SyntaxError,
@@ -521,7 +522,7 @@ class DatabaseWriter(SqlQueryHelper):
         """
         if return_id:
             statement += sql.SQL("""RETURNING id;""")
-
+        error_fqid = fqid_from_collection_and_id(collection, target_id or 0)
         try:
             with self.connection.cursor() as curs:
                 curs.execute(statement, arguments)
@@ -529,24 +530,21 @@ class DatabaseWriter(SqlQueryHelper):
                     result = curs.fetchone()
                     if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
                         assert target_id  # we will never reach here with delete or update events being None on id
-                        raise ModelDoesNotExist(
-                            fqid_from_collection_and_id(collection, target_id)
-                        )
+                        raise ModelDoesNotExist(error_fqid)
                     id_ = result.get("id", 0)
                     return id_
         except UniqueViolation as e:
             if "duplicate key value violates unique constraint" in e.args[0]:
                 if "Key (id)" in e.args[0]:
-                    raise ModelExists(
-                        fqid_from_collection_and_id(collection, target_id or id_)
-                    )
+                    raise ModelExists(error_fqid)
                 else:
                     raise RelationException(
-                        f"Relation from {fqid_from_collection_and_id(collection, target_id or id_)} violates UNIQUE constraint: {e}"
+                        f"Relation from {error_fqid} violates UNIQUE constraint: {e}"
                     )
         except NotNullViolation as e:
+            column = e.args[0].split('"')[1]
             raise BadCodingException(
-                f"Missing fields in '{collection}/{target_id}'. Ooopsy Daisy! {e}"
+                f"Missing fields '{column}' in '{error_fqid}'. Ooopsy Daisy! {e}"
             )
         except GeneratedAlways as e:
             raise BadCodingException(
@@ -560,6 +558,11 @@ class DatabaseWriter(SqlQueryHelper):
         except UndefinedTable as e:
             raise InvalidFormat(
                 f"Collection '{collection}' does not exist in the database: {e}"
+            )
+        except DatatypeMismatch as e:
+            column = e.args[0].split('"')[1]
+            raise InvalidFormat(
+                f"Invalid data type for '{column}' in {error_fqid}. {e}"
             )
         except CheckViolation as e:
             _, table, _, constraint_name, _ = e.args[0].split('"')

@@ -308,7 +308,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 {
                     # fmt: off
                     field:
-                        value.timestamp() if isinstance(value, datetime)
+                        int(value.timestamp()) if isinstance(value, datetime)
                         else str(value) if isinstance(value, Decimal)
                         else value.obj if isinstance(value, Jsonb)
                         else value

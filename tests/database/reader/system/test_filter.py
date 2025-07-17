@@ -37,7 +37,7 @@ expected_response_changed_models = {
 last_login_filter = FilterOperator(
     "last_login",
     "=",
-    datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")),
+    datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
 )
 
 
@@ -201,9 +201,7 @@ def test_mapped_fields(db_connection: Connection) -> None:
     assert response == {
         1: {
             "first_name": None,
-            "last_login": datetime(
-                2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo(key="Etc/UTC")
-            ),
+            "last_login": datetime(2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo("UTC")),
             "username": "data",
         }
     }

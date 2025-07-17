@@ -283,7 +283,7 @@ class TimestampField(IntegerField):
     ) -> None:
         if isinstance(value, datetime):
             value = int(value.timestamp())
-        elif not isinstance(value, int):
+        elif not isinstance(value, int | None):
             raise NotImplementedError(
                 f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
             )
