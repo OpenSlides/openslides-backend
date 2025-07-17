@@ -98,13 +98,21 @@ FROM base as prod
 # Große Sicherheitslücke hier umgehen:
 # Das sorgt dafür dass alle Commands innerhalb des Containers als unprivilegierter User durchgeführt werden und nicht als root
 RUN adduser --system --no-create-home appuser
-USER appuser
 
-COPY --chown=appuser:appuser scripts scripts
-COPY --chown=appuser:appuser entrypoint.sh ./
-COPY --chown=appuser:appuser openslides_backend openslides_backend
-COPY --chown=appuser:appuser meta meta
-COPY --chown=appuser:appuser data data
+COPY scripts scripts
+COPY entrypoint.sh ./
+COPY openslides_backend openslides_backend
+COPY meta meta
+COPY data data
+
+RUN chown appuser ./scripts/ && \
+ chown appuser ./entrypoint.sh && \
+ chown appuser ./openslides_backend && \
+ chown appuser ./meta && \
+ chown appuser ./command.sh && \
+ chown appuser ./data
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt
+
+USER appuser
