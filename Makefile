@@ -1,6 +1,4 @@
 override SERVICE=backend
-override MAKEFILE_PATH=../dev/scripts/makefile
-override DOCKER_COMPOSE_FILE=./dev/docker-compose.dev.yml
 override paths = openslides_backend/ tests/ cli/ meta/dev/src/
 
 # Build images for different contexts
@@ -13,13 +11,6 @@ build-dev:
 
 build-tests:
 	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
-
-# Development
-
-.PHONY: dev
-
-dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter:
-	bash $(MAKEFILE_PATH)/make-dev.sh -v "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "./entrypoint.sh bash --rcfile .bashrc"
 
 # Tests
 
