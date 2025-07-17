@@ -390,6 +390,7 @@
             "poll_default_group_ids": [
                 3
             ],
+            "poll_default_live_voting_enabled": false,
             "poll_default_backend": "fast",
             "poll_couple_countdown": true,
             "meeting_user_ids": [1, 2, 3],
