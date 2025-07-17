@@ -390,6 +390,7 @@
             "poll_default_group_ids": [
                 3
             ],
+            "poll_default_live_voting_enabled": false,
             "poll_default_backend": "fast",
             "poll_couple_countdown": true,
             "meeting_user_ids": [1, 2, 3],
@@ -1956,7 +1957,8 @@
             "global_abstain": false,
             "global_no": false,
             "global_yes": false,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "live_voting_enabled": false
         },
         "2": {
             "id": 2,
@@ -1978,7 +1980,8 @@
             "global_abstain": false,
             "global_no": false,
             "global_yes": false,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "live_voting_enabled": false
         },
         "3": {
             "id": 3,
@@ -2000,7 +2003,8 @@
                 5
             ],
             "global_option_id": 6,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "live_voting_enabled": false
         },
         "4": {
             "id": 4,
@@ -2027,7 +2031,8 @@
                 9
             ],
             "global_option_id": 10,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "live_voting_enabled": false
         },
         "5": {
             "id": 5,
@@ -2059,7 +2064,8 @@
                 12
             ],
             "global_option_id": 13,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "live_voting_enabled": false
         }
     },
     "option": {
