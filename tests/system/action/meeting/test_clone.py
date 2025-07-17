@@ -1157,6 +1157,7 @@ class MeetingClone(BaseActionTestCase):
             }
         )
 
+        self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1179,12 +1180,13 @@ class MeetingClone(BaseActionTestCase):
             {
                 "is_public": False,
                 "meeting_id": 2,
-                "mediafile_id": 18,
+                "mediafile_id": 17,
                 "inherited_access_group_ids": [4],
                 "used_as_font_regular_in_meeting_id": 2,
             },
         )
-        self.assert_model_exists("mediafile/18", {"meeting_mediafile_ids": [12]})
+        self.assert_model_exists("mediafile/17", {"meeting_mediafile_ids": [11, 12]})
+        self.media.duplicate_mediafile.assert_not_called()
 
     def test_clone_with_organization_tag(self) -> None:
         self.test_models_with_admin["meeting/1"]["organization_tag_ids"] = [1]

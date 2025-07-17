@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+from ...models.models import MeetingMediafile
 from ...shared.filters import And, FilterOperator, Or
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
@@ -19,15 +20,15 @@ class ForwardMediafilesMixin(Action):
         meeting_mediafile_replace_map: dict[int, dict[int, int]] = {},
     ) -> dict[int, dict[int, int]]:
         """
+        Duplicates meeting_mediafiles to the meetings defined in target_meeting_ids.
+        If related mediafile is meeting-wide also duplicates it.
+
         Takes dictionary of type:
         {
             "mediafile": {id: {data}},
             "meeting_mediafile": {id: {data}},
         }
-
-        1. Builds mediafile and meeting_mediafile replace maps.
-        2. Duplicates meeting-wide mediafiles.
-        3. Forwards meeting_mediafiles.
+        meeting_mediafile data must contain target_meeting_ids for each instance.
 
         Returns forwarded_attachments, meeting_mediafile_replace_map.
         """
@@ -169,6 +170,11 @@ class ForwardMediafilesMixin(Action):
             (entry["meeting_id"], entry["mediafile_id"]): entry["id"]
             for entry in retrieved_instances.values()
         }
+        extra_relational_fields_to_meeting = [
+            field.own_field_name
+            for field in MeetingMediafile().get_fields()
+            if field.own_field_name.startswith("used_as_")
+        ]
 
         new_mm_action_data = []
         for entry in new_mm_instances_data:
@@ -184,9 +190,24 @@ class ForwardMediafilesMixin(Action):
                     {entry["old_id"]: existing_mm_imstances[key]}
                 )
             else:
-                new_mm = {**entry}
-                new_mm.pop("old_id")
-                new_mm["mediafile_id"] = new_mediafile_id
+                new_mm = {
+                    "is_public": entry.get("is_public", False),
+                    "mediafile_id": new_mediafile_id,
+                    **{
+                        field: entry[field]
+                        for field in [
+                            "meeting_id",
+                            "access_group_ids",
+                            "inherited_access_group_ids",
+                        ]
+                        if field in entry
+                    },
+                    **{
+                        field: meeting_id
+                        for field in entry
+                        if field in extra_relational_fields_to_meeting
+                    },
+                }
                 new_mm_action_data.append(new_mm)
 
         created_results = cast(
