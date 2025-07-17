@@ -72,22 +72,25 @@ check-example-data-json:
 ########################## Deprecation List ##########################
 
 deprecation-warning:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh
+	@echo "\033[1;33m DEPRECATION WARNING: This make command is deprecated and will be removed soon! \033[0m"
+
+deprecation-warning-alternative: | deprecation-warning
+	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
 
 all:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-lint"
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
 	make run-lint
 
 run-bash:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev"
+	@make deprecation-warning-alternative ALTERNATIVE="dev"
 	dev
 
 run-dev-attach:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev-attached"
+	@make deprecation-warning-alternative ALTERNATIVE="dev-attached"
 	dev-attached
 
 stop-dev:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev-stop"
+	@make deprecation-warning-alternative ALTERNATIVE="dev-stop"
 	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml down --volumes
 
 check-black: | deprecation-warning
