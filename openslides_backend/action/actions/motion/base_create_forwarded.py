@@ -544,16 +544,22 @@ class BaseMotionCreateForwarded(
             lock_result=False,
         )["meeting_mediafile"]
 
-        annotated: dict[int, dict[str, Any]] = defaultdict(dict)
-        for meeting_id, mm_ids in target_meeting_id_mm_ids_map.items():
-            for mm_id in mm_ids:
-                if mm_id in meeting_mediafiles:
-                    entry = annotated[mm_id]
-                    if not entry:
-                        entry.update(meeting_mediafiles[mm_id])
-                        entry["target_meeting_ids"] = []
-                    entry["target_meeting_ids"].append(meeting_id)
-        return annotated
+        mm_id_target_meeting_ids_map = {
+            mm_id: [
+                meeting_id
+                for meeting_id, mm_ids in target_meeting_id_mm_ids_map.items()
+                if mm_id in mm_ids
+            ]
+            for mm_id in meeting_mediafiles
+        }
+
+        return {
+            id_: {
+                **origin_data,
+                "target_meeting_ids": mm_id_target_meeting_ids_map.get(id_, []),
+            }
+            for id_, origin_data in meeting_mediafiles.items()
+        }
 
     def _fetch_mediafiles(self, mediafile_ids: list[int]) -> dict[int, dict[str, Any]]:
         """Helper method for _prepare_mediafiles_data"""
