@@ -414,7 +414,7 @@ class BaseMotionCreateForwarded(
                 list(motion_target_meeting_ids_map.keys())
             )
         )
-        forwarded_attachments, fetched_data = self._prepare_mediafiles_data(
+        fetched_data = self._prepare_mediafiles_data(
             motion_target_meeting_ids_map,
             origin_attachments_data,
             forwarded_attachments,
@@ -461,7 +461,7 @@ class BaseMotionCreateForwarded(
         motion_target_meeting_ids_map: dict[int, set[int]],
         origin_attachments_data: dict[int, dict[str, Any]],
         forwarded_attachments: dict[int, set[int]],
-    ) -> tuple[dict[int, set[int]], dict[str, dict[int, dict[str, Any]]]]:
+    ) -> dict[str, dict[int, dict[str, Any]]]:
         """
         Helper method for duplicate_mediafiles.
 
@@ -484,7 +484,7 @@ class BaseMotionCreateForwarded(
                 {data["mediafile_id"] for data in meeting_mediafile_instances.values()}
             )
         )
-        return forwarded_attachments, {
+        return {
             "mediafile": mediafile_instances,
             "meeting_mediafile": meeting_mediafile_instances,
         }
