@@ -511,9 +511,7 @@ class BaseMotionCreateForwarded(
             for meeting_id in meeting_ids:
                 already_forwarded = forwarded_attachments.get(meeting_id, set())
                 new_ids = attachments - already_forwarded
-                target_map[meeting_id] = sorted(
-                    list(set(target_map[meeting_id]) | new_ids)
-                )
+                target_map[meeting_id] = sorted(set(target_map[meeting_id]) | new_ids)
                 forwarded_attachments[meeting_id].update(attachments)
         return target_map
 
