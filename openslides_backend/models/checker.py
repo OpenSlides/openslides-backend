@@ -560,7 +560,9 @@ class Checker:
         source_model = self.find_model("mediafile", model["mediafile_id"])
         meeting = self.find_model("meeting", model["meeting_id"])
 
-        # Specific validation for orga-wide mediafiles used in the meeting
+        # Specific validation for fields of orga-wide mediafiles used in the meeting:
+        # * is_public: always False
+        # * inherited_access_group_ids: admin_group_id of the meeting
         is_published_orgawide_mediafile = (
             source_model.get("owner_id") == ONE_ORGANIZATION_FQID
             and source_model.get("published_to_meetings_in_organization_id")
