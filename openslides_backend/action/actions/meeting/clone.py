@@ -175,8 +175,9 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             use_changed_models=False,
         )["mediafile"]
         meeting_json["mediafile"] = {
-            str(id_): {k: v for k, v in data.items() if k != "meta_position"}
+            str(id_): data
             for id_, data in mediafiles.items()
+            if data.pop("meta_position", True) or True
         }
 
         # check datavalidation
