@@ -216,7 +216,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         origin_meeting_mediafiles = meeting_json.pop("meeting_mediafile", {})
 
         self.create_replace_map(meeting_json)
-        self._remove_mediafile_relational_fields(instance)
+        self._remove_mediafile_relational_fields(meeting_json)
         meeting_mediafiles = self._update_meeting_mediafiles(
             origin_meeting_mediafiles, meeting["id"]
         )
@@ -334,7 +334,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             return meeting["committee_id"]
 
     def _remove_mediafile_relational_fields(
-        self, instance: dict[str, dict[str, dict[str, Any]]]
+        self, meeting: dict[str, dict[str, Any]]
     ) -> None:
         """
         All the meeting_mediafile relations are handled by ForwardMediafilesMixin
@@ -350,20 +350,19 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             "meeting_mediafile_inherited_access_group_ids",
         ]
 
-        self._strip_instance_fields(instance, "meeting", meeting_fields_to_skip)
-        self._strip_instance_fields(instance, "group", group_fields_to_skip)
+        self._strip_instance_fields(meeting["meeting"], meeting_fields_to_skip)
+        self._strip_instance_fields(meeting["group"], group_fields_to_skip)
 
     def _strip_instance_fields(
         self,
-        instance: dict[str, dict[str, dict[str, Any]]],
-        collection: str,
+        collection: dict[str, Any],
         fields_to_strip: list[str],
     ) -> None:
         """
         Removes from the instance the fields that shouldn't be processed
         (for example, because they are processed in other actions).
         """
-        for entry in instance["meeting"].get(collection, {}).values():
+        for entry in collection.values():
             for field in fields_to_strip:
                 entry.pop(field, None)
 
