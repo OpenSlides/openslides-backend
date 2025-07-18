@@ -9,25 +9,10 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
-relations_to_group = ["access_group_ids", "inherited_access_group_ids"]
-
-extra_relations_to_meeting = [
-    "used_as_font_bold_in_meeting_id",
-    "used_as_font_bold_italic_in_meeting_id",
-    "used_as_font_chyron_speaker_name_in_meeting_id",
-    "used_as_font_italic_in_meeting_id",
-    "used_as_font_monospace_in_meeting_id",
-    "used_as_font_projector_h1_in_meeting_id",
-    "used_as_font_projector_h2_in_meeting_id",
-    "used_as_font_regular_in_meeting_id",
-    "used_as_logo_pdf_ballot_paper_in_meeting_id",
-    "used_as_logo_pdf_footer_l_in_meeting_id",
-    "used_as_logo_pdf_footer_r_in_meeting_id",
-    "used_as_logo_pdf_header_l_in_meeting_id",
-    "used_as_logo_pdf_header_r_in_meeting_id",
-    "used_as_logo_projector_header_in_meeting_id",
-    "used_as_logo_projector_main_in_meeting_id",
-    "used_as_logo_web_header_in_meeting_id",
+EXTRA_RELATIONAL_FIELDS_TO_MEETING = [
+    field.own_field_name
+    for field in MeetingMediafile().get_fields()
+    if field.own_field_name.startswith("used_as_")
 ]
 
 
@@ -41,7 +26,8 @@ class MeetingMediafileCreate(CreateAction):
     model = MeetingMediafile()
     schema = DefaultSchema(MeetingMediafile()).get_create_schema(
         required_properties=["meeting_id", "mediafile_id", "is_public"],
-        optional_properties=relations_to_group + extra_relations_to_meeting,
+        optional_properties=["access_group_ids", "inherited_access_group_ids"]
+        + EXTRA_RELATIONAL_FIELDS_TO_MEETING,
     )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

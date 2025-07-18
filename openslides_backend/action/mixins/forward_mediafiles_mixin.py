@@ -3,14 +3,16 @@ from typing import Any, cast
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ...models.models import MeetingMediafile
 from ...shared.filters import And, FilterOperator, Or
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 from ..actions.mediafile.duplicate_to_another_meeting import (
     MediafileDuplicateToAnotherMeetingAction,
 )
-from ..actions.meeting_mediafile.create import MeetingMediafileCreate
+from ..actions.meeting_mediafile.create import (
+    EXTRA_RELATIONAL_FIELDS_TO_MEETING,
+    MeetingMediafileCreate,
+)
 
 
 class ForwardMediafilesMixin(Action):
@@ -170,11 +172,6 @@ class ForwardMediafilesMixin(Action):
             (entry["meeting_id"], entry["mediafile_id"]): entry["id"]
             for entry in retrieved_instances.values()
         }
-        extra_relational_fields_to_meeting = [
-            field.own_field_name
-            for field in MeetingMediafile().get_fields()
-            if field.own_field_name.startswith("used_as_")
-        ]
 
         new_mm_action_data = []
         for entry in new_mm_instances_data:
@@ -205,7 +202,7 @@ class ForwardMediafilesMixin(Action):
                     **{
                         field: meeting_id
                         for field in entry
-                        if field in extra_relational_fields_to_meeting
+                        if field in EXTRA_RELATIONAL_FIELDS_TO_MEETING
                     },
                 }
                 new_mm_action_data.append(new_mm)
