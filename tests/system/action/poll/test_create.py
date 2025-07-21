@@ -1139,3 +1139,48 @@ class CreatePoll(BasePollTestCase):
             "Anonymous group is not allowed in entitled_group_ids.",
             response.json["message"],
         )
+
+    def test_live_voting_type_named(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "live_voting_enabled": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1", {"type": Poll.TYPE_NAMED, "live_voting_enabled": True}
+        )
+
+    def test_live_voting_type_analog_not_allowed(self) -> None:
+        self.base_live_voting_incorrect_type_not_allowed(Poll.TYPE_ANALOG)
+
+    def test_live_voting_type_pseudoanonymous_not_allowed(self) -> None:
+        self.base_live_voting_incorrect_type_not_allowed(Poll.TYPE_PSEUDOANONYMOUS)
+
+    def base_live_voting_incorrect_type_not_allowed(self, poll_type: str) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "YNA",
+                "type": poll_type,
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "live_voting_enabled": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+        assert ("live_voting_enabled only allowed for named polls.") in response.json[
+            "message"
+        ]

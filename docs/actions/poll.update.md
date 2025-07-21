@@ -28,6 +28,9 @@
     votescast: number,
     publish_immediately: boolean,
 
+// Optional, type==named
+    live_voting_enabled: boolean
+
 // action called internally
     entitled_users_at_stop: json
 }

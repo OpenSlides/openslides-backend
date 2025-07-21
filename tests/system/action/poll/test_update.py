@@ -621,3 +621,23 @@ class UpdatePollTestCase(BasePollTestCase):
                 ]
             },
         )
+
+    def test_live_voting_type_named(self) -> None:
+        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"live_voting_enabled": True})
+
+    def test_live_voting_type_analog_not_allowed(self) -> None:
+        self.base_live_voting_incorrect_type_not_allowed(Poll.TYPE_ANALOG)
+
+    def test_live_voting_type_pseudoanonymous_not_allowed(self) -> None:
+        self.base_live_voting_incorrect_type_not_allowed(Poll.TYPE_PSEUDOANONYMOUS)
+
+    def base_live_voting_incorrect_type_not_allowed(self, poll_type: str) -> None:
+        self.update_model("poll/1", {"type": poll_type})
+        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("poll/1", {"live_voting_enabled": None})
+        assert ("live_voting_enabled only allowed for named polls.") in response.json[
+            "message"
+        ]
