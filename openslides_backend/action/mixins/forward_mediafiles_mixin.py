@@ -32,7 +32,7 @@ class ForwardMediafilesMixin(Action):
         }
         meeting_mediafile data must contain target_meeting_ids for each instance.
 
-        Returns forwarded_attachments, meeting_mediafile_replace_map.
+        Returns meeting_mediafile_replace_map.
         """
         if not meeting_mediafile_replace_map:
             meeting_mediafile_replace_map = defaultdict(dict)
