@@ -464,6 +464,7 @@ class BaseMotionCreateForwarded(
     ) -> dict[str, dict[int, dict[str, Any]]]:
         """
         Helper method for duplicate_mediafiles.
+        Updates forwarded_attachments to avoid duplication.
 
         Fetches mediafile and meeting_mediafile data and returns a dictionary of type:
         {
