@@ -367,7 +367,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                 entry.pop(field, None)
 
     def _update_meeting_mediafiles(
-        self, origin_meeting_mediafiles: dict[int, dict[str, Any]], meeting_id: int
+        self, origin_meeting_mediafiles: dict[str, dict[str, Any]], meeting_id: int
     ) -> dict[int, dict[str, Any]]:
         return {
             int(id_): {
