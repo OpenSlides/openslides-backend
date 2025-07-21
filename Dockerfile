@@ -83,7 +83,7 @@ COPY Makefile .
 COPY setup.cfg .
 COPY dev/entrypoint.sh ./
 
-ENV OPENSLIDES_DEVELOPMENT 1
+ENV OPENSLIDES_DEVELOPMENT=1
 
 EXPOSE 5678
 
