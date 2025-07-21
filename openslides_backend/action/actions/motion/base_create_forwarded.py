@@ -545,22 +545,13 @@ class BaseMotionCreateForwarded(
             lock_result=False,
         )["meeting_mediafile"]
 
-        mm_id_target_meeting_ids_map = {
-            mm_id: [
-                meeting_id
-                for meeting_id, mm_ids in target_meeting_id_mm_ids_map.items()
-                if mm_id in mm_ids
-            ]
-            for mm_id in meeting_mediafiles
-        }
+        for meeting_id, mediafile_ids in target_meeting_id_mm_ids_map.items():
+            for mediafile_id in mediafile_ids:
+                meeting_mediafiles[mediafile_id].setdefault(
+                    "target_meeting_ids", []
+                ).append(meeting_id)
 
-        return {
-            id_: {
-                **origin_data,
-                "target_meeting_ids": mm_id_target_meeting_ids_map.get(id_, []),
-            }
-            for id_, origin_data in meeting_mediafiles.items()
-        }
+        return meeting_mediafiles
 
     def _fetch_mediafiles(self, mediafile_ids: list[int]) -> dict[int, dict[str, Any]]:
         """Helper method for _prepare_mediafiles_data"""
