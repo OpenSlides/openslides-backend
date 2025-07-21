@@ -5,7 +5,7 @@ from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
@@ -70,7 +70,7 @@ class PollUpdateAction(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["state", "type", "entitled_users_at_stop"],
+            ["state", "type", "entitled_users_at_stop", "content_object_id"],
         )
 
         self.check_entitled_users_at_stop(instance, poll)
@@ -118,8 +118,14 @@ class PollUpdateAction(
             )
 
         # check named and live_voting_enabled
-        if poll["type"] != Poll.TYPE_NAMED and instance.get("live_voting_enabled"):
-            raise ActionException("live_voting_enabled only allowed for named polls.")
+        if instance.get("live_voting_enabled") and not (
+            poll["type"] == Poll.TYPE_NAMED
+            and poll.get("content_object_id")
+            and collection_from_fqid(poll["content_object_id"]) == "motion"
+        ):
+            raise ActionException(
+                "live_voting_enabled only allowed for named motion polls."
+            )
 
         if poll["type"] == Poll.TYPE_ANALOG and (
             base := instance.get("onehundred_percent_base")
