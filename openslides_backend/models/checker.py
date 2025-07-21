@@ -558,32 +558,15 @@ class Checker:
             return
 
         source_model = self.find_model("mediafile", model["mediafile_id"])
-        meeting = self.find_model("meeting", model["meeting_id"])
-
-        # Specific validation for fields of orga-wide mediafiles used in the meeting:
-        # * is_public: always False
-        # * inherited_access_group_ids: admin_group_id of the meeting
-        is_published_orgawide_mediafile = (
-            source_model.get("owner_id") == ONE_ORGANIZATION_FQID
-            and source_model.get("published_to_meetings_in_organization_id")
-            == ONE_ORGANIZATION_ID
-        )
-        is_used_in_meeting = [
-            field for field in model if field.startswith("used_as")
-        ] and model.get("inherited_access_group_ids", []) == [
-            meeting.get("admin_group_id")
-        ]
-        if is_published_orgawide_mediafile and is_used_in_meeting:
-            return
-
         access_group_ids = model.get("access_group_ids")
         parent_is_public = None
         parent_inherited_access_group_ids = None
+        meeting = self.find_model("meeting", model["meeting_id"])
+        assert meeting
         if source_model and source_model.get("parent_id"):
             source_parent = self.find_model("mediafile", source_model["parent_id"])
             # relations are checked beforehand, so parent always exists
             assert source_parent
-            assert meeting
             parent_ids = set(meeting.get("meeting_mediafile_ids", [])).intersection(
                 source_parent.get("meeting_mediafile_ids", [])
             )
@@ -600,6 +583,18 @@ class Checker:
                 # must be assumed to have inherited_access_group admin
                 parent_is_public = False
                 parent_inherited_access_group_ids = [meeting["admin_group_id"]]
+        else:
+            # If published organization mediafile assigned to the meeting doesn't have
+            # a parent its access_group_ids is equal to meetings admin group
+            meeting_admin_group = [meeting.get("admin_group_id")]
+            if (
+                source_model.get("owner_id") == ONE_ORGANIZATION_FQID
+                and source_model.get("published_to_meetings_in_organization_id")
+                == ONE_ORGANIZATION_ID
+                and model.get("inherited_access_group_ids", []) == meeting_admin_group
+            ):
+                access_group_ids = meeting_admin_group
+
         is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
             access_group_ids, parent_is_public, parent_inherited_access_group_ids
         )
