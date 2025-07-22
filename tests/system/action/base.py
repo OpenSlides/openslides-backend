@@ -137,7 +137,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def execute_action_internally(
-        self, action_name: str, data: dict[str, Any], user_id: int = 0
+        self,
+        action_name: str,
+        data: dict[str, Any] | list[dict[str, Any]],
+        user_id: int = 0,
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
@@ -152,7 +155,9 @@ class BaseActionTestCase(BaseSystemTestCase):
             MagicMock(),
         )
         action_data = deepcopy(data)
-        write_request, result = action.perform([action_data], user_id, internal=True)
+        if isinstance(action_data, dict):
+            action_data = [action_data]
+        write_request, result = action.perform(action_data, user_id, internal=True)
         if write_request:
             self.datastore.write(write_request)
         self.datastore.reset()

@@ -82,31 +82,29 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
     def test_create_multi(self) -> None:
         response = self.execute_action_internally(
             "speaker.create_for_merge",
-            {
-                "list_of_speakers_id": 1,
-                "meeting_user_id": 78,
-                "begin_time": datetime.fromtimestamp(20),
-                "end_time": datetime.fromtimestamp(40),
-                "unpause_time": datetime.fromtimestamp(1),
-                "total_pause": 10,
-                "weight": 1,
-                "speech_state": SpeechState.PRO,
-                "structure_level_list_of_speakers_id": 1,
-            },
+            [
+                {
+                    "list_of_speakers_id": 1,
+                    "meeting_user_id": 78,
+                    "begin_time": datetime.fromtimestamp(20),
+                    "end_time": datetime.fromtimestamp(40),
+                    "unpause_time": datetime.fromtimestamp(1),
+                    "total_pause": 10,
+                    "weight": 1,
+                    "speech_state": SpeechState.PRO,
+                    "structure_level_list_of_speakers_id": 1,
+                },
+                {
+                    "list_of_speakers_id": 1,
+                    "meeting_user_id": 78,
+                    "weight": 2,
+                    "note": "Hello",
+                    "point_of_order": True,
+                    "point_of_order_category_id": 1,
+                },
+            ],
         )
-        assert response == [{"id": 1}]
-        response = self.execute_action_internally(
-            "speaker.create_for_merge",
-            {
-                "list_of_speakers_id": 1,
-                "meeting_user_id": 78,
-                "weight": 2,
-                "note": "Hello",
-                "point_of_order": True,
-                "point_of_order_category_id": 1,
-            },
-        )
-        assert response == [{"id": 2}]
+        assert response == [{"id": 1}, {"id": 2}]
         self.assert_model_exists(
             "speaker/1",
             {

@@ -558,7 +558,9 @@ class DatabaseWriter(SqlQueryHelper):
         except UndefinedTable as e:
             table = e.args[0].split('"')[1]
             if table.startswith(("gm_", "nm_")):
-                raise InvalidFormat(f"Intermediate table '{table}' does not exist for collection: '{collection}': {e}")
+                raise InvalidFormat(
+                    f"Intermediate table '{table}' does not exist for collection: '{collection}': {e}"
+                )
             else:
                 raise InvalidFormat(
                     f"Collection '{collection}' does not exist in the database: {e}"
