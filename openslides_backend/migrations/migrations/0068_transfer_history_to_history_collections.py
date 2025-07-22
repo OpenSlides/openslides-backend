@@ -90,12 +90,8 @@ class Migration(BaseModelMigration):
                     for fqid, fields in create_events
                 )
                 events.extend(
-                    (
-                        RequestUpdateEvent(fqid, fields=cast(dict[str, Any], fields))
-                        if "id" in fields
-                        else RequestUpdateEvent(
-                            fqid, fields={}, list_fields=cast(ListFieldsData, fields)
-                        )
+                    RequestUpdateEvent(
+                        fqid, fields={}, list_fields=cast(ListFieldsData, fields)
                     )
                     for fqid, fields in update_events
                 )
