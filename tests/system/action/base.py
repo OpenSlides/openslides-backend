@@ -22,6 +22,7 @@ from openslides_backend.shared.exceptions import (
 )
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import PartialModel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
@@ -136,7 +137,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def execute_action_internally(
-        self, action_name: str, data: dict[str, Any], user_id: int = 0
+        self,
+        action_name: str,
+        data: dict[str, Any] | list[dict[str, Any]],
+        user_id: int = 0,
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
@@ -151,7 +155,9 @@ class BaseActionTestCase(BaseSystemTestCase):
             MagicMock(),
         )
         action_data = deepcopy(data)
-        write_request, result = action.perform([action_data], user_id, internal=True)
+        if isinstance(action_data, dict):
+            action_data = [action_data]
+        write_request, result = action.perform(action_data, user_id, internal=True)
         if write_request:
             self.datastore.write(write_request)
         self.datastore.reset()
@@ -241,7 +247,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
 
-    def create_meeting(self, base: int = 1) -> None:
+    def create_meeting(self, base: int = 1, meeting_data: PartialModel = {}) -> None:
         """
         Creates meeting with id 1, committee 60 and groups with ids 1(Default), 2(Admin), 3 by default.
         With base you can setup other meetings, but be cautious because of group-ids
@@ -262,6 +268,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "language": "en",
                     "motion_state_ids": [base],
                     "motion_workflow_ids": [base],
+                    **meeting_data,
                 },
                 f"projector/{base}": {"sequential_number": base, "meeting_id": base},
                 f"group/{base}": {
@@ -493,7 +500,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         filtered_result = self.datastore.filter(
             "meeting_user",
             FilterOperator("user_id", "=", user_id),
-            ["id", "user_id", "meeting_id", "group_ids"],
+            ["id", "user_id", "meeting_id"],
             lock_result=False,
         )
         meeting_users: dict[int, dict[str, Any]] = {
@@ -514,7 +521,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
                 "user_id": user_id,
                 "meeting_id": meeting_id,
-                "group_ids": [],
             }
             for meeting_id in meeting_ids
             if meeting_id not in meeting_users
@@ -539,7 +545,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
 
         def add_to_list(where: dict[str, Any], key: str, what: int) -> None:
-            if key in where and where.get(key):
+            if key in where and where[key]:
                 if what not in where[key]:
                     where[key].append(what)
             else:
@@ -548,15 +554,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         for group in groups.values():
             meeting_id = group["meeting_id"]
             meeting_user_id = meeting_users[meeting_id]["id"]
-            # meetings[meeting_id]["id"] = meeting_id
-            add_to_list(meeting_users[meeting_id], "group_ids", group["id"])
             add_to_list(group, "meeting_user_ids", meeting_user_id)
-            add_to_list(meetings[meeting_id], "meeting_user_ids", meeting_user_id)
-            add_to_list(user, "meeting_user_ids", meeting_user_id)
         self.set_models(
             {
                 f"user/{user_id}": user,
-                **{f"meeting_user/{mu['id']}": mu for mu in meeting_users.values()},
+                **{f"meeting_user/{mu['id']}": mu for mu in meeting_users_new.values()},
                 **{f"group/{group['id']}": group for group in groups.values()},
                 **{
                     f"meeting/{meeting['id']}": meeting for meeting in meetings.values()

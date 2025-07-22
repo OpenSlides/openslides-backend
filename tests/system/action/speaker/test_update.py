@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
@@ -13,12 +14,19 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_enable_pro_contra_speech": True,
-                "meeting_user_ids": [7],
-                "speaker_ids": [890],
             },
-            "user/7": {"username": "test_username1", "meeting_user_ids": [7]},
-            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
-            "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+            "user/7": {"username": "test_username1"},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+            "topic/1337": {
+                "title": "introduction leet gathering",
+                "sequential_number": 1337,
+                "meeting_id": 1,
+            },
+            "list_of_speakers/23": {
+                "sequential_number": 23,
+                "content_object_id": "topic/1337",
+                "meeting_id": 1,
+            },
             "speaker/890": {
                 "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
@@ -335,21 +343,21 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
 
     def test_update_meeting_user_and_structure_level_on_past_speaker(self) -> None:
-        now = round(time())
+        now = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
                 "meeting/1": {
                     "list_of_speakers_default_structure_level_time": 60,
-                    "structure_level_ids": [2],
                 },
                 "structure_level/2": {
+                    "name": "unicorns",
                     "meeting_id": 1,
                 },
                 "speaker/890": {
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_user_id": None,
-                    "begin_time": now - 100,
-                    "end_time": now - 50,
+                    "begin_time": now - timedelta(seconds=100),
+                    "end_time": now - timedelta(seconds=50),
                 },
             }
         )
@@ -365,20 +373,18 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_meeting_user_and_structure_level_on_past_speaker_without_default_time(
         self,
     ) -> None:
-        now = round(time())
+        now = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [2],
-                },
                 "structure_level/2": {
+                    "name": "unicorns",
                     "meeting_id": 1,
                 },
                 "speaker/890": {
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_user_id": None,
-                    "begin_time": now - 100,
-                    "end_time": now - 50,
+                    "begin_time": now - timedelta(seconds=100),
+                    "end_time": now - timedelta(seconds=50),
                 },
             }
         )
@@ -432,21 +438,16 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_structure_level_existing(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [42],
-                },
-                "list_of_speakers/23": {
-                    "structure_level_list_of_speakers_ids": [42],
-                },
                 "structure_level/1": {
+                    "name": "panthers",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [42],
                 },
                 "structure_level_list_of_speakers/42": {
                     "meeting_id": 1,
                     "structure_level_id": 1,
                     "list_of_speakers_id": 23,
+                    "initial_time": 200,
+                    "remaining_time": 100,
                 },
             }
         )
@@ -461,9 +462,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_default_structure_level_time": 60,
-                    "structure_level_ids": [2],
                 },
                 "structure_level/2": {
+                    "name": "unicorns",
                     "meeting_id": 1,
                 },
             }
@@ -481,24 +482,19 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_structure_level_already_speaking(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [42],
-                },
-                "list_of_speakers/23": {
-                    "structure_level_list_of_speakers_ids": [42],
-                },
                 "structure_level/1": {
+                    "name": "panthers",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [42],
                 },
                 "structure_level_list_of_speakers/42": {
                     "meeting_id": 1,
                     "structure_level_id": 1,
                     "list_of_speakers_id": 23,
+                    "initial_time": 200,
+                    "remaining_time": 100,
                 },
                 "speaker/890": {
-                    "begin_time": round(time()),
+                    "begin_time": datetime.now(ZoneInfo("UTC")),
                 },
             }
         )
@@ -512,22 +508,16 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_structure_level_none(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [42],
-                },
-                "list_of_speakers/23": {
-                    "structure_level_list_of_speakers_ids": [42],
-                },
                 "structure_level/1": {
+                    "name": "panthers",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [42],
                 },
                 "structure_level_list_of_speakers/42": {
                     "meeting_id": 1,
                     "structure_level_id": 1,
                     "list_of_speakers_id": 23,
-                    "speaker_ids": [890],
+                    "initial_time": 200,
+                    "remaining_time": 100,
                 },
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 42,
@@ -542,10 +532,13 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "speaker/890", {"structure_level_list_of_speakers_id": None}
         )
         self.assert_model_exists(
-            "structure_level_list_of_speakers/42", {"speaker_ids": []}
+            "structure_level_list_of_speakers/42", {"speaker_ids": None}
         )
 
     def test_update_set_point_of_order_forbidden(self) -> None:
+        self.set_models(
+            {"meeting/1": {"list_of_speakers_enable_point_of_order_speakers": False}}
+        )
         response = self.request("speaker.update", {"id": 890, "point_of_order": True})
         self.assert_status_code(response, 400)
         self.assertEqual(
@@ -598,6 +591,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_categories": True,
                 },
                 "point_of_order_category/1": {
+                    "text": "pooc",
+                    "rank": 1,
                     "meeting_id": 1,
                 },
             }
@@ -637,6 +632,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_can_create_point_of_order_for_others": True,
                 },
                 "point_of_order_category/1": {
+                    "text": "pooc",
+                    "rank": 1,
                     "meeting_id": 1,
                 },
             }
@@ -692,7 +689,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "speaker/890": {
                     "speech_state": SpeechState.INTERVENTION,
-                    "begin_time": 1234,
+                    "begin_time": datetime.fromtimestamp(1234),
                 }
             }
         )
@@ -717,7 +714,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "speaker/890": {
                     "speech_state": SpeechState.INTERVENTION,
-                    "begin_time": 1234,
+                    "begin_time": datetime.fromtimestamp(1234),
                 }
             }
         )
@@ -729,14 +726,21 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_running_speaker_with_speech_state(self) -> None:
-        self.set_models({"speaker/890": {"begin_time": 1234}})
+        self.set_models({"speaker/890": {"begin_time": datetime.fromtimestamp(1234)}})
         response = self.request(
             "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
         )
         self.assert_status_code(response, 200)
 
     def test_update_running_point_of_order_with_speech_state(self) -> None:
-        self.set_models({"speaker/890": {"point_of_order": True, "begin_time": 1234}})
+        self.set_models(
+            {
+                "speaker/890": {
+                    "point_of_order": True,
+                    "begin_time": datetime.fromtimestamp(1234),
+                }
+            }
+        )
         response = self.request(
             "speaker.update",
             {"id": 890, "speech_state": SpeechState.CONTRA, "point_of_order": False},
@@ -755,7 +759,10 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_can_create_point_of_order_for_others": True,
                 },
-                "speaker/890": {"speech_state": SpeechState.CONTRA, "begin_time": 1234},
+                "speaker/890": {
+                    "speech_state": SpeechState.CONTRA,
+                    "begin_time": datetime.fromtimestamp(1234),
+                },
             }
         )
         response = self.request(
@@ -771,24 +778,24 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_can_create_point_of_order_for_others": True,
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [1],
                     "list_of_speakers_intervention_time": 1,
                 },
                 "structure_level/1": {
                     "name": "Level",
                     "meeting_id": 1,
-                    "meeting_user_ids": [7],
                 },
                 "structure_level_list_of_speakers/1": {
                     "list_of_speakers_id": 23,
-                    "speaker_ids": [890],
+                    "structure_level_id": 1,
+                    "initial_time": 200,
+                    "remaining_time": 100,
                     "meeting_id": 1,
                 },
                 "speaker/890": {
-                    "begin_time": 1234,
+                    "begin_time": datetime.fromtimestamp(1234),
                     "structure_level_list_of_speakers_id": 1,
                 },
+                "meeting_user/7": {"structure_level_ids": [1]},
             }
         )
 
@@ -855,11 +862,16 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_with_internal_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level/1": {
+                    "name": "Level",
+                    "meeting_id": 1,
+                },
                 "structure_level_list_of_speakers/90": {
                     "meeting_id": 1,
+                    "structure_level_id": 1,
                     "list_of_speakers_id": 23,
+                    "initial_time": 200,
+                    "remaining_time": 100,
                 },
             }
         )
@@ -876,11 +888,16 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_with_internal_fields_error(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level/1": {
+                    "name": "Level",
+                    "meeting_id": 1,
+                },
                 "structure_level_list_of_speakers/90": {
                     "meeting_id": 1,
+                    "structure_level_id": 1,
                     "list_of_speakers_id": 23,
+                    "initial_time": 200,
+                    "remaining_time": 100,
                 },
             }
         )

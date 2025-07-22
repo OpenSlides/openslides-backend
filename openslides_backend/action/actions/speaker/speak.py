@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
@@ -75,7 +76,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         if action_data:
             self.execute_other_action(action, action_data)
 
-        now = round(time.time())
+        now = datetime.now(ZoneInfo("UTC"))
         if db_instance.get("begin_time") is not None:
             raise ActionException("Speaker has already started to speak.")
         assert db_instance.get("end_time") is None

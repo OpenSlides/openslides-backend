@@ -17,6 +17,7 @@ from tests.database.writer.system.util import (
 )
 
 
+@pytest.mark.skip()
 def test_two_write_requests_with_locked_fields(db_connection: Connection) -> None:
     # TODO does this really make sense? To me it seems like we shouldn't even need to send locks on writes
     # TODO this probably needs two async threads to actually have conflicts

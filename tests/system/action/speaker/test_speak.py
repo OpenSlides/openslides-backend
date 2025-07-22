@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from math import ceil, floor
 from time import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
@@ -13,8 +15,17 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "user/7": {"username": "test_username1"},
-            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
-            "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+            "topic/1337": {
+                "title": "introduction leet gathering",
+                "sequential_number": 1337,
+                "meeting_id": 1,
+            },
+            "list_of_speakers/23": {
+                "sequential_number": 23,
+                "content_object_id": "topic/1337",
+                "meeting_id": 1,
+            },
             "speaker/890": {
                 "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
@@ -31,6 +42,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_countdown_id": 75,
                 },
                 "projector_countdown/75": {
+                    "title": "poc",
                     "running": False,
                     "default_time": 60,
                     "countdown_time": 30.0,
@@ -52,17 +64,18 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.assertIsNone(model.get("begin_time"))
 
     def test_speak_existing_speaker(self) -> None:
+        begin_time = datetime.fromtimestamp(100000, ZoneInfo("UTC"))
         self.set_models(
             {
                 "speaker/890": {
-                    "begin_time": 100000,
+                    "begin_time": begin_time,
                 },
             }
         )
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
-        self.assertEqual(model.get("begin_time"), 100000)
+        self.assertEqual(model.get("begin_time"), begin_time)
 
     def test_speak_next_speaker(self) -> None:
         self.set_models(
@@ -72,7 +85,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                 },
                 "list_of_speakers/23": {"speaker_ids": [890, 891]},
                 "speaker/890": {
-                    "begin_time": 100000,
+                    "begin_time": datetime.fromtimestamp(100000),
                 },
                 "speaker/891": {
                     "meeting_user_id": 7,
@@ -86,7 +99,9 @@ class SpeakerSpeakTester(BaseActionTestCase):
         model2 = self.get_model("speaker/891")
         self.assertIsNotNone(model2.get("begin_time"))
         model1 = self.get_model("speaker/890")
-        self.assertAlmostEqual(model1.get("end_time"), model2["begin_time"], delta=1)
+        self.assertAlmostEqual(
+            model1.get("end_time"), model2["begin_time"], delta=timedelta(1)
+        )
 
     def test_closed(self) -> None:
         self.set_models(
@@ -156,7 +171,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         assert now <= countdown["countdown_time"] <= ceil(time())
 
     def test_speak_with_interposed_questions(self) -> None:
-        now = floor(time())
+        start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
                 "meeting_user/7": {
@@ -164,7 +179,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                 },
                 "list_of_speakers/23": {"speaker_ids": [890, 891, 892]},
                 "speaker/890": {
-                    "begin_time": now - 100,
+                    "begin_time": start - timedelta(seconds=100),
                 },
                 "speaker/891": {
                     "meeting_user_id": 7,
@@ -183,7 +198,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.assertIsNotNone(speaker.get("pause_time"))
 
     def test_speak_interposed_question_paused_current_speaker(self) -> None:
-        now = floor(time())
+        start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
                 "meeting_user/7": {
@@ -191,8 +206,8 @@ class SpeakerSpeakTester(BaseActionTestCase):
                 },
                 "list_of_speakers/23": {"speaker_ids": [890, 891]},
                 "speaker/890": {
-                    "begin_time": now - 200,
-                    "pause_time": now - 100,
+                    "begin_time": start - timedelta(seconds=200),
+                    "pause_time": start - timedelta(seconds=100),
                 },
                 "speaker/891": {
                     "meeting_user_id": 7,
@@ -236,36 +251,31 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_with_structure_level(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [2],
-                },
                 "structure_level/1": {
+                    "name": "labour",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [2],
                 },
                 "structure_level_list_of_speakers/2": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
-                    "speaker_ids": [890],
+                    "initial_time": 200,
                     "remaining_time": 100,
                 },
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 2,
                 },
             }
         )
-        now = floor(time())
+        start = datetime.now(ZoneInfo("UTC"))
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 200)
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertEqual(model["remaining_time"], 100)
-        assert now <= model["current_start_time"] <= ceil(time())
+        assert start <= model["current_start_time"] <= datetime.now(ZoneInfo("UTC"))
 
     def test_speak_with_structure_level_and_current_speaker(self) -> None:
-        now = floor(time())
+        start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
                 "meeting/1": {
@@ -281,6 +291,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                 },
                 "structure_level/1": {
                     "meeting_id": 1,
+                    "name": "torries",
                     "structure_level_list_of_speakers_ids": [2],
                 },
                 "structure_level_list_of_speakers/2": {
@@ -288,6 +299,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
                     "speaker_ids": [889, 890],
+                    "initial_time": 700,
                     "remaining_time": 500,
                 },
                 "speaker/889": {
@@ -295,7 +307,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
-                    "begin_time": now - 100,
+                    "begin_time": start - timedelta(seconds=100),
                 },
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 2,
@@ -307,30 +319,28 @@ class SpeakerSpeakTester(BaseActionTestCase):
         speaker = self.get_model("speaker/889")
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertEqual(
-            model["remaining_time"], 500 - (speaker["end_time"] - speaker["begin_time"])
+            model["remaining_time"],
+            500 - int((speaker["end_time"] - speaker["begin_time"]).total_seconds()),
         )
-        assert now <= model["current_start_time"] <= ceil(time())
+        assert start <= model["current_start_time"] <= datetime.now(ZoneInfo("UTC"))
 
     def speak_with_structure_level_and_speech_state(self, state: SpeechState) -> None:
         self.set_models(
             {
                 "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [2],
                     "list_of_speakers_intervention_time": 100,
                 },
                 "structure_level/1": {
+                    "name": "USC",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [2],
                 },
                 "structure_level_list_of_speakers/2": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
-                    "speaker_ids": [890],
+                    "initial_time": 200,
                     "remaining_time": 100,
                 },
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 2,
                     "speech_state": state,
@@ -374,13 +384,19 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_stop_paused_speaker(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "speaker_ids": [890, 891],
+                "topic/1337": {
+                    "title": "introduction leet gathering",
+                    "sequential_number": 1337,
+                    "meeting_id": 1,
                 },
-                "list_of_speakers/23": {"speaker_ids": [890, 891]},
+                "list_of_speakers/23": {
+                    "sequential_number": 23,
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 1,
+                },
                 "speaker/890": {
-                    "begin_time": 1000,
-                    "pause_time": 1500,
+                    "begin_time": datetime.fromtimestamp(1000),
+                    "pause_time": datetime.fromtimestamp(1500),
                 },
                 "speaker/891": {
                     "meeting_user_id": 7,
@@ -403,6 +419,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_intervention_time": 100,
                 },
                 "structure_level/1": {
+                    "name": "SDP",
                     "meeting_id": 1,
                     "structure_level_list_of_speakers_ids": [2],
                 },
@@ -411,6 +428,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
                     "speaker_ids": [890],
+                    "initial_time": 200,
                     "remaining_time": 100,
                 },
                 "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
