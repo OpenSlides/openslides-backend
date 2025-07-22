@@ -68,9 +68,9 @@ class PollCreateAction(
             "votescast",
             "entitled_group_ids",
             "backend",
+            "live_voting_enabled",
         ],
         additional_optional_fields={
-            "live_voting_enabled": {"type": "boolean"},
             "publish_immediately": {"type": "boolean"},
             "amount_global_yes": decimal_schema,
             "amount_global_no": decimal_schema,

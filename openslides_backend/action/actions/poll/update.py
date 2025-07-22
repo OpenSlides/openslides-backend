@@ -49,11 +49,11 @@ class PollUpdateAction(
             "votesinvalid",
             "votescast",
             "backend",
+            "live_voting_enabled",
             *internal_fields,
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
-            "live_voting_enabled": {"type": "boolean"},
         },
     )
     poll_history_information = "updated"
