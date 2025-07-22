@@ -3,7 +3,7 @@
 {
 // Required
     id: Id;
-    
+
 // Optional
 // Group A
     welcome_title: string;
@@ -160,6 +160,7 @@
     topic_poll_default_group_ids: Id[];
 
     poll_default_backend: string;
+    poll_default_live_voting_enabled: boolean;
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;

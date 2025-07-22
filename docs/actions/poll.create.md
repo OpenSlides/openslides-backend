@@ -38,6 +38,9 @@ Payload:
     onehundred_percent_base: string,
     backend: string,
 
+// Optional, only for type==named
+    live_voting_enabled: boolean,
+
 // Only for non analog types
     entitled_group_ids: Id[],
 
