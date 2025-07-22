@@ -20,7 +20,7 @@ class Migration(BaseModelMigration):
     This migration transcribes the entire history into the history collections
     """
 
-    target_migration_index = 68
+    target_migration_index = 69
     chunk_length = 1000
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:

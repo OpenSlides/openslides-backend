@@ -2548,7 +2548,8 @@ class HistoryEntry(Model):
             "user": "history_entry_ids",
             "motion": "history_entry_ids",
             "assignment": "history_entry_ids",
-        }
+        },
+        required=True,
     )
     position_id = fields.RelationField(
         to={"history_position": "entry_ids"}, required=True, constant=True
