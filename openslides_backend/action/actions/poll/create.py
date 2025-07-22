@@ -84,10 +84,7 @@ class PollCreateAction(
         action_data = []
 
         state_change = self.check_state_change(instance)
-        is_motion_poll = (
-            instance.get("content_object_id")
-            and collection_from_fqid(instance["content_object_id"]) == "motion"
-        )
+        is_motion_poll = collection_from_fqid(instance["content_object_id"]) == "motion"
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):

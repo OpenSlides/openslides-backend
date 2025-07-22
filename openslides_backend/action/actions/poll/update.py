@@ -120,7 +120,6 @@ class PollUpdateAction(
         # check named and live_voting_enabled
         if instance.get("live_voting_enabled") and not (
             poll["type"] == Poll.TYPE_NAMED
-            and poll.get("content_object_id")
             and collection_from_fqid(poll["content_object_id"]) == "motion"
         ):
             raise ActionException(
