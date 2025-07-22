@@ -382,6 +382,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_poll_default_live_voting_enabled(self) -> None:
+        self.basic_test({"poll_default_live_voting_enabled": True})
+        self.assert_model_exists(
+            "meeting/1",
+            {"poll_default_live_voting_enabled": True},
+        )
+
     def test_update_motions_block_slide_columns(self) -> None:
         self.basic_test(
             {

@@ -675,6 +675,12 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    poll_default_live_voting_enabled = fields.BooleanField(
+        default=False,
+        constraints={
+            "description": "Defines default 'poll.live_voting_enabled' option suggested to user. Is not used in the validations."
+        },
+    )
     poll_couple_countdown = fields.BooleanField(default=True)
     topic_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_topic_poll_default_id"}
@@ -1886,6 +1892,12 @@ class Poll(Model, PollModelMixin):
     votesinvalid = fields.DecimalField()
     votescast = fields.DecimalField()
     entitled_users_at_stop = fields.JSONField()
+    live_voting_enabled = fields.BooleanField(
+        default=False,
+        constraints={
+            "description": "If true, the vote service sends the votes of the users to the autoupdate service."
+        },
+    )
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
