@@ -20,33 +20,27 @@ def calculate_history_event_payloads(
         (model_fqid_to_entry_id[fqid], fqid, entries)
         for fqid, entries in information.items()
     ]
-    create_events: list[EventPayload] = []
-    update_events: list[EventPayload] = []
-    create_events.extend(
-        [
-            (
-                fqid_from_collection_and_id("history_entry", id_),
-                {
-                    "id": id_,
-                    "entries": entries,
-                    "position_id": position_id,
-                    "original_model_id": fqid,
-                    "model_id": (fqid if fqid in existing_fqids else None),
-                },
-            )
-            for id_, fqid, entries in transformed_information
-        ]
-    )
-    update_events.extend(
-        [
-            (
-                fqid,
-                {"add": {"history_entry_ids": [id_]}},
-            )
-            for id_, fqid, entries in transformed_information
-            if fqid in existing_fqids
-        ]
-    )
+    create_events: list[EventPayload] = [
+        (
+            fqid_from_collection_and_id("history_entry", id_),
+            {
+                "id": id_,
+                "entries": entries,
+                "position_id": position_id,
+                "original_model_id": fqid,
+                "model_id": (fqid if fqid in existing_fqids else None),
+            },
+        )
+        for id_, fqid, entries in transformed_information
+    ]
+    update_events: list[EventPayload] = [
+        (
+            fqid,
+            {"add": {"history_entry_ids": [id_]}},
+        )
+        for id_, fqid, entries in transformed_information
+        if fqid in existing_fqids
+    ]
     if set_user := (
         user_id
         and user_id > 0

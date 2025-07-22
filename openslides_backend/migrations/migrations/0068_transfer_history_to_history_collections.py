@@ -25,12 +25,11 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         collections = ["motion", "assignment", "user"]
-        all_current_fqids: set[str] = set()
-        for collection in collections:
-            all_current_fqids.update(
-                fqid_from_collection_and_id(collection, id_)
-                for id_ in self.reader.get_all(collection, ["id"])
-            )
+        all_current_fqids: set[str] = {
+            fqid_from_collection_and_id(collection, id_)
+            for collection in collections
+            for id_ in self.reader.get_all(collection, ["id"])
+        }
         max_position = self.reader.get_max_position()
         cur_max_pos = 0
         next_entry_id = 1
@@ -54,14 +53,12 @@ class Migration(BaseModelMigration):
                     m_fqid: e_id
                     for e_id, m_fqid in enumerate(
                         sorted(
-                            [
-                                fqid
-                                for fqid in {
-                                    *position_to_fqids[position_nr],
-                                    *(info if isinstance(info, dict) else {}),
-                                }
-                                if collection_from_fqid(fqid) in collections
-                            ]
+                            fqid
+                            for fqid in {
+                                *position_to_fqids[position_nr],
+                                *(info if isinstance(info, dict) else {}),
+                            }
+                            if collection_from_fqid(fqid) in collections
                         ),
                         start=next_entry_id,
                     )

@@ -587,12 +587,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
 
     @with_database_context
-    def assert_history_information(
-        self, fqid: FullQualifiedId, information: list[str] | None
-    ) -> None:
-        """
-        Asserts that the last history information for the given model is the given information.
-        """
+    def get_last_history_information(self, fqid: FullQualifiedId) -> list[str] | None:
         entry_id = self.datastore.max(
             "history_entry",
             FilterOperator("original_model_id", "=", fqid),
@@ -603,9 +598,18 @@ class BaseActionTestCase(BaseSystemTestCase):
             history_entry = self.datastore.get(
                 fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
             )
-            last_information = history_entry.get("entries")
+            return history_entry.get("entries")
         else:
-            last_information = None
+            return None
+
+    @with_database_context
+    def assert_history_information(
+        self, fqid: FullQualifiedId, information: list[str] | None
+    ) -> None:
+        """
+        Asserts that the last history information for the given model is the given information.
+        """
+        last_information = self.get_last_history_information(fqid)
         if information is None:
             assert not last_information
         else:
@@ -619,19 +623,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Asserts that the last history information for the given model is the given information.
         """
-        entry_id = self.datastore.max(
-            "history_entry",
-            FilterOperator("original_model_id", "=", fqid),
-            "id",
-            lock_result=False,
-        )
-        if entry_id:
-            history_entry = self.datastore.get(
-                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
-            )
-            last_information = history_entry.get("entries")
-        else:
-            last_information = None
+        last_information = self.get_last_history_information(fqid)
         assert last_information
         assert information in last_information
 
