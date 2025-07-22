@@ -556,9 +556,13 @@ class DatabaseWriter(SqlQueryHelper):
                 f"Field '{column}' does not exist in collection '{collection}': {e}"
             )
         except UndefinedTable as e:
-            raise InvalidFormat(
-                f"Collection '{collection}' does not exist in the database: {e}"
-            )
+            table = e.args[0].split('"')[1]
+            if table.startswith(("gm_", "nm_")):
+                raise InvalidFormat(f"Intermediate table '{table}' does not exist for collection: '{collection}': {e}")
+            else:
+                raise InvalidFormat(
+                    f"Collection '{collection}' does not exist in the database: {e}"
+                )
         except DatatypeMismatch as e:
             column = e.args[0].split('"')[1]
             raise InvalidFormat(
