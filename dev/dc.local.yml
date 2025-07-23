@@ -16,6 +16,7 @@ services:
     datastore-writer:
         build:
             context: ../../openslides-datastore-service/
+            target: "dev"
             args:
                 CONTEXT: "dev"
                 MODULE: "writer"
@@ -36,10 +37,12 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
+            target: "prod"
             args:
                 CONTEXT: "prod"
     auth:
         build:
             context: ../../openslides-auth-service
+            target: "prod"
             args:
                 CONTEXT: "prod"
