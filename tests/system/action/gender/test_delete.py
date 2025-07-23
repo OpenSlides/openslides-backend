@@ -11,7 +11,7 @@ class GenderDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/20": {"username": "human", "gender_id": 1},
-                "user/21": {"username": "fairy", "gender_id": self.gender_id},
+                "user/21": {"username": "duskray", "gender_id": self.gender_id},
                 "gender/1": {
                     "id": 1,
                     "name": "male",
