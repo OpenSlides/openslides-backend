@@ -442,7 +442,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     position_id,
                     {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
                     touched_fqids - deleted_fqids,
-                    None,
                 )
                 events_by_type[EventType.Create].extend(
                     [

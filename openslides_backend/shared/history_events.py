@@ -14,7 +14,7 @@ def calculate_history_event_payloads(
     position_id: int,
     model_fqid_to_entry_id: dict[str, int],
     existing_fqids: set[str],
-    timestamp: int | None,
+    timestamp: int | None = None,
 ) -> tuple[list[EventPayload], list[EventPayload]]:
     transformed_information = [
         (model_fqid_to_entry_id[fqid], fqid, entries)
