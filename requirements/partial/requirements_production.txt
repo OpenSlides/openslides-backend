@@ -13,9 +13,9 @@ python-magic==0.4.27
 pygments==2.19.1
 
 # opentelemetry
-opentelemetry-api==1.33.1
-opentelemetry-sdk==1.33.1
-opentelemetry-exporter-otlp==1.33.1
+opentelemetry-api==1.34.1
+opentelemetry-sdk==1.34.1
+opentelemetry-exporter-otlp==1.34.1
 opentelemetry-instrumentation-flask==0.54b1
 opentelemetry-instrumentation-redis==0.54b1
 opentelemetry-instrumentation-requests==0.54b1
