@@ -10,35 +10,24 @@ class GenderDeleteActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"gender_ids": [self.gender_id]},
-                "user/20": {"gender_id": 1},
-                "user/21": {"gender_id": self.gender_id},
+                "user/20": {"username": "human", "gender_id": 1},
+                "user/21": {"username": "duskray", "gender_id": self.gender_id},
                 "gender/1": {
                     "id": 1,
                     "name": "male",
                     "organization_id": 1,
-                    "user_ids": [20],
                 },
                 self.gender_fqid: {
                     "id": self.gender_id,
                     "name": self.gender_name,
                     "organization_id": 1,
-                    "user_ids": [21],
                 },
             }
         )
 
     def test_delete_correctly(self) -> None:
         self.create_data()
-        self.set_models(
-            {
-                "gender/6": {
-                    "name": "dragon",
-                    "organization_id": 1,
-                },
-                ONE_ORGANIZATION_FQID: {"gender_ids": [1, self.gender_id, 6]},
-            }
-        )
+        self.set_models({"gender/6": {"name": "dragon", "organization_id": 1}})
         response = self.request("gender.delete", {"id": self.gender_id})
 
         self.assert_status_code(response, 200)
