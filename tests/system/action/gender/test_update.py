@@ -77,6 +77,10 @@ class GenderUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model(self.gender_fqid)
         self.assertEqual(model.get("name"), self.gender_name)
+        self.assertIn(
+            "Model 'gender/200' does not exist.",
+            response.json["message"],
+        )
 
     def test_update_wrong_field(self) -> None:
         self.create_data()
