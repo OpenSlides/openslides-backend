@@ -8,11 +8,16 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {"speaker_ids": [1], "is_active_in_organization_id": 1},
+            "topic/32": {
+                "title": "leet improvement discussion",
+                "sequential_number": 2,
+                "meeting_id": 1,
+            },
             "list_of_speakers/111": {
+                "content_object_id": "topic/32",
+                "sequential_number": 11,
                 "closed": False,
                 "meeting_id": 1,
-                "speaker_ids": [1],
             },
             "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
         }
@@ -24,7 +29,14 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
                 "meeting/222": {
                     "speaker_ids": list(range(1, 11)),
                 },
+                "topic/32": {
+                    "title": "leet improvement discussion",
+                    "sequential_number": 2,
+                    "meeting_id": 222,
+                },
                 "list_of_speakers/111": {
+                    "content_object_id": "topic/32",
+                    "sequential_number": 11,
                     "closed": False,
                     "meeting_id": 222,
                     "speaker_ids": list(range(1, 11)),

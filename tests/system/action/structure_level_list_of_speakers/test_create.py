@@ -11,11 +11,18 @@ class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_default_structure_level_time": 600,
-                "structure_level_ids": [1],
-                "list_of_speakers_ids": [2],
             },
-            "structure_level/1": {"meeting_id": 1},
-            "list_of_speakers/2": {"meeting_id": 1},
+            "topic/32": {
+                "title": "leet improvement discussion",
+                "sequential_number": 32,
+                "meeting_id": 1,
+            },
+            "structure_level/1": {"meeting_id": 1, "name": "d."},
+            "list_of_speakers/2": {
+                "meeting_id": 1,
+                "sequential_number": 1,
+                "content_object_id": "topic/32",
+            },
         }
         self.set_models(self.models)
 
@@ -93,6 +100,8 @@ class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "structure_level_id": 1,
                     "list_of_speakers_id": 2,
+                    "initial_time": 400,
+                    "remaining_time": 333,
                 },
             }
         )
