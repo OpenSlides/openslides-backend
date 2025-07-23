@@ -65,10 +65,7 @@ class GenderUpdateActionTest(BaseActionTestCase):
         self.create_data()
         response = self.request(
             "gender.update",
-            {
-                "id": 2,
-                "name": "so wrong to change this gender",
-            },
+            {"id": 2, "name": "so wrong to change this gender"},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
