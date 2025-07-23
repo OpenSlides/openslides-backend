@@ -6,7 +6,7 @@ services:
             context: ..
             args:
                 REQUIREMENTS_FILE_OVERWRITE: "requirements_development_local.txt"
-                CONTEXT: "prod"
+                CONTEXT: "dev"
         volumes:
             - ../../openslides-datastore-service/:/datastore-service
             - ../../openslides-auth-service/auth/libraries/pip-auth/:/authlib
@@ -37,12 +37,6 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
-            target: "prod"
-            args:
-                CONTEXT: "prod"
     auth:
         build:
             context: ../../openslides-auth-service
-            target: "prod"
-            args:
-                CONTEXT: "prod"
