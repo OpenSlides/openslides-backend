@@ -1,4 +1,3 @@
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -10,7 +9,6 @@ class GenderUpdateActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 self.gender_fqid: {
                     "name": self.gender_name,
                     "organization_id": 1,

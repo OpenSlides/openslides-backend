@@ -10,7 +10,6 @@ class GenderDeleteActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 "user/20": {"username": "human", "gender_id": 1},
                 "user/21": {"username": "fairy", "gender_id": self.gender_id},
                 "gender/1": {

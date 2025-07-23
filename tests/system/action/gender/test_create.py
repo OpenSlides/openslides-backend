@@ -7,7 +7,6 @@ class GenderCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 "user/20": {"username": "test_user20"},
                 "gender/1": {"organization_id": 1, "name": "male"},
             }
