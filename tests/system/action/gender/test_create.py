@@ -5,12 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class GenderCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.set_models(
-            {
-                "user/20": {"username": "test_user20"},
-                "gender/1": {"organization_id": 1, "name": "male"},
-            }
-        )
+        self.set_models({"gender/1": {"organization_id": 1, "name": "male"}})
         gender_name = "female"
 
         response = self.request("gender.create", {"name": gender_name})
