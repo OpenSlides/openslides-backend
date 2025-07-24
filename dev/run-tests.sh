@@ -14,7 +14,7 @@ export COMPOSE_DOCKER_CLI_BUILD=0
 # Helpers
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
-DC="CONTEXT=dev docker compose -f dev/docker-compose.dev.yml"
+DC="CONTEXT=dev USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose -f dev/docker-compose.dev.yml"
 
 # Safe Exit
 trap 'eval "$DC down --volumes"' EXIT
