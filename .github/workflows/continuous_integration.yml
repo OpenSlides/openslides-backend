@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI - Build and Test Service
 
 on:
   pull_request:
@@ -54,8 +54,8 @@ jobs:
       with:
         submodules: true
 
-    - name: Run tests
-      run: dev/run-tests.sh
+      - name: Run tests
+        run: dev/run-tests.sh
 
   test-local-setup:
     name: Build and test local dev setup
@@ -64,7 +64,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: openslides-backend
-    
+
     - name: Set env vars
       working-directory: openslides-backend/requirements
       run: |
