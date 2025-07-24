@@ -9,11 +9,8 @@ WORKDIR /app
 ENV APP_CONTEXT=${CONTEXT}
 
 ### Query based on context value
-ENV IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"}
-ENV CONTEXT_INSTALLS=${tests:+""}${prod:+"libc-dev"}${dev:+"make vim bash-completion"}
-
 RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
-    tests)  echo "";; \
+    tests)  echo "make vim bash-completion";; \
     dev)    echo "make vim bash-completion";; \
     *)      echo "libc-dev" ;; esac) && \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
@@ -83,6 +80,7 @@ COPY Makefile .
 COPY setup.cfg .
 COPY dev/entrypoint.sh ./
 
+RUN chmod 777 -R .
 ENV OPENSLIDES_DEVELOPMENT=1
 
 EXPOSE 5678
@@ -106,11 +104,11 @@ COPY meta meta
 COPY data data
 
 RUN chown appuser ./scripts/ && \
-    chown appuser ./entrypoint.sh && \
-    chown appuser ./openslides_backend && \
-    chown appuser ./meta && \
-    chown appuser ./command.sh && \
-    chown appuser ./data
+ chown appuser ./entrypoint.sh && \
+ chown appuser ./openslides_backend && \
+ chown appuser ./meta && \
+ chown appuser ./command.sh && \
+ chown appuser ./data
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt

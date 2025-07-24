@@ -22,7 +22,9 @@ LOCAL_PWD=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export COMPOSE_DOCKER_CLI_BUILD=0
 
 # Helpers
-DC="CONTEXT=dev docker compose -f dev/docker-compose.dev.yml"
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+DC="CONTEXT=dev USER_ID=$USER_ID GROUP_ID=$GROUP_ID docker compose -f dev/docker-compose.dev.yml"
 
 # Safe Exit
 trap 'eval "$DC down --volumes"' EXIT
