@@ -52,6 +52,8 @@ class UserUpdate(
         "poll_voted_ids",
         "vote_ids",
         "delegated_vote_ids",
+        "history_entry_ids",
+        "history_position_ids",
     ]
 
     model = User()
