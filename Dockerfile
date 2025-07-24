@@ -74,7 +74,6 @@ COPY dev/cleanup.sh .
 # Copy files which are mounted to make the full stack work
 COPY scripts scripts
 COPY cli cli
-COPY data data
 COPY meta meta
 
 COPY Makefile .
