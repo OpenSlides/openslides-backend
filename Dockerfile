@@ -106,7 +106,7 @@ RUN chown appuser ./scripts/ && \
  chown appuser ./entrypoint.sh && \
  chown appuser ./openslides_backend && \
  chown appuser ./meta && \
- chown appuser ./command.sh &&
+ chown appuser ./command.sh
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt
