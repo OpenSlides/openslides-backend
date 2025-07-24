@@ -9,6 +9,12 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
+EXTRA_RELATIONAL_FIELDS_TO_MEETING = [
+    field.own_field_name
+    for field in MeetingMediafile().get_fields()
+    if field.own_field_name.startswith("used_as_")
+]
+
 
 @register_action("meeting_mediafile.create", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingMediafileCreate(CreateAction):
@@ -20,7 +26,8 @@ class MeetingMediafileCreate(CreateAction):
     model = MeetingMediafile()
     schema = DefaultSchema(MeetingMediafile()).get_create_schema(
         required_properties=["meeting_id", "mediafile_id", "is_public"],
-        optional_properties=["access_group_ids", "inherited_access_group_ids"],
+        optional_properties=["access_group_ids", "inherited_access_group_ids"]
+        + EXTRA_RELATIONAL_FIELDS_TO_MEETING,
     )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

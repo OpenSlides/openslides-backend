@@ -187,6 +187,7 @@ class MeetingImport(BaseActionTestCase):
                         "poll_default_onehundred_percent_base": "valid",
                         "poll_default_group_ids": [],
                         "poll_default_backend": "fast",
+                        "poll_default_live_voting_enabled": False,
                         "poll_couple_countdown": True,
                         "projector_ids": [1],
                         "all_projection_ids": [],
