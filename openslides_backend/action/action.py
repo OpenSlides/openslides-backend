@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, TypeVar, cast
 
@@ -309,6 +309,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     # fmt: off
                     field:
                         int(value.timestamp()) if isinstance(value, datetime)
+                        else int(value.total_seconds()) if isinstance(value, timedelta)
                         else str(value) if isinstance(value, Decimal)
                         else value.obj if isinstance(value, Jsonb)
                         else value
