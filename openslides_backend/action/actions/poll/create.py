@@ -68,6 +68,7 @@ class PollCreateAction(
             "votescast",
             "entitled_group_ids",
             "backend",
+            "live_voting_enabled",
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
@@ -83,6 +84,7 @@ class PollCreateAction(
         action_data = []
 
         state_change = self.check_state_change(instance)
+        is_motion_poll = collection_from_fqid(instance["content_object_id"]) == "motion"
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
@@ -92,6 +94,14 @@ class PollCreateAction(
             )
             if not organization.get("enable_electronic_voting"):
                 raise ActionException("Electronic voting is not allowed.")
+
+        # check named and live_voting_enabled
+        if instance.get("live_voting_enabled") and not (
+            instance["type"] == Poll.TYPE_NAMED and is_motion_poll
+        ):
+            raise ActionException(
+                "live_voting_enabled only allowed for named motion polls."
+            )
 
         # check entitled_group_ids and analog
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
@@ -113,10 +123,7 @@ class PollCreateAction(
             raise ActionException("publish_immediately only allowed for analog polls.")
 
         # check content_object_id motion and state allow_create_poll
-        if (
-            instance.get("content_object_id")
-            and collection_from_fqid(instance["content_object_id"]) == "motion"
-        ):
+        if is_motion_poll:
             motion = self.datastore.get(instance["content_object_id"], ["state_id"])
             if not motion.get("state_id"):
                 raise ActionException("Motion doesn't have a state.")
