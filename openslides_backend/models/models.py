@@ -1299,6 +1299,12 @@ class Group(Model):
         is_primary=True,
         read_only=True,
         constraints={"description": "Calculated field."},
+        write_fields=(
+            "nm_group_mmiagi_meeting_mediafile",
+            "group_id",
+            "meeting_mediafile_id",
+            [],
+        ),
     )
     read_comment_section_ids = fields.RelationListField(
         to={"motion_comment_section": "read_group_ids"},
