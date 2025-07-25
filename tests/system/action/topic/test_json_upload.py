@@ -1,4 +1,5 @@
-from time import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.permissions import Permissions
@@ -143,7 +144,9 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_duplicate_in_existing_topic(self) -> None:
-        self.set_models({"topic/10": {"title": "test"}})
+        self.set_models(
+            {"topic/10": {"sequential_number": 5, "title": "test", "meeting_id": 22}}
+        )
         response = self.request(
             "topic.json_upload",
             {
@@ -186,7 +189,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
         self.create_meeting(22)
 
     def json_upload_agenda_data(self) -> None:
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "topic.json_upload",
             {
@@ -202,7 +205,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
                 ],
             },
         )
-        end_time = int(time())
+        end_time = datetime.now(ZoneInfo("UTC"))
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["state"] == ImportState.DONE
@@ -225,8 +228,12 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_duplicate_in_db(self) -> None:
         self.set_models(
             {
-                "topic/3": {"title": "test", "text": "old one", "meeting_id": 22},
-                "meeting/22": {"topic_ids": [3]},
+                "topic/3": {
+                    "sequential_number": 2,
+                    "title": "test",
+                    "text": "old one",
+                    "meeting_id": 22,
+                },
             }
         )
         response = self.request(
