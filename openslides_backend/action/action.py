@@ -37,6 +37,7 @@ from ..shared.patterns import (
     collection_from_fqid,
     fqid_and_field_from_fqfield,
     fqid_from_collection_and_id,
+    id_from_fqid,
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
@@ -436,11 +437,29 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 }
                 if self.user_id and self.user_id > 0:
                     touched_fqids.add(fqid_from_collection_and_id("user", self.user_id))
+                collection_to_ids: dict[str, list[int]] = defaultdict(list)
+                for fqid in information:
+                    collection_to_ids[collection_from_fqid(fqid)].append(
+                        id_from_fqid(fqid)
+                    )
+                data = self.datastore.get_many(
+                    [
+                        GetManyRequest(collection, ids, ["meeting_id"])
+                        for collection, ids in collection_to_ids.items()
+                        if model_registry[collection]().try_get_field("meeting_id")
+                    ]
+                )
                 create_events, update_events = calculate_history_event_payloads(
                     self.user_id,
                     information,
                     position_id,
                     {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
+                    {
+                        fqid_from_collection_and_id(collection, id_): meeting_id
+                        for collection, models in data.items()
+                        for id_, date in models.items()
+                        if (meeting_id := date.get("meeting_id"))
+                    },
                     touched_fqids - deleted_fqids,
                 )
                 events_by_type[EventType.Create].extend(

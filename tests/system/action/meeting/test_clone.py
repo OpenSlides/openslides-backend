@@ -2120,7 +2120,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 37
+        assert counter.calls == 34
 
     @performance
     def test_clone_performance(self) -> None:

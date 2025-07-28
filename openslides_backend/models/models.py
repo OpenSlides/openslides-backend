@@ -940,6 +940,9 @@ class Meeting(Model, MeetingModelMixin):
     anonymous_group_id = fields.RelationField(
         to={"group": "anonymous_group_for_meeting_id"}
     )
+    relevant_history_entry_ids = fields.RelationListField(
+        to={"history_entry": "meeting_id"}
+    )
 
 
 class StructureLevel(Model):
@@ -2553,3 +2556,4 @@ class HistoryEntry(Model):
     position_id = fields.RelationField(
         to={"history_position": "entry_ids"}, required=True, constant=True
     )
+    meeting_id = fields.RelationField(to={"meeting": "relevant_history_entry_ids"})

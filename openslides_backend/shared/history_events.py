@@ -1,8 +1,9 @@
 import time
-from typing import Any
+from collections import defaultdict
+from typing import Any, cast
 
 from .interfaces.event import ListFields
-from .patterns import fqid_from_collection_and_id
+from .patterns import fqid_from_collection_and_id, id_from_fqid
 from .typing import FullQualifiedId, HistoryInformation
 
 EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
@@ -13,6 +14,7 @@ def calculate_history_event_payloads(
     information: HistoryInformation,
     position_id: int,
     model_fqid_to_entry_id: dict[str, int],
+    model_fqid_to_meeting_id: dict[str, int | None],
     existing_fqids: set[str],
     timestamp: int | None = None,
 ) -> tuple[list[EventPayload], list[EventPayload]]:
@@ -29,6 +31,7 @@ def calculate_history_event_payloads(
                 "position_id": position_id,
                 "original_model_id": fqid,
                 "model_id": (fqid if fqid in existing_fqids else None),
+                "meeting_id": model_fqid_to_meeting_id.get(fqid, None),
             },
         )
         for id_, fqid, entries in transformed_information
@@ -41,6 +44,19 @@ def calculate_history_event_payloads(
         for id_, fqid, entries in transformed_information
         if fqid in existing_fqids
     ]
+    meeting_to_entry_ids: dict[int, list[int]] = defaultdict(list)
+    for entry in create_events:
+        if meeting_id := cast(dict[str, Any], entry[1]).get("meeting_id"):
+            meeting_to_entry_ids[meeting_id].append(id_from_fqid(entry[0]))
+    update_events.extend(
+        [
+            (
+                fqid_from_collection_and_id("meeting", meeting_id),
+                {"add": {"relevant_history_entry_ids": ids}},
+            )
+            for meeting_id, ids in meeting_to_entry_ids.items()
+        ]
+    )
     if set_user := (
         user_id
         and user_id > 0

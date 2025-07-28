@@ -12,6 +12,7 @@ from datastore.writer.core.write_request import (
     RequestUpdateEvent,
 )
 
+from ...shared.filters import FilterOperator
 from ...shared.history_events import calculate_history_event_payloads
 
 
@@ -30,6 +31,27 @@ class Migration(BaseModelMigration):
             for collection in collections
             for id_ in self.reader.get_all(collection, ["id"])
         }
+        all_meeting_ids: set[int] = {
+            id_ for id_ in self.reader.get_all("meeting", ["id"])
+        }
+        fqid_to_meeting_id: dict[str, int | None] = {
+            fqid: None for fqid in all_current_fqids
+        }
+        fqid_to_meeting_id.update(
+            {
+                fqid_from_collection_and_id(collection, id_): (
+                    meeting_id
+                    if (meeting_id := data.get("meeting_id")) in all_meeting_ids
+                    else None
+                )
+                for collection in ["motion", "assignment"]
+                for id_, data in self.reader.filter(
+                    collection,
+                    FilterOperator("meeting_id", "!=", None),
+                    ["id", "meeting_id"],
+                ).items()
+            }
+        )
         max_position = self.reader.get_max_position()
         cur_max_pos = 0
         next_entry_id = 1
@@ -78,6 +100,7 @@ class Migration(BaseModelMigration):
                     },
                     position_nr,
                     models_to_entry_ids,
+                    fqid_to_meeting_id,
                     all_current_fqids,
                     position["timestamp"],
                 )
