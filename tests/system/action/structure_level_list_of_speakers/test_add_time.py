@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -12,48 +13,65 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_default_structure_level_time": 1000,
-                "structure_level_ids": [1, 2, 3, 4],
-                "list_of_speakers_ids": [1, 2],
-                "structure_level_list_of_speakers_ids": [1, 2, 3, 4],
+            },
+            "topic/32": {
+                "title": "leet improvement discussion",
+                "sequential_number": 32,
+                "meeting_id": 1,
+            },
+            "topic/42": {
+                "title": "leet improvement discussion 2nd",
+                "sequential_number": 42,
+                "meeting_id": 1,
             },
             "list_of_speakers/1": {
                 "meeting_id": 1,
+                "sequential_number": 1,
+                "content_object_id": "topic/32",
                 "structure_level_list_of_speakers_ids": [1, 2, 3],
             },
             "list_of_speakers/2": {
                 "meeting_id": 1,
+                "sequential_number": 2,
+                "content_object_id": "topic/42",
                 "structure_level_list_of_speakers_ids": [4],
             },
             "structure_level/1": {
                 "meeting_id": 1,
+                "name": "monkey",
                 "structure_level_list_of_speakers_ids": [1, 4],
             },
             "structure_level/2": {
                 "meeting_id": 1,
+                "name": "d.",
                 "structure_level_list_of_speakers_ids": [2],
             },
             "structure_level/3": {
                 "meeting_id": 1,
+                "name": "ruffy",
                 "structure_level_list_of_speakers_ids": [3],
             },
-            "structure_level/4": {"meeting_id": 1},
+            "structure_level/4": {"meeting_id": 1, "name": "portgas"},
             "structure_level_list_of_speakers/1": {
                 "meeting_id": 1,
                 "structure_level_id": 1,
                 "list_of_speakers_id": 1,
+                "initial_time": 666,
                 "remaining_time": -100,
             },
             "structure_level_list_of_speakers/2": {
                 "meeting_id": 1,
                 "structure_level_id": 2,
                 "list_of_speakers_id": 1,
+                "initial_time": 1000,
                 "remaining_time": 200,
-                "current_start_time": int(time()),
+                "current_start_time": datetime.now(ZoneInfo("UTC")),
             },
             "structure_level_list_of_speakers/3": {
                 "meeting_id": 1,
                 "structure_level_id": 3,
                 "list_of_speakers_id": 1,
+                "initial_time": 1000,
                 "additional_time": 200,
                 "remaining_time": 400,
             },
@@ -61,6 +79,7 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "structure_level_id": 1,
                 "list_of_speakers_id": 2,
+                "initial_time": 1000,
                 "remaining_time": 300,
             },
         }
