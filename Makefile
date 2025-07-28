@@ -12,6 +12,13 @@ build-dev:
 build-tests:
 	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
 
+# Development redirects
+
+.PHONY: dev
+
+dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build:
+	@@$(MAKE) -C .. $@ backend
+
 # Tests
 
 run-tests:
@@ -23,11 +30,11 @@ lint:
 test-file:
 	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
 
-coverage:
-	pytest --cov --cov-report html
-
 test:
 	pytest
+
+coverage:
+	pytest --cov --cov-report html
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
@@ -68,27 +75,53 @@ deprecation-warning:
 deprecation-warning-alternative: | deprecation-warning
 	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
 
-all:
+all: | pyupgrade black autoflake isort flake8 mypy
 	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	make run-lint
+
+pyupgrade:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	pyupgrade --py310-plus $$(find . -name '*.py')
+
+black:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	black $(paths)
+
+check-black:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	black --check --diff $(paths)
+
+autoflake:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	autoflake $(paths)
+
+isort:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	isort $(paths)
+
+check-isort:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	isort --check-only --diff $(paths)
+
+flake8:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	flake8 $(paths)
+
+mypy:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	mypy $(paths)
 
 run-bash:
 	@make deprecation-warning-alternative ALTERNATIVE="dev"
-	dev
+	make start-dev
+	make run-dev-attach
 
 run-dev-attach:
 	@make deprecation-warning-alternative ALTERNATIVE="dev-attached"
-	dev-attached
-
-stop-dev:
-	@make deprecation-warning-alternative ALTERNATIVE="dev-stop"
-	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml down --volumes
-
-check-black: | deprecation-warning
-	black --check --diff $(paths)
-
-check-pyupgrade: | deprecation-warning
-	pyupgrade --py310-plus $$(find . -name '*.py')
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 test-unit-integration: | deprecation-warning
 	pytest tests/unit tests/integration
