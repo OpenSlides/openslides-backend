@@ -60,18 +60,11 @@ class StructureLevelUpdateTest(BaseActionTestCase):
 
     def test_update_duplicate_name_in_other_meeting(self) -> None:
         self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                },
-                "meeting/2": {
-                    "is_active_in_organization_id": 1,
-                    "structure_level_ids": [2],
-                    "committee_id": 1,
-                },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
-                "structure_level/2": {"meeting_id": 2, "name": "test2"},
+                "structure_level/2": {"meeting_id": 4, "name": "test2"},
             }
         )
         response = self.request(
