@@ -5,6 +5,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MotionComment
+from ....permissions.permission_helper import has_committee_management_level
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, FilterOperator
@@ -41,12 +42,9 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         if allowed_groups.intersection(user_groups):
             return
 
-        committee_managers = self.datastore.get(
-            fqid_from_collection_and_id("committee", meeting["committee_id"]),
-            ["manager_ids"],
-            lock_result=False,
-        ).get("manager_ids", [])
-        if self.user_id in committee_managers:
+        if has_committee_management_level(
+            self.datastore, self.user_id, meeting["committee_id"]
+        ):
             return
 
         user_orga_management_level = self.datastore.get(

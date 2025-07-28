@@ -199,11 +199,20 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
 
     def test_create_permission_non_meeting_committee_admin(self) -> None:
         self.set_committee_management_level([60])
-        self.permission_test_models["committee/60"] = {
-            "user_ids": [1],
-            "manager_ids": [1],
-        }
         self.base_create_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_meeting()
+        self.create_committee(committee_id=61, parent_id=60)
+        self.set_committee_management_level([61])
+        self.permission_test_models.update(
+            {
+                "committee/60": {"meeting_ids": []},
+                "committee/61": {"meeting_ids": [1]},
+                "meeting/1": {"committee_id": 61},
+            }
+        )
+        self.base_create_permission_non_meeting_admin(meeting_exists=True)
 
     def test_create_permission_non_meeting_orga_admin(self) -> None:
         self.base_create_permission_non_meeting_admin(
@@ -216,9 +225,12 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
 
     def base_create_permission_non_meeting_admin(
-        self, permission: OrganizationManagementLevel | None = None
+        self,
+        permission: OrganizationManagementLevel | None = None,
+        meeting_exists: bool = False,
     ) -> None:
-        self.create_meeting()
+        if not meeting_exists:
+            self.create_meeting()
         self.set_organization_management_level(permission)
         self.set_models(self.permission_test_models)
         response = self.request(
