@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.10.17-slim-bookworm as base
+FROM python:3.10.17-slim-bookworm AS base
 
 ## Setup
 ARG CONTEXT
@@ -34,14 +34,14 @@ RUN REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
     REQUIREMENTS_FILE=${REQUIEREMENTS_FILE_OVERWRITE:-$REQUIREMENTS_FILE} && \
     . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
 
-ENV PYTHONPATH /app
+ENV PYTHONPATH=/app
 
-ENV EMAIL_HOST postfix
-ENV EMAIL_PORT 25
-ENV EMAIL_CONNECTION_SECURITY NONE
-ENV EMAIL_TIMEOUT 5
-ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
-ENV DEFAULT_FROM_EMAIL noreply@example.com
+ENV EMAIL_HOST=postfix
+ENV EMAIL_PORT=25
+ENV EMAIL_CONNECTION_SECURITY=NONE
+ENV EMAIL_TIMEOUT=5
+ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE=false
+ENV DEFAULT_FROM_EMAIL=noreply@example.com
 
 ## External Information
 LABEL org.opencontainers.image.title="OpenSlides Backend Service"
@@ -65,7 +65,7 @@ HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ && curl 
 ENTRYPOINT ["./entrypoint.sh"]
 
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .
@@ -88,13 +88,12 @@ EXPOSE 5678
 STOPSIGNAL SIGKILL
 
 # Test Image (same as dev)
-FROM dev as tests
+FROM dev AS tests
 
 # Production Image
-FROM base as prod
+FROM base AS prod
 
-# Große Sicherheitslücke hier umgehen:
-# Das sorgt dafür dass alle Commands innerhalb des Containers als unprivilegierter User durchgeführt werden und nicht als root
+# This disables root access for the enduser, which could pose a security risk
 RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts
