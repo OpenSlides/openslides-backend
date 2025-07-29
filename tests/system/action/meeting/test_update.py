@@ -590,9 +590,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_committee(59)
         self.create_committee(60, parent_id=59)
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_committee_management_level([59], self.user_id)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([59], 1)
         response = self.request(
             "meeting.update",
             {
