@@ -587,8 +587,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_group_d_committee_parent_permissions(self) -> None:
-        self.create_committee(59)
         self.create_meeting()
+        self.create_committee(59)
         self.create_committee(60, parent_id=59)
         self.user_id = self.create_user("user")
         self.login(self.user_id)
