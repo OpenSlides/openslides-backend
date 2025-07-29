@@ -41,10 +41,7 @@ def export_meeting(
         lock_result=False,
         use_changed_models=False,
     )
-    for forbidden_field in [
-        *FORBIDDEN_FIELDS,
-        *HISTORY_FIELDS_PER_COLLECTION["meeting"],
-    ]:
+    for forbidden_field in FORBIDDEN_FIELDS + HISTORY_FIELDS_PER_COLLECTION["meeting"]:
         meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))

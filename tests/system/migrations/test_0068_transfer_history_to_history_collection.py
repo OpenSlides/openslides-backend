@@ -26,7 +26,7 @@ def test_migration(write, finalize, assert_model):
                     "fields": {
                         "id": id_,
                         namekey: f"{collection}{id_}{suffix}",
-                        **({"meeting_id": 1} if collection != "user" else {}),
+                        "meeting_id": 1 if collection != "user" else None,
                     },
                 }
                 for collection, namekey in collection_to_name_key.items()
