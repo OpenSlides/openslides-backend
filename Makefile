@@ -75,6 +75,9 @@ deprecation-warning:
 deprecation-warning-alternative: | deprecation-warning
 	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
 
+stop-dev:
+	@make deprecation-warning-alternative ALTERNATIVE="dev and derivative maketargets are now only available in main repository. (use 'make dev-help' in main repository for more information)"
+
 all: | pyupgrade black autoflake isort flake8 mypy
 	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
 
