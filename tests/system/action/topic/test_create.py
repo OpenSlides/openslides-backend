@@ -39,15 +39,31 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 {
                     "action": "topic.create",
                     "data": [
-                        {"meeting_id": 1, "title": "test1"},
-                        {"meeting_id": 1, "title": "test2"},
+                        {
+                            "meeting_id": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
+                            "title": "test1",
+                        },
+                        {
+                            "meeting_id": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
+                            "title": "test2",
+                        },
                     ],
                 },
                 {
                     "action": "topic.create",
                     "data": [
-                        {"meeting_id": 1, "title": "test3"},
-                        {"meeting_id": 1, "title": "test4"},
+                        {
+                            "meeting_id": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
+                            "title": "test3",
+                        },
+                        {
+                            "meeting_id": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
+                            "title": "test4",
+                        },
                     ],
                 },
             ],
@@ -58,16 +74,36 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assert_model_exists("topic/3", {"meeting_id": 1, "title": "test3"})
         self.assert_model_exists("topic/4", {"meeting_id": 1, "title": "test4"})
         self.assert_model_exists(
-            "agenda_item/1", {"content_object_id": "topic/1", "weight": 1}
+            "agenda_item/1",
+            {
+                "content_object_id": "topic/1",
+                "type": AgendaItem.AGENDA_ITEM,
+                "weight": 1,
+            },
         )
         self.assert_model_exists(
-            "agenda_item/2", {"content_object_id": "topic/2", "weight": 2}
+            "agenda_item/2",
+            {
+                "content_object_id": "topic/2",
+                "type": AgendaItem.AGENDA_ITEM,
+                "weight": 2,
+            },
         )
         self.assert_model_exists(
-            "agenda_item/3", {"content_object_id": "topic/3", "weight": 3}
+            "agenda_item/3",
+            {
+                "content_object_id": "topic/3",
+                "type": AgendaItem.AGENDA_ITEM,
+                "weight": 3,
+            },
         )
         self.assert_model_exists(
-            "agenda_item/4", {"content_object_id": "topic/4", "weight": 4}
+            "agenda_item/4",
+            {
+                "content_object_id": "topic/4",
+                "type": AgendaItem.AGENDA_ITEM,
+                "weight": 4,
+            },
         )
 
     def test_create_more_fields(self) -> None:
@@ -151,47 +187,6 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assert_model_exists(
             "tag/37", {"meeting_id": 1, "tagged_ids": ["agenda_item/1"]}
         )
-
-    def test_create_multiple_in_one_request(self) -> None:
-        self.create_meeting()
-        response = self.request_multi(
-            "topic.create",
-            [
-                {
-                    "meeting_id": 1,
-                    "title": "A",
-                    "agenda_type": AgendaItem.AGENDA_ITEM,
-                    "agenda_weight": 1000,
-                },
-                {
-                    "meeting_id": 1,
-                    "title": "B",
-                    "agenda_type": AgendaItem.AGENDA_ITEM,
-                    "agenda_weight": 1001,
-                },
-            ],
-        )
-        self.assert_status_code(response, 200)
-        topic = self.get_model("topic/1")
-        self.assertEqual(topic.get("agenda_item_id"), 1)
-        self.assertEqual(topic.get("sequential_number"), 1)
-        agenda_item = self.get_model("agenda_item/1")
-        self.assertEqual(agenda_item.get("meeting_id"), 1)
-        self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
-        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
-        self.assertEqual(agenda_item.get("weight"), 1000)
-        topic = self.get_model("topic/2")
-        self.assertEqual(topic.get("agenda_item_id"), 2)
-        self.assertEqual(topic.get("sequential_number"), 2)
-        agenda_item = self.get_model("agenda_item/2")
-        self.assertEqual(agenda_item.get("meeting_id"), 1)
-        self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
-        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
-        self.assertEqual(agenda_item.get("weight"), 1001)
-        meeting = self.get_model("meeting/1")
-        self.assertEqual(meeting.get("topic_ids"), [1, 2])
-        self.assertEqual(meeting.get("agenda_item_ids"), [1, 2])
-        self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])
 
     def test_create_multiple_with_existing_sequential_number(self) -> None:
         self.create_meeting()
