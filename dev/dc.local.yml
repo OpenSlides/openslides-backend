@@ -37,6 +37,10 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
+            args:
+                CONTEXT: "prod"
     auth:
         build:
             context: ../../openslides-auth-service
+            args:
+                CONTEXT: "prod"
