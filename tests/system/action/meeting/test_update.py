@@ -586,6 +586,30 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_group_d_committee_parent_permissions(self) -> None:
+        self.create_committee(59)
+        self.create_meeting()
+        self.create_committee(60, parent_id=59)
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_committee_management_level([59], self.user_id)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+
     def test_update_group_e_no_permission(self) -> None:
         self.set_models({"organization_tag/1": {}})
         self.create_meeting()
