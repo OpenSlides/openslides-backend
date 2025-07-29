@@ -276,3 +276,27 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )
+
+    def test_set_password_as_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.create_meeting()
+
+        alice_id = self.create_user("alice")
+        bob_id = self.create_user("bob")
+        self.set_committee_management_level([59], alice_id)
+        self.set_user_groups(bob_id, [3])
+
+        self.create_committee(61)
+        self.create_meeting(4)
+        self.set_user_groups(bob_id, [6])
+
+        self.login(alice_id)
+
+        response = self.request(
+            "user.set_password", {"id": bob_id, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model(f"user/{bob_id}")
+        assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
