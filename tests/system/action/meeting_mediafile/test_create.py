@@ -4,7 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingMediafileCreate(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_meeting()
-        self.set_models({"mediafile/10": {"title": "hOi"}})
+        self.set_models(
+            {"mediafile/10": {"title": "hOi", "owner_id": "organization/1"}}
+        )
         test_dict = {
             "mediafile_id": 10,
             "meeting_id": 1,
@@ -21,16 +23,12 @@ class MeetingMediafileCreate(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"mediafile_ids": [10], "meeting_mediafile_ids": [2]},
                 "mediafile/10": {
                     "title": "hOi",
-                    "meeting_mediafile_ids": [2],
                     "owner_id": "meeting/1",
                 },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "mediafile_id": 10,
                     "is_public": True,
                 },

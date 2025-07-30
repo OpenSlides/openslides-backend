@@ -6,16 +6,12 @@ class MeetingMediafileUpdate(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"mediafile_ids": [10], "meeting_mediafile_ids": [2]},
                 "mediafile/10": {
                     "title": "hOi",
-                    "meeting_mediafile_ids": [2],
                     "owner_id": "meeting/1",
                 },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "mediafile_id": 10,
                     "is_public": True,
                 },

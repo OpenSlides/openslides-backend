@@ -10,15 +10,12 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {
-                "logo_web_header_id": 222,
-                "is_active_in_organization_id": 1,
-                "meeting_mediafile_ids": [222],
-            },
-            "mediafile/222": {"owner_id": "meeting/1", "meeting_mediafile_ids": [222]},
+            "meeting/1": {"logo_web_header_id": 222},
+            "mediafile/222": {"owner_id": "meeting/1"},
             "meeting_mediafile/222": {
                 "used_as_logo_web_header_in_meeting_id": 1,
                 "mediafile_id": 222,
+                "is_public": True,
                 "meeting_id": 1,
             },
         }
@@ -27,15 +24,12 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(34)
         self.set_models(
             {
-                "meeting/34": {
-                    "meeting_mediafile_ids": [111],
+                "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/34"},
+                "meeting_mediafile/111": {
+                    "mediafile_id": 111,
+                    "is_public": True,
+                    "meeting_id": 34,
                 },
-                "mediafile/111": {
-                    "title": "title_srtgb123",
-                    "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [111],
-                },
-                "meeting_mediafile/111": {"mediafile_id": 111, "meeting_id": 34},
             }
         )
         response = self.request("mediafile.delete", {"id": 111})
@@ -50,15 +44,15 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(34)
         self.set_models(
             {
-                "meeting/34": {
-                    "meeting_mediafile_ids": [111],
-                },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [111],
                 },
-                "meeting_mediafile/111": {"meeting_id": 34, "mediafile_id": 112},
+                "meeting_mediafile/111": {
+                    "meeting_id": 34,
+                    "is_public": True,
+                    "mediafile_id": 112,
+                },
             }
         )
         response = self.request("mediafile.delete", {"id": 111})
@@ -71,29 +65,25 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(34)
         self.set_models(
             {
-                "meeting/34": {
-                    "meeting_mediafile_ids": [1110, 1112],
-                },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
-                    "child_ids": [110],
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1112],
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
                     "parent_id": 112,
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1110],
                 },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
             }
@@ -109,42 +99,36 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(34)
         self.set_models(
             {
-                "meeting/34": {
-                    "meeting_mediafile_ids": [1110, 1112, 1113],
-                },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
-                    "child_ids": [110],
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1112],
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": True,
-                    "child_ids": [113],
                     "parent_id": 112,
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1110],
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
-                    "child_ids": [],
                     "parent_id": 110,
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1113],
                 },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
                 "meeting_mediafile/1113": {
                     "mediafile_id": 113,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
             }
@@ -162,42 +146,36 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(34)
         self.set_models(
             {
-                "meeting/34": {
-                    "meeting_mediafile_ids": [1110, 1112, 1113],
-                },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
-                    "child_ids": [110, 113],
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1112],
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
-                    "child_ids": [],
                     "parent_id": 112,
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1110],
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
-                    "child_ids": [],
                     "parent_id": 112,
                     "owner_id": "meeting/34",
-                    "meeting_mediafile_ids": [1113],
                 },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
                 "meeting_mediafile/1113": {
                     "mediafile_id": 113,
+                    "is_public": True,
                     "meeting_id": 34,
                 },
             }
@@ -215,19 +193,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.create_meeting(111)
         self.set_models(
             {
-                "meeting/111": {
-                    "logo_web_header_id": 2222,
-                    "all_projection_ids": [1],
-                    "meeting_mediafile_ids": [2222],
-                    "mediafile_ids": [222],
-                },
-                "mediafile/222": {
-                    "owner_id": "meeting/111",
-                    "meeting_mediafile_ids": [2222],
-                },
+                "meeting/111": {"logo_web_header_id": 2222},
+                "mediafile/222": {"owner_id": "meeting/111"},
                 "meeting_mediafile/2222": {
                     "used_as_logo_web_header_in_meeting_id": 111,
-                    "projection_ids": [1],
+                    "is_public": True,
                     "meeting_id": 111,
                     "mediafile_id": 222,
                 },
@@ -236,10 +206,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 111,
                 },
-                "projector/1": {
-                    "current_projection_ids": [1],
-                    "meeting_id": 111,
-                },
+                "projector/1": {"sequential_number": 1, "meeting_id": 111},
             }
         )
         response = self.request("mediafile.delete", {"id": 222})
@@ -257,20 +224,17 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
-                    "child_ids": [110, 113],
                     "owner_id": ONE_ORGANIZATION_FQID,
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
-                    "child_ids": [],
                     "parent_id": 112,
                     "owner_id": ONE_ORGANIZATION_FQID,
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
-                    "child_ids": [],
                     "parent_id": 112,
                     "owner_id": ONE_ORGANIZATION_FQID,
                 },

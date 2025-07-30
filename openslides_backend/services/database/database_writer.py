@@ -305,6 +305,13 @@ class DatabaseWriter(SqlQueryHelper):
             self.execute_sql(statement, arguments, collection, id_),
         )
 
+    def is_primary_nm_relation(self, field: Field) -> bool:
+        return bool(
+            field.is_primary
+            and field.write_fields
+            and isinstance(field, (RelationListField, GenericRelationListField))
+        )
+
     def get_simple_fields_intermediate_table(
         self, event_fields: PartialModel, collection: Collection
     ) -> tuple[dict[str, Any], dict[str, Field]]:
@@ -324,11 +331,7 @@ class DatabaseWriter(SqlQueryHelper):
             field_name: field
             for field_name in event_fields
             if (field := collection_cls.get_field(field_name))
-            if field.is_primary and field.write_fields
-            if any(
-                isinstance(field, type_)
-                for type_ in [RelationListField, GenericRelationListField]
-            )
+            if self.is_primary_nm_relation(field)
         }
 
     def get_list_types_and_nm_relation_list_fields(
@@ -351,14 +354,7 @@ class DatabaseWriter(SqlQueryHelper):
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
                         lists_type_dict[field_name] = type(value_list[0])
-                    if (
-                        field.is_primary
-                        and field.write_fields
-                        and any(
-                            isinstance(field, type_)
-                            for type_ in [RelationListField, GenericRelationListField]
-                        )
-                    ):
+                    if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field
         return (lists_type_dict, nm_relation_list_fields)
 

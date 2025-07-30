@@ -1654,8 +1654,6 @@ msgstr ""
 msgid "Default visibility for new agenda items (except topics)"
 msgstr "Výchozí viditelnost pro nové body pořadu jednání (vyjma námětů)"
 
-=======
->>>>>>> upstream/main
 msgid "Default vote weight"
 msgstr "Výchozí váha hlasu"
 

@@ -21,8 +21,16 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "is_directory": True,
                 "meeting_mediafile_ids": [8],
             },
-            "meeting_mediafile/7": {"mediafile_id": 7, "meeting_id": 1},
-            "meeting_mediafile/8": {"mediafile_id": 8, "meeting_id": 1},
+            "meeting_mediafile/7": {
+                "mediafile_id": 7,
+                "is_public": True,
+                "meeting_id": 1,
+            },
+            "meeting_mediafile/8": {
+                "mediafile_id": 8,
+                "is_public": True,
+                "meeting_id": 1,
+            },
         }
         self.orga_permission_test_models: dict[str, dict[str, Any]] = {
             "mediafile/7": {"owner_id": ONE_ORGANIZATION_FQID, "is_directory": True},
@@ -33,51 +41,44 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [2227, 2228, 2229, 2230],
-                },
                 "mediafile/7": {
                     "title": "title_7",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [8, 9],
-                    "meeting_mediafile_ids": [2227],
                 },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 7,
                 },
                 "mediafile/8": {
                     "title": "title_8",
                     "owner_id": "meeting/222",
                     "parent_id": 7,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2228],
                 },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 8,
                 },
                 "mediafile/9": {
                     "title": "title_9",
                     "owner_id": "meeting/222",
                     "parent_id": 7,
-                    "child_ids": [10],
-                    "meeting_mediafile_ids": [2229],
                 },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 9,
                 },
                 "mediafile/10": {
                     "title": "title_10",
                     "owner_id": "meeting/222",
                     "parent_id": 9,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2230],
                 },
                 "meeting_mediafile/2230": {
                     "meeting_id": 222,
+                    "is_public": False,
                     "mediafile_id": 10,
                 },
             }
@@ -89,37 +90,25 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "mediafile/7",
-            {"child_ids": [], "parent_id": None, "meeting_mediafile_ids": [2227]},
+            {"child_ids": None, "parent_id": None, "meeting_mediafile_ids": [2227]},
         )
         self.assert_model_exists(
             "mediafile/8",
-            {
-                "child_ids": [],
-                "parent_id": None,
-                "meeting_mediafile_ids": [2228],
-            },
+            {"child_ids": None, "parent_id": None, "meeting_mediafile_ids": [2228]},
         )
         self.assert_model_exists("meeting_mediafile/2228", {"is_public": True})
         self.assert_model_exists(
             "mediafile/9",
-            {
-                "child_ids": [10],
-                "parent_id": None,
-                "meeting_mediafile_ids": [2229],
-            },
+            {"child_ids": [10], "parent_id": None, "meeting_mediafile_ids": [2229]},
         )
         self.assert_model_exists("meeting_mediafile/2229", {"is_public": True})
         self.assert_model_exists(
             "mediafile/10",
-            {
-                "child_ids": [],
-                "parent_id": 9,
-                "meeting_mediafile_ids": [2230],
-            },
+            {"child_ids": None, "parent_id": 9, "meeting_mediafile_ids": [2230]},
         )
         self.assert_model_exists(
             "meeting_mediafile/2230",
-            {"is_public": True, "inherited_access_group_ids": []},
+            {"is_public": True, "inherited_access_group_ids": None},
         )
 
     def test_move_parent_set(self) -> None:
@@ -130,36 +119,31 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "title": "title_7",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
                     "is_directory": True,
-                    "meeting_mediafile_ids": [2227],
                 },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
                     "mediafile_id": 7,
                     "is_public": True,
-                    "inherited_access_group_ids": [],
                 },
                 "mediafile/8": {
                     "title": "title_8",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2228],
                 },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 8,
                 },
                 "mediafile/9": {
                     "title": "title_9",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2229],
                 },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 9,
                 },
             }
@@ -176,14 +160,14 @@ class MediafileMoveActionTest(BaseActionTestCase):
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
-                    "child_ids": [],
+                    "child_ids": None,
                     "parent_id": 7,
                     "meeting_mediafile_ids": [2220 + id_],
                 },
             )
             self.assert_model_exists(
                 f"meeting_mediafile/222{id_}",
-                {"inherited_access_group_ids": [], "is_public": True},
+                {"inherited_access_group_ids": None, "is_public": True},
             )
 
     def test_move_non_directory_parent_set(self) -> None:
@@ -194,34 +178,31 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "title": "title_7",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
                     "is_directory": False,
-                    "meeting_mediafile_ids": [2227],
                 },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 7,
                 },
                 "mediafile/8": {
                     "title": "title_8",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2228],
                 },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 8,
                 },
                 "mediafile/9": {
                     "title": "title_9",
                     "owner_id": "meeting/222",
                     "parent_id": None,
-                    "child_ids": [],
-                    "meeting_mediafile_ids": [2229],
                 },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 9,
                 },
             }
@@ -237,25 +218,16 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [2227, 2228],
-                },
-                "mediafile/7": {
-                    "owner_id": "meeting/222",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [2227],
-                },
+                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 7,
                 },
-                "mediafile/8": {
-                    "owner_id": "meeting/222",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [2228],
-                },
+                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
+                    "is_public": True,
                     "mediafile_id": 8,
                 },
             }
@@ -297,23 +269,22 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7, 8],
-                },
-                "mediafile/7": {
-                    "owner_id": "meeting/222",
-                    "is_directory": True,
-                    "child_ids": [8],
-                    "meeting_mediafile_ids": [7],
-                },
+                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
                 "mediafile/8": {
                     "owner_id": "meeting/222",
                     "is_directory": True,
                     "parent_id": 7,
-                    "meeting_mediafile_ids": [8],
                 },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 7},
-                "meeting_mediafile/8": {"meeting_id": 222, "mediafile_id": 8},
+                "meeting_mediafile/7": {
+                    "meeting_id": 222,
+                    "is_public": True,
+                    "mediafile_id": 7,
+                },
+                "meeting_mediafile/8": {
+                    "meeting_id": 222,
+                    "is_public": True,
+                    "mediafile_id": 8,
+                },
             }
         )
         response = self.request(
@@ -331,19 +302,16 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile/7": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [8],
                 },
                 "mediafile/8": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
                     "parent_id": 7,
-                    "child_ids": [9],
                 },
                 "mediafile/9": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
                     "parent_id": 8,
-                    "child_ids": [10],
                 },
                 "mediafile/10": {
                     "owner_id": ONE_ORGANIZATION_FQID,
@@ -455,12 +423,12 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/4": {
                     "meeting_id": 4,
+                    "is_public": True,
                     "mediafile_id": 1,
                 },
                 "mediafile/2": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [3],
                 },
                 "mediafile/3": {
                     "parent_id": 2,
@@ -497,7 +465,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 2,
                 "meeting_id": 4,
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": True,
             },
         )
@@ -523,7 +491,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 3,
                 "meeting_id": 4,
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": True,
             },
         )
@@ -535,23 +503,40 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(7)
         self.set_models(
             {
-                "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [3],
+                    "meeting_mediafile_inherited_access_group_ids": [1, 3],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [2, 3],
+                    "meeting_mediafile_inherited_access_group_ids": [2],
+                },
+                "group/3": {
+                    "meeting_mediafile_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [1],
+                },
+                "group/6": {
+                    "meeting_mediafile_access_group_ids": [6],
+                    "meeting_mediafile_inherited_access_group_ids": [6],
+                },
+                "group/9": {
+                    "meeting_mediafile_access_group_ids": [9],
+                    "meeting_mediafile_inherited_access_group_ids": [9],
+                },
                 "meeting/4": {"meeting_mediafile_ids": [4]},
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "meeting_mediafile_ids": [1, 4],
                 },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
-                    "inherited_access_group_ids": [1, 3],
                     "is_public": False,
                 },
                 "meeting_mediafile/4": {
                     "meeting_id": 4,
+                    "is_public": True,
                     "mediafile_id": 1,
                 },
                 "mediafile/2": {
@@ -559,21 +544,15 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [3],
-                    "meeting_mediafile_ids": [2, 8],
                 },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 2,
-                    "access_group_ids": [2, 3],
-                    "inherited_access_group_ids": [2],
                     "is_public": False,
                 },
                 "meeting_mediafile/8": {
                     "meeting_id": 7,
                     "mediafile_id": 2,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "is_public": True,
                 },
                 "mediafile/3": {
@@ -581,34 +560,26 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "parent_id": 2,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "meeting_mediafile_ids": [3, 6, 9],
                 },
                 "meeting_mediafile/3": {
                     "meeting_id": 1,
                     "mediafile_id": 3,
-                    "access_group_ids": [1, 2],
-                    "inherited_access_group_ids": [2],
                     "is_public": False,
                 },
                 "meeting_mediafile/6": {
                     "meeting_id": 4,
                     "mediafile_id": 3,
-                    "access_group_ids": [6],
-                    "inherited_access_group_ids": [6],
                     "is_public": False,
                 },
                 "meeting_mediafile/9": {
                     "meeting_id": 7,
                     "mediafile_id": 3,
-                    "access_group_ids": [9],
-                    "inherited_access_group_ids": [9],
                     "is_public": False,
                 },
                 "mediafile/4": {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [2],
                 },
             }
         )
@@ -644,7 +615,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "meeting_id": 7,
                 "mediafile_id": 2,
-                "access_group_ids": [],
+                "access_group_ids": None,
                 "inherited_access_group_ids": [8],
                 "is_public": False,
             },
@@ -655,7 +626,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "meeting_id": 4,
                 "mediafile_id": 2,
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": True,
             },
         )
@@ -674,7 +645,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile_id": 3,
                 "meeting_id": 1,
                 "access_group_ids": [1, 2],
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": False,
             },
         )
@@ -694,12 +665,12 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 "mediafile_id": 3,
                 "meeting_id": 7,
                 "access_group_ids": [9],
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": False,
             },
         )
         self.assert_model_not_exists("meeting_mediafile/11")
-        self.assert_model_exists("mediafile/4", {"parent_id": None, "child_ids": []})
+        self.assert_model_exists("mediafile/4", {"parent_id": None, "child_ids": None})
 
     def test_move_published_to_unpublished_parent_meeting_data(self) -> None:
         self.create_meeting(1)
@@ -707,9 +678,26 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(7)
         self.set_models(
             {
-                "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
-                "meeting/4": {"meeting_mediafile_ids": [4]},
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [3],
+                    "meeting_mediafile_inherited_access_group_ids": [3],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [2, 3],
+                    "meeting_mediafile_inherited_access_group_ids": [2],
+                },
+                "group/3": {
+                    "meeting_mediafile_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [2],
+                },
+                "group/6": {
+                    "meeting_mediafile_access_group_ids": [6],
+                    "meeting_mediafile_inherited_access_group_ids": [6],
+                },
+                "group/9": {
+                    "meeting_mediafile_access_group_ids": [9],
+                    "meeting_mediafile_inherited_access_group_ids": [9],
+                },
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
@@ -719,21 +707,15 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [3],
-                    "meeting_mediafile_ids": [2, 8],
                 },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 2,
-                    "access_group_ids": [2, 3],
-                    "inherited_access_group_ids": [2],
                     "is_public": False,
                 },
                 "meeting_mediafile/8": {
                     "meeting_id": 7,
                     "mediafile_id": 2,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "is_public": True,
                 },
                 "mediafile/3": {
@@ -741,34 +723,26 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "parent_id": 2,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "meeting_mediafile_ids": [3, 6, 9],
                 },
                 "meeting_mediafile/3": {
                     "meeting_id": 1,
                     "mediafile_id": 3,
-                    "access_group_ids": [1, 2],
-                    "inherited_access_group_ids": [2],
                     "is_public": False,
                 },
                 "meeting_mediafile/6": {
                     "meeting_id": 4,
                     "mediafile_id": 3,
-                    "access_group_ids": [6],
-                    "inherited_access_group_ids": [6],
                     "is_public": False,
                 },
                 "meeting_mediafile/9": {
                     "meeting_id": 7,
                     "mediafile_id": 3,
-                    "access_group_ids": [9],
-                    "inherited_access_group_ids": [9],
                     "is_public": False,
                 },
                 "mediafile/4": {
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
-                    "child_ids": [2],
                 },
             }
         )
@@ -782,7 +756,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "parent_id": 1,
                 "child_ids": [3],
-                "meeting_mediafile_ids": [],
+                "meeting_mediafile_ids": None,
                 "published_to_meetings_in_organization_id": None,
             },
         )
@@ -793,7 +767,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             "mediafile/3",
             {
                 "parent_id": 2,
-                "meeting_mediafile_ids": [],
+                "meeting_mediafile_ids": None,
                 "published_to_meetings_in_organization_id": None,
             },
         )
