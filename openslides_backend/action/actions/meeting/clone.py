@@ -169,11 +169,35 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                         "owner_id",
                         "meeting_mediafile_ids",
                         "published_to_meetings_in_organization_id",
+                        "parent_id",
+                        "child_ids",
                     ],
                 ),
             ],
             use_changed_models=False,
         )["mediafile"]
+        unknown_parents = {
+            parent_id
+            for file in mediafiles.values()
+            if (parent_id := file.get("parent_id")) and parent_id not in mediafiles
+        }
+        mediafiles.update(
+            self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "mediafile",
+                        list(unknown_parents),
+                        [
+                            "id",
+                            "owner_id",
+                            "published_to_meetings_in_organization_id",
+                            "child_ids",
+                        ],
+                    ),
+                ],
+                use_changed_models=False,
+            )["mediafile"]
+        )
         meeting_json["mediafile"] = {
             str(id_): data
             for id_, data in mediafiles.items()

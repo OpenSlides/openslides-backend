@@ -1083,6 +1083,129 @@ class MeetingClone(BaseActionTestCase):
             "meeting/2", {"logo_web_header_id": 21, "font_bold_id": 22}
         )
 
+    def test_clone_with_meeting_mediafile_hierarchy(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1, 2]
+        self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "logo_web_header_id": 10,
+                    "font_bold_id": 20,
+                    "meeting_user_ids": [1],
+                },
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "child_ids": [2],
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "mimetype": "text/plain",
+                    "meeting_mediafile_ids": [20],
+                    "parent_id": 1,
+                },
+                "meeting_mediafile/10": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "used_as_logo_web_header_in_meeting_id": 1,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/20": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "used_as_font_bold_in_meeting_id": 1,
+                    "access_group_ids": [],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20],
+                },
+            }
+        )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_called_with(2, 4)
+        self.assert_model_exists(
+            "meeting_mediafile/21",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 3,
+                "used_as_logo_web_header_in_meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/22",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+                "used_as_font_bold_in_meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/2", {"logo_web_header_id": 21, "font_bold_id": 22}
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [10],
+                "child_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [20],
+                "parent_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [21],
+                "child_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [22],
+                "parent_id": 3,
+            },
+        )
+
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
@@ -1185,6 +1308,7 @@ class MeetingClone(BaseActionTestCase):
                 "used_as_font_regular_in_meeting_id": 2,
             },
         )
+        self.assert_model_exists("mediafile/16", {"meeting_mediafile_ids": None})
         self.assert_model_exists("mediafile/17", {"meeting_mediafile_ids": [11, 12]})
         self.media.duplicate_mediafile.assert_not_called()
 
