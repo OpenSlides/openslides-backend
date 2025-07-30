@@ -1,3 +1,4 @@
+from datetime import datetime
 from hashlib import md5
 from typing import Any
 
@@ -49,7 +50,7 @@ class AmendmentParagraphHelper:
 
 
 def set_workflow_timestamp_helper(
-    datastore: Database, instance: dict[str, Any], timestamp: int
+    datastore: Database, instance: dict[str, Any], timestamp: datetime
 ) -> None:
     state = datastore.get(
         fqid_from_collection_and_id("motion_state", instance["state_id"]),

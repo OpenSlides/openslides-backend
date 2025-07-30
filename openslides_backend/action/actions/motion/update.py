@@ -1,6 +1,7 @@
-import time
 from copy import deepcopy
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -107,7 +108,7 @@ class MotionUpdate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),

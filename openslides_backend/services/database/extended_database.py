@@ -450,12 +450,13 @@ class ExtendedDatabase(Database):
                         lock_result,
                         use_changed_models,
                     )
-                    if response:
-                        response_values = [
+                    if response and (
+                        response_values := [
                             model[field_or_star]
                             for model in response.values()
                             if model[field_or_star] is not None
                         ]
+                    ):
                         if method == "max":
                             return max(response_values)
                         else:

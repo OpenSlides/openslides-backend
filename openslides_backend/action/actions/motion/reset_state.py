@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -66,7 +67,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             motion.get("number"),
             motion.get("number_value"),
         )
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         instance["workflow_timestamp"] = None
         set_workflow_timestamp_helper(self.datastore, instance, timestamp)
