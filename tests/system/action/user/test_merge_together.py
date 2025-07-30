@@ -459,7 +459,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "gender_id": 1,
                     "email": "nick.everything@rob.banks",
                     "last_email_sent": datetime.fromtimestamp(
-                        123456789, ZoneInfo("Etc/UTC")
+                        123456789, ZoneInfo("UTC")
                     ),
                     "committee_management_ids": [60],
                     "home_committee_id": 60,
@@ -472,9 +472,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "last_name": "Banks",
                     "is_physical_person": True,
                     "default_vote_weight": Decimal("1.234567"),
-                    "last_login": datetime.fromtimestamp(
-                        987654321, ZoneInfo("Etc/UTC")
-                    ),
+                    "last_login": datetime.fromtimestamp(987654321, ZoneInfo("UTC")),
                     "is_present_in_meeting_ids": [7],
                     "external": True,
                 },
@@ -484,7 +482,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "is_physical_person": False,
                     "gender_id": 2,
                     "last_email_sent": datetime.fromtimestamp(
-                        234567890, ZoneInfo("Etc/UTC")
+                        234567890, ZoneInfo("UTC")
                     ),
                     "is_present_in_meeting_ids": [4, 7],
                     "member_number": "souperadmin",
@@ -563,9 +561,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "email": "nick.everything@rob.banks",
                 "is_present_in_meeting_ids": [7, 10],
                 "committee_management_ids": [60, 69],
-                "last_email_sent": datetime.fromtimestamp(
-                    123456789, ZoneInfo("Etc/UTC")
-                ),
+                "last_email_sent": datetime.fromtimestamp(123456789, ZoneInfo("UTC")),
                 "home_committee_id": 60,
                 "title": None,
                 "last_name": None,
@@ -1741,7 +1737,7 @@ class UserMergeTogether(BaseActionTestCase):
                     data[f"chat_message/{next_message_id}"] = {
                         "content": message,
                         "created": datetime.fromtimestamp(
-                            next_message_id - first_message_id, ZoneInfo("Etc/UTC")
+                            next_message_id - first_message_id, ZoneInfo("UTC")
                         ),
                         "meeting_user_id": meeting_user_id,
                         "chat_group_id": group_id,
@@ -2128,8 +2124,8 @@ class UserMergeTogether(BaseActionTestCase):
 
         # meeting_user_id, weight, speech_state, point_of_order, point_of_order_category_id, structure_level_id
         finished_data = {
-            "begin_time": datetime.fromtimestamp(1, ZoneInfo("Etc/UTC")),
-            "end_time": datetime.fromtimestamp(5, ZoneInfo("Etc/UTC")),
+            "begin_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
+            "end_time": datetime.fromtimestamp(5, ZoneInfo("UTC")),
         }
         finished_with_pause_data = {**finished_data, "total_pause": 2}
         next_id = add_list_of_speakers(
@@ -2320,11 +2316,7 @@ class UserMergeTogether(BaseActionTestCase):
     def test_with_running_speaker(self) -> None:
         self.create_speakers_for_test()
         self.set_models(
-            {
-                "speaker/5": {
-                    "begin_time": datetime.fromtimestamp(1, ZoneInfo("Etc/UTC"))
-                }
-            }
+            {"speaker/5": {"begin_time": datetime.fromtimestamp(1, ZoneInfo("UTC"))}}
         )
 
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})

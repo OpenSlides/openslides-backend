@@ -7,68 +7,36 @@ from tests.util import Response
 class UserUpdateDelegationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
+        self.create_meeting(225)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [222]},
-                "meeting/222": {
-                    "name": "Meeting222",
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 1,
-                    "meeting_user_ids": [11, 12, 13, 14],
-                    "default_group_id": 11,
-                },
-                "meeting/223": {
-                    "name": "Meeting223",
-                    "is_active_in_organization_id": 1,
-                    "default_group_id": 12,
-                },
-                "group/1": {"meeting_id": 222, "meeting_user_ids": [11, 12, 13, 14]},
-                "group/2": {"meeting_id": 223, "meeting_user_ids": [21]},
-                "group/11": {"meeting_id": 222, "default_group_for_meeting_id": 222},
-                "group/12": {"meeting_id": 223, "default_group_for_meeting_id": 223},
-                "user/1": {"meeting_user_ids": [11, 21], "meeting_ids": [222]},
-                "user/2": {
-                    "username": "user/2",
-                    "meeting_user_ids": [12],
-                    "meeting_ids": [222],
-                },
-                "user/3": {
-                    "username": "user3",
-                    "meeting_user_ids": [13],
-                    "meeting_ids": [222],
-                },
-                "user/4": {
-                    "username": "delegator2",
-                    "meeting_ids": [222],
-                    "meeting_user_ids": [14],
-                },
-                "meeting_user/11": {
+                "meeting/222": {"default_group_id": 11},
+                "meeting/225": {"default_group_id": 12},
+                "group/1": {
+                    "name": "groupy",
                     "meeting_id": 222,
-                    "user_id": 1,
-                    "group_ids": [1],
+                    "meeting_user_ids": [11, 12, 13, 14],
                 },
+                "group/2": {
+                    "name": "groupy",
+                    "meeting_id": 225,
+                    "meeting_user_ids": [21],
+                },
+                "group/11": {"name": "groupy", "meeting_id": 222},
+                "group/12": {"name": "groupy", "meeting_id": 225},
+                "user/2": {"username": "user/2"},
+                "user/3": {"username": "user3"},
+                "user/4": {"username": "delegator2"},
+                "meeting_user/11": {"meeting_id": 222, "user_id": 1},
                 "meeting_user/12": {
                     "meeting_id": 222,
                     "user_id": 2,
                     "vote_delegated_to_id": 13,
-                    "group_ids": [1],
                 },
-                "meeting_user/13": {
-                    "meeting_id": 222,
-                    "user_id": 3,
-                    "vote_delegations_from_ids": [12],
-                    "group_ids": [1],
-                },
-                "meeting_user/14": {
-                    "meeting_id": 222,
-                    "user_id": 4,
-                    "group_ids": [1],
-                },
-                "meeting_user/21": {
-                    "meeting_id": 223,
-                    "user_id": 1,
-                    "group_ids": [2],
-                },
+                "meeting_user/13": {"meeting_id": 222, "user_id": 3},
+                "meeting_user/14": {"meeting_id": 222, "user_id": 4},
+                "meeting_user/21": {"meeting_id": 225, "user_id": 1},
             }
         )
 
@@ -101,7 +69,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "meeting_user/14",
             {
                 "vote_delegated_to_id": 13,
-                "group_ids": [],
+                "group_ids": None,
                 "meeting_id": 222,
                 "user_id": 4,
             },
@@ -111,15 +79,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_delegated_to_error_group_do_not_match_meeting(self) -> None:
-        self.set_models(
-            {
-                "meeting/223": {
-                    "name": "Meeting223",
-                    "is_active_in_organization_id": 1,
-                },
-                "group/2": {"meeting_id": 223},
-            }
-        )
         response = self.request_executor({"vote_delegated_to_id": 13, "group_ids": [2]})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -164,11 +123,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     ) -> None:
         self.set_models(
             {
-                "meeting_user/14": {"vote_delegations_from_ids": [13]},
-                "meeting_user/13": {
-                    "vote_delegated_to_id": 14,
-                    "vote_delegations_from_ids": [],
-                },
+                "meeting_user/12": {"vote_delegated_to_id": None},
+                "meeting_user/13": {"vote_delegated_to_id": 14},
             }
         )
         response = self.request_executor(
@@ -177,7 +133,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/14",
-            {"vote_delegated_to_id": 13, "vote_delegations_from_ids": []},
+            {"vote_delegated_to_id": 13, "vote_delegations_from_ids": None},
         )
         self.assert_model_exists(
             "meeting_user/13",
@@ -194,7 +150,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/13",
-            {"vote_delegated_to_id": 14, "vote_delegations_from_ids": []},
+            {"vote_delegated_to_id": 14, "vote_delegations_from_ids": None},
         )
 
     def test_delegated_to_error_target_not_exists(self) -> None:
@@ -288,7 +244,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
         response = self.request_executor({"vote_delegations_from_ids": []})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": []})
+        self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": None})
         self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": None})
         self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": None})
 
@@ -334,7 +290,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": 14})
         self.assert_model_exists("meeting_user/12", {"vote_delegated_to_id": 14})
-        self.assert_model_exists("meeting_user/13", {"vote_delegations_from_ids": []})
+        self.assert_model_exists("meeting_user/13", {"vote_delegations_from_ids": None})
         self.assert_model_exists(
             "meeting_user/14", {"vote_delegations_from_ids": [11, 12]}
         )
@@ -458,6 +414,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/11", {"vote_delegated_to_id": 14})
         self.assert_model_exists(
-            "meeting_user/14", {"vote_delegations_from_ids": [13, 11]}
+            "meeting_user/14", {"vote_delegations_from_ids": [11, 13]}
         )
         self.assert_model_exists("meeting_user/13", {"vote_delegated_to_id": 14})

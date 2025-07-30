@@ -79,9 +79,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 },
                 "speaker/15": {
                     # "begin_time": 12345678,
-                    "begin_time": datetime(
-                        2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
-                    ),
+                    "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 1111,
                     "meeting_id": 1,
@@ -113,9 +111,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "meeting_user_id": None,
                 "meeting_id": 1,
-                "begin_time": datetime(
-                    2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
-                ),
+                "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
             },
         )
         self.assert_model_not_exists("speaker/16")

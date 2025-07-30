@@ -11,7 +11,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class AccountJsonUpload(BaseActionTestCase):
     def test_json_upload_simple(self) -> None:
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
@@ -37,7 +37,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 ],
             },
         )
-        end_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        end_time = datetime.now(ZoneInfo("UTC"))
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
