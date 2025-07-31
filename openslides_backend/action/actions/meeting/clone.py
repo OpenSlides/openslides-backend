@@ -235,11 +235,13 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         # set imported_at
         meeting["imported_at"] = round(time.time())
 
+        # Perform mediafiles and meeting_mediafiles forwarding
         origin_mediafiles = meeting_json.pop("mediafile", {})
         origin_meeting_mediafiles = meeting_json.get("meeting_mediafile", {})
 
         self.create_replace_map(meeting_json)
         meeting_id = self.replace_map["meeting"][meeting["id"]]
+
         _, mediafile_replace_map_by_meeting = (
             self.perform_mediafiles_mapping_and_duplication(
                 {
@@ -258,7 +260,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                 "mediafile": mediafile_replace_map_by_meeting.get(meeting_id, {}),
             }
         )
-        # TODO: remove after switching to rel-DB
+        # TODO: remove mediafiles_back_relations after switching to rel-DB
         mediafiles_back_relations = self.generate_mediafiles_back_relations(
             origin_meeting_mediafiles, origin_mediafiles
         )
@@ -396,9 +398,9 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         origin_mediafiles: dict[str, dict[str, Any]],
     ) -> dict[str, dict[str, Any]]:
         """
-        Generates the back-relations for mediafiles, handling orga-wide vs. meeting-specific references.
-        Avoids replacing original `meeting_mediafile` IDs for orga-wide mediafiles.
-        Should be generated manually to avoid replacing original meeting_mediafile ids for orga-wide mediafiles.
+        Generates the back-relations from mediafiles to meeting_mediafiles.
+        Relations should be generated manually to avoid replacing original
+        meeting_mediafile ids for orga-wide mediafiles.
         """
         mediafiles_back_relations = {}
 
