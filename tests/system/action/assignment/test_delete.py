@@ -10,8 +10,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"is_active_in_organization_id": 1},
-                "assignment/111": {"meeting_id": 110, "title": "title_srtgb123"},
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "meeting_id": 110,
+                    "title": "title_srtgb123",
+                }
             }
         )
         response = self.request("assignment.delete", {"id": 111})
@@ -21,19 +24,16 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
-                "meeting/110": {
-                    "is_active_in_organization_id": 1,
-                    "all_projection_ids": [1],
-                },
                 "assignment/111": {
+                    "sequential_number": 1,
+                    "title": "Dr. Assignment",
                     "list_of_speakers_id": 222,
                     "agenda_item_id": 333,
-                    "projection_ids": [1],
                     "meeting_id": 110,
                     "phase": "finished",
-                    "candidate_ids": [1111],
                 },
                 "list_of_speakers/222": {
+                    "sequential_number": 1,
                     "closed": False,
                     "content_object_id": "assignment/111",
                     "meeting_id": 110,
@@ -49,7 +49,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 110,
                 },
                 "projector/1": {
-                    "current_projection_ids": [1],
+                    "sequential_number": 1,
                     "meeting_id": 110,
                 },
                 "assignment_candidate/1111": {"assignment_id": 111, "meeting_id": 110},
@@ -66,8 +66,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"is_active_in_organization_id": 1},
-                "assignment/112": {"title": "title_srtgb123", "meeting_id": 110},
+                "assignment/112": {
+                    "sequential_number": 1,
+                    "title": "title_srtgb123",
+                    "meeting_id": 110,
+                }
             }
         )
         response = self.request("assignment.delete", {"id": 111})
@@ -78,7 +81,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
             {
-                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                },
             },
             "assignment.delete",
             {"id": 111},
@@ -87,7 +94,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_permission(self) -> None:
         self.base_permission_test(
             {
-                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                },
             },
             "assignment.delete",
             {"id": 111},
@@ -97,7 +108,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
             {
-                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                },
             },
             "assignment.delete",
             {"id": 111},
