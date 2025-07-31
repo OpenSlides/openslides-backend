@@ -23,7 +23,7 @@ from openslides_backend.shared.exceptions import (
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import PartialModel
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
@@ -566,6 +566,54 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
         return [mu["id"] for mu in meeting_users.values()]
+
+    def create_mediafile(
+        self,
+        base: int = 1,
+        owner_meeting_id: int = 0,
+        is_directory: bool = False,
+        parent_id: int = 0,
+        file_type: str = "text",
+    ) -> None:
+        """
+        If `owner_meeting_id` is specified, creates meeting-wide mediafile
+        belonging to this meeting. Otherwise, creates published
+        organization-wide mediafile.
+
+        If parent_id is provided, parent must have `is_directory=True`
+        and belong to the same `owner_id`.
+
+        If file is not directory, it has mimetype and filename of the text file
+        by default. Set `file_type` to `image` or `font` to change these values.
+        """
+        model_data: dict[str, str | int | bool | None] = {
+            "title": f"folder_{base}" if is_directory else f"file_{base}",
+            "is_directory": is_directory,
+            "parent_id": parent_id or None,
+            "owner_id": (
+                f"meeting/{owner_meeting_id}"
+                if owner_meeting_id
+                else ONE_ORGANIZATION_FQID
+            ),
+            "published_to_meetings_in_organization_id": (
+                ONE_ORGANIZATION_ID if not owner_meeting_id else None
+            ),
+        }
+
+        if not is_directory:
+            match file_type:
+                case "text":
+                    mimetype = "text/plain"
+                    filename = f"text-{base}.txt"
+                case "font":
+                    mimetype = "font/woff"
+                    filename = f"font-{base}.woff"
+                case "image":
+                    mimetype = "image/png"
+                    filename = f"image-{base}.png"
+            model_data.update({"mimetype": mimetype, "filename": filename})
+
+        self.set_models({f"mediafile/{base}": model_data})
 
     def base_permission_test(
         self,
