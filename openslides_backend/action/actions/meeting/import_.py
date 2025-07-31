@@ -631,7 +631,7 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection in ["user", "gender"]:
+                elif collection in ["user", "gender", "mediafile"]:
                     list_fields: ListFields = {"add": {}, "remove": {}}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)

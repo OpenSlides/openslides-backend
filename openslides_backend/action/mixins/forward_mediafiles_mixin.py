@@ -9,18 +9,16 @@ from ..action import Action
 from ..actions.mediafile.duplicate_to_another_meeting import (
     MediafileDuplicateToAnotherMeetingAction,
 )
-from ..actions.meeting_mediafile.create import (
-    EXTRA_RELATIONAL_FIELDS_TO_MEETING,
-    MeetingMediafileCreate,
-)
+from ..actions.meeting_mediafile.create import MeetingMediafileCreate
 
 
 class ForwardMediafilesMixin(Action):
-    def perform_mediafiles_duplication(
+    def perform_mediafiles_mapping_and_duplication(
         self,
         fetched_data: dict[str, dict[int, dict[str, Any]]],
         meeting_mediafile_replace_map: dict[int, dict[int, int]] = {},
-    ) -> dict[int, dict[int, int]]:
+        should_create_mm: bool = True,
+    ) -> tuple[dict[int, dict[int, int]], dict[int, dict[int, int]]]:
         """
         Duplicates meeting_mediafiles to the meetings defined in target_meeting_ids.
         If related mediafile is meeting-wide also duplicates it.
@@ -53,13 +51,13 @@ class ForwardMediafilesMixin(Action):
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
             )
-        if new_mm_instances_data:
+        if new_mm_instances_data and should_create_mm:
             meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
                 new_mm_instances_data,
                 mediafile_replace_map_by_meeting,
                 meeting_mediafile_replace_map,
             )
-        return meeting_mediafile_replace_map
+        return meeting_mediafile_replace_map, mediafile_replace_map_by_meeting
 
     def map_mediafiles_data(
         self, fetched_data: dict[str, dict[int, dict[str, Any]]]
@@ -198,11 +196,6 @@ class ForwardMediafilesMixin(Action):
                             "inherited_access_group_ids",
                         ]
                         if field in entry
-                    },
-                    **{
-                        field: meeting_id
-                        for field in entry
-                        if field in EXTRA_RELATIONAL_FIELDS_TO_MEETING
                     },
                 }
                 new_mm_action_data.append(new_mm)
