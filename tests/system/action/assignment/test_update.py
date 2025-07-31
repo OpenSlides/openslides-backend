@@ -24,6 +24,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("assignment/111", {"title": "title_Xcdfgee"})
 
     def test_update_correct_full_fields(self) -> None:
+        self.create_mediafile(1, 1)
         self.set_models(
             {
                 "meeting/1": {
@@ -34,7 +35,6 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {
                     "is_public": True,
                     "mediafile_id": 1,

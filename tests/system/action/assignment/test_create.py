@@ -93,10 +93,10 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert agenda_item.get("content_object_id") == "assignment/1"
 
     def test_create_full_fields(self) -> None:
+        self.create_mediafile(1, 110)
         self.set_models(
             {
                 "meeting/110": {"agenda_item_creation": "default_yes"},
-                "mediafile/1": {"owner_id": "meeting/110"},
                 "meeting_mediafile/11": {
                     "is_public": True,
                     "mediafile_id": 1,
