@@ -1206,6 +1206,492 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def test_clone_with_meeting_mediafile_hierarchy_and_los(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1, 2, 3]
+        self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20, 30]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"meeting_user_ids": [1], "list_of_speakers_ids": [300]},
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "mimetype": "text/plain",
+                    "meeting_mediafile_ids": [30],
+                    "parent_id": 3,
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "child_ids": [3],
+                },
+                "mediafile/3": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [20],
+                    "parent_id": 2,
+                    "child_ids": [1],
+                },
+                "meeting_mediafile/10": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/20": {
+                    "meeting_id": 1,
+                    "mediafile_id": 3,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/30": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [],
+                    "inherited_access_group_ids": [1, 2],
+                    "list_of_speakers_id": 300,
+                },
+                "list_of_speakers/300": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "content_object_id": "meeting_mediafile/30",
+                },
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+            }
+        )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.assert_model_exists(
+            "meeting_mediafile/31",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/32",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/33",
+            {"meeting_id": 2, "mediafile_id": 6, "list_of_speakers_id": 301},
+        )
+        self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [10],
+                "child_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [20],
+                "parent_id": 2,
+                "child_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [30],
+                "parent_id": 3,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [31],
+                "child_ids": [5],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/5",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 4,
+                "child_ids": [6],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/6",
+            {
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [33],
+                "parent_id": 5,
+            },
+        )
+
+    def test_clone_with_meeting_mediafile_hierarchy_and_projection(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1, 2, 3]
+        self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20, 30]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"meeting_user_ids": [1], "all_projection_ids": [300]},
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "mimetype": "text/plain",
+                    "meeting_mediafile_ids": [30],
+                    "parent_id": 3,
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "child_ids": [3],
+                },
+                "mediafile/3": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [20],
+                    "parent_id": 2,
+                    "child_ids": [1],
+                },
+                "meeting_mediafile/10": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/20": {
+                    "meeting_id": 1,
+                    "mediafile_id": 3,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/30": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [],
+                    "inherited_access_group_ids": [1, 2],
+                    "projection_ids": [300],
+                },
+                "projection/300": {
+                    "meeting_id": 1,
+                    "content_object_id": "meeting_mediafile/30",
+                },
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+            }
+        )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.assert_model_exists(
+            "meeting_mediafile/31",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/32",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/33",
+            {"meeting_id": 2, "mediafile_id": 6, "projection_ids": [301]},
+        )
+        self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [10],
+                "child_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [20],
+                "parent_id": 2,
+                "child_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [30],
+                "parent_id": 3,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [31],
+                "child_ids": [5],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/5",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 4,
+                "child_ids": [6],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/6",
+            {
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [33],
+                "parent_id": 5,
+            },
+        )
+
+    def test_clone_with_meeting_mediafile_hierarchy_and_attachment(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1, 2, 3]
+        self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20, 30]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/2"]["meeting_user_ids"] = [1]
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    "motion_ids": [300],
+                    "list_of_speakers_ids": [3000],
+                },
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "mimetype": "text/plain",
+                    "meeting_mediafile_ids": [30],
+                    "parent_id": 3,
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "child_ids": [3],
+                },
+                "mediafile/3": {
+                    "owner_id": "meeting/1",
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [20],
+                    "parent_id": 2,
+                    "child_ids": [1],
+                },
+                "meeting_mediafile/10": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/20": {
+                    "meeting_id": 1,
+                    "mediafile_id": 3,
+                    "attachment_ids": [],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "meeting_mediafile/30": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "is_public": False,
+                    "access_group_ids": [],
+                    "inherited_access_group_ids": [1, 2],
+                    "attachment_ids": ["motion/300"],
+                },
+                "motion/300": {
+                    "meeting_id": 1,
+                    "attachment_meeting_mediafile_ids": [30],
+                    "list_of_speakers_id": 3000,
+                    "sequential_number": 1,
+                    "state_id": 1,
+                    "title": "A motion",
+                    "text": "A motion text",
+                },
+                "list_of_speakers/3000": {
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                    "content_object_id": "motion/300",
+                },
+                "motion_state/1": {"motion_ids": [300]},
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10, 20],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+            }
+        )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.assert_model_exists(
+            "meeting_mediafile/31",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/32",
+            {
+                "meeting_id": 2,
+                "mediafile_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/33",
+            {"meeting_id": 2, "mediafile_id": 6, "attachment_ids": ["motion/301"]},
+        )
+        self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [10],
+                "child_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "owner_id": "meeting/1",
+                "is_directory": True,
+                "meeting_mediafile_ids": [20],
+                "parent_id": 2,
+                "child_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "owner_id": "meeting/1",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [30],
+                "parent_id": 3,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [31],
+                "child_ids": [5],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/5",
+            {
+                "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 4,
+                "child_ids": [6],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/6",
+            {
+                "owner_id": "meeting/2",
+                "mimetype": "text/plain",
+                "meeting_mediafile_ids": [33],
+                "parent_id": 5,
+            },
+        )
+
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
