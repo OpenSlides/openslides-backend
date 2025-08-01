@@ -39,42 +39,26 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_parent_none(self) -> None:
         self.create_meeting(222)
+        self.create_mediafile(7, 222, is_directory=True)
+        self.create_mediafile(8, 222, parent_id=7)
+        self.create_mediafile(9, 222, is_directory=True, parent_id=7)
+        self.create_mediafile(10, 222, parent_id=9)
         self.set_models(
             {
-                "mediafile/7": {
-                    "title": "title_7",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
-                },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 7,
-                },
-                "mediafile/8": {
-                    "title": "title_8",
-                    "owner_id": "meeting/222",
-                    "parent_id": 7,
                 },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 8,
                 },
-                "mediafile/9": {
-                    "title": "title_9",
-                    "owner_id": "meeting/222",
-                    "parent_id": 7,
-                },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 9,
-                },
-                "mediafile/10": {
-                    "title": "title_10",
-                    "owner_id": "meeting/222",
-                    "parent_id": 9,
                 },
                 "meeting_mediafile/2230": {
                     "meeting_id": 222,
@@ -113,33 +97,20 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_parent_set(self) -> None:
         self.create_meeting(222)
+        self.create_mediafile(7, 222, is_directory=True)
+        self.create_mediafile(8, 222)
+        self.create_mediafile(9, 222)
         self.set_models(
             {
-                "mediafile/7": {
-                    "title": "title_7",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
-                    "is_directory": True,
-                },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
                     "mediafile_id": 7,
                     "is_public": True,
                 },
-                "mediafile/8": {
-                    "title": "title_8",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
-                },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 8,
-                },
-                "mediafile/9": {
-                    "title": "title_9",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
                 },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
@@ -172,33 +143,20 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_non_directory_parent_set(self) -> None:
         self.create_meeting(222)
+        self.create_mediafile(7, 222)
+        self.create_mediafile(8, 222)
+        self.create_mediafile(9, 222)
         self.set_models(
             {
-                "mediafile/7": {
-                    "title": "title_7",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
-                    "is_directory": False,
-                },
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 7,
                 },
-                "mediafile/8": {
-                    "title": "title_8",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
-                },
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 8,
-                },
-                "mediafile/9": {
-                    "title": "title_9",
-                    "owner_id": "meeting/222",
-                    "parent_id": None,
                 },
                 "meeting_mediafile/2229": {
                     "meeting_id": 222,
@@ -216,15 +174,15 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_multiple_action_data_items(self) -> None:
         """This test ensures that multi-requests are impossible"""
         self.create_meeting(222)
+        self.create_mediafile(7, 222, is_directory=True)
+        self.create_mediafile(8, 222, is_directory=True)
         self.set_models(
             {
-                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
                 "meeting_mediafile/2227": {
                     "meeting_id": 222,
                     "is_public": True,
                     "mediafile_id": 7,
                 },
-                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
                 "meeting_mediafile/2228": {
                     "meeting_id": 222,
                     "is_public": True,
@@ -250,12 +208,8 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_owner_mismatch(self) -> None:
         self.create_meeting(222)
-        self.set_models(
-            {
-                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
-                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
-            }
-        )
+        self.create_mediafile(7, 222, is_directory=True)
+        self.create_mediafile(8, 222, is_directory=True)
         response = self.request_multi(
             "mediafile.move",
             [
@@ -267,14 +221,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_circle(self) -> None:
         self.create_meeting(222)
+        self.create_mediafile(7, 222, is_directory=True)
+        self.create_mediafile(8, 222, parent_id=7, is_directory=True)
         self.set_models(
             {
-                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
-                "mediafile/8": {
-                    "owner_id": "meeting/222",
-                    "is_directory": True,
-                    "parent_id": 7,
-                },
                 "meeting_mediafile/7": {
                     "meeting_id": 222,
                     "is_public": True,
@@ -297,29 +247,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_bigger_circle(self) -> None:
-        self.set_models(
-            {
-                "mediafile/7": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                },
-                "mediafile/8": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "parent_id": 7,
-                },
-                "mediafile/9": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "parent_id": 8,
-                },
-                "mediafile/10": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "parent_id": 9,
-                },
-            }
-        )
+        self.create_mediafile(7, is_directory=True)
+        self.create_mediafile(8, is_directory=True, parent_id=7)
+        self.create_mediafile(9, is_directory=True, parent_id=8)
+        self.create_mediafile(10, is_directory=True, parent_id=9)
         response = self.request(
             "mediafile.move",
             {"owner_id": ONE_ORGANIZATION_FQID, "ids": [7], "parent_id": 10},
@@ -335,15 +266,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                },
-                "mediafile/2": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
+                    "is_directory": True
+                }
             }
         )
+        self.create_mediafile(2, is_directory=True)
         response = self.request(
             "mediafile.move",
             {"owner_id": ONE_ORGANIZATION_FQID, "ids": [2], "parent_id": 1},
@@ -355,20 +282,8 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_explicitly_published_file_error_2(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-                "mediafile/2": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-            }
-        )
+        self.create_mediafile(1, is_directory=True)
+        self.create_mediafile(2, is_directory=True)
         response = self.request(
             "mediafile.move",
             {"owner_id": ONE_ORGANIZATION_FQID, "ids": [2], "parent_id": 1},
@@ -384,15 +299,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                },
-                "mediafile/2": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
+                    "is_directory": True
+                }
             }
         )
+        self.create_mediafile(2, is_directory=True)
         response = self.request(
             "mediafile.move",
             {"owner_id": ONE_ORGANIZATION_FQID, "ids": [1], "parent_id": 2},
@@ -404,21 +315,16 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(1, is_directory=True)
         self.set_models(
             {
-                "meeting/1": {"meeting_mediafile_ids": [1]},
-                "group/3": {"meeting_mediafile_inherited_access_group_ids": [1]},
-                "meeting/4": {"meeting_mediafile_ids": [4]},
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "meeting_mediafile_ids": [1, 4],
+                "group/3": {
+                    "meeting_mediafile_access_group_ids": [1],
+                    "meeting_mediafile_inherited_access_group_ids": [1]
                 },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
-                    "inherited_access_group_ids": [3],
                     "is_public": False,
                 },
                 "meeting_mediafile/4": {
@@ -501,18 +407,22 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(1, is_directory=True)
+        self.create_mediafile(4, is_directory=True)
+        self.create_mediafile(2, is_directory=True, parent_id=4)
+        self.create_mediafile(3, is_directory=True, parent_id=2)
         self.set_models(
             {
                 "group/1": {
-                    "meeting_mediafile_access_group_ids": [3],
-                    "meeting_mediafile_inherited_access_group_ids": [1, 3],
+                    "meeting_mediafile_access_group_ids": [1, 3],
+                    "meeting_mediafile_inherited_access_group_ids": [1],
                 },
                 "group/2": {
                     "meeting_mediafile_access_group_ids": [2, 3],
-                    "meeting_mediafile_inherited_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [2, 3],
                 },
                 "group/3": {
-                    "meeting_mediafile_access_group_ids": [2],
+                    "meeting_mediafile_access_group_ids": [1, 2],
                     "meeting_mediafile_inherited_access_group_ids": [1],
                 },
                 "group/6": {
@@ -521,13 +431,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "group/9": {
                     "meeting_mediafile_access_group_ids": [9],
-                    "meeting_mediafile_inherited_access_group_ids": [9],
-                },
-                "meeting/4": {"meeting_mediafile_ids": [4]},
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
@@ -539,12 +443,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "is_public": True,
                     "mediafile_id": 1,
                 },
-                "mediafile/2": {
-                    "parent_id": 4,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 2,
@@ -554,12 +452,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "meeting_id": 7,
                     "mediafile_id": 2,
                     "is_public": True,
-                },
-                "mediafile/3": {
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "parent_id": 2,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
                 },
                 "meeting_mediafile/3": {
                     "meeting_id": 1,
@@ -575,11 +467,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
                     "meeting_id": 7,
                     "mediafile_id": 3,
                     "is_public": False,
-                },
-                "mediafile/4": {
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True,
                 },
             }
         )
@@ -676,19 +563,22 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(4, is_directory=True)
+        self.create_mediafile(2, is_directory=True, parent_id=4)
+        self.create_mediafile(3, is_directory=True, parent_id=2)
         self.set_models(
             {
                 "group/1": {
                     "meeting_mediafile_access_group_ids": [3],
-                    "meeting_mediafile_inherited_access_group_ids": [3],
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "group/2": {
                     "meeting_mediafile_access_group_ids": [2, 3],
-                    "meeting_mediafile_inherited_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [2, 3],
                 },
                 "group/3": {
                     "meeting_mediafile_access_group_ids": [2],
-                    "meeting_mediafile_inherited_access_group_ids": [2],
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "group/6": {
                     "meeting_mediafile_access_group_ids": [6],
@@ -696,7 +586,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "group/9": {
                     "meeting_mediafile_access_group_ids": [9],
-                    "meeting_mediafile_inherited_access_group_ids": [9],
+                    "meeting_mediafile_inherited_access_group_ids": [],
                 },
                 "mediafile/1": {
                     "owner_id": ONE_ORGANIZATION_FQID,

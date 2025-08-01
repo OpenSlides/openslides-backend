@@ -82,16 +82,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_upload_organization_with_published_parent(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                }
-            }
-        )
+        self.create_mediafile(is_directory=True)
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
@@ -125,20 +116,10 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(is_directory=True)
+        self.create_mediafile(2, is_directory=True)
         self.set_models(
             {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                },
-                "mediafile/2": {
-                    "title": "publishedToo",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                },
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -157,11 +138,11 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 },
                 "group/5": {
                     "meeting_mediafile_access_group_ids": [41, 42],
-                    "meeting_mediafile_inherited_access_group_ids": [41],
+                    "meeting_mediafile_inherited_access_group_ids": [41, 42],
                 },
                 "group/6": {
                     "meeting_mediafile_access_group_ids": [41, 42],
-                    "meeting_mediafile_inherited_access_group_ids": [42],
+                    "meeting_mediafile_inherited_access_group_ids": [41, 42],
                 },
             }
         )
@@ -207,7 +188,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "meeting_id": 4,
                 "mediafile_id": 3,
                 "is_public": False,
-                "inherited_access_group_ids": [5],
+                "inherited_access_group_ids": [5, 6],
             },
         )
         self.assert_model_not_exists("meeting_mediafile/45")
@@ -570,11 +551,7 @@ l,m,n,"""
 
     def test_create_directory_parent_id_parent_not_directory(self) -> None:
         self.create_meeting()
-        self.set_models(
-            {
-                "mediafile/7": {"owner_id": "meeting/1"},
-            }
-        )
+        self.create_mediafile(7, 1)
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
@@ -592,11 +569,7 @@ l,m,n,"""
     def test_create_directory_parent_id_owner_mismatch(self) -> None:
         self.create_meeting()
         self.create_meeting(4)
-        self.set_models(
-            {
-                "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
-            }
-        )
+        self.create_mediafile(7, 1, is_directory=True)
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
@@ -613,26 +586,14 @@ l,m,n,"""
 
     def test_create_directory_title_parent_id_unique(self) -> None:
         self.create_meeting()
-        self.set_models(
-            {
-                "mediafile/6": {
-                    "is_directory": True,
-                    "owner_id": "meeting/1",
-                    "title": "parent",
-                },
-                "mediafile/7": {
-                    "title": "title_1",
-                    "owner_id": "meeting/1",
-                    "parent_id": 6,
-                },
-            }
-        )
+        self.create_mediafile(6, 1, is_directory=True)
+        self.create_mediafile(7, 1, parent_id=6)
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
             {
                 "owner_id": "meeting/1",
-                "title": "title_1",
+                "title": "file_7",
                 "parent_id": 6,
                 "file": file_content,
                 "filename": "test.txt",
@@ -640,7 +601,7 @@ l,m,n,"""
         )
         self.assert_status_code(response, 400)
         assert (
-            "File 'title_1' already exists in folder 'parent'."
+            "File 'file_7' already exists in folder 'folder_6'."
             in response.json["message"]
         )
 
@@ -748,14 +709,10 @@ l,m,n,"""
 
     def test_create_media_access_group(self) -> None:
         self.create_meeting(110)
+        self.create_mediafile(10, 110, is_directory=True)
         self.set_models(
             {
                 "group/1": {"meeting_id": 110, "name": "grp1"},
-                "mediafile/10": {
-                    "title": "title_CgKPfByo",
-                    "is_directory": True,
-                    "owner_id": "meeting/110",
-                },
                 "meeting_mediafile/1110": {
                     "meeting_id": 110,
                     "mediafile_id": 10,
@@ -807,17 +764,14 @@ l,m,n,"""
 
     def test_create_media_directory_group(self) -> None:
         self.create_meeting(110)
+        self.create_mediafile(10, 110, is_directory=True)
         self.set_models(
             {
                 "group/1": {
                     "meeting_id": 110,
+                    "meeting_mediafile_access_group_ids": [1110],
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "name": "grp1",
-                },
-                "mediafile/10": {
-                    "title": "title_CgKPfByo",
-                    "is_directory": True,
-                    "owner_id": "meeting/110",
                 },
                 "meeting_mediafile/1110": {
                     "meeting_id": 110,
@@ -867,19 +821,16 @@ l,m,n,"""
 
     def test_create_media_both_groups(self) -> None:
         self.create_meeting(110)
+        self.create_mediafile(10, 110, is_directory=True)
         self.set_models(
             {
                 "group/1": {
+                    "meeting_mediafile_access_group_ids": [1110],
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_id": 110,
                     "name": "grp1",
                 },
                 "group/2": {"meeting_id": 110, "name": "grp2"},
-                "mediafile/10": {
-                    "title": "title_CgKPfByo",
-                    "is_directory": True,
-                    "owner_id": "meeting/110",
-                },
                 "meeting_mediafile/1110": {
                     "meeting_id": 110,
                     "mediafile_id": 10,
@@ -925,7 +876,7 @@ l,m,n,"""
         self.assert_model_exists(
             "group/1",
             {
-                "meeting_mediafile_access_group_ids": [1111],
+                "meeting_mediafile_access_group_ids": [1110, 1111],
                 "meeting_mediafile_inherited_access_group_ids": [1110, 1111],
             },
         )

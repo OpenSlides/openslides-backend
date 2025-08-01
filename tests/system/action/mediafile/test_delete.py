@@ -13,18 +13,17 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             "meeting/1": {"logo_web_header_id": 222},
             "mediafile/222": {"owner_id": "meeting/1"},
             "meeting_mediafile/222": {
-                "used_as_logo_web_header_in_meeting_id": 1,
                 "mediafile_id": 222,
                 "is_public": True,
-                "meeting_id": 1,
+                "meeting_id": 1
             },
         }
 
     def test_delete_correct(self) -> None:
         self.create_meeting(34)
+        self.create_mediafile(111, 34)
         self.set_models(
             {
-                "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/34"},
                 "meeting_mediafile/111": {
                     "mediafile_id": 111,
                     "is_public": True,
@@ -42,12 +41,9 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
     def test_delete_wrong_id(self) -> None:
         self.create_meeting(34)
+        self.create_mediafile(112, 34)
         self.set_models(
             {
-                "mediafile/112": {
-                    "title": "title_srtgb123",
-                    "owner_id": "meeting/34",
-                },
                 "meeting_mediafile/111": {
                     "meeting_id": 34,
                     "is_public": True,
@@ -58,24 +54,15 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         response = self.request("mediafile.delete", {"id": 111})
         self.assert_status_code(response, 400)
         model = self.get_model("mediafile/112")
-        assert model.get("title") == "title_srtgb123"
+        assert model.get("title") == "file_112"
         self.assert_model_exists("meeting_mediafile/111")
 
     def test_delete_directory(self) -> None:
         self.create_meeting(34)
+        self.create_mediafile(112, 34, is_directory=True)
+        self.create_mediafile(110, 34, parent_id=112)
         self.set_models(
             {
-                "mediafile/112": {
-                    "title": "title_srtgb123",
-                    "is_directory": True,
-                    "owner_id": "meeting/34",
-                },
-                "mediafile/110": {
-                    "title": "title_ghjeu212",
-                    "is_directory": False,
-                    "parent_id": 112,
-                    "owner_id": "meeting/34",
-                },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
                     "is_public": True,
@@ -97,25 +84,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
     def test_delete_directory_list_of_children(self) -> None:
         self.create_meeting(34)
+        self.create_mediafile(112, 34, is_directory=True)
+        self.create_mediafile(110, 34, parent_id=112)
+        self.create_mediafile(113, 34, parent_id=110)
         self.set_models(
             {
-                "mediafile/112": {
-                    "title": "title_srtgb123",
-                    "is_directory": True,
-                    "owner_id": "meeting/34",
-                },
-                "mediafile/110": {
-                    "title": "title_ghjeu212",
-                    "is_directory": True,
-                    "parent_id": 112,
-                    "owner_id": "meeting/34",
-                },
-                "mediafile/113": {
-                    "title": "title_del2",
-                    "is_directory": False,
-                    "parent_id": 110,
-                    "owner_id": "meeting/34",
-                },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
                     "is_public": True,
@@ -144,25 +117,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
     def test_delete_directory_two_children(self) -> None:
         self.create_meeting(34)
+        self.create_mediafile(112, 34, is_directory=True)
+        self.create_mediafile(110, 34, parent_id=112)
+        self.create_mediafile(113, 34, parent_id=112)
         self.set_models(
             {
-                "mediafile/112": {
-                    "title": "title_srtgb123",
-                    "is_directory": True,
-                    "owner_id": "meeting/34",
-                },
-                "mediafile/110": {
-                    "title": "title_ghjeu212",
-                    "is_directory": False,
-                    "parent_id": 112,
-                    "owner_id": "meeting/34",
-                },
-                "mediafile/113": {
-                    "title": "title_del2",
-                    "is_directory": False,
-                    "parent_id": 112,
-                    "owner_id": "meeting/34",
-                },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
                     "is_public": True,
@@ -191,15 +150,14 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
     def test_delete_check_relations(self) -> None:
         self.create_meeting(111)
+        self.create_mediafile(222, 111)
         self.set_models(
             {
                 "meeting/111": {"logo_web_header_id": 2222},
-                "mediafile/222": {"owner_id": "meeting/111"},
                 "meeting_mediafile/2222": {
-                    "used_as_logo_web_header_in_meeting_id": 111,
                     "is_public": True,
                     "meeting_id": 111,
-                    "mediafile_id": 222,
+                    "mediafile_id": 222
                 },
                 "projection/1": {
                     "content_object_id": "meeting_mediafile/2222",
@@ -219,27 +177,9 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         assert meeting.get("logo_web_header_id") is None
 
     def test_delete_directory_two_children_orga_owner(self) -> None:
-        self.set_models(
-            {
-                "mediafile/112": {
-                    "title": "title_srtgb123",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-                "mediafile/110": {
-                    "title": "title_ghjeu212",
-                    "is_directory": False,
-                    "parent_id": 112,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-                "mediafile/113": {
-                    "title": "title_del2",
-                    "is_directory": False,
-                    "parent_id": 112,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-            }
-        )
+        self.create_mediafile(112, is_directory=True)
+        self.create_mediafile(110, parent_id=112)
+        self.create_mediafile(113, parent_id=112)
         response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("mediafile/110")

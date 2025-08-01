@@ -17,7 +17,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.create_meeting(110)
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "meeting_id": 110},
+                "group/7": {"name": "group_LxAHErRs", "meeting_id": 110}
             }
         )
         response = self.request(
@@ -70,16 +70,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             assert field not in mediafile
 
     def test_create_directory_organization_with_published_parent(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                }
-            }
-        )
+        self.create_mediafile(1, is_directory=True)
         response = self.request(
             "mediafile.create_directory",
             {
@@ -109,20 +100,10 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(1, is_directory=True)
+        self.create_mediafile(2, is_directory=True)
         self.set_models(
             {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                },
-                "mediafile/2": {
-                    "title": "publishedToo",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                },
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -190,14 +171,10 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_parent(self) -> None:
         self.create_meeting(110)
+        self.create_mediafile(110,110, is_directory=True)
         self.set_models(
             {
                 "group/7": {"name": "group_LxAHErRs", "meeting_id": 110},
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
                     "is_public": True,
