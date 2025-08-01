@@ -2,7 +2,11 @@ from time import time
 from typing import Any, cast
 from unittest.mock import MagicMock
 
+from datastore.shared.util import is_reserved_field
+
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.permissions.permissions import Permissions
@@ -1206,6 +1210,26 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def run_db_checker(self) -> None:
+        result = self.datastore.get_everything()
+        data: dict[str, Any] = {
+            collection: {
+                str(id): {
+                    field: value
+                    for field, value in model.items()
+                    if not is_reserved_field(field)
+                }
+                for id, model in models.items()
+            }
+            for collection, models in result.items()
+            if collection not in ["action_worker", "import_preview"]
+        }
+        data["_migration_index"] = get_backend_migration_index()
+        Checker(
+            data=data,
+            mode="all",
+        ).run_check()
+
     def test_clone_with_meeting_mediafile_hierarchy_and_los(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["mediafile_ids"] = [1, 2, 3]
@@ -1273,6 +1297,7 @@ class MeetingClone(BaseActionTestCase):
                     "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "meeting_mediafile/30",
+                    "closed": False,
                 },
                 "group/1": {
                     "meeting_mediafile_access_group_ids": [10, 20],
@@ -1363,6 +1388,11 @@ class MeetingClone(BaseActionTestCase):
                 "parent_id": 5,
             },
         )
+        try:
+            self.run_db_checker()
+        except CheckException as e:
+            for strng in ["mediafile/", "list_of_speakers/300", "list_of_speakers/301"]:
+                assert strng not in str(e)
 
     def test_clone_with_meeting_mediafile_hierarchy_and_projection(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
@@ -1430,6 +1460,7 @@ class MeetingClone(BaseActionTestCase):
                 "projection/300": {
                     "meeting_id": 1,
                     "content_object_id": "meeting_mediafile/30",
+                    "stable": False,
                 },
                 "group/1": {
                     "meeting_mediafile_access_group_ids": [10, 20],
@@ -1520,6 +1551,11 @@ class MeetingClone(BaseActionTestCase):
                 "parent_id": 5,
             },
         )
+        try:
+            self.run_db_checker()
+        except CheckException as e:
+            for strng in ["mediafile/", "projection/300", "projection/301"]:
+                assert strng not in str(e)
 
     def test_clone_with_meeting_mediafile_hierarchy_and_attachment(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
@@ -1595,6 +1631,9 @@ class MeetingClone(BaseActionTestCase):
                     "state_id": 1,
                     "title": "A motion",
                     "text": "A motion text",
+                    "sort_weight": 10000,
+                    "start_line_number": 1,
+                    "category_weight": 10000,
                 },
                 "list_of_speakers/3000": {
                     "meeting_id": 1,
@@ -1691,6 +1730,11 @@ class MeetingClone(BaseActionTestCase):
                 "parent_id": 5,
             },
         )
+        try:
+            self.run_db_checker()
+        except CheckException as e:
+            for strng in ["mediafile/", "motion/300", "motion/301"]:
+                assert strng not in str(e)
 
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
