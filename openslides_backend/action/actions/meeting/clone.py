@@ -419,6 +419,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             mediafiles_back_relations[str(new_mediafile_id)] = {
                 "id": new_mediafile_id,
                 "meeting_mediafile_ids": meeting_mediafile_ids,
+                "owner_id": mediafile["owner_id"],
             }
 
         return mediafiles_back_relations
