@@ -4,12 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingMediafileDelete(BaseActionTestCase):
     def test_delete(self) -> None:
         self.create_meeting()
+        self.create_mediafile(10, 1)
         self.set_models(
             {
-                "mediafile/10": {
-                    "title": "hOi",
-                    "owner_id": "meeting/1",
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 10,
@@ -24,6 +21,7 @@ class MeetingMediafileDelete(BaseActionTestCase):
 
     def test_delete_complex(self) -> None:
         self.create_meeting()
+        self.create_mediafile(10, 1)
         self.set_models(
             {
                 "meeting/1": {
@@ -35,17 +33,12 @@ class MeetingMediafileDelete(BaseActionTestCase):
                     "meeting_mediafile_access_group_ids": [2],
                     "meeting_mediafile_inherited_access_group_ids": [2],
                 },
-                "mediafile/10": {
-                    "title": "hOi",
-                    "owner_id": "meeting/1",
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 10,
                     "is_public": False,
                     "list_of_speakers_id": 3,
                     "attachment_ids": ["topic/5"],
-                    "used_as_logo_projector_main_in_meeting_id": 1,
                 },
                 "list_of_speakers/3": {
                     "meeting_id": 1,
@@ -60,7 +53,6 @@ class MeetingMediafileDelete(BaseActionTestCase):
                     "meeting_id": 1,
                     "sequential_number": 5,
                     "title": "pic me",
-                    "attachment_meeting_mediafile_ids": [2],
                 },
             }
         )

@@ -4,12 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingMediafileUpdate(BaseActionTestCase):
     def test_update(self) -> None:
         self.create_meeting()
+        self.create_mediafile(10, 1)
         self.set_models(
             {
-                "mediafile/10": {
-                    "title": "hOi",
-                    "owner_id": "meeting/1",
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 10,
