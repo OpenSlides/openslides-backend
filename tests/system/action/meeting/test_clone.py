@@ -1,6 +1,6 @@
 from time import time
 from typing import Any, cast
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from datastore.shared.util import is_reserved_field
 
@@ -1066,7 +1066,10 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(2, 4)
+        self.assertEqual(self.media.duplicate_mediafile.call_count, 2)
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=[call(1, 3), call(2, 4)], any_order=True
+        )
         self.assert_model_exists(
             "meeting_mediafile/21",
             {
@@ -1153,7 +1156,7 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(2, 4)
+        self.media.duplicate_mediafile.assert_called_once_with(2, 4)
         self.assert_model_exists(
             "meeting_mediafile/21",
             {
@@ -1207,6 +1210,20 @@ class MeetingClone(BaseActionTestCase):
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [22],
                 "parent_id": 3,
+            },
+        )
+        self.assert_model_exists(
+            "group/3",
+            {
+                "meeting_mediafile_access_group_ids": [21],
+                "meeting_mediafile_inherited_access_group_ids": [21, 22],
+            },
+        )
+        self.assert_model_exists(
+            "group/4",
+            {
+                "meeting_mediafile_access_group_ids": [21],
+                "meeting_mediafile_inherited_access_group_ids": [21, 22],
             },
         )
 
@@ -1312,7 +1329,7 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
         self.assert_model_exists(
             "meeting_mediafile/31",
             {
@@ -1386,6 +1403,28 @@ class MeetingClone(BaseActionTestCase):
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [33],
                 "parent_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "group/3",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "group/4",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "list_of_speakers/301",
+            {
+                "sequential_number": 1,
+                "meeting_id": 2,
+                "content_object_id": "meeting_mediafile/33",
             },
         )
         try:
@@ -1475,7 +1514,7 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
         self.assert_model_exists(
             "meeting_mediafile/31",
             {
@@ -1549,6 +1588,27 @@ class MeetingClone(BaseActionTestCase):
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [33],
                 "parent_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "group/3",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "group/4",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "projection/301",
+            {
+                "meeting_id": 2,
+                "content_object_id": "meeting_mediafile/33",
             },
         )
         try:
@@ -1654,7 +1714,7 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
         self.assert_model_exists(
             "meeting_mediafile/31",
             {
@@ -1729,6 +1789,23 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_mediafile_ids": [33],
                 "parent_id": 5,
             },
+        )
+        self.assert_model_exists(
+            "group/3",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "group/4",
+            {
+                "meeting_mediafile_access_group_ids": [31, 32],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+        )
+        self.assert_model_exists(
+            "motion/301", {"meeting_id": 2, "attachment_meeting_mediafile_ids": [33]}
         )
         try:
             self.run_db_checker()
