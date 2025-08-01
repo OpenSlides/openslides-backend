@@ -13,11 +13,11 @@ from ..actions.meeting_mediafile.create import MeetingMediafileCreate
 
 
 class ForwardMediafilesMixin(Action):
-    def perform_mediafiles_mapping_and_duplication(
+    def perform_mediafiles_duplication(
         self,
         fetched_data: dict[str, dict[int, dict[str, Any]]],
         meeting_mediafile_replace_map: dict[int, dict[int, int]] = {},
-        should_create_mm: bool = True,
+        should_create_meeting_mediafiles: bool = False,
     ) -> tuple[dict[int, dict[int, int]], dict[int, dict[int, int]]]:
         """
         Duplicates meeting_mediafiles to the meetings defined in target_meeting_ids.
@@ -39,7 +39,7 @@ class ForwardMediafilesMixin(Action):
             mediafile_new_mm_map_by_meeting,
             new_mm_instances_data,
             mm_id_target_meeting_ids_map,
-        ) = self.map_mediafiles_data(fetched_data)
+        ) = self.map_mediafiles_data(fetched_data, should_create_meeting_mediafiles)
         duplicate_mediafiles_data, mediafile_replace_map_by_meeting = (
             self._build_duplication_data_and_mediafile_replace_map(
                 mediafiles,
@@ -51,7 +51,7 @@ class ForwardMediafilesMixin(Action):
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, duplicate_mediafiles_data
             )
-        if new_mm_instances_data and should_create_mm:
+        if new_mm_instances_data:
             meeting_mediafile_replace_map = self._duplicate_meeting_mediafiles(
                 new_mm_instances_data,
                 mediafile_replace_map_by_meeting,
@@ -60,7 +60,9 @@ class ForwardMediafilesMixin(Action):
         return meeting_mediafile_replace_map, mediafile_replace_map_by_meeting
 
     def map_mediafiles_data(
-        self, fetched_data: dict[str, dict[int, dict[str, Any]]]
+        self,
+        fetched_data: dict[str, dict[int, dict[str, Any]]],
+        should_create_meeting_mediafiles: bool,
     ) -> tuple[
         dict[int, dict[str, Any]],
         dict[int, dict[int, dict[str, Any]]],
@@ -93,8 +95,9 @@ class ForwardMediafilesMixin(Action):
                 mediafile_new_mm_map_by_meeting[meeting_id][
                     mm_instance["mediafile_id"]
                 ] = mm_instance
-                new_mm_instances_data.append(mm_instance)
                 mm_id_target_meeting_ids_map[mm_id].add(meeting_id)
+                if should_create_meeting_mediafiles:
+                    new_mm_instances_data.append(mm_instance)
 
         return (
             mediafiles,

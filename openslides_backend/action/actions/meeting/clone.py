@@ -242,18 +242,15 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         self.create_replace_map(meeting_json)
         meeting_id = self.replace_map["meeting"][meeting["id"]]
 
-        _, mediafile_replace_map_by_meeting = (
-            self.perform_mediafiles_mapping_and_duplication(
-                {
-                    "mediafile": {
-                        int(id_): data for id_, data in origin_mediafiles.items()
-                    },
-                    "meeting_mediafile": self._update_meeting_mediafiles(
-                        origin_meeting_mediafiles, meeting["id"]
-                    ),
+        _, mediafile_replace_map_by_meeting = self.perform_mediafiles_duplication(
+            {
+                "mediafile": {
+                    int(id_): data for id_, data in origin_mediafiles.items()
                 },
-                should_create_mm=False,
-            )
+                "meeting_mediafile": self._update_meeting_mediafiles(
+                    origin_meeting_mediafiles, meeting["id"]
+                ),
+            }
         )
         self.replace_map.update(
             {

@@ -631,7 +631,10 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection in ["user", "gender", "mediafile"]:
+                elif collection in ["user", "gender"] or (
+                    collection == "mediafile"
+                    and getattr(self, "action_name", None) == "clone"
+                ):
                     list_fields: ListFields = {"add": {}, "remove": {}}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
