@@ -10,17 +10,8 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {"meeting_mediafile_ids": [7, 8]},
-            "mediafile/7": {
-                "owner_id": "meeting/1",
-                "is_directory": True,
-                "meeting_mediafile_ids": [7],
-            },
-            "mediafile/8": {
-                "owner_id": "meeting/1",
-                "is_directory": True,
-                "meeting_mediafile_ids": [8],
-            },
+            "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
+            "mediafile/8": {"owner_id": "meeting/1", "is_directory": True},
             "meeting_mediafile/7": {
                 "mediafile_id": 7,
                 "is_public": True,
@@ -62,7 +53,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/2230": {
                     "meeting_id": 222,
-                    "is_public": False,
+                    "is_public": True,
                     "mediafile_id": 10,
                 },
             }
@@ -263,12 +254,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_explicitly_published_file_error(self) -> None:
         self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True
-                }
-            }
+            {"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID, "is_directory": True}}
         )
         self.create_mediafile(2, is_directory=True)
         response = self.request(
@@ -296,12 +282,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_to_explicitly_published_directory(self) -> None:
         self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "is_directory": True
-                }
-            }
+            {"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID, "is_directory": True}}
         )
         self.create_mediafile(2, is_directory=True)
         response = self.request(
@@ -320,7 +301,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {
                 "group/3": {
                     "meeting_mediafile_access_group_ids": [1],
-                    "meeting_mediafile_inherited_access_group_ids": [1]
+                    "meeting_mediafile_inherited_access_group_ids": [1],
                 },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,

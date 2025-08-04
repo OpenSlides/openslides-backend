@@ -10,15 +10,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting()
         self.orga_permission_test_models: dict[str, dict[str, Any]] = {
-            "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
             "mediafile/111": {
                 "title": "title_srtgb123",
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
         }
         self.test_models: dict[str, dict[str, Any]] = {
-            "group/7": {"name": "group_1", "meeting_id": 1},
-            "group/8": {"name": "group_2", "meeting_id": 1},
             "mediafile/110": {
                 "title": "title_srtgb199",
                 "child_ids": [111],
@@ -43,7 +40,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         }
         self.published_update_data: dict[str, dict[str, Any]] = {
-            "group/7": {
+            "group/1": {
                 "meeting_mediafile_access_group_ids": [1113],
                 "meeting_mediafile_inherited_access_group_ids": [1113],
             },
@@ -89,7 +86,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "group/7",
+            "group/1",
             {
                 "meeting_mediafile_access_group_ids": None,
                 "meeting_mediafile_inherited_access_group_ids": None,
@@ -113,7 +110,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "group/7",
+            "group/1",
             {
                 "meeting_mediafile_access_group_ids": [1113],
                 "meeting_mediafile_inherited_access_group_ids": [1113],
@@ -162,7 +159,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "group/7",
+            "group/1",
             {
                 "meeting_mediafile_access_group_ids": None,
                 "meeting_mediafile_inherited_access_group_ids": None,
@@ -224,10 +221,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_publish_meeting_mediafile(self) -> None:
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_id": 1,
-                },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "owner_id": "meeting/1",

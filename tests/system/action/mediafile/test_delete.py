@@ -15,7 +15,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             "meeting_mediafile/222": {
                 "mediafile_id": 222,
                 "is_public": True,
-                "meeting_id": 1
+                "meeting_id": 1,
             },
         }
 
@@ -157,7 +157,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                 "meeting_mediafile/2222": {
                     "is_public": True,
                     "meeting_id": 111,
-                    "mediafile_id": 222
+                    "mediafile_id": 222,
                 },
                 "projection/1": {
                     "content_object_id": "meeting_mediafile/2222",

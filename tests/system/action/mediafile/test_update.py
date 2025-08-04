@@ -11,7 +11,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
             "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
             "meeting_mediafile/1111": {
                 "mediafile_id": 111,
@@ -20,9 +19,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         }
         self.orga_permission_test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {"admin_group_id": 8},
-            "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
-            "group/8": {"name": "group_2", "meeting_id": 1},
             "mediafile/111": {
                 "title": "title_srtgb123",
                 "owner_id": ONE_ORGANIZATION_FQID,
@@ -33,7 +29,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(111, 1)
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
                     "is_public": True,
@@ -46,7 +41,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
                 "meeting_id": 1,
             },
         )
@@ -56,8 +51,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111",
             {
                 "meeting_id": 1,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
                 "is_public": False,
             },
         )
@@ -67,11 +62,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(111, 1, parent_id=110)
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
+                "group/3": {
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
@@ -80,7 +73,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -90,7 +83,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "id": 110,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
                 "meeting_id": 1,
             },
         )
@@ -98,7 +91,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("mediafile/111", {"title": "file_111"})
         self.assert_model_exists(
             "meeting_mediafile/1111",
-            {"meeting_id": 1, "inherited_access_group_ids": [7], "is_public": False},
+            {"meeting_id": 1, "inherited_access_group_ids": [3], "is_public": False},
         )
 
     def test_update_parent(self) -> None:
@@ -106,7 +99,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(111, 1, parent_id=110)
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
                     "is_public": True,
@@ -124,7 +116,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
                 "meeting_id": 1,
             },
         )
@@ -134,8 +126,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111",
             {
                 "meeting_id": 1,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
                 "is_public": False,
             },
         )
@@ -145,12 +137,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(111, 1, parent_id=110)
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
-                "group/8": {
-                    "name": "group_sdfafd",
+                "group/2": {
                     "meeting_mediafile_access_group_ids": [1110],
                     "meeting_mediafile_inherited_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
@@ -159,7 +148,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -170,7 +159,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 200)
@@ -179,7 +168,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111",
             {
                 "meeting_id": 1,
-                "access_group_ids": [7],
+                "access_group_ids": [3],
                 "inherited_access_group_ids": None,
                 "is_public": False,
             },
@@ -230,13 +219,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "group/3": {
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
-                "group/4": {
-                    "name": "group_sdfafd",
+                "group/1": {
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
@@ -245,7 +231,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -264,7 +250,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1111",
             {
                 "access_group_ids": None,
-                "inherited_access_group_ids": [3, 4],
+                "inherited_access_group_ids": [1, 3],
                 "is_public": False,
             },
         )
@@ -274,8 +260,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(111, 1, parent_id=110)
         self.set_models(
             {
-                "group/3": {"name": "group_LxAHErRs", "meeting_id": 1},
-                "group/6": {"name": "group_sdfafd", "meeting_id": 1},
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
                     "meeting_id": 1,
@@ -293,7 +277,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [3, 6],
+                "access_group_ids": [3, 1],
                 "meeting_id": 1,
             },
         )
@@ -301,8 +285,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_mediafile/1111",
             {
-                "access_group_ids": [3, 6],
-                "inherited_access_group_ids": [3, 6],
+                "access_group_ids": [1, 3],
+                "inherited_access_group_ids": [1, 3],
                 "is_public": False,
             },
         )
@@ -313,16 +297,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "group/1": {
-                    "name": "group_LxAHErRs",
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "group/2": {
-                    "name": "group_sdfafd",
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
@@ -331,7 +311,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -361,16 +341,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "group/1": {
-                    "name": "group_LxAHErRs",
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "group/2": {
-                    "name": "group_sdfafd",
                     "meeting_mediafile_inherited_access_group_ids": [1110],
                     "meeting_mediafile_access_group_ids": [1110],
-                    "meeting_id": 1,
                 },
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
@@ -379,7 +355,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -415,7 +391,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -454,11 +430,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(112, 1, parent_id=111)
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_mediafile_access_group_ids": [1112],
-                    "meeting_id": 1,
-                },
+                "group/3": {"meeting_mediafile_access_group_ids": [1112]},
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
                     "is_public": True,
@@ -466,12 +438,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -482,23 +454,23 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_mediafile/1111",
             {
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
                 "is_public": False,
             },
         )
         self.assert_model_exists(
             "meeting_mediafile/1112",
             {
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
                 "is_public": False,
             },
         )
@@ -510,7 +482,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(113, 1, parent_id=111)
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "meeting_id": 1},
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
                     "meeting_id": 1,
@@ -539,12 +510,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 110,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "group/7",
+            "group/3",
             {
                 "meeting_mediafile_access_group_ids": [1110],
                 "meeting_mediafile_inherited_access_group_ids": [
@@ -559,8 +530,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "meeting_mediafile/1110",
             {
                 "is_public": False,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
             },
         )
         mediafiles_to_check = (
@@ -574,7 +545,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 {
                     "is_public": False,
                     "access_group_ids": None,
-                    "inherited_access_group_ids": [7],
+                    "inherited_access_group_ids": [3],
                 },
             )
 
@@ -585,11 +556,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(113, 1, parent_id=112)
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_mediafile_access_group_ids": [1112, 1113],
-                    "meeting_id": 1,
-                },
+                "group/3": {"meeting_mediafile_access_group_ids": [1112, 1113]},
                 "meeting_mediafile/1110": {
                     "mediafile_id": 110,
                     "is_public": True,
@@ -597,17 +564,17 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
                 "meeting_mediafile/1112": {
                     "mediafile_id": 112,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
                 "meeting_mediafile/1113": {
                     "mediafile_id": 113,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
@@ -618,7 +585,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 200)
@@ -632,8 +599,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 mediafile,
                 {
                     "is_public": False,
-                    "access_group_ids": [7],
-                    "inherited_access_group_ids": [7],
+                    "access_group_ids": [3],
+                    "inherited_access_group_ids": [3],
                 },
             )
 
@@ -686,7 +653,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "mediafile.update", {"id": 111, "meeting_id": 1, "access_group_ids": [7]}
+            "mediafile.update", {"id": 111, "meeting_id": 1, "access_group_ids": [3]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -694,8 +661,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 111,
                 "meeting_id": 1,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [3],
+                "inherited_access_group_ids": [3],
             },
         )
 
@@ -707,7 +674,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(112, is_directory=True, parent_id=111)
         self.create_mediafile(113, parent_id=112)
         response = self.request(
-            "mediafile.update", {"id": 112, "meeting_id": 1, "access_group_ids": [7, 8]}
+            "mediafile.update", {"id": 112, "meeting_id": 1, "access_group_ids": [2, 3]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -715,8 +682,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 112,
                 "meeting_id": 1,
-                "access_group_ids": [7, 8],
-                "inherited_access_group_ids": [8],
+                "access_group_ids": [2, 3],
+                "inherited_access_group_ids": [2],
             },
         )
         self.assert_model_not_exists("meeting_mediafile/2")
@@ -729,19 +696,19 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(112, parent_id=111)
         self.set_models(
             {
-                "group/8": {
+                "group/2": {
                     "meeting_mediafile_access_group_ids": [1111],
                     "meeting_mediafile_inherited_access_group_ids": [1111],
                 },
                 "meeting_mediafile/1111": {
                     "mediafile_id": 111,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
         )
         response = self.request(
-            "mediafile.update", {"id": 112, "meeting_id": 1, "access_group_ids": [7, 8]}
+            "mediafile.update", {"id": 112, "meeting_id": 1, "access_group_ids": [2, 3]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -749,8 +716,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 112,
                 "meeting_id": 1,
-                "access_group_ids": [7, 8],
-                "inherited_access_group_ids": [8],
+                "access_group_ids": [2, 3],
+                "inherited_access_group_ids": [2],
             },
         )
 
@@ -764,20 +731,20 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(114, parent_id=113)
         self.set_models(
             {
-                "group/7": {"meeting_mediafile_access_group_ids": [1]},
-                "group/8": {
+                "group/3": {"meeting_mediafile_access_group_ids": [1]},
+                "group/2": {
                     "meeting_mediafile_access_group_ids": [1],
                     "meeting_mediafile_inherited_access_group_ids": [1],
                 },
                 "meeting_mediafile/1": {
                     "mediafile_id": 112,
                     "meeting_id": 1,
-                    "is_public": True,
+                    "is_public": False,
                 },
             }
         )
         response = self.request(
-            "mediafile.update", {"id": 114, "meeting_id": 1, "access_group_ids": [7, 8]}
+            "mediafile.update", {"id": 114, "meeting_id": 1, "access_group_ids": [2, 3]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -785,8 +752,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 114,
                 "meeting_id": 1,
-                "access_group_ids": [7, 8],
-                "inherited_access_group_ids": [8],
+                "access_group_ids": [2, 3],
+                "inherited_access_group_ids": [2],
             },
         )
         self.assert_model_not_exists("meeting_mediafile/3")
@@ -799,21 +766,20 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_mediafile(114, parent_id=113)
         self.set_models(
             {
-                "group/7": {"meeting_mediafile_access_group_ids": [1]},
-                "group/8": {
+                "group/3": {"meeting_mediafile_access_group_ids": [1]},
+                "group/2": {
                     "meeting_mediafile_access_group_ids": [1],
                     "meeting_mediafile_inherited_access_group_ids": [1],
                 },
-                "group/9": {"name": "group_3", "meeting_id": 1},
                 "meeting_mediafile/1": {
                     "mediafile_id": 113,
-                    "is_public": True,
+                    "is_public": False,
                     "meeting_id": 1,
                 },
             }
         )
         response = self.request(
-            "mediafile.update", {"id": 111, "meeting_id": 1, "access_group_ids": [7, 9]}
+            "mediafile.update", {"id": 111, "meeting_id": 1, "access_group_ids": [1, 3]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -821,8 +787,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 113,
                 "meeting_id": 1,
-                "access_group_ids": [7, 8],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [2, 3],
+                "inherited_access_group_ids": [3],
             },
         )
         self.assert_model_exists(
@@ -830,8 +796,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "mediafile_id": 111,
                 "meeting_id": 1,
-                "access_group_ids": [7, 9],
-                "inherited_access_group_ids": [7, 9],
+                "access_group_ids": [1, 3],
+                "inherited_access_group_ids": [1, 3],
             },
         )
         self.assert_model_exists(
@@ -840,7 +806,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile_id": 112,
                 "meeting_id": 1,
                 "access_group_ids": None,
-                "inherited_access_group_ids": [7, 9],
+                "inherited_access_group_ids": [1, 3],
             },
         )
         self.assert_model_exists(
@@ -849,17 +815,17 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile_id": 114,
                 "meeting_id": 1,
                 "access_group_ids": None,
-                "inherited_access_group_ids": [7],
+                "inherited_access_group_ids": [3],
             },
         )
 
     def test_update_access_group_different_owner(self) -> None:
         self.create_meeting(4)
-        self.permission_test_models["group/7"]["meeting_id"] = 4
+        self.permission_test_models["group/3"] = {"meeting_id": 4}
         self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update",
-            {"id": 111, "meeting_id": 1, "access_group_ids": [7]},
+            {"id": 111, "meeting_id": 1, "access_group_ids": [3]},
         )
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]
@@ -919,7 +885,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
 
@@ -931,7 +897,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
             Permissions.Mediafile.CAN_MANAGE,
         )
@@ -944,7 +910,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
 
@@ -986,6 +952,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.orga_permission_test_models,
             "mediafile.update",
-            {"id": 111, "meeting_id": 1, "access_group_ids": [7]},
+            {"id": 111, "meeting_id": 1, "access_group_ids": [3]},
             Permissions.Mediafile.CAN_MANAGE,
         )
