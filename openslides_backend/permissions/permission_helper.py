@@ -199,7 +199,13 @@ def get_shared_committee_management_levels(
         ):
             return committee_ids
         return list(
-            set(committee_ids).intersection(user.get("committee_management_ids", []))
+            {
+                id_
+                for committee_id, committee in datastore.get_many(
+                    [GetManyRequest("committee", committee_ids, ["all_parent_ids"])]
+                )["committee"].items()
+                for id_ in [committee_id, *committee.get("all_parent_ids", [])]
+            }.intersection(user.get("committee_management_ids", []))
         )
     return []
 
