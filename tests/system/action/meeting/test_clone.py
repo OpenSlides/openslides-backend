@@ -1329,24 +1329,16 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 4)
         self.assert_model_exists(
-            "meeting_mediafile/31",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 4,
-            },
+            "meeting_mediafile/31", {"meeting_id": 2, "mediafile_id": 5}
         )
         self.assert_model_exists(
-            "meeting_mediafile/32",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 5,
-            },
+            "meeting_mediafile/32", {"meeting_id": 2, "mediafile_id": 6}
         )
         self.assert_model_exists(
             "meeting_mediafile/33",
-            {"meeting_id": 2, "mediafile_id": 6, "list_of_speakers_id": 301},
+            {"meeting_id": 2, "mediafile_id": 4, "list_of_speakers_id": 301},
         )
         self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
         self.assert_model_exists(
@@ -1378,21 +1370,11 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/4",
-            {
-                "owner_id": "meeting/2",
-                "is_directory": True,
-                "meeting_mediafile_ids": [31],
-                "child_ids": [5],
-            },
-        )
-        self.assert_model_exists(
             "mediafile/5",
             {
                 "owner_id": "meeting/2",
                 "is_directory": True,
-                "meeting_mediafile_ids": [32],
-                "parent_id": 4,
+                "meeting_mediafile_ids": [31],
                 "child_ids": [6],
             },
         )
@@ -1400,9 +1382,19 @@ class MeetingClone(BaseActionTestCase):
             "mediafile/6",
             {
                 "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 5,
+                "child_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [33],
-                "parent_id": 5,
+                "parent_id": 6,
             },
         )
         self.assert_model_exists(
@@ -1514,24 +1506,16 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 4)
         self.assert_model_exists(
-            "meeting_mediafile/31",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 4,
-            },
+            "meeting_mediafile/31", {"meeting_id": 2, "mediafile_id": 5}
         )
         self.assert_model_exists(
-            "meeting_mediafile/32",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 5,
-            },
+            "meeting_mediafile/32", {"meeting_id": 2, "mediafile_id": 6}
         )
         self.assert_model_exists(
             "meeting_mediafile/33",
-            {"meeting_id": 2, "mediafile_id": 6, "projection_ids": [301]},
+            {"meeting_id": 2, "mediafile_id": 4, "projection_ids": [301]},
         )
         self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
         self.assert_model_exists(
@@ -1563,21 +1547,11 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/4",
-            {
-                "owner_id": "meeting/2",
-                "is_directory": True,
-                "meeting_mediafile_ids": [31],
-                "child_ids": [5],
-            },
-        )
-        self.assert_model_exists(
             "mediafile/5",
             {
                 "owner_id": "meeting/2",
                 "is_directory": True,
-                "meeting_mediafile_ids": [32],
-                "parent_id": 4,
+                "meeting_mediafile_ids": [31],
                 "child_ids": [6],
             },
         )
@@ -1585,9 +1559,19 @@ class MeetingClone(BaseActionTestCase):
             "mediafile/6",
             {
                 "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 5,
+                "child_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [33],
-                "parent_id": 5,
+                "parent_id": 6,
             },
         )
         self.assert_model_exists(
@@ -1714,24 +1698,16 @@ class MeetingClone(BaseActionTestCase):
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_once_with(1, 6)
+        self.media.duplicate_mediafile.assert_called_once_with(1, 4)
         self.assert_model_exists(
-            "meeting_mediafile/31",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 4,
-            },
+            "meeting_mediafile/31", {"meeting_id": 2, "mediafile_id": 5}
         )
         self.assert_model_exists(
-            "meeting_mediafile/32",
-            {
-                "meeting_id": 2,
-                "mediafile_id": 5,
-            },
+            "meeting_mediafile/32", {"meeting_id": 2, "mediafile_id": 6}
         )
         self.assert_model_exists(
             "meeting_mediafile/33",
-            {"meeting_id": 2, "mediafile_id": 6, "attachment_ids": ["motion/301"]},
+            {"meeting_id": 2, "mediafile_id": 4, "attachment_ids": ["motion/301"]},
         )
         self.assert_model_exists("meeting/2", {"meeting_mediafile_ids": [31, 32, 33]})
         self.assert_model_exists(
@@ -1763,21 +1739,11 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/4",
-            {
-                "owner_id": "meeting/2",
-                "is_directory": True,
-                "meeting_mediafile_ids": [31],
-                "child_ids": [5],
-            },
-        )
-        self.assert_model_exists(
             "mediafile/5",
             {
                 "owner_id": "meeting/2",
                 "is_directory": True,
-                "meeting_mediafile_ids": [32],
-                "parent_id": 4,
+                "meeting_mediafile_ids": [31],
                 "child_ids": [6],
             },
         )
@@ -1785,9 +1751,19 @@ class MeetingClone(BaseActionTestCase):
             "mediafile/6",
             {
                 "owner_id": "meeting/2",
+                "is_directory": True,
+                "meeting_mediafile_ids": [32],
+                "parent_id": 5,
+                "child_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "owner_id": "meeting/2",
                 "mimetype": "text/plain",
                 "meeting_mediafile_ids": [33],
-                "parent_id": 5,
+                "parent_id": 6,
             },
         )
         self.assert_model_exists(

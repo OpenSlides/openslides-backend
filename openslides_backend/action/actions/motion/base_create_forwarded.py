@@ -422,7 +422,7 @@ class BaseMotionCreateForwarded(
 
         # Calculate new ids and execute dublication actions
         meeting_mediafile_replace_map, _ = self.perform_mediafiles_duplication(
-            fetched_data, meeting_mediafile_replace_map, True
+            fetched_data, meeting_mediafile_replace_map
         )
         return forwarded_attachments, meeting_mediafile_replace_map
 

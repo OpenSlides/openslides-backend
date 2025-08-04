@@ -14,11 +14,9 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
-from openslides_backend.shared.util import ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
-from ....shared.patterns import collection_from_fqid
-from ...mixins.forward_mediafiles_mixin import ForwardMediafilesMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -38,7 +36,7 @@ updatable_fields = [
 
 
 @register_action("meeting.clone")
-class MeetingClone(ForwardMediafilesMixin, MeetingImport):
+class MeetingClone(MeetingImport):
     """
     Action to clone a meeting.
     """
@@ -156,6 +154,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                     user["default_vote_weight"] = "0.000001"
 
         # Necessary for orga-wide mediafiles
+        origin_mediafiles = meeting_json.get("mediafile", {})
         mediafiles = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -235,35 +234,37 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         # set imported_at
         meeting["imported_at"] = round(time.time())
 
-        # Perform mediafiles and meeting_mediafiles forwarding
-        origin_mediafiles = meeting_json.pop("mediafile", {})
-        origin_meeting_mediafiles = meeting_json.get("meeting_mediafile", {})
-
+        # replace ids in the meeting_json
+        # Handle replacements for orga-wide mediafiles manually
+        meeting_json["mediafile"] = origin_mediafiles
         self.create_replace_map(meeting_json)
-        meeting_id = self.replace_map["meeting"][meeting["id"]]
-
-        _, mediafile_replace_map_by_meeting = self.perform_mediafiles_duplication(
+        self.replace_map["mediafile"].update(
             {
-                "mediafile": {
-                    int(id_): data for id_, data in origin_mediafiles.items()
-                },
-                "meeting_mediafile": self._update_meeting_mediafiles(
-                    origin_meeting_mediafiles, meeting["id"]
-                ),
+                old_id: old_id
+                for old_id in mediafiles
+                if not str(old_id) in origin_mediafiles
             }
         )
-        self.replace_map.update(
-            {
-                "mediafile": mediafile_replace_map_by_meeting.get(meeting_id, {}),
-            }
-        )
-        # TODO: remove mediafiles_back_relations after switching to rel-DB
-        mediafiles_back_relations = self.generate_mediafiles_back_relations(
-            origin_meeting_mediafiles, origin_mediafiles
-        )
+        self.duplicate_mediafiles(meeting_json)
 
+        orga_wide_mediafiles = {
+            str(mediafile_id): {
+                "id": mediafile_id,
+                "meeting_mediafile_ids": mediafiles[mediafile_id][
+                    "meeting_mediafile_ids"
+                ]
+                + [self.replace_map["meeting_mediafile"][mm_data["id"]]],
+            }
+            for mm_data in meeting_json["meeting_mediafile"].values()
+            if (
+                (mediafile := mediafiles.get(mediafile_id := mm_data["mediafile_id"]))
+                and mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+            )
+        }
         self.replace_fields(instance)
-        instance["meeting"]["mediafile"] = mediafiles_back_relations
+        instance["meeting"]["mediafile"].update(orga_wide_mediafiles)
+
+        meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
         if additional_user_ids:
             default_group_id = meeting.get("default_group_id")
@@ -332,6 +333,14 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
+    def duplicate_mediafiles(self, json_data: dict[str, Any]) -> None:
+        for mediafile_id in json_data["mediafile"]:
+            mediafile = json_data["mediafile"][mediafile_id]
+            if not mediafile.get("is_directory"):
+                self.media.duplicate_mediafile(
+                    mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
+                )
+
     def append_extra_events(
         self, events: list[Event], json_data: dict[str, Any]
     ) -> None:
@@ -367,59 +376,3 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                 use_changed_models=False,
             )
             return meeting["committee_id"]
-
-    def _update_meeting_mediafiles(
-        self, origin_meeting_mediafiles: dict[str, dict[str, Any]], meeting_id: int
-    ) -> dict[int, dict[str, Any]]:
-        return {
-            int(id_): {
-                **data,
-                "target_meeting_ids": [
-                    self.replace_map.get("meeting", {}).get(meeting_id)
-                ],
-                **{
-                    field: [
-                        self.replace_map.get("group", {}).get(group_id)
-                        for group_id in data.get(field, [])
-                    ]
-                    for field in ["access_group_ids", "inherited_access_group_ids"]
-                    if field in data
-                },
-            }
-            for id_, data in origin_meeting_mediafiles.items()
-        }
-
-    def generate_mediafiles_back_relations(
-        self,
-        origin_meeting_mediafiles: dict[str, dict[str, Any]],
-        origin_mediafiles: dict[str, dict[str, Any]],
-    ) -> dict[str, dict[str, Any]]:
-        """
-        Generates the back-relations from mediafiles to meeting_mediafiles.
-        Relations should be generated manually to avoid replacing original
-        meeting_mediafile ids for orga-wide mediafiles.
-        """
-        mediafiles_back_relations = {}
-
-        for mm in origin_meeting_mediafiles.values():
-            old_mediafile_id = mm["mediafile_id"]
-            old_mm_id = mm["id"]
-
-            new_mediafile_id = self.replace_map["mediafile"][old_mediafile_id]
-            new_mm_id = self.replace_map["meeting_mediafile"][old_mm_id]
-
-            mediafile = origin_mediafiles[str(old_mediafile_id)]
-            owner_collection = collection_from_fqid(mediafile["owner_id"])
-
-            if owner_collection == "meeting":
-                meeting_mediafile_ids = [new_mm_id]
-            else:
-                meeting_mediafile_ids = mediafile["meeting_mediafile_ids"] + [new_mm_id]
-
-            mediafiles_back_relations[str(new_mediafile_id)] = {
-                "id": new_mediafile_id,
-                "meeting_mediafile_ids": meeting_mediafile_ids,
-                "owner_id": mediafile["owner_id"],
-            }
-
-        return mediafiles_back_relations
