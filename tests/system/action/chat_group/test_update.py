@@ -8,19 +8,15 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"enable_chat": True},
-            "committee/2": {"meeting_ids": [1]},
-            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 2},
             "chat_group/1": {
                 "meeting_id": 1,
                 "name": "redekreis1",
                 "read_group_ids": [1],
                 "write_group_ids": [2],
             },
-            "group/1": {"meeting_id": 1, "read_chat_group_ids": [1]},
-            "group/2": {"meeting_id": 1, "write_chat_group_ids": [1]},
-            "group/3": {"meeting_id": 1},
         }
 
     def test_update(self) -> None:
@@ -34,7 +30,7 @@ class ChatGroupUpdate(BaseActionTestCase):
             "chat_group/1",
             {"name": "test", "read_group_ids": [2], "write_group_ids": [2, 3]},
         )
-        self.assert_model_exists("group/1", {"read_chat_group_ids": []})
+        self.assert_model_exists("group/1", {"read_chat_group_ids": None})
         self.assert_model_exists(
             "group/2", {"read_chat_group_ids": [1], "write_chat_group_ids": [1]}
         )

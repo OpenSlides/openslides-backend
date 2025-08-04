@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import datetime
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,8 +8,8 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupClear(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        created = datetime.now()
         self.test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/11": {
                 "meeting_id": 1,
                 "name": "redekreis1",
@@ -16,16 +17,19 @@ class ChatGroupClear(BaseActionTestCase):
             },
             "chat_message/111": {
                 "content": "test111",
+                "created": created,
                 "chat_group_id": 11,
                 "meeting_id": 1,
             },
             "chat_message/112": {
                 "content": "test222",
+                "created": created,
                 "chat_group_id": 11,
                 "meeting_id": 1,
             },
             "chat_message/113": {
                 "content": "test333",
+                "created": created,
                 "chat_group_id": 11,
                 "meeting_id": 1,
             },
@@ -41,7 +45,7 @@ class ChatGroupClear(BaseActionTestCase):
         self.assert_model_not_exists("chat_message/111")
         self.assert_model_not_exists("chat_message/112")
         self.assert_model_not_exists("chat_message/113")
-        self.assert_model_exists("chat_group/11", {"chat_message_ids": []})
+        self.assert_model_exists("chat_group/11", {"chat_message_ids": None})
 
     def test_clear_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(

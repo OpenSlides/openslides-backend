@@ -8,7 +8,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"enable_chat": True},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True}
             }
         )
         response = self.request(
@@ -61,16 +61,12 @@ class ChatGroupCreate(BaseActionTestCase):
 
     def test_create_weight(self) -> None:
         self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/1": {
-                    "chat_group_ids": [1],
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {"chat_group_ids": [2], "is_active_in_organization_id": 1},
-                "chat_group/1": {"meeting_id": 1, "weight": 10},
-                "chat_group/2": {"meeting_id": 2, "weight": 100},
+                "chat_group/1": {"name": "family dinner", "meeting_id": 1, "weight": 10},
+                "chat_group/2": {"name": "working lunch", "meeting_id": 4, "weight": 100},
             }
         )
         response = self.request(
@@ -83,7 +79,7 @@ class ChatGroupCreate(BaseActionTestCase):
 
     def test_create_group_from_different_meeting(self) -> None:
         self.create_meeting()
-        self.create_meeting(2)
+        self.create_meeting(4)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
@@ -107,8 +103,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/1": {"name": "test1"},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True}
             },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
@@ -117,8 +112,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_permissions(self) -> None:
         self.base_permission_test(
             {
-                ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/1": {"name": "test"},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True}
             },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
@@ -128,8 +122,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
             {
-                ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/1": {"name": "test"},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True}
             },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
@@ -155,13 +148,13 @@ class ChatGroupCreate(BaseActionTestCase):
 
     def test_create_same_name_in_two_meetings(self) -> None:
         self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
-                    "enable_chat": True,
-                    "active_meeting_ids": [1, 2],
+                    "enable_chat": True
                 },
-                "meeting/2": {"is_active_in_organization_id": 1, "committee_id": 60},
+                "meeting/4": {"committee_id": 60},
                 "chat_group/21": {"meeting_id": 1, "name": "test"},
             }
         )
@@ -169,11 +162,11 @@ class ChatGroupCreate(BaseActionTestCase):
             "chat_group.create",
             {
                 "name": "test",
-                "meeting_id": 2,
+                "meeting_id": 4,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("chat_group/22", {"name": "test", "meeting_id": 2})
+        self.assert_model_exists("chat_group/22", {"name": "test", "meeting_id": 4})
 
     def test_create_anonymous_may_read(self) -> None:
         self.create_meeting()
