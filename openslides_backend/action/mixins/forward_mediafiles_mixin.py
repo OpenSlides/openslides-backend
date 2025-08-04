@@ -56,7 +56,7 @@ class ForwardMediafilesMixin(Action):
                 mediafile_replace_map_by_meeting,
                 meeting_mediafile_replace_map,
             )
-        return meeting_mediafile_replace_map, mediafile_replace_map_by_meeting
+        return meeting_mediafile_replace_map
 
     def map_mediafiles_data(
         self,
