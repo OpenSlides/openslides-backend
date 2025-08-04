@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -6,11 +7,7 @@ class ChatMessageUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.set_models(
-            {
-                "chat_group/1": {"name": "redekreis1", "meeting_id": 1}
-            }
-        )
+        self.set_models({"chat_group/1": {"name": "redekreis1", "meeting_id": 1}})
 
     def test_update_correct(self) -> None:
         self.set_models(
@@ -22,10 +19,7 @@ class ChatMessageUpdate(BaseActionTestCase):
                     "content": "blablabla",
                     "meeting_id": 1,
                 },
-                "meeting_user/7": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                },
+                "meeting_user/7": {"meeting_id": 1, "user_id": 1},
             }
         )
         response = self.request("chat_message.update", {"id": 2, "content": "test"})
@@ -43,10 +37,7 @@ class ChatMessageUpdate(BaseActionTestCase):
                     "content": "blablabla",
                     "meeting_id": 1,
                 },
-                "meeting_user/8": {
-                    "meeting_id": 1,
-                    "user_id": 2,
-                },
+                "meeting_user/8": {"meeting_id": 1, "user_id": 2},
             }
         )
         response = self.request("chat_message.update", {"id": 2, "content": "test"})

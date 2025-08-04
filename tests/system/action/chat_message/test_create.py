@@ -11,16 +11,16 @@ class ChatMessageCreate(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "chat_group/2": {"meeting_id": 1, "write_group_ids": [3], "name": "UNIX thrash talk"},
+                "chat_group/2": {
+                    "meeting_id": 1,
+                    "write_group_ids": [3],
+                    "name": "UNIX thrash talk",
+                },
             }
         )
 
     def test_no_permission(self) -> None:
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": None},
-            }
-        )
+        self.set_models({"user/1": {"organization_management_level": None}})
         response = self.request(
             "chat_message.create", {"chat_group_id": 2, "content": "<b>test</b>"}
         )
@@ -35,10 +35,7 @@ class ChatMessageCreate(BaseActionTestCase):
         self.set_models(
             {
                 "group/3": {"meeting_user_ids": [1]},
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1
-                },
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
         response = self.request(
@@ -61,9 +58,7 @@ class ChatMessageCreate(BaseActionTestCase):
                     "meeting_user_ids": [1],
                     "permissions": [Permissions.Chat.CAN_MANAGE],
                 },
-                "user/1": {
-                    "organization_management_level": None
-                },
+                "user/1": {"organization_management_level": None},
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
@@ -81,16 +76,9 @@ class ChatMessageCreate(BaseActionTestCase):
     def test_create_correct_with_user_in_write_group_of_chat_group(self) -> None:
         self.set_models(
             {
-                "group/3": {
-                    "meeting_user_ids": [1]
-                },
-                "user/1": {
-                    "organization_management_level": None
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1
-                },
+                "group/3": {"meeting_user_ids": [1]},
+                "user/1": {"organization_management_level": None},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
         response = self.request(
