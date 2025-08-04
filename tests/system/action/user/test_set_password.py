@@ -287,7 +287,6 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.set_committee_management_level([59], alice_id)
         self.set_user_groups(bob_id, [3])
 
-        self.create_committee(61)
         self.create_meeting(4)
         self.set_user_groups(bob_id, [6])
 
