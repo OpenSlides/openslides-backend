@@ -17,6 +17,7 @@ from ..models.models import Meeting
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
