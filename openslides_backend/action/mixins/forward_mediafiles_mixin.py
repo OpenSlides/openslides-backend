@@ -17,7 +17,7 @@ class ForwardMediafilesMixin(Action):
         self,
         fetched_data: dict[str, dict[int, dict[str, Any]]],
         meeting_mediafile_replace_map: dict[int, dict[int, int]] = {},
-    ) -> tuple[dict[int, dict[int, int]], dict[int, dict[int, int]]]:
+    ) -> dict[int, dict[int, int]]:
         """
         Duplicates meeting_mediafiles to the meetings defined in target_meeting_ids.
         If related mediafile is meeting-wide also duplicates it.

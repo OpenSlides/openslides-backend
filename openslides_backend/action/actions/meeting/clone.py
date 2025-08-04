@@ -333,8 +333,8 @@ class MeetingClone(MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
-    def duplicate_mediafiles(self, mediafiles: dict[int, Any]) -> None:
-        for mediafile_id, mediafile in mediafiles.items():
+    def duplicate_mediafiles(self, mediafiles: dict[str, Any]) -> None:
+        for mediafile in mediafiles.values():
             if not mediafile.get("is_directory"):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
