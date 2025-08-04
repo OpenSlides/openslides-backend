@@ -9,10 +9,7 @@ from ..action import Action
 from ..actions.mediafile.duplicate_to_another_meeting import (
     MediafileDuplicateToAnotherMeetingAction,
 )
-from ..actions.meeting_mediafile.create import (
-    EXTRA_RELATIONAL_FIELDS_TO_MEETING,
-    MeetingMediafileCreate,
-)
+from ..actions.meeting_mediafile.create import MeetingMediafileCreate
 
 
 class ForwardMediafilesMixin(Action):
@@ -62,7 +59,8 @@ class ForwardMediafilesMixin(Action):
         return meeting_mediafile_replace_map
 
     def map_mediafiles_data(
-        self, fetched_data: dict[str, dict[int, dict[str, Any]]]
+        self,
+        fetched_data: dict[str, dict[int, dict[str, Any]]],
     ) -> tuple[
         dict[int, dict[str, Any]],
         dict[int, dict[int, dict[str, Any]]],
@@ -95,8 +93,8 @@ class ForwardMediafilesMixin(Action):
                 mediafile_new_mm_map_by_meeting[meeting_id][
                     mm_instance["mediafile_id"]
                 ] = mm_instance
-                new_mm_instances_data.append(mm_instance)
                 mm_id_target_meeting_ids_map[mm_id].add(meeting_id)
+                new_mm_instances_data.append(mm_instance)
 
         return (
             mediafiles,
@@ -198,11 +196,6 @@ class ForwardMediafilesMixin(Action):
                             "inherited_access_group_ids",
                         ]
                         if field in entry
-                    },
-                    **{
-                        field: meeting_id
-                        for field in entry
-                        if field in EXTRA_RELATIONAL_FIELDS_TO_MEETING
                     },
                 }
                 new_mm_action_data.append(new_mm)
