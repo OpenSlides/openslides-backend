@@ -245,7 +245,7 @@ class MeetingClone(MeetingImport):
                 if not str(old_id) in origin_mediafiles
             }
         )
-        self.duplicate_mediafiles(meeting_json)
+        self.duplicate_mediafiles(meeting_json["mediafile"])
 
         orga_wide_mediafiles = {
             str(mediafile_id): {
@@ -333,9 +333,8 @@ class MeetingClone(MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
-    def duplicate_mediafiles(self, json_data: dict[str, Any]) -> None:
-        for mediafile_id in json_data["mediafile"]:
-            mediafile = json_data["mediafile"][mediafile_id]
+    def duplicate_mediafiles(self, mediafiles: dict[int, Any]) -> None:
+        for mediafile_id, mediafile in mediafiles.items():
             if not mediafile.get("is_directory"):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
