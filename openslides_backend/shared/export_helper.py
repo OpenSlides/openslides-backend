@@ -25,7 +25,10 @@ NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candida
 
 
 def export_meeting(
-    datastore: DatastoreService, meeting_id: int, internal_target: bool = False
+    datastore: DatastoreService,
+    meeting_id: int,
+    internal_target: bool = False,
+    update_mediafiles: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -57,7 +60,7 @@ def export_meeting(
             get_many_requests, lock_result=False, use_changed_models=False
         )
         # update_mediafiles_for_internal_calls
-        if internal_target and len(
+        if update_mediafiles and len(
             mediafile_ids := results.get("mediafile", {}).keys()
         ) != len(meeting_mediafiles := results.get("meeting_mediafile", {})):
             mm_with_unknown_mediafiles = {
