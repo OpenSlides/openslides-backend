@@ -179,3 +179,16 @@ class GroupUpdateActionTest(BaseActionTestCase):
             "Cannot change name of anonymous group.",
             response.json["message"],
         )
+
+    def test_update_as_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.set_committee_management_level([59])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "group.update", {"id": 3, "name": "T-T", "external_id": "T-T"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/3", {"id": 3, "name": "T-T", "external_id": "T-T"}
+        )

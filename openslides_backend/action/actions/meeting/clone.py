@@ -14,10 +14,9 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
-from openslides_backend.shared.util import ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
-from ...mixins.forward_mediafiles_mixin import ForwardMediafilesMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -37,7 +36,7 @@ updatable_fields = [
 
 
 @register_action("meeting.clone")
-class MeetingClone(ForwardMediafilesMixin, MeetingImport):
+class MeetingClone(MeetingImport):
     """
     Action to clone a meeting.
     """
@@ -155,6 +154,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                     user["default_vote_weight"] = "0.000001"
 
         # Necessary for orga-wide mediafiles
+        origin_mediafiles = meeting_json.get("mediafile", {})
         mediafiles = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -169,11 +169,35 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                         "owner_id",
                         "meeting_mediafile_ids",
                         "published_to_meetings_in_organization_id",
+                        "parent_id",
+                        "child_ids",
                     ],
                 ),
             ],
             use_changed_models=False,
         )["mediafile"]
+        unknown_parents = {
+            parent_id
+            for file in mediafiles.values()
+            if (parent_id := file.get("parent_id")) and parent_id not in mediafiles
+        }
+        mediafiles.update(
+            self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "mediafile",
+                        list(unknown_parents),
+                        [
+                            "id",
+                            "owner_id",
+                            "published_to_meetings_in_organization_id",
+                            "child_ids",
+                        ],
+                    ),
+                ],
+                use_changed_models=False,
+            )["mediafile"]
+        )
         meeting_json["mediafile"] = {
             str(id_): data
             for id_, data in mediafiles.items()
@@ -210,25 +234,37 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         # set imported_at
         meeting["imported_at"] = round(time.time())
 
-        mediafiles = {
-            int(id_): data for id_, data in meeting_json.pop("mediafile", {}).items()
-        }
-        origin_meeting_mediafiles = meeting_json.pop("meeting_mediafile", {})
-
+        # replace ids in the meeting_json
+        # Handle replacements for orga-wide mediafiles manually
+        meeting_json["mediafile"] = origin_mediafiles
         self.create_replace_map(meeting_json)
-        self._remove_mediafile_relational_fields(meeting_json)
-        meeting_mediafiles = self._update_meeting_mediafiles(
-            origin_meeting_mediafiles, meeting["id"]
-        )
-        self.replace_fields(instance)
-
-        meeting_id = meeting["id"]
-        self.perform_mediafiles_duplication(
+        self.replace_map["mediafile"].update(
             {
-                "mediafile": mediafiles,
-                "meeting_mediafile": meeting_mediafiles,
+                old_id: old_id
+                for old_id in mediafiles
+                if not str(old_id) in origin_mediafiles
             }
         )
+        self.duplicate_mediafiles(meeting_json["mediafile"])
+
+        orga_wide_mediafiles = {
+            str(mediafile_id): {
+                "id": mediafile_id,
+                "meeting_mediafile_ids": mediafiles[mediafile_id][
+                    "meeting_mediafile_ids"
+                ]
+                + [self.replace_map["meeting_mediafile"][mm_data["id"]]],
+            }
+            for mm_data in meeting_json["meeting_mediafile"].values()
+            if (
+                (mediafile := mediafiles.get(mediafile_id := mm_data["mediafile_id"]))
+                and mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+            )
+        }
+        self.replace_fields(instance)
+        instance["meeting"]["mediafile"].update(orga_wide_mediafiles)
+
+        meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
         if additional_user_ids:
             default_group_id = meeting.get("default_group_id")
@@ -297,6 +333,13 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
+    def duplicate_mediafiles(self, mediafiles: dict[str, Any]) -> None:
+        for mediafile in mediafiles.values():
+            if not mediafile.get("is_directory"):
+                self.media.duplicate_mediafile(
+                    mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
+                )
+
     def append_extra_events(
         self, events: list[Event], json_data: dict[str, Any]
     ) -> None:
@@ -332,57 +375,3 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
                 use_changed_models=False,
             )
             return meeting["committee_id"]
-
-    def _remove_mediafile_relational_fields(
-        self, meeting: dict[str, dict[str, Any]]
-    ) -> None:
-        """
-        All the meeting_mediafile relations are handled by ForwardMediafilesMixin
-        so shouldn't be processed in this class.
-        """
-        meeting_fields_to_skip = [
-            field.own_field_name
-            for field in Meeting().get_fields()
-            if field.own_field_name.startswith(("logo_", "font_"))
-        ] + ["mediafile_ids", "meeting_mediafile_ids"]
-        group_fields_to_skip = [
-            "meeting_mediafile_access_group_ids",
-            "meeting_mediafile_inherited_access_group_ids",
-        ]
-
-        self._strip_instance_fields(meeting["meeting"], meeting_fields_to_skip)
-        self._strip_instance_fields(meeting["group"], group_fields_to_skip)
-
-    def _strip_instance_fields(
-        self,
-        collection: dict[str, Any],
-        fields_to_strip: list[str],
-    ) -> None:
-        """
-        Removes from the instance the fields that shouldn't be processed
-        (for example, because they are processed in other actions).
-        """
-        for entry in collection.values():
-            for field in fields_to_strip:
-                entry.pop(field, None)
-
-    def _update_meeting_mediafiles(
-        self, origin_meeting_mediafiles: dict[str, dict[str, Any]], meeting_id: int
-    ) -> dict[int, dict[str, Any]]:
-        return {
-            int(id_): {
-                **data,
-                "target_meeting_ids": [
-                    self.replace_map.get("meeting", {}).get(meeting_id)
-                ],
-                **{
-                    field: [
-                        self.replace_map.get("group", {}).get(group_id)
-                        for group_id in data.get(field, [])
-                    ]
-                    for field in ["access_group_ids", "inherited_access_group_ids"]
-                    if field in data
-                },
-            }
-            for id_, data in origin_meeting_mediafiles.items()
-        }
