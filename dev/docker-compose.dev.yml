@@ -1,10 +1,11 @@
-version: "3"
 services:
     backend:
         build:
             context: ..
-            dockerfile: dev/Dockerfile.dev
-        image: openslides-backend-dev
+            target: "$CONTEXT"
+            args:
+                CONTEXT: "$CONTEXT"
+        image: openslides-backend-$CONTEXT
         user: $USER_ID:$GROUP_ID
         ports:
             - "9002:9002"
@@ -34,9 +35,11 @@ services:
     datastore-reader:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            target: "prod"
             args:
                 MODULE: "reader"
                 PORT: "9010"
+                CONTEXT: "prod"
         image: openslides-datastore-reader
         ports:
             - "9010:9010"
@@ -48,9 +51,11 @@ services:
     datastore-writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            target: "prod"
             args:
                 MODULE: "writer"
                 PORT: "9011"
+                CONTEXT: "prod"
         image: openslides-datastore-writer
         ports:
             - "9011:9011"
@@ -63,7 +68,9 @@ services:
     auth:
         build:
             context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
-            dockerfile: "Dockerfile.dev"
+            target: "dev"
+            args:
+                CONTEXT: "dev"
         image: openslides-auth-dev
         ports:
             - "9004:9004"
@@ -83,6 +90,9 @@ services:
     vote:
         build:
             context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
+            target: "dev"
+            args:
+                CONTEXT: "dev"
         image: openslides-vote-dev
         ports:
             - "9013:9013"

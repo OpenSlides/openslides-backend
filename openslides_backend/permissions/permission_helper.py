@@ -222,11 +222,11 @@ def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permis
 def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        ["admin_group_id", "locked_from_inside"],
+        ["admin_group_id", "locked_from_inside", "committee_id"],
         lock_result=False,
     )
-    if not meeting.get("locked_from_inside") and has_organization_management_level(
-        datastore, user_id, OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    if not meeting.get("locked_from_inside") and has_committee_management_level(
+        datastore, user_id, meeting["committee_id"]
     ):
         return True
 
