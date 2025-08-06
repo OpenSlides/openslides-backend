@@ -1817,6 +1817,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_with_linked_orga_wide_font(self) -> None:
+        self.create_meeting(4)
         self.test_models_with_admin["meeting/1"].update(
             {
                 "template_for_organization_id": 1,
@@ -1851,7 +1852,7 @@ class MeetingClone(BaseActionTestCase):
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "meeting_mediafile_ids": [11],
+                    "meeting_mediafile_ids": [10, 11],
                 },
                 "meeting_mediafile/11": {
                     "is_public": False,
@@ -1860,6 +1861,11 @@ class MeetingClone(BaseActionTestCase):
                     "inherited_access_group_ids": [2],
                     "used_as_font_regular_in_meeting_id": 1,
                 },
+                "meeting_mediafile/10": {
+                    "is_public": True,
+                    "meeting_id": 4,
+                    "mediafile_id": 17,
+                },
             }
         )
 
@@ -1867,17 +1873,17 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/2",
+            "meeting/5",
             {
-                "admin_group_id": 4,
+                "admin_group_id": 8,
                 "meeting_mediafile_ids": [12],
                 "font_regular_id": 12,
             },
         )
         self.assert_model_exists(
-            "group/4",
+            "group/8",
             {
-                "admin_group_for_meeting_id": 2,
+                "admin_group_for_meeting_id": 5,
                 "meeting_mediafile_inherited_access_group_ids": [12],
             },
         )
@@ -1885,14 +1891,16 @@ class MeetingClone(BaseActionTestCase):
             "meeting_mediafile/12",
             {
                 "is_public": False,
-                "meeting_id": 2,
+                "meeting_id": 5,
                 "mediafile_id": 17,
-                "inherited_access_group_ids": [4],
-                "used_as_font_regular_in_meeting_id": 2,
+                "inherited_access_group_ids": [8],
+                "used_as_font_regular_in_meeting_id": 5,
             },
         )
         self.assert_model_exists("mediafile/16", {"meeting_mediafile_ids": None})
-        self.assert_model_exists("mediafile/17", {"meeting_mediafile_ids": [11, 12]})
+        self.assert_model_exists(
+            "mediafile/17", {"meeting_mediafile_ids": [10, 11, 12]}
+        )
         self.media.duplicate_mediafile.assert_not_called()
 
     def test_clone_with_organization_tag(self) -> None:
