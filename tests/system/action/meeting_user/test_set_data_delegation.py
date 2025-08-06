@@ -11,21 +11,9 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.create_meeting(225)
         self.set_models(
             {
-                "meeting/222": {"default_group_id": 11},
-                "meeting/225": {"default_group_id": 12},
-                "group/1": {
-                    "name": "groupy",
-                    "meeting_id": 222,
-                    "meeting_user_ids": [11, 12, 13, 14],
-                },
-                "group/2": {
-                    "name": "groupy",
-                    "meeting_id": 225,
-                    "meeting_user_ids": [21],
-                },
-                "group/11": {"name": "groupy", "meeting_id": 222},
-                "group/12": {"name": "groupy", "meeting_id": 225},
-                "user/2": {"username": "user/2"},
+                "group/224": {"meeting_user_ids": [11, 12, 13, 14]},
+                "group/227": {"meeting_user_ids": [21]},
+                "user/2": {"username": "user2"},
                 "user/3": {"username": "user3"},
                 "user/4": {"username": "delegator2"},
                 "meeting_user/11": {"meeting_id": 222, "user_id": 1},
@@ -79,10 +67,12 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_delegated_to_error_group_do_not_match_meeting(self) -> None:
-        response = self.request_executor({"vote_delegated_to_id": 13, "group_ids": [2]})
+        response = self.request_executor(
+            {"vote_delegated_to_id": 13, "group_ids": [227]}
+        )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: ['group/2']",
+            "The following models do not belong to meeting 222: ['group/227']",
             response.json["message"],
         )
 
@@ -105,12 +95,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_delegated_to_error_user_cannot_delegate_has_delegations_himself(
         self,
     ) -> None:
-        self.set_models(
-            {
-                "meeting_user/14": {"vote_delegations_from_ids": [12]},
-                "meeting_user/12": {"vote_delegated_to_id": 14},
-            }
-        )
+        self.set_models({"meeting_user/12": {"vote_delegated_to_id": 14}})
         response = self.request_executor({"vote_delegated_to_id": 11})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -169,11 +154,11 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
     def test_delegations_from_error_group_do_not_match_meeting(self) -> None:
         response = self.request_executor(
-            {"vote_delegations_from_ids": [12], "group_ids": [2]}
+            {"vote_delegations_from_ids": [12], "group_ids": [227]}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: ['group/2']",
+            "The following models do not belong to meeting 222: ['group/227']",
             response.json["message"],
         )
 
@@ -212,7 +197,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/14": {"vote_delegated_to_id": 13},
-                "meeting_user/13": {"vote_delegations_from_ids": [12, 14]},
             }
         )
         response = self.request_executor({"vote_delegated_to_id": None})
@@ -223,7 +207,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_reset_vote_delegations_from_ok(self) -> None:
         self.set_models(
             {
-                "meeting_user/14": {"vote_delegations_from_ids": [12, 13]},
                 "meeting_user/12": {"vote_delegated_to_id": 14},
                 "meeting_user/13": {"vote_delegated_to_id": 14},
             }
@@ -237,7 +220,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_delegations_from_on_empty_array_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting_user/14": {"vote_delegations_from_ids": [12, 13]},
                 "meeting_user/12": {"vote_delegated_to_id": 14},
                 "meeting_user/13": {"vote_delegated_to_id": 14},
             }
@@ -251,7 +233,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_delegated_to_error_user_cant_delegate_to_user_who_delegated(self) -> None:
         self.set_models(
             {
-                "meeting_user/12": {"vote_delegations_from_ids": [13]},
                 "meeting_user/13": {"vote_delegated_to_id": 12},
             }
         )
@@ -266,7 +247,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/12": {"vote_delegated_to_id": 13},
-                "meeting_user/13": {"vote_delegations_from_ids": [12, 14]},
                 "meeting_user/14": {"vote_delegated_to_id": 13},
             }
         )
@@ -282,8 +262,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             {
                 "meeting_user/11": {"vote_delegated_to_id": 14},
                 "meeting_user/12": {"vote_delegated_to_id": 13},
-                "meeting_user/13": {"vote_delegations_from_ids": [12]},
-                "meeting_user/14": {"vote_delegations_from_ids": [11]},
             }
         )
         response = self.request_executor({"vote_delegations_from_ids": [11, 12]})
@@ -302,8 +280,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             {
                 "meeting_user/11": {"vote_delegated_to_id": 14},
                 "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {"vote_delegations_from_ids": []},
-                "meeting_user/14": {"vote_delegations_from_ids": [11, 12]},
             }
         )
 
@@ -315,12 +291,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting_user/14", {"vote_delegations_from_ids": [13]})
 
     def test_delegations_from_but_delegated_own(self) -> None:
-        self.set_models(
-            {
-                "meeting_user/13": {"vote_delegations_from_ids": [12, 14]},
-                "meeting_user/14": {"vote_delegated_to_id": 13},
-            }
-        )
+        self.set_models({"meeting_user/14": {"vote_delegated_to_id": 13}})
         response = self.request_executor({"vote_delegations_from_ids": [11]})
 
         self.assert_status_code(response, 400)
@@ -339,12 +310,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
     def test_vote_setting_both_correct_from_to_1_standard_user(self) -> None:
         """meeting_user2/4 -> meeting_user3: meeting_user4 reset own delegation and receives other delegation"""
-        self.set_models(
-            {
-                "meeting_user/14": {"vote_delegated_to_id": 13},
-                "meeting_user/13": {"vote_delegations_from_ids": [12, 14]},
-            }
-        )
+        self.set_models({"meeting_user/14": {"vote_delegated_to_id": 13}})
 
         response = self.request_executor(
             {"vote_delegations_from_ids": [11], "vote_delegated_to_id": None}
@@ -360,11 +326,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {
-                    "vote_delegated_to_id": 14,
-                    "vote_delegations_from_ids": [],
-                },
-                "meeting_user/14": {"vote_delegations_from_ids": [12, 13]},
+                "meeting_user/13": {"vote_delegated_to_id": 14},
             }
         )
 
@@ -382,11 +344,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {
-                    "vote_delegated_to_id": 14,
-                    "vote_delegations_from_ids": [],
-                },
-                "meeting_user/14": {"vote_delegations_from_ids": [12, 13]},
+                "meeting_user/13": {"vote_delegated_to_id": 14},
             }
         )
         response = self.request_executor(
@@ -403,11 +361,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/12": {"vote_delegated_to_id": 14},
-                "meeting_user/13": {
-                    "vote_delegated_to_id": 14,
-                    "vote_delegations_from_ids": [],
-                },
-                "meeting_user/14": {"vote_delegations_from_ids": [12, 13]},
+                "meeting_user/13": {"vote_delegated_to_id": 14},
             }
         )
         response = self.request_executor({"vote_delegations_from_ids": [13, 11]})

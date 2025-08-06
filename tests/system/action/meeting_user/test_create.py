@@ -9,12 +9,7 @@ class MeetingUserCreate(BaseActionTestCase):
         self.create_meeting(10)
 
     def test_create(self) -> None:
-        self.set_models(
-            {
-                "group/21": {"name": "groupy", "meeting_id": 10},
-                "structure_level/31": {"name": "structy", "meeting_id": 10},
-            }
-        )
+        self.set_models({"structure_level/31": {"name": "structy", "meeting_id": 10}})
         test_dict = {
             "user_id": 1,
             "meeting_id": 10,
@@ -23,7 +18,7 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
         }
         response = self.request("meeting_user.create", test_dict)
         self.assert_status_code(response, 200)
@@ -55,12 +50,7 @@ class MeetingUserCreate(BaseActionTestCase):
         )
 
     def test_update_checks_locked_out_with_error(self) -> None:
-        self.set_models(
-            {
-                "group/21": {"name": "groupy", "meeting_id": 10},
-                "structure_level/31": {"name": "structy", "meeting_id": 10},
-            }
-        )
+        self.set_models({"structure_level/31": {"name": "structy", "meeting_id": 10}})
         test_dict = {
             "user_id": 1,
             "meeting_id": 10,
@@ -69,7 +59,7 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
             "locked_out": True,
         }
         response = self.request("meeting_user.create", test_dict)
@@ -82,11 +72,7 @@ class MeetingUserCreate(BaseActionTestCase):
     def test_update_checks_locked_out_with_error_2(self) -> None:
         self.set_models(
             {
-                "group/21": {
-                    "name": "groupy",
-                    "meeting_id": 10,
-                    "permissions": ["user.can_manage"],
-                },
+                "group/12": {"permissions": ["user.can_manage"]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -99,23 +85,18 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
             "locked_out": True,
         }
         response = self.request("meeting_user.create", test_dict)
         self.assert_status_code(response, 400)
         assert (
-            "Group(s) 21 have user.can_manage permissions and may therefore not be used by users who are locked out"
+            "Group(s) 12 have user.can_manage permissions and may therefore not be used by users who are locked out"
             == response.json["message"]
         )
 
     def test_update_locked_out_allowed(self) -> None:
-        self.set_models(
-            {
-                "group/21": {"name": "groupy", "meeting_id": 10},
-                "structure_level/31": {"name": "structy", "meeting_id": 10},
-            }
-        )
+        self.set_models({"structure_level/31": {"name": "structy", "meeting_id": 10}})
         self.create_user("test")
         test_dict = {
             "user_id": 2,
@@ -125,7 +106,7 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
             "locked_out": True,
         }
         response = self.request("meeting_user.create", test_dict)

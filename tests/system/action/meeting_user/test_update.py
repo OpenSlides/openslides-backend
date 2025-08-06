@@ -10,7 +10,6 @@ class MeetingUserUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "group/21": {"name": "groupy", "meeting_id": 10},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -21,7 +20,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
         }
         response = self.request("meeting_user.update", test_dict)
         self.assert_status_code(response, 200)
@@ -132,11 +131,7 @@ class MeetingUserUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "group/21": {
-                    "name": "groupy",
-                    "meeting_id": 10,
-                    "permissions": ["user.can_manage"],
-                },
+                "group/12": {"permissions": ["user.can_manage"]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -147,7 +142,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
             "locked_out": True,
         }
         response = self.request("meeting_user.update", test_dict)
@@ -159,13 +154,8 @@ class MeetingUserUpdate(BaseActionTestCase):
 
     def test_update_locked_out_allowed(self) -> None:
         self.create_meeting(10)
-        self.set_models(
-            {
-                "group/21": {"name": "groupy", "meeting_id": 10},
-                "structure_level/31": {"name": "structy", "meeting_id": 10},
-            }
-        )
-        self.create_user("test", [21])
+        self.set_models({"structure_level/31": {"name": "structy", "meeting_id": 10}})
+        self.create_user("test", [12])
         test_dict = {
             "id": 1,
             "comment": "test bla",
@@ -173,7 +163,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "group_ids": [21],
+            "group_ids": [12],
             "locked_out": True,
         }
         response = self.request("meeting_user.update", test_dict)
