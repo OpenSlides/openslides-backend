@@ -5,7 +5,6 @@ from . import (  # noqa
     get_active_users_amount,
     get_forwarding_committees,
     get_forwarding_meetings,
-    get_history_information,
     get_mediafile_context,
     get_user_editable,
     get_user_related_models,
