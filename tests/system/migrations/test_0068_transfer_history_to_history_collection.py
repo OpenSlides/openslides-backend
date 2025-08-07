@@ -604,6 +604,11 @@ def test_migration_history_entry_meeting_relation_with_deletions(
             "fqid": "meeting/2",
             "fields": {"motion_ids": [3]},
         },
+        {
+            "type": "update",
+            "fqid": "user/1",
+            "fields": {"first_name": "Admin", "last_name": "Adminson"},
+        },
         information={
             "motion/1": ["Motion updated"],
             "motion/2": ["Motion deleted"],
@@ -628,7 +633,14 @@ def test_migration_history_entry_meeting_relation_with_deletions(
     finalize("0068_transfer_history_to_history_collections")
 
     assert_model(
-        "user/1", {"id": 1, "username": "admin", "history_position_ids": [2, 3, 4]}
+        "user/1",
+        {
+            "id": 1,
+            "username": "admin",
+            "history_position_ids": [2, 3, 4],
+            "first_name": "Admin",
+            "last_name": "Adminson",
+        },
     )
 
     assert_model(
