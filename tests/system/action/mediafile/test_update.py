@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -197,9 +197,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "title": "title_Xcdfgee",
+                "access_group_ids": [],
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/111", {"title": "title_Xcdfgee"})
         self.assert_model_exists(
             "meeting_mediafile/1111",
             {
@@ -644,14 +646,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_access_group_on_published_orga_file(self) -> None:
-        self.set_models(self.orga_permission_test_models)
-        self.set_models(
-            {
-                "mediafile/111": {
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID
-                }
-            }
-        )
+        self.create_mediafile(111)
         response = self.request(
             "mediafile.update", {"id": 111, "meeting_id": 1, "access_group_ids": [3]}
         )
@@ -669,7 +664,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_access_group_on_implicitly_published_orga_file_implicit_parent_meeting_data(
         self,
     ) -> None:
-        self.set_models(self.orga_permission_test_models)
         self.create_mediafile(111, is_directory=True)
         self.create_mediafile(112, is_directory=True, parent_id=111)
         self.create_mediafile(113, parent_id=112)
@@ -691,7 +685,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_access_group_on_implicitly_published_orga_file_explicit_parent_meeting_data(
         self,
     ) -> None:
-        self.set_models(self.orga_permission_test_models)
         self.create_mediafile(111, is_directory=True)
         self.create_mediafile(112, parent_id=111)
         self.set_models(
@@ -724,7 +717,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_access_group_on_implicitly_published_orga_file_explicit_grandparent_meeting_data(
         self,
     ) -> None:
-        self.set_models(self.orga_permission_test_models)
         self.create_mediafile(111, is_directory=True)
         self.create_mediafile(112, is_directory=True, parent_id=111)
         self.create_mediafile(113, is_directory=True, parent_id=112)
@@ -759,7 +751,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting_mediafile/3")
 
     def test_update_access_group_on_published_root_mediafile(self) -> None:
-        self.set_models(self.orga_permission_test_models)
         self.create_mediafile(111, is_directory=True)
         self.create_mediafile(112, is_directory=True, parent_id=111)
         self.create_mediafile(113, is_directory=True, parent_id=112)
@@ -934,11 +925,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_meeting_permissions_orga_owner_on_published_file_error(
         self,
     ) -> None:
-        self.orga_permission_test_models["mediafile/111"][
-            "published_to_meetings_in_organization_id"
-        ] = ONE_ORGANIZATION_ID
+        self.create_mediafile(111)
         self.base_permission_test(
-            self.orga_permission_test_models,
+            {},
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee"},
             Permissions.Mediafile.CAN_MANAGE,
@@ -946,11 +935,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_meeting_permissions_orga_owner_on_published_file(self) -> None:
-        self.orga_permission_test_models["mediafile/111"][
-            "published_to_meetings_in_organization_id"
-        ] = ONE_ORGANIZATION_ID
+        self.create_mediafile(111)
         self.base_permission_test(
-            self.orga_permission_test_models,
+            {},
             "mediafile.update",
             {"id": 111, "meeting_id": 1, "access_group_ids": [3]},
             Permissions.Mediafile.CAN_MANAGE,

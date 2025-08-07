@@ -290,6 +290,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             {"owner_id": ONE_ORGANIZATION_FQID, "ids": [1], "parent_id": 2},
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/1", {"parent_id": 2})
         self.assert_model_not_exists("meeting_mediafile/1")
 
     def test_move_unpublished_to_published_parent_meeting_data(self) -> None:
@@ -408,7 +409,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "group/6": {
                     "meeting_mediafile_access_group_ids": [6],
-                    "meeting_mediafile_inherited_access_group_ids": [6],
+                    "meeting_mediafile_inherited_access_group_ids": [],
+                },
+                "group/8": {
+                    "meeting_mediafile_access_group_ids": [],
+                    "meeting_mediafile_inherited_access_group_ids": [8],
                 },
                 "group/9": {
                     "meeting_mediafile_access_group_ids": [9],
@@ -563,7 +568,11 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "group/6": {
                     "meeting_mediafile_access_group_ids": [6],
-                    "meeting_mediafile_inherited_access_group_ids": [6],
+                    "meeting_mediafile_inherited_access_group_ids": [],
+                },
+                "group/8": {
+                    "meeting_mediafile_access_group_ids": [],
+                    "meeting_mediafile_inherited_access_group_ids": [8],
                 },
                 "group/9": {
                     "meeting_mediafile_access_group_ids": [9],
