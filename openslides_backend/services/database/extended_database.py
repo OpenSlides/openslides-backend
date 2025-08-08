@@ -437,18 +437,13 @@ class ExtendedDatabase(Database):
         if use_changed_models and self._changed_models[collection]:
             match method:
                 case "count":
-                    return len(
-                        self.filter(
-                            collection, filter_, [], lock_result, use_changed_models
-                        )
-                    )
+                    return len(self.filter(collection, filter_, [], lock_result))
                 case "min" | "max":
                     response = self.filter(
                         collection,
                         filter_,
                         [field_or_star],
                         lock_result,
-                        use_changed_models,
                     )
                     if response:
                         response_values = [

@@ -43,6 +43,20 @@ def test_basic(
     assert response == to_be_found_max
 
 
+def test_on_empty_fields(
+    db_connection: Connection,
+) -> None:
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        # changed models only relevant to not use the readers aggregate function but self.filter
+        extended_database.apply_changed_model("committee/1", {"name": "c "})
+        response = extended_database.max(
+            "committee", FilterOperator("name", "!=", None), "parent_id"
+        )
+    assert response is None
+
+
 @pytest.mark.parametrize(
     "collection,filter_,field,expected_error",
     [
