@@ -247,6 +247,17 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
 
+    def create_amendment(
+        self, meeting_id: int, lead_motion_id: int, base: int = 2
+    ) -> None:
+        """
+        The meeting and lead motion must already exist.
+        Creates a new motion and sets its lead_motion_id to the given value.
+        You can specify another id by setting base.
+        """
+        self.create_motion(meeting_id, base)
+        self.set_models({f"motion/{base}": {"lead_motion_id": lead_motion_id}})
+
     def create_meeting(self, base: int = 1, meeting_data: PartialModel = {}) -> None:
         """
         Creates meeting with id 1, committee 60 and groups with ids 1(Default), 2(Admin), 3 by default.

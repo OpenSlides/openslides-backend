@@ -1,5 +1,6 @@
 import threading
-import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -12,19 +13,20 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/76": {
-                    "meeting_id": 1,
                     "name": "test0",
-                    "motion_ids": [],
+                    "weight": 76,
+                    "meeting_id": 1,
+                    "workflow_id": 1,
                     "next_state_ids": [77],
-                    "previous_state_ids": [],
                     "allow_submitter_edit": True,
                 },
                 "motion_state/77": {
-                    "meeting_id": 1,
                     "name": "test1",
+                    "weight": 77,
+                    "meeting_id": 1,
+                    "workflow_id": 1,
                     "motion_ids": [22],
                     "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
                     "previous_state_ids": [76],
                     "allow_submitter_edit": True,
                 },
@@ -33,8 +35,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
                     "title": "test1",
                     "state_id": 77,
                     "number_value": 23,
-                    "submitter_ids": [12],
-                    "created": 1687339000,
+                    "sequential_number": 22,
+                    "created": datetime.fromtimestamp(1687339000),
                 },
                 "motion_submitter/12": {
                     "meeting_id": 1,
@@ -55,16 +57,21 @@ class MotionSetStateActionTest(BaseActionTestCase):
         )
 
     def test_set_state_correct_previous_state(self) -> None:
-        check_time = round(time.time())
+        check_time = datetime.now(ZoneInfo("UTC"))
         self.update_model("motion_state/76", {"set_workflow_timestamp": True})
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number_value") == 23
-        assert model.get("last_modified", 0) >= check_time
+        assert (
+            model.get("last_modified", datetime.fromtimestamp(0, ZoneInfo("UTC")))
+            >= check_time
+        )
         assert model.get("workflow_timestamp", 0) >= check_time
-        assert model.get("created") == 1687339000
+        assert model.get("created") == datetime.fromtimestamp(
+            1687339000, ZoneInfo("UTC")
+        )
         self.assert_history_information(
             "motion/22", ["State set to {}", "motion_state/76"]
         )
@@ -135,25 +142,15 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.assert_model_exists("motion/22", {"state_id": 76})
 
     def test_set_state_set_number_multiple_motions(self) -> None:
+        self.create_motion(1, 23)
+        self.create_motion(1, 24)
         self.set_models(
             {
-                "motion_state/76": {
-                    "set_number": True,
-                },
-                "motion_state/77": {
-                    "motion_ids": [22, 23, 24],
-                },
-                "motion/22": {
-                    "number_value": None,
-                },
-                "motion/23": {
-                    "meeting_id": 1,
-                    "state_id": 77,
-                },
-                "motion/24": {
-                    "meeting_id": 1,
-                    "state_id": 77,
-                },
+                "meeting/1": {"motions_number_min_digits": 1},
+                "motion_state/76": {"set_number": True},
+                "motion/22": {"number_value": None},
+                "motion/23": {"state_id": 77},
+                "motion/24": {"state_id": 77},
             }
         )
         response = self.request_multi(
@@ -176,14 +173,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
         assert model.get("number") == "3"
 
     def test_history_multiple_actions(self) -> None:
-        self.set_models(
-            {
-                "motion/23": {
-                    "meeting_id": 1,
-                    "state_id": 77,
-                },
-            }
-        )
+        self.create_motion(1, 23)
+        self.set_models({"motion/23": {"state_id": 77}})
         response = self.request_multi(
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 76}]
         )
@@ -196,14 +187,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
         )
 
     def test_history_multiple_actions_different_states(self) -> None:
-        self.set_models(
-            {
-                "motion/23": {
-                    "meeting_id": 1,
-                    "state_id": 76,
-                },
-            }
-        )
+        self.create_motion(1, 23)
+        self.set_models({"motion/23": {"state_id": 76}})
         response = self.request_multi(
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 77}]
         )
@@ -281,20 +266,15 @@ class MotionSetStateActionTest(BaseActionTestCase):
         count: int = 5
         self.sync_event = threading.Event()
         self.sync_event.clear()
-
+        for i in range(count):
+            self.create_motion(1, 22 + i)
         self.set_models(
             {
-                "motion_state/77": {
-                    "motion_ids": [22 + i for i in range(count)],
-                },
-                **{
-                    f"motion/{22+i}": {
-                        "meeting_id": 1,
-                        "state_id": 77,
-                        "number_value": 23 + i,
-                    }
-                    for i in range(count)
-                },
+                f"motion/{22+i}": {
+                    "state_id": 77,
+                    "number_value": 23 + i,
+                }
+                for i in range(count)
             }
         )
 
@@ -305,13 +285,13 @@ class MotionSetStateActionTest(BaseActionTestCase):
             threads.append(thread)
 
         exceptions = []
-        check_time = time.time()
+        check_time = datetime.now()
         self.sync_event.set()
         for thread in threads:
             thread.join()
             if exc := getattr(thread, "exception", None):
                 exceptions.append(exc)
-        duration = round(time.time() - check_time, 2)
+        duration = datetime.now() - check_time
         print(duration)
         for exception in exceptions:
             raise exception

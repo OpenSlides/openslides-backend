@@ -58,6 +58,7 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_simple_fields(self) -> None:
         self.set_user_groups(1, [1])
+        self.create_mediafile(8, 1)
         self.set_models(
             {
                 "motion/1": {
@@ -77,7 +78,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "sequential_number": 78,
                 },
                 "tag/56": {"name": "name_56", "meeting_id": 1},
-                "mediafile/8": {"owner_id": "meeting/1"},
                 "meeting_mediafile/80": {
                     "meeting_id": 1,
                     "mediafile_id": 8,
@@ -628,10 +628,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_with_can_create_and_mediafile_can_see(self) -> None:
+        self.create_mediafile(1, 1)
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE, Permissions.Mediafile.CAN_SEE],
             {
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -663,10 +663,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_with_can_create_and_not_mediafile_can_see(self) -> None:
+        self.create_mediafile(1, 1)
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE],
             {
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -691,10 +691,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_no_double_error(self) -> None:
+        self.create_mediafile(1, 1)
         self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE],
             {
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,

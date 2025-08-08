@@ -53,10 +53,6 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             fqid_from_collection_and_id("motion_workflow", old_state["workflow_id"]),
             ["first_state_id"],
         )
-        if not workflow.get("first_state_id"):
-            raise ActionException(
-                f"State {old_state['workflow_id']} has no first_state_id."
-            )
         instance["state_id"] = workflow.get("first_state_id")
         self.set_number(
             instance,
