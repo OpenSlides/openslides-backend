@@ -264,7 +264,7 @@ class UserSendInvitationMail(UpdateAction):
             html=False,
         )
         result["sent"] = True
-        instance["last_email_sent"] = datetime.now(ZoneInfo(key="Etc/UTC"))
+        instance["last_email_sent"] = datetime.now(ZoneInfo("UTC"))
         return super().update_instance(instance)
 
     def get_data_from_meeting_or_organization(
