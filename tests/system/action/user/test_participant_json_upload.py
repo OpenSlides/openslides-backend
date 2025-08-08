@@ -32,7 +32,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_simple(self) -> None:
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "participant.json_upload",
             {
@@ -54,7 +54,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 ],
             },
         )
-        end_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        end_time = datetime.now(ZoneInfo("UTC"))
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,

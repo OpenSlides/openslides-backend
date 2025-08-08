@@ -20,7 +20,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -36,7 +36,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -111,7 +111,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user/3": {"email": "user@ntvtn.de", "username": "test3"},
             }
         )
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -152,7 +152,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user/2": {"email": id_to_email[2], "username": "test2"},
             }
         )
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(

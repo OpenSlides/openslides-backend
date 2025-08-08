@@ -3019,9 +3019,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 4444,
                     "meeting_id": 4,
-                    "begin_time": datetime(
-                        2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
-                    ),
+                    "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                 },
                 "speaker/25": {
                     "list_of_speakers_id": 1,
@@ -3100,9 +3098,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 4444,
                     "meeting_id": 4,
-                    "begin_time": datetime(
-                        2012, 5, 31, 0, 0, tzinfo=ZoneInfo(key="Etc/UTC")
-                    ),
+                    "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                 },
                 "group/4": {"meeting_user_ids": [4444]},
                 "group/6": {"meeting_user_ids": [4444]},

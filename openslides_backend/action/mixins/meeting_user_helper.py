@@ -32,4 +32,4 @@ def get_groups_from_meeting_user(
     meeting_user = get_meeting_user(datastore, meeting_id, user_id, ["group_ids"])
     if not meeting_user:
         return []
-    return meeting_user.get("group_ids", [])
+    return meeting_user.get("group_ids") or []

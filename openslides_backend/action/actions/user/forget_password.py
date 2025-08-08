@@ -93,9 +93,7 @@ The link will be valid for 10 minutes."""
                         if ok:
                             yield {
                                 "id": user["id"],
-                                "last_email_sent": datetime.now(
-                                    ZoneInfo(key="Etc/UTC")
-                                ),
+                                "last_email_sent": datetime.now(ZoneInfo("UTC")),
                             }
             except ActionException as e:
                 self.logger.error(f"send mail action exception: {str(e)}")

@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
@@ -31,7 +32,7 @@ class ChatMessageCreate(MeetingUserHelperMixin, CreateActionWithInferredMeeting)
         instance["meeting_user_id"] = self.create_or_get_meeting_user(
             instance["meeting_id"], self.user_id
         )
-        instance["created"] = round(time())
+        instance["created"] = datetime.now(ZoneInfo("UTC"))
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
