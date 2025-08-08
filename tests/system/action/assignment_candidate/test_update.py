@@ -4,21 +4,18 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
-                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
-                "meeting_user/233": {
+                "assignment/222": {
+                    "sequential_number": 1,
+                    "title": "title_SNLGsvIV",
                     "meeting_id": 1,
-                    "user_id": 233,
-                    "assignment_candidate_ids": [31],
                 },
-                "meeting_user/234": {
-                    "meeting_id": 1,
-                    "user_id": 234,
-                    "assignment_candidate_ids": [32],
-                },
+                "user/233": {"username": "username_233"},
+                "user/234": {"username": "username_234"},
+                "meeting_user/233": {"meeting_id": 1, "user_id": 233},
+                "meeting_user/234": {"meeting_id": 1, "user_id": 234},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,

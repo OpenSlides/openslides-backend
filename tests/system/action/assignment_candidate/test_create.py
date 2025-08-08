@@ -23,22 +23,24 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 "user_id": 110,
             },
             "assignment/111": {
+                "sequential_number": 1,
                 "title": "title_xTcEkItp",
                 "meeting_id": 1,
                 "phase": "voting",
             },
         }
 
-    def test_create(self) -> None:
+    def test_create_count_calls(self) -> None:
         self.create_meeting(1333)
         self.set_models(
             {
                 "user/110": {"username": "test_Xcdfgee"},
-                "meeting_user/110": {
-                    "meeting_id": 1133,
-                    "user_id": 110,
+                "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "title": "title_xTcEkItp",
+                    "meeting_id": 1333,
                 },
-                "assignment/111": {"title": "title_xTcEkItp", "meeting_id": 1333},
             }
         )
         with CountDatastoreCalls() as counter:
@@ -47,7 +49,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 {"assignment_id": 111, "meeting_user_id": 110},
             )
         self.assert_status_code(response, 200)
-        assert counter.calls == 7
+        assert counter.calls == 16
         model = self.get_model("assignment_candidate/1")
         assert model.get("meeting_user_id") == 110
         assert model.get("assignment_id") == 111
@@ -63,14 +65,16 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_meeting(1133)
         self.set_models(
             {
                 "user/110": {"username": "test_Xcdfgee"},
-                "assignment/111": {"title": "title_xTcEkItp"},
-                "meeting_user/110": {
+                "assignment/111": {
+                    "sequential_number": 1,
+                    "title": "title_xTcEkItp",
                     "meeting_id": 1133,
-                    "user_id": 110,
                 },
+                "meeting_user/110": {"meeting_id": 1133, "user_id": 110},
             }
         )
         response = self.request(
@@ -93,10 +97,11 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             {
                 "user/110": {"username": "test_Xcdfgee"},
                 "meeting_user/110": {
-                    "meeting_id": 1133,
+                    "meeting_id": 1333,
                     "user_id": 110,
                 },
                 "assignment/111": {
+                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                     "phase": "finished",

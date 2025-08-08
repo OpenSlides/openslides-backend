@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import DatabaseException
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
@@ -1728,45 +1728,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 meeting_mediafile_id, mediafile_id, meeting_id, motion_ids
             )
 
-    def create_mediafile(
-        self,
-        mediafile_id: int,
-        owner_meeting_id: int = 0,
-        is_directory: bool = False,
-    ) -> None:
-        fqid = f"mediafile/{mediafile_id}"
-        model_data: dict[str, str | int | bool] = {
-            "is_directory": is_directory,
-            "title": (
-                f"folder_{mediafile_id}" if is_directory else f"title_{mediafile_id}"
-            ),
-        }
-        models_data = {fqid: model_data}
-
-        if owner_meeting_id:
-            owner_fqid = f"meeting/{owner_meeting_id}"
-            model_data["owner_id"] = owner_fqid
-            self._update_list_field(
-                models_data,
-                owner_fqid,
-                "mediafile_ids",
-                mediafile_id,
-            )
-        else:
-            model_data.update(
-                {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                }
-            )
-            self._update_list_field(
-                models_data, ONE_ORGANIZATION_FQID, "mediafile_ids", mediafile_id
-            )
-
-        if not is_directory:
-            model_data["mimetype"] = "text/plain"
-        self.set_models(models_data)
-
     def create_meeting_mediafile(
         self,
         meeting_mediafile_id: int,
@@ -1926,13 +1887,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def test_forward_with_meeting_wide_mediafile_with_attachments_false(self) -> None:
         self.base_test_forward_with_attachments_false(
-            origin_mediafiles=[{"mediafile_id": 1, "owner_meeting_id": 1}]
+            origin_mediafiles=[{"base": 1, "owner_meeting_id": 1}]
         )
 
     def test_forward_with_orga_wide_mediafile_with_attachments_false(self) -> None:
-        self.base_test_forward_with_attachments_false(
-            origin_mediafiles=[{"mediafile_id": 1}]
-        )
+        self.base_test_forward_with_attachments_false(origin_mediafiles=[{"base": 1}])
 
     def base_test_forward_with_attachments_true(
         self,
@@ -2055,23 +2014,21 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def test_forward_with_meeting_wide_mediafile_with_attachments_true(self) -> None:
         self.base_test_forward_with_attachments_true(
-            origin_mediafiles=[{"mediafile_id": 1, "owner_meeting_id": 1}]
+            origin_mediafiles=[{"base": 1, "owner_meeting_id": 1}]
         )
 
     def test_forward_with_orga_wide_mediafile_with_attachments_true(self) -> None:
-        self.base_test_forward_with_attachments_true(
-            origin_mediafiles=[{"mediafile_id": 1}]
-        )
+        self.base_test_forward_with_attachments_true(origin_mediafiles=[{"base": 1}])
 
     def test_forward_with_nested_mediafiles_with_attachments_true(self) -> None:
         self.base_test_forward_with_attachments_true(
             origin_mediafiles=[
-                {"mediafile_id": 1, "owner_meeting_id": 1, "is_directory": True},
-                {"mediafile_id": 2, "is_directory": True},
-                {"mediafile_id": 3, "owner_meeting_id": 1},
-                {"mediafile_id": 4, "owner_meeting_id": 1},
-                {"mediafile_id": 5, "is_directory": True},
-                {"mediafile_id": 6},
+                {"base": 1, "owner_meeting_id": 1, "is_directory": True},
+                {"base": 2, "is_directory": True},
+                {"base": 3, "owner_meeting_id": 1},
+                {"base": 4, "owner_meeting_id": 1},
+                {"base": 5, "is_directory": True},
+                {"base": 6},
             ],
             nested_files_ids={1: [3, 4], 2: [5], 5: [6]},
             custom_models_data={
