@@ -103,7 +103,7 @@ class Migration(BaseModelMigration):
                     models_to_entry_ids,
                     fqid_to_meeting_id,
                     all_current_fqids,
-                    position["timestamp"],
+                    round(position["timestamp"]),
                 )
                 next_entry_id += len(models_to_entry_ids)
                 events.extend(
