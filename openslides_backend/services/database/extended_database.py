@@ -456,12 +456,12 @@ class ExtendedDatabase(Database):
                             for model in response.values()
                             if model[field_or_star] is not None
                         ]
-                        if method == "max":
-                            return max(response_values)
-                        else:
-                            return min(response_values)
-                    else:
-                        return None
+                        if response_values:
+                            if method == "max":
+                                return max(response_values)
+                            else:
+                                return min(response_values)
+                    return None
                 case _:
                     raise BadCodingException(
                         f"Invalid aggregate function: {method} frfr"
