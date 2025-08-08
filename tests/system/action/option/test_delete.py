@@ -35,7 +35,11 @@ class OptionDeleteTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "content_object_id": "poll_candidate_list/2",
                 },
-                "vote/42": {"user_token": "imnotapropertoken", "option_id": 112, "meeting_id": 1},
+                "vote/42": {
+                    "user_token": "imnotapropertoken",
+                    "option_id": 112,
+                    "meeting_id": 1,
+                },
                 "poll_candidate_list/2": {"option_id": 112, "meeting_id": 1},
             }
         )
