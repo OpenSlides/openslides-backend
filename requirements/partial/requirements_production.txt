@@ -4,7 +4,7 @@ bleach[css]==6.2.0
 dependency_injector==4.48.1
 fastjsonschema==2.21.1
 gunicorn==23.0.0
-pypdf[crypto]==5.8.0
+pypdf[crypto]==5.9.0
 requests==2.32.4
 roman==5.1
 simplejson==3.20.1
@@ -13,10 +13,10 @@ python-magic==0.4.27
 pygments==2.19.2
 
 # opentelemetry
-opentelemetry-api==1.35.0
-opentelemetry-sdk==1.35.0
-opentelemetry-exporter-otlp==1.35.0
-opentelemetry-instrumentation-flask==0.56b0
-opentelemetry-instrumentation-redis==0.56b0
-opentelemetry-instrumentation-requests==0.56b0
-opentelemetry-semantic-conventions==0.56b0
+opentelemetry-api==1.36.0
+opentelemetry-sdk==1.36.0
+opentelemetry-exporter-otlp==1.36.0
+opentelemetry-instrumentation-flask==0.57b0
+opentelemetry-instrumentation-redis==0.57b0
+opentelemetry-instrumentation-requests==0.57b0
+opentelemetry-semantic-conventions==0.57b0

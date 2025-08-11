@@ -36,6 +36,9 @@ test:
 coverage:
 	pytest --cov --cov-report html
 
+test-file:
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
+
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 # Models
