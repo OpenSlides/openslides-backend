@@ -18,19 +18,22 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
 
     def create_workflow(self, workflow_id: int = 12, meeting_id: int = 222) -> None:
         state_id = workflow_id + 100
-        state_str = str(state_id)
 
-        self.create_model(
-            "motion_workflow/" + str(workflow_id),
+        self.set_models(
             {
-                "name": "name_workflow1",
-                "first_state_id": state_id,
-                "state_ids": [state_id],
-            },
-        )
-        self.create_model(
-            "motion_state/" + state_str,
-            {"name": "name_state" + state_str, "meeting_id": meeting_id},
+                f"motion_workflow/{workflow_id}": {
+                    "name": f"motion_workflow{workflow_id}",
+                    "sequential_number": workflow_id,
+                    "first_state_id": state_id,
+                    "meeting_id": meeting_id,
+                },
+                f"motion_state/{state_id}": {
+                    "name": f"motion_state{state_id}",
+                    "weight": state_id,
+                    "workflow_id": workflow_id,
+                    "meeting_id": meeting_id,
+                },
+            }
         )
 
     def test_create_sequential_numbers(self) -> None:
@@ -132,12 +135,8 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         ActionHandler.MAX_RETRY = 3
         self.set_thread_watch_timeout(-2)
         pytest_thread_local.name = "MainThread_RC"
-        self.set_models(
-            {
-                "meeting/222": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "user/1": {"meeting_ids": [222]},
-            }
-        )
+        self.create_meeting(222)
+        self.set_user_groups(1, [222])
         self.create_workflow(workflow_id=12, meeting_id=222)
         self.create_workflow(workflow_id=13, meeting_id=222)
 
@@ -170,9 +169,9 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
 
             testlock.acquire()
             thread1.start()
-            sync_event.wait()  # This is where it fails
+            sync_event.wait()
             thread2.start()
-            thread2.join()
+            thread2.join()  # Now it fails here
             testlock.release()
             thread1.join()
 
