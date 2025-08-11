@@ -2,6 +2,7 @@ from typing import Any
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from .base import BasePresenterTestCase
 
@@ -320,9 +321,10 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_ids": [1, 2, 3, 4, 5, 6],
                     "present_user_ids": [2],
                     "mediafile_ids": [1, 2],
-                    "meeting_mediafile_ids": [1, 2],
+                    "meeting_mediafile_ids": [1, 2, 4],
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
+                    "font_regular_id": 4,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
                     **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
@@ -339,6 +341,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "admin group",
                     "weight": 1,
                     "admin_group_for_meeting_id": 1,
+                    "meeting_mediafile_inherited_access_group_ids": [4],
                 },
                 "user/1": {
                     "meeting_user_ids": [11],
@@ -465,6 +468,18 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
                 "mediafile/2": {"owner_id": "meeting/1", "meeting_mediafile_ids": [2]},
+                "mediafile/3": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "is_directory": True,
+                    "child_ids": [4],
+                },
+                "mediafile/4": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "parent_id": 3,
+                    "meeting_mediafile_ids": [4],
+                },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -476,6 +491,13 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "mediafile_id": 2,
                     "is_public": True,
                     "used_as_font_bold_in_meeting_id": 1,
+                },
+                "meeting_mediafile/4": {
+                    "meeting_id": 1,
+                    "mediafile_id": 4,
+                    "used_as_font_regular_in_meeting_id": 1,
+                    "is_public": False,
+                    "inherited_access_group_ids": [2],
                 },
                 "motion/1": {
                     "submitter_ids": [5],
