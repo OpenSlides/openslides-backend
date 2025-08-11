@@ -3,6 +3,7 @@ from hashlib import md5
 from typing import Any
 
 import simplejson as json
+from psycopg.types.json import Jsonb
 
 from ....services.database.commands import GetManyRequest
 from ....services.database.interface import Database
@@ -86,6 +87,8 @@ class TextHashMixin(Action):
         if html := motion.get("text"):
             text = get_text_from_html(html)
         elif paragraphs := motion.get("amendment_paragraphs"):
+            if isinstance(paragraphs, Jsonb):
+                paragraphs = dict(paragraphs.obj)
             paragraph_texts = {
                 key: get_text_from_html(html) for key, html in paragraphs.items()
             }

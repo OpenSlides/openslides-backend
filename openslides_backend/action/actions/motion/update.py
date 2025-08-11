@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -119,8 +121,9 @@ class MotionUpdate(
         )
         if len(error_messages):
             raise ActionException(error_messages[0]["message"])
-        if instance.get("amendment_paragraphs"):
+        if paragraphs := instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
+            instance["amendment_paragraphs"] = Jsonb(paragraphs)
 
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")

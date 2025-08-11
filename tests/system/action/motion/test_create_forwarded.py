@@ -1085,7 +1085,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "internal": True,
                     "type": "replacement",
                     "other_description": "Iamachangerecommendation",
-                    "creation_time": datetime.fromtimestamp(0, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(0),
                 },
                 "motion_change_recommendation/2": {
                     "line_from": 24,
@@ -1094,7 +1094,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "motion_id": 12,
                     "meeting_id": 1,
                     "type": "replacement",
-                    "creation_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(1),
                 },
             }
         )
@@ -1155,7 +1155,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "internal": True,
                     "type": "replacement",
                     "other_description": "Iamachangerecommendation",
-                    "creation_time": datetime.fromtimestamp(0, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(0),
                 },
                 "motion_change_recommendation/2": {
                     "line_from": 24,
@@ -1164,7 +1164,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "motion_id": 12,
                     "meeting_id": 1,
                     "type": "replacement",
-                    "creation_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(1),
                 },
             }
         )
@@ -1221,7 +1221,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "internal": True,
                     "type": "replacement",
                     "other_description": "Iamachangerecommendation",
-                    "creation_time": datetime.fromtimestamp(0, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(0),
                 },
                 "motion_change_recommendation/2": {
                     "line_from": 24,
@@ -1230,7 +1230,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "motion_id": 13,
                     "meeting_id": 1,
                     "type": "replacement",
-                    "creation_time": datetime.fromtimestamp(1, ZoneInfo("UTC")),
+                    "creation_time": datetime.fromtimestamp(1),
                 },
             }
         )

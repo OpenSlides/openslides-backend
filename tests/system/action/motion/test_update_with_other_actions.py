@@ -5,28 +5,22 @@ class MotionUpdateWithOtherActionsTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(222)
+        self.create_motion(222, 22)
         self.set_models(
             {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
-                },
-                "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
-                    "next_state_ids": [77],
-                },
+                "motion_state/22": {"next_state_ids": [77]},
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "workflow_id": 34,
-                    "recommendation_label": "label",
                     "name": "test",
+                    "weight": 77,
+                    "meeting_id": 222,
+                    "workflow_id": 22,
+                    "recommendation_label": "label",
                 },
                 "motion_category/3": {
                     "meeting_id": 222,
                     "name": "category",
+                    "sequential_number": 3,
                 },
-                "motion/22": {"meeting_id": 222, "state_id": 66},
             }
         )
 

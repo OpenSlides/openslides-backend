@@ -1,5 +1,7 @@
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
@@ -11,23 +13,19 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.create_motion(1)
         self.set_models(
             {
-                "meeting/1": {
-                    "motions_default_amendment_workflow_id": 1,
-                },
-                "motion_workflow/12": {
-                    "first_state_id": 34,
-                    "state_ids": [34],
-                },
-                "motion_state/34": {"meeting_id": 1},
-                "motion/1": {
-                    "title": "title_eJveLQIh",
-                    "sort_child_ids": [],
+                "motion_category/12": {
                     "meeting_id": 1,
+                    "name": "Category 12",
+                    "sequential_number": 1,
                 },
-                "motion_category/12": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
+                "motion_block/13": {
+                    "meeting_id": 1,
+                    "title": "Block 13",
+                    "sequential_number": 1,
+                },
             }
         )
         self.default_action_data = {
@@ -108,15 +106,17 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_with_amendment_paragraphs_letter_in_key(self) -> None:
         response = self.create_with_amendment_paragraphs({"a4": "text"})
         self.assert_status_code(response, 400)
-        assert (
-            "data.amendment_paragraphs must not contain {'a4'} properties"
-            in response.json["message"]
+        self.assertEqual(
+            "Action motion.create: data.amendment_paragraphs must not contain {'a4'} properties",
+            response.json["message"],
         )
 
     def test_create_with_amendment_paragraphs_array(self) -> None:
         response = self.create_with_amendment_paragraphs(["test"])
         self.assert_status_code(response, 400)
-        assert "data.amendment_paragraphs must be object" in response.json["message"]
+        self.assertEqual(
+            "data.amendment_paragraphs must be object", response.json["message"]
+        )
 
     def test_create_with_amendment_paragraphs_html(self) -> None:
         response = self.create_with_amendment_paragraphs(
@@ -159,7 +159,10 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "give both of text and amendment_paragraphs" in response.json["message"]
+        self.assertEqual(
+            "You can't give both of text and amendment_paragraphs",
+            response.json["message"],
+        )
 
     def test_create_missing_reason(self) -> None:
         self.set_models(
@@ -174,7 +177,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             self.default_action_data,
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in response.json["message"]
+        self.assertEqual("Reason is required", response.json["message"])
 
     def test_create_identical_amendment(self) -> None:
         text = "test"
@@ -182,10 +185,13 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion/2": {
+                    "title": "Motion 2",
                     "meeting_id": 1,
                     "lead_motion_id": 1,
                     "text": text,
                     "text_hash": hash,
+                    "sequential_number": 2,
+                    "state_id": 1,
                 },
             }
         )
@@ -209,13 +215,19 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion/2": {
+                    "title": "Motion 2",
                     "meeting_id": 1,
+                    "sequential_number": 2,
+                    "state_id": 1,
                 },
                 "motion/3": {
+                    "title": "Motion 3",
                     "meeting_id": 1,
                     "lead_motion_id": 2,
                     "text": text,
                     "text_hash": hash,
+                    "sequential_number": 3,
+                    "state_id": 1,
                 },
             }
         )
@@ -234,21 +246,18 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         )
 
     def test_create_identical_paragraph_based_amendment(self) -> None:
-        paragraphs = {
-            "1": "test",
-        }
+        paragraphs = {1: "test"}
         amendment = {
+            "title": "Amendment 1",
             "meeting_id": 1,
             "lead_motion_id": 1,
             "amendment_paragraphs": paragraphs,
+            "sequential_number": 2,
+            "state_id": 1,
         }
         hash = TextHashMixin.get_hash_for_motion(amendment)
-        amendment["text_hash"] = hash
-        self.set_models(
-            {
-                "motion/2": amendment,
-            }
-        )
+        amendment.update({"text_hash": hash, "amendment_paragraphs": Jsonb(paragraphs)})
+        self.set_models({"motion/2": amendment})
         response = self.request(
             "motion.create",
             {
@@ -289,9 +298,9 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             self.default_action_data,
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Missing Permission: motion.can_create_amendments"
-            in response.json["message"]
+        self.assertEqual(
+            "You are not allowed to perform action motion.create. Missing Permission: motion.can_create_amendments",
+            response.json["message"],
         )
 
     def test_create_amendment_non_admin(self) -> None:
@@ -334,4 +343,4 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 },
             )
             self.assert_status_code(response, 403)
-            assert f"Forbidden fields: {field}" in response.json["message"]
+            self.assertEqual("Forbidden fields: {field}", response.json["message"])
