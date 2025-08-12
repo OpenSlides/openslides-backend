@@ -77,7 +77,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     },
                     "start_line_number": 13,
                     "additional_submitter": "test",
-                    "workflow_timestamp": datetime.fromtimestamp(1234567890),
+                    "workflow_timestamp": 1234567890,
                 },
             )
         self.assert_status_code(response, 200)
@@ -105,7 +105,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/111",
             ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
         )
-        assert counter.calls == 8
+        assert counter.calls == 11
 
     def test_update_wrong_id(self) -> None:
         self.set_test_models()
@@ -223,7 +223,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_mediafile_ids": [],
-                    "workflow_timestamp": datetime.fromtimestamp(9876543210),
+                    "workflow_timestamp": 9876543210,
                 },
             )
         self.assert_status_code(response, 200)
@@ -259,7 +259,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 29
+        assert counter.calls == 32
 
     def test_update_workflow_id(self) -> None:
         self.create_motion(1, 111)
@@ -295,7 +295,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "motion.update",
-            {"id": 111, "workflow_timestamp": datetime.fromtimestamp(0)},
+            {"id": 111, "workflow_timestamp": 0},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -306,11 +306,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         response = self.request("motion.update", {"id": 111, "workflow_id": 1})
         self.assert_status_code(response, 200)
         model = self.assert_model_exists(
-            "motion/111",
-            {
-                "state_id": 1,
-                "recommendation_id": None,
-            },
+            "motion/111", {"state_id": 1, "recommendation_id": None}
         )
         assert model["created"] < model["workflow_timestamp"]
         self.assert_history_information_contains(
@@ -390,10 +386,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_motion(4, 2)
         response = self.request(
             "motion.update",
-            {
-                "id": 1,
-                "recommendation_extension": "blablabla [motion/2] blablabla",
-            },
+            {"id": 1, "recommendation_extension": "blablabla [motion/2] blablabla"},
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
@@ -419,10 +412,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_motion(1, 1)
         response = self.request(
             "motion.update",
-            {
-                "id": 1,
-                "state_extension": "blablabla [assignment/1] blablabla",
-            },
+            {"id": 1, "state_extension": "blablabla [assignment/1] blablabla"},
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
@@ -434,10 +424,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_motion(1, 2)
         response = self.request(
             "motion.update",
-            {
-                "id": 1,
-                "recommendation_extension": "[motion/2]",
-            },
+            {"id": 1, "recommendation_extension": "[motion/2]"},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -448,10 +435,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "motion.update",
-            {
-                "id": 1,
-                "recommendation_extension": "",
-            },
+            {"id": 1, "recommendation_extension": ""},
         )
         self.assert_model_exists(
             "motion/1", {"recommendation_extension_reference_ids": None}
@@ -546,10 +530,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion.update",
-            {
-                "id": 111,
-                "workflow_timestamp": 1,
-            },
+            {"id": 111, "workflow_timestamp": 1},
             Permissions.Motion.CAN_MANAGE,
         )
 
@@ -557,10 +538,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion.update",
-            {
-                "id": 111,
-                "workflow_timestamp": 1,
-            },
+            {"id": 111, "workflow_timestamp": 1},
             Permissions.Motion.CAN_MANAGE_METADATA,
         )
 
@@ -568,10 +546,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion.update",
-            {
-                "id": 111,
-                "workflow_timestamp": 1,
-            },
+            {"id": 111, "workflow_timestamp": 1},
         )
 
     def setup_can_manage_metadata(self) -> None:
@@ -582,13 +557,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
 
     def test_update_permission_created(self) -> None:
         self.setup_can_manage_metadata()
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "created": datetime.fromtimestamp(11223344),
-            },
-        )
+        response = self.request("motion.update", {"id": 111, "created": 11223344})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion/111", {"created": datetime.fromtimestamp(11223344, ZoneInfo("UTC"))}
@@ -605,13 +574,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "modified_final_version": "test",
             "attachment_mediafile_ids": [1],
         }.items():
-            response = self.request(
-                "motion.update",
-                {
-                    "id": 111,
-                    field: value,
-                },
-            )
+            response = self.request("motion.update", {"id": 111, field: value})
             self.assert_status_code(response, 403)
             self.assertEqual(
                 f"You are not allowed to perform action motion.update. Forbidden fields: {field}",
@@ -622,8 +585,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.setup_can_manage_metadata()
         self.set_models(
             {
-                "motion_category/2": {"meeting_id": 1, "name": "test"},
-                "motion_block/4": {"meeting_id": 1, "title": "blocky"},
+                "motion_category/2": {
+                    "meeting_id": 1,
+                    "name": "test",
+                    "sequential_number": 2,
+                },
+                "motion_block/4": {
+                    "meeting_id": 1,
+                    "title": "blocky",
+                    "sequential_number": 4,
+                    "list_of_speakers_id": 1,
+                },
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
         )
@@ -636,13 +608,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "state_extension": "test",
                 "recommendation_extension": "test",
                 "start_line_number": 1,
-                "created": now,
+                "created": int(now.timestamp()),
                 "tag_ids": [3],
                 "block_id": 4,
                 "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111")
 
     def test_update_permission_submitter_allowed(self) -> None:
         self.set_organization_management_level(None)

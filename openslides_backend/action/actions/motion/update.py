@@ -125,6 +125,13 @@ class MotionUpdate(
             self.validate_amendment_paragraphs(instance)
             instance["amendment_paragraphs"] = Jsonb(paragraphs)
 
+        for field_name in ["workflow_timestamp", "created"]:
+            raw_timestamp = instance.get(field_name)
+            if isinstance(raw_timestamp, int):
+                instance[field_name] = datetime.fromtimestamp(
+                    raw_timestamp, ZoneInfo("UTC")
+                )
+
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
