@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -41,7 +41,10 @@ class SpeakerCreateAction(
             "speech_state",
             "point_of_order_category_id",
         ],
-        additional_optional_fields={"structure_level_id": required_id_schema},
+        additional_optional_fields={
+            "structure_level_id": required_id_schema,
+            "answer_to_id": required_id_schema,
+        },
     )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -54,14 +57,27 @@ class SpeakerCreateAction(
             instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION
         )
         is_intervention = instance.get("speech_state") == SpeechState.INTERVENTION
+        is_intervention_answer = (
+            instance.get("speech_state") == SpeechState.INTERVENTION_ANSWER
+        )
+        answer_to: int | None = instance.pop("answer_to_id", None)
+        if answer_to and not is_intervention_answer:
+            raise ActionException("Only intervention answers may have 'answer_to' set")
+        if is_intervention_answer and not answer_to:
+            raise ActionException(
+                "Cannot create intervention answer without intervention id."
+            )
         list_of_speakers_id = instance["list_of_speakers_id"]
         max_weight = self._get_max_weight(list_of_speakers_id, instance["meeting_id"])
         if max_weight is None:
-            instance["weight"] = 1
-            return instance
+            if not is_intervention_answer:
+                instance["weight"] = 1
+                return instance
+            else:
+                max_weight = 0
 
         if not instance.get("point_of_order") and not (
-            is_interposed_question or is_intervention
+            is_interposed_question or is_intervention or is_intervention_answer
         ):
             instance["weight"] = max_weight + 1
             return instance
@@ -85,6 +101,48 @@ class SpeakerCreateAction(
             speaker_ids = self._insert_before_weight(
                 instance["id"],
                 min_weight,
+                list_of_speakers_id,
+                instance["meeting_id"],
+            )
+        elif is_intervention_answer:
+            parent = self.datastore.get(
+                fqid_from_collection_and_id("speaker", cast(int, answer_to)),
+                ["weight", "speech_state", "end_time"],
+            )
+            if not parent or parent.get("speech_state") != SpeechState.INTERVENTION:
+                raise ActionException(
+                    "Cannot create intervention answer answering to a non-intervention speech."
+                )
+            if parent.get("end_time"):
+                raise ActionException(
+                    "Cannot create intervention answer for finished intervention."
+                )
+            weight = parent["weight"] + 1
+            if parent.get("begin_time"):
+                weight = 1
+            weight = self.datastore.min(
+                collection="speaker",
+                filter=And(
+                    FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                    FilterOperator("weight", ">=", weight),
+                    Or(
+                        FilterOperator("speech_state", "=", None),
+                        FilterOperator(
+                            "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
+                        ),
+                    ),
+                    FilterOperator("begin_time", "=", None),
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                ),
+                field="weight",
+            )
+            if weight is None:
+                instance["weight"] = max_weight + 1
+                return instance
+
+            speaker_ids = self._insert_before_weight(
+                instance["id"],
+                weight,
                 list_of_speakers_id,
                 instance["meeting_id"],
             )
@@ -263,6 +321,7 @@ class SpeakerCreateAction(
             if instance.get("speech_state") not in [
                 SpeechState.INTERPOSED_QUESTION,
                 SpeechState.INTERVENTION,
+                SpeechState.INTERVENTION_ANSWER,
             ]:
                 raise ActionException("meeting_user_id is required.")
             user_id = None
