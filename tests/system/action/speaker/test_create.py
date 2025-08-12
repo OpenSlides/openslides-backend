@@ -956,14 +956,154 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_create_other_state_without_meeting_user_id(self) -> None:
+    def test_create_intervention_without_meeting_user_id(self) -> None:
         self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+
+    def create_expansive_test_data(self) -> None:
+        speaker_ids = list(range(1, 16))
+        self.test_models["list_of_speakers/23"]["speaker_ids"] = speaker_ids
+        self.test_models["meeting/1"].update(
+            {
+                "speaker_ids": speaker_ids,
+                "user_ids": [10 + id_ for id_ in speaker_ids],
+                "meeting_user_ids": [100 + id_ for id_ in speaker_ids],
+            }
+        )
+        speakers: list[dict[str, Any]] = [
+            {
+                "begin_time": 100,
+                "end_time": 200,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+            {"begin_time": 200, "end_time": 300, "point_of_order": True},
+            {"begin_time": 300, "end_time": 400},
+            {"begin_time": 400},
+            {"speech_state": SpeechState.INTERVENTION},
+            {"speech_state": SpeechState.INTERVENTION},
+            {"point_of_order": True},
+            {"point_of_order": True},
+            {},
+            {"speech_state": SpeechState.INTERVENTION},
+            {"point_of_order": True},
+            {"speech_state": SpeechState.INTERVENTION},
+            {"point_of_order": True},
+            {},
+            {"speech_state": SpeechState.PRO},
+        ]
+        self.test_models.update(
+            {
+                **{
+                    f"user/{10+id_}": {
+                        "username": f"user{10+id_}",
+                        "meeting_ids": [1],
+                        "is_active": True,
+                        "default_password": DEFAULT_PASSWORD,
+                        "password": self.auth.hash(DEFAULT_PASSWORD),
+                        "meeting_user_ids": [100 + id_],
+                    }
+                    for id_ in speaker_ids
+                },
+                **{
+                    f"meeting_user/{100+id_}": {
+                        "meeting_id": 1,
+                        "speaker_ids": [id_],
+                        "user_id": 10 + id_,
+                    }
+                    for id_ in speaker_ids
+                },
+                **{
+                    f"speaker/{id_}": {
+                        "meeting_id": 1,
+                        "meeting_user_id": 100 + id_,
+                        "list_of_speakers_id": 23,
+                        "weight": id_,
+                        **speakers[id_ - 1],
+                    }
+                    for id_ in speaker_ids
+                },
+            }
+        )
+        self.set_models(self.test_models)
+
+    def test_create_intervention_without_meeting_user_id_and_other_speeches(
+        self,
+    ) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.create_expansive_test_data()
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/16",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 3,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        for i in range(5, 7):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 4})
+        for i in range(7, 16):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 3})
+
+    def test_create_point_of_order_with_other_speeches(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_point_of_order_speakers"
+        ] = True
+        self.create_meeting(1)
+        self.set_user_groups(1, [2])
+        self.create_expansive_test_data()
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 1,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/16",
+            {
+                "meeting_user_id": 1,
+                "list_of_speakers_id": 23,
+                "weight": 5,
+                "point_of_order": True,
+            },
+        )
+        for i in range(5, 9):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 4})
+        for i in range(9, 16):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 3})
+
+    def test_create_other_state_without_meeting_user_id(self) -> None:
         self.set_models(self.test_models)
         for state in (
             SpeechState.PRO,
             SpeechState.CONTRA,
             SpeechState.CONTRIBUTION,
-            SpeechState.INTERVENTION,
         ):
             response = self.request(
                 "speaker.create", {"list_of_speakers_id": 23, "speech_state": state}

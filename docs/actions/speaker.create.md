@@ -3,7 +3,7 @@
 {
 // Required
     list_of_speakers_id: Id;
-    meeting_user_id: Id;  // except if speech_state == interposed_question, see below
+    meeting_user_id: Id;  // except if speech_state == interposed_question or speech_state == intervention, see below
 
 // Optional
     speech_state: string;
@@ -57,6 +57,7 @@ There are many things to watch out for:
 - If `speech_state == "interposed_question"`, the speaker has to be sorted after all other
   interposed questions, but before all other speakers (including point of order speakers)
 - The speech states `intervention` and `interposed_question` cannot be combined with `point_of_order == True`
+- If `speech_state == "intervention"`, the speaker has to be sorted after all other intervention, but before all other speakers (including point of order speakers)
 
 If the optional `structure_level_id` is given, it is checked whether a
 `structure_level_list_of_speakers` for this LOS and structure level exists. If it doesn't, it is
