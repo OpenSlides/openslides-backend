@@ -1068,6 +1068,40 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         for i in range(7, 16):
             self.assert_model_exists(f"speaker/{i}", {"weight": i - 3})
 
+    def test_create_intervention_with_other_speeches_and_answers(
+        self,
+    ) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.create_expansive_test_data()
+        self.set_models(
+            {
+                "speaker/7": {
+                    "point_of_order": False,
+                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                }
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/16",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 4,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        for i in range(5, 8):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 4})
+        for i in range(8, 16):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 3})
+
     def test_create_intervention_without_meeting_user_permission(self) -> None:
         self.create_meeting()
         self.set_models(

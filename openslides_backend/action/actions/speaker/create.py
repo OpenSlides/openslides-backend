@@ -261,7 +261,12 @@ class SpeakerCreateAction(
         and_content: list[FilterOperator | Or] = [
             FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
             Or(
-                FilterOperator("speech_state", "!=", SpeechState.INTERVENTION),
+                And(
+                    FilterOperator("speech_state", "!=", SpeechState.INTERVENTION),
+                    FilterOperator(
+                        "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
+                    ),
+                ),
                 FilterOperator("speech_state", "=", None),
             ),
             FilterOperator("begin_time", "=", None),
