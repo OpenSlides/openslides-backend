@@ -392,7 +392,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": SpeechState.INTERVENTION,
+                    "speech_state": SpeechState.PRO,
                     "meeting_user_id": None,
                 },
             }
@@ -702,7 +702,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "You can not change the speech_state of a started intervention."
+            == "You can not change the speech_state of a started intervention or intervention answer."
         )
 
     def test_update_non_running_intervention_with_other_state(self) -> None:
@@ -725,7 +725,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "You can not change the speech_state of a started intervention."
+            == "You can not change the speech_state of a started intervention or intervention answer."
         )
 
     def test_update_running_speaker_with_speech_state(self) -> None:
@@ -898,3 +898,70 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "'weight'",
         ]:
             self.assertIn(field, message)
+
+    def test_update_set_meeting_user_for_empty_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION,
+                }
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_set_meeting_user_for_non_empty_intervention(self) -> None:
+        self.create_meeting(1)
+        alice_id = self.create_user("alice", [3])
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
+        response = self.request(
+            "speaker.update", {"id": 890, "meeting_user_id": alice_id}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You cannot set the meeting_user_id."
+
+    def test_update_set_meeting_user_for_empty_intervention_answer(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                }
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_set_meeting_user_for_non_empty_intervention_answer(self) -> None:
+        self.create_meeting(1)
+        alice_id = self.create_user("alice", [3])
+        self.set_models(
+            {"speaker/890": {"speech_state": SpeechState.INTERVENTION_ANSWER}}
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "meeting_user_id": alice_id}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You cannot set the meeting_user_id."
+
+    def test_update_speech_state_without_meeting_user_error(self) -> None:
+        self.create_meeting(1)
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                }
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot set speakers without meeting_user_id to anything other than intervention or intervention answer."
+        )

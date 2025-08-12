@@ -62,19 +62,35 @@ class SpeakerUpdate(
                 "structure_level_list_of_speakers_id",
             ],
         )
-        if (
-            speaker.get("speech_state") == SpeechState.INTERPOSED_QUESTION
-            and "speech_state" in instance
-            and instance["speech_state"] != SpeechState.INTERPOSED_QUESTION
-        ):
-            raise ActionException(
-                "You cannot change the speech state of an interposed_question."
-            )
+        if "speech_state" in instance:
+            if (
+                speaker.get("speech_state") == SpeechState.INTERPOSED_QUESTION
+                and instance["speech_state"] != SpeechState.INTERPOSED_QUESTION
+            ):
+                raise ActionException(
+                    "You cannot change the speech state of an interposed_question."
+                )
+            elif (
+                speaker.get("speech_state")
+                in [SpeechState.INTERVENTION, SpeechState.INTERVENTION_ANSWER]
+                and not speaker.get("meeting_user_id")
+                and instance["speech_state"]
+                not in [SpeechState.INTERVENTION, SpeechState.INTERVENTION_ANSWER]
+                and not instance.get("meeting_user_id")
+            ):
+                raise ActionException(
+                    "Cannot set speakers without meeting_user_id to anything other than intervention or intervention answer."
+                )
         if "meeting_user_id" in instance:
             if (
                 instance["meeting_user_id"] is None
                 or speaker.get("meeting_user_id")
-                or speaker.get("speech_state") != SpeechState.INTERPOSED_QUESTION
+                or speaker.get("speech_state")
+                not in [
+                    SpeechState.INTERPOSED_QUESTION,
+                    SpeechState.INTERVENTION,
+                    SpeechState.INTERVENTION_ANSWER,
+                ]
             ):
                 raise ActionException("You cannot set the meeting_user_id.")
         elif "structure_level_id" in instance and speaker.get("begin_time"):
@@ -92,9 +108,12 @@ class SpeakerUpdate(
             else speaker.get("point_of_order")
         )
         if speaker.get("begin_time"):
-            if speaker.get("speech_state") == SpeechState.INTERVENTION:
+            if speaker.get("speech_state") in [
+                SpeechState.INTERVENTION,
+                SpeechState.INTERVENTION_ANSWER,
+            ]:
                 raise ActionException(
-                    "You can not change the speech_state of a started intervention."
+                    "You can not change the speech_state of a started intervention or intervention answer."
                 )
             if instance.get("structure_level_id") or (
                 speaker.get("structure_level_list_of_speakers_id")
