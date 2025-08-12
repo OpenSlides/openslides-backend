@@ -615,7 +615,20 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/111")
+        self.assert_model_exists(
+            "motion/111",
+            {
+                "id": 111,
+                "category_id": 2,
+                "state_extension": "test",
+                "recommendation_extension": "test",
+                "start_line_number": 1,
+                "created": now.replace(microsecond=0, tzinfo=ZoneInfo("UTC")),
+                "tag_ids": [3],
+                "block_id": 4,
+                "supporter_meeting_user_ids": [1],
+            },
+        )
 
     def test_update_permission_submitter_allowed(self) -> None:
         self.set_organization_management_level(None)
