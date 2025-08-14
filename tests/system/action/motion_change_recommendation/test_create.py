@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
@@ -9,12 +12,17 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [233]},
-                "motion/233": {"meeting_id": 1},
+                "motion/233": {
+                    "title": "motion 233",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "sequential_number": 233,
+                },
             }
         )
 
     def test_create_good_required_fields(self) -> None:
+        now = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "motion_change_recommendation.create",
             {
@@ -25,19 +33,27 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion_change_recommendation/1")
-        assert model.get("line_from") == 125
-        assert model.get("line_to") == 234
-        assert model.get("text") == "text_DvLXGcdW"
-        assert model.get("motion_id") == 233
-        assert model.get("type") == "replacement"
-        assert model.get("meeting_id") == 1
-        assert int(str(model.get("creation_time"))) > 1600246886
+        model = self.assert_model_exists(
+            "motion_change_recommendation/1",
+            {
+                "line_from": 125,
+                "line_to": 234,
+                "text": "text_DvLXGcdW",
+                "motion_id": 233,
+                "type": "replacement",
+                "meeting_id": 1,
+            },
+        )
+        assert (
+            model.get("creation_time", datetime.fromtimestamp(0, ZoneInfo("UTC")))
+            >= now
+        )
         self.assert_history_information(
             "motion/233", ["Motion change recommendation created"]
         )
 
     def test_create_good_all_fields(self) -> None:
+        now = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "motion_change_recommendation.create",
             {
@@ -52,23 +68,29 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion_change_recommendation/1")
-        assert model.get("line_from") == 125
-        assert model.get("line_to") == 234
-        assert model.get("text") == "text_DvLXGcdW"
-        assert model.get("motion_id") == 233
-        assert model.get("rejected") is False
-        assert model.get("internal") is True
-        assert model.get("type") == "replacement"
-        assert model.get("other_description") == "other_description_iuDguxZp"
-        assert model.get("meeting_id") == 1
-        assert int(str(model.get("creation_time"))) > 1600246886
+        model = self.assert_model_exists(
+            "motion_change_recommendation/1",
+            {
+                "line_from": 125,
+                "line_to": 234,
+                "text": "text_DvLXGcdW",
+                "motion_id": 233,
+                "rejected": False,
+                "internal": True,
+                "type": "replacement",
+                "other_description": "other_description_iuDguxZp",
+                "meeting_id": 1,
+            },
+        )
+        assert (
+            model.get("creation_time", datetime.fromtimestamp(0, ZoneInfo("UTC"))) > now
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion_change_recommendation.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['line_from', 'line_to', 'motion_id', 'text'] properties",
+        self.assertEqual(
+            "Action motion_change_recommendation.create: data must contain ['line_from', 'line_to', 'motion_id', 'text'] properties",
             response.json["message"],
         )
 
@@ -84,8 +106,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must not contain {'wrong_field'} properties",
+        self.assertEqual(
+            "Action motion_change_recommendation.create: data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
 
@@ -134,8 +156,12 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"motion_ids": [233]},
-                "motion/233": {"meeting_id": 1},
+                "motion/233": {
+                    "title": "motion 233",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "sequential_number": 233,
+                },
             }
         )
 
@@ -171,9 +197,8 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
     def test_create_change_recommendation_to_lt_from(self) -> None:
         response = self.cr_request(42, 24)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "Starting line must be smaller than ending line.",
-            response.json["message"],
+        self.assertEqual(
+            "Starting line must be smaller than ending line.", response.json["message"]
         )
 
     def test_create_change_recommendation_other_not_colliding(self) -> None:
@@ -181,13 +206,22 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(10, 15)
         response = self.cr_request(6, 9)
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_change_recommendation/3",
+            {
+                "line_from": 6,
+                "line_to": 9,
+                "text": "text",
+                "motion_id": 233,
+            },
+        )
 
     def test_create_change_recommendation_other_colliding(self) -> None:
         self.create_change_recommendation(1, 5)
         response = self.cr_request(1, 5)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
+        self.assertEqual(
+            "The recommendation collides with an existing one (line 1 - 5).",
             response.json["message"],
         )
 
@@ -195,8 +229,8 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(1, 5)
         response = self.cr_request(4, 10)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
+        self.assertEqual(
+            "The recommendation collides with an existing one (line 4 - 10).",
             response.json["message"],
         )
 
@@ -204,8 +238,8 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(5, 10)
         response = self.cr_request(1, 6)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
+        self.assertEqual(
+            "The recommendation collides with an existing one (line 1 - 6).",
             response.json["message"],
         )
 
@@ -213,8 +247,8 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(1, 5)
         response = self.cr_request(5, 10)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
+        self.assertEqual(
+            "The recommendation collides with an existing one (line 5 - 10).",
             response.json["message"],
         )
 
@@ -222,12 +256,22 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(5, 10)
         response = self.cr_request(1, 5)
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
+        self.assertEqual(
+            "The recommendation collides with an existing one (line 1 - 5).",
             response.json["message"],
         )
 
     def test_create_change_recommendation_other_motion_not_colliding(self) -> None:
+        self.create_motion(1, 42)
         self.create_change_recommendation(1, 5, motion_id=42)
         response = self.cr_request(1, 5)
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_change_recommendation/2",
+            {
+                "line_from": 1,
+                "line_to": 5,
+                "text": "text",
+                "motion_id": 233,
+            },
+        )
