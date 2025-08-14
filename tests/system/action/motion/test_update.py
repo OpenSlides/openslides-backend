@@ -319,8 +319,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             {
                 "motion/111": {"recommendation_id": 111},
                 "motion_state/111": {
-                    "motion_ids": [111],
-                    "motion_recommendation_ids": [111],
                     "set_workflow_timestamp": True,
                 },
             }
