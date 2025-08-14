@@ -17,7 +17,7 @@ class MotionSortActionTest(BaseActionTestCase):
             },
         }
 
-    def test_sort_singe_node_correct(self) -> None:
+    def test_sort_single_node_correct(self) -> None:
         self.create_motion(222, 22)
         response = self.request(
             "motion.sort", {"meeting_id": 222, "tree": [{"id": 22}]}
