@@ -136,11 +136,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "motion_state/1": {"allow_support": True},
                 "meeting/1": {
                     "motions_supporters_min_amount": 1,
-                    **(
-                        {}
-                        if disable_delegations
-                        else {"users_enable_vote_delegations": True}
-                    ),
+                    "users_enable_vote_delegations": False if disable_delegations else True
                     delegator_setting: True,
                 },
             }
