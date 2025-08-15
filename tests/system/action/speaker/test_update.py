@@ -913,7 +913,6 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
 
     def test_update_set_meeting_user_for_non_empty_intervention(self) -> None:
-        self.create_meeting(1)
         alice_id = self.create_user("alice", [3])
         self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
         response = self.request(

@@ -995,10 +995,18 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {"begin_time": 200, "end_time": 300, "point_of_order": True},
             {"begin_time": 300, "end_time": 400},
             {"begin_time": 400},
+            # All of the above should be ignored for the sake of sorting
+            # After creating something with special insertion rules weight should be
+            # newly calculated for all of the below, beginning with weight 1 for the
+            # first intervention
             {"speech_state": SpeechState.INTERVENTION},
             {"speech_state": SpeechState.INTERVENTION},
+            # New interventions should land here (with weight 3)
             {"point_of_order": True},
             {"point_of_order": True},
+            # new points of order should land here (with weight 5)
+            # all of the below are additional speeches to ensure the algorithm
+            # doesn't get confused by speeches that were artificially moved up/down
             {},
             {"speech_state": SpeechState.INTERVENTION},
             {"point_of_order": True},

@@ -270,7 +270,6 @@ class SpeakerCreateAction(
                 FilterOperator("speech_state", "=", None),
             ),
             FilterOperator("begin_time", "=", None),
-            FilterOperator("meeting_id", "=", meeting_id),
         ]
         if also_point_of_order:
             and_content.append(
