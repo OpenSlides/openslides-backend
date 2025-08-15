@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -41,7 +41,10 @@ class SpeakerCreateAction(
             "speech_state",
             "point_of_order_category_id",
         ],
-        additional_optional_fields={"structure_level_id": required_id_schema},
+        additional_optional_fields={
+            "structure_level_id": required_id_schema,
+            "answer_to_id": required_id_schema,
+        },
     )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -53,13 +56,29 @@ class SpeakerCreateAction(
         is_interposed_question = (
             instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION
         )
+        is_intervention = instance.get("speech_state") == SpeechState.INTERVENTION
+        is_intervention_answer = (
+            instance.get("speech_state") == SpeechState.INTERVENTION_ANSWER
+        )
+        answer_to: int | None = instance.pop("answer_to_id", None)
+        if answer_to and not is_intervention_answer:
+            raise ActionException("Only intervention answers may have 'answer_to' set")
+        if is_intervention_answer and not answer_to:
+            raise ActionException(
+                "Cannot create intervention answer without intervention id."
+            )
         list_of_speakers_id = instance["list_of_speakers_id"]
         max_weight = self._get_max_weight(list_of_speakers_id, instance["meeting_id"])
         if max_weight is None:
-            instance["weight"] = 1
-            return instance
+            if not is_intervention_answer:
+                instance["weight"] = 1
+                return instance
+            else:
+                max_weight = 0
 
-        if not instance.get("point_of_order") and not is_interposed_question:
+        if not instance.get("point_of_order") and not (
+            is_interposed_question or is_intervention or is_intervention_answer
+        ):
             instance["weight"] = max_weight + 1
             return instance
 
@@ -85,7 +104,51 @@ class SpeakerCreateAction(
                 list_of_speakers_id,
                 instance["meeting_id"],
             )
-        elif meeting.get("list_of_speakers_enable_point_of_order_categories"):
+        elif is_intervention_answer:
+            parent = self.datastore.get(
+                fqid_from_collection_and_id("speaker", cast(int, answer_to)),
+                ["weight", "speech_state", "end_time"],
+            )
+            if not parent or parent.get("speech_state") != SpeechState.INTERVENTION:
+                raise ActionException(
+                    "Cannot create intervention answer answering to a non-intervention speech."
+                )
+            if parent.get("end_time"):
+                raise ActionException(
+                    "Cannot create intervention answer for finished intervention."
+                )
+            weight = parent["weight"] + 1
+            if parent.get("begin_time"):
+                weight = 1
+            weight = self.datastore.min(
+                collection="speaker",
+                filter=And(
+                    FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                    FilterOperator("weight", ">=", weight),
+                    Or(
+                        FilterOperator("speech_state", "=", None),
+                        FilterOperator(
+                            "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
+                        ),
+                    ),
+                    FilterOperator("begin_time", "=", None),
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                ),
+                field="weight",
+            )
+            if weight is None:
+                instance["weight"] = max_weight + 1
+                return instance
+
+            speaker_ids = self._insert_before_weight(
+                instance["id"],
+                weight,
+                list_of_speakers_id,
+                instance["meeting_id"],
+            )
+        elif not is_intervention and meeting.get(
+            "list_of_speakers_enable_point_of_order_categories"
+        ):
             # fetch point of order categories
             result = self.datastore.get_many(
                 [
@@ -111,6 +174,7 @@ class SpeakerCreateAction(
                     "weight",
                     "point_of_order",
                     "point_of_order_category_id",
+                    "speech_state",
                 ],
             )
             los = sorted(speakers.values(), key=lambda k: k["weight"])
@@ -120,7 +184,7 @@ class SpeakerCreateAction(
             ]
             while index >= 0:
                 speaker = los[index]
-                if (
+                if speaker["speech_state"] == SpeechState.INTERVENTION or (
                     speaker.get("point_of_order")
                     and speaker.get("point_of_order_category_id")
                     and categories[speaker["point_of_order_category_id"]]["rank"]
@@ -131,8 +195,8 @@ class SpeakerCreateAction(
             los.insert(index + 1, {"id": instance["id"]})
             speaker_ids = [speaker["id"] for speaker in los]
         else:
-            weight_no_poos_min = self._get_no_poo_min(
-                list_of_speakers_id, instance["meeting_id"]
+            weight_no_poos_min = self._get_no_intervention_min(
+                list_of_speakers_id, instance["meeting_id"], not is_intervention
             )
             if weight_no_poos_min is None:
                 instance["weight"] = max_weight + 1
@@ -191,18 +255,32 @@ class SpeakerCreateAction(
             field="weight",
         )
 
-    def _get_no_poo_min(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
-        return self.datastore.min(
-            collection="speaker",
-            filter=And(
-                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+    def _get_no_intervention_min(
+        self, list_of_speakers_id: int, meeting_id: int, also_point_of_order: bool
+    ) -> int | None:
+        and_content: list[FilterOperator | Or] = [
+            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+            Or(
+                And(
+                    FilterOperator("speech_state", "!=", SpeechState.INTERVENTION),
+                    FilterOperator(
+                        "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
+                    ),
+                ),
+                FilterOperator("speech_state", "=", None),
+            ),
+            FilterOperator("begin_time", "=", None),
+        ]
+        if also_point_of_order:
+            and_content.append(
                 Or(
                     FilterOperator("point_of_order", "=", False),
                     FilterOperator("point_of_order", "=", None),
-                ),
-                FilterOperator("begin_time", "=", None),
-                FilterOperator("meeting_id", "=", meeting_id),
-            ),
+                )
+            )
+        return self.datastore.min(
+            collection="speaker",
+            filter=And(and_content),
             field="weight",
         )
 
@@ -244,7 +322,11 @@ class SpeakerCreateAction(
             )
             user_id = meeting_user["user_id"]
         else:
-            if instance.get("speech_state") != SpeechState.INTERPOSED_QUESTION:
+            if instance.get("speech_state") not in [
+                SpeechState.INTERPOSED_QUESTION,
+                SpeechState.INTERVENTION,
+                SpeechState.INTERVENTION_ANSWER,
+            ]:
                 raise ActionException("meeting_user_id is required.")
             user_id = None
 

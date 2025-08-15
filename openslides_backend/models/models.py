@@ -1284,6 +1284,7 @@ class Speaker(Model):
                 "pro",
                 "contra",
                 "intervention",
+                "intervention_answer",
                 "interposed_question",
             ]
         }
