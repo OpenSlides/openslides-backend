@@ -222,9 +222,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         motion_data: PartialModel = {},
     ) -> None:
         """
-        The meeting must already exist.
-        Creates a motion and all other models required for this with id 1.
+        The meeting and motion_state must already exist.
+        Creates a motion with id 1 by deafult.
         You can specify another id by setting base.
+        If no state_id is passed, meeting_must have `state_id` equal to `id`.
         """
         self.set_models(
             {
