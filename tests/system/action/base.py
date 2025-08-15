@@ -223,9 +223,9 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> None:
         """
         The meeting and motion_state must already exist.
-        Creates a motion with id 1 by deafult.
+        Creates a motion with id 1 by default.
         You can specify another id by setting base.
-        If no state_id is passed, meeting_must have `state_id` equal to `id`.
+        If no state_id is passed, meeting must have `state_id` equal to `id`.
         """
         self.set_models(
             {
