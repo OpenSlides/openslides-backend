@@ -1,8 +1,8 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
@@ -38,16 +38,11 @@ class MotionCreateBase(
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
-        if workflow_id:
-            workflow = self.datastore.get(
-                fqid_from_collection_and_id("motion_workflow", workflow_id),
-                ["first_state_id"],
-            )
-            instance["state_id"] = workflow.get("first_state_id")
-        else:
-            raise ActionException(
-                "No matching default workflow defined on this meeting"
-            )
+        workflow = self.datastore.get(
+            fqid_from_collection_and_id("motion_workflow", workflow_id),
+            ["first_state_id"],
+        )
+        instance["state_id"] = workflow.get("first_state_id")
 
     def create_submitters(self, instance: dict[str, Any]) -> None:
         submitter_ids = instance.pop("submitter_ids", [])
@@ -85,7 +80,7 @@ class MotionCreateBase(
         )
 
     def set_created_last_modified(self, instance: dict[str, Any]) -> None:
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         instance["last_modified"] = timestamp
         instance["created"] = timestamp

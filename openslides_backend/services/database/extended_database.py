@@ -445,18 +445,19 @@ class ExtendedDatabase(Database):
                         [field_or_star],
                         lock_result,
                     )
-                    if response:
-                        response_values = [
+                    if response and (
+                        response_values := [
                             model[field_or_star]
                             for model in response.values()
                             if model[field_or_star] is not None
                         ]
-                        if response_values:
-                            if method == "max":
-                                return max(response_values)
-                            else:
-                                return min(response_values)
-                    return None
+                    ):
+                        if method == "max":
+                            return max(response_values)
+                        else:
+                            return min(response_values)
+                    else:
+                        return None
                 case _:
                     raise BadCodingException(
                         f"Invalid aggregate function: {method} frfr"
