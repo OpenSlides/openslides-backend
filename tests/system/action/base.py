@@ -278,8 +278,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "name": "flo",
                     "sequential_number": base,
                     "meeting_id": base,
-                    "default_workflow_meeting_id": base,
-                    "default_amendment_workflow_meeting_id": base,
                     "first_state_id": base,
                 },
                 f"motion_state/{base}": {
