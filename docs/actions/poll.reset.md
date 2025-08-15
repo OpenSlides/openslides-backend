@@ -11,5 +11,5 @@ If `type != "pseudoanonymous"`, `is_pseudoanonymized` may be reset to `false` (i
 ## Permissions
 The request user needs:
 - `motion.can_manage_polls` if the poll's content object is a motion
-- `assignment.can_manage` if the poll's content object is an assignment
+- `assignment.can_manage_polls` if the poll's content object is an assignment
 - `poll.can_manage` if the poll's content object is a topic

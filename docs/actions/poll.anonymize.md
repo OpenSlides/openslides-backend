@@ -11,5 +11,5 @@ Only for non-analog polls in the state *finished* or *published*. Sets all `vote
 ## Permissions
 The request user needs:
 - `motion.can_manage_polls` if the poll's content object is a motion
-- `assignment.can_manage` if the poll's content object is an assignment
+- `assignment.can_manage_polls` if the poll's content object is an assignment
 - `poll.can_manage` if the poll's content object is a topic
