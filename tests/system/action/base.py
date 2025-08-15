@@ -218,7 +218,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self,
         meeting_id: int,
         base: int = 1,
-        state_id: int = None,
+        state_id: int = 0,
         motion_data: PartialModel = {},
     ) -> None:
         """
