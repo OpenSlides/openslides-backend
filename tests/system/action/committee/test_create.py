@@ -8,11 +8,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
-            ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
             "user/22": {"username": "test_user22"},
-            "organization_tag/12": {"organization_id": 1},
+            "organization_tag/12": {"name": "taggy", "color": "#345678"},
         }
 
     def test_create(self) -> None:
@@ -95,11 +94,11 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             "user/13",
             {
                 "username": "test",
-                "committee_ids": [3],
-                "committee_management_ids": [3],
             },
         )
-        self.create_model("committee/3", {"name": "test_committee2", "user_ids": [13]})
+        self.create_model(
+            "committee/3", {"name": "test_committee2", "manager_ids": [13]}
+        )
         committee_name = "test_committee4"
 
         response = self.request(
@@ -194,13 +193,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_self_forwarded_and_received_ok_self_None(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "test_organization1",
-                },
-            }
-        )
         response = self.request(
             "committee.create",
             {
@@ -219,13 +211,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_self_forwarded_and_received_asyn1(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "test_organization1",
-                },
-            }
-        )
         response = self.request(
             "committee.create",
             {
@@ -242,13 +227,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_self_forwarded_and_received_asyn2(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "test_organization1",
-                },
-            }
-        )
         response = self.request(
             "committee.create",
             {
@@ -303,24 +281,8 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create_after_deleting_default_committee(self) -> None:
         # details see Backend Issue1071
+        self.test_models["committee/1"] = {"name": "com1", "manager_ids": [1]}
         self.set_models(self.test_models)
-        self.set_models(
-            {
-                "committee/1": {
-                    "organization_tag_ids": [12],
-                    "forward_to_committee_ids": [2],
-                    "receive_forwardings_from_committee_ids": [3],
-                    "user_ids": [1],
-                    "organization_id": 1,
-                    "manager_ids": [1],
-                },
-                "user/1": {
-                    "committee_management_ids": [1],
-                    "committee_ids": [1],
-                },
-                ONE_ORGANIZATION_FQID: {"committee_ids": [1]},
-            }
-        )
         response = self.request("committee.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("committee/1")
@@ -352,9 +314,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         external_id = "external"
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "c1",
                     "external_id": external_id,
                 },
@@ -378,9 +338,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         external_id = ""
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "c1",
                     "external_id": external_id,
                 },
@@ -409,7 +367,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "Committee 1",
                 },
                 ONE_ORGANIZATION_FQID: {
@@ -441,7 +398,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "Committee 1",
                 },
                 ONE_ORGANIZATION_FQID: {
@@ -472,13 +428,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "Committee 1",
-                    "child_ids": [2],
                     "all_child_ids": [2],
                 },
                 "committee/2": {
-                    "organization_id": 1,
                     "name": "Committee 2",
                     "parent_id": 1,
                     "all_parent_ids": [1],
@@ -538,14 +491,8 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_with_parent_wrong_committee_admin(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "organization_id": 1,
-                    "name": "Committee 1",
-                },
-                "committee/2": {
-                    "organization_id": 1,
-                    "name": "Committee 2",
-                },
+                "committee/1": {"name": "Committee 1"},
+                "committee/2": {"name": "Committee 2"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "enable_electronic_voting": True,
@@ -569,7 +516,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {
-                    "organization_id": 1,
                     "name": "Committee 1",
                 },
                 ONE_ORGANIZATION_FQID: {
@@ -605,11 +551,9 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "committee/1": {
                     "forward_to_committee_ids": [2],
-                    "receive_forwardings_from_committee_ids": [2],
                 },
                 "committee/2": {
                     "forward_to_committee_ids": [1],
-                    "receive_forwardings_from_committee_ids": [1],
                 },
             }
         )

@@ -7,43 +7,27 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     COMMITTEE_FQID = "committee/1"
 
     def create_data(self) -> None:
+        self.create_committee(self.COMMITTEE_ID)
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"committee_ids": [self.COMMITTEE_ID]},
-                "user/20": {"committee_ids": [self.COMMITTEE_ID]},
-                "user/21": {
-                    "committee_ids": [self.COMMITTEE_ID],
-                    "committee_management_ids": [self.COMMITTEE_ID],
-                },
-                self.COMMITTEE_FQID: {
-                    "organization_id": 1,
-                    "user_ids": [20, 21],
-                    "manager_ids": [21],
-                },
+                "user/20": {"username": "user_20"},
+                "user/21": {"username": "user_21"},
             }
         )
+        self.set_committee_management_level([self.COMMITTEE_ID], 21)
 
     def test_delete_correct(self) -> None:
         self.create_data()
+        self.create_committee(2)
+        self.create_committee(3)
         self.set_models(
             {
-                self.COMMITTEE_FQID: {
-                    "organization_tag_ids": [12],
-                    "forward_to_committee_ids": [2],
-                    "receive_forwardings_from_committee_ids": [3],
-                    "organization_id": 1,
-                },
-                "committee/2": {
-                    "receive_forwardings_from_committee_ids": [1],
-                    "organization_id": 1,
-                },
-                "committee/3": {"forward_to_committee_ids": [1], "organization_id": 1},
-                "meeting/1": {"user_ids": [20]},
-                "user/20": {"meeting_ids": [1]},
-                ONE_ORGANIZATION_FQID: {"committee_ids": [1, 2, 3]},
+                self.COMMITTEE_FQID: {"forward_to_committee_ids": [2]},
+                "committee/3": {"forward_to_committee_ids": [1]},
                 "organization_tag/12": {
+                    "name": "org tag 1",
+                    "color": "#078942",
                     "tagged_ids": ["committee/1"],
-                    "organization_id": 1,
                 },
             }
         )
@@ -51,18 +35,18 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_not_exists(self.COMMITTEE_FQID)
-        self.assert_model_exists("user/20", {"committee_ids": []})
+        self.assert_model_exists("user/20", {"committee_ids": None})
         self.assert_model_exists(
             "user/21",
-            {"committee_ids": [], "committee_management_ids": []},
+            {"committee_ids": None, "committee_management_ids": None},
         )
         organization1 = self.get_model(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization1["committee_ids"], [2, 3])
-        self.assert_model_exists("organization_tag/12", {"tagged_ids": []})
+        self.assert_model_exists("organization_tag/12", {"tagged_ids": None})
         self.assert_model_exists(
-            "committee/2", {"receive_forwardings_from_committee_ids": []}
+            "committee/2", {"receive_forwardings_from_committee_ids": None}
         )
-        self.assert_model_exists("committee/3", {"forward_to_committee_ids": []})
+        self.assert_model_exists("committee/3", {"forward_to_committee_ids": None})
 
     def test_delete_wrong_id(self) -> None:
         self.create_data()
@@ -73,10 +57,8 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
     def test_delete_protected_by_meeting(self) -> None:
         self.create_data()
-        self.create_model(
-            "meeting/22", {"name": "name_meeting_22", "committee_id": self.COMMITTEE_ID}
-        )
-        self.update_model(self.COMMITTEE_FQID, {"meeting_ids": [22]})
+        self.create_meeting(22)
+        self.set_models({"meeting/22": {"committee_id": self.COMMITTEE_ID}})
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
 
@@ -163,22 +145,15 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     def test_delete_2_committees_with_forwarding(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"committee_ids": [1, 2]},
-                "user/20": {
-                    "committee_ids": [1, 2],
-                    "committee_management_ids": [1, 2],
-                },
+                "user/20": {"username": "loisel"},
                 "committee/1": {
-                    "organization_id": 1,
-                    "user_ids": [20],
+                    "name": "com1",
                     "manager_ids": [20],
                     "forward_to_committee_ids": [2],
                 },
                 "committee/2": {
-                    "organization_id": 1,
-                    "user_ids": [20],
+                    "name": "com2",
                     "manager_ids": [20],
-                    "receive_forwardings_from_committee_ids": [1],
                 },
             }
         )
@@ -189,7 +164,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/20",
             {
-                "committee_management_ids": [],
-                "committee_ids": [],
+                "committee_management_ids": None,
+                "committee_ids": None,
             },
         )
