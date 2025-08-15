@@ -3,6 +3,8 @@ from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
+from ...shared.filters import And, FilterOperator
+
 
 class Migration(BaseModelMigration):
     """
@@ -16,6 +18,15 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent]:
         groups = self.reader.get_all("group", ["permissions"])
+        groups = self.reader.filter(
+            "group",
+            And(
+                FilterOperator("permissions", "!=", []),
+                FilterOperator("permissions", "!=", None),
+                FilterOperator("meta_deleted", "!=", True),
+            ),
+            ["permissions"],
+        )
         events: list[BaseRequestEvent] = [
             RequestUpdateEvent(
                 fqid_from_collection_and_id("group", id_),

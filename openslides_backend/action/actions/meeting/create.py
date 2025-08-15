@@ -154,6 +154,7 @@ class MeetingCreate(
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Motion.CAN_MANAGE,
+                    Permissions.Motion.CAN_MANAGE_POLLS,
                     Permissions.Projector.CAN_MANAGE,
                     Permissions.Tag.CAN_MANAGE,
                     Permissions.User.CAN_MANAGE,

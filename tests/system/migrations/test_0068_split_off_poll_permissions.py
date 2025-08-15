@@ -56,6 +56,7 @@ def test_migration(write, finalize, assert_model):
             "fqid": "group/8",
             "fields": {"permissions": ["assignment.can_manage", "user.can_manage"]},
         },
+        {"type": "create", "fqid": "group/9", "fields": {"id": 9, "permissions": None}},
     )
     write(
         {"type": "delete", "fqid": "group/7", "fields": {}},
@@ -126,6 +127,13 @@ def test_migration(write, finalize, assert_model):
                 "user.can_manage",
                 "assignment.can_manage_polls",
             ],
+            "meta_deleted": False,
+        },
+    )
+    assert_model(
+        "group/9",
+        {
+            "id": 9,
             "meta_deleted": False,
         },
     )
