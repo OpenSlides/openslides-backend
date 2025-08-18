@@ -999,7 +999,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             # After creating something with special insertion rules weight should be
             # newly calculated for all of the below, beginning with weight 1 for the
             # first intervention
-            {"speech_state": SpeechState.INTERVENTION},
+            {"speech_state": SpeechState.INTERPOSED_QUESTION},
+            # New interposed questions should land here (with weight 2)
             {"speech_state": SpeechState.INTERVENTION},
             # New interventions should land here (with weight 3)
             {"point_of_order": True},
@@ -1049,6 +1050,35 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             }
         )
         self.set_models(self.test_models)
+
+    def test_create_interposed_question_with_other_speeches(
+        self,
+    ) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.create_expansive_test_data()
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/16",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 2,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+        for i in range(5, 6):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 4})
+        for i in range(6, 16):
+            self.assert_model_exists(f"speaker/{i}", {"weight": i - 3})
 
     def test_create_intervention_without_meeting_user_id_and_other_speeches(
         self,

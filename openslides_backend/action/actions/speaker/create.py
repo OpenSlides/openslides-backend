@@ -90,8 +90,10 @@ class SpeakerCreateAction(
             ],
         )
         if is_interposed_question:
-            min_weight = self._get_no_interposed_question_min(
-                list_of_speakers_id, instance["meeting_id"]
+            min_weight = self._get_no_speech_type_min(
+                list_of_speakers_id,
+                instance["meeting_id"],
+                instance.get("speech_state"),
             )
             if min_weight is None:
                 instance["weight"] = max_weight + 1
@@ -195,8 +197,10 @@ class SpeakerCreateAction(
             los.insert(index + 1, {"id": instance["id"]})
             speaker_ids = [speaker["id"] for speaker in los]
         else:
-            weight_no_poos_min = self._get_no_intervention_min(
-                list_of_speakers_id, instance["meeting_id"], not is_intervention
+            weight_no_poos_min = self._get_no_speech_type_min(
+                list_of_speakers_id,
+                instance["meeting_id"],
+                instance.get("speech_state"),
             )
             if weight_no_poos_min is None:
                 instance["weight"] = max_weight + 1
@@ -255,23 +259,38 @@ class SpeakerCreateAction(
             field="weight",
         )
 
-    def _get_no_intervention_min(
-        self, list_of_speakers_id: int, meeting_id: int, also_point_of_order: bool
+    def _get_no_speech_type_min(
+        self,
+        list_of_speakers_id: int,
+        meeting_id: int,
+        for_speech_state: SpeechState | None = None,
     ) -> int | None:
-        and_content: list[FilterOperator | Or] = [
-            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+        """
+        Interposed question > intervention & intervention answer > point of order
+        """
+        and_content: list[FilterOperator | Or | And] = [
             Or(
-                And(
-                    FilterOperator("speech_state", "!=", SpeechState.INTERVENTION),
-                    FilterOperator(
-                        "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
-                    ),
-                ),
+                FilterOperator("speech_state", "!=", SpeechState.INTERPOSED_QUESTION),
                 FilterOperator("speech_state", "=", None),
-            ),
-            FilterOperator("begin_time", "=", None),
+            )
         ]
-        if also_point_of_order:
+        if for_speech_state in [
+            SpeechState.INTERVENTION,
+            SpeechState.INTERVENTION_ANSWER,
+            None,
+        ]:
+            and_content.append(
+                Or(
+                    And(
+                        FilterOperator("speech_state", "!=", SpeechState.INTERVENTION),
+                        FilterOperator(
+                            "speech_state", "!=", SpeechState.INTERVENTION_ANSWER
+                        ),
+                    ),
+                    FilterOperator("speech_state", "=", None),
+                )
+            )
+        if for_speech_state is None:
             and_content.append(
                 Or(
                     FilterOperator("point_of_order", "=", False),
@@ -280,25 +299,12 @@ class SpeakerCreateAction(
             )
         return self.datastore.min(
             collection="speaker",
-            filter=And(and_content),
-            field="weight",
-        )
-
-    def _get_no_interposed_question_min(
-        self, list_of_speakers_id: int, meeting_id: int
-    ) -> int | None:
-        return self.datastore.min(
-            collection="speaker",
             filter=And(
-                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
-                Or(
-                    FilterOperator("speech_state", "=", None),
-                    FilterOperator(
-                        "speech_state", "!=", SpeechState.INTERPOSED_QUESTION
-                    ),
-                ),
-                FilterOperator("begin_time", "=", None),
-                FilterOperator("meeting_id", "=", meeting_id),
+                [
+                    FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                    *and_content,
+                    FilterOperator("begin_time", "=", None),
+                ]
             ),
             field="weight",
         )

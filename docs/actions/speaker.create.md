@@ -58,7 +58,7 @@ There are many things to watch out for:
 - If `speech_state == "interposed_question"`, the speaker has to be sorted after all other
   interposed questions, but before all other speakers (including point of order speakers)
 - The speech states `intervention`, `intervention_answer` and `interposed_question` cannot be combined with `point_of_order == True`
-- If `speech_state == "intervention"`, the speaker has to be sorted after all other intervention, but before all other speakers (including point of order speakers, excluding intervention answers)
+- If `speech_state == "intervention"`, the speaker has to be sorted after all other intervention and interposed questions, but before all other speakers (including point of order speakers, excluding intervention answers)
 - If `speech_state == "intervention_answer"`, `answer_to_id` must be set to the id of an intervention, the speaker will then be sorted directly under that intervention (or, if there are already `intervention_answers` under this intervention, right above the first non-intervention-answer)
 
 If the optional `structure_level_id` is given, it is checked whether a
