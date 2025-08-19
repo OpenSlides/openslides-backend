@@ -1,34 +1,34 @@
 from datetime import datetime
-from typing import Any
 from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from openslides_backend.shared.typing import PartialModel
 
 
 class MotionCategoryNumberMotionsTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion_category/111": {
-                "name": "name_MKKAcYQu",
-                "prefix": "prefix_A",
-                "meeting_id": 1,
-                "sequential_number": 111,
-            },
-            "motion/69": {
-                "title": "title_NAZOknoM",
-                "category_id": 111,
-                "meeting_id": 1,
-                "state_id": 1,
-                "sequential_number": 69,
-            },
-        }
+
+    def create_motion_category(
+        self, meeting_id: int = 1, base: int = 111, category_data: PartialModel = {}
+    ) -> None:
+        self.set_models(
+            {
+                f"motion_category/{base}": {
+                    "name": f"category {base}",
+                    "meeting_id": meeting_id,
+                    "sequential_number": base,
+                    **category_data,
+                }
+            }
+        )
 
     def test_good_single_motion(self) -> None:
         check_time = datetime.now(ZoneInfo("UTC"))
-        self.set_models(self.permission_test_models)
+        self.create_motion_category(1, 111, {"prefix": "prefix_A"})
+        self.create_motion(1, 69, motion_data={"category_id": 111})
 
         response = self.request("motion_category.number_motions", {"id": 111})
         self.assert_status_code(response, 200)
@@ -45,90 +45,30 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                 "meeting/1": {
                     "motions_number_with_blank": True,
                     "motions_number_min_digits": 3,
-                },
-                "motion/78": {
-                    "title": "title_NAZOknoM",
-                    "category_id": 78,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 78,
-                },
-                "motion/85": {
-                    "title": "title_MyMayxxr",
-                    "category_id": 78,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 85,
-                },
-                "motion_category/111": {
-                    "name": "name_MKKAcYQu",
-                    "prefix": "prefix_A",
-                    "meeting_id": 1,
-                    "sequential_number": 111,
-                },
-                "motion_category/78": {
-                    "name": "name_xSBwbHAT",
-                    "parent_id": 111,
-                    "meeting_id": 1,
-                    "sequential_number": 78,
-                },
-                "motion_category/114": {
-                    "name": "name_pIObKJwT",
-                    "parent_id": 111,
-                    "prefix": "prefix_C",
-                    "meeting_id": 1,
-                    "sequential_number": 114,
-                },
+                }
             }
         )
+        self.create_motion_category(1, 111, {"prefix": "prefix_A"})
+        self.create_motion_category(1, 78, {"parent_id": 111})
+        self.create_motion(1, 78, motion_data={"category_id": 78})
+        self.create_motion(1, 85, motion_data={"category_id": 78})
+
         response = self.request("motion_category.number_motions", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/78", {"number": "prefix_A 001"})
         self.assert_model_exists("motion/85", {"number": "prefix_A 002"})
 
     def test_check_amendments_error_case(self) -> None:
-        self.set_models(
-            {
-                "motion/78": {
-                    "title": "title_NAZOknoM",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_id": 78,
-                    "sequential_number": 78,
-                },
-                "motion/666": {
-                    "title": "title_XtzUEFdl",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 666,
-                },
-                "motion/85": {
-                    "title": "title_MyMayxxr",
-                    "lead_motion_id": 666,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_id": 78,
-                    "sequential_number": 85,
-                },
-                "motion_category/111": {
-                    "name": "name_MKKAcYQu",
-                    "meeting_id": 1,
-                    "sequential_number": 111,
-                },
-                "motion_category/78": {
-                    "name": "name_xSBwbHAT",
-                    "parent_id": 111,
-                    "meeting_id": 1,
-                    "sequential_number": 78,
-                },
-                "motion_category/114": {
-                    "name": "name_pIObKJwT",
-                    "parent_id": 111,
-                    "meeting_id": 1,
-                    "sequential_number": 114,
-                },
-            }
+        self.create_motion_category(1, 111)
+        self.create_motion_category(1, 78, {"parent_id": 111})
+        self.create_motion_category(1, 114, {"parent_id": 111})
+
+        self.create_motion(1, 78, motion_data={"category_id": 78})
+        self.create_motion(1, 666)
+        self.create_motion(
+            1, 85, motion_data={"lead_motion_id": 666, "category_id": 78}
         )
+
         response = self.request("motion_category.number_motions", {"id": 111})
         self.assert_status_code(response, 400)
         self.assertEqual(
@@ -144,64 +84,17 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "motions_number_min_digits": 3,
                     "motions_amendments_prefix": "X",
                 },
-                "motion_category/1": {
-                    "name": "name_category_1",
-                    "meeting_id": 1,
-                    "sequential_number": 1,
-                },
-                "motion_category/2": {
-                    "name": "name_category_2",
-                    "parent_id": 1,
-                    "prefix": "A",
-                    "meeting_id": 1,
-                    "sequential_number": 2,
-                },
-                "motion_category/3": {
-                    "name": "name_category_3",
-                    "parent_id": 1,
-                    "prefix": "B",
-                    "meeting_id": 1,
-                    "sequential_number": 13,
-                },
-                "motion/1": {
-                    "title": "title_motion_1",
-                    "category_id": 2,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 1,
-                },
-                "motion/2": {
-                    "title": "title_motion_2",
-                    "category_id": 2,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 2,
-                },
-                "motion/3": {
-                    "title": "title_motion_3",
-                    "category_id": 3,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 3,
-                },
-                "motion/4": {
-                    "title": "title_motion_4",
-                    "category_id": 3,
-                    "meeting_id": 1,
-                    "lead_motion_id": 3,
-                    "state_id": 1,
-                    "sequential_number": 4,
-                },
-                "motion/5": {
-                    "title": "title_motion_5",
-                    "category_id": 3,
-                    "meeting_id": 1,
-                    "lead_motion_id": 3,
-                    "state_id": 1,
-                    "sequential_number": 5,
-                },
             }
         )
+        self.create_motion_category(1, 1)
+        self.create_motion_category(1, 2, {"parent_id": 1, "prefix": "A"})
+        self.create_motion_category(1, 3, {"parent_id": 1, "prefix": "B"})
+
+        self.create_motion(1, 1, motion_data={"category_id": 2})
+        self.create_motion(1, 2, motion_data={"category_id": 2})
+        self.create_motion(1, 3, motion_data={"category_id": 3})
+        self.create_motion(1, 4, motion_data={"category_id": 3, "lead_motion_id": 3})
+        self.create_motion(1, 5, motion_data={"category_id": 3, "lead_motion_id": 3})
 
         response = self.request("motion_category.number_motions", {"id": 1})
         self.assert_status_code(response, 200)
@@ -213,18 +106,11 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_model_exists("motion/5", {"number": "B 003 X 002"})
 
     def test_already_existing_number(self) -> None:
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/70": {
-                    "title": "title_NAZOknoM",
-                    "meeting_id": 1,
-                    "number": "prefix_A01",
-                    "state_id": 1,
-                    "sequential_number": 70,
-                },
-            }
+        self.create_motion_category(1, 111, {"prefix": "prefix_A"})
+        self.create_motion(
+            1, 69, motion_data={"category_id": 111, "number": "prefix_A01"}
         )
+        self.create_motion(1, 70, motion_data={"number": "prefix_A01"})
         response = self.request("motion_category.number_motions", {"id": 111})
         self.assert_status_code(response, 400)
         self.assertEqual(
@@ -233,63 +119,17 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_sort_categories(self) -> None:
-        self.set_models(
-            {
-                "motion_category/1": {
-                    "name": "category_1",
-                    "meeting_id": 1,
-                    "sequential_number": 1,
-                },
-                "motion_category/2": {
-                    "name": "category_2",
-                    "meeting_id": 1,
-                    "parent_id": 1,
-                    "prefix": "C",
-                    "weight": 100,
-                    "sequential_number": 2,
-                },
-                "motion_category/3": {
-                    "name": "category_3",
-                    "meeting_id": 1,
-                    "parent_id": 1,
-                    "prefix": "A",
-                    "weight": 1,
-                    "sequential_number": 3,
-                },
-                "motion_category/4": {
-                    "name": "category_4",
-                    "meeting_id": 1,
-                    "parent_id": 1,
-                    "prefix": "B",
-                    "weight": 10,
-                    "sequential_number": 4,
-                },
-                "motion/1": {
-                    "title": "m1",
-                    "category_id": 2,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 100,
-                    "sequential_number": 1,
-                },
-                "motion/2": {
-                    "title": "m2",
-                    "category_id": 3,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 10,
-                    "sequential_number": 2,
-                },
-                "motion/3": {
-                    "title": "m3",
-                    "category_id": 4,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 1,
-                    "sequential_number": 3,
-                },
-            }
+        self.create_motion_category(1, 1)
+        self.create_motion_category(
+            1, 2, {"parent_id": 1, "prefix": "C", "weight": 100}
         )
+        self.create_motion_category(1, 3, {"parent_id": 1, "prefix": "A", "weight": 1})
+        self.create_motion_category(1, 4, {"parent_id": 1, "prefix": "B", "weight": 10})
+
+        self.create_motion(1, 1, motion_data={"category_id": 2, "category_weight": 100})
+        self.create_motion(1, 2, motion_data={"category_id": 3, "category_weight": 10})
+        self.create_motion(1, 3, motion_data={"category_id": 4, "category_weight": 1})
+
         response = self.request("motion_category.number_motions", {"id": 1})
         self.assert_status_code(response, 200)
 
@@ -298,39 +138,11 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_model_exists("motion/3", {"number": "B02"})
 
     def test_sort_motions(self) -> None:
-        self.set_models(
-            {
-                "motion_category/1": {
-                    "name": "category_1",
-                    "meeting_id": 1,
-                    "sequential_number": 1,
-                },
-                "motion/1": {
-                    "title": "m1",
-                    "category_id": 1,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 100,
-                    "sequential_number": 1,
-                },
-                "motion/2": {
-                    "title": "m2",
-                    "category_id": 1,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 10,
-                    "sequential_number": 2,
-                },
-                "motion/3": {
-                    "title": "m3",
-                    "category_id": 1,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 1,
-                    "sequential_number": 3,
-                },
-            }
-        )
+        self.create_motion_category(1, 1)
+        self.create_motion(1, 1, motion_data={"category_id": 1, "category_weight": 100})
+        self.create_motion(1, 2, motion_data={"category_id": 1, "category_weight": 10})
+        self.create_motion(1, 3, motion_data={"category_id": 1, "category_weight": 1})
+
         response = self.request("motion_category.number_motions", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/1", {"number": "03"})
@@ -338,60 +150,17 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_model_exists("motion/3", {"number": "01"})
 
     def test_stop_prefix_lookup_at_main_category(self) -> None:
-        self.set_models(
-            {
-                "motion_category/1": {
-                    "name": "category_1",
-                    "meeting_id": 1,
-                    "prefix": "A",
-                    "sequential_number": 1,
-                },
-                "motion_category/2": {
-                    "name": "category_2",
-                    "meeting_id": 1,
-                    "parent_id": 1,
-                    "sequential_number": 2,
-                },
-                "motion/1": {
-                    "title": "m1",
-                    "category_id": 2,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 100,
-                    "sequential_number": 1,
-                },
-            }
-        )
+        self.create_motion_category(1, 1, {"prefix": "A"})
+        self.create_motion_category(1, 2, {"parent_id": 1})
+        self.create_motion(1, 1, motion_data={"category_id": 2, "category_weight": 100})
 
         response = self.request("motion_category.number_motions", {"id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/1", {"number": "01"})
 
     def test_invalid_id(self) -> None:
-        self.set_models(
-            {
-                "motion_category/1": {
-                    "name": "category_1",
-                    "meeting_id": 1,
-                    "prefix": "A",
-                    "sequential_number": 1,
-                },
-                "motion_category/2": {
-                    "name": "category_2",
-                    "meeting_id": 1,
-                    "parent_id": 1,
-                    "sequential_number": 2,
-                },
-                "motion/1": {
-                    "title": "m1",
-                    "category_id": 2,
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "category_weight": 100,
-                    "sequential_number": 1,
-                },
-            }
-        )
+        self.create_motion_category()
+        self.create_motion(1, 1, motion_data={"category_id": 111})
 
         response = self.request("motion_category.number_motions", {"id": 222})
         self.assert_status_code(response, 400)
@@ -400,19 +169,20 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_number_motions_no_permissions(self) -> None:
-        self.base_permission_test(
-            self.permission_test_models, "motion_category.number_motions", {"id": 111}
-        )
+        self.create_motion_category()
+        self.base_permission_test({}, "motion_category.number_motions", {"id": 111})
 
     def test_number_motions_permissions(self) -> None:
+        self.create_motion_category()
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion_category.number_motions",
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,
         )
 
     def test_number_motions_permissions_locked_meeting(self) -> None:
+        self.create_motion_category()
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models, "motion_category.number_motions", {"id": 111}
+            {}, "motion_category.number_motions", {"id": 111}
         )

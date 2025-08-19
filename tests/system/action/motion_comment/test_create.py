@@ -6,14 +6,9 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.create_motion(1, 357)
         self.set_models(
             {
-                "motion/357": {
-                    "title": "title_YIDYXmKj",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 357,
-                },
                 "motion_comment_section/78": {
                     "meeting_id": 1,
                     "name": "test",

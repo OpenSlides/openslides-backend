@@ -6,14 +6,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.create_motion(1, 25)
         self.set_models(
             {
-                "motion/25": {
-                    "title": "title_pheK0Ja3ai",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 25,
-                },
                 "motion_change_recommendation/111": {
                     "line_from": 11,
                     "line_to": 23,

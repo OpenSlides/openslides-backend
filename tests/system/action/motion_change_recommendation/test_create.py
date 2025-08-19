@@ -10,16 +10,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.set_models(
-            {
-                "motion/233": {
-                    "title": "motion 233",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 233,
-                },
-            }
-        )
+        self.create_motion(1, 233)
 
     def test_create_good_required_fields(self) -> None:
         now = datetime.now(ZoneInfo("UTC"))
@@ -154,16 +145,7 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         super().setUp()
         self.crid = 0
         self.create_meeting()
-        self.set_models(
-            {
-                "motion/233": {
-                    "title": "motion 233",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 233,
-                },
-            }
-        )
+        self.create_motion(1, 233)
 
     def create_change_recommendation(
         self, line_from: int, line_to: int, motion_id: int = 233

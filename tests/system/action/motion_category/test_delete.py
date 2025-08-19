@@ -30,10 +30,9 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.assert_model_exists("motion_category/111")
 
     def test_delete_handle_remove_relation(self) -> None:
-        self.create_motion(1, 89)
-        self.set_models({"motion/89": {"category_id": 111}})
-
-        self.request("motion_category.delete", {"id": 111})
+        self.create_motion(1, 89, motion_data={"category_id": 111})
+        response = self.request("motion_category.delete", {"id": 111})
+        self.assert_status_code(response, 200)
         self.assert_model_exists("motion/89", {"category_id": None})
         self.assert_model_exists("meeting/1", {"motion_category_ids": None})
 

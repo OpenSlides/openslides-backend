@@ -8,18 +8,22 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.set_models(
+            {
+                "motion_category/111": {
+                    "name": "name_srtgb123",
+                    "prefix": "prefix_JmDHFgvH",
+                    "meeting_id": 1,
+                    "sequential_number": 111,
+                }
+            }
+        )
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion/89": {
                 "title": "motion 89",
                 "meeting_id": 1,
                 "state_id": 1,
                 "sequential_number": 89,
-            },
-            "motion_category/111": {
-                "name": "name_srtgb123",
-                "prefix": "prefix_JmDHFgvH",
-                "meeting_id": 1,
-                "sequential_number": 111,
             },
         }
 
@@ -41,16 +45,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_update_delete_prefix(self) -> None:
-        self.set_models(
-            {
-                "motion_category/111": {
-                    "name": "name_srtgb123",
-                    "prefix": "prefix_JmDHFgvH",
-                    "meeting_id": 1,
-                    "sequential_number": 111,
-                }
-            }
-        )
         response = self.request("motion_category.update", {"id": 111, "prefix": None})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion_category/111", {"prefix": None})
@@ -75,12 +69,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_non_unique_prefix(self) -> None:
         self.set_models(
             {
-                "motion_category/111": {
-                    "name": "name_srtgb123",
-                    "prefix": "bla",
-                    "meeting_id": 1,
-                    "sequential_number": 111,
-                },
                 "motion_category/110": {
                     "name": "name_already",
                     "prefix": "test",

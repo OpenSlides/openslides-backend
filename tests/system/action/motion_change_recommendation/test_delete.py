@@ -5,16 +5,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.create_motion(1, 1)
         self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion 1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 1,
-                },
-                "motion_change_recommendation/111": {"meeting_id": 1, "motion_id": 1},
-            }
+            {"motion_change_recommendation/111": {"meeting_id": 1, "motion_id": 1}}
         )
 
     def test_delete_correct(self) -> None:
