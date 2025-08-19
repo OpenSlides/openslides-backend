@@ -19,4 +19,4 @@ types-bleach==6.2.0.20250514
 types-PyYAML==6.0.12.20250809
 types-requests==2.32.4.20250809
 types-simplejson==3.20.0.20250326
-types-Pygments==2.19.0.20250715
+types-Pygments==2.19.0.20250809
