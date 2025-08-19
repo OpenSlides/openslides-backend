@@ -575,6 +575,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "marked_forwarded": True,
             },
         )
+        self.assert_model_not_exists("motion/22")
 
     def test_forward_to_2_meetings_1_transaction(self) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
