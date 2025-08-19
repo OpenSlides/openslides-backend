@@ -8,12 +8,12 @@ class MotionUpdateWithOtherActionsTest(BaseActionTestCase):
         self.create_motion(222, 22)
         self.set_models(
             {
-                "motion_state/22": {"next_state_ids": [77]},
+                "motion_state/222": {"next_state_ids": [77]},
                 "motion_state/77": {
                     "name": "test",
                     "weight": 77,
                     "meeting_id": 222,
-                    "workflow_id": 22,
+                    "workflow_id": 222,
                     "recommendation_label": "label",
                 },
                 "motion_category/3": {

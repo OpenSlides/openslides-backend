@@ -15,7 +15,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_model: dict[str, dict[str, Any]] = {
-            "motion_state/12": {
+            "motion_state/1": {
                 "allow_motion_forwarding": True,
                 "allow_amendment_forwarding": True,
             },
@@ -36,11 +36,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "structure_level/3": {"meeting_id": 1, "name": "good"},
         }
 
-    def set_test_models(self) -> None:
+    def set_test_models(self, motion_12_data: dict[str, Any] = {}) -> None:
         self.create_meeting()
         self.create_meeting(4)
         self.set_user_groups(1, [1, 4])
-        self.create_motion(1, 12)
+        self.create_motion(1, 12, motion_data=motion_12_data)
         self.set_models(self.test_model)
 
     def create_meeting_mediafile(
@@ -213,28 +213,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/1": {"allow_motion_forwarding": True},
-                "motion/6": {
-                    "state_id": 1,
-                    "derived_motion_ids": [11, 12],
-                    "all_derived_motion_ids": [11, 12, 13],
-                },
-                "motion/11": {
-                    "state_id": 1,
-                    "origin_id": 6,
-                    "derived_motion_ids": [13],
-                    "all_origin_ids": [6],
-                    "all_derived_motion_ids": [13],
-                },
-                "motion/12": {
-                    "state_id": 1,
-                    "origin_id": 6,
-                    "all_origin_ids": [6],
-                },
-                "motion/13": {
-                    "state_id": 1,
-                    "origin_id": 11,
-                    "all_origin_ids": [6, 11],
-                },
+                "motion/6": {"all_derived_motion_ids": [11, 12, 13]},
+                "motion/11": {"origin_id": 6, "all_derived_motion_ids": [13]},
+                "motion/12": {"origin_id": 6},
+                "motion/13": {"origin_id": 11},
             }
         )
         response = self.request(
@@ -288,12 +270,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_motion(1, 2)
         self.set_models(
             {
-                "motion/1": {
-                    "state_id": 12,
-                    "derived_motion_ids": [2],
-                    "all_derived_motion_ids": [2],
-                },
-                "motion/2": {"state_id": 12, "origin_id": 1, "all_origin_ids": [1]},
+                "motion/1": {"all_derived_motion_ids": [2]},
+                "motion/2": {"origin_id": 1},
             }
         )
         response = self.request("motion.delete", {"id": 1})
@@ -322,16 +300,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_not_allowed_to_forward_amendments_directly(self) -> None:
-        self.test_model["motion_state/12"]["allow_amendment_forwarding"] = False
+        self.test_model["motion_state/1"]["allow_amendment_forwarding"] = False
         self.set_test_models()
         self.create_motion(1, 6)
-        self.create_motion(1, 11)
-        self.set_models(
-            {
-                "motion/6": {"state_id": 4},
-                "motion/11": {"state_id": 4, "lead_motion_id": 6},
-            }
-        )
+        self.create_motion(1, 11, motion_data={"lead_motion_id": 6})
         response = self.request(
             "motion.create_forwarded",
             {
@@ -346,16 +318,14 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def test_allowed_to_forward_amendments_indirectly(self) -> None:
         self.set_test_models()
-        self.create_motion(1, 13)
-        self.set_models(
-            {
-                "motion/13": {
-                    "title": "amendment",
-                    "lead_motion_id": 12,
-                    "state_id": 12,
-                    "amendment_paragraphs": Jsonb({"0": "texts"}),
-                },
-            }
+        self.create_motion(
+            meeting_id=1,
+            base=13,
+            motion_data={
+                "title": "amendment",
+                "lead_motion_id": 12,
+                "amendment_paragraphs": Jsonb({"0": "texts"}),
+            },
         )
         response = self.request(
             "motion.create_forwarded",
@@ -410,14 +380,71 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_allowed_to_forward_amendments_indirectly_complex(self) -> None:
-        self.set_test_models()
+        self.set_test_models(motion_12_data={"number": "MAIN"})
         user1 = self.create_user("first_submitter", [1])
         user2 = self.create_user("second_submitter", [1])
-        self.create_motion(1, 13)
-        self.create_motion(1, 14)
-        self.create_motion(1, 15)
-        self.create_motion(1, 16)
-        self.create_motion(1, 17)
+        self.set_models(
+            {
+                "motion_state/31": {
+                    "weight": 31,
+                    "name": "No forward state",
+                    "meeting_id": 1,
+                    "workflow_id": 1,
+                },
+            }
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=13,
+            motion_data={
+                "number": "AMNDMNT1",
+                "title": "amendment1",
+                "lead_motion_id": 12,
+                "amendment_paragraphs": Jsonb({"0": "texts"}),
+            },
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=14,
+            state_id=31,
+            motion_data={
+                "number": "AMNDMNT2",
+                "title": "amendment2",
+                "lead_motion_id": 12,
+                "amendment_paragraphs": Jsonb({"0": "NO!!!"}),
+            },
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=15,
+            motion_data={
+                "number": "AMNDMNT3",
+                "title": "amendment3",
+                "lead_motion_id": 12,
+                "amendment_paragraphs": Jsonb({"0": "tests"}),
+            },
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=16,
+            motion_data={
+                "number": "AMNDMNT4",
+                "title": "amendment4",
+                "lead_motion_id": 15,
+                "amendment_paragraphs": Jsonb({"0": "testssss"}),
+            },
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=17,
+            state_id=31,
+            motion_data={
+                "number": "AMNDMNT5",
+                "title": "amendment5",
+                "lead_motion_id": 15,
+                "amendment_paragraphs": Jsonb({"0": "test"}),
+            },
+        )
         self.set_models(
             {
                 f"user/{user1}": {"first_name": "A", "last_name": "man"},
@@ -426,7 +453,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "first_name": "hairy",
                     "last_name": "woman",
                 },
-                "motion/12": {"number": "MAIN"},
                 "motion_submitter/1": {
                     "meeting_id": 1,
                     "motion_id": 12,
@@ -439,64 +465,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "meeting_user_id": 4,
                     "weight": 2,
                 },
-                "motion/13": {
-                    "number": "AMNDMNT1",
-                    "title": "amendment1",
-                    "lead_motion_id": 12,
-                    "state_id": 12,
-                    "amendment_paragraphs": Jsonb({"0": "texts"}),
-                },
                 "motion_submitter/3": {
                     "meeting_id": 1,
                     "motion_id": 13,
                     "meeting_user_id": 3,
                     "weight": 1,
-                },
-                "motion/14": {
-                    "number": "AMNDMNT2",
-                    "title": "amendment2",
-                    "lead_motion_id": 12,
-                    "state_id": 31,
-                    "amendment_paragraphs": Jsonb({"0": "NO!!!"}),
-                },
-                "motion/15": {
-                    "number": "AMNDMNT3",
-                    "title": "amendment3",
-                    "lead_motion_id": 12,
-                    "state_id": 12,
-                    "amendment_paragraphs": Jsonb({"0": "tests"}),
-                },
-                "motion/16": {
-                    "number": "AMNDMNT4",
-                    "title": "amendment4",
-                    "lead_motion_id": 15,
-                    "state_id": 12,
-                    "amendment_paragraphs": Jsonb({"0": "testssss"}),
-                },
-                "motion/17": {
-                    "number": "AMNDMNT5",
-                    "title": "amendment5",
-                    "lead_motion_id": 15,
-                    "state_id": 31,
-                    "amendment_paragraphs": Jsonb({"0": "test"}),
-                },
-                "meeting/4": {"motions_default_amendment_workflow_id": 13},
-                "motion_state/31": {
-                    "weight": 31,
-                    "name": "No forward state",
-                    "meeting_id": 1,
-                    "workflow_id": 1,
-                },
-                "motion_workflow/13": {
-                    "name": "name_workflow2",
-                    "first_state_id": 35,
-                    "meeting_id": 4,
-                },
-                "motion_state/35": {
-                    "weight": 35,
-                    "name": "name_state35",
-                    "meeting_id": 4,
-                    "workflow_id": 13,
                 },
             }
         )
@@ -567,7 +540,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "A man",
                 "sequential_number": 2,
-                "state_id": 35,
+                "state_id": 4,
                 "marked_forwarded": True,
             },
         )
@@ -579,7 +552,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "origin_id": 15,
                 "title": "amendment3",
                 "meeting_id": 4,
-                "state_id": 35,
+                "state_id": 4,
                 "amendment_paragraphs": {"0": "tests"},
                 "additional_submitter": None,
                 "amendment_ids": [21],
@@ -595,7 +568,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "origin_id": 16,
                 "title": "amendment4",
                 "meeting_id": 4,
-                "state_id": 35,
+                "state_id": 4,
                 "amendment_paragraphs": {"0": "testssss"},
                 "additional_submitter": None,
                 "sequential_number": 4,
@@ -606,8 +579,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_forward_to_2_meetings_1_transaction(self) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
         self.set_test_models()
-        self.create_meeting(7)
-        self.set_models({"meeting/7": {"committee_id": 63}})
+        self.create_meeting(7, {"committee_id": 63})
         response = self.request_multi(
             "motion.create_forwarded",
             [
@@ -675,7 +647,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_history_information("motion/14", ["Motion created (forwarded)"])
 
     def test_create_forwarded_not_allowed_by_state(self) -> None:
-        self.test_model["motion_state/12"]["allow_motion_forwarding"] = False
+        self.test_model["motion_state/1"]["allow_motion_forwarding"] = False
         self.set_test_models()
         response = self.request(
             "motion.create_forwarded",
@@ -693,14 +665,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def test_create_forwarded_with_identical_motion(self) -> None:
         self.set_test_models()
-        self.create_motion(4, 13)
         text = "test"
         hash = TextHashMixin.get_hash(text)
-        self.set_models(
-            {
-                "motion/13": {"text_hash": hash},
-            }
-        )
+        self.create_motion(4, 13, motion_data={"text_hash": hash})
         response = self.request(
             "motion.create_forwarded",
             {
@@ -758,7 +725,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/4": {"motions_number_min_digits": 1},
-                "motion/13": {"state_id": 12},
                 "motion_state/4": {"set_number": True},
             }
         )
@@ -793,11 +759,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     ) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
         self.set_test_models()
-        self.create_motion(1, 13)
+        self.create_motion(1, 13, motion_data={"number": "1"})
         self.set_models(
             {
                 "meeting/4": {"motions_number_min_digits": 1},
-                "motion/13": {"state_id": 12, "number": "1"},
                 "motion_state/4": {"set_number": True},
             }
         )
@@ -830,13 +795,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
-        self.set_test_models()
+        self.set_test_models(motion_12_data={"number": "1"})
         self.create_motion(1, 13)
         self.set_models(
             {
                 "meeting/4": {"motions_number_min_digits": 1},
-                "motion/12": {"number": "1"},
-                "motion/13": {"state_id": 12},
                 "motion_state/4": {"set_number": True},
             }
         )
@@ -869,9 +832,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
-        self.set_test_models()
-        self.create_motion(1, 13)
-        self.create_motion(4, 14)
+        self.set_test_models(motion_12_data={"number": "1"})
+        self.create_motion(1, 13, motion_data={"number": "1"})
+        self.create_motion(4, 14, motion_data={"number": "1"})
         self.set_models(
             {
                 "motion_state/4": {
@@ -946,11 +909,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_use_original_submitter_multiple(self) -> None:
-        self.set_test_models()
+        self.set_test_models(motion_12_data={"additional_submitter": "Sue B. Mid-Edit"})
         self.create_user_for_meeting(1)
         self.set_models(
             {
-                "motion/12": {"additional_submitter": "Sue B. Mid-Edit"},
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -984,7 +946,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_name_generation(self) -> None:
-        self.set_test_models()
+        self.set_test_models(motion_12_data={"additional_submitter": "Sue B. Mid-Edit"})
         extra_user_data: list[tuple[dict[str, Any], ...]] = [
             ({"title": "He is", "pronoun": "he"}, {"structure_level_ids": [1, 3]}),
             ({"first_name": "King", "pronoun": "Kong"}, {"structure_level_ids": [2]}),
@@ -1014,10 +976,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         extra_user_ids = [self.create_user(f"user{i}", [1]) for i in range(amount)]
         self.set_models(
             {
-                "motion/12": {
-                    "submitter_ids": list(range(12, 13 + amount)),
-                    "additional_submitter": "Sue B. Mid-Edit",
-                },
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -1202,15 +1160,13 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def test_with_amendment_change_recommendations(self) -> None:
         self.set_test_models()
-        self.create_motion(1, 13)
+        self.create_motion(
+            meeting_id=1,
+            base=13,
+            motion_data={"number": "AMNDMNT1", "lead_motion_id": 12, "text": "bla"},
+        )
         self.set_models(
             {
-                "motion/13": {
-                    "number": "AMNDMNT1",
-                    "lead_motion_id": 12,
-                    "state_id": 12,
-                    "text": "bla",
-                },
                 "motion_change_recommendation/1": {
                     "line_from": 11,
                     "line_to": 23,
@@ -1285,9 +1241,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_amendment_forwarding_different_states(self) -> None:
         self.create_meeting()
         self.create_meeting(4)
-        self.create_motion(1, 1)
-        self.create_motion(1, 2)
-        self.create_motion(1, 3)
         self.set_models(
             {
                 "motion_state/1": {
@@ -1295,26 +1248,12 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "allow_amendment_forwarding": False,
                 },
                 "motion_state/2": {
+                    "name": "state 2",
+                    "weight": 2,
+                    "meeting_id": 1,
+                    "workflow_id": 1,
                     "allow_motion_forwarding": False,
                     "allow_amendment_forwarding": True,
-                },
-                "motion_state/5": {
-                    "weight": 5,
-                    "name": "state 5",
-                    "meeting_id": 4,
-                    "workflow_id": 4,
-                },
-                "motion/2": {
-                    "title": "Amendment 1",
-                    "state_id": 1,
-                    "lead_motion_id": 1,
-                    "amendment_paragraphs": Jsonb({"0": "texts"}),
-                },
-                "motion/3": {
-                    "title": "Amendment 2",
-                    "state_id": 2,
-                    "lead_motion_id": 1,
-                    "amendment_paragraphs": Jsonb({"0": "paragraph"}),
                 },
                 "committee/60": {
                     "name": "committee_forwarder",
@@ -1323,6 +1262,28 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "committee/63": {"name": "committee_receiver"},
             }
         )
+        self.create_motion(1, 1)
+        self.create_motion(
+            meeting_id=1,
+            base=2,
+            state_id=1,
+            motion_data={
+                "title": "Amendment 1",
+                "lead_motion_id": 1,
+                "amendment_paragraphs": Jsonb({"0": "texts"}),
+            },
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=3,
+            state_id=2,
+            motion_data={
+                "title": "Amendment 2",
+                "lead_motion_id": 1,
+                "amendment_paragraphs": Jsonb({"0": "paragraph"}),
+            },
+        )
+
         response = self.request(
             "motion.create_forwarded",
             {
@@ -1753,7 +1714,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def set_2_motions_with_same_attachment(self, is_orga_wide: bool) -> None:
         self.set_test_models()
         self.create_motion(1, 13)
-        self.set_models({"motion/13": {"state_id": 12}})
         if is_orga_wide:
             self.create_mediafile(1)
         else:
@@ -1825,7 +1785,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_motion(1, 14)
         self.set_models(
             {
-                "motion/14": {"state_id": 12},
                 "meeting_mediafile/11": {
                     "attachment_ids": ["motion/12", "motion/13", "motion/14"]
                 },
@@ -2089,10 +2048,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         self.set_test_models()
-        self.create_meeting(7)
+        self.create_meeting(7, {"committee_id": 63})
         self.create_mediafile(1, 1)
         self.create_meeting_mediafile(11, 1, 1, [12])
-        self.set_models({"meeting/7": {"committee_id": 63}})
         self.media.duplicate_mediafile = MagicMock()
 
         response = self.request_multi(
@@ -2148,12 +2106,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def set_motion_with_amendment(self) -> None:
         self.set_test_models()
-        self.create_motion(1, 13)
-        self.set_models(
-            {
-                "motion/13": {"state_id": 12, "lead_motion_id": 12},
-            }
-        )
+        self.create_motion(1, 13, motion_data={"lead_motion_id": 12})
         self.create_mediafile(1, 1)
         self.create_mediafile(6, 1)
         self.create_mediafile(8)
@@ -2167,14 +2120,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         self.set_motion_with_amendment()
-        self.create_motion(1, 14)
+        self.create_motion(1, 14, motion_data={"lead_motion_id": 13})
         self.create_mediafile(20, 1)
         self.create_meeting_mediafile(20, 20, 1, [14])
-        self.set_models(
-            {
-                "motion/14": {"state_id": 12, "lead_motion_id": 13},
-            }
-        )
         self.set_models(
             {"meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]}}
         )
@@ -2366,7 +2314,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self,
     ) -> None:
         self.set_test_models()
-        self.create_motion(1, 13)
+        self.create_motion(1, 13, motion_data={"lead_motion_id": 12})
         self.create_motion(1, 16)
         self.create_motion(1, 17)
 
@@ -2382,15 +2330,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting_mediafile(31, 16, 1, [13, 17])
         self.create_meeting_mediafile(30, 19, 1, [16])
 
-        self.set_models(
-            {
-                "motion/13": {"state_id": 12, "lead_motion_id": 12},
-                "motion/16": {"state_id": 12},
-                "motion/17": {
-                    "state_id": 12,
-                },
-            }
-        )
         self.media.duplicate_mediafile = MagicMock()
         response = self.request_multi(
             "motion.create_forwarded",

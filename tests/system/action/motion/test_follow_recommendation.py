@@ -9,7 +9,6 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.create_motion(1, 22)
         self.set_models(
             {
                 "motion_state/76": {
@@ -17,23 +16,20 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
                     "weight": 76,
                     "meeting_id": 1,
                     "workflow_id": 1,
-                    "next_state_ids": [77],
+                    "next_state_ids": [1],
                     "show_state_extension_field": True,
                     "show_recommendation_extension_field": True,
                 },
-                "motion_state/77": {
-                    "name": "test1",
-                    "weight": 77,
-                    "meeting_id": 1,
-                    "workflow_id": 1,
-                    "first_state_of_workflow_id": 76,
-                },
-                "motion/22": {
-                    "state_id": 77,
-                    "recommendation_id": 76,
-                    "recommendation_extension": "test_test_test",
-                },
+                "motion_state/1": {"first_state_of_workflow_id": 76},
             }
+        )
+        self.create_motion(
+            meeting_id=1,
+            base=22,
+            motion_data={
+                "recommendation_id": 76,
+                "recommendation_extension": "test_test_test",
+            },
         )
 
     def test_follow_recommendation_correct(self) -> None:
@@ -57,7 +53,7 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "State '76' is not in next or previous states of the state '77'.",
+            "State '76' is not in next or previous states of the state '1'.",
             response.json["message"],
         )
 

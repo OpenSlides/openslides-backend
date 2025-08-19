@@ -59,14 +59,9 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_simple_fields(self) -> None:
         self.set_user_groups(1, [1])
         self.create_mediafile(8, 1)
+        self.create_motion(1)
         self.set_models(
             {
-                "motion/1": {
-                    "title": "title_eJveLQIh",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 1,
-                },
                 "motion_category/124": {
                     "name": "name_wbtlHQro",
                     "meeting_id": 1,
@@ -301,21 +296,12 @@ class MotionCreateActionTest(BaseActionTestCase):
     def setup_hash_test(self, count: int = 1) -> None:
         self.text = "test"
         self.hash = TextHashMixin.get_hash(self.text)
-        self.set_models(
-            {
-                **{
-                    f"motion/{i}": {
-                        "title": f"test{i}",
-                        "sequential_number": i,
-                        "meeting_id": 1,
-                        "state_id": 1,
-                        "text": self.text,
-                        "text_hash": self.hash,
-                    }
-                    for i in range(1, count + 1)
-                }
-            }
-        )
+        for i in range(1, count + 1):
+            self.create_motion(
+                meeting_id=1,
+                base=i,
+                motion_data={"text": self.text, "text_hash": self.hash},
+            )
 
     def test_create_single_identical_motion(self) -> None:
         self.setup_hash_test()
@@ -718,24 +704,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("motion/1")
 
     def test_create_check_not_unique_number(self) -> None:
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 1,
-                    "number": "T001",
-                },
-                "motion/2": {
-                    "title": "motion_2",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "sequential_number": 2,
-                    "number": "A001",
-                },
-            }
-        )
+        self.create_motion(1, 1, motion_data={"number": "T001"})
+        self.create_motion(1, 2, motion_data={"number": "A001"})
         response = self.request(
             "motion.create",
             {

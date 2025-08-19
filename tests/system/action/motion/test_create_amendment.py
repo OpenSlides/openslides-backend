@@ -182,18 +182,10 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_identical_amendment(self) -> None:
         text = "test"
         hash = TextHashMixin.get_hash(text)
-        self.set_models(
-            {
-                "motion/2": {
-                    "title": "Motion 2",
-                    "meeting_id": 1,
-                    "lead_motion_id": 1,
-                    "text": text,
-                    "text_hash": hash,
-                    "sequential_number": 2,
-                    "state_id": 1,
-                },
-            }
+        self.create_motion(
+            meeting_id=1,
+            base=2,
+            motion_data={"lead_motion_id": 1, "text": text, "text_hash": hash},
         )
         response = self.request(
             "motion.create",
@@ -212,24 +204,11 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_identical_amendment_for_other_motion(self) -> None:
         text = "test"
         hash = TextHashMixin.get_hash(text)
-        self.set_models(
-            {
-                "motion/2": {
-                    "title": "Motion 2",
-                    "meeting_id": 1,
-                    "sequential_number": 2,
-                    "state_id": 1,
-                },
-                "motion/3": {
-                    "title": "Motion 3",
-                    "meeting_id": 1,
-                    "lead_motion_id": 2,
-                    "text": text,
-                    "text_hash": hash,
-                    "sequential_number": 3,
-                    "state_id": 1,
-                },
-            }
+        self.create_motion(meeting_id=1, base=2)
+        self.create_motion(
+            meeting_id=1,
+            base=2,
+            motion_data={"lead_motion_id": 2, "text": text, "text_hash": hash},
         )
         response = self.request(
             "motion.create",
@@ -249,15 +228,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         paragraphs = {1: "test"}
         amendment = {
             "title": "Amendment 1",
-            "meeting_id": 1,
             "lead_motion_id": 1,
             "amendment_paragraphs": paragraphs,
-            "sequential_number": 2,
-            "state_id": 1,
         }
         hash = TextHashMixin.get_hash_for_motion(amendment)
         amendment.update({"text_hash": hash, "amendment_paragraphs": Jsonb(paragraphs)})
-        self.set_models({"motion/2": amendment})
+        self.create_motion(1, 2, motion_data=amendment)
         response = self.request(
             "motion.create",
             {
@@ -311,14 +287,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 Permissions.Motion.CAN_MANAGE,
             ],
         )
-        self.set_models(
-            {
-                "motion/1": {
-                    "category_id": 12,
-                    "block_id": 13,
-                },
-            }
-        )
+        self.set_models({"motion/1": {"category_id": 12, "block_id": 13}})
         response = self.request(
             "motion.create",
             {

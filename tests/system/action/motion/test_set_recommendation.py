@@ -15,7 +15,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
                 "motion_state/77": {
                     "name": "recommendation",
                     "meeting_id": 1,
-                    "workflow_id": 22,
+                    "workflow_id": 1,
                     "weight": 77,
                     "recommendation_label": "blablabal",
                 }
@@ -49,7 +49,17 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:
-        self.set_models({"motion_state/77": {"workflow_id": 1}})
+        self.set_models(
+            {
+                "motion_workflow/2": {
+                    "name": "motion_workflow 2",
+                    "sequential_number": 2,
+                    "first_state_id": 77,
+                    "meeting_id": 1,
+                },
+                "motion_state/77": {"workflow_id": 2},
+            }
+        )
         response = self.request(
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
@@ -60,16 +70,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_history_multiple_actions(self) -> None:
-        self.set_models(
-            {
-                "motion/23": {
-                    "title": "motion23",
-                    "sequential_number": 23,
-                    "state_id": 22,
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.create_motion(1, 23)
         response = self.request_multi(
             "motion.set_recommendation",
             [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 77}],
@@ -89,7 +90,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
                 "motion_state/66": {
                     "name": "recommendation2",
                     "meeting_id": 1,
-                    "workflow_id": 23,
+                    "workflow_id": 1,
                     "weight": 66,
                     "recommendation_label": "blablabal",
                 },

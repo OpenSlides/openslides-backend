@@ -1,19 +1,15 @@
 from tests.system.action.base import BaseActionTestCase
+from typing import Any
 
 
 class MotionSetNumberMixinTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.create_meeting(222)
+    def set_test_models(self, meeting_data: dict[str, Any] = {}) -> None:
+        self.create_meeting(222, meeting_data)
         self.set_user_groups(1, [222])
 
     def test_create_set_number_return_because_number_preset(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"motions_number_type": "manually"},
-                "motion_state/222": {"set_number": True},
-            }
-        )
+        self.set_test_models({"motions_number_type": "manually"})
+        self.set_models({"motion_state/222": {"set_number": True}})
         response = self.request(
             "motion.create",
             {
@@ -35,11 +31,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_return_because_number_type_manually(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"motions_number_type": "manually"},
-            }
-        )
+        self.set_test_models({"motions_number_type": "manually"})
         response = self.request(
             "motion.create",
             {
@@ -65,7 +57,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_good(self) -> None:
-        self.set_models({"meeting/222": {"motions_number_min_digits": None}})
+        self.set_test_models({"motions_number_min_digits": None})
         response = self.request(
             "motion.create",
             {
@@ -87,7 +79,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_min_digits(self) -> None:
-        self.set_models({"meeting/222": {"motions_number_min_digits": 3}})
+        self.set_test_models({"motions_number_min_digits": 3})
         response = self.request(
             "motion.create",
             {
@@ -110,17 +102,14 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_prefix_blank_lead_motion(self) -> None:
-        self.create_motion(222, 11)
-        self.set_models(
+        self.set_test_models(
             {
-                "meeting/222": {
-                    "motions_number_min_digits": 3,
-                    "motions_number_with_blank": True,
-                    "motions_amendments_prefix": "B",
-                },
-                "motion/11": {"state_id": 222, "number": "001"},
+                "motions_number_min_digits": 3,
+                "motions_number_with_blank": True,
+                "motions_amendments_prefix": "B",
             }
         )
+        self.create_motion(222, 11, motion_data={"number": "001"})
         response = self.request(
             "motion.create",
             {
@@ -144,31 +133,31 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_prefix_blank_lead_motion_number_inc(self) -> None:
-        self.set_models(
+        self.set_test_models(
             {
-                "meeting/222": {
-                    "motions_number_min_digits": 3,
-                    "motions_number_with_blank": True,
-                    "motions_amendments_prefix": "B",
-                },
-                "motion/11": {
-                    "title": "title_FcnPUXJB",
-                    "meeting_id": 222,
-                    "state_id": 222,
-                    "sequential_number": 11,
-                    "number": "001",
-                    "number_value": 3,
-                },
-                "motion/8": {
-                    "title": "title_FcnPUXJB",
-                    "meeting_id": 222,
-                    "state_id": 222,
-                    "sequential_number": 8,
-                    "number": "001",
-                    "number_value": 1,
-                    "lead_motion_id": 11,
-                },
+                "motions_number_min_digits": 3,
+                "motions_number_with_blank": True,
+                "motions_amendments_prefix": "B",
             }
+        )
+        self.create_motion(
+            meeting_id=222,
+            base=11,
+            motion_data={
+                "title": "title_FcnPUXJB",
+                "number": "001",
+                "number_value": 3,
+            },
+        )
+        self.create_motion(
+            meeting_id=222,
+            base=8,
+            motion_data={
+                "title": "title_FcnPUXJB",
+                "number": "001",
+                "number_value": 1,
+                "lead_motion_id": 11,
+            },
         )
         response = self.request(
             "motion.create",
@@ -193,27 +182,22 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_get_number_per_category(self) -> None:
+        self.set_test_models(
+            {"motions_number_min_digits": 3, "motions_number_type": "per_category"}
+        )
         self.set_models(
             {
-                "meeting/222": {
-                    "motions_number_min_digits": 3,
-                    "motions_number_type": "per_category",
-                },
                 "motion_category/176": {
                     "name": "name_category_176",
                     "meeting_id": 222,
                     "sequential_number": 176,
                 },
-                "motion/8": {
-                    "title": "title_FcnPUXJB",
-                    "meeting_id": 222,
-                    "state_id": 222,
-                    "sequential_number": 8,
-                    "number": "003",
-                    "number_value": 23,
-                    "category_id": 176,
-                },
             }
+        )
+        self.create_motion(
+            meeting_id=222,
+            base=8,
+            motion_data={"number": "003", "number_value": 23, "category_id": 176},
         )
 
         response = self.request(
@@ -239,36 +223,27 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_create_set_number_unique_check_jump(self) -> None:
+        self.set_test_models(
+            {"motions_number_min_digits": 3, "motions_number_type": "per_category"}
+        )
         self.set_models(
             {
-                "meeting/222": {
-                    "motions_number_min_digits": 3,
-                    "motions_number_type": "per_category",
-                },
                 "motion_category/176": {
                     "name": "name_category_176",
                     "meeting_id": 222,
                     "sequential_number": 176,
                 },
-                "motion/8": {
-                    "title": "title_FcnPUXJB",
-                    "meeting_id": 222,
-                    "state_id": 222,
-                    "sequential_number": 6,
-                    "number": "001",
-                    "number_value": 23,
-                    "category_id": 176,
-                },
-                "motion/6": {
-                    "title": "title_FcnPUXJB",
-                    "meeting_id": 222,
-                    "state_id": 222,
-                    "sequential_number": 8,
-                    "number": "024",
-                    "number_value": 23,
-                    "category_id": 176,
-                },
             }
+        )
+        self.create_motion(
+            meeting_id=222,
+            base=8,
+            motion_data={"number": "001", "number_value": 23, "category_id": 176},
+        )
+        self.create_motion(
+            meeting_id=222,
+            base=6,
+            motion_data={"number": "024", "number_value": 24, "category_id": 176},
         )
 
         response = self.request(
@@ -294,12 +269,8 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         )
 
     def test_set_number_false(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"motions_number_min_digits": 3},
-                "motion_state/222": {"set_number": False},
-            }
-        )
+        self.set_test_models({"motions_number_min_digits": 3})
+        self.set_models({"motion_state/222": {"set_number": False}})
         response = self.request(
             "motion.create",
             {
@@ -334,15 +305,10 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
                     "set_number": True,
                     "meeting_id": 222,
                 },
-                "motion_state/77": {
-                    "name": "test1",
-                    "workflow_id": 222,
-                    "weight": 77,
+                "motion_state/222": {
                     "first_state_of_workflow_id": 76,
                     "next_state_ids": [76],
-                    "meeting_id": 222,
                 },
-                "motion/22": {"title": "test1", "state_id": 77},
             }
         )
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
@@ -356,13 +322,8 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
 class SetNumberMixinManuallyTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {"motions_number_type": "manually"},
-                "motion_state/222": {"set_number": True},
-            }
-        )
+        self.create_meeting(222, {"motions_number_type": "manually"})
+        self.set_models({"motion_state/222": {"set_number": True}})
 
     def test_complex_example_manually_1(self) -> None:
         response = self.request(
@@ -437,14 +398,16 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 class SetNumberMixinSerialTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_meeting(222)
+        self.create_meeting(
+            222,
+            {
+                "motions_number_type": "serially_numbered",
+                "motions_number_min_digits": 3,
+                "motions_number_with_blank": True,
+            },
+        )
         self.set_models(
             {
-                "meeting/222": {
-                    "motions_number_type": "serially_numbered",
-                    "motions_number_min_digits": 3,
-                    "motions_number_with_blank": True,
-                },
                 "motion_state/222": {"set_number": True},
                 "motion_category/7": {
                     "name": "A",
@@ -578,15 +541,18 @@ class SetNumberMixinSerialTest(BaseActionTestCase):
 
 
 class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.create_meeting(222)
+    def set_test_models(self, meeting_data: dict[str, Any] = {}) -> None:
+        self.create_meeting(
+            222,
+            {
+                "motions_number_type": "per_category",
+                "motions_number_min_digits": 3,
+                **meeting_data,
+            },
+        )
+        self.set_user_groups(1, [222])
         self.set_models(
             {
-                "meeting/222": {
-                    "motions_number_type": "per_category",
-                    "motions_number_min_digits": 3,
-                },
                 "motion_state/222": {"set_number": True},
                 "motion_category/7": {
                     "name": "A",
@@ -598,6 +564,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         )
 
     def _create_models_for_number_per_category_1(self) -> None:
+        self.set_test_models()
         self.set_models(
             {
                 "motion_category/8": {
@@ -736,13 +703,8 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         self.assert_model_exists("motion/2", {"number": "2", "number_value": 2})
 
     def _create_models_for_number_per_category_2(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "motions_number_with_blank": True,
-                    "motions_amendments_prefix": "X-",
-                },
-            }
+        self.set_test_models(
+            {"motions_number_with_blank": True, "motions_amendments_prefix": "X-"}
         )
 
     def test_complex_example_per_category_2_1(self) -> None:
@@ -960,10 +922,9 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 
 class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
     def test_set_number(self) -> None:
-        self.create_meeting(222)
+        self.create_meeting(222, {"motions_number_min_digits": None})
         self.set_models(
             {
-                "meeting/222": {"motions_number_min_digits": None},
                 "motion_category/7": {
                     "name": "A",
                     "prefix": "A",
@@ -989,17 +950,19 @@ class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
                     "set_number": True,
                     "meeting_id": 222,
                 },
-                "motion/22": {
-                    "meeting_id": 222,
-                    "title": "test1",
-                    "state_id": 77,
-                    "recommendation_id": 76,
-                    "recommendation_extension": "test_test_test",
-                    "category_id": 7,
-                    "sequential_number": 22,
-                },
             }
         )
+        self.create_motion(
+            meeting_id=222,
+            base=22,
+            motion_data={
+                "state_id": 77,
+                "recommendation_id": 76,
+                "recommendation_extension": "test_test_test",
+                "category_id": 7,
+            },
+        )
+
         response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

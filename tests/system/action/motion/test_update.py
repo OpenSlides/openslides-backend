@@ -38,29 +38,45 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion_state/1": {"allow_submitter_edit": True},
         }
 
-    def set_test_models(self) -> None:
-        self.create_motion(1, 111)
+    def set_test_models(self, motion_111_data: dict[str, Any] = {}) -> None:
+        self.create_motion(
+            meeting_id=1,
+            base=111,
+            motion_data={
+                "title": "title_srtgb123",
+                "number": "123",
+                "text": "<i>test</i>",
+                "reason": "<b>test2</b>",
+                "modified_final_version": "blablabla",
+                "amendment_paragraphs": Jsonb({"3": "testtesttest"}),
+                **motion_111_data,
+            },
+        )
+        self.set_models({"motion_state/1": {"allow_submitter_edit": True}})
+
+    def create_workflow(
+        self, base: int, meeting_id: int = 1, state_data: dict[str, Any] = {}
+    ) -> None:
         self.set_models(
             {
-                "motion/111": {
-                    "title": "title_srtgb123",
-                    "number": "123",
-                    "text": "<i>test</i>",
-                    "reason": "<b>test2</b>",
-                    "modified_final_version": "blablabla",
-                    "amendment_paragraphs": Jsonb({"3": "testtesttest"}),
+                f"motion_workflow/{base}": {
+                    "name": f"motion_workflow{base}",
+                    "sequential_number": base,
+                    "first_state_id": base,
+                    "meeting_id": meeting_id,
                 },
-                "motion_state/111": {"allow_submitter_edit": True},
+                f"motion_state/{base}": {
+                    "name": f"motion_state{base}",
+                    "weight": base,
+                    "workflow_id": base,
+                    "meeting_id": meeting_id,
+                    **state_data,
+                },
             }
         )
 
     def test_update_correct(self) -> None:
-        self.set_test_models()
-        self.set_models(
-            {
-                "motion/111": {"created": datetime.fromtimestamp(1687339000)},
-            }
-        )
+        self.set_test_models({"created": datetime.fromtimestamp(1687339000)})
         with CountDatastoreCalls() as counter:
             response = self.request(
                 "motion.update",
@@ -114,11 +130,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("motion/111", {"number": "123"})
 
     def test_update_text_without_previous(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "motion/111": {"number": "123", "reason": "<b>test2</b>"},
-            }
+        self.create_motion(
+            1, 111, motion_data={"number": "123", "reason": "<b>test2</b>"}
         )
         response = self.request(
             "motion.update",
@@ -137,14 +150,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_amendment_paragraphs_without_previous(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "motion/111": {
-                    "number": "123",
-                    "modified_final_version": "blablabla",
-                },
-            }
+        self.create_motion(
+            1, 111, motion_data={"number": "123", "modified_final_version": "blablabla"}
         )
         response = self.request(
             "motion.update",
@@ -162,18 +169,16 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_required_reason(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "meeting/1": {"motions_reason_required": True},
-                "motion/111": {
-                    "title": "title_srtgb123",
-                    "number": "123",
-                    "modified_final_version": "blablabla",
-                    "reason": "balblabla",
-                },
-            }
+        self.create_motion(
+            meeting_id=1,
+            base=111,
+            motion_data={
+                "number": "123",
+                "modified_final_version": "blablabla",
+                "reason": "balblabla",
+            },
         )
+        self.set_models({"meeting/1": {"motions_reason_required": True}})
         response = self.request(
             "motion.update",
             {
@@ -188,6 +193,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
 
     def test_update_correct_2(self) -> None:
         self.create_motion(1, 111)
+        self.create_motion(1, 112)
         self.set_models(
             {
                 "motion_category/4": {
@@ -200,12 +206,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "title": "title_ddyvpXch",
                     "sequential_number": 51,
                     "list_of_speakers_id": 1,
-                },
-                "motion/112": {
-                    "meeting_id": 1,
-                    "title": "motion 112",
-                    "sequential_number": 112,
-                    "state_id": 111,
                 },
             }
         )
@@ -262,16 +262,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert counter.calls == 32
 
     def test_update_workflow_id(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "motion/111": {
-                    "recommendation_id": 111,
-                    "created": datetime.now() - timedelta(minutes=1),
-                },
-                "motion_state/1": {"set_workflow_timestamp": True},
-            }
+        self.create_workflow(111)
+        self.create_motion(
+            meeting_id=1,
+            base=111,
+            state_id=111,
+            motion_data={
+                "recommendation_id": 111,
+                "created": datetime.now() - timedelta(minutes=1),
+            },
         )
+        self.set_models({"motion_state/1": {"set_workflow_timestamp": True}})
         response = self.request("motion.update", {"id": 111, "workflow_id": 1})
         self.assert_status_code(response, 200)
         model = self.assert_model_exists(
@@ -283,16 +284,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_workflow_timestamp_subsequent(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "motion/111": {
-                    "recommendation_id": 111,
-                    "created": datetime.now() - timedelta(minutes=1),
-                },
-                "motion_state/1": {"set_workflow_timestamp": True},
-            }
+        self.create_workflow(111)
+        self.create_motion(
+            meeting_id=1,
+            base=111,
+            state_id=111,
+            motion_data={
+                "recommendation_id": 111,
+                "created": datetime.now() - timedelta(minutes=1),
+            },
         )
+        self.set_models({"motion_state/1": {"set_workflow_timestamp": True}})
         response = self.request(
             "motion.update",
             {"id": 111, "workflow_timestamp": 0},
@@ -314,14 +316,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_workflow_id_no_change(self) -> None:
-        self.create_motion(1, 111)
-        self.set_models(
-            {
-                "motion/111": {"recommendation_id": 111},
-                "motion_state/111": {
-                    "set_workflow_timestamp": True,
-                },
-            }
+        self.create_workflow(111, 1, {"set_workflow_timestamp": True})
+        self.create_motion(
+            meeting_id=1, base=111, state_id=111, motion_data={"recommendation_id": 111}
         )
         response = self.request("motion.update", {"id": 111, "workflow_id": 111})
         self.assert_status_code(response, 200)
@@ -461,24 +458,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         hash1 = TextHashMixin.get_hash(text1)
         text2 = "test2"
         hash2 = TextHashMixin.get_hash(text2)
-        self.create_motion(1, 1)
-        self.create_motion(1, 2)
-        self.create_motion(1, 3)
-        self.set_models(
-            {
-                "motion/1": {
-                    "text": text1,
-                    "text_hash": hash1,
-                    "identical_motion_ids": [2],
-                },
-                "motion/2": {
-                    "text": text1,
-                    "text_hash": hash1,
-                    "identical_motion_ids": [1],
-                },
-                "motion/3": {"text": text2, "text_hash": hash2},
-            }
+        self.create_motion(1, 1, motion_data={"text": text1, "text_hash": hash1})
+        self.create_motion(
+            meeting_id=1,
+            base=2,
+            motion_data={
+                "text": text1,
+                "text_hash": hash1,
+                "identical_motion_ids": [1],
+            },
         )
+        self.create_motion(1, 3, motion_data={"text": text2, "text_hash": hash2})
         response = self.request(
             "motion.update",
             {"id": 2, "text": text2},
@@ -673,13 +663,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_update_check_not_unique_number(self) -> None:
-        self.create_motion(1, 1)
-        self.create_motion(1, 2)
-        self.set_models(
-            {
-                "motion/1": {"number": "T001"},
-                "motion/2": {"number": "A001"},
-            }
+        self.create_motion(1, 1, motion_data={"number": "T001"})
+        self.create_motion(1, 2, motion_data={"number": "A001"})
         )
         response = self.request(
             "motion.update",
