@@ -326,7 +326,8 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
         self.create_meeting(222, {"motions_number_type": "manually"})
         self.set_models({"motion_state/222": {"set_number": True}})
 
-    def test_complex_example_manually_1(self) -> None:
+    def test_complex_example_manually_success_no_value(self) -> None:
+        self.create_motion(222)
         response = self.request(
             "motion.create",
             {
@@ -337,36 +338,10 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/1",
-            {"number": None, "number_value": None},
-        )
-
-    def test_complex_example_manually_2(self) -> None:
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 222,
-                "workflow_id": 222,
-                "text": "test",
-            },
-        )
-        self.assert_status_code(response, 200)
-        response2 = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 222,
-                "workflow_id": 222,
-                "text": "test",
-            },
-        )
-        self.assert_status_code(response2, 200)
-        self.assert_model_exists("motion/1", {"number": None, "number_value": None})
         self.assert_model_exists("motion/2", {"number": None, "number_value": None})
 
-    def test_complex_example_manually_3(self) -> None:
+    def test_complex_example_manually_success_with_value(self) -> None:
+        self.create_motion(222)
         response = self.request(
             "motion.create",
             {
@@ -378,8 +353,11 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/2", {"number": "TEST", "number_value": None})
 
-        response2 = self.request(
+    def test_complex_example_manually_not_unique(self) -> None:
+        self.create_motion(222, 1, motion_data={"number": "TEST"})
+        response = self.request(
             "motion.create",
             {
                 "title": "test_Xcdfgee",
@@ -389,11 +367,9 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
                 "text": "test",
             },
         )
-        self.assert_status_code(response2, 400)
-
-        self.assert_model_exists("motion/1", {"number": "TEST", "number_value": None})
+        self.assert_status_code(response, 400)
         self.assert_model_not_exists("motion/2")
-        self.assertEqual("Number is not unique.", response2.json["message"])
+        self.assertEqual("Number is not unique.", response.json["message"])
 
 
 class SetNumberMixinSerialTest(BaseActionTestCase):
