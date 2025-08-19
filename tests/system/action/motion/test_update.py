@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from math import floor
+from time import time
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -267,10 +269,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             meeting_id=1,
             base=111,
             state_id=111,
-            motion_data={
-                "recommendation_id": 111,
-                "created": datetime.now() - timedelta(minutes=1),
-            },
+            motion_data={"recommendation_id": 111, "created": datetime.now()},
         )
         self.set_models({"motion_state/1": {"set_workflow_timestamp": True}})
         response = self.request("motion.update", {"id": 111, "workflow_id": 1})
@@ -289,10 +288,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             meeting_id=1,
             base=111,
             state_id=111,
-            motion_data={
-                "recommendation_id": 111,
-                "created": datetime.now() - timedelta(minutes=1),
-            },
+            motion_data={"recommendation_id": 111, "created": datetime.now()},
         )
         self.set_models({"motion_state/1": {"set_workflow_timestamp": True}})
         response = self.request(
@@ -586,7 +582,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
         )
-        now = datetime.now()
+        now = floor(time())
         response = self.request(
             "motion.update",
             {
@@ -595,7 +591,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "state_extension": "test",
                 "recommendation_extension": "test",
                 "start_line_number": 1,
-                "created": int(now.timestamp()),
+                "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
                 "supporter_meeting_user_ids": [1],
@@ -610,7 +606,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "state_extension": "test",
                 "recommendation_extension": "test",
                 "start_line_number": 1,
-                "created": now.replace(microsecond=0, tzinfo=ZoneInfo("UTC")),
+                "created": datetime.fromtimestamp(now).replace(
+                    microsecond=0, tzinfo=ZoneInfo("UTC")
+                ),
                 "tag_ids": [3],
                 "block_id": 4,
                 "supporter_meeting_user_ids": [1],
@@ -619,11 +617,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
 
     def test_update_permission_submitter_allowed(self) -> None:
         self.set_organization_management_level(None)
-        self.permission_test_models["meeting_user/2"] = {
-            "meeting_id": 1,
-            "user_id": 1,
-            "motion_submitter_ids": [1],
-        }
+        self.permission_test_models["meeting_user/1"]["motion_submitter_ids"] = [1]
         self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",

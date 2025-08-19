@@ -97,7 +97,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         }
 
         response = self.request(
-            "motion.create", motion | {"attachment_mediafile_ids": [8]}
+            "motion.create",
+            motion | {"workflow_id": 1, "attachment_mediafile_ids": [8]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(

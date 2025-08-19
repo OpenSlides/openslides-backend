@@ -88,7 +88,7 @@ class TextHashMixin(Action):
             text = get_text_from_html(html)
         elif paragraphs := motion.get("amendment_paragraphs"):
             if isinstance(paragraphs, Jsonb):
-                paragraphs = dict(paragraphs.obj)
+                paragraphs = paragraphs.obj
             paragraph_texts = {
                 key: get_text_from_html(html) for key, html in paragraphs.items()
             }
