@@ -268,7 +268,7 @@ class SpeakerCreateAction(
         """
         Interposed question > intervention & intervention answer > point of order
         """
-        and_content: list[FilterOperator | Or | And] = [
+        and_content: list[Filter] = [
             Or(
                 FilterOperator("speech_state", "!=", SpeechState.INTERPOSED_QUESTION),
                 FilterOperator("speech_state", "=", None),
@@ -300,11 +300,9 @@ class SpeakerCreateAction(
         return self.datastore.min(
             collection="speaker",
             filter=And(
-                [
-                    FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
-                    *and_content,
-                    FilterOperator("begin_time", "=", None),
-                ]
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                *and_content,
+                FilterOperator("begin_time", "=", None),
             ),
             field="weight",
         )
