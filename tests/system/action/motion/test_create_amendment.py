@@ -115,7 +115,8 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         response = self.create_with_amendment_paragraphs(["test"])
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "data.amendment_paragraphs must be object", response.json["message"]
+            "Action motion.create: data.amendment_paragraphs must be object",
+            response.json["message"],
         )
 
     def test_create_with_amendment_paragraphs_html(self) -> None:
@@ -306,4 +307,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 },
             )
             self.assert_status_code(response, 403)
-            self.assertEqual("Forbidden fields: {field}", response.json["message"])
+            self.assertEqual(
+                f"You are not allowed to perform action motion.create. Forbidden fields: {field} with possibly needed permission(s): motion.can_manage",
+                response.json["message"],
+            )
