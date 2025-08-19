@@ -145,7 +145,6 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
             meeting_id=222,
             base=11,
             motion_data={
-                "title": "title_FcnPUXJB",
                 "number": "001",
                 "number_value": 3,
             },
@@ -154,7 +153,6 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
             meeting_id=222,
             base=8,
             motion_data={
-                "title": "title_FcnPUXJB",
                 "number": "001",
                 "number_value": 1,
                 "lead_motion_id": 11,

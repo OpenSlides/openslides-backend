@@ -27,11 +27,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
                 "workflow_id": 1,
                 "weight": 77,
             },
-            "motion/22": {
-                "title": "test1",
-                "state_id": 77,
-                "number": "001",
-            },
+            "motion/22": {"state_id": 77, "number": "001"},
         }
 
     def test_reset_state_correct(self) -> None:

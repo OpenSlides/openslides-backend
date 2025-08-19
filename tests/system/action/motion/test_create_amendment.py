@@ -221,11 +221,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
 
     def test_create_identical_paragraph_based_amendment(self) -> None:
         paragraphs = {1: "test"}
-        amendment = {
-            "title": "Amendment 1",
-            "lead_motion_id": 1,
-            "amendment_paragraphs": paragraphs,
-        }
+        amendment = {"lead_motion_id": 1, "amendment_paragraphs": paragraphs}
         hash = TextHashMixin.get_hash_for_motion(amendment)
         amendment.update({"text_hash": hash, "amendment_paragraphs": Jsonb(paragraphs)})
         self.create_motion(1, 2, motion_data=amendment)

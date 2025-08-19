@@ -45,7 +45,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             meeting_id=1,
             base=111,
             motion_data={
-                "title": "title_srtgb123",
                 "number": "123",
                 "text": "<i>test</i>",
                 "reason": "<b>test2</b>",

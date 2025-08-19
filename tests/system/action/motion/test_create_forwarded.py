@@ -1263,7 +1263,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             base=2,
             state_id=1,
             motion_data={
-                "title": "Amendment 1",
                 "lead_motion_id": 1,
                 "amendment_paragraphs": Jsonb({"0": "texts"}),
             },
