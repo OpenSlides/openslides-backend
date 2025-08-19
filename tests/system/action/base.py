@@ -214,35 +214,27 @@ class BaseActionTestCase(BaseSystemTestCase):
                 )
         self.set_models(data)
 
-    def create_motion(self, meeting_id: int, base: int = 1) -> None:
+    def create_motion(
+        self,
+        meeting_id: int,
+        base: int = 1,
+        state_id: int = 0,
+        motion_data: PartialModel = {},
+    ) -> None:
         """
-        The meeting must already exist.
-        Creates a motion and all other models required for this with id 1.
+        The meeting and motion_state must already exist.
+        Creates a motion with id 1 by default.
         You can specify another id by setting base.
+        If no state_id is passed, meeting must have `state_id` equal to `id`.
         """
         self.set_models(
             {
-                f"motion_workflow/{base}": {
-                    "name": f"motion_workflow{base}",
-                    "sequential_number": base,
-                    "default_workflow_meeting_id": base,
-                    "default_amendment_workflow_meeting_id": base,
-                    "state_ids": [base],
-                    "first_state_id": base,
-                    "meeting_id": meeting_id,
-                },
-                f"motion_state/{base}": {
-                    "name": f"motion_state{base}",
-                    "weight": 36,
-                    "workflow_id": base,
-                    "first_state_of_workflow_id": base,
-                    "meeting_id": meeting_id,
-                },
                 f"motion/{base}": {
                     "title": f"motion{base}",
                     "sequential_number": base,
-                    "state_id": base,
+                    "state_id": state_id or meeting_id,
                     "meeting_id": meeting_id,
+                    **motion_data,
                 },
             }
         )
@@ -257,7 +249,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_models(
             {
                 f"meeting/{base}": {
-                    "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "motions_default_workflow_id": base,
@@ -266,32 +257,16 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
                     "language": "en",
-                    "motion_state_ids": [base],
-                    "motion_workflow_ids": [base],
                     **meeting_data,
                 },
                 f"projector/{base}": {"sequential_number": base, "meeting_id": base},
-                f"group/{base}": {
-                    "meeting_id": base,
-                    "default_group_for_meeting_id": base,
-                    "name": f"group{base}",
-                },
-                f"group/{base+1}": {
-                    "meeting_id": base,
-                    "admin_group_for_meeting_id": base,
-                    "name": f"group{base+1}",
-                },
-                f"group/{base+2}": {
-                    "meeting_id": base,
-                    "name": f"group{base+2}",
-                },
+                f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
+                f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
+                f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
                 f"motion_workflow/{base}": {
                     "name": "flo",
                     "sequential_number": base,
                     "meeting_id": base,
-                    "default_workflow_meeting_id": base,
-                    "default_amendment_workflow_meeting_id": base,
-                    "state_ids": [base],
                     "first_state_id": base,
                 },
                 f"motion_state/{base}": {
@@ -301,13 +276,9 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "workflow_id": base,
                     "first_state_of_workflow_id": base,
                 },
-                f"committee/{committee_id}": {
-                    "name": f"Commitee{committee_id}",
-                    "meeting_ids": [base],
-                },
+                f"committee/{committee_id}": {"name": f"Commitee{committee_id}"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
-                    "active_meeting_ids": [base],
                     "enable_electronic_voting": True,
                 },
             }
