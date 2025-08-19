@@ -2,8 +2,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import BaseActionTestCase
 from openslides_backend.shared.typing import PartialModel
+from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategoryNumberMotionsTest(BaseActionTestCase):
