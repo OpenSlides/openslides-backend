@@ -127,7 +127,12 @@ class User(Model):
     is_present_in_meeting_ids = fields.RelationListField(
         to={"meeting": "present_user_ids"},
         is_view_field=True,
-        write_fields=("nm_meeting_present_user_ids_user", "user_id", "meeting_id", []),
+        write_fields=(
+            "nm_meeting_present_user_ids_user_t",
+            "user_id",
+            "meeting_id",
+            [],
+        ),
     )
     committee_ids = fields.RelationListField(
         to={"committee": "user_ids"},
@@ -140,7 +145,7 @@ class User(Model):
     committee_management_ids = fields.RelationListField(
         to={"committee": "manager_ids"},
         is_view_field=True,
-        write_fields=("nm_committee_manager_ids_user", "user_id", "committee_id", []),
+        write_fields=("nm_committee_manager_ids_user_t", "user_id", "committee_id", []),
     )
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "user_id"},
@@ -150,7 +155,7 @@ class User(Model):
     poll_voted_ids = fields.RelationListField(
         to={"poll": "voted_ids"},
         is_view_field=True,
-        write_fields=("nm_poll_voted_ids_user", "user_id", "poll_id", []),
+        write_fields=("nm_poll_voted_ids_user_t", "user_id", "poll_id", []),
     )
     option_ids = fields.RelationListField(
         to={"option": "content_object_id"}, is_view_field=True
@@ -207,7 +212,7 @@ class MeetingUser(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_meeting_user_supported_motion_ids_motion",
+            "nm_meeting_user_supported_motion_ids_motion_t",
             "meeting_user_id",
             "motion_id",
             [],
@@ -254,7 +259,7 @@ class MeetingUser(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_meeting_user_ids_meeting_user",
+            "nm_group_meeting_user_ids_meeting_user_t",
             "meeting_user_id",
             "group_id",
             [],
@@ -266,7 +271,7 @@ class MeetingUser(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_meeting_user_structure_level_ids_structure_level",
+            "nm_meeting_user_structure_level_ids_structure_level_t",
             "meeting_user_id",
             "structure_level_id",
             [],
@@ -300,7 +305,7 @@ class OrganizationTag(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "gm_organization_tag_tagged_ids",
+            "gm_organization_tag_tagged_ids_t",
             "organization_tag_id",
             "tagged_id",
             ["tagged_id_committee_id", "tagged_id_meeting_id"],
@@ -399,7 +404,7 @@ class Committee(Model):
         to={"user": "committee_management_ids"},
         is_view_field=True,
         is_primary=True,
-        write_fields=("nm_committee_manager_ids_user", "committee_id", "user_id", []),
+        write_fields=("nm_committee_manager_ids_user_t", "committee_id", "user_id", []),
     )
     parent_id = fields.RelationField(to={"committee": "child_ids"})
     child_ids = fields.RelationListField(
@@ -409,7 +414,7 @@ class Committee(Model):
         to={"committee": "all_child_ids"},
         is_view_field=True,
         write_fields=(
-            "nm_committee_all_child_ids_committee",
+            "nm_committee_all_child_ids_committee_t",
             "all_child_id",
             "all_parent_id",
             [],
@@ -420,7 +425,7 @@ class Committee(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "nm_committee_all_child_ids_committee",
+            "nm_committee_all_child_ids_committee_t",
             "all_parent_id",
             "all_child_id",
             [],
@@ -434,7 +439,7 @@ class Committee(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "nm_committee_forward_to_committee_ids_committee",
+            "nm_committee_forward_to_committee_ids_committee_t",
             "receive_forwardings_from_committee_id",
             "forward_to_committee_id",
             [],
@@ -444,7 +449,7 @@ class Committee(Model):
         to={"committee": "forward_to_committee_ids"},
         is_view_field=True,
         write_fields=(
-            "nm_committee_forward_to_committee_ids_committee",
+            "nm_committee_forward_to_committee_ids_committee_t",
             "forward_to_committee_id",
             "receive_forwardings_from_committee_id",
             [],
@@ -454,7 +459,7 @@ class Committee(Model):
         to={"organization_tag": "tagged_ids"},
         is_view_field=True,
         write_fields=(
-            "gm_committee_organization_tag_ids",
+            "gm_committee_organization_tag_ids_t",
             "committee_id",
             "organization_tag_id",
             ["organization_tag_id_organization_tag_id"],
@@ -1052,7 +1057,7 @@ class Meeting(Model, MeetingModelMixin):
         to={"organization_tag": "tagged_ids"},
         is_view_field=True,
         write_fields=(
-            "gm_meeting_organization_tag_ids",
+            "gm_meeting_organization_tag_ids_t",
             "meeting_id",
             "organization_tag_id",
             ["organization_tag_id_organization_tag_id"],
@@ -1062,7 +1067,12 @@ class Meeting(Model, MeetingModelMixin):
         to={"user": "is_present_in_meeting_ids"},
         is_view_field=True,
         is_primary=True,
-        write_fields=("nm_meeting_present_user_ids_user", "meeting_id", "user_id", []),
+        write_fields=(
+            "nm_meeting_present_user_ids_user_t",
+            "meeting_id",
+            "user_id",
+            [],
+        ),
     )
     user_ids = fields.RelationListField(
         to={"user": "meeting_ids"},
@@ -1182,7 +1192,7 @@ class StructureLevel(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_meeting_user_structure_level_ids_structure_level",
+            "nm_meeting_user_structure_level_ids_structure_level_t",
             "structure_level_id",
             "meeting_user_id",
             [],
@@ -1260,7 +1270,7 @@ class Group(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_meeting_user_ids_meeting_user",
+            "nm_group_meeting_user_ids_meeting_user_t",
             "group_id",
             "meeting_user_id",
             [],
@@ -1287,7 +1297,7 @@ class Group(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_mmagi_meeting_mediafile",
+            "nm_group_mmagi_meeting_mediafile_t",
             "group_id",
             "meeting_mediafile_id",
             [],
@@ -1300,7 +1310,7 @@ class Group(Model):
         read_only=True,
         constraints={"description": "Calculated field."},
         write_fields=(
-            "nm_group_mmiagi_meeting_mediafile",
+            "nm_group_mmiagi_meeting_mediafile_t",
             "group_id",
             "meeting_mediafile_id",
             [],
@@ -1312,7 +1322,7 @@ class Group(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_read_comment_section_ids_motion_comment_section",
+            "nm_group_read_comment_section_ids_motion_comment_section_t",
             "group_id",
             "motion_comment_section_id",
             [],
@@ -1324,7 +1334,7 @@ class Group(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_write_comment_section_ids_motion_comment_section",
+            "nm_group_write_comment_section_ids_motion_comment_section_t",
             "group_id",
             "motion_comment_section_id",
             [],
@@ -1335,7 +1345,7 @@ class Group(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_chat_group_read_group_ids_group",
+            "nm_chat_group_read_group_ids_group_t",
             "group_id",
             "chat_group_id",
             [],
@@ -1346,7 +1356,7 @@ class Group(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_chat_group_write_group_ids_group",
+            "nm_chat_group_write_group_ids_group_t",
             "group_id",
             "chat_group_id",
             [],
@@ -1357,7 +1367,7 @@ class Group(Model):
         is_view_field=True,
         is_primary=True,
         equal_fields="meeting_id",
-        write_fields=("nm_group_poll_ids_poll", "group_id", "poll_id", []),
+        write_fields=("nm_group_poll_ids_poll_t", "group_id", "poll_id", []),
     )
     used_as_motion_poll_default_id = fields.RelationField(
         to={"meeting": "motion_poll_default_group_ids"}
@@ -1409,7 +1419,7 @@ class Tag(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_tag_tagged_ids",
+            "gm_tag_tagged_ids_t",
             "tag_id",
             "tagged_id",
             [
@@ -1470,7 +1480,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_agenda_item_tag_ids",
+            "gm_agenda_item_tag_ids_t",
             "agenda_item_id",
             "tag_id",
             ["tag_id_tag_id"],
@@ -1667,7 +1677,7 @@ class Topic(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_topic_attachment_meeting_mediafile_ids",
+            "gm_topic_attachment_meeting_mediafile_ids_t",
             "topic_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
@@ -1771,7 +1781,7 @@ class Motion(Model):
         to={"motion": "all_derived_motion_ids"},
         is_view_field=True,
         write_fields=(
-            "nm_motion_all_derived_motion_ids_motion",
+            "nm_motion_all_derived_motion_ids_motion_t",
             "all_derived_motion_id",
             "all_origin_id",
             [],
@@ -1782,7 +1792,7 @@ class Motion(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "nm_motion_all_derived_motion_ids_motion",
+            "nm_motion_all_derived_motion_ids_motion_t",
             "all_origin_id",
             "all_derived_motion_id",
             [],
@@ -1793,7 +1803,7 @@ class Motion(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "nm_motion_identical_motion_ids_motion",
+            "nm_motion_identical_motion_ids_motion_t",
             "identical_motion_id_2",
             "identical_motion_id_1",
             [],
@@ -1811,7 +1821,7 @@ class Motion(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_state_extension_reference_ids",
+            "gm_motion_state_extension_reference_ids_t",
             "motion_id",
             "state_extension_reference_id",
             ["state_extension_reference_id_motion_id"],
@@ -1822,7 +1832,7 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_referenced_in_motion_state_extension_ids",
+            "gm_motion_referenced_in_motion_state_extension_ids_t",
             "motion_id",
             "referenced_in_motion_state_extension_id",
             ["referenced_in_motion_state_extension_id_motion_id"],
@@ -1834,7 +1844,7 @@ class Motion(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_recommendation_extension_reference_ids",
+            "gm_motion_recommendation_extension_reference_ids_t",
             "motion_id",
             "recommendation_extension_reference_id",
             ["recommendation_extension_reference_id_motion_id"],
@@ -1845,7 +1855,7 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_referenced_in_motion_recommendation_extension_ids",
+            "gm_motion_referenced_in_motion_recommendation_extension_ids_t",
             "motion_id",
             "referenced_in_motion_recommendation_extension_id",
             ["referenced_in_motion_recommendation_extension_id_motion_id"],
@@ -1868,7 +1878,7 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_meeting_user_supported_motion_ids_motion",
+            "nm_meeting_user_supported_motion_ids_motion_t",
             "motion_id",
             "meeting_user_id",
             [],
@@ -1928,14 +1938,14 @@ class Motion(Model):
         to={"tag": "tagged_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
-        write_fields=("gm_motion_tag_ids", "motion_id", "tag_id", ["tag_id_tag_id"]),
+        write_fields=("gm_motion_tag_ids_t", "motion_id", "tag_id", ["tag_id_tag_id"]),
     )
     attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_attachment_meeting_mediafile_ids",
+            "gm_motion_attachment_meeting_mediafile_ids_t",
             "motion_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
@@ -2068,7 +2078,7 @@ class MotionCommentSection(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_read_comment_section_ids_motion_comment_section",
+            "nm_group_read_comment_section_ids_motion_comment_section_t",
             "motion_comment_section_id",
             "group_id",
             [],
@@ -2079,7 +2089,7 @@ class MotionCommentSection(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_group_write_comment_section_ids_motion_comment_section",
+            "nm_group_write_comment_section_ids_motion_comment_section_t",
             "motion_comment_section_id",
             "group_id",
             [],
@@ -2247,7 +2257,7 @@ class MotionState(Model):
         is_primary=True,
         equal_fields=["meeting_id", "workflow_id"],
         write_fields=(
-            "nm_motion_state_next_state_ids_motion_state",
+            "nm_motion_state_next_state_ids_motion_state_t",
             "previous_state_id",
             "next_state_id",
             [],
@@ -2258,7 +2268,7 @@ class MotionState(Model):
         is_view_field=True,
         equal_fields=["meeting_id", "workflow_id"],
         write_fields=(
-            "nm_motion_state_next_state_ids_motion_state",
+            "nm_motion_state_next_state_ids_motion_state_t",
             "next_state_id",
             "previous_state_id",
             [],
@@ -2425,13 +2435,13 @@ class Poll(Model, PollModelMixin):
         to={"user": "poll_voted_ids"},
         is_view_field=True,
         is_primary=True,
-        write_fields=("nm_poll_voted_ids_user", "poll_id", "user_id", []),
+        write_fields=("nm_poll_voted_ids_user_t", "poll_id", "user_id", []),
     )
     entitled_group_ids = fields.RelationListField(
         to={"group": "poll_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
-        write_fields=("nm_group_poll_ids_poll", "poll_id", "group_id", []),
+        write_fields=("nm_group_poll_ids_poll_t", "poll_id", "group_id", []),
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
@@ -2556,7 +2566,7 @@ class Assignment(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_assignment_tag_ids",
+            "gm_assignment_tag_ids_t",
             "assignment_id",
             "tag_id",
             ["tag_id_tag_id"],
@@ -2567,7 +2577,7 @@ class Assignment(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_assignment_attachment_meeting_mediafile_ids",
+            "gm_assignment_attachment_meeting_mediafile_ids_t",
             "assignment_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
@@ -2712,7 +2722,7 @@ class MeetingMediafile(Model):
             "description": "Calculated in actions. Shows what access group permissions are actually relevant. Calculated as the intersection of this meeting_mediafiles access_group_ids and the related mediafiles potential parent mediafiles inherited_access_group_ids. If the parent has no meeting_mediafile for this meeting, its inherited access group is assumed to be the meetings admin group. If there is no parent, the inherited_access_group_ids is equal to the access_group_ids. If the access_group_ids are empty, the interpretations is that every group has access rights, therefore the parent inherited_access_group_ids are used as-is."
         },
         write_fields=(
-            "nm_group_mmiagi_meeting_mediafile",
+            "nm_group_mmiagi_meeting_mediafile_t",
             "meeting_mediafile_id",
             "group_id",
             [],
@@ -2722,7 +2732,7 @@ class MeetingMediafile(Model):
         to={"group": "meeting_mediafile_access_group_ids"},
         is_view_field=True,
         write_fields=(
-            "nm_group_mmagi_meeting_mediafile",
+            "nm_group_mmagi_meeting_mediafile_t",
             "meeting_mediafile_id",
             "group_id",
             [],
@@ -2747,7 +2757,7 @@ class MeetingMediafile(Model):
         is_view_field=True,
         is_primary=True,
         write_fields=(
-            "gm_meeting_mediafile_attachment_ids",
+            "gm_meeting_mediafile_attachment_ids_t",
             "meeting_mediafile_id",
             "attachment_id",
             [
@@ -3014,7 +3024,7 @@ class ChatGroup(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_chat_group_read_group_ids_group",
+            "nm_chat_group_read_group_ids_group_t",
             "chat_group_id",
             "group_id",
             [],
@@ -3026,7 +3036,7 @@ class ChatGroup(Model):
         is_primary=True,
         equal_fields="meeting_id",
         write_fields=(
-            "nm_chat_group_write_group_ids_group",
+            "nm_chat_group_write_group_ids_group_t",
             "chat_group_id",
             "group_id",
             [],
