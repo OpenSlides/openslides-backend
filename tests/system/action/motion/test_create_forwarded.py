@@ -11,7 +11,16 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCreateForwardedTest(BaseActionTestCase):
+class CreateForwardeBaseTestCase(BaseActionTestCase):
+    def set_test_models(self, motion_12_data: dict[str, Any] = {}) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.set_user_groups(1, [1, 4])
+        self.create_motion(1, 12, motion_data=motion_12_data)
+        self.set_models(self.test_models)
+
+
+class MotionCreateForwardedTest(CreateForwardeBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
@@ -35,35 +44,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "structure_level/2": {"meeting_id": 1, "name": "very"},
             "structure_level/3": {"meeting_id": 1, "name": "good"},
         }
-
-    def set_test_models(self, motion_12_data: dict[str, Any] = {}) -> None:
-        self.create_meeting()
-        self.create_meeting(4)
-        self.set_user_groups(1, [1, 4])
-        self.create_motion(1, 12, motion_data=motion_12_data)
-        self.set_models(self.test_models)
-
-    def create_meeting_mediafile(
-        self,
-        meeting_mediafile_id: int,
-        mediafile_id: int,
-        meeting_id: int,
-        motion_ids: list[int] = [],
-    ) -> None:
-        self.set_models(
-            {
-                f"meeting_mediafile/{meeting_mediafile_id}": {
-                    "meeting_id": meeting_id,
-                    "mediafile_id": mediafile_id,
-                    "is_public": True,
-                    "attachment_ids": (
-                        [f"motion/{motion_id}" for motion_id in motion_ids]
-                        if motion_ids
-                        else None
-                    ),
-                }
-            }
-        )
 
     def test_correct_origin_id_set(self) -> None:
         self.set_test_models()
@@ -1340,6 +1320,49 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_model_not_exists("motion/6")
 
+
+class BaseMotionForwardTestCaseWithAttachments(CreateForwardeBaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.media.duplicate_mediafile = MagicMock()
+        self.test_models: dict[str, dict[str, Any]] = {
+            "motion_state/1": {
+                "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
+            },
+            "committee/60": {
+                "name": "committee_forwarder",
+                "forward_to_committee_ids": [63],
+            },
+            "committee/63": {"name": "committee_receiver"},
+        }
+
+    def create_meeting_mediafile(
+        self,
+        meeting_mediafile_id: int,
+        mediafile_id: int,
+        meeting_id: int,
+        motion_ids: list[int] = [],
+    ) -> None:
+        self.set_models(
+            {
+                f"meeting_mediafile/{meeting_mediafile_id}": {
+                    "meeting_id": meeting_id,
+                    "mediafile_id": mediafile_id,
+                    "is_public": True,
+                    "attachment_ids": (
+                        [f"motion/{motion_id}" for motion_id in motion_ids]
+                        if motion_ids
+                        else None
+                    ),
+                }
+            }
+        )
+
+
+class CreateForwardedTestWithAttachmentsSimple(
+    BaseMotionForwardTestCaseWithAttachments
+):
     def base_test_forward_with_attachments_false(self, is_orga_wide: bool) -> None:
         """
         Base test for forwarding a motion without attachments.
@@ -1361,7 +1384,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting_mediafile(
             meeting_mediafile_id=10, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
-        self.media.duplicate_mediafile = MagicMock()
 
         response = self.request(
             "motion.create_forwarded",
@@ -1411,7 +1433,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting_mediafile(
             meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
             {
@@ -1452,7 +1473,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting_mediafile(
             meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
             {
@@ -1508,7 +1528,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 motion_ids=[12],
             )
 
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
             {
@@ -1638,8 +1657,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         Verify orga-wide mediafile is reused correctly when motion is forwarded
         to the same meeting.
         """
+        self.test_models["committee/60"]["forward_to_committee_ids"] = [63, 60]
         self.set_test_models()
-        self.set_models({"committee/60": {"forward_to_committee_ids": [63, 60]}})
         self.create_mediafile(1)
         self.create_meeting_mediafile(
             meeting_mediafile_id=1, mediafile_id=1, meeting_id=1, motion_ids=[12]
@@ -1719,6 +1738,71 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     def test_preserve_meeting_attachments_ids_with_attachments_true(self) -> None:
         self.base_test_preserve_existing_meeting_attachments_ids(with_attachments=True)
 
+    def test_forward_to_2_meetings_1_transaction_orga_wide_mediafiles(
+        self,
+    ) -> None:
+        self.set_test_models()
+        self.create_meeting(7, {"committee_id": 63})
+        self.create_mediafile(1, 1)
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
+
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "Forward to meeting 4",
+                    "meeting_id": 4,
+                    "origin_id": 12,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+                {
+                    "title": "Forward to meeting 7",
+                    "meeting_id": 7,
+                    "origin_id": 12,
+                    "text": "test",
+                    "with_attachments": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assertEqual(self.media.duplicate_mediafile.call_count, 2)
+        self.media.duplicate_mediafile.assert_has_calls(
+            calls=[call(1, 2), call(1, 3)], any_order=True
+        )
+        self.assert_model_exists(
+            "meeting/4", {"meeting_mediafile_ids": [12], "mediafile_ids": [2]}
+        )
+        self.assert_model_exists(
+            "meeting/7", {"meeting_mediafile_ids": [13], "mediafile_ids": [3]}
+        )
+        self.assert_model_exists(
+            "mediafile/2", {"meeting_mediafile_ids": [12], "owner_id": "meeting/4"}
+        )
+        self.assert_model_exists(
+            "mediafile/3", {"meeting_mediafile_ids": [13], "owner_id": "meeting/7"}
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/12",
+            {"meeting_id": 4, "mediafile_id": 2, "attachment_ids": ["motion/13"]},
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/13",
+            {"meeting_id": 7, "mediafile_id": 3, "attachment_ids": ["motion/14"]},
+        )
+        self.assert_model_exists(
+            "motion/13", {"attachment_meeting_mediafile_ids": [12]}
+        )
+        self.assert_model_exists(
+            "motion/14", {"attachment_meeting_mediafile_ids": [13]}
+        )
+
+
+class CreateForwardedTestWithAttachmentsShared(
+    BaseMotionForwardTestCaseWithAttachments
+):
     def set_2_motions_with_same_attachment(self, is_orga_wide: bool) -> None:
         self.set_test_models()
         self.create_motion(1, 13)
@@ -1729,7 +1813,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting_mediafile(
             meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12, 13]
         )
-        self.media.duplicate_mediafile = MagicMock()
 
     def test_forward_to_1_meeting_together_with_shared_meeting_wide_mediafile(
         self,
@@ -2058,68 +2141,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
     ) -> None:
         self.base_forward_to_1_meeting_with_shared_orga_wide_mediafile(False)
 
-    def test_forward_to_2_meetings_1_transaction_orga_wide_mediafiles(
-        self,
-    ) -> None:
-        self.set_test_models()
-        self.create_meeting(7, {"committee_id": 63})
-        self.create_mediafile(1, 1)
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
-        )
-        self.media.duplicate_mediafile = MagicMock()
 
-        response = self.request_multi(
-            "motion.create_forwarded",
-            [
-                {
-                    "title": "Forward to meeting 4",
-                    "meeting_id": 4,
-                    "origin_id": 12,
-                    "text": "test",
-                    "with_attachments": True,
-                },
-                {
-                    "title": "Forward to meeting 7",
-                    "meeting_id": 7,
-                    "origin_id": 12,
-                    "text": "test",
-                    "with_attachments": True,
-                },
-            ],
-        )
-        self.assert_status_code(response, 200)
-        self.assertEqual(self.media.duplicate_mediafile.call_count, 2)
-        self.media.duplicate_mediafile.assert_has_calls(
-            calls=[call(1, 2), call(1, 3)], any_order=True
-        )
-        self.assert_model_exists(
-            "meeting/4", {"meeting_mediafile_ids": [12], "mediafile_ids": [2]}
-        )
-        self.assert_model_exists(
-            "meeting/7", {"meeting_mediafile_ids": [13], "mediafile_ids": [3]}
-        )
-        self.assert_model_exists(
-            "mediafile/2", {"meeting_mediafile_ids": [12], "owner_id": "meeting/4"}
-        )
-        self.assert_model_exists(
-            "mediafile/3", {"meeting_mediafile_ids": [13], "owner_id": "meeting/7"}
-        )
-        self.assert_model_exists(
-            "meeting_mediafile/12",
-            {"meeting_id": 4, "mediafile_id": 2, "attachment_ids": ["motion/13"]},
-        )
-        self.assert_model_exists(
-            "meeting_mediafile/13",
-            {"meeting_id": 7, "mediafile_id": 3, "attachment_ids": ["motion/14"]},
-        )
-        self.assert_model_exists(
-            "motion/13", {"attachment_meeting_mediafile_ids": [12]}
-        )
-        self.assert_model_exists(
-            "motion/14", {"attachment_meeting_mediafile_ids": [13]}
-        )
-
+class CreateForwardedTestWithAttachmentsAndAmendments(
+    BaseMotionForwardTestCaseWithAttachments
+):
     def set_motion_with_amendment(self) -> None:
         self.set_test_models()
         self.create_motion(1, 13, motion_data={"lead_motion_id": 12})
@@ -2152,7 +2177,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_models(
             {"meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]}}
         )
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
             {
@@ -2245,7 +2269,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "motion/13": {"state_id": 4},
                 }
             )
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
             {
@@ -2294,7 +2317,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
 
     def base_forward_with_attachments_false(self, with_amendments: bool) -> None:
         self.set_motion_with_amendment()
-        self.media.duplicate_mediafile = MagicMock()
 
         response = self.request(
             "motion.create_forwarded",
@@ -2366,7 +2388,6 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             meeting_mediafile_id=30, mediafile_id=19, meeting_id=1, motion_ids=[16]
         )
 
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request_multi(
             "motion.create_forwarded",
             [
