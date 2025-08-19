@@ -108,7 +108,7 @@ class SpeakerUpdate(
             else speaker.get("point_of_order")
         )
         if speaker.get("begin_time"):
-            if speaker.get("speech_state") in [
+            if "speech_state" in instance and speaker.get("speech_state") in [
                 SpeechState.INTERVENTION,
                 SpeechState.INTERVENTION_ANSWER,
             ]:
