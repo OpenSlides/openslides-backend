@@ -29,19 +29,19 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        motion = self.get_model("motion/1")
-        assert motion.get("workflow_timestamp")
-        self.assert_model_exists(
+        motion = self.assert_model_exists(
             "motion/1",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "workflow_timestamp": motion.get("last_modified"),
-                "created": motion.get("last_modified"),
                 "submitter_ids": [1],
                 "state_id": 1,
             },
+        )
+        assert motion.get("workflow_timestamp")
+        assert (
+            motion["workflow_timestamp"] == motion["last_modified"] == motion["created"]
         )
         self.assert_model_exists(
             "motion_submitter/1",

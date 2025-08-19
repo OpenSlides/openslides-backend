@@ -67,11 +67,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         )
 
     def test_set_state_correct_next_state(self) -> None:
-        self.set_models(
-            {
-                "motion/22": {"state_id": 76, "number": "A021"},
-            }
-        )
+        self.set_models({"motion/22": {"state_id": 76, "number": "A021"}})
         response = self.request("motion.set_state", {"id": 22, "state_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/22", {"state_id": 1, "number": "A021"})
@@ -79,8 +75,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
     def test_set_state_wrong_not_in_next_or_previous(self) -> None:
         self.set_models(
             {
-                "motion_state/76": {"next_state_ids": None},
-                "motion_state/1": {"previous_state_ids": None},
+                "motion_state/76": {"next_state_ids": []},
                 "user/1": {"organization_management_level": None},
             }
         )
@@ -95,7 +90,6 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/76": {"next_state_ids": None},
-                "motion_state/1": {"previous_state_ids": None},
                 "user/1": {"organization_management_level": None},
                 "group/1": {"permissions": [Permissions.Motion.CAN_MANAGE_METADATA]},
             }
@@ -176,13 +170,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         )
 
     def test_set_state_permission_submitter(self) -> None:
-        self.set_models(
-            {
-                "user/1": {
-                    "organization_management_level": None,
-                },
-            }
-        )
+        self.set_models({"user/1": {"organization_management_level": None}})
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
 

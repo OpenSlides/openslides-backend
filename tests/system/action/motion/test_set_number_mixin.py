@@ -1,5 +1,6 @@
-from tests.system.action.base import BaseActionTestCase
 from typing import Any
+
+from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSetNumberMixinTest(BaseActionTestCase):

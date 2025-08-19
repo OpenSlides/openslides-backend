@@ -14,7 +14,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateForwardedTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model: dict[str, dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "motion_state/1": {
                 "allow_motion_forwarding": True,
                 "allow_amendment_forwarding": True,
@@ -41,7 +41,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting(4)
         self.set_user_groups(1, [1, 4])
         self.create_motion(1, 12, motion_data=motion_12_data)
-        self.set_models(self.test_model)
+        self.set_models(self.test_models)
 
     def create_meeting_mediafile(
         self,
@@ -177,7 +177,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_correct_origin_id_wrong_1(self) -> None:
-        self.test_model["committee/60"]["forward_to_committee_ids"] = []
+        self.test_models["committee/60"]["forward_to_committee_ids"] = []
         self.set_test_models()
         response = self.request(
             "motion.create_forwarded",
@@ -300,7 +300,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
 
     def test_not_allowed_to_forward_amendments_directly(self) -> None:
-        self.test_model["motion_state/1"]["allow_amendment_forwarding"] = False
+        self.test_models["motion_state/1"]["allow_amendment_forwarding"] = False
         self.set_test_models()
         self.create_motion(1, 6)
         self.create_motion(1, 11, motion_data={"lead_motion_id": 6})
@@ -647,7 +647,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_history_information("motion/14", ["Motion created (forwarded)"])
 
     def test_create_forwarded_not_allowed_by_state(self) -> None:
-        self.test_model["motion_state/1"]["allow_motion_forwarding"] = False
+        self.test_models["motion_state/1"]["allow_motion_forwarding"] = False
         self.set_test_models()
         response = self.request(
             "motion.create_forwarded",
@@ -837,12 +837,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_motion(4, 14, motion_data={"number": "1"})
         self.set_models(
             {
-                "motion_state/4": {
-                    "allow_motion_forwarding": True,
-                },
-                "motion/12": {"number": "1"},
-                "motion/13": {"state_id": 12, "number": "1"},
-                "motion/14": {"number": "1"},
+                "motion_state/4": {"allow_motion_forwarding": True},
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -1363,7 +1358,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             self.create_mediafile(1)
         else:
             self.create_mediafile(1, 1)
-        self.create_meeting_mediafile(10, 1, 1, [12])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=10, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
         self.media.duplicate_mediafile = MagicMock()
 
         response = self.request(
@@ -1411,7 +1408,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         """
         self.set_test_models()
         self.create_mediafile(1, 1)
-        self.create_meeting_mediafile(11, 1, 1, motion_ids=[12])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
         self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
@@ -1450,7 +1449,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         """
         self.set_test_models()
         self.create_mediafile(1)
-        self.create_meeting_mediafile(11, 1, 1, motion_ids=[12])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
         self.media.duplicate_mediafile = MagicMock()
         response = self.request(
             "motion.create_forwarded",
@@ -1500,7 +1501,12 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_mediafile(6, parent_id=5)
 
         for i in range(1, 7):
-            self.create_meeting_mediafile(i + 10, i, 1, motion_ids=[12])
+            self.create_meeting_mediafile(
+                meeting_mediafile_id=i + 10,
+                mediafile_id=i,
+                meeting_id=1,
+                motion_ids=[12],
+            )
 
         self.media.duplicate_mediafile = MagicMock()
         response = self.request(
@@ -1633,13 +1639,11 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         to the same meeting.
         """
         self.set_test_models()
-        self.set_models(
-            {
-                "committee/60": {"forward_to_committee_ids": [63, 60]},
-            }
-        )
+        self.set_models({"committee/60": {"forward_to_committee_ids": [63, 60]}})
         self.create_mediafile(1)
-        self.create_meeting_mediafile(1, 1, 1, [12])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=1, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
         response = self.request(
             "motion.create_forwarded",
             {
@@ -1677,8 +1681,12 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_test_models()
         self.create_mediafile(1, 1)
         self.create_mediafile(2, 4)
-        self.create_meeting_mediafile(11, 1, 1, [12])
-        self.create_meeting_mediafile(12, 2, 4)
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=12, mediafile_id=2, meeting_id=4
+        )
 
         response = self.request(
             "motion.create_forwarded",
@@ -1718,7 +1726,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             self.create_mediafile(1)
         else:
             self.create_mediafile(1, 1)
-        self.create_meeting_mediafile(11, 1, 1, [12, 13])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12, 13]
+        )
         self.media.duplicate_mediafile = MagicMock()
 
     def test_forward_to_1_meeting_together_with_shared_meeting_wide_mediafile(
@@ -1888,8 +1898,12 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_2_motions_with_same_attachment(is_orga_wide=False)
         self.create_mediafile(2, 1, is_directory=True)
         self.create_mediafile(3, 1, parent_id=2)
-        self.create_meeting_mediafile(12, 2, 1, [13])
-        self.create_meeting_mediafile(13, 3, 1, [13])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=12, mediafile_id=2, meeting_id=1, motion_ids=[13]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=13, mediafile_id=3, meeting_id=1, motion_ids=[13]
+        )
         self.set_models({"meeting_mediafile/11": {"attachment_ids": ["motion/12"]}})
         response1 = self.request(
             "motion.create_forwarded",
@@ -2050,7 +2064,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_test_models()
         self.create_meeting(7, {"committee_id": 63})
         self.create_mediafile(1, 1)
-        self.create_meeting_mediafile(11, 1, 1, [12])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+        )
         self.media.duplicate_mediafile = MagicMock()
 
         response = self.request_multi(
@@ -2111,10 +2127,18 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_mediafile(6, 1)
         self.create_mediafile(8)
         self.create_mediafile(19, 1)
-        self.create_meeting_mediafile(11, 1, 1, [13])
-        self.create_meeting_mediafile(14, 6, 1, [12, 13])
-        self.create_meeting_mediafile(17, 8, 1, [12])
-        self.create_meeting_mediafile(24, 19, 1, [13])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[13]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[12, 13]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=17, mediafile_id=8, meeting_id=1, motion_ids=[12]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=24, mediafile_id=19, meeting_id=1, motion_ids=[13]
+        )
 
     def test_forward_with_attachments_true_with_amendments_true_with_nested_amendments(
         self,
@@ -2122,7 +2146,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_motion_with_amendment()
         self.create_motion(1, 14, motion_data={"lead_motion_id": 13})
         self.create_mediafile(20, 1)
-        self.create_meeting_mediafile(20, 20, 1, [14])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=20, mediafile_id=20, meeting_id=1, motion_ids=[14]
+        )
         self.set_models(
             {"meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]}}
         )
@@ -2324,11 +2350,21 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_mediafile(16, 1)
         self.create_mediafile(19)
 
-        self.create_meeting_mediafile(8, 1, 1, [16])
-        self.create_meeting_mediafile(14, 6, 1, [13])
-        self.create_meeting_mediafile(17, 9, 1, [12])
-        self.create_meeting_mediafile(31, 16, 1, [13, 17])
-        self.create_meeting_mediafile(30, 19, 1, [16])
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=8, mediafile_id=1, meeting_id=1, motion_ids=[16]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[13]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=17, mediafile_id=9, meeting_id=1, motion_ids=[12]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=31, mediafile_id=16, meeting_id=1, motion_ids=[13, 17]
+        )
+        self.create_meeting_mediafile(
+            meeting_mediafile_id=30, mediafile_id=19, meeting_id=1, motion_ids=[16]
+        )
 
         self.media.duplicate_mediafile = MagicMock()
         response = self.request_multi(

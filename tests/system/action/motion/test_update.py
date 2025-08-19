@@ -443,7 +443,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_test_models()
         self.create_meeting(4)
         self.set_user_groups(1, [4])
-        self.set_test_models()
         response = self.request(
             "motion.update", {"id": 111, "supporter_meeting_user_ids": [1]}
         )
@@ -665,14 +664,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_check_not_unique_number(self) -> None:
         self.create_motion(1, 1, motion_data={"number": "T001"})
         self.create_motion(1, 2, motion_data={"number": "A001"})
-        )
-        response = self.request(
-            "motion.update",
-            {
-                "id": 1,
-                "number": "A001",
-            },
-        )
+        response = self.request("motion.update", {"id": 1, "number": "A001"})
         self.assert_status_code(response, 400)
         self.assertEqual("Number is not unique.", response.json["message"])
 

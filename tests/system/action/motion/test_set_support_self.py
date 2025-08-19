@@ -14,13 +14,11 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_motion(1, 1)
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/1": {"sequential_number": 1},
             "meeting/1": {"motions_supporters_min_amount": 1},
             "motion_state/1": {"allow_support": True},
         }
 
     def test_meeting_support_system_deactivated(self) -> None:
-        # self.set_models({"meeting/1": {"motions_supporters_min_amount": 0}})
         response = self.request(
             "motion.set_support_self", {"motion_id": 1, "support": True}
         )
@@ -136,7 +134,9 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "motion_state/1": {"allow_support": True},
                 "meeting/1": {
                     "motions_supporters_min_amount": 1,
-                    "users_enable_vote_delegations": False if disable_delegations else True
+                    "users_enable_vote_delegations": (
+                        False if disable_delegations else True
+                    ),
                     delegator_setting: True,
                 },
             }

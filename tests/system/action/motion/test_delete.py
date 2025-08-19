@@ -114,13 +114,13 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("motion/112")
         self.assert_model_exists("projector/1", {"current_projection_ids": None})
 
-    def set_forwarded_motion(self) -> None:
-        self.create_meeting(4)
-        self.create_motion(
-            4, 112, motion_data={"origin_id": 111, "all_origin_ids": [111]}
-        )
+    def set_forwarded_motion(
+        self, meeting_id: int = 4, base: int = 112, origin_id: int = 111
+    ) -> None:
+        self.create_motion(meeting_id, base, motion_data={"origin_id": origin_id})
 
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
+        self.create_meeting(4)
         self.set_forwarded_motion()
         response = self.request("motion.delete", {"id": 112})
         self.assert_status_code(response, 200)
@@ -128,6 +128,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_history_information("motion/111", ["Forwarded motion deleted"])
 
     def test_delete_with_forwardings_all_derived_motion_ids(self) -> None:
+        self.create_meeting(4)
         self.set_forwarded_motion()
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
@@ -135,10 +136,10 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_history_information("motion/112", ["Origin motion deleted"])
 
     def test_delete_with_forwardings_complex(self) -> None:
-        self.create_motion(1, 113, motion_data={"origin_id": 111})
         self.create_meeting(4)
-        self.create_motion(4, 112, motion_data={"origin_id": 112})
-        self.create_motion(4, 114, motion_data={"origin_id": 113})
+        self.set_forwarded_motion(4, 112, 111)
+        self.set_forwarded_motion(1, 113, 112)
+        self.set_forwarded_motion(4, 114, 113)
 
         response = self.request_multi(
             "motion.delete", [{"id": 111}, {"id": 112}, {"id": 113}]

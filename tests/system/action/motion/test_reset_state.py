@@ -36,16 +36,14 @@ class MotionResetStateActionTest(BaseActionTestCase):
 
     def test_reset_state_correct(self) -> None:
         check_time = datetime.now(ZoneInfo("UTC"))
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion_state/76": {"set_workflow_timestamp": True},
-                "motion/22": {
-                    "number": "001",
-                    "created": datetime.fromtimestamp(1687339000),
-                },
-            }
+        self.permission_test_models["motion/22"].update(
+            {"number": "001", "created": datetime.fromtimestamp(1687339000)}
         )
+        self.permission_test_models["motion_state/76"].update(
+            {"set_workflow_timestamp": True}
+        )
+        self.set_models(self.permission_test_models)
+
         response = self.request("motion.reset_state", {"id": 22})
         self.assert_status_code(response, 200)
         model = self.assert_model_exists(
@@ -63,15 +61,11 @@ class MotionResetStateActionTest(BaseActionTestCase):
         assert model.get("workflow_timestamp") == model_last_modified
 
     def test_reset_state_correct_number_value(self) -> None:
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/22": {
-                    "number_value": 23,
-                    "workflow_timestamp": datetime.fromtimestamp(1111111),
-                },
-            }
+        self.permission_test_models["motion/22"].update(
+            {"number_value": 23, "workflow_timestamp": datetime.fromtimestamp(1111111)}
         )
+        self.set_models(self.permission_test_models)
+
         response = self.request("motion.reset_state", {"id": 22})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

@@ -70,11 +70,7 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_follow_recommendation_without_extension(self) -> None:
-        self.set_models(
-            {
-                "motion/22": {"recommendation_extension": None},
-            }
-        )
+        self.set_models({"motion/22": {"recommendation_extension": None}})
         response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

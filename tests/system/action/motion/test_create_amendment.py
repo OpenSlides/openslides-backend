@@ -165,13 +165,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         )
 
     def test_create_missing_reason(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "motions_reason_required": True,
-                },
-            }
-        )
+        self.set_models({"meeting/1": {"motions_reason_required": True}})
         response = self.request(
             "motion.create",
             self.default_action_data,
