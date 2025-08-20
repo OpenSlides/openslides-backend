@@ -17,10 +17,11 @@ class CreateForwardedBaseTestCase(BaseActionTestCase):
         self.create_meeting(4)
         self.set_user_groups(1, [1, 4])
         self.create_motion(1, 12, motion_data=motion_12_data)
-        self.set_models(self.test_models)
+        if hasattr(self, "test_models"):
+            self.set_models(self.test_models)
 
 
-class MotionCreateForwardedTest(CreateForwardeBaseTestCase):
+class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: dict[str, dict[str, Any]] = {
@@ -1321,7 +1322,7 @@ class MotionCreateForwardedTest(CreateForwardeBaseTestCase):
         self.assert_model_not_exists("motion/6")
 
 
-class BaseMotionForwardTestCaseWithAttachments(CreateForwardeBaseTestCase):
+class BaseMotionForwardTestCaseWithAttachments(CreateForwardedBaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.media.duplicate_mediafile = MagicMock()
