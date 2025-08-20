@@ -11,7 +11,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
-class CreateForwardeBaseTestCase(BaseActionTestCase):
+class CreateForwardedBaseTestCase(BaseActionTestCase):
     def set_test_models(self, motion_12_data: dict[str, Any] = {}) -> None:
         self.create_meeting()
         self.create_meeting(4)
