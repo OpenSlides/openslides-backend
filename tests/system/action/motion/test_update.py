@@ -605,9 +605,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "state_extension": "test",
                 "recommendation_extension": "test",
                 "start_line_number": 1,
-                "created": datetime.fromtimestamp(now).replace(
-                    microsecond=0, tzinfo=ZoneInfo("UTC")
-                ),
+                "created": datetime.fromtimestamp(now, ZoneInfo("UTC"),
                 "tag_ids": [3],
                 "block_id": 4,
                 "supporter_meeting_user_ids": [1],
