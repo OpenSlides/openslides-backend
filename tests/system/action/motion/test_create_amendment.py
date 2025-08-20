@@ -224,7 +224,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         amendment = {"lead_motion_id": 1, "amendment_paragraphs": paragraphs}
         hash = TextHashMixin.get_hash_for_motion(amendment)
         amendment.update({"text_hash": hash, "amendment_paragraphs": Jsonb(paragraphs)})
-        self.create_motion(1, 2, motion_data=amendment)
+        self.create_motion(1, 2, motion_data={"lead_motion_id": 1, "text_hash": hash, "amendment_paragraphs": Jsonb(paragraphs)})
         response = self.request(
             "motion.create",
             {
