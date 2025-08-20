@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from math import floor
+from time import time
 from typing import Any
 
 from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
@@ -429,9 +431,9 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         )
         assert sllos["remaining_time"] == 18
 
-    def add_coupled_countdown(self) -> datetime:
+    def add_coupled_countdown(self) -> int:
         """Returns the current date that was used to set the countdown_time"""
-        now = datetime.now()
+        now = floor(time())
         self.set_models(
             {
                 "meeting/1": {
@@ -442,12 +444,10 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "title": "projeto countdown",
                     "running": True,
                     "default_time": 200,
-                    "countdown_time": now.timestamp() + 100,
+                    "countdown_time": now + 100,
                     "meeting_id": 1,
                 },
-                "speaker/890": {
-                    "begin_time": now + timedelta(seconds=100),
-                },
+                "speaker/890": {"begin_time": now + 100},
             }
         )
         return now
@@ -495,4 +495,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
-        self.assertAlmostEqual(countdown["countdown_time"], now.timestamp(), delta=200)
+        self.assertAlmostEqual(
+            countdown["countdown_time"], datetime.fromtimestamp(now), delta=200
+        )

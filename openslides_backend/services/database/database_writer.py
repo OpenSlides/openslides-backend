@@ -7,6 +7,7 @@ from psycopg.errors import (
     DatatypeMismatch,
     GeneratedAlways,
     NotNullViolation,
+    ProgrammingError,
     SyntaxError,
     UndefinedColumn,
     UndefinedTable,
@@ -593,6 +594,8 @@ class DatabaseWriter(SqlQueryHelper):
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}"""
             )
+        except ProgrammingError as e:
+            raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
                 raise ModelDoesNotExist(

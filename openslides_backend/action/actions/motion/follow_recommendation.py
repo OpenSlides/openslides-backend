@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -65,7 +66,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             instance["state_extension_reference_ids"] = (
                 recommendation_extension_reference_ids or []
             )
-        instance["last_modified"] = round(time.time())
+        instance["last_modified"] = datetime.now(ZoneInfo("UTC"))
         return instance
 
     def get_history_information(self) -> HistoryInformation | None:

@@ -60,13 +60,13 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         origin_id = instance.pop("origin_id")
-        instance.update(
-            self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, origin_id),
-                FIELDS,
-                lock_result=False,
-            )
+        origin_instance = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, origin_id),
+            FIELDS,
+            lock_result=False,
         )
+        origin_instance.pop("id")
+        instance.update(origin_instance)
         self.ensure_unique_title_within_parent(instance)
         instance["create_timestamp"] = datetime.now(ZoneInfo("UTC"))
         if not instance.get("is_directory"):
