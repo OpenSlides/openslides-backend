@@ -1339,14 +1339,14 @@ class BaseMotionForwardTestCaseWithAttachments(CreateForwardeBaseTestCase):
 
     def create_meeting_mediafile(
         self,
-        meeting_mediafile_id: int,
+        base: int,
         mediafile_id: int,
         meeting_id: int,
         motion_ids: list[int] = [],
     ) -> None:
         self.set_models(
             {
-                f"meeting_mediafile/{meeting_mediafile_id}": {
+                f"meeting_mediafile/{base}": {
                     "meeting_id": meeting_id,
                     "mediafile_id": mediafile_id,
                     "is_public": True,
@@ -1382,7 +1382,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         else:
             self.create_mediafile(1, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=10, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=10, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
 
         response = self.request(
@@ -1431,7 +1431,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         self.set_test_models()
         self.create_mediafile(1, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
         response = self.request(
             "motion.create_forwarded",
@@ -1471,7 +1471,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         self.set_test_models()
         self.create_mediafile(1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
         response = self.request(
             "motion.create_forwarded",
@@ -1522,7 +1522,7 @@ class CreateForwardedTestWithAttachmentsSimple(
 
         for i in range(1, 7):
             self.create_meeting_mediafile(
-                meeting_mediafile_id=i + 10,
+                base=i + 10,
                 mediafile_id=i,
                 meeting_id=1,
                 motion_ids=[12],
@@ -1661,7 +1661,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         self.set_test_models()
         self.create_mediafile(1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=1, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=1, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
         response = self.request(
             "motion.create_forwarded",
@@ -1701,11 +1701,9 @@ class CreateForwardedTestWithAttachmentsSimple(
         self.create_mediafile(1, 1)
         self.create_mediafile(2, 4)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
-        self.create_meeting_mediafile(
-            meeting_mediafile_id=12, mediafile_id=2, meeting_id=4
-        )
+        self.create_meeting_mediafile(base=12, mediafile_id=2, meeting_id=4)
 
         response = self.request(
             "motion.create_forwarded",
@@ -1745,7 +1743,7 @@ class CreateForwardedTestWithAttachmentsSimple(
         self.create_meeting(7, {"committee_id": 63})
         self.create_mediafile(1, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[12]
         )
 
         response = self.request_multi(
@@ -1811,7 +1809,7 @@ class CreateForwardedTestWithAttachmentsShared(
         else:
             self.create_mediafile(1, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[12, 13]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[12, 13]
         )
 
     def test_forward_to_1_meeting_together_with_shared_meeting_wide_mediafile(
@@ -1982,10 +1980,10 @@ class CreateForwardedTestWithAttachmentsShared(
         self.create_mediafile(2, 1, is_directory=True)
         self.create_mediafile(3, 1, parent_id=2)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=12, mediafile_id=2, meeting_id=1, motion_ids=[13]
+            base=12, mediafile_id=2, meeting_id=1, motion_ids=[13]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=13, mediafile_id=3, meeting_id=1, motion_ids=[13]
+            base=13, mediafile_id=3, meeting_id=1, motion_ids=[13]
         )
         self.set_models({"meeting_mediafile/11": {"attachment_ids": ["motion/12"]}})
         response1 = self.request(
@@ -2153,16 +2151,16 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         self.create_mediafile(8)
         self.create_mediafile(19, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=11, mediafile_id=1, meeting_id=1, motion_ids=[13]
+            base=11, mediafile_id=1, meeting_id=1, motion_ids=[13]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[12, 13]
+            base=14, mediafile_id=6, meeting_id=1, motion_ids=[12, 13]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=17, mediafile_id=8, meeting_id=1, motion_ids=[12]
+            base=17, mediafile_id=8, meeting_id=1, motion_ids=[12]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=24, mediafile_id=19, meeting_id=1, motion_ids=[13]
+            base=24, mediafile_id=19, meeting_id=1, motion_ids=[13]
         )
 
     def test_forward_with_attachments_true_with_amendments_true_with_nested_amendments(
@@ -2172,7 +2170,7 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         self.create_motion(1, 14, motion_data={"lead_motion_id": 13})
         self.create_mediafile(20, 1)
         self.create_meeting_mediafile(
-            meeting_mediafile_id=20, mediafile_id=20, meeting_id=1, motion_ids=[14]
+            base=20, mediafile_id=20, meeting_id=1, motion_ids=[14]
         )
         self.set_models(
             {"meeting_mediafile/11": {"attachment_ids": ["motion/13", "motion/14"]}}
@@ -2373,19 +2371,19 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         self.create_mediafile(19)
 
         self.create_meeting_mediafile(
-            meeting_mediafile_id=8, mediafile_id=1, meeting_id=1, motion_ids=[16]
+            base=8, mediafile_id=1, meeting_id=1, motion_ids=[16]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=14, mediafile_id=6, meeting_id=1, motion_ids=[13]
+            base=14, mediafile_id=6, meeting_id=1, motion_ids=[13]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=17, mediafile_id=9, meeting_id=1, motion_ids=[12]
+            base=17, mediafile_id=9, meeting_id=1, motion_ids=[12]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=31, mediafile_id=16, meeting_id=1, motion_ids=[13, 17]
+            base=31, mediafile_id=16, meeting_id=1, motion_ids=[13, 17]
         )
         self.create_meeting_mediafile(
-            meeting_mediafile_id=30, mediafile_id=19, meeting_id=1, motion_ids=[16]
+            base=30, mediafile_id=19, meeting_id=1, motion_ids=[16]
         )
 
         response = self.request_multi(
