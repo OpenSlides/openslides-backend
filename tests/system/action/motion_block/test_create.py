@@ -24,7 +24,6 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "weight": 1,
                 "meeting_id": 42,
                 "content_object_id": "motion_block/1",
-                "meta_deleted": None,
             },
         )
         self.assert_model_exists(
