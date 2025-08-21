@@ -50,7 +50,6 @@ class MotionBlockActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 1,
                 },
-                "projector/1": {"sequential_number": 1, "meeting_id": 1},
             }
         )
         response = self.request("motion_block.delete", {"id": 111})
