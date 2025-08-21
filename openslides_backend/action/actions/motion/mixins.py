@@ -1,7 +1,9 @@
+from datetime import datetime
 from hashlib import md5
 from typing import Any
 
 import simplejson as json
+from psycopg.types.json import Jsonb
 
 from ....services.database.commands import GetManyRequest
 from ....services.database.interface import Database
@@ -49,7 +51,7 @@ class AmendmentParagraphHelper:
 
 
 def set_workflow_timestamp_helper(
-    datastore: Database, instance: dict[str, Any], timestamp: int
+    datastore: Database, instance: dict[str, Any], timestamp: datetime
 ) -> None:
     state = datastore.get(
         fqid_from_collection_and_id("motion_state", instance["state_id"]),
@@ -85,6 +87,8 @@ class TextHashMixin(Action):
         if html := motion.get("text"):
             text = get_text_from_html(html)
         elif paragraphs := motion.get("amendment_paragraphs"):
+            if isinstance(paragraphs, Jsonb):
+                paragraphs = paragraphs.obj
             paragraph_texts = {
                 key: get_text_from_html(html) for key, html in paragraphs.items()
             }
