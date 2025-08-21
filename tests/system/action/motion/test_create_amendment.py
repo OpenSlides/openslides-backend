@@ -221,8 +221,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
 
     def test_create_identical_paragraph_based_amendment(self) -> None:
         paragraphs = {1: "test"}
-        amendment = {"lead_motion_id": 1, "amendment_paragraphs": paragraphs}
-        hash = TextHashMixin.get_hash_for_motion(amendment)
+        hash = TextHashMixin.get_hash_for_motion({"amendment_paragraphs": paragraphs})
         self.create_motion(
             meeting_id=1,
             base=2,
