@@ -354,7 +354,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "speaker/890": {
                     "begin_time": 100,
-                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
                     "meeting_user_id": None,
                 },
             }
@@ -731,7 +732,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "You can not change the speech_state of a started intervention or intervention answer."
+            == "You can not change the speech_state of a started intervention."
         )
 
     def test_update_non_running_intervention_with_other_state(self) -> None:
@@ -756,7 +757,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "You can not change the speech_state of a started intervention or intervention answer."
+            == "You can not change the speech_state of a started intervention."
         )
 
     def test_update_running_speaker_with_speech_state(self) -> None:
@@ -957,7 +958,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "speaker/890": {
                     "meeting_user_id": None,
-                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
                 }
             }
         )
@@ -969,7 +971,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.create_meeting(1)
         alice_id = self.create_user("alice", [3])
         self.set_models(
-            {"speaker/890": {"speech_state": SpeechState.INTERVENTION_ANSWER}}
+            {"speaker/890": {"answer": True, "speech_state": SpeechState.INTERVENTION}}
         )
         response = self.request(
             "speaker.update", {"id": 890, "meeting_user_id": alice_id}
@@ -983,7 +985,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "speaker/890": {
                     "meeting_user_id": None,
-                    "speech_state": SpeechState.INTERVENTION_ANSWER,
+                    "speech_state": SpeechState.INTERVENTION,
                 }
             }
         )
@@ -993,5 +995,101 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "Cannot set speakers without meeting_user_id to anything other than intervention or intervention answer."
+            == "Cannot set interventions to other speech states without meeting_user_id."
+        )
+
+    def test_update_set_answer_on_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": True})
+
+    def test_update_set_answer_on_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": True})
+
+    def test_update_set_answer_on_any_other_state(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.PRO,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Answer can only be set for interventions and interposed questions."
+        )
+
+    def test_update_set_answer_on_no_state(self) -> None:
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Answer can only be set for interventions and interposed questions."
+        )
+
+    def test_update_unset_answer_on_intervention_and_change_state(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "answer": False, "speech_state": SpeechState.CONTRA},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"answer": False, "speech_state": SpeechState.CONTRA}
+        )
+
+    def test_update_unset_answer_on_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": False})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": False})
+
+    def test_update_change_state_on_answer_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRA}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot set speech_state to anything except interventions and interposed questions for answers."
         )

@@ -11,6 +11,7 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .create import ANSWERABLE_STATES
 from .mixins import CheckSpeechState, PointOfOrderPermissionMixin, StructureLevelMixin
 from .speech_state import SpeechState
 
@@ -30,6 +31,7 @@ class SpeakerUpdate(
             "point_of_order",
             "point_of_order_category_id",
             "note",
+            "answer",
             *internal_fields,
         ],
         additional_optional_fields={"structure_level_id": optional_id_schema},
@@ -60,10 +62,18 @@ class SpeakerUpdate(
                 "begin_time",
                 "list_of_speakers_id",
                 "structure_level_list_of_speakers_id",
+                "answer",
             ],
         )
         if "speech_state" in instance:
             if (
+                (speaker.get("answer") and "answer" not in instance)
+                or instance.get("answer")
+            ) and instance["speech_state"] not in ANSWERABLE_STATES:
+                raise ActionException(
+                    "Cannot set speech_state to anything except interventions and interposed questions for answers."
+                )
+            elif (
                 speaker.get("speech_state") == SpeechState.INTERPOSED_QUESTION
                 and instance["speech_state"] != SpeechState.INTERPOSED_QUESTION
             ):
@@ -71,16 +81,31 @@ class SpeakerUpdate(
                     "You cannot change the speech state of an interposed_question."
                 )
             elif (
-                speaker.get("speech_state")
-                in [SpeechState.INTERVENTION, SpeechState.INTERVENTION_ANSWER]
-                and not speaker.get("meeting_user_id")
-                and instance["speech_state"]
-                not in [SpeechState.INTERVENTION, SpeechState.INTERVENTION_ANSWER]
-                and not instance.get("meeting_user_id")
+                speaker.get("speech_state") == SpeechState.INTERVENTION
+                and instance["speech_state"] != SpeechState.INTERVENTION
             ):
+                if not (
+                    (
+                        speaker.get("meeting_user_id")
+                        and "meeting_user_id" not in instance
+                    )
+                    or instance.get("meeting_user_id")
+                ):
+                    raise ActionException(
+                        "Cannot set interventions to other speech states without meeting_user_id."
+                    )
+                if (
+                    speaker.get("answer") and not instance.get("answer") is False
+                ) or instance.get("answer"):
+                    raise ActionException("Cannot set answers to other speech states.")
+        if instance.get("answer"):
+            if speaker.get(
+                "speech_state"
+            ) not in ANSWERABLE_STATES and not instance.get("speech_state"):
                 raise ActionException(
-                    "Cannot set speakers without meeting_user_id to anything other than intervention or intervention answer."
+                    "Answer can only be set for interventions and interposed questions."
                 )
+
         if "meeting_user_id" in instance:
             if (
                 instance["meeting_user_id"] is None
@@ -89,7 +114,6 @@ class SpeakerUpdate(
                 not in [
                     SpeechState.INTERPOSED_QUESTION,
                     SpeechState.INTERVENTION,
-                    SpeechState.INTERVENTION_ANSWER,
                 ]
             ):
                 raise ActionException("You cannot set the meeting_user_id.")
@@ -108,12 +132,12 @@ class SpeakerUpdate(
             else speaker.get("point_of_order")
         )
         if speaker.get("begin_time"):
-            if "speech_state" in instance and speaker.get("speech_state") in [
-                SpeechState.INTERVENTION,
-                SpeechState.INTERVENTION_ANSWER,
-            ]:
+            if (
+                "speech_state" in instance
+                and speaker.get("speech_state") == SpeechState.INTERVENTION
+            ):
                 raise ActionException(
-                    "You can not change the speech_state of a started intervention or intervention answer."
+                    "You can not change the speech_state of a started intervention."
                 )
             if instance.get("structure_level_id") or (
                 speaker.get("structure_level_list_of_speakers_id")

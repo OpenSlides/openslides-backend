@@ -6,5 +6,4 @@ class SpeechState(str, Enum):
     PRO = "pro"
     CONTRA = "contra"
     INTERVENTION = "intervention"
-    INTERVENTION_ANSWER = "intervention_answer"
     INTERPOSED_QUESTION = "interposed_question"
