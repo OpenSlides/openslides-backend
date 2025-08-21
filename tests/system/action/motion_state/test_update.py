@@ -6,12 +6,6 @@ class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.set_models(
-            {
-                "motion_workflow/1": {"name": "name_Ycefgee"},
-                "motion_state/1": {"name": "name_srtgb123"},
-            }
-        )
 
     def test_update_correct(self) -> None:
         self.set_models(
@@ -117,7 +111,7 @@ class MotionStateActionTest(BaseActionTestCase):
             "motion_state.update", {"id": 2, "name": "name_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
-        self.assert_model_exists("motion_state/1", {"name": "name_srtgb123"})
+        self.assert_model_exists("motion_state/1", {"name": "stasis"})
         self.assertEqual(
             "Model 'motion_state/2' does not exist.", response.json["message"]
         )
