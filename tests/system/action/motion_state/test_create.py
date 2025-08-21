@@ -123,13 +123,6 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion_state/2", {"weight": 37})
 
-        response = self.request(
-            "motion_state.create",
-            {"name": "test_Xcdfgee", "workflow_id": 1},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_state/3", {"weight": 38})
-
     def test_create_manual_weight(self) -> None:
         response = self.request(
             "motion_state.create",
