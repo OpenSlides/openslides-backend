@@ -9,13 +9,13 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "assignment/1": {"meeting_id": 1},
-                "projector/1": {"meeting_id": 1, "preview_projection_ids": [10]},
-                "projector/2": {"meeting_id": 1, "preview_projection_ids": [11, 12]},
-                "projector/3": {"meeting_id": 1},
-                "projector/4": {"meeting_id": 2},
+                "assignment/1": {
+                    "meeting_id": 1,
+                    "title": "test assignment",
+                    "sequential_number": 1,
+                },
+                "projector/2": {"meeting_id": 1, "sequential_number": 2},
+                "projector/3": {"meeting_id": 1, "sequential_number": 3},
                 "projection/10": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",
@@ -48,18 +48,26 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        projector_1 = self.get_model("projector/1")
-        assert projector_1.get("preview_projection_ids") == [10, 13]
-        projector_2 = self.get_model("projector/2")
-        assert projector_2.get("preview_projection_ids") == [11, 12, 14]
-        projection_13 = self.get_model("projection/13")
-        assert projection_13.get("preview_projector_id") == 1
-        assert projection_13.get("content_object_id") == "assignment/1"
-        assert projection_13.get("weight") == 11
-        projection_14 = self.get_model("projection/14")
-        assert projection_14.get("preview_projector_id") == 2
-        assert projection_14.get("content_object_id") == "assignment/1"
-        assert projection_14.get("weight") == 31
+        self.assert_model_exists("projector/1", {"preview_projection_ids": [10, 13]})
+        self.assert_model_exists(
+            "projector/2", {"preview_projection_ids": [11, 12, 14]}
+        )
+        self.assert_model_exists(
+            "projection/13",
+            {
+                "preview_projector_id": 1,
+                "content_object_id": "assignment/1",
+                "weight": 11,
+            },
+        )
+        self.assert_model_exists(
+            "projection/14",
+            {
+                "preview_projector_id": 2,
+                "content_object_id": "assignment/1",
+                "weight": 31,
+            },
+        )
 
     def test_add_to_preview_empty_projector(self) -> None:
         response = self.request(
@@ -72,12 +80,15 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        projector_1 = self.get_model("projector/3")
-        assert projector_1.get("preview_projection_ids") == [13]
-        projection_13 = self.get_model("projection/13")
-        assert projection_13.get("preview_projector_id") == 3
-        assert projection_13.get("content_object_id") == "assignment/1"
-        assert projection_13.get("weight") == 1
+        self.assert_model_exists("projector/3", {"preview_projection_ids": [13]})
+        self.assert_model_exists(
+            "projection/13",
+            {
+                "preview_projector_id": 3,
+                "content_object_id": "assignment/1",
+                "weight": 1,
+            },
+        )
 
     def test_add_to_preview_non_unique_ids(self) -> None:
         response = self.request(
@@ -90,9 +101,13 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.ids must contain unique items" in response.json["message"]
+        self.assertEqual(
+            "Action projector.add_to_preview: data.ids must contain unique items",
+            response.json["message"],
+        )
 
     def test_add_to_preview_check_meeting_id(self) -> None:
+        self.create_meeting(4)
         response = self.request(
             "projector.add_to_preview",
             {
@@ -103,7 +118,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['projector/4']",
             response.json["message"],
         )
@@ -120,14 +135,13 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
-            in response.json["message"]
+        self.assertEqual(
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'.",
+            response.json["message"],
         )
 
     def test_add_to_preview_meeting_user(self) -> None:
         user_id = self.create_user_for_meeting(1)
-        self.set_models({"meeting_user/1": {"meeting_id": 1, "user_id": user_id}})
         response = self.request(
             "projector.add_to_preview",
             {
@@ -138,9 +152,9 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'."
-            in response.json["message"]
+        self.assertEqual(
+            "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'.",
+            response.json["message"],
         )
 
     def test_add_to_preview_non_existent_content_object(self) -> None:
@@ -154,7 +168,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['motion/42']",
             response.json["message"],
         )
@@ -197,13 +211,9 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
 
     def test_mediafile_as_content_object(self) -> None:
+        self.create_mediafile()
         self.set_models(
             {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "meeting_mediafile_ids": [2],
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -220,21 +230,11 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projection/13",
-            {
-                "content_object_id": "meeting_mediafile/2",
-                "preview_projector_id": 1,
-            },
+            {"content_object_id": "meeting_mediafile/2", "preview_projector_id": 1},
         )
 
     def test_mediafile_as_content_object_generate_meeting_mediafile(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-            }
-        )
+        self.create_mediafile()
         response = self.request(
             "projector.add_to_preview",
             {"ids": [2], "content_object_id": "mediafile/1", "meeting_id": 1},
@@ -253,20 +253,13 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
         self.assert_model_exists(
             "projection/13",
-            {
-                "content_object_id": "meeting_mediafile/1",
-                "preview_projector_id": 2,
-            },
+            {"content_object_id": "meeting_mediafile/1", "preview_projector_id": 2},
         )
 
     def test_meeting_mediafile_as_content_object(self) -> None:
+        self.create_mediafile()
         self.set_models(
             {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "meeting_mediafile_ids": [2],
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -283,26 +276,17 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projection/13",
-            {
-                "content_object_id": "meeting_mediafile/2",
-                "preview_projector_id": 1,
-            },
+            {"content_object_id": "meeting_mediafile/2", "preview_projector_id": 1},
         )
 
     def test_unpublished_mediafile_as_content_object(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-            }
-        )
+        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
         response = self.request(
             "projector.add_to_preview",
             {"ids": [2], "content_object_id": "mediafile/1", "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "No meeting_mediafile creation possible: Mediafile is not published."
-            in response.json["message"]
+        self.assertEqual(
+            "No meeting_mediafile creation possible: Mediafile is not published.",
+            response.json["message"],
         )
