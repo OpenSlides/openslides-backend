@@ -59,7 +59,14 @@ class SpeakerCreateAction(
         if answer_to:
             origin = self.datastore.get(
                 fqid_from_collection_and_id("speaker", answer_to),
-                ["weight", "list_of_speakers_id", "speech_state", "end_time", "answer"],
+                [
+                    "weight",
+                    "list_of_speakers_id",
+                    "speech_state",
+                    "begin_time",
+                    "end_time",
+                    "answer",
+                ],
             )
             if origin["list_of_speakers_id"] != instance["list_of_speakers_id"]:
                 raise ActionException(
@@ -333,7 +340,7 @@ class SpeakerCreateAction(
             if instance.get("speech_state") not in [
                 SpeechState.INTERPOSED_QUESTION,
                 SpeechState.INTERVENTION,
-            ]:
+            ] and not instance.get("answer_to_id"):
                 raise ActionException("meeting_user_id is required.")
             user_id = None
 
@@ -386,7 +393,9 @@ class SpeakerCreateAction(
                         "Only present users can be on the list of speakers."
                     )
 
-            if not meeting.get("list_of_speakers_allow_multiple_speakers"):
+            if not meeting.get(
+                "list_of_speakers_allow_multiple_speakers"
+            ) and not instance.get("answer_to_id"):
                 # Results are necessary, because of getting a lock_result
                 if instance.get("point_of_order"):
                     poo_filter: Filter = FilterOperator("point_of_order", "=", True)
@@ -402,12 +411,28 @@ class SpeakerCreateAction(
                     FilterOperator("begin_time", "=", None),
                     FilterOperator("meeting_id", "=", meeting_id),
                     FilterOperator("meeting_user_id", "=", instance["meeting_user_id"]),
+                    Or(
+                        FilterOperator("answer", "!=", True),
+                        FilterOperator("answer", "=", None),
+                    ),
                     poo_filter,
                 )
                 if self.datastore.exists("speaker", filter_obj):
                     raise ActionException(
                         f"User {user_id} is already on the list of speakers."
                     )
+        if instance.get("answer_to_id") and not self.datastore.exists(
+            "speaker",
+            And(
+                FilterOperator(
+                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
+                ),
+                FilterOperator("begin_time", "!=", None),
+            ),
+        ):
+            raise ActionException(
+                "Cannot create answer if there isn't a started/finished speech."
+            )
         return super().validate_fields(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

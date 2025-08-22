@@ -1494,31 +1494,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_intervention_time": 100,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERVENTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
                     "meeting_id": 1,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_MANAGE])
@@ -1530,14 +1538,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
                 "speech_state": SpeechState.INTERVENTION,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
         self.assert_model_exists(
-            "speaker/4",
+            "speaker/5",
             {
                 "meeting_user_id": 3,
                 "list_of_speakers_id": 23,
@@ -1546,7 +1554,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "answer": True,
             },
         )
-        self.assert_model_exists("speaker/3", {"weight": 4})
+        self.assert_model_exists("speaker/4", {"weight": 4})
 
     def test_create_answer_to_interposed_question(self) -> None:
         self.create_meeting()
@@ -1557,31 +1565,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_enable_interposed_question": True,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
                     "meeting_id": 1,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_MANAGE])
@@ -1593,14 +1609,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
                 "speech_state": SpeechState.INTERPOSED_QUESTION,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
         self.assert_model_exists(
-            "speaker/4",
+            "speaker/5",
             {
                 "meeting_user_id": 3,
                 "list_of_speakers_id": 23,
@@ -1609,7 +1625,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "answer": True,
             },
         )
-        self.assert_model_exists("speaker/3", {"weight": 4})
+        self.assert_model_exists("speaker/4", {"weight": 4})
 
     def test_create_answer_to_intervention_after_other_answer(self) -> None:
         self.create_meeting()
@@ -1620,24 +1636,32 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_intervention_time": 100,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERVENTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
@@ -1645,8 +1669,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "speech_state": SpeechState.INTERVENTION,
                     "answer": True,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         response = self.request(
@@ -1654,15 +1678,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
-        self.assert_model_exists("speaker/3", {"weight": 3})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
+        self.assert_model_exists("speaker/4", {"weight": 3})
         self.assert_model_exists(
-            "speaker/4",
+            "speaker/5",
             {
                 "meeting_user_id": 3,
                 "list_of_speakers_id": 23,
@@ -1681,24 +1705,32 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_enable_interposed_question": True,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
@@ -1706,8 +1738,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "answer": True,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         response = self.request(
@@ -1715,15 +1747,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
-        self.assert_model_exists("speaker/3", {"weight": 3})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
+        self.assert_model_exists("speaker/4", {"weight": 3})
         self.assert_model_exists(
-            "speaker/4",
+            "speaker/5",
             {
                 "meeting_user_id": 3,
                 "list_of_speakers_id": 23,
@@ -1741,17 +1773,25 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2],
+                    "speaker_ids": [1, 2, 3],
                     "list_of_speakers_intervention_time": 100,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
@@ -1759,7 +1799,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "answer": False,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
             }
         )
         response = self.request(
@@ -1768,14 +1808,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": bob_id - 1,
                 "list_of_speakers_id": 23,
                 "speech_state": SpeechState.INTERVENTION,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
         self.assert_model_exists(
-            "speaker/3",
+            "speaker/4",
             {
                 "meeting_user_id": 2,
                 "list_of_speakers_id": 23,
@@ -1793,24 +1833,32 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2],
+                    "speaker_ids": [1, 2, 3],
                     "list_of_speakers_enable_interposed_question": True,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_id": 1,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
             }
         )
         response = self.request(
@@ -1819,14 +1867,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": bob_id - 1,
                 "list_of_speakers_id": 23,
                 "speech_state": SpeechState.INTERPOSED_QUESTION,
-                "answer_to_id": 2,
+                "answer_to_id": 3,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/1", {"weight": 1})
-        self.assert_model_exists("speaker/2", {"weight": 2})
+        self.assert_model_exists("speaker/2", {"weight": 1})
+        self.assert_model_exists("speaker/3", {"weight": 2})
         self.assert_model_exists(
-            "speaker/3",
+            "speaker/4",
             {
                 "meeting_user_id": 2,
                 "list_of_speakers_id": 23,
@@ -1969,31 +2017,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_intervention_time": 100,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERVENTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
                     "meeting_id": 1,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         response = self.request(
@@ -2001,7 +2057,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
-                "answer_to_id": 1,
+                "answer_to_id": 2,
             },
         )
         self.assert_status_code(response, 400)
@@ -2021,31 +2077,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1, 2, 3],
+                    "speaker_ids": [1, 2, 3, 4],
                     "list_of_speakers_enable_interposed_question": True,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
                 "speaker/1": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
                 },
                 "speaker/2": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
                     "meeting_user_id": None,
                     "list_of_speakers_id": 23,
                     "weight": 2,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_id": 1,
                 },
-                "speaker/3": {
+                "speaker/4": {
                     "meeting_user_id": bob_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 3,
                     "meeting_id": 1,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                f"meeting_user/{bob_id-1}": {"speaker_ids": [3]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [4]},
             }
         )
         response = self.request(
@@ -2053,7 +2117,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": colin_id - 1,
                 "list_of_speakers_id": 23,
-                "answer_to_id": 1,
+                "answer_to_id": 2,
             },
         )
         self.assert_status_code(response, 400)
@@ -2069,25 +2133,33 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1],
+                    "speaker_ids": [1, 2],
                     "list_of_speakers_intervention_time": 100,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 1},
                 "speaker/1": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
+                },
+                "speaker/2": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1, 2]},
             }
         )
         response = self.request(
             "speaker.create",
             {
                 "list_of_speakers_id": 23,
-                "answer_to_id": 1,
+                "answer_to_id": 2,
                 "speech_state": SpeechState.INTERVENTION,
             },
         )
@@ -2100,29 +2172,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_interposed_question_answer_to_intervention(self) -> None:
         self.create_meeting()
         alice_id = self.create_user("alice", [3])
+        bob_id = self.create_user("bob", [3])
         self.set_models(
             {
                 "meeting/1": {
                     "list_of_speakers_ids": [23],
-                    "speaker_ids": [1],
+                    "speaker_ids": [1, 2],
                     "list_of_speakers_enable_interposed_question": True,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 1},
                 "speaker/1": {
+                    "meeting_user_id": bob_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                    "begin_time": 100,
+                    "end_time": 200,
+                },
+                "speaker/2": {
                     "meeting_user_id": alice_id - 1,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 1,
                     "speech_state": SpeechState.INTERVENTION,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [2]},
+                f"meeting_user/{bob_id-1}": {"speaker_ids": [1]},
             }
         )
         response = self.request(
             "speaker.create",
             {
                 "list_of_speakers_id": 23,
-                "answer_to_id": 1,
+                "answer_to_id": 2,
                 "speech_state": SpeechState.INTERPOSED_QUESTION,
             },
         )
@@ -2274,7 +2356,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             == "Answers may only be created for interventions and interposed questions."
         )
 
-    def create_answer_to_speaker_from_other_list(self) -> None:
+    def test_create_answer_to_speaker_from_other_list(self) -> None:
         self.create_meeting()
         self.create_meeting(4)
         alice_id = self.create_user("alice", [3])
@@ -2298,8 +2380,16 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/4": {
                     "list_of_speakers_ids": [26],
                     "list_of_speakers_intervention_time": 100,
+                    "speaker_ids": [2],
                 },
-                "list_of_speakers/26": {"speaker_ids": [], "meeting_id": 4},
+                "list_of_speakers/26": {"speaker_ids": [2], "meeting_id": 4},
+                "speaker/2": {
+                    "list_of_speakers_id": 26,
+                    "weight": 1,
+                    "meeting_id": 4,
+                    "begin_time": 100,
+                    "speech_state": SpeechState.INTERVENTION,
+                },
             }
         )
         response = self.request(
@@ -2312,10 +2402,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "Answers may only be created for interventions and interposed questions."
+            == "Cannot create answer for speaker in different list."
         )
 
-    def create_answer_to_other_answer(self) -> None:
+    def test_create_answer_to_other_answer(self) -> None:
         self.create_meeting()
         alice_id = self.create_user("alice", [3])
         self.set_models(
@@ -2354,7 +2444,104 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        assert response.json["message"] == "Cannot create answer to an answer."
+
+    def test_create_answer_for_running_speech(self) -> None:
+        self.create_meeting()
+        alice_id = self.create_user("alice", [3])
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_ids": [23],
+                    "speaker_ids": [1, 2, 3, 4],
+                    "list_of_speakers_intervention_time": 100,
+                    "list_of_speakers_enable_interposed_question": True,
+                },
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
+                "speaker/1": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 2,
+                    "meeting_id": 1,
+                    "begin_time": 100,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+                "speaker/2": {
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "answer": True,
+                },
+                "speaker/3": {
+                    "list_of_speakers_id": 23,
+                    "weight": 2,
+                    "meeting_id": 1,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+                "speaker/4": {
+                    "list_of_speakers_id": 23,
+                    "weight": 3,
+                    "meeting_id": 1,
+                    "speech_state": SpeechState.INTERVENTION,
+                },
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "answer_to_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/5",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 2,
+                "meeting_id": 1,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+                "answer": True,
+            },
+        )
+
+    def test_create_answer_if_there_isnt_a_started_speech(self) -> None:
+        self.create_meeting()
+        alice_id = self.create_user("alice", [3])
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_ids": [23],
+                    "speaker_ids": [1, 2],
+                    "list_of_speakers_intervention_time": 100,
+                },
+                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 1},
+                "speaker/1": {
+                    "meeting_user_id": alice_id - 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/2": {
+                    "list_of_speakers_id": 23,
+                    "weight": 2,
+                    "meeting_id": 1,
+                    "speech_state": SpeechState.INTERVENTION,
+                },
+                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "answer_to_id": 2,
+            },
+        )
+        self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "Answers may only be created for interventions and interposed questions."
+            == "Cannot create answer if there isn't a started/finished speech."
         )
