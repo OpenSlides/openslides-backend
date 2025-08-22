@@ -386,20 +386,12 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"user/{id}": self._get_user_data(
                     username, organization_management_level
-                ),
+                )
+                | {"home_committee_id": home_committee_id},
             }
         )
-        if home_committee_id:
-            self.set_home_committee(id, home_committee_id)
         meeting_user_ids.extend(self.set_user_groups(id, group_ids))
         return id
-
-    def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
-        self.set_models(
-            {
-                f"user/{user_id}": {"home_committee_id": home_committee_id},
-            }
-        )
 
     def _get_user_data(
         self,
@@ -415,6 +407,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
+        """adds created user to default group, returns user_id"""
         meeting = self.get_model(f"meeting/{meeting_id}")
         user_id = self.create_user("user_" + get_random_string(6))
         self.set_user_groups(user_id, [meeting["default_group_id"]])
