@@ -37,10 +37,7 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("personal_note/1", {"star": True, "note": "blablabla"})
 
     def test_update_no_permission_user_not_in_meeting(self) -> None:
-        self.create_user_for_meeting(1)
-        self.set_models(
-            {"meeting_user/1": {"user_id": 2}}
-        )  # TODO: replace with set_user_groups(1, []) when this method is fixed
+        self.set_user_groups(1, [])
         response = self.request(
             "personal_note.update", {"id": 1, "star": False, "note": "blopblop"}
         )
