@@ -39,7 +39,11 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         action_data_dict = list(action_data)[0]
 
@@ -52,7 +56,7 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
             )
         action_data = action_data_dict.pop("amendment_data", [])
 
-        return super().perform(action_data, user_id, internal)
+        return super().perform(action_data, user_id, internal, is_sub_call)
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

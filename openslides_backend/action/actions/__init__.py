@@ -14,6 +14,8 @@ def prepare_actions_map() -> None:
         committee,
         gender,
         group,
+        history_entry,
+        history_position,
         list_of_speakers,
         mediafile,
         meeting,
