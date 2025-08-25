@@ -1,5 +1,5 @@
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -9,24 +9,19 @@ class ProjectorProject(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1, "committee_id": 60},
-                "projector/23": {
-                    "meeting_id": 1,
-                    "current_projection_ids": [105, 106],
-                    "scroll": 80,
-                },
-                "projector/65": {"meeting_id": 1},
-                "projector/75": {"meeting_id": 1, "current_projection_ids": [110, 111]},
+                "projector/1": {"scroll": 80},
+                "projector/65": {"meeting_id": 1, "sequential_number": 65},
+                "projector/75": {"meeting_id": 1, "sequential_number": 75},
                 "projection/105": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/452",
-                    "current_projector_id": 23,
+                    "current_projector_id": 1,
                     "stable": False,
                 },
                 "projection/106": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/452",
-                    "current_projector_id": 23,
+                    "current_projector_id": 1,
                     "stable": True,
                 },
                 "projection/110": {
@@ -42,9 +37,16 @@ class ProjectorProject(BaseActionTestCase):
                     "current_projector_id": 75,
                     "stable": True,
                 },
-                "assignment/452": {"meeting_id": 1},
-                "assignment/453": {"meeting_id": 1},
-                "assignment/567": {"meeting_id": 2},
+                "assignment/452": {
+                    "meeting_id": 1,
+                    "title": "assignment 452",
+                    "sequential_number": 452,
+                },
+                "assignment/453": {
+                    "meeting_id": 1,
+                    "title": "assignment 453",
+                    "sequential_number": 453,
+                },
             }
         )
 
@@ -52,7 +54,7 @@ class ProjectorProject(BaseActionTestCase):
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "options": {},
@@ -65,7 +67,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/105",
             {
                 "content_object_id": "assignment/452",
-                "history_projector_id": 23,
+                "history_projector_id": 1,
                 "stable": False,
                 "weight": 1,
             },
@@ -74,7 +76,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/106",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": True,
             },
         )
@@ -82,7 +84,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/112",
             {
                 "content_object_id": "assignment/453",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": False,
                 "options": {},
                 "type": "test",
@@ -107,7 +109,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "projector/23",
+            "projector/1",
             {
                 "current_projection_ids": [106, 112],
                 "history_projection_ids": [105],
@@ -123,7 +125,7 @@ class ProjectorProject(BaseActionTestCase):
         response = self.request(
             "projector.project",
             {
-                "ids": [23, 65],
+                "ids": [1, 65],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "stable": True,
@@ -135,7 +137,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/105",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": False,
                 "options": None,
             },
@@ -144,7 +146,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/106",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": True,
             },
         )
@@ -152,7 +154,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/112",
             {
                 "content_object_id": "assignment/453",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": True,
             },
         )
@@ -165,7 +167,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "projector/23", {"current_projection_ids": [105, 106, 112], "scroll": 80}
+            "projector/1", {"current_projection_ids": [105, 106, 112], "scroll": 80}
         )
         self.assert_model_exists("projector/65", {"current_projection_ids": [113]})
 
@@ -203,20 +205,23 @@ class ProjectorProject(BaseActionTestCase):
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "meeting_user/0",
                 "meeting_id": 1,
                 "stable": False,
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.content_object_id must match pattern" in response.json["message"]
+        self.assertEqual(
+            "Action projector.project: data.content_object_id must match pattern ^[a-z](?:[a-z_]+[a-z]+)?/[1-9][0-9]*$",
+            response.json["message"],
+        )
 
     def test_try_to_store_second_unstable_projection_1(self) -> None:
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/452",
                 "meeting_id": 1,
                 "stable": False,
@@ -224,7 +229,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "projector/23",
+            "projector/1",
             {
                 "current_projection_ids": [106, 112],
                 "history_projection_ids": [105],
@@ -235,7 +240,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/112",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": False,
             },
         )
@@ -243,7 +248,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/105",
             {
                 "content_object_id": "assignment/452",
-                "history_projector_id": 23,
+                "history_projector_id": 1,
                 "stable": False,
                 "weight": 1,
             },
@@ -252,7 +257,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/106",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": True,
             },
         )
@@ -262,13 +267,13 @@ class ProjectorProject(BaseActionTestCase):
             "projector.project",
             [
                 {
-                    "ids": [23],
+                    "ids": [1],
                     "content_object_id": "assignment/452",
                     "meeting_id": 1,
                     "stable": False,
                 },
                 {
-                    "ids": [23],
+                    "ids": [1],
                     "content_object_id": "assignment/452",
                     "meeting_id": 1,
                     "stable": False,
@@ -276,7 +281,7 @@ class ProjectorProject(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "data must contain less than or equal to 1 items", response.json["message"]
         )
 
@@ -287,7 +292,7 @@ class ProjectorProject(BaseActionTestCase):
                     "action": "projector.project",
                     "data": [
                         {
-                            "ids": [23],
+                            "ids": [1],
                             "content_object_id": "assignment/452",
                             "meeting_id": 1,
                             "stable": False,
@@ -298,7 +303,7 @@ class ProjectorProject(BaseActionTestCase):
                     "action": "projector.project",
                     "data": [
                         {
-                            "ids": [23],
+                            "ids": [1],
                             "content_object_id": "assignment/452",
                             "meeting_id": 1,
                             "stable": False,
@@ -308,7 +313,7 @@ class ProjectorProject(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "Action projector.project may not appear twice in one request.",
             response.json["message"],
         )
@@ -317,7 +322,7 @@ class ProjectorProject(BaseActionTestCase):
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/452",
                 "meeting_id": 1,
                 "stable": True,
@@ -325,13 +330,13 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "projector/23", {"current_projection_ids": [105, 112], "scroll": 80}
+            "projector/1", {"current_projection_ids": [105, 112], "scroll": 80}
         )
         self.assert_model_exists(
             "projection/112",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": True,
             },
         )
@@ -339,7 +344,7 @@ class ProjectorProject(BaseActionTestCase):
             "projection/105",
             {
                 "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "current_projector_id": 1,
                 "stable": False,
             },
         )
@@ -397,58 +402,33 @@ class ProjectorProject(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_user_as_content_object(self) -> None:
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "normal user",
-                    "meeting_ids": [1],
-                },
-            }
-        )
-        self.set_user_groups(2, [1])
+        self.create_user_for_meeting(1)
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
-            in response.json["message"]
+        self.assertEqual(
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'.",
+            response.json["message"],
         )
 
     def test_meeting_user_as_content_object(self) -> None:
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "normal user",
-                    "meeting_ids": [1],
-                    "meeting_user_ids": [2],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 1,
-                    "user_id": 2,
-                    "group_ids": [1],
-                },
-            }
-        )
+        self.create_user_for_meeting(1)
         response = self.request(
             "projector.project",
-            {"ids": [75], "content_object_id": "meeting_user/2", "meeting_id": 1},
+            {"ids": [75], "content_object_id": "meeting_user/1", "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'."
-            in response.json["message"]
+        self.assertEqual(
+            "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'.",
+            response.json["message"],
         )
 
     def test_mediafile_as_content_object(self) -> None:
+        self.create_mediafile()
         self.set_models(
             {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "meeting_mediafile_ids": [2],
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -472,14 +452,7 @@ class ProjectorProject(BaseActionTestCase):
         )
 
     def test_mediafile_as_content_object_generate_meeting_mediafile(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-            }
-        )
+        self.create_mediafile()
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},
@@ -505,13 +478,9 @@ class ProjectorProject(BaseActionTestCase):
         )
 
     def test_meeting_mediafile_as_content_object(self) -> None:
+        self.create_mediafile()
         self.set_models(
             {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "meeting_mediafile_ids": [2],
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -535,85 +504,73 @@ class ProjectorProject(BaseActionTestCase):
         )
 
     def test_unpublished_mediafile_as_content_object(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-            }
-        )
+        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "No meeting_mediafile creation possible: Mediafile is not published."
-            in response.json["message"]
+        self.assertEqual(
+            "No meeting_mediafile creation possible: Mediafile is not published.",
+            response.json["message"],
         )
 
     def test_project_without_meeting_id(self) -> None:
         response = self.request(
             "projector.project",
-            {
-                "ids": [23],
-                "content_object_id": "assignment/453",
-            },
+            {"ids": [1], "content_object_id": "assignment/453"},
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['meeting_id'] properties",
+        self.assertEqual(
+            "Action projector.project: data must contain ['meeting_id'] properties",
             response.json["message"],
         )
 
     def test_project_wrong_meeting_by_ids_and_object(self) -> None:
+        self.create_meeting(4)
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/452",
-                "meeting_id": 2,
+                "meeting_id": 4,
                 "stable": True,
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 2", response.json["message"]
+            "The following models do not belong to meeting 4", response.json["message"]
         )
         self.assertIn("'assignment/452'", response.json["message"])
-        self.assertIn("'projector/23'", response.json["message"])
+        self.assertIn("'projector/1'", response.json["message"])
 
     def test_project_wrong_meeting_by_content_user(self) -> None:
-        self.create_model(
-            "user/2",
-            {"username": "normal user", "meeting_user_ids": [2]},
-        )
-        self.set_models(
-            {"meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]}}
-        )
+        self.create_meeting(4)
+        self.create_user_for_meeting(1)
         response = self.request(
             "projector.project",
-            {"ids": [], "content_object_id": "user/2", "meeting_id": 2, "stable": True},
+            {"ids": [], "content_object_id": "user/2", "meeting_id": 4, "stable": True},
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The following models do not belong to meeting 2: ['user/2']",
+        self.assertEqual(
+            "The following models do not belong to meeting 4: ['user/2']",
             response.json["message"],
         )
 
     def test_project_wrong_meeting_by_content_meeting(self) -> None:
+        self.create_meeting(4)
         response = self.request(
             "projector.project",
             {
                 "ids": [],
                 "content_object_id": "meeting/1",
-                "meeting_id": 2,
+                "meeting_id": 4,
                 "stable": True,
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The following models do not belong to meeting 2: ['meeting/1']",
+        self.assertEqual(
+            "The following models do not belong to meeting 4: ['meeting/1']",
             response.json["message"],
         )
 
@@ -621,7 +578,7 @@ class ProjectorProject(BaseActionTestCase):
         response = self.request(
             "projector.project",
             {
-                "ids": [23, 23],
+                "ids": [1, 1],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "options": None,
@@ -630,14 +587,17 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.ids must contain unique items" in response.data.decode()
+        self.assertEqual(
+            "Action projector.project: data.ids must contain unique items",
+            response.json["message"],
+        )
 
     def test_project_no_permissions(self) -> None:
         self.base_permission_test(
             {},
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "options": {},
@@ -651,7 +611,7 @@ class ProjectorProject(BaseActionTestCase):
             {},
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "options": {},
@@ -666,7 +626,7 @@ class ProjectorProject(BaseActionTestCase):
             {},
             "projector.project",
             {
-                "ids": [23],
+                "ids": [1],
                 "content_object_id": "assignment/453",
                 "meeting_id": 1,
                 "options": {},
