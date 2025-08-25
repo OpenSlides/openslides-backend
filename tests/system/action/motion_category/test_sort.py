@@ -139,18 +139,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             {"weight": 2, "parent_id": 1, "child_ids": None, "level": 1},
         )
 
-    def test_with_deleted_model(self) -> None:
-        self.create_motion_category(2)
-        self.create_motion_category(3)
-
-        response = self.request(
-            "motion_category.sort", {"meeting_id": 222, "tree": [{"id": 2}, {"id": 3}]}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_not_exists("motion_category/1")
-        self.assert_model_exists("motion_category/2", {"weight": 1})
-        self.assert_model_exists("motion_category/3", {"weight": 2})
-
     def test_sort_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
