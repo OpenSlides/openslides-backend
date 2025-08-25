@@ -7,7 +7,7 @@ echo "###################### Run Linters #####################################"
 echo "########################################################################"
 
 # Parameters
-while getopts "lscp" FLAG; do
+while getopts "l" FLAG; do
     case "${FLAG}" in
     l) LOCAL=true ;;
     *) echo "Can't parse flag ${FLAG}" && break ;;
