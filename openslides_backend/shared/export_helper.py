@@ -4,6 +4,7 @@ from typing import Any
 from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ..models.base import model_registry
 from ..models.fields import (
@@ -30,7 +31,10 @@ HISTORY_FIELDS_PER_COLLECTION = {
 
 
 def export_meeting(
-    datastore: DatastoreService, meeting_id: int, internal_target: bool = False
+    datastore: DatastoreService,
+    meeting_id: int,
+    internal_target: bool = False,
+    update_mediafiles: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -61,6 +65,45 @@ def export_meeting(
         results = datastore.get_many(
             get_many_requests, lock_result=False, use_changed_models=False
         )
+        # update_mediafiles_for_internal_calls
+        if update_mediafiles and len(
+            mediafile_ids := results.get("mediafile", {}).keys()
+        ) != len(meeting_mediafiles := results.get("meeting_mediafile", {})):
+            mm_with_unknown_mediafiles = {
+                mm_id: mm_data
+                for mm_id, mm_data in meeting_mediafiles.items()
+                if mm_data["mediafile_id"] not in mediafile_ids
+            }
+            unknown_mediafiles = datastore.get_many(
+                [
+                    GetManyRequest(
+                        "mediafile",
+                        [
+                            mm["mediafile_id"]
+                            for mm in mm_with_unknown_mediafiles.values()
+                        ],
+                        [
+                            "id",
+                            "owner_id",
+                            "meeting_mediafile_ids",
+                            "published_to_meetings_in_organization_id",
+                        ],
+                    ),
+                ],
+                use_changed_models=False,
+            )["mediafile"]
+            for mm_id, mm_data in mm_with_unknown_mediafiles.items():
+                mediafile_id = mm_data["mediafile_id"]
+                mediafile = unknown_mediafiles.get(mediafile_id)
+                if (
+                    mediafile
+                    and mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+                    and mediafile["published_to_meetings_in_organization_id"]
+                    == ONE_ORGANIZATION_ID
+                ):
+                    mediafile["meeting_mediafile_ids"] = [mm_id]
+                    results.setdefault("mediafile", {})[mediafile_id] = mediafile
+
     else:
         results = {}
 
