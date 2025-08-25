@@ -26,7 +26,7 @@ class ProjectorToggle(BaseActionTestCase):
             }
         )
 
-    def setup_projection(self, stable: bool) -> None:
+    def setup_projection_33(self, stable: bool) -> None:
         self.set_models(
             {
                 "projection/33": {
