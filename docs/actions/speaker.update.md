@@ -11,6 +11,7 @@
     point_of_order: bool;
     point_of_order_category_id: Id;
     note: string;
+    answer: boolean; // only for speech_state == intervention or interposed_question
 
 // Only if internal
     structure_level_list_of_speakers_id: Id;
@@ -23,7 +24,9 @@ Updates the given speaker. This table shows the conditions needed to change `spe
 value for any of (None, contribution, pro, contra). The table state changes must be evaluated after
 the permission check since it sets the global frame for these checks.
 
-`meeting_user_id` is only allowed to be given if `speaker/meeting_user_id` is currently `None` and `speaker/speech_state` is `interposed_question`.
+`meeting_user_id` is only allowed to be given if `speaker/meeting_user_id` is currently `None` and `speaker/speech_state` is `interposed_question`, `intervention`
+
+If `speech_state` is changed from `intervention` to any other state and the speaker has no `meeting_user_id` or is an answer, this either needs to be changed at the same time or there'll be an error.
 
 `structure_level_id` is only allowed if the speaker is still waiting, i.e., `begin_time` is `None`. It is translated to a `structure_level_list_of_speakers_id` analogously to [speaker.create](speaker.create.md).
 
