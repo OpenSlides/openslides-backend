@@ -448,14 +448,12 @@ class BaseActionTestCase(BaseSystemTestCase):
             for data in current_meeting_users.values()
             if data["meeting_id"] in meeting_ids
         }
-        # reset meeting_users that aren't part of any by group_ids related meetings.
-        for group in groups.values():
-            # find difference with meetings
-            if group["meeting_id"] not in meeting_users and (
-                meeting_user_ids := group.get("meeting_user_ids")
-            ):
+        # remove from groups in difference with requested group_ids
+        groups_remove_from = set(groups) - set(group_ids)
+        for group_id in groups_remove_from:
+            if meeting_user_ids := groups[group_id].get("meeting_user_ids"):
+                # remove intersection with user
                 for meeting_user_id in meeting_user_ids:
-                    # remove intersection with user
                     if meeting_user_id in current_meeting_users:
                         meeting_user_ids.remove(meeting_user_id)
         last_meeting_user_id = max(
