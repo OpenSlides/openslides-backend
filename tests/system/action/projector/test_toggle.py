@@ -39,7 +39,7 @@ class ProjectorToggle(BaseActionTestCase):
         )
 
     def test_correct_remove_stable_projection(self) -> None:
-        self.setup_projection(True)
+        self.setup_projection_33(True)
         response = self.request(
             "projector.toggle",
             {
@@ -54,7 +54,7 @@ class ProjectorToggle(BaseActionTestCase):
         self.assert_model_exists("projector/1", {"current_projection_ids": None})
 
     def test_correct_remove_unstable_projection(self) -> None:
-        self.setup_projection(False)
+        self.setup_projection_33(False)
         response = self.request(
             "projector.toggle",
             {
@@ -90,7 +90,7 @@ class ProjectorToggle(BaseActionTestCase):
         self.assert_model_exists("projector/1", {"current_projection_ids": [1]})
 
     def test_toggle_unstable_move_into_history(self) -> None:
-        self.setup_projection(False)
+        self.setup_projection_33(False)
         self.create_poll(888)
         response = self.request(
             "projector.toggle",

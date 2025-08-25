@@ -1,5 +1,5 @@
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -141,7 +141,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
 
     def test_add_to_preview_meeting_user(self) -> None:
-        user_id = self.create_user_for_meeting(1)
+        self.create_user_for_meeting(1)
         response = self.request(
             "projector.add_to_preview",
             {

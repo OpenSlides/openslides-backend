@@ -127,13 +127,7 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_reference_projector_internal_error(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"reference_projector_id": 111},
-                "projector/111": {"sequential_number": 111, "meeting_id": 1},
-            }
-        )
-        response = self.request("projector.update", {"id": 111, "is_internal": True})
+        response = self.request("projector.update", {"id": 1, "is_internal": True})
         self.assert_status_code(response, 400)
         self.assertEqual(
             "Projector cannot be set to internal, because it is the reference projector of the meeting.",
@@ -141,17 +135,7 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_reference_projector_internal_okay(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"reference_projector_id": 111},
-                "projector/111": {
-                    "sequential_number": 111,
-                    "meeting_id": 1,
-                    "is_internal": False,
-                },
-            }
-        )
-        response = self.request("projector.update", {"id": 111, "is_internal": False})
+        response = self.request("projector.update", {"id": 1, "is_internal": False})
         self.assert_status_code(response, 200)
 
     def test_update_no_permissions(self) -> None:
