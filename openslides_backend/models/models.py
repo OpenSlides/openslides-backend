@@ -974,6 +974,7 @@ class Group(Model):
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
                 "assignment.can_manage",
+                "assignment.can_manage_polls",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
                 "assignment.can_see",
