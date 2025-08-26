@@ -94,17 +94,13 @@ class SpeakerUpdate(
                     raise ActionException(
                         "Cannot set interventions to other speech states without meeting_user_id."
                     )
-                if (
-                    speaker.get("answer") and not instance.get("answer") is False
-                ) or instance.get("answer"):
-                    raise ActionException("Cannot set answers to other speech states.")
-        if instance.get("answer"):
-            if speaker.get(
-                "speech_state"
-            ) not in ANSWERABLE_STATES and not instance.get("speech_state"):
-                raise ActionException(
-                    "Answer can only be set for interventions and interposed questions."
-                )
+        if instance.get("answer") and not (
+            speaker.get("speech_state") in ANSWERABLE_STATES
+            or instance.get("speech_state")
+        ):
+            raise ActionException(
+                "Answer can only be set for interventions and interposed questions."
+            )
 
         if "meeting_user_id" in instance:
             if (
