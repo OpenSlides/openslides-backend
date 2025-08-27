@@ -430,7 +430,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         for mu in current_meeting_users.values():
             if mu_group_ids := mu.get("group_ids"):
                 request_group_ids.update(mu_group_ids)
-        all_groups = self.datastore.get_many(
+        all_users_groups = self.datastore.get_many(
             [
                 GetManyRequest(
                     "group",
@@ -441,17 +441,17 @@ class BaseActionTestCase(BaseSystemTestCase):
             lock_result=False,
         )["group"]
         meeting_ids: list[int] = list(
-            {v["meeting_id"] for v in all_groups.values() if v["id"] in group_ids}
+            {v["meeting_id"] for v in all_users_groups.values() if v["id"] in group_ids}
         )
         meeting_users: dict[int, dict[str, Any]] = {
             data["meeting_id"]: data
             for data in current_meeting_users.values()
             if data["meeting_id"] in meeting_ids
         }
-        # remove from all_groups in difference with requested group_ids
-        groups_remove_from = set(all_groups) - set(group_ids)
+        # remove from all_users_groups in difference with requested group_ids
+        groups_remove_from = set(all_users_groups) - set(group_ids)
         for group_id in groups_remove_from:
-            if meeting_user_ids := all_groups[group_id].get("meeting_user_ids"):
+            if meeting_user_ids := all_users_groups[group_id].get("meeting_user_ids"):
                 # remove intersection with user
                 for meeting_user_id in meeting_user_ids:
                     if meeting_user_id in current_meeting_users:
@@ -477,7 +477,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
         # fill relevant meeting_user relations
         for group_id in group_ids:
-            group = all_groups[group_id]
+            group = all_users_groups[group_id]
             meeting_id = group["meeting_id"]
             meeting_user_id = meeting_users[meeting_id]["id"]
             if meeting_user_ids := group.get("meeting_user_ids"):
@@ -485,14 +485,17 @@ class BaseActionTestCase(BaseSystemTestCase):
                     meeting_user_ids.append(meeting_user_id)
             else:
                 group["meeting_user_ids"] = [meeting_user_id]
-        if meeting_users_new or all_groups:
+        if meeting_users_new or all_users_groups:
             self.set_models(
                 {
                     **{
                         f"meeting_user/{mu['id']}": mu
                         for mu in meeting_users_new.values()
                     },
-                    **{f"group/{group['id']}": group for group in all_groups.values()},
+                    **{
+                        f"group/{group['id']}": group
+                        for group in all_users_groups.values()
+                    },
                 }
             )
         return [mu["id"] for mu in meeting_users.values()]
