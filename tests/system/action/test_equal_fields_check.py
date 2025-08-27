@@ -103,7 +103,7 @@ class FakeModelEFA(Model):
     b_id = fields.RelationField(
         to={"fake_model_ef_b": "meeting_id"}, is_view_field=True
     )
-    c_ids = fields.RelationField(
+    c_ids = fields.RelationListField(
         to={"fake_model_ef_c": "meeting_id"}, is_view_field=True
     )
 
