@@ -139,8 +139,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/4", {"name": "group 1"})
-        self.assert_model_exists("group/5", {"name": "group 2"})
+        self.assert_model_exists("group/4", {"name": "group 1", "weight": 1})
+        self.assert_model_exists("group/5", {"name": "group 2", "weight": 2})
         self.assert_model_exists("meeting/1", {"group_ids": [1, 2, 3, 4, 5]})
 
     def test_create_1_2_events(self) -> None:
