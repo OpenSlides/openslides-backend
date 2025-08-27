@@ -447,7 +447,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "countdown_time": now + 100,
                     "meeting_id": 1,
                 },
-                "speaker/890": {"begin_time": now + 100},
+                "speaker/890": {"begin_time": datetime.fromtimestamp(now + 100)},
             }
         )
         return now
@@ -495,6 +495,4 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
-        self.assertAlmostEqual(
-            countdown["countdown_time"], datetime.fromtimestamp(now), delta=200
-        )
+        self.assertAlmostEqual(countdown["countdown_time"], now, delta=200)

@@ -99,6 +99,8 @@ class ExtendedDatabase(Database):
         self.env = env
         self.logger = logging.getLogger(__name__)
         self._changed_models = defaultdict(lambda: defaultdict(dict))
+        self._to_be_deleted: set[FullQualifiedId] = set()
+        self._to_be_deleted_for_protected: set[FullQualifiedId] = set()
         self.connection = connection
         self.database_reader = DatabaseReader(self.connection, logging, env)
         self.database_writer = DatabaseWriter(self.connection, logging, env)
@@ -118,6 +120,14 @@ class ExtendedDatabase(Database):
         if "id" not in self._changed_models[collection][id_]:
             self._changed_models[collection][id_]["id"] = id_
 
+    def apply_to_be_deleted(self, fqid: FullQualifiedId) -> None:
+        """Meaning both: to be deleted in the future and the past."""
+        self._to_be_deleted.add(fqid)
+
+    def apply_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> None:
+        """Meaning both: to be deleted in the future and the past. Only used for protected models deletion."""
+        self._to_be_deleted_for_protected.add(fqid)
+
     def get_changed_model(
         self, collection_or_fqid: str, id_: int | None = None
     ) -> PartialModel:
@@ -127,6 +137,14 @@ class ExtendedDatabase(Database):
 
     def get_changed_models(self, collection: str) -> dict[Id, PartialModel]:
         return self._changed_models.get(collection, dict())
+
+    def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
+        """Meaning both: to be deleted in the future and the past."""
+        return fqid in self._to_be_deleted
+
+    def is_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> bool:
+        """Meaning both: to be deleted in the future and the past. Only used for protected models deletion."""
+        return fqid in self._to_be_deleted_for_protected or fqid in self._to_be_deleted
 
     def get(
         self,

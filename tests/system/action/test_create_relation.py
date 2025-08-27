@@ -9,9 +9,63 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
+from .util import create_table_view
+
+collection_a = "fake_model_cr_a"
+collection_b = "fake_model_cr_b"
+collection_c = "fake_model_cr_c"
+collection_d = "fake_model_cr_d"
+
+yml = f"""
+_meta:
+  id_field: &id_field
+    type: number
+    restriction_mode: A
+    constant: true
+    required: true
+{collection_a}:
+  id: *id_field
+  req_field:
+    type: number
+    required: true
+  not_req_field:
+    type: number
+{collection_b}:
+  id: *id_field
+  name:
+    type: text
+  fake_model_cr_c_id:
+    type: relation
+    to: {collection_c}/fake_model_cr_b_id
+    required: true
+{collection_c}:
+  id: *id_field
+  name:
+    type: text
+  fake_model_cr_b_id:
+    type: relation
+    to: {collection_b}/fake_model_cr_c_id
+    reference: {collection_b}
+    required: true
+  fake_model_cr_d_id:
+    type: relation
+    to: {collection_d}/fake_model_cr_c_ids
+    reference: {collection_d}
+{collection_d}:
+  id: *id_field
+  name:
+    type: text
+  fake_model_cr_c_ids:
+    type: relation
+    to: {collection_c}/fake_model_cr_d_id
+    required: true
+        """
 
 
 class FakeModelCRA(Model):
@@ -30,7 +84,7 @@ class FakeModelCRB(Model):
 
     name = fields.CharField()
     fake_model_cr_c_id = fields.RelationField(
-        to={"fake_model_cr_c": "fake_model_cr_b_id"}, required=True
+        to={"fake_model_cr_c": "fake_model_cr_b_id"}, required=True, is_view_field=True
     )
 
 
@@ -44,7 +98,7 @@ class FakeModelCRC(Model):
         to={"fake_model_cr_b": "fake_model_cr_c_id"}, required=True
     )
     fake_model_cr_d_id = fields.RelationField(
-        to={"fake_model_cr_d": "fake_model_cr_c_ids"},
+        to={"fake_model_cr_d": "fake_model_cr_c_ids"}, is_view_field=True
     )
 
 
@@ -100,6 +154,37 @@ class FakeModelCRDCreateAction(CreateAction):
 
 
 class TestCreateRelation(BaseActionTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        create_table_view(yml)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute(
+                    f"""
+                    DROP TABLE {collection_a}_t CASCADE;
+                    DROP TABLE {collection_b}_t CASCADE;
+                    DROP TABLE {collection_c}_t CASCADE;
+                    DROP TABLE {collection_d}_t CASCADE;
+                    """
+                )
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        with self.connection.cursor() as curs:
+            curs.execute(
+                f"""
+                TRUNCATE TABLE {collection_a}_t RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE {collection_b}_t RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE {collection_c}_t RESTART IDENTITY CASCADE;
+                TRUNCATE TABLE {collection_d}_t RESTART IDENTITY CASCADE;
+                """
+            )
+
     def test_simple_create(self) -> None:
         response = self.request(
             "fake_model_cr_a.create", {"req_field": 1, "not_req_field": 2}
@@ -148,7 +233,7 @@ class TestCreateRelation(BaseActionTestCase):
         response = self.request("fake_model_cr_c.create", {"fake_model_cr_b_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'fake_model_cr_b/1' does not exist.",
+            "Model 'fake_model_cr_b/1' does not exist.",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_cr_c/1")
