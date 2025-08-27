@@ -283,7 +283,7 @@ class SpeakerCreateAction(
         for_speech_state: SpeechState | None = None,
     ) -> int | None:
         """
-        Interposed question > intervention & intervention answer > point of order
+        Interposed question > intervention > point of order
         """
         and_content: list[Filter] = [
             Or(
