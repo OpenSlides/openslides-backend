@@ -428,7 +428,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         request_group_ids = set(group_ids)
         for mu in current_meeting_users.values():
-            if mu_group_ids := mu["group_ids"]:
+            if mu_group_ids := mu.get("group_ids"):
                 request_group_ids.update(mu_group_ids)
         groups = self.datastore.get_many(
             [
