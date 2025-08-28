@@ -26,6 +26,7 @@ class SpeakerCreateForMerge(CreateActionWithInferredMeeting):
             "point_of_order_category_id",
             "structure_level_list_of_speakers_id",
             "note",
+            "answer",
         ],
     )
     permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS

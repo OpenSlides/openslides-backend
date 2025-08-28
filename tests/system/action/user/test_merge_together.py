@@ -2033,7 +2033,20 @@ class UserMergeTogether(BaseActionTestCase):
             ],
             next_id,
         )
-        # 23 speakers on 8 lists
+        next_id = add_list_of_speakers(
+            9,
+            1,
+            [  # 24 - 29
+                (12, 1, None, True, None, None, {}),
+                (14, 2, SpeechState.INTERVENTION, None, None, None, {"answer": False}),
+                (12, 3, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+                (15, 4, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+                (15, 5, SpeechState.INTERVENTION, None, None, None, {}),
+                (12, 6, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+            ],
+            next_id,
+        )
+        # 29 speakers on 9 lists
         self.set_models(data)
         return data
 
@@ -2047,7 +2060,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         merged_away = [2, 3, 6, 8, 14, 16, 19, 21]
-        replaced = [10, 12, 15, 23]
+        replaced = [10, 12, 15, 23, 25]
         deleted_ids = replaced + merged_away
         for id_ in deleted_ids:
             self.assert_model_not_exists(f"speaker/{id_}")
@@ -2061,8 +2074,8 @@ class UserMergeTogether(BaseActionTestCase):
             self.assert_model_exists(
                 f"speaker/{id_}", {**data[f"speaker/{id_}"], "weight": 2}
             )
-        next_id = 24
-        for m_user_id, speaker_ids in {12: [10, 12, 23], 106: [15]}.items():
+        next_id = 30
+        for m_user_id, speaker_ids in {12: [10, 12, 23, 25], 106: [15]}.items():
             for speaker_id in speaker_ids:
                 self.assert_model_exists(
                     f"speaker/{next_id}",
@@ -2072,9 +2085,29 @@ class UserMergeTogether(BaseActionTestCase):
 
         self.assert_model_exists(
             "meeting_user/12",
-            {"speaker_ids": [1, 5, 7, 9, 11, 13, 17, 18, 20, 22, 24, 25, 26]},
+            {
+                "speaker_ids": [
+                    1,
+                    5,
+                    7,
+                    9,
+                    11,
+                    13,
+                    17,
+                    18,
+                    20,
+                    22,
+                    24,
+                    26,
+                    29,
+                    30,
+                    31,
+                    32,
+                    33,
+                ]
+            },
         )
-        self.assert_model_exists("meeting_user/106", {"speaker_ids": [27]})
+        self.assert_model_exists("meeting_user/106", {"speaker_ids": [34]})
 
     def test_with_speakers_multiple_speakers_allowed(self) -> None:
         data = self.create_speakers_for_test(allow_multiple_speakers=True)
@@ -2085,7 +2118,7 @@ class UserMergeTogether(BaseActionTestCase):
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
 
-        replaced_meeting_1 = [2, 3, 6, 8, 10, 12, 16, 19, 21, 23]
+        replaced_meeting_1 = [2, 3, 6, 8, 10, 12, 16, 19, 21, 23, 25]
         replaced_meeting_3 = [14, 15]
         deleted_ids = replaced_meeting_1 + replaced_meeting_3
         for id_ in range(1, 24):
@@ -2093,7 +2126,7 @@ class UserMergeTogether(BaseActionTestCase):
                 self.assert_model_not_exists(f"speaker/{id_}")
             else:
                 self.assert_model_exists(f"speaker/{id_}", data[f"speaker/{id_}"])
-        next_id = 24
+        next_id = 30
         for m_user_id, speaker_ids in {
             12: replaced_meeting_1,
             106: replaced_meeting_3,
@@ -2119,7 +2152,10 @@ class UserMergeTogether(BaseActionTestCase):
                     18,
                     20,
                     22,
-                    *range(24, 24 + len(replaced_meeting_1)),
+                    24,
+                    26,
+                    29,
+                    *range(30, 30 + len(replaced_meeting_1)),
                 ]
             },
         )
@@ -2127,7 +2163,7 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/106",
             {
                 "speaker_ids": list(
-                    range(24 + len(replaced_meeting_1), 26 + len(replaced_meeting_1))
+                    range(30 + len(replaced_meeting_1), 32 + len(replaced_meeting_1))
                 )
             },
         )

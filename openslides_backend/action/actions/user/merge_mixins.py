@@ -35,6 +35,7 @@ class SpeakerMergeMixin(BaseMergeMixin):
                     "meeting_id",
                     "point_of_order",
                     "list_of_speakers_id",
+                    "answer",
                 ],
                 "lowest": [
                     "weight",
@@ -231,6 +232,7 @@ class MeetingUserMergeMixin(
                 if (
                     meeting.get("list_of_speakers_allow_multiple_speakers")
                     or model.get("end_time") is not None
+                    or model.get("answer")
                 ):
                     return model["id"]
                 return (
