@@ -43,7 +43,7 @@ class GroupDeleteAction(DeleteAction):
                 "meeting_id",
             ],
         )
-        if len(group.get("meeting_user_ids", [])) and not self.is_meeting_deleted(
+        if len(group.get("meeting_user_ids", [])) and not self.is_meeting_to_be_deleted(
             group["meeting_id"]
         ):
             raise ActionException("You cannot delete a group with users.")

@@ -27,10 +27,10 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
         for instance in payload:
             projector_id = instance.pop("projector_id")
             fields = Meeting.all_default_projectors()
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                fields + ["reference_projector_id"],
-            )
+            fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
+            if self.datastore.is_to_be_deleted(fqid):
+                continue
+            meeting = self.datastore.get(fqid, fields + ["reference_projector_id"])
             changed = False
             for field in fields:
                 change_list = meeting.get(field)

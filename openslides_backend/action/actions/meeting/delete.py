@@ -1,5 +1,7 @@
 from typing import Any
 
+from openslides_backend.action.actions.topic.delete import TopicDelete
+
 from ....models.models import Meeting
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
@@ -25,3 +27,12 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
             ["committee_id"],
         )
         return meeting["committee_id"]
+
+    def update_instance(self, instance: dict[str, Any]) -> dict:
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]), []
+        )
+        if topic_ids := meeting.get("topic_ids"):
+            for topic_fqid in topic_ids:
+                self.execute_other_action(TopicDelete, [{"id": topic_fqid}])
+        return instance

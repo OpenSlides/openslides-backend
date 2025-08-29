@@ -120,6 +120,7 @@ class BaseSystemTestCase(TestCase):
         """
         Overrides the TestCases run method.
         Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
+        Also stores its connection in self.connection.
         """
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())

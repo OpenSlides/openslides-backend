@@ -27,7 +27,7 @@ class MotionWorkflowDeleteAction(DeleteAction):
             fqid_from_collection_and_id("motion_workflow", instance["id"]),
             ["meeting_id"],
         )
-        if not self.is_meeting_deleted(workflow["meeting_id"]):
+        if not self.is_meeting_to_be_deleted(workflow["meeting_id"]):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", workflow["meeting_id"]),
                 [

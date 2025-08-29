@@ -232,11 +232,11 @@ class SingleRelationHandler:
         # Calculate add set and remove set
         new_fqids = set(rel_fqids)
         add = new_fqids - current_fqids
-        # filter out deleted models, so that in case of cascade deletion no data is lost
+        # filter out deleted models for improved performance
         remove = {
             fqid
             for fqid in current_fqids - new_fqids
-            if not self.datastore.is_deleted(fqid)
+            if not self.datastore.is_to_be_deleted(fqid)
         }
 
         return add, remove
