@@ -6,93 +6,8 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 
-from .base import BaseActionTestCase
-from .util import create_table_view
-
-collection_a = "fake_model_ef_a"
-collection_b = "fake_model_ef_b"
-collection_c = "fake_model_ef_c"
-
-yml = """
-_meta:
-  id_field: &id_field
-    type: number
-    restriction_mode: A
-    constant: true
-    required: true
-fake_model_ef_a:
-  id: *id_field
-  b_id:
-    type: relation
-    to: fake_model_ef_b/meeting_id
-    reference: fake_model_ef_b
-  c_ids:
-    type: relation-list
-    to: fake_model_ef_c/meeting_id
-    reference: fake_model_ef_c
-fake_model_ef_b:
-  id: *id_field
-  meeting_id:
-    type: relation
-    to: fake_model_ef_a/b_id
-    reference: fake_model_ef_a
-  c_id:
-    type: relation
-    to: fake_model_ef_c/b_id
-    reference: fake_model_ef_c
-    equal_fields: meeting_id
-  c_ids:
-    type: relation-list
-    to: fake_model_ef_c/b_ids
-    equal_fields: meeting_id
-  c_generic_id:
-    type: generic-relation
-    reference:
-      - fake_model_ef_c
-    to:
-      - fake_model_ef_c/b_generic_id
-    equal_fields: meeting_id
-  c_generic_ids:
-    type: generic-relation-list
-    to:
-      collections:
-        - fake_model_ef_c
-      field: b_generic_ids
-    equal_fields: meeting_id
-fake_model_ef_c:
-  id: *id_field
-  meeting_id:
-    type: relation
-    to: fake_model_ef_a/c_ids
-    reference: fake_model_ef_a
-  b_id:
-    type: relation
-    to: fake_model_ef_b/c_id
-    reference: fake_model_ef_b
-    equal_fields: meeting_id
-  b_ids:
-    type: relation-list
-    to: fake_model_ef_b/c_ids
-    equal_fields: meeting_id
-  b_generic_id:
-    type: generic-relation
-    reference:
-      - fake_model_ef_b
-    to:
-      - fake_model_ef_b/c_generic_id
-    equal_fields: meeting_id
-  b_generic_ids:
-    type: generic-relation-list
-    to:
-      collections:
-        - fake_model_ef_b
-      field: c_generic_ids
-    equal_fields: meeting_id
-        """
+from .base_generic import BaseGenericTestCase
 
 
 class FakeModelEFA(Model):
@@ -166,37 +81,92 @@ class FakeModelEFBUpdateAction(UpdateAction):
     skip_archived_meeting_check = True
 
 
-class TestEqualFieldsCheck(BaseActionTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        create_table_view(yml)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                curs.execute(
-                    f"""
-                    DROP TABLE nm_fake_model_ef_b_c_ids_fake_model_ef_c_t CASCADE;
-                    DROP TABLE {collection_a}_t CASCADE;
-                    DROP TABLE {collection_b}_t CASCADE;
-                    DROP TABLE {collection_c}_t CASCADE;
-                    """
-                )
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        with self.connection.cursor() as curs:
-            curs.execute(
-                f"""
-                TRUNCATE TABLE nm_fake_model_ef_b_c_ids_fake_model_ef_c_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_a}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_b}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_c}_t RESTART IDENTITY CASCADE;
-                """
-            )
+class TestEqualFieldsCheck(BaseGenericTestCase):
+    collection_a = "fake_model_ef_a"
+    collection_b = "fake_model_ef_b"
+    collection_c = "fake_model_ef_c"
+    tables_to_reset = [
+        f"{collection_a}_t",
+        f"{collection_b}_t",
+        f"{collection_c}_t",
+        "nm_fake_model_ef_b_c_ids_fake_model_ef_c_t",
+    ]
+    yml = f"""
+    _meta:
+        id_field: &id_field
+            type: number
+            restriction_mode: A
+            constant: true
+            required: true
+    {collection_a}:
+        id: *id_field
+        b_id:
+            type: relation
+            to: {collection_b}/meeting_id
+            reference: {collection_b}
+        c_ids:
+            type: relation-list
+            to: {collection_c}/meeting_id
+            reference: {collection_c}
+    {collection_b}:
+        id: *id_field
+        meeting_id:
+            type: relation
+            to: {collection_a}/b_id
+            reference: {collection_a}
+        c_id:
+            type: relation
+            to: {collection_c}/b_id
+            reference: {collection_c}
+            equal_fields: meeting_id
+        c_ids:
+            type: relation-list
+            to: {collection_c}/b_ids
+            equal_fields: meeting_id
+        c_generic_id:
+            type: generic-relation
+            reference:
+            - {collection_c}
+            to:
+            - {collection_c}/b_generic_id
+            equal_fields: meeting_id
+        c_generic_ids:
+            type: generic-relation-list
+            to:
+            collections:
+                - {collection_c}
+            field: b_generic_ids
+            equal_fields: meeting_id
+    {collection_c}:
+        id: *id_field
+        meeting_id:
+            type: relation
+            to: {collection_a}/c_ids
+            reference: {collection_a}
+        b_id:
+            type: relation
+            to: {collection_b}/c_id
+            reference: {collection_b}
+            equal_fields: meeting_id
+        b_ids:
+            type: relation-list
+            to: {collection_b}/c_ids
+            equal_fields: meeting_id
+        b_generic_id:
+            type: generic-relation
+            reference:
+            - {collection_b}
+            to:
+            - {collection_b}/c_generic_id
+            equal_fields: meeting_id
+        b_generic_ids:
+            type: generic-relation-list
+            to:
+            collections:
+                - {collection_b}
+            field: c_generic_ids
+            equal_fields: meeting_id
+    """
 
     def test_simple_pass(self) -> None:
         self.set_models(

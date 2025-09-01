@@ -3,83 +3,8 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 
-from .base import BaseActionTestCase
-from .util import create_table_view
-
-collection_a = "fake_model_cd_a"
-collection_b = "fake_model_cd_b"
-collection_c = "fake_model_cd_c"
-collection_d = "fake_model_cd_d"
-
-yml = f"""
-_meta:
-  id_field: &id_field
-    type: number
-    restriction_mode: A
-    constant: true
-    required: true
-{collection_a}:
-  id: *id_field
-  {collection_b}:
-    type: relation
-    to: {collection_b}/{collection_a}
-    on_delete: CASCADE
-  {collection_c}:
-    type: relation
-    to: {collection_c}/{collection_a}
-    on_delete: CASCADE
-  {collection_b}_set_null:
-    type: relation
-    to: {collection_b}/{collection_a}_set_null
-    on_delete: SET_NULL
-  {collection_d}_set_null_required:
-    type: relation
-    to: {collection_d}/{collection_a}_set_null_required
-    on_delete: SET_NULL
-{collection_b}:
-  id: *id_field
-  {collection_a}:
-    type: relation
-    to: {collection_a}/{collection_b}
-    reference: {collection_a}
-  {collection_c}_protect:
-    type: relation
-    to: {collection_c}/{collection_b}_protected
-    on_delete: PROTECT
-  {collection_c}_cascade:
-    type: relation
-    to: {collection_c}/{collection_b}_cascaded
-    on_delete: CASCADE
-  {collection_a}_set_null:
-    type: relation
-    to: {collection_a}/{collection_b}_set_null
-    reference: {collection_a}
-{collection_c}:
-  id: *id_field
-  {collection_a}:
-    type: relation
-    to: {collection_a}/{collection_c}
-    reference: {collection_a}
-  {collection_b}_protected:
-    type: relation
-    to: {collection_b}/{collection_c}_protect
-    reference: {collection_b}
-  {collection_b}_cascaded:
-    type: relation
-    to: {collection_b}/{collection_c}_cascade
-    reference: {collection_b}
-{collection_d}:
-  id: *id_field
-  {collection_a}_set_null_required:
-    type: relation
-    to: {collection_a}/{collection_d}_set_null_required
-    reference: {collection_a}
-    required: true
-        """
+from .base_generic import BaseGenericTestCase
 
 
 class FakeModelCDA(Model):
@@ -183,37 +108,82 @@ class FakeModelCDDDeleteAction(DeleteAction):
     skip_archived_meeting_check = True
 
 
-class TestDeleteCascade(BaseActionTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        create_table_view(yml)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                curs.execute(
-                    f"""
-                    DROP TABLE {collection_a}_t CASCADE;
-                    DROP TABLE {collection_b}_t CASCADE;
-                    DROP TABLE {collection_c}_t CASCADE;
-                    DROP TABLE {collection_d}_t CASCADE;
-                    """
-                )
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        with self.connection.cursor() as curs:
-            curs.execute(
-                f"""
-                TRUNCATE TABLE {collection_a}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_b}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_c}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_d}_t RESTART IDENTITY CASCADE;
-                """
-            )
+class TestDeleteCascade(BaseGenericTestCase):
+    collection_a = "fake_model_cd_a"
+    collection_b = "fake_model_cd_b"
+    collection_c = "fake_model_cd_c"
+    collection_d = "fake_model_cd_d"
+    tables_to_reset = [
+        f"{collection_a}_t",
+        f"{collection_b}_t",
+        f"{collection_c}_t",
+        f"{collection_d}_t",
+    ]
+    yml = f"""
+    _meta:
+        id_field: &id_field
+            type: number
+            restriction_mode: A
+            constant: true
+            required: true
+    {collection_a}:
+        id: *id_field
+        {collection_b}:
+            type: relation
+            to: {collection_b}/{collection_a}
+            on_delete: CASCADE
+        {collection_c}:
+            type: relation
+            to: {collection_c}/{collection_a}
+            on_delete: CASCADE
+        {collection_b}_set_null:
+            type: relation
+            to: {collection_b}/{collection_a}_set_null
+            on_delete: SET_NULL
+        {collection_d}_set_null_required:
+            type: relation
+            to: {collection_d}/{collection_a}_set_null_required
+            on_delete: SET_NULL
+    {collection_b}:
+        id: *id_field
+        {collection_a}:
+            type: relation
+            to: {collection_a}/{collection_b}
+            reference: {collection_a}
+        {collection_c}_protect:
+            type: relation
+            to: {collection_c}/{collection_b}_protected
+            on_delete: PROTECT
+        {collection_c}_cascade:
+            type: relation
+            to: {collection_c}/{collection_b}_cascaded
+            on_delete: CASCADE
+        {collection_a}_set_null:
+            type: relation
+            to: {collection_a}/{collection_b}_set_null
+            reference: {collection_a}
+    {collection_c}:
+        id: *id_field
+        {collection_a}:
+            type: relation
+            to: {collection_a}/{collection_c}
+            reference: {collection_a}
+        {collection_b}_protected:
+            type: relation
+            to: {collection_b}/{collection_c}_protect
+            reference: {collection_b}
+        {collection_b}_cascaded:
+            type: relation
+            to: {collection_b}/{collection_c}_cascade
+            reference: {collection_b}
+    {collection_d}:
+        id: *id_field
+        {collection_a}_set_null_required:
+            type: relation
+            to: {collection_a}/{collection_d}_set_null_required
+            reference: {collection_a}
+            required: true
+    """
 
     def test_simple(self) -> None:
         self.set_models(

@@ -9,63 +9,9 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_new_os_conn,
-)
 from openslides_backend.shared.patterns import Collection
 
-from .base import BaseActionTestCase
-from .util import create_table_view
-
-collection_a = "fake_model_cr_a"
-collection_b = "fake_model_cr_b"
-collection_c = "fake_model_cr_c"
-collection_d = "fake_model_cr_d"
-
-yml = f"""
-_meta:
-  id_field: &id_field
-    type: number
-    restriction_mode: A
-    constant: true
-    required: true
-{collection_a}:
-  id: *id_field
-  req_field:
-    type: number
-    required: true
-  not_req_field:
-    type: number
-{collection_b}:
-  id: *id_field
-  name:
-    type: text
-  fake_model_cr_c_id:
-    type: relation
-    to: {collection_c}/fake_model_cr_b_id
-    required: true
-{collection_c}:
-  id: *id_field
-  name:
-    type: text
-  fake_model_cr_b_id:
-    type: relation
-    to: {collection_b}/fake_model_cr_c_id
-    reference: {collection_b}
-    required: true
-  fake_model_cr_d_id:
-    type: relation
-    to: {collection_d}/fake_model_cr_c_ids
-    reference: {collection_d}
-{collection_d}:
-  id: *id_field
-  name:
-    type: text
-  fake_model_cr_c_ids:
-    type: relation
-    to: {collection_c}/fake_model_cr_d_id
-    required: true
-        """
+from .base_generic import BaseGenericTestCase
 
 
 class FakeModelCRA(Model):
@@ -153,37 +99,61 @@ class FakeModelCRDCreateAction(CreateAction):
     skip_archived_meeting_check = True
 
 
-class TestCreateRelation(BaseActionTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        create_table_view(yml)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                curs.execute(
-                    f"""
-                    DROP TABLE {collection_a}_t CASCADE;
-                    DROP TABLE {collection_b}_t CASCADE;
-                    DROP TABLE {collection_c}_t CASCADE;
-                    DROP TABLE {collection_d}_t CASCADE;
-                    """
-                )
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        with self.connection.cursor() as curs:
-            curs.execute(
-                f"""
-                TRUNCATE TABLE {collection_a}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_b}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_c}_t RESTART IDENTITY CASCADE;
-                TRUNCATE TABLE {collection_d}_t RESTART IDENTITY CASCADE;
-                """
-            )
+class TestCreateRelation(BaseGenericTestCase):
+    collection_a = "fake_model_cr_a"
+    collection_b = "fake_model_cr_b"
+    collection_c = "fake_model_cr_c"
+    collection_d = "fake_model_cr_d"
+    tables_to_reset = [
+        f"{collection_a}_t",
+        f"{collection_b}_t",
+        f"{collection_c}_t",
+        f"{collection_d}_t",
+    ]
+    yml = f"""
+    _meta:
+        id_field: &id_field
+            type: number
+            restriction_mode: A
+            constant: true
+            required: true
+    {collection_a}:
+        id: *id_field
+        req_field:
+            type: number
+            required: true
+        not_req_field:
+            type: number
+    {collection_b}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_c_id:
+            type: relation
+            to: {collection_c}/fake_model_cr_b_id
+            required: true
+    {collection_c}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_b_id:
+            type: relation
+            to: {collection_b}/fake_model_cr_c_id
+            reference: {collection_b}
+            required: true
+        fake_model_cr_d_id:
+            type: relation
+            to: {collection_d}/fake_model_cr_c_ids
+            reference: {collection_d}
+    {collection_d}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_c_ids:
+            type: relation
+            to: {collection_c}/fake_model_cr_d_id
+            required: true
+    """
 
     def test_simple_create(self) -> None:
         response = self.request(
