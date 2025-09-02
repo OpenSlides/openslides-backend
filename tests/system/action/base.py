@@ -13,6 +13,7 @@ from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
@@ -254,7 +255,11 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "language": "en",
                     **meeting_data,
                 },
-                f"projector/{base}": {"sequential_number": base, "meeting_id": base},
+                f"projector/{base}": {
+                    "sequential_number": base,
+                    "meeting_id": base,
+                    **{field: base for field in Meeting.reverse_default_projectors()},
+                },
                 f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
                 f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
                 f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
