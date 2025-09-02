@@ -92,7 +92,7 @@ def test_migration(write, finalize, assert_model):
     write_many(create=[7], update=[4, 5, 6], delete=[5], suffix="-boy")
     write_many(update=[7], delete=[3, 6], suffix="-girl", user_id=2)
 
-    finalize("0068_transfer_history_to_history_collections")
+    finalize("0069_transfer_history_to_history_collections")
 
     # First history position is not created because the first position does not have history entries
     assert_model("history_position/1", DoesNotExist())
@@ -415,7 +415,7 @@ def test_migration_with_both_history_formats(write, finalize, assert_model):
         },
     )
 
-    finalize("0068_transfer_history_to_history_collections")
+    finalize("0069_transfer_history_to_history_collections")
 
     assert_model(
         "user/1", {"id": 1, "username": "admin", "history_position_ids": [2, 3]}
@@ -630,7 +630,7 @@ def test_migration_history_entry_meeting_relation_with_deletions(
         },
     )
 
-    finalize("0068_transfer_history_to_history_collections")
+    finalize("0069_transfer_history_to_history_collections")
 
     assert_model(
         "user/1",
