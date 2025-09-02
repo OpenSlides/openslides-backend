@@ -414,7 +414,16 @@ class UpdatePollTestCase(BasePollTestCase):
             {},
             "poll.update",
             {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+            Permissions.Assignment.CAN_MANAGE_POLLS,
+        )
+
+    def test_update_wrong_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
             Permissions.Assignment.CAN_MANAGE,
+            fail=True,
         )
 
     def test_update_permissions_locked_meeting(self) -> None:
