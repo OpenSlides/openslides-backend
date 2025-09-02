@@ -1289,6 +1289,7 @@ class Speaker(Model):
             ]
         }
     )
+    answer = fields.BooleanField()
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField(constant=True)
     list_of_speakers_id = fields.RelationField(
