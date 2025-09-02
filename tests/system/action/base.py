@@ -16,7 +16,11 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+)
 from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
@@ -132,7 +136,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self,
         action_name: str,
         data: dict[str, Any] | list[dict[str, Any]],
-        user_id: int = 0,
+        user_id: int = -1,
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
@@ -281,24 +285,33 @@ class BaseActionTestCase(BaseSystemTestCase):
             True,
         )
 
+    def get_last_history_information(self, fqid: FullQualifiedId) -> list[str] | None:
+        entry_id = self.datastore.max(
+            "history_entry",
+            FilterOperator("original_model_id", "=", fqid),
+            "id",
+            lock_result=False,
+        )
+        if entry_id:
+            history_entry = self.datastore.get(
+                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
+            )
+            return history_entry.get("entries")
+        else:
+            return None
+
     def assert_history_information(
         self, fqid: FullQualifiedId, information: list[str] | None
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
-        # TODO write history model and its actions
-        # informations = self.datastore.history_information([fqid]).get(fqid)
-        # last_information = (
-        #     cast(HistoryInformation, informations[-1]["information"])
-        #     if informations
-        #     else {}
-        # )
-        # if information is None:
-        #     assert not informations or fqid not in last_information, informations
-        # else:
-        #     assert informations
-        #     self.assertEqual(last_information[fqid], information)
+        last_information = self.get_last_history_information(fqid)
+        if information is None:
+            assert not last_information
+        else:
+            assert last_information
+            self.assertEqual(last_information, information)
 
     def assert_history_information_contains(
         self, fqid: FullQualifiedId, information: str
@@ -306,15 +319,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Asserts that the last history information for the given model is the given information.
         """
-        # TODO write history model and its actions
-        # informations = self.datastore.history_information([fqid]).get(fqid)
-        # last_information = (
-        #     cast(HistoryInformation, informations[-1]["information"])
-        #     if informations
-        #     else {}
-        # )
-        # assert informations
-        # assert information in last_information[fqid]
+        last_information = self.get_last_history_information(fqid)
+        assert last_information
+        assert information in last_information
 
     def assert_logged_in(self) -> None:
         self.auth.authenticate()  # assert that no exception is thrown

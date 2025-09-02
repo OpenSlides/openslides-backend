@@ -2,6 +2,7 @@ from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 
 class BaseMotionDeleteActionTest(BaseActionTestCase):
@@ -28,7 +29,21 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
     def test_delete_correct(self) -> None:
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"history_position_ids": [1]})
         self.assert_model_not_exists("motion/111")
+        self.assert_model_exists(
+            "history_position/1",
+            {"original_user_id": 1, "user_id": 1, "entry_ids": [1]},
+        )
+        self.assert_model_exists(
+            "history_entry/1",
+            {
+                "entries": ["Motion deleted"],
+                "original_model_id": "motion/111",
+                "model_id": None,
+                "position_id": 1,
+            },
+        )
         self.assert_history_information("motion/111", ["Motion deleted"])
 
     def test_delete_amendment(self) -> None:
@@ -107,19 +122,19 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         self.set_forwarded_motion(4, 114, 113)
 
         response = self.request_multi(
-            "motion.delete", [{"id": 111}, {"id": 112}, {"id": 113}]
+            "motion.delete", [{"id": 112}, {"id": 113}, {"id": 114}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/110", ["Forwarded motion deleted"])
+        self.assert_history_information("motion/111", ["Forwarded motion deleted"])
         self.assert_history_information(
-            "motion/111", ["Motion deleted", "Forwarded motion deleted"]
+            "motion/112", ["Motion deleted", "Forwarded motion deleted"]
         )
         self.assert_history_information(
-            "motion/112",
+            "motion/113",
             ["Motion deleted", "Forwarded motion deleted", "Origin motion deleted"],
         )
         self.assert_history_information(
-            "motion/113", ["Motion deleted", "Origin motion deleted"]
+            "motion/114", ["Motion deleted", "Origin motion deleted"]
         )
 
     def test_delete_with_submodels(self) -> None:

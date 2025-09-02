@@ -919,6 +919,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def base_assign_external_self_test(self, oml: OrganizationManagementLevel) -> None:
+        """also tests the history collection feature in case of the creation of multiple history entries with just one history position"""
         bob_id = self.create_user("bob", organization_management_level=oml)
         self.login(bob_id)
         response = self.request_multi(
@@ -954,6 +955,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "text": "test",
                 "submitter_ids": [1],
+                "history_entry_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -963,6 +965,38 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "text": "test 2",
                 "submitter_ids": [2],
+                "history_entry_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "history_position/1",
+            {"original_user_id": bob_id, "user_id": bob_id, "entry_ids": [1, 2, 3]},
+        )
+        self.assert_model_exists(
+            "history_entry/1",
+            {
+                "entries": ["Participant added to meeting {}.", "meeting/1"],
+                "original_model_id": f"user/{bob_id}",
+                "model_id": f"user/{bob_id}",
+                "position_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/2",
+            {
+                "entries": ["Motion created"],
+                "original_model_id": "motion/1",
+                "model_id": "motion/1",
+                "position_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/3",
+            {
+                "entries": ["Motion created"],
+                "original_model_id": "motion/2",
+                "model_id": "motion/2",
+                "position_id": 1,
             },
         )
 

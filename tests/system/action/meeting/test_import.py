@@ -5,14 +5,13 @@ from typing import Any
 
 import pytest
 from psycopg.types.json import Jsonb
+
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.http.views.presenter_view import PresenterView
-from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import (
-    CountDatastoreCalls,
     Profiler,
     create_presenter_test_application,
     get_route_path,

@@ -29,7 +29,15 @@ class PollPublishActionTest(BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == "published"
-        self.assert_history_information("topic/1", ["Voting published"])
+        self.assert_history_information("topic/1", None)
+
+    def test_publish_motion(self) -> None:
+        self.create_motion(1, 2)
+        self.poll_data["poll/1"]["content_object_id"] = "motion/2"
+        self.set_models(self.poll_data)
+        response = self.request("poll.publish", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/2", ["Voting published"])
 
     def test_publish_assignment(self) -> None:
         self.create_assignment(1, 1)
@@ -52,6 +60,8 @@ class PollPublishActionTest(BasePollTestCase):
         )
 
     def test_publish_started(self) -> None:
+        self.create_motion(1, 2)
+        self.poll_data["poll/1"]["content_object_id"] = "motion/2"
         self.poll_data["poll/1"]["state"] = "started"
         self.set_models(self.poll_data)
         self.vote_service.start(1)
@@ -66,7 +76,7 @@ class PollPublishActionTest(BasePollTestCase):
                 "entitled_users_at_stop": [],
             },
         )
-        self.assert_history_information("topic/1", ["Voting stopped/published"])
+        self.assert_history_information("motion/2", ["Voting stopped/published"])
 
     def test_publish_no_permissions(self) -> None:
         self.base_permission_test(self.poll_data, "poll.publish", {"id": 1})

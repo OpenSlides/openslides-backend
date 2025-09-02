@@ -316,17 +316,17 @@ class BaseSystemTestCase(TestCase):
             except ActionException as e:
                 raise JsonSchemaException(e.message)
 
-    def get_model(self, fqid: str) -> dict[str, Any]:
-        self.connection.commit()
+    def get_model(self, fqid: str, raise_exception: bool = True) -> dict[str, Any]:
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
             lock_result=False,
             use_changed_models=False,
+            raise_exception=raise_exception,
         )
-        self.assertTrue(model)
-        assert model
-        self.assertEqual(model.get("id"), id_from_fqid(fqid))
+        if raise_exception:
+            self.assertTrue(model)
+            self.assertEqual(model.get("id"), id_from_fqid(fqid))
         return model
 
     def assert_model_exists(

@@ -17,11 +17,16 @@ from ..models.models import Meeting
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
 NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candidate_ids"]
+
+HISTORY_FIELDS_PER_COLLECTION = {
+    "meeting": ["relevant_history_entry_ids"],
+    "user": ["history_entry_ids", "history_position_ids"],
+    **{collection: ["history_entry_ids"] for collection in ["motion", "assignment"]},
+}
 
 
 def export_meeting(
@@ -39,6 +44,8 @@ def export_meeting(
         lock_result=False,
         use_changed_models=False,
     )
+    for forbidden_field in FORBIDDEN_FIELDS + HISTORY_FIELDS_PER_COLLECTION["meeting"]:
+        meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
@@ -124,8 +131,8 @@ def export_meeting(
     for field in relation_fields:
         collection = field.get_target_collection()
         if collection in results:
-            export[str(collection)] = remove_meta_fields(
-                transfer_keys(results[collection])
+            export[str(collection)] = remove_history_fields(
+                collection, remove_meta_fields(transfer_keys(results[collection]))
             )
         else:
             export[str(collection)] = {}
@@ -246,12 +253,15 @@ def add_users(
         user_ids,
         get_fields_for_export("user"),
     )
-    users = remove_meta_fields(
-        transfer_keys(
-            datastore.get_many([gmr], lock_result=False, use_changed_models=False)[
-                "user"
-            ]
-        )
+    users = remove_history_fields(
+        "user",
+        remove_meta_fields(
+            transfer_keys(
+                datastore.get_many([gmr], lock_result=False, use_changed_models=False)[
+                    "user"
+                ]
+            )
+        ),
     )
 
     for user in users.values():
@@ -292,14 +302,25 @@ def remove_meta_fields(res: dict[str, Any]) -> dict[str, Any]:
     return dict_without_meta_fields
 
 
+def remove_history_fields(collection: str, res: dict[str, Any]) -> dict[str, Any]:
+    for field in HISTORY_FIELDS_PER_COLLECTION.get(collection, []):
+        for key in res:
+            res[key].pop(field, None)
+    return res
+
+
 def get_relation_fields() -> Iterable[RelationListField]:
     for field in Meeting().get_relation_fields():
-        if isinstance(field, RelationListField) and (
-            (
-                field.on_delete == OnDelete.CASCADE
-                and field.get_own_field_name().endswith("_ids")
+        if (
+            isinstance(field, RelationListField)
+            and field not in HISTORY_FIELDS_PER_COLLECTION["meeting"]
+            and (
+                (
+                    field.on_delete == OnDelete.CASCADE
+                    and field.get_own_field_name().endswith("_ids")
+                )
+                or field.get_own_field_name() in NON_CASCADING_MEETING_RELATION_LISTS
             )
-            or field.get_own_field_name() in NON_CASCADING_MEETING_RELATION_LISTS
         ):
             yield field
 

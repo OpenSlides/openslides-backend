@@ -79,13 +79,18 @@ class MeetingImport(
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
 
         # prefetch as much data as possible
         self.prefetch(action_data)
