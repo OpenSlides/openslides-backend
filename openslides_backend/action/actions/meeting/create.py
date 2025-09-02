@@ -148,11 +148,13 @@ class MeetingCreate(
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
                     Permissions.Assignment.CAN_MANAGE,
+                    Permissions.Assignment.CAN_MANAGE_POLLS,
                     Permissions.ListOfSpeakers.CAN_MANAGE,
                     Permissions.Mediafile.CAN_MANAGE,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Motion.CAN_MANAGE,
+                    Permissions.Motion.CAN_MANAGE_POLLS,
                     Permissions.Projector.CAN_MANAGE,
                     Permissions.Tag.CAN_MANAGE,
                     Permissions.User.CAN_MANAGE,
