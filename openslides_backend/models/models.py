@@ -132,6 +132,8 @@ class User(Model):
     delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
     poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
     home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
+    history_position_ids = fields.RelationListField(to={"history_position": "user_id"})
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -938,6 +940,9 @@ class Meeting(Model, MeetingModelMixin):
     anonymous_group_id = fields.RelationField(
         to={"group": "anonymous_group_for_meeting_id"}
     )
+    relevant_history_entry_ids = fields.RelationListField(
+        to={"history_entry": "meeting_id"}
+    )
 
 
 class StructureLevel(Model):
@@ -1519,6 +1524,7 @@ class Motion(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "motion_ids"}, required=True, constant=True
     )
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
 
 
 class MotionSubmitter(Model):
@@ -2067,6 +2073,7 @@ class Assignment(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_ids"}, required=True, constant=True
     )
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
 
 
 class AssignmentCandidate(Model):
@@ -2519,3 +2526,36 @@ class ImportPreview(Model):
     )
     created = fields.TimestampField(required=True)
     result = fields.JSONField()
+
+
+class HistoryPosition(Model):
+    collection = "history_position"
+    verbose_name = "history position"
+
+    id = fields.IntegerField(required=True, constant=True)
+    timestamp = fields.TimestampField(read_only=True)
+    original_user_id = fields.IntegerField(constant=True)
+    user_id = fields.RelationField(to={"user": "history_position_ids"})
+    entry_ids = fields.RelationListField(
+        to={"history_entry": "position_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+
+
+class HistoryEntry(Model):
+    collection = "history_entry"
+    verbose_name = "history entry"
+
+    id = fields.IntegerField(required=True, constant=True)
+    entries = fields.CharArrayField()
+    original_model_id = fields.CharField(constant=True)
+    model_id = fields.GenericRelationField(
+        to={
+            "user": "history_entry_ids",
+            "motion": "history_entry_ids",
+            "assignment": "history_entry_ids",
+        }
+    )
+    position_id = fields.RelationField(
+        to={"history_position": "entry_ids"}, required=True, constant=True
+    )
+    meeting_id = fields.RelationField(to={"meeting": "relevant_history_entry_ids"})

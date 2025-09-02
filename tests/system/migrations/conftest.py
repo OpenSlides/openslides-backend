@@ -10,6 +10,7 @@ from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
+from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
@@ -66,10 +67,12 @@ def clear_datastore(setup) -> None:
 
 @pytest.fixture()
 def write(clear_datastore) -> None:
-    def _write(*events: dict[str, Any]):
+    def _write(
+        *events: dict[str, Any], information: HistoryInformation = {}, user_id: int = 1
+    ):
         payload = {
-            "user_id": 1,
-            "information": {},
+            "user_id": user_id,
+            "information": information,
             "locked_fields": {},
             "events": events,
         }
@@ -131,7 +134,7 @@ def finalize(clear_datastore):
 
 @pytest.fixture()
 def read_model(clear_datastore):
-    def _read_model(fqid, position=None):
+    def _read_model(fqid, position=None, check_filled_and_remove: list[str] = []):
         reader: Reader = injector.get(Reader)
         with reader.get_database_context():
             request = GetRequest(
@@ -139,7 +142,10 @@ def read_model(clear_datastore):
                 position=position,
                 get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             )
-            return reader.get(request)
+            model = reader.get(request)
+            for field in check_filled_and_remove:
+                assert model.pop(field, None)
+            return model
 
     yield _read_model
 
@@ -158,10 +164,14 @@ def assert_model(read_model):
                 expected[key] = model[key]
         assert model == expected
 
-    def _assert_model(fqid, _expected, position=None):
+    def _assert_model(
+        fqid, _expected, position=None, only_check_filled: list[str] = []
+    ):
         # try to fetch model and assert correct existance
         try:
-            model = read_model(fqid, position=position)
+            model = read_model(
+                fqid, position=position, check_filled_and_remove=only_check_filled
+            )
         except ModelDoesNotExist:
             if not isinstance(_expected, DoesNotExist):
                 raise
@@ -186,7 +196,9 @@ def assert_model(read_model):
                 position = read_database.get_max_position()
 
             # additionally assert that the model at the max position is equal to expected
-            model = read_model(fqid, position=position)
+            model = read_model(
+                fqid, position=position, check_filled_and_remove=only_check_filled
+            )
 
         compare_models(model, expected)
 

@@ -102,6 +102,8 @@ class UserMergeTogether(
                 "merge": [
                     "committee_ids",
                     "committee_management_ids",
+                    "history_entry_ids",
+                    "history_position_ids",
                     "option_ids",  # throw error if conflict on same poll
                     "poll_voted_ids",  # throw error if conflict on same poll
                     "vote_ids",  # throw error if conflict on same poll
