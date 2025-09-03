@@ -1,4 +1,7 @@
+from datetime import datetime
 from typing import Any, cast
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -334,6 +337,14 @@ class MeetingUpdate(
             ],
             anonymous_group_id,
         )
+
+        for field in ["start_time", "end_time"]:
+            raw_value = instance.get(field)
+            if isinstance(raw_value, int):
+                instance[field] = datetime.fromtimestamp(raw_value)
+
+        if (translations := instance.get("custom_translations")) is not None:
+            instance["custom_translations"] = Jsonb(translations)
 
         instance = super().update_instance(instance)
         return instance

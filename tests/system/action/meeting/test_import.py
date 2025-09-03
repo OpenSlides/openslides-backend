@@ -15,6 +15,7 @@ from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler, performance
 
 
+@pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
