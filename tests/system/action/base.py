@@ -565,13 +565,12 @@ class BaseActionTestCase(BaseSystemTestCase):
         lock_meeting: bool = False,
         lock_out_calling_user: bool = False,
     ) -> None:
-        self.create_meeting()
+        meeting_data = {"locked_from_inside": True} if lock_meeting else {}
+        self.create_meeting(meeting_data={meeting_data})
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         if models:
             self.set_models(models)
-        if lock_meeting:
-            self.set_models({"meeting/1": {"locked_from_inside": True}})
         meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
         if lock_out_calling_user:
             self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})

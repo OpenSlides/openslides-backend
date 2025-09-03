@@ -1,6 +1,6 @@
 import re
 from collections.abc import Callable, Iterable
-from decimal import InvalidOperation
+from decimal import InvalidOperation, Decimal
 from typing import Any, cast
 
 import fastjsonschema
@@ -113,9 +113,7 @@ def check_x_list(value: Any, fn: Callable) -> bool:
 
 
 def check_decimal(value: Any) -> bool:
-    return value is None or bool(
-        isinstance(value, str) and DECIMAL_PATTERN.match(value)
-    )
+    return value is None or isinstance(value, Decimal)
 
 
 def check_json(value: Any, root: bool = True) -> bool:
@@ -273,7 +271,8 @@ class Checker:
     def check_model(self, collection: str, model: dict[str, Any]) -> None:
         if self.repair and collection in self.fields_to_remove:
             [model.pop(field, None) for field in self.fields_to_remove[collection]]
-
+        if collection == "user":
+            pass
         errors = self.check_normal_fields(model, collection)
 
         if not errors:
@@ -333,6 +332,8 @@ class Checker:
 
     def check_types(self, model: dict[str, Any], collection: str) -> None:
         for field in model.keys():
+            if field == "imported_at":
+                pass
             field_type = self.get_type_from_collection(field, collection)
             enum = self.get_enum_from_collection_field(field, collection)
 
