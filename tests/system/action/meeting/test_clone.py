@@ -3132,6 +3132,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_with_structured_published_orga_files(self) -> None:
+        self.create_meeting()
         self.set_models(self.test_models_with_admin)
         self.set_models(
             {
@@ -3151,7 +3152,6 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
                 },
                 "mediafile/1": {
-                    "id": 1,
                     "title": "Mother of all directories (MOAD)",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "child_ids": [2, 3],
@@ -3160,7 +3160,6 @@ class MeetingClone(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": 1,
                 },
                 "meeting_mediafile/10": {
-                    "id": 10,
                     "is_public": False,
                     "meeting_id": 1,
                     "mediafile_id": 1,
@@ -3168,7 +3167,6 @@ class MeetingClone(BaseActionTestCase):
                     "inherited_access_group_ids": [1, 2],
                 },
                 "mediafile/2": {
-                    "id": 2,
                     "title": "Child_of_mother_of_all_directories.xlsx",
                     "filename": "COMOAD.xlsx",
                     "filesize": 10000,
@@ -3179,14 +3177,12 @@ class MeetingClone(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": 1,
                 },
                 "meeting_mediafile/20": {
-                    "id": 20,
                     "is_public": False,
                     "meeting_id": 1,
                     "mediafile_id": 2,
                     "inherited_access_group_ids": [1, 2],
                 },
                 "mediafile/3": {
-                    "id": 3,
                     "title": "Child_of_mother_of_all_directories.pdf",
                     "filename": "COMOAD.pdf",
                     "filesize": 750000,
@@ -3198,7 +3194,6 @@ class MeetingClone(BaseActionTestCase):
                     "published_to_meetings_in_organization_id": 1,
                 },
                 "meeting_mediafile/30": {
-                    "id": 30,
                     "is_public": False,
                     "meeting_id": 1,
                     "mediafile_id": 3,
@@ -3207,7 +3202,52 @@ class MeetingClone(BaseActionTestCase):
             }
         )
 
-        self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        # TODO: Assert expected model results
+        models: dict[str, dict[str, Any]] = {
+            ONE_ORGANIZATION_FQID: {
+                "mediafile_ids": [1, 2, 3],
+                "published_mediafile_ids": [1, 2, 3],
+            },
+            "meeting/2": {
+                "meeting_mediafile_ids": [31, 32, 33],
+            },
+            "group/4": {
+                "meeting_mediafile_access_group_ids": [31],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+            "group/5": {
+                "meeting_mediafile_access_group_ids": [31],
+                "meeting_mediafile_inherited_access_group_ids": [31, 32, 33],
+            },
+            "mediafile/1": {
+                "meeting_mediafile_ids": [10, 31],
+            },
+            "meeting_mediafile/31": {
+                "is_public": False,
+                "meeting_id": 2,
+                "mediafile_id": 1,
+                "access_group_ids": [4, 5],
+                "inherited_access_group_ids": [4, 5],
+            },
+            "mediafile/2": {
+                "meeting_mediafile_ids": [20, 32],
+            },
+            "meeting_mediafile/32": {
+                "is_public": False,
+                "meeting_id": 2,
+                "mediafile_id": 2,
+                "inherited_access_group_ids": [4, 5],
+            },
+            "mediafile/3": {
+                "meeting_mediafile_ids": [30, 33],
+            },
+            "meeting_mediafile/33": {
+                "is_public": False,
+                "meeting_id": 2,
+                "mediafile_id": 3,
+                "inherited_access_group_ids": [4, 5],
+            },
+        }
+        for fqid, model in models.items():
+            self.assert_model_exists(fqid, model)

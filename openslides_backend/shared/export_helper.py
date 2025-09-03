@@ -74,24 +74,37 @@ def export_meeting(
                 for mm_id, mm_data in meeting_mediafiles.items()
                 if mm_data["mediafile_id"] not in mediafile_ids
             }
-            unknown_mediafiles = datastore.get_many(
-                [
-                    GetManyRequest(
-                        "mediafile",
+            unknown_mediafiles: dict[int, dict[str, Any]] = {}
+            next_file_ids = [
+                mm["mediafile_id"] for mm in mm_with_unknown_mediafiles.values()
+            ]
+            while next_file_ids:
+                unknown_mediafiles.update(
+                    datastore.get_many(
                         [
-                            mm["mediafile_id"]
-                            for mm in mm_with_unknown_mediafiles.values()
+                            GetManyRequest(
+                                "mediafile",
+                                next_file_ids,
+                                [
+                                    "id",
+                                    "owner_id",
+                                    "published_to_meetings_in_organization_id",
+                                    "parent_id",
+                                    "child_ids",
+                                ],
+                            ),
                         ],
-                        [
-                            "id",
-                            "owner_id",
-                            "meeting_mediafile_ids",
-                            "published_to_meetings_in_organization_id",
-                        ],
-                    ),
-                ],
-                use_changed_models=False,
-            )["mediafile"]
+                        use_changed_models=False,
+                    )["mediafile"]
+                )
+                next_file_ids = list(
+                    {
+                        parent_id
+                        for m in unknown_mediafiles.values()
+                        if (parent_id := m.get("parent_id"))
+                    }
+                    - set(unknown_mediafiles)
+                )
             for mm_id, mm_data in mm_with_unknown_mediafiles.items():
                 mediafile_id = mm_data["mediafile_id"]
                 mediafile = unknown_mediafiles.get(mediafile_id)
@@ -103,6 +116,11 @@ def export_meeting(
                 ):
                     mediafile["meeting_mediafile_ids"] = [mm_id]
                     results.setdefault("mediafile", {})[mediafile_id] = mediafile
+                    while (
+                        parent_id := mediafile.get("parent_id")
+                    ) and parent_id not in results["mediafile"]:
+                        mediafile = unknown_mediafiles[parent_id]
+                        results["mediafile"][parent_id] = mediafile
 
     else:
         results = {}
