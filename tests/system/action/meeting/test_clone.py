@@ -3130,3 +3130,84 @@ class MeetingClone(BaseActionTestCase):
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_clone_with_structured_published_orga_files(self) -> None:
+        self.set_models(self.test_models_with_admin)
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "mediafile_ids": [1, 2, 3],
+                    "published_mediafile_ids": [1, 2, 3],
+                },
+                "meeting/1": {
+                    "meeting_mediafile_ids": [10, 20, 30],
+                },
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "mediafile/1": {
+                    "id": 1,
+                    "title": "Mother of all directories (MOAD)",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "child_ids": [2, 3],
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/10": {
+                    "id": 10,
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "mediafile/2": {
+                    "id": 2,
+                    "title": "Child_of_mother_of_all_directories.xlsx",
+                    "filename": "COMOAD.xlsx",
+                    "filesize": 10000,
+                    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "meeting_mediafile_ids": [20],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/20": {
+                    "id": 20,
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "mediafile/3": {
+                    "id": 3,
+                    "title": "Child_of_mother_of_all_directories.pdf",
+                    "filename": "COMOAD.pdf",
+                    "filesize": 750000,
+                    "mimetype": "application/pdf",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "pdf_information": {"pages": 1},
+                    "meeting_mediafile_ids": [30],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/30": {
+                    "id": 30,
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 3,
+                    "inherited_access_group_ids": [1, 2],
+                },
+            }
+        )
+
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        # TODO: Assert expected model results
