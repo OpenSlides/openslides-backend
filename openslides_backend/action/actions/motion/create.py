@@ -40,6 +40,7 @@ class MotionCreate(
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
             "number",
+            "diff_version",
             "additional_submitter",
             "sort_parent_id",
             "category_id",
