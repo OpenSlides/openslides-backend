@@ -1,7 +1,7 @@
 import time
 from decimal import Decimal
 from typing import Any, cast
-
+from datetime import datetime
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.models.checker import (
     Checker,
@@ -131,6 +131,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             if field in instance:
                 meeting[field] = instance.pop(field)
 
+        # Still Necessary?
         vote_weight_min = Decimal(
             MeetingUser.vote_weight.constraints.get("minimum", "0.000001")
         )
@@ -208,7 +209,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             text2="",
         )
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
         mediafiles = {
             int(id_): data for id_, data in meeting_json.pop("mediafile", {}).items()
