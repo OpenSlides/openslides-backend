@@ -86,6 +86,7 @@ class Migration(BaseModelMigration):
                         start=next_entry_id,
                     )
                 }
+                next_entry_id += len(models_to_entry_ids)
                 if isinstance(info, list):
                     use_info: dict[str, list[str]] = {
                         mod_fqid: info for mod_fqid in models_to_entry_ids
@@ -105,7 +106,6 @@ class Migration(BaseModelMigration):
                     all_current_fqids,
                     round(position["timestamp"]),
                 )
-                next_entry_id += len(models_to_entry_ids)
                 events.extend(
                     RequestCreateEvent(fqid, fields=cast(dict[str, Any], fields))
                     for fqid, fields in create_events
