@@ -3075,10 +3075,7 @@ class MeetingImport(BaseActionTestCase):
             get_route_path(PresenterView.presenter_route),
             json=[{"presenter": "export_meeting", "data": {"meeting_id": 1}}],
         )
-        if isinstance(response.json, list) and len(response.json) == 1:
-            status_code, export = (response.status_code, response.json[0])
-        else:
-            status_code, export = (response.status_code, response.json)
+        status_code, export = (response.status_code, response.json[0])
         assert status_code == 200
         self.auth_data = deepcopy(self.client.auth_data)
         self.set_models(

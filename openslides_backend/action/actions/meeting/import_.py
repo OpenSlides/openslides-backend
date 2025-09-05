@@ -862,8 +862,11 @@ class MeetingImport(
         models_to_remove: set[tuple[str, int]] = set(),
     ) -> None:
         models_to_remove.add((collection, model_id))
-        for relation_field in model_registry[collection]().get_relation_fields():
-            if to_remove := content.get(relation_field.own_field_name):
+        for field_name in content:
+            if isinstance(
+                (relation_field := model_registry[collection]().get_field(field_name)),
+                BaseRelationField,
+            ) and (to_remove := content.get(field_name)):
                 if isinstance(to_remove, list):
                     for target in to_remove:
                         self.remove_back_relation(

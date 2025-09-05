@@ -630,5 +630,5 @@ class TestExportMeeting(BasePresenterTestCase):
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
-        # Should not include mediafile ids bc presenter does not include non-meeting mediafiles
+        # Should not include mediafile ids bc presenter does not include orga mediafiles
         assert data["mediafile"] == {}
