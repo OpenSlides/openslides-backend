@@ -45,8 +45,8 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
         self.logger.debug("Initialize OpenSlides Backend WSGI application.")
         self.view = view
         self.services = services
-        if issubclass(view, ActionView):
-            self.create_initial_data()
+        #         if issubclass(view, ActionView):
+        #    self.create_initial_data()
 
     def create_initial_data(self) -> None:
         if is_truthy(self.env.OPENSLIDES_BACKEND_CREATE_INITIAL_DATA):
