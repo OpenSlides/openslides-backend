@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
 from typing import Any, cast
+import logging
 
 from datastore.migrations import BaseModelMigration
 from datastore.shared.services.read_database import HistoryInformation
@@ -116,10 +117,18 @@ class Migration(BaseModelMigration):
                     )
                     for fqid, fields in update_events
                 )
+                logging.info(f"\n\nPosition: {position_nr} \nInformation: {position.get('information')}\n")
+                logging.info(f"Create Events: {create_events}")
+                logging.info(f"Update Events: {update_events}")
         all_update_fqids: set[str] = {
             *model_fqid_to_entry_ids,
             *user_fqid_to_position_ids,
         }
+        logging.error(f"All current FQIDS: {all_current_fqids}")
+        logging.error(f"All update FQIDS: {all_update_fqids}")
+        for event in events:
+            if event.fqid in all_update_fqids and event.fqid in create_events:
+                logging.warning(f"Is in both: {event.fqid}: {event.fields} {event.list_fields}")
         for fqid in all_update_fqids:
             payload: dict[str, Any] = {}
             if posit_ids := user_fqid_to_position_ids.get(fqid):

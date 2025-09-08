@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict
 from typing import Any, cast
+import logging
 
 from .interfaces.event import ListFields
 from .patterns import fqid_from_collection_and_id, id_from_fqid
@@ -80,4 +81,17 @@ def calculate_history_event_payloads(
             },
         )
     )
+    flag = False
+    for item in update_events:
+        if item == "history_entry/286":
+            flag = True
+        if flag:
+            flag = False
+            logging.error(f"Update HE/286: {item}")
+    for item in update_events:
+        if item == "history_entry/286":
+            flag = True
+        if flag:
+            flag = False
+            logging.error(f"Create HE/286: {item}")
     return create_events, update_events
