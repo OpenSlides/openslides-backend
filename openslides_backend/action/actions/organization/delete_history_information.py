@@ -6,6 +6,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ...action import Action, Event
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..history_position.delete import HistoryPositionDelete
 
 
 @register_action("organization.delete_history_information")
@@ -20,7 +21,10 @@ class DeleteHistoryInformation(Action):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        self.datastore.delete_history_information()
+        all_positions = self.datastore.get_all("history_position", ["id"])
+        self.execute_other_action(
+            HistoryPositionDelete, [{"id": id_} for id_ in all_positions]
+        )
         return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
