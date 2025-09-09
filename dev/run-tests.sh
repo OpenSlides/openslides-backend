@@ -18,7 +18,7 @@ done
 
 # Setup
 IMAGE_TAG=openslides-backend-tests
-LOCAL_PWD=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+LOCAL_PWD=$(dirname "$0")
 export COMPOSE_DOCKER_CLI_BUILD=0
 
 # Helpers
