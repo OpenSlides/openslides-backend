@@ -1,4 +1,3 @@
-from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -18,17 +17,23 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 }
             }
         )
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/89": {
-                "title": "motion 89",
-                "meeting_id": 1,
-                "state_id": 1,
-                "sequential_number": 89,
-            },
-        }
 
     def test_update_correct_all_fields(self) -> None:
-        self.set_models(self.permission_test_models)
+        self.set_models(
+            {
+                "motion/89": {
+                    "title": "motion 89",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "sequential_number": 89,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion/89",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
+            }
+        )
         response = self.request(
             "motion_category.update",
             {
@@ -90,14 +95,14 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion_category.update",
             {"id": 111, "name": "name_Xcdfgee"},
         )
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion_category.update",
             {"id": 111, "name": "name_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,
@@ -105,7 +110,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_update_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
+            {},
             "motion_category.update",
             {"id": 111, "name": "name_Xcdfgee"},
         )

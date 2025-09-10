@@ -23,6 +23,16 @@ class MotionDeleteActionTest(BaseActionTestCase):
                 "lead_motion_id": 111,
                 "sequential_number": 222,
             },
+            "list_of_speakers/23": {
+                "content_object_id": "motion/112",
+                "sequential_number": 11,
+                "meeting_id": 1,
+            },
+            "list_of_speakers/42": {
+                "content_object_id": "motion/222",
+                "sequential_number": 12,
+                "meeting_id": 1,
+            },
             "motion_state/1": {"allow_submitter_edit": True},
             "motion_submitter/12": {
                 "meeting_id": 1,
@@ -87,12 +97,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         self.set_models(
             {
-                "list_of_speakers/222": {
-                    "closed": False,
-                    "content_object_id": "motion/111",
-                    "meeting_id": 1,
-                    "sequential_number": 222,
-                },
+                "list_of_speakers/111": {"closed": False},
                 "agenda_item/333": {
                     "comment": "test_comment_ewoirzewoirioewr",
                     "content_object_id": "motion/111",

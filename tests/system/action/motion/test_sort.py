@@ -15,6 +15,11 @@ class MotionSortActionTest(BaseActionTestCase):
                 "state_id": 1,
                 "meeting_id": 1,
             },
+            "list_of_speakers/23": {
+                "content_object_id": "motion/22",
+                "sequential_number": 11,
+                "meeting_id": 1,
+            },
         }
 
     def test_sort_single_node_correct(self) -> None:

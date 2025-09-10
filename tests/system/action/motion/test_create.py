@@ -72,6 +72,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "sequential_number": 78,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/78",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
                 "tag/56": {"name": "name_56", "meeting_id": 1},
                 "meeting_mediafile/80": {
                     "meeting_id": 1,

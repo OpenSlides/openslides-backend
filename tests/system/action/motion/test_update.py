@@ -28,6 +28,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "modified_final_version": "blablabla",
                 "amendment_paragraphs": Jsonb({"3": "testtesttest"}),
             },
+            "list_of_speakers/23": {
+                "content_object_id": "motion/111",
+                "sequential_number": 11,
+                "meeting_id": 1,
+            },
             "meeting_user/1": {
                 "meeting_id": 1,
                 "user_id": 1,
@@ -206,7 +211,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "title": "title_ddyvpXch",
                     "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -347,7 +356,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "title": "title_ddyvpXch",
                     "meeting_id": 1,
                     "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -576,7 +589,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "title": "blocky",
                     "sequential_number": 4,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/4",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
@@ -630,6 +647,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_permission_metadata_and_submitter(self) -> None:
         self.setup_can_manage_metadata()
         self.permission_test_models["meeting_user/1"] = {"motion_submitter_ids": [1]}
+        del self.permission_test_models["list_of_speakers/23"]
         self.set_models(self.permission_test_models)
         self.set_models(
             {

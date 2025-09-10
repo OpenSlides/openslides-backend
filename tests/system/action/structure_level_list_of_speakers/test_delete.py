@@ -14,6 +14,7 @@ class StructureLevelListOfSpeakersDeleteTest(BaseActionTestCase):
                     "sequential_number": 32,
                     "meeting_id": 1,
                 },
+                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/32"},
                 "structure_level/1": {
                     "name": "monkey",
                     "meeting_id": 1,
