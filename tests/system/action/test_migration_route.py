@@ -4,6 +4,8 @@ from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations import (
     get_backend_migration_index,
@@ -18,6 +20,9 @@ from tests.util import Response
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
+@pytest.mark.skip(
+    reason="Test not relevant anymore after migration to relational database"
+)
 class BaseMigrationRouteTest(BaseInternalRequestTest):
     """
     Uses the anonymous client to call the migration route.

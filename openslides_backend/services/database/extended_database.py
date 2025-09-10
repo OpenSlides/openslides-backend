@@ -121,11 +121,18 @@ class ExtendedDatabase(Database):
             self._changed_models[collection][id_]["id"] = id_
 
     def apply_to_be_deleted(self, fqid: FullQualifiedId) -> None:
-        """Meaning both: to be deleted in the future and the past."""
+        """
+        The model will be marked as to be deleted.
+        This will not be undone when it is marked as deleted.
+        """
         self._to_be_deleted.add(fqid)
 
     def apply_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> None:
-        """Meaning both: to be deleted in the future and the past. Only used for protected models deletion."""
+        """
+        The model will be marked as to be deleted.
+        This will not be undone when it is marked as deleted.
+        Only used for protected models deletion.
+        """
         self._to_be_deleted_for_protected.add(fqid)
 
     def get_changed_model(
@@ -139,11 +146,16 @@ class ExtendedDatabase(Database):
         return self._changed_models.get(collection, dict())
 
     def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool:
-        """Meaning both: to be deleted in the future and the past."""
+        """
+        Returns if the model was ever marked for deletion.
+        """
         return fqid in self._to_be_deleted
 
     def is_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> bool:
-        """Meaning both: to be deleted in the future and the past. Only used for protected models deletion."""
+        """
+        Returns if the model was ever marked for deletion.
+        Only used for protected models deletion.
+        """
         return fqid in self._to_be_deleted_for_protected or fqid in self._to_be_deleted
 
     def get(

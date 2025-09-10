@@ -57,11 +57,12 @@ class Model(metaclass=ModelMetaClass):
         """
         return bool(self.try_get_field(field_name))
 
-    def try_get_field(self, field_name: str) -> fields.Field | None:
+    @classmethod
+    def try_get_field(cls, field_name: str) -> fields.Field | None:
         """
         Returns the field for the given field name or None if field is not found.
         """
-        field = getattr(self, field_name, None)
+        field = getattr(cls, field_name, None)
         if isinstance(field, fields.Field):
             return field
         return None

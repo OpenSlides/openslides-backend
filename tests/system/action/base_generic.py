@@ -54,6 +54,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             final_info_code,
             missing_handled_attributes,
             im_table_code,
+            create_trigger_1_1_relation_not_null_code,
             create_trigger_relationlistnotnull_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_notify_code,
@@ -62,6 +63,12 @@ class BaseGenericTestCase(BaseActionTestCase):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute(
-                    table_name_code + im_table_code + view_name_code + alter_table_code
+                    table_name_code
+                    + im_table_code
+                    + view_name_code
+                    + alter_table_code
+                    #  + create_trigger_1_1_relation_not_null_code
+                    + create_trigger_relationlistnotnull_code
+                    + create_trigger_unique_ids_pair_code
                 )
         return

@@ -11,7 +11,6 @@ from .base import BaseActionTestCase
 
 
 class GeneralActionCommandFormat(BaseActionTestCase):
-    # TODO later: either delete commented out code or implement locked fields
     """
     Tests the interface to datastore-command with one WriteRequest
     per payload-action and it's own locked_fields
@@ -58,6 +57,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 2)
         self.assertEqual(len(write_requests[0].events), 2)
+        # TODO later: either delete commented out code or implement locked fields
         # self.assertCountEqual(
         #     write_requests[0].locked_fields.keys(),
         #     [
@@ -101,6 +101,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 1)
         self.assertEqual(len(write_requests[0].events), 3)
+        # TODO later: either delete commented out code or implement locked fields
         # self.assertCountEqual(
         #     write_requests[0].locked_fields.keys(),
         #     [

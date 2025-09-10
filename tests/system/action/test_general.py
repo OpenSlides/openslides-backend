@@ -69,6 +69,9 @@ class GeneralActionWSGITester(BaseActionTestCase):
             response.json["message"],
         )
 
+    @pytest.mark.skip(
+        reason="Test not relevant anymore after migration to relational database"
+    )
     def test_migrations_route(self) -> None:
         response = self.client.post(
             get_route_path(ActionView.migrations_route),

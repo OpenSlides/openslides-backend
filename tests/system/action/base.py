@@ -236,6 +236,11 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "meeting_id": meeting_id,
                     **motion_data,
                 },
+                f"list_of_speakers/{base}": {
+                    "content_object_id": f"motion/{base}",
+                    "sequential_number": base,
+                    "meeting_id": meeting_id,
+                },
             }
         )
 
