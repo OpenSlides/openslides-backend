@@ -74,7 +74,7 @@ class Migration(BaseModelMigration):
                 models_to_entry_ids = {
                     m_fqid: e_id
                     for e_id, m_fqid in enumerate(
-                        sorted(
+                        {
                             fqid
                             for fqid in (
                                 info
@@ -82,7 +82,7 @@ class Migration(BaseModelMigration):
                                 else position_to_fqids[position_nr]
                             )
                             if collection_from_fqid(fqid) in collections
-                        ),
+                        },
                         start=next_entry_id,
                     )
                 }
