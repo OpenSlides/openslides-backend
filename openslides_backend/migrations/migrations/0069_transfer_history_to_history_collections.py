@@ -1,5 +1,4 @@
 import json
-from collections import defaultdict
 from typing import Any, cast
 
 from datastore.migrations import BaseModelMigration
@@ -56,8 +55,6 @@ class Migration(BaseModelMigration):
         cur_max_pos = 0
         next_entry_id = 1
         events: list[BaseRequestEvent] = []
-        user_fqid_to_position_ids: dict[str, list[int]] = defaultdict(list)
-        model_fqid_to_entry_ids: dict[str, list[int]] = defaultdict(list)
         while cur_max_pos <= max_position:
             cur_min_pos = cur_max_pos
             cur_max_pos += self.chunk_length
