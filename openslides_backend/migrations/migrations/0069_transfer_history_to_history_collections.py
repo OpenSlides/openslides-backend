@@ -116,15 +116,4 @@ class Migration(BaseModelMigration):
                     )
                     for fqid, fields in update_events
                 )
-        all_update_fqids: set[str] = {
-            *model_fqid_to_entry_ids,
-            *user_fqid_to_position_ids,
-        }
-        for fqid in all_update_fqids:
-            payload: dict[str, Any] = {}
-            if posit_ids := user_fqid_to_position_ids.get(fqid):
-                payload["history_position_ids"] = posit_ids
-            if entry_ids := model_fqid_to_entry_ids.get(fqid):
-                payload["history_entry_ids"] = entry_ids
-            events.append(RequestUpdateEvent(fqid, payload))
         return events
