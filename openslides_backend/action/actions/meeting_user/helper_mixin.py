@@ -16,8 +16,7 @@ class MeetingUserHelperMixin(Action):
                 [{"meeting_id": meeting_id, "user_id": user_id}],
             )
             id_ = action_results[0]["id"]  # type: ignore
-            # TODO this line may be important (for the import?) see set data
-            # self.datastore.get_changed_model("meeting_user", id_).pop("meta_new", None)
+            self.datastore.get_changed_model("meeting_user", id_).pop("meta_new", None)
             return id_
 
     def get_meeting_user(

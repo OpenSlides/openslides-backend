@@ -1,5 +1,4 @@
-import time
-from decimal import Decimal
+from datetime import datetime
 from typing import Any, cast
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
@@ -8,7 +7,7 @@ from openslides_backend.models.checker import (
     CheckException,
     external_motion_fields,
 )
-from openslides_backend.models.models import Meeting, MeetingUser
+from openslides_backend.models.models import Meeting
 from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
@@ -126,33 +125,15 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        # Set proper types for TimestampFields
+        for field_name in ["start_time", "end_time"]:
+            if (value := instance.get(field_name)) and isinstance(value, int):
+                instance[field_name] = datetime.fromtimestamp(value)
+
         meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
-
-        vote_weight_min = Decimal(
-            MeetingUser.vote_weight.constraints.get("minimum", "0.000001")
-        )
-        for meeting_user in meeting_json.get("meeting_user", {}).values():
-            if (value := meeting_user.get("vote_weight")) is not None:
-                if Decimal(value) < vote_weight_min:
-                    meeting_user["vote_weight"] = "0.000001"
-            else:
-                user_id = meeting_user.get("user_id", 0)
-                value = (
-                    meeting_json.get("user", {})
-                    .get(str(user_id), "0")
-                    .get("default_vote_weight")
-                )
-                if value is not None and Decimal(value) < vote_weight_min:
-                    meeting_user["vote_weight"] = "0.000001"
-
-        # Necessary, because the check otherwise raise exception, even if user will not be imported
-        for user in meeting_json.get("user", {}).values():
-            if (value := user.get("default_vote_weight")) is not None:
-                if Decimal(value) < vote_weight_min:
-                    user["default_vote_weight"] = "0.000001"
 
         # Necessary for orga-wide mediafiles
         mediafiles = self.datastore.get_many(
@@ -208,7 +189,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             text2="",
         )
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
         mediafiles = {
             int(id_): data for id_, data in meeting_json.pop("mediafile", {}).items()

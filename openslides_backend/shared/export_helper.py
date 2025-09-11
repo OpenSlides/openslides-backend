@@ -133,6 +133,28 @@ def export_meeting(
                         id_ = id_from_fqid(entry[field_name])
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
+
+    for collection, instances in export.items():
+        if collection == "_migration_index":
+            continue
+        model = model_registry[collection]()
+        # Exclude view fields
+        all_collection_fields = {
+            field.get_own_field_name() for field in model.get_fields()
+        }
+        for id, data in instances.items():
+            for field_name, value in data.items():
+                if field_name not in all_collection_fields:
+                    pass
+            instances[id] = {
+                field_name: value
+                for field_name, value in data.items()
+                if field_name in all_collection_fields and value is not None
+            }
+        # Sort instances by id within each collection
+        export[collection] = dict(
+            sorted(instances.items(), key=lambda item: int(item[0]))
+        )
     return export
 
 

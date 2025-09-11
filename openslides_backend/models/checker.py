@@ -1,6 +1,7 @@
 import re
 from collections.abc import Callable, Iterable
-from decimal import InvalidOperation
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any, cast
 
 import fastjsonschema
@@ -32,7 +33,6 @@ from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import (
     COLOR_PATTERN,
-    DECIMAL_PATTERN,
     EXTENSION_REFERENCE_IDS_PATTERN,
     collection_and_id_from_fqid,
 )
@@ -88,6 +88,10 @@ def check_number(value: Any) -> bool:
     return value is None or isinstance(value, int)
 
 
+def check_timestamp(value: Any) -> bool:
+    return value is None or isinstance(value, datetime)
+
+
 def check_float(value: Any) -> bool:
     return value is None or isinstance(value, (int, float))
 
@@ -113,9 +117,7 @@ def check_x_list(value: Any, fn: Callable) -> bool:
 
 
 def check_decimal(value: Any) -> bool:
-    return value is None or bool(
-        isinstance(value, str) and DECIMAL_PATTERN.match(value)
-    )
+    return value is None or isinstance(value, Decimal)
 
 
 def check_json(value: Any, root: bool = True) -> bool:
@@ -136,7 +138,7 @@ checker_map: dict[type[Field], Callable[..., bool]] = {
     HTMLPermissiveField: check_string,
     GenericRelationField: check_string,
     IntegerField: check_number,
-    TimestampField: check_number,
+    TimestampField: check_timestamp,
     RelationField: check_number,
     FloatField: check_float,
     BooleanField: check_boolean,
