@@ -149,6 +149,7 @@ class BaseSystemTestCase(TestCase):
         Do NOT use in final tests since it takes a long time.
         """
         example_data = get_initial_data_file(EXAMPLE_DATA_FILE)
+        # TODO: apply `convert_to_non_json_data_types` from PR#3119 to example_data before processing
         self._load_data(example_data)
 
     def load_json_data(self, filename: str) -> None:

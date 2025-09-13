@@ -2,9 +2,11 @@ import re
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from math import floor
 from typing import Any, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
@@ -33,6 +35,7 @@ from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import (
     COLOR_PATTERN,
+    DECIMAL_PATTERN,
     EXTENSION_REFERENCE_IDS_PATTERN,
     collection_and_id_from_fqid,
 )
@@ -88,10 +91,6 @@ def check_number(value: Any) -> bool:
     return value is None or isinstance(value, int)
 
 
-def check_timestamp(value: Any) -> bool:
-    return value is None or isinstance(value, datetime)
-
-
 def check_float(value: Any) -> bool:
     return value is None or isinstance(value, (int, float))
 
@@ -117,7 +116,13 @@ def check_x_list(value: Any, fn: Callable) -> bool:
 
 
 def check_decimal(value: Any) -> bool:
-    return value is None or isinstance(value, Decimal)
+    return (
+        value is None
+        or bool(isinstance(value, str) and DECIMAL_PATTERN.match(value))
+        or isinstance(value, Decimal)
+        and value.is_finite()
+        and cast(int, value.normalize().as_tuple().exponent) >= -6
+    )
 
 
 def check_json(value: Any, root: bool = True) -> bool:
@@ -127,9 +132,17 @@ def check_json(value: Any, root: bool = True) -> bool:
         return True
     if isinstance(value, list):
         return all(check_json(x, root=False) for x in value)
-    if isinstance(value, dict):
+    elif isinstance(value, dict):
         return all(check_json(x, root=False) for x in value.values())
+    elif isinstance(value, Jsonb):
+        return check_json(value.obj, root=True)
     return False
+
+
+def check_timestamp(value: Any) -> bool:
+    if isinstance(value, datetime):
+        value = floor(value.timestamp())
+    return check_number(value)
 
 
 checker_map: dict[type[Field], Callable[..., bool]] = {

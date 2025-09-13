@@ -164,11 +164,6 @@ class MeetingClone(BaseActionTestCase):
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
-                "list_of_speakers/1": {
-                    "content_object_id": "motion/1",
-                    "meeting_id": 1,
-                    "sequential_number": 1,
-                },
             }
         )
         response = self.request(
@@ -349,24 +344,10 @@ class MeetingClone(BaseActionTestCase):
                 "recommendation_extension_reference_ids": ["motion/23"],
             },
         )
-        self.set_models(
-            {
-                "list_of_speakers/1": {
-                    "meeting_id": 1,
-                    "content_object_id": "motion/22",
-                    "sequential_number": 1,
-                },
-                "list_of_speakers/2": {
-                    "meeting_id": 1,
-                    "content_object_id": "motion/23",
-                    "sequential_number": 2,
-                },
-            }
-        )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/2", {"motion_ids": [24, 25], "list_of_speakers_ids": [3, 4]}
+            "meeting/2", {"motion_ids": [24, 25], "list_of_speakers_ids": [24, 25]}
         )
         self.assert_model_exists(
             "motion/24",

@@ -29,15 +29,6 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
 
     def test_one_los_empty(self) -> None:
         self.create_motion(1)
-        self.set_models(
-            {
-                "list_of_speakers/11": {
-                    "meeting_id": 1,
-                    "sequential_number": 1,
-                    "content_object_id": "motion/1",
-                },
-            }
-        )
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 1})
         self.assert_status_code(response, 200)
 
@@ -61,24 +52,9 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.create_motion(1, 3)
         self.set_models(
             {
-                "list_of_speakers/11": {
-                    "meeting_id": 1,
-                    "sequential_number": 11,
-                    "content_object_id": "motion/1",
-                },
-                "speaker/1": {"list_of_speakers_id": 11, "meeting_id": 1},
-                "speaker/2": {"list_of_speakers_id": 11, "meeting_id": 1},
-                "list_of_speakers/12": {
-                    "meeting_id": 1,
-                    "sequential_number": 12,
-                    "content_object_id": "motion/2",
-                },
-                "list_of_speakers/13": {
-                    "meeting_id": 1,
-                    "sequential_number": 13,
-                    "content_object_id": "motion/3",
-                },
-                "speaker/3": {"list_of_speakers_id": 13, "meeting_id": 1},
+                "speaker/1": {"list_of_speakers_id": 1, "meeting_id": 1},
+                "speaker/2": {"list_of_speakers_id": 1, "meeting_id": 1},
+                "speaker/3": {"list_of_speakers_id": 3, "meeting_id": 1},
             }
         )
 
