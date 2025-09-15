@@ -29,7 +29,6 @@ class DeleteAction(Action):
         this_fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
 
         if self.datastore.is_to_be_deleted(this_fqid):
-            # Been there. Done that.
             return instance
         self.datastore.apply_to_be_deleted(this_fqid)
 
@@ -50,13 +49,12 @@ class DeleteAction(Action):
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
         delete_actions: list[tuple[FullQualifiedId, type[Action], ActionData]] = []
-        for field_name in db_instance:
+        for field_name, value in db_instance.items():
             if field_name == "id":
                 continue
             field = cast(BaseRelationField, self.model.get_field(field_name))
             # Check on_delete.
             # Extract all foreign keys as fqids from the model
-            value = db_instance.get(field_name, [])
             foreign_fqids = transform_to_fqids(value, field.get_target_collection())
             if field.on_delete != OnDelete.SET_NULL:
                 if field.on_delete == OnDelete.PROTECT:

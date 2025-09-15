@@ -67,7 +67,7 @@ class BaseGenericTestCase(BaseActionTestCase):
                     + im_table_code
                     + view_name_code
                     + alter_table_code
-                    #  + create_trigger_1_1_relation_not_null_code
+                    + create_trigger_1_1_relation_not_null_code
                     + create_trigger_relationlistnotnull_code
                     + create_trigger_unique_ids_pair_code
                 )

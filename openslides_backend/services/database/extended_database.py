@@ -633,7 +633,6 @@ class ExtendedDatabase(Database):
                     collection, MappedFields(), False
                 )
                 for collection in model_registry
-                if collection != "motion_statute_paragraph"
             }.items()
             if v
         }

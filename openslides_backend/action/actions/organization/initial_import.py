@@ -1,15 +1,10 @@
 from collections.abc import Iterable
-from datetime import datetime
-from decimal import Decimal
 from typing import Any
-
-from psycopg.types.json import Jsonb
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
-from ....models.base import model_registry
+from ....models.base import json_dict_to_non_json_data_types
 from ....models.checker import Checker, CheckException
-from ....models.fields import DecimalField, JSONField, TimestampField
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
@@ -67,7 +62,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         if not data:
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
-        self.convert_to_non_json_data_types(data)
+        json_dict_to_non_json_data_types(data)
         # check datavalidation
         checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:
@@ -88,22 +83,6 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             False,
         ):
             raise ActionException("Datastore is not empty.")
-
-    def convert_to_non_json_data_types(self, data: dict[str, Any]) -> None:
-        "json cannot hold datetime, Decimal and Jsonb values like psycopg expects."
-        for collection, elements in data.items():
-            if collection == "_migration_index":
-                continue
-            model_description = model_registry[collection]
-            for element in elements.values():
-                for field_name, value in element.items():
-                    field = model_description.try_get_field(field_name)
-                    if isinstance(field, DecimalField):
-                        element[field_name] = Decimal(value)
-                    elif isinstance(field, TimestampField):
-                        element[field_name] = datetime.fromtimestamp(value)
-                    elif isinstance(field, JSONField):
-                        element[field_name] = Jsonb(value)
 
     def translate_organization_and_theme(self, data: dict[str, Any]) -> None:
         organization = data["organization"]["1"]
@@ -154,6 +133,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
         backend_migration_index = 1
+        # TODO set to fixed value because of lacking migrations
+        # needs to be readded in some shape or form
         # backend_migration_index = get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,

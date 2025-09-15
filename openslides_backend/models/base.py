@@ -1,10 +1,36 @@
 from collections.abc import Iterable
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+
+from psycopg.types.json import Jsonb
 
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection
 from . import fields
 
 model_registry: dict[Collection, type["Model"]] = {}
+
+
+def json_dict_to_non_json_data_types(json: dict[str, Any]) -> None:
+    """
+    json cannot hold datetime, Decimal and Jsonb values like psycopg expects.
+    Replaces all values to datetime, Decimal and Jsonb values as specified by their field type.
+    """
+    for collection, elements in json.items():
+        if collection == "_migration_index":
+            continue
+        model_description = model_registry[collection]
+        for element in elements.values():
+            for field_name, value in element.items():
+                field = model_description.try_get_field(field_name)
+                match type(field):
+                    case fields.DecimalField:
+                        element[field_name] = Decimal(value)
+                    case fields.TimestampField:
+                        element[field_name] = datetime.fromtimestamp(value)
+                    case fields.JSONField:
+                        element[field_name] = Jsonb(value)
 
 
 class ModelMetaClass(type):
