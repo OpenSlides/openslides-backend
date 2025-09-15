@@ -2,11 +2,11 @@ services:
     backend:
         build:
             context: ..
-            target: "$CONTEXT"
+            target: "${CONTEXT}"
             args:
-                CONTEXT: "$CONTEXT"
-        image: openslides-backend-$CONTEXT
-        user: $USER_ID:$GROUP_ID
+                CONTEXT: "${CONTEXT}"
+        image: openslides-backend-${CONTEXT}
+        user: ${USER_ID}:${GROUP_ID}
         ports:
             - "9002:9002"
             - "9003:9003"
