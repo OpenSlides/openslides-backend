@@ -1,5 +1,3 @@
-from typing import Any
-
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -8,19 +6,6 @@ class MotionSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(222)
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/22": {
-                "title": "motion22",
-                "sequential_number": 22,
-                "state_id": 1,
-                "meeting_id": 1,
-            },
-            "list_of_speakers/23": {
-                "content_object_id": "motion/22",
-                "sequential_number": 11,
-                "meeting_id": 1,
-            },
-        }
 
     def test_sort_single_node_correct(self) -> None:
         self.create_motion(222, 22)
@@ -164,16 +149,23 @@ class MotionSortActionTest(BaseActionTestCase):
             "Id in sort tree does not exist: 111", response.json["message"]
         )
 
+
+class MotionSortPermissionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting()
+        self.create_motion(1, 22)
+
     def test_sort_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )
 
     def test_sort_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
             Permissions.Motion.CAN_MANAGE,
@@ -181,7 +173,7 @@ class MotionSortActionTest(BaseActionTestCase):
 
     def test_sort_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
+            {},
             "motion.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )

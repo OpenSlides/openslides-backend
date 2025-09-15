@@ -4,48 +4,14 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionDeleteActionTest(BaseActionTestCase):
+class BaseMotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(1)
         self.create_motion(1, 111)
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/112": {
-                "title": "title_fgehemn",
-                "meeting_id": 1,
-                "state_id": 1,
-                "sequential_number": 112,
-            },
-            "motion/222": {
-                "title": "amendment to 111",
-                "meeting_id": 1,
-                "state_id": 1,
-                "lead_motion_id": 111,
-                "sequential_number": 222,
-            },
-            "list_of_speakers/23": {
-                "content_object_id": "motion/112",
-                "sequential_number": 11,
-                "meeting_id": 1,
-            },
-            "list_of_speakers/42": {
-                "content_object_id": "motion/222",
-                "sequential_number": 12,
-                "meeting_id": 1,
-            },
-            "motion_state/1": {"allow_submitter_edit": True},
-            "motion_submitter/12": {
-                "meeting_id": 1,
-                "motion_id": 111,
-                "meeting_user_id": 5,
-            },
-            "meeting_user/5": {
-                "meeting_id": 1,
-                "user_id": 2,
-                "motion_submitter_ids": [12],
-            },
-        }
 
+
+class MotionDeleteActionTest(BaseMotionDeleteActionTest):
     def create_amendment(
         self,
         meeting_id: int,
@@ -89,15 +55,9 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assertEqual("Model 'motion/112' does not exist.", response.json["message"])
 
     def test_delete_correct_cascading(self) -> None:
-        self.create_amendment(
-            meeting_id=1,
-            base=112,
-            lead_motion_id=111,
-            motion_data={"list_of_speakers_id": 222, "agenda_item_id": 333},
-        )
+        self.create_amendment(meeting_id=1, base=112, lead_motion_id=111)
         self.set_models(
             {
-                "list_of_speakers/111": {"closed": False},
                 "agenda_item/333": {
                     "comment": "test_comment_ewoirzewoirioewr",
                     "content_object_id": "motion/111",
@@ -190,6 +150,22 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("motion_editor/1")
         self.assert_model_not_exists("motion_working_group_speaker/1")
         self.assert_history_information("motion/111", ["Motion deleted"])
+
+
+class MotionDeletePermissionTest(BaseMotionDeleteActionTest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_motion(1, 112)
+        self.create_motion(1, 222, motion_data={"lead_motion_id": 111})
+        self.permission_test_models: dict[str, Any] = {
+            "motion_submitter/12": {
+                "meeting_user_id": 5,
+                "motion_id": 111,
+                "meeting_id": 1,
+            },
+            "meeting_user/5": {"user_id": 2, "meeting_id": 1},
+            "motion_state/1": {"allow_submitter_edit": True},
+        }
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
