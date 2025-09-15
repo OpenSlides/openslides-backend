@@ -34,7 +34,7 @@ services:
             - datastore-writer
     datastore-reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "prod"
             args:
                 MODULE: "reader"
@@ -50,7 +50,7 @@ services:
             - postgres
     datastore-writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "prod"
             args:
                 MODULE: "writer"
@@ -67,7 +67,7 @@ services:
             - redis
     auth:
         build:
-            context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-auth-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "dev"
             args:
                 CONTEXT: "dev"
@@ -89,7 +89,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "dev"
             args:
                 CONTEXT: "dev"
