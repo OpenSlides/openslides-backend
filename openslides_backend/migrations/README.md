@@ -8,7 +8,7 @@ There are three ways to execute migrations:
 This is done within the dockersetup in this folder. Note that the datastore needs to be checked out with the name `openslides-datastore-service` next to the backend repository.
 
 - checkout the current datastore (in ../../openslides-datastore-service) and the current backend.
-- `make run-dev`: Starts the compose setup -> A shell opens with the ability to run `migrate.py` and auxillary scripts.
+- `make dev`: Starts the compose setup -> A shell opens with the ability to run `migrate.py` and auxillary scripts.
 - You can exit from it with `exit` and shut down the docker setup with `make stop-dev`
 - You can write migrations in the backend and also adjust the Datastore at the same time since both are mounted into the container.
 
