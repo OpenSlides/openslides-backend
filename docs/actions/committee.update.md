@@ -16,6 +16,8 @@
 // Group B
     forward_to_committee_ids: Id[];
     receive_forwardings_from_committee_ids: Id[];
+    forward_agenda_to_committee_ids: Id[];
+    receive_agenda_forwardings_from_committee_ids: Id[];
 
 // Group C
     parent_id: Id;

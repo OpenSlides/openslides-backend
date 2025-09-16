@@ -94,6 +94,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "description": new_description,
                 "manager_ids": [20, 21],
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
+                "forward_agenda_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
                 "default_meeting_id": 201,
             },
         )
@@ -107,6 +108,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assertEqual(
             model.get("forward_to_committee_ids"), [self.COMMITTEE_ID_FORWARD]
         )
+        self.assertEqual(
+            model.get("forward_agenda_to_committee_ids"), [self.COMMITTEE_ID_FORWARD]
+        )
         self.assertEqual(model.get("default_meeting_id"), 201)
 
     def test_update_receive_forwardings(self) -> None:
@@ -116,12 +120,16 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "id": self.COMMITTEE_ID_FORWARD,
                 "receive_forwardings_from_committee_ids": [self.COMMITTEE_ID],
+                "receive_agenda_forwardings_from_committee_ids": [self.COMMITTEE_ID],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             self.COMMITTEE_FQID,
-            {"forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD]},
+            {
+                "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
+                "forward_agenda_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
+            },
         )
         self.assert_model_exists(
             self.COMMITTEE_FQID_FORWARD,
@@ -146,6 +154,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "id": 1,
                 "forward_to_committee_ids": [2],
                 "receive_forwardings_from_committee_ids": [3],
+                "forward_agenda_to_committee_ids": [3],
+                "receive_agenda_forwardings_from_committee_ids": [2],
             },
         )
         self.assert_status_code(response, 200)
@@ -154,12 +164,24 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "forward_to_committee_ids": [2],
                 "receive_forwardings_from_committee_ids": [3],
+                "forward_agenda_to_committee_ids": [3],
+                "receive_agenda_forwardings_from_committee_ids": [2],
             },
         )
         self.assert_model_exists(
-            "committee/2", {"receive_forwardings_from_committee_ids": [1]}
+            "committee/2",
+            {
+                "receive_forwardings_from_committee_ids": [1],
+                "forward_agenda_to_committee_ids": [1],
+            },
         )
-        self.assert_model_exists("committee/3", {"forward_to_committee_ids": [1]})
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "forward_to_committee_ids": [1],
+                "receive_agenda_forwardings_from_committee_ids": [1],
+            },
+        )
 
     def test_update_both_forwarded_and_received_async(self) -> None:
         self.set_models(
@@ -198,6 +220,43 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_both_agenda_forwarded_and_received_async(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test_organization1",
+                    "committee_ids": [1],
+                },
+                "committee/1": {
+                    "name": "committee_1",
+                    "organization_id": 1,
+                    "forward_agenda_to_committee_ids": [2],
+                    "receive_agenda_forwardings_from_committee_ids": [2],
+                },
+                "committee/2": {
+                    "name": "committee_2",
+                    "organization_id": 1,
+                    "forward_agenda_to_committee_ids": [1],
+                    "receive_agenda_forwardings_from_committee_ids": [
+                        1,
+                    ],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_agenda_to_committee_ids": [1],
+                "receive_agenda_forwardings_from_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Agenda forwarding or receiving to/from own must be configured in both directions!",
+            response.json["message"],
+        )
+
     def test_update_complex_1(self) -> None:
         """A->C and B->C exist, test that the request for C with {B, D}->C works and sets the reverse relations on A and D correctly."""
         self.set_models(
@@ -210,16 +269,19 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                     "name": "committee_A",
                     "organization_id": 1,
                     "forward_to_committee_ids": [3],
+                    "forward_agenda_to_committee_ids": [3],
                 },
                 "committee/2": {
                     "name": "committee_B",
                     "organization_id": 1,
                     "forward_to_committee_ids": [3],
+                    "forward_agenda_to_committee_ids": [3],
                 },
                 "committee/3": {
                     "name": "committee_C",
                     "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [1, 2],
+                    "receive_agenda_forwardings_from_committee_ids": [1, 2],
                 },
                 "committee/4": {"name": "committee_D", "organization_id": 1},
             }
@@ -229,6 +291,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "id": 3,
                 "receive_forwardings_from_committee_ids": [2, 4],
+                "receive_agenda_forwardings_from_committee_ids": [2, 4],
             },
         )
         self.assert_status_code(response, 200)
@@ -236,13 +299,24 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee/1",
             {
                 "forward_to_committee_ids": [],
+                "forward_agenda_to_committee_ids": [],
             },
         )
-        self.assert_model_exists("committee/2", {"forward_to_committee_ids": [3]})
         self.assert_model_exists(
-            "committee/3", {"receive_forwardings_from_committee_ids": [2, 4]}
+            "committee/2",
+            {"forward_to_committee_ids": [3], "forward_agenda_to_committee_ids": [3]},
         )
-        self.assert_model_exists("committee/4", {"forward_to_committee_ids": [3]})
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "receive_forwardings_from_committee_ids": [2, 4],
+                "receive_agenda_forwardings_from_committee_ids": [2, 4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {"forward_to_committee_ids": [3], "forward_agenda_to_committee_ids": [3]},
+        )
 
     def test_update_complex_2(self) -> None:
         """C->A and C->B exists, test that the request for C with C->{B,D} works and sets the reverse relations on A and D correctly"""
@@ -462,6 +536,23 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertIsNone(model.get("forward_to_committee_ids"))
+        self.assertIn(
+            "Model 'committee/101' does not exist.",
+            response.json["message"],
+        )
+
+    def test_update_wrong_agenda_forward_committee(self) -> None:
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {
+                "id": self.COMMITTEE_ID,
+                "forward_agenda_to_committee_ids": [101],
+            },
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model(self.COMMITTEE_FQID)
+        self.assertIsNone(model.get("forward_agenda_to_committee_ids"))
         self.assertIn(
             "Model 'committee/101' does not exist.",
             response.json["message"],
@@ -737,6 +828,35 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "id": 1,
                 "forward_to_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee {2}"
+            in response.json["message"]
+        )
+
+    def test_update_group_b_no_permission_with_agenda_forward_data(self) -> None:
+        self.create_data()
+        self.create_meetings_with_users()
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                },
+                "committee/1": {
+                    "user_ids": [1, 20, 21],
+                    "manager_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_agenda_to_committee_ids": [2],
             },
         )
         self.assert_status_code(response, 403)
