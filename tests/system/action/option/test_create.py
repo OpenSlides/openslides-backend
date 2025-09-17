@@ -35,6 +35,11 @@ class OptionCreateActionTest(BaseActionTestCase):
                     "state_id": 111,
                     "meeting_id": 111,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion/112",
+                    "sequential_number": 11,
+                    "meeting_id": 111,
+                },
             }
         )
         response = self.request(

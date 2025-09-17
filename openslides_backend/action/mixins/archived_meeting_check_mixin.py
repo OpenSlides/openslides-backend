@@ -19,7 +19,7 @@ class CheckForArchivedMeetingMixin(Action):
         """check all instance fields for their meeting and if the meeting is active"""
         if self.skip_archived_meeting_check:
             return
-        model = model_registry[self.model.collection]()
+        model = model_registry[self.model.collection]
         meeting_ids: set[int] = set()
         if "meeting_id" in instance:
             meeting_ids.add(instance["meeting_id"])

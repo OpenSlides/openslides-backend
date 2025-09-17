@@ -14,6 +14,11 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "title": "tropic",
                     "meeting_id": 1,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/102",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
                 "agenda_item/111": {
                     "item_number": "101",
                     "duration": 600,
@@ -56,17 +61,18 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
-                "agenda_item/111": {
-                    "child_ids": [222],
+                "list_of_speakers/42": {
                     "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
+                "agenda_item/111": {"child_ids": [222]},
                 "agenda_item/222": {
                     "type": AgendaItem.AGENDA_ITEM,
                     "item_number": "102",
                     "parent_id": 111,
                     "meeting_id": 1,
-                    "content_object_id": "topic/2",
+                    "content_object_id": "topic/1",
                 },
             }
         )
@@ -105,6 +111,16 @@ class AgendaItemActionTest(BaseActionTestCase):
             {
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 1,
+                },
                 "tag/1": {
                     "name": "tag",
                     "meeting_id": 1,
@@ -140,6 +156,21 @@ class AgendaItemActionTest(BaseActionTestCase):
                 "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
                 "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
                 "topic/3": {"meeting_id": 1, "title": "jungle", "sequential_number": 3},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/128": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 1,
+                },
                 "agenda_item/1": {
                     "comment": "test1",
                     "meeting_id": 1,

@@ -74,6 +74,7 @@ COPY dev/cleanup.sh .
 # Copy files which are mounted to make the full stack work
 COPY scripts scripts
 COPY cli cli
+COPY data data
 COPY meta meta
 
 COPY Makefile .
@@ -100,11 +101,13 @@ RUN adduser --system --no-create-home appuser
 COPY scripts scripts
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
+COPY data data
 COPY meta meta
 
 RUN chown appuser ./scripts/ && \
  chown appuser ./entrypoint.sh && \
  chown appuser ./openslides_backend && \
+ chown appuser ./data && \
  chown appuser ./meta && \
  chown appuser ./command.sh
 

@@ -47,6 +47,16 @@ class ProjectorProject(BaseActionTestCase):
                     "title": "assignment 453",
                     "sequential_number": 453,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/452",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "assignment/453",
+                    "sequential_number": 12,
+                    "meeting_id": 1,
+                },
             }
         )
 

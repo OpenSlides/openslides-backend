@@ -13,6 +13,11 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "title": "title_SNLGsvIV",
                 "meeting_id": 1,
             },
+            "list_of_speakers/23": {
+                "content_object_id": "assignment/222",
+                "sequential_number": 11,
+                "meeting_id": 1,
+            },
             "user/233": {"username": "username_233"},
             "user/234": {"username": "username_234"},
             "meeting_user/233": {"meeting_id": 1, "user_id": 233},
@@ -36,6 +41,11 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "assignment/222": {
                     "sequential_number": 1,
                     "title": "title_SNLGsvIV",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/222",
+                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "user/233": {"username": "username_233"},
@@ -73,6 +83,11 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                     "title": "title_SNLGsvIV",
                     "meeting_id": 1,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/222",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
+                },
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
                 "meeting_user/233": {"meeting_id": 1, "user_id": 233},
@@ -101,6 +116,11 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "assignment/222": {
                     "sequential_number": 1,
                     "title": "title_SNLGsvIV",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/222",
+                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "user/233": {"username": "username_233"},

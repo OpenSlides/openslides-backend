@@ -3,6 +3,19 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AssignmentDeleteActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "assignment/111": {
+            "sequential_number": 1,
+            "meeting_id": 1,
+            "title": "title_srtgb123",
+        },
+        "list_of_speakers/23": {
+            "content_object_id": "assignment/111",
+            "sequential_number": 11,
+            "meeting_id": 1,
+        },
+    }
+
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(110)
@@ -14,7 +27,12 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "sequential_number": 1,
                     "meeting_id": 110,
                     "title": "title_srtgb123",
-                }
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/111",
+                    "sequential_number": 11,
+                    "meeting_id": 110,
+                },
             }
         )
         response = self.request("assignment.delete", {"id": 111})
@@ -66,40 +84,34 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "assignment/112": {
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/111",
+                    "sequential_number": 11,
+                    "meeting_id": 110,
+                },
+                "assignment/111": {
                     "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 110,
-                }
+                },
             }
         )
-        response = self.request("assignment.delete", {"id": 111})
+        response = self.request("assignment.delete", {"id": 112})
         self.assert_status_code(response, 400)
-        model = self.get_model("assignment/112")
-        self.assertEqual(model.get("title"), "title_srtgb123")
+        self.assert_model_exists(
+            "assignment/111", {"title": "title_srtgb123", "list_of_speakers_id": 23}
+        )
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "meeting_id": 1,
-                    "title": "title_srtgb123",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.delete",
             {"id": 111},
         )
 
     def test_delete_permission(self) -> None:
         self.base_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "meeting_id": 1,
-                    "title": "title_srtgb123",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.delete",
             {"id": 111},
             Permissions.Assignment.CAN_MANAGE,
@@ -107,13 +119,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
 
     def test_delete_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "meeting_id": 1,
-                    "title": "title_srtgb123",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.delete",
             {"id": 111},
         )

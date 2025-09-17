@@ -1,4 +1,3 @@
-import pkgutil
 from collections.abc import Callable
 from importlib import import_module
 from typing import Any
@@ -38,13 +37,15 @@ class MigrationWrapper:
                 base_migration_module_pypath = "migrations"
             else:
                 base_migration_module_pypath = base_module + ".migrations"
-        base_migration_module = import_module(base_migration_module_pypath)
+        # TODO reimplement
+        # base_migration_module = import_module(base_migration_module_pypath)
 
-        module_names = {
-            name
-            for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
-            if not is_pkg
-        }
+        # module_names = {
+        #     name
+        #     for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
+        #     if not is_pkg
+        # }
+        module_names: set[str] = set()
 
         migration_classes: list[type[BaseMigration]] = []
         for module_name in module_names:

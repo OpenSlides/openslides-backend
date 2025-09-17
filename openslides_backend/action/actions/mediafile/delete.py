@@ -30,7 +30,7 @@ class MediafileDelete(MediafileMixin, DeleteAction):
         )
         if node.get("child_ids"):
             for child_id in node["child_ids"]:
-                if not self.is_deleted(
+                if not self.is_to_be_deleted(
                     fqid_from_collection_and_id("mediafile", child_id)
                 ):
                     tree_ids.extend(self.get_tree_ids(child_id))

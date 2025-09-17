@@ -27,6 +27,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
             "meeting_user/17": {"meeting_id": 1, "user_id": 7},
             "topic/1337": {"title": "leet", "sequential_number": 1337, "meeting_id": 1},
+            "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
             "list_of_speakers/23": {
                 "sequential_number": 23,
                 "content_object_id": "topic/1337",
@@ -243,6 +244,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -291,6 +293,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -347,6 +350,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -387,6 +391,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -434,6 +439,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -513,6 +519,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -550,6 +557,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 4,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -830,6 +838,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -907,6 +916,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",

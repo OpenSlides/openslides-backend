@@ -3,6 +3,11 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemActionTest(BaseActionTestCase):
+
+    PERMISSION_TEST_MODELS = {
+        "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
+    }
+
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(20)
@@ -12,6 +17,11 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "agenda_item/111": {"meeting_id": 20, "content_object_id": "topic/1"},
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 20,
+                },
                 "topic/1": {
                     "meeting_id": 20,
                     "title": "tropic",
@@ -28,6 +38,11 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "agenda_item/112": {"meeting_id": 20, "content_object_id": "topic/1"},
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 20,
+                },
                 "topic/1": {
                     "meeting_id": 20,
                     "title": "tropic",
@@ -47,6 +62,11 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "title": "tropic",
                     "sequential_number": 1,
                     "agenda_item_id": 111,
+                    "meeting_id": 20,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/34",
+                    "sequential_number": 11,
                     "meeting_id": 20,
                 },
                 "agenda_item/111": {"content_object_id": "topic/34", "meeting_id": 20},
@@ -104,9 +124,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_motion(1, 34)
         self.base_permission_test(
-            {
-                "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.delete",
             {"id": 111},
         )
@@ -115,9 +133,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_motion(1, 34)
         self.base_permission_test(
-            {
-                "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.delete",
             {"id": 111},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -127,9 +143,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_motion(1, 34)
         self.base_locked_out_superadmin_permission_test(
-            {
-                "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.delete",
             {"id": 111},
         )

@@ -24,6 +24,8 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
                 "sequential_number": 42,
                 "meeting_id": 1,
             },
+            "agenda_item/1": {"content_object_id": "topic/32", "meeting_id": 1},
+            "agenda_item/2": {"content_object_id": "topic/42", "meeting_id": 1},
             "list_of_speakers/1": {
                 "meeting_id": 1,
                 "sequential_number": 1,

@@ -19,6 +19,7 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
                     "sequential_number": 42,
                     "meeting_id": 78,
                 },
+                "agenda_item/23": {"content_object_id": "topic/42", "meeting_id": 78},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/42",
                     "sequential_number": 10,
@@ -49,9 +50,9 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.delete", {"id": 111})
 
         self.assert_status_code(response, 400)
-        self.assertEqual(
+        self.assertIn(
+            "Relation violates required constraint: Trigger tr_ud_topic_list_of_speakers_id Exception: NOT NULL CONSTRAINT VIOLATED for topic/42/list_of_speakers_id from relationship before 111/content_object_id_topic_id",
             response.json["message"],
-            "Update of topic/42: You try to set following required fields to an empty value: ['list_of_speakers_id']",
         )
         self.assert_model_exists("list_of_speakers/111")
         self.assert_model_exists("projection/1")

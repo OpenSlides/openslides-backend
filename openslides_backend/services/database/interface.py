@@ -37,12 +37,24 @@ class Database(Protocol):
     ) -> None: ...
 
     @abstractmethod
+    def apply_to_be_deleted(self, fqid: FullQualifiedId) -> None: ...
+
+    @abstractmethod
+    def apply_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> None: ...
+
+    @abstractmethod
     def get_changed_model(
         self, collection_or_fqid: str, id_: Id | None = None
     ) -> PartialModel: ...
 
     @abstractmethod
     def get_changed_models(self, collection: str) -> dict[Id, PartialModel]: ...
+
+    @abstractmethod
+    def is_to_be_deleted(self, fqid: FullQualifiedId) -> bool: ...
+
+    @abstractmethod
+    def is_to_be_deleted_for_protected(self, fqid: FullQualifiedId) -> bool: ...
 
     @abstractmethod
     def get(
