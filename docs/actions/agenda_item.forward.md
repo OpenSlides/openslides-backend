@@ -23,9 +23,12 @@ Should the `agenda_item_ids` contain any agenda items linking to motions or assi
 
 Upon forwarding for every topic and every target meeting:
 - A new topic is created in the target meeting with the same title and text as the original linked topic.
-- The agenda item linked to said topic is given the same `type` as the original agenda_item.
+- The agenda item linked to said topic is given the same `type`, `item_number`, `comment`, `closed` and `duration` values as the original agenda_item, `tag_ids` are matched to the target_meetings tags by name. Should one not exist, it will be created.
+- The new agenda items `weight` will be the original items `weight` plus the maximum weight in the new meeting.
+- Agenda item parentage is preserved as best as possible concerning the agenda_items that are actually sent over. This means that if a connectory item between two items is removed, the copy of the grandchild would be set as the child of the copy of the grandparent, and so on.
 
 If `with_speakers` is true:
+- The new list of speakers is closed if the original was closed as well.
 - An exception is thrown if there is any paused or started speakers, or any waiting points of order, connected to any of the topics list of speakers.
 - Otherwise all speakers are copied over.
    - Restrictions concerning presence in the target meeting are ignored.
@@ -39,6 +42,8 @@ If `with_moderator_notes` is true:
 - For any new topic, the newly generated list of speakers receive the origin topics list of speakers `moderator_notes` value.
 If `with_attachments` is true:
 - All files connected to any of the topics are copied into the target meeting and the copies are connected with the created topics.
+- If any of the attached files is a directory, the children are also copied over.
+- Access groups are always the new meetings admin group.
 
 ## Permissions
 The request user needs `agenda_item.can_forward` in the source meeting. There are no rights needed in the receiving meeting, unless `with_speakers` is said, in which case `user.can_manage` is required in all target meetings.
