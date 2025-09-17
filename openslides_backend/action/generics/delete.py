@@ -66,7 +66,7 @@ class DeleteAction(Action):
                     if protected_fqids:
                         raise ProtectedModelsException(this_fqid, protected_fqids)
                 else:
-                    # field.on_delete == OnDelete.CASCADE
+                    # case: field.on_delete == OnDelete.CASCADE
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
                         if self.datastore.is_to_be_deleted(fqid):
@@ -84,10 +84,9 @@ class DeleteAction(Action):
                         action_data = [{"id": id_from_fqid(fqid)}]
                         delete_actions.append((fqid, delete_action_class, action_data))
                         self.datastore.apply_to_be_deleted_for_protected(fqid)
-            else:
-                # field.on_delete == OnDelete.SET_NULL
-                if field.is_view_field:
-                    instance[field_name] = None
+            elif field.is_view_field:
+                # case: field.on_delete == OnDelete.SET_NULL
+                instance[field_name] = None
 
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
