@@ -32,7 +32,7 @@ If `with_speakers` is true:
    - Restrictions concerning having multiple speakers with the same user in the target meeting are ignored.
    - If a user behind a speaker isn't part of the target meeting, he will be added to it. Groups and structure levels in this case will be matched via name. Should a group or structure level by that name not exist in the target meeting yet, it will be created.
    - Structure levels for the speakers (not the users) are matched by name. If one doesn't exist yet, it will be created.
-   - The groups of all users, that were present in the target meeting already, will be updated in the target meetings to include the groups from the original meeting (again, matched by name, potentially created if not found). The same does _not_ happen for structure levels or any other meeting_user data.
+   - The groups of all users, that were present in the target meeting already, will be updated in the target meetings to include the newly created groups from the original meeting (again, potentially created if not found). Groups that already existed in the meeting will not be added, however. The same does _not_ happen for structure levels or any other meeting_user data, they'll be left as-is.
    - Newly created groups will have no permissions.
 - `structure_level_list_of_speakers` are copied over if they exist.
 If `with_moderator_notes` is true:
