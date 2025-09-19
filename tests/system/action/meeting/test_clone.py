@@ -370,7 +370,7 @@ class MeetingClone(BaseActionTestCase):
         """
         Action is
         """
-        self.meeting_data.pop("template_for_organization_id", None)
+        del self.meeting_data["template_for_organization_id"]
         self.set_test_data()
         new_admin_user = self.create_user("new_admin_user")
         new_default_group_user = self.create_user("new_default_group_user")
