@@ -355,11 +355,10 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     }
                     structure_level_id_set.update(
                         {
-                            id_
+                            sllos["structure_level_id"]
                             for sllos in more_data.get(
                                 "structure_level_list_of_speakers", {}
                             ).values()
-                            if (id_ := sllos.get("structure_level_id"))
                         }
                     )
                     if structure_level_id_set:
@@ -401,11 +400,11 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                         topic["list_of_speakers_id"], {}
                     )
                     speakers = {
-                        id_: more_data.get("speakers", {})[id_]
+                        id_: more_data.get("speaker", {})[id_]
                         for id_ in los.get("speaker_ids", [])
                     }
                     sllos = {
-                        id_: more_data.get("speakers", {})[id_]
+                        id_: more_data.get("structure_level_list_of_speakers", {})[id_]
                         for id_ in los.get("structure_level_list_of_speakers_ids", [])
                     }
                     id_to_node[id_] = (
@@ -430,6 +429,8 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     )
                     if parent_id is None:
                         tree_list.append(id_to_node[id_])
+                    else:
+                        id_to_node[parent_id][5].append(id_to_node[id_])
                     del child_id_to_parent_id[id_]
 
         for meeting_id in target_meeting_ids:
@@ -504,7 +505,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 **{
                     field: val
                     for field, val in topic.items()
-                    if field != "attachment_mediafile_ids"
+                    if field != "attachment_meeting_mediafile_ids"
                 },
                 **(
                     {"attachment_mediafile_ids": mediafile_ids}
@@ -537,13 +538,13 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         )["topic"]
         # only if there are los, speakers or sllos
         topic_id_to_tree_node_with_los_data = {
-            id_: node for id_, node in topic_id_to_tree_node if node[2]
+            id_: node for id_, node in topic_id_to_tree_node.items() if node[2]
         }
         topic_id_to_tree_node_with_speaker_data = {
-            id_: node for id_, node in topic_id_to_tree_node if node[3]
+            id_: node for id_, node in topic_id_to_tree_node.items() if node[3]
         }
         topic_id_to_tree_node_with_sllos_data = {
-            id_: node for id_, node in topic_id_to_tree_node if node[4]
+            id_: node for id_, node in topic_id_to_tree_node.items() if node[4]
         }
         if topic_id_to_tree_node_with_los_data:
             self.execute_other_action(
@@ -559,16 +560,17 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 (
                     topic_id,
                     {
-                        "initial_time": node[4]["initial_time"],
+                        "initial_time": sllos["initial_time"],
                         "list_of_speakers_id": new_topics[topic_id][
                             "list_of_speakers_id"
                         ],
                         "structure_level_id": structure_level_matches[
-                            node[4]["structure_level_id"]
+                            sllos["structure_level_id"]
                         ],
                     },
                 )
-                for topic_id, node in topic_id_to_tree_node_with_sllos_data
+                for topic_id, node in topic_id_to_tree_node_with_sllos_data.items()
+                for origin_sllos_id, sllos in node[4].items()
             ]
             result = self.execute_other_action(
                 StructureLevelListOfSpeakersCreateAction,
@@ -584,15 +586,18 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             fields = ["additional_time", "remaining_time"]
             update_payloads = [
                 {
-                    "id": topic_id,
+                    "id": topic_id_to_sl_to_sllos_id[topic_id][
+                        structure_level_matches[sllos["structure_level_id"]]
+                    ],
                     **{
                         field: val
                         for field in fields
-                        if (val := node[4].get(field) is not None)
+                        if (val := sllos.get(field)) is not None
                     },
                 }
-                for topic_id, node in topic_id_to_tree_node_with_sllos_data
-                if any(node[4].get(field) is not None for field in fields)
+                for topic_id, node in topic_id_to_tree_node_with_sllos_data.items()
+                for origin_sllos_id, sllos in node[4].items()
+                if any(sllos.get(field) is not None for field in fields)
             ]
             if update_payloads:
                 self.execute_other_action(
@@ -600,42 +605,46 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 )
 
         if topic_id_to_tree_node_with_speaker_data:
-            payloads = [
+            speaker_payloads = [
                 {
-                    "meeting_user_id": muser_matches[node[3]["meeting_user_id"]],
+                    "meeting_user_id": muser_matches[speaker["meeting_user_id"]],
                     "list_of_speakers_id": new_topics[topic_id]["list_of_speakers_id"],
                     **(
                         {
                             "structure_level_list_of_speakers_id": topic_id_to_sl_to_sllos_id[
                                 topic_id
                             ][
-                                structure_level_matches[node[4]["structure_level_id"]]
+                                structure_level_matches[
+                                    node[4][sllos_id]["structure_level_id"]
+                                ]
                             ]
                         }
-                        if node[4].get("structure_level_id")
+                        if (
+                            sllos_id := speaker.get(
+                                "structure_level_list_of_speakers_id"
+                            )
+                        )
                         else {}
                     ),
                     **(
-                        {
-                            "point_of_order_category_id": pooc_matches[
-                                node[3]["point_of_order_category_id"]
-                            ]
-                        }
-                        if node[3].get("point_of_order_category_id")
+                        {"point_of_order_category_id": pooc_matches[pooc_id]}
+                        if (pooc_id := speaker.get("point_of_order_category_id"))
                         else {}
                     ),
                     **{
                         field: val
                         for field in TRANSFERRABLE_SPEAKER_FIELDS
-                        if (val := node[3].get(field)) is not None
+                        if (val := speaker.get(field)) is not None
                     },
                 }
-                for topic_id, node in topic_id_to_tree_node_with_sllos_data
+                for topic_id, node in topic_id_to_tree_node_with_sllos_data.items()
+                for origin_speaker_id, speaker in node[3].items()
             ]
-            result = self.execute_other_action(SpeakerCreateForMerge, payloads)
+            result = self.execute_other_action(SpeakerCreateForMerge, speaker_payloads)
         for topic_id, tree_node in topic_id_to_tree_node.items():
-            yield {"id": new_topics[topic_id]["agenda_item_id"]}
-            for node in tree_node[5]:
+            agenda_item_id = new_topics[topic_id]["agenda_item_id"]
+            yield {"id": agenda_item_id}
+            if tree_node[5]:
                 yield from self.get_updated_instances_from_tree_node(
                     target_meeting_id,
                     target_meeting,
@@ -645,6 +654,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     structure_level_matches,
                     pooc_matches,
                     mediafile_matches,
+                    agenda_item_id,
                 )
 
     def create_mediafile_meeting_models(
@@ -675,11 +685,13 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     "owner_id": fqid_from_collection_and_id(
                         "meeting", target_meeting_id
                     ),
-                    "parent_id": origin_to_new_id[
-                        origin_mediafiles[origin_id]["mediafile_id"]
-                    ],
+                    **(
+                        {"parent_id": origin_to_new_id[parent_id]}
+                        if (parent_id := origin_mediafiles[origin_id].get("parent_id"))
+                        else {}
+                    ),
                 }
-                for id_, origin_id in origin_to_new_id.items()
+                for origin_id, id_ in origin_to_new_id.items()
             ]
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, payloads
@@ -793,7 +805,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         )
         if relevant_unmatched_structure_level_ids_set:
             relevant_unmatched_structure_level_ids: list[int] = sorted(
-                relevant_structure_level_ids_set
+                relevant_unmatched_structure_level_ids_set
             )
             structure_level_payloads = [
                 {
@@ -827,12 +839,16 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     "meeting_id": target_meeting_id,
                     "user_id": origin_musers[id_]["user_id"],
                     "group_ids": [
-                        *origin_musers.get(id_, {}).get("group_ids", []),
+                        *target_meeting_models.get("meeting_user", {})
+                        .get(muser_matches[id_], {})
+                        .get("group_ids", []),
                         *[
                             group_matches[group_id]
                             for group_id in origin_musers[id_].get("group_ids", [])
                             if group_matches[group_id]
-                            not in origin_musers.get(id_, {}).get("group_ids", [])
+                            not in target_meeting_models.get("meeting_user", {})
+                            .get(muser_matches[id_], {})
+                            .get("group_ids", [])
                         ],
                     ],
                     **(
