@@ -7,6 +7,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
+from tests.util import Response
 
 
 class MeetingUpdateActionTest(BaseActionTestCase):
@@ -93,22 +94,30 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response_message,
         )
 
-    def test_update_projector_related_fields(self) -> None:
-        data = {
-            "reference_projector_id": 2,
-            "default_projector_topic_ids": [2],
-            "default_projector_current_los_ids": [1, 2],
-        }
-        self.basic_test(
-            action_data=data,
-            extra_models={
+    def setup_test_update_projector_related_fields(
+        self,
+    ) -> tuple[Response, dict[str, Any]]:
+        self.create_meeting()
+        self.set_models(
+            {
                 "projector/2": {
                     "name": "Projector 2",
                     "meeting_id": 1,
                     "sequential_number": 2,
-                },
-            },
+                }
+            }
         )
+        action_data = {
+            "reference_projector_id": 2,
+            "default_projector_topic_ids": [2],
+            "default_projector_current_los_ids": [1, 2],
+        }
+        response = self.request("meeting.update", {"id": 1, **action_data})
+        return response, action_data
+
+    def test_update_projector_related_fields(self) -> None:
+        response, data = self.setup_test_update_projector_related_fields()
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1",
             {
@@ -136,26 +145,37 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_projector_related_fields2(self) -> None:
-        self.basic_test(
-            action_data={"default_projector_current_los_ids": [2]},
-            extra_models={
-                "projector/2": {
-                    "name": "Projector 2",
-                    "meeting_id": 1,
-                    "sequential_number": 2,
-                },
+        self.setup_test_update_projector_related_fields()
+        response = self.request(
+            "meeting.update", {"id": 1, "default_projector_current_los_ids": [2]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "reference_projector_id": 2,
+                "default_projector_topic_ids": [2],
+                "default_projector_motion_ids": [1],
+                "default_projector_current_los_ids": [2],
             },
         )
         self.assert_model_exists(
-            "meeting/1", {"default_projector_current_los_ids": [2]}
-        )
-        self.assert_model_exists(
             "projector/1",
-            {"used_as_default_projector_for_current_los_in_meeting_id": None},
+            {
+                "used_as_reference_projector_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_current_los_in_meeting_id": None,
+            },
         )
         self.assert_model_exists(
             "projector/2",
-            {"used_as_default_projector_for_current_los_in_meeting_id": 1},
+            {
+                "used_as_reference_projector_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
+                "used_as_default_projector_for_current_los_in_meeting_id": 1,
+            },
         )
 
     def test_update_reference_projector_to_null_error(self) -> None:
