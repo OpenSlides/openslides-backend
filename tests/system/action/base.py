@@ -160,8 +160,10 @@ class BaseActionTestCase(BaseSystemTestCase):
             action_data = [action_data]
         write_request, result = action.perform(action_data, user_id, internal=True)
         if write_request:
+            action.validate_write_request(write_request)
             self.datastore.write(write_request)
         self.datastore.reset()
+        self.connection.commit()
         return result
 
     def create_committee(

@@ -119,11 +119,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         response, data = self.setup_test_update_projector_related_fields()
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/1",
-            {
-                **data,
-                "default_projector_current_los_ids": [1, 2],
-            },
+            "meeting/1", {**data, "default_projector_motion_ids": [1]}
         )
         self.assert_model_exists(
             "projector/1",

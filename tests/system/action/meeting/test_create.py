@@ -420,9 +420,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_external_id_not_unique(self) -> None:
         external_id = "external"
-        self.create_meeting(
-            meeting_data=({"committee_id": 1, "external_id": external_id})
-        )
+        self.create_meeting(meeting_data=({"external_id": external_id}))
         self.basic_test(
             {"external_id": external_id},
             set_400_str="The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",

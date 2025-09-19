@@ -123,6 +123,36 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def test_clone_with_users_min_vote_weight_NN_N(self) -> None:
+        """if vote_weight and default vote weight are None, both could remain None, because
+        they are not required"""
+        self.set_test_data()
+        self.set_user_groups(1, [2])
+        self.set_models({"user/1": {"default_vote_weight": None}})
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 2],
+                "committee_ids": [60],
+                "organization_id": 1,
+                "default_vote_weight": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [5],
+                "vote_weight": None,
+            },
+        )
+
     def test_clone_with_users_min_vote_weight_N1_N(self) -> None:
         """vote_weight can remain None, because default_vote_weight is set greater than minimum"""
         self.set_test_data_with_admin()
@@ -919,29 +949,77 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
 
     def test_create_clone(self) -> None:
-        self.create_meeting(
-            meeting_data={
-                "start_time": datetime.fromtimestamp(1633039200),
-                "end_time": datetime.fromtimestamp(1633039200),
-            }
+        self.create_committee()
+        self.create_user("user2")
+        self.create_user("user3")
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [2],
+                "organization_tag_ids": [],
+                "language": "en",
+            },
         )
-        self.set_user_groups(1, [2])
-        self.create_user("user2", [1])
-        self.create_user("user3", [1])
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/4", {"meeting_user_ids": [5, 6]})
-        self.assert_model_exists("group/5", {"meeting_user_ids": [4]})
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "committee_id": 1,
+                "name": "meeting - Copy",
+                "description": "",
+                "location": "",
+                "start_time": datetime.fromtimestamp(1633039200, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1633039200, ZoneInfo("UTC")),
+                "meeting_user_ids": [3, 4],
+                "user_ids": [2, 3],
+                "language": "en",
+                "group_ids": [5, 6, 7, 8],
+                "default_group_id": 5,
+                "admin_group_id": 6,
+            },
+        )
+        self.assert_model_exists(
+            "group/5", {"default_group_for_meeting_id": 2, "meeting_user_ids": [4]}
+        )
+        self.assert_model_exists(
+            "meeting_user/4", {"user_id": 3, "meeting_id": 2, "group_ids": [5]}
+        )
+        self.assert_model_exists(
+            "group/6", {"admin_group_for_meeting_id": 2, "meeting_user_ids": [3]}
+        )
+        self.assert_model_exists(
+            "meeting_user/3", {"user_id": 2, "meeting_id": 2, "group_ids": [6]}
+        )
 
     def test_create_clone_without_admin(self) -> None:
-        self.create_meeting(
-            meeting_data={
-                "start_time": datetime.fromtimestamp(1633039200),
-                "end_time": datetime.fromtimestamp(1633039200),
-            }
+        self.create_committee()
+        self.create_user("user2")
+        self.create_user("user3")
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [1],
+                "organization_tag_ids": [],
+                "language": "en",
+            },
         )
-        self.create_user("user2", [1])
-        self.create_user("user3", [1])
+        # TODO (for set_user_groups): fix `Missing fields 'name' in 'group/2'`
+        self.set_user_groups(1, [])
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         self.assertEqual(
