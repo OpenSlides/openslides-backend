@@ -323,6 +323,12 @@ class Committee(Model):
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={"committee": "forward_to_committee_ids"}
     )
+    forward_agenda_to_committee_ids = fields.RelationListField(
+        to={"committee": "receive_agenda_forwardings_from_committee_ids"}
+    )
+    receive_agenda_forwardings_from_committee_ids = fields.RelationListField(
+        to={"committee": "forward_agenda_to_committee_ids"}
+    )
     organization_tag_ids = fields.RelationListField(
         to={"organization_tag": "tagged_ids"}
     )
@@ -976,6 +982,7 @@ class Group(Model):
         in_array_constraints={
             "enum": [
                 "agenda_item.can_manage",
+                "agenda_item.can_forward",
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
                 "assignment.can_manage",
