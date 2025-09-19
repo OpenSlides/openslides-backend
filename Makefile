@@ -70,9 +70,6 @@ generate-permissions:
 	python cli/generate_permissions.py $(MODELS_PATH)
 	black openslides_backend/permissions/permissions.py
 
-generate-relational-schema:
-	make -C meta/dev generate-relational-schema
-
 check-permissions:
 	python cli/generate_permissions.py --check
 
@@ -97,10 +94,16 @@ drop-database:
 create-database:
 	make -C meta/dev create-database
 
+generate-relational-schema:
+	make -C meta/dev generate-relational-schema
+
 apply-db-schema:
 	make -C meta/dev apply-db-schema
 
 create-database-with-schema:
+	python cli/create_schema.py
+
+recreate-database:
 	make -C meta/dev create-database-with-schema
 
 run-psql:

@@ -9,7 +9,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "font/woff",
@@ -23,7 +23,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         }
 
     def test_set_font_correct(self) -> None:
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         response = self.request(
             "meeting.set_font", {"id": 1, "mediafile_id": 17, "place": "bold"}
         )
@@ -34,7 +34,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
 
     def test_set_font_wrong_place(self) -> None:
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         response = self.request(
             "meeting.set_font", {"id": 1, "mediafile_id": 17, "place": "broken"}
         )
@@ -45,11 +45,11 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
 
     def test_set_font_wrong_directory(self) -> None:
-        self.permission_test_models["mediafile/17"] = {
+        self.test_models["mediafile/17"] = {
             "owner_id": "meeting/1",
             "is_directory": True,
         }
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         response = self.request(
             "meeting.set_font", {"id": 1, "mediafile_id": 17, "place": "bold"}
         )
@@ -57,8 +57,8 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         self.assertEqual("Cannot set a directory.", response.json["message"])
 
     def test_set_font_wrong_no_image(self) -> None:
-        self.permission_test_models["mediafile/17"]["mimetype"] = "text/plain"
-        self.set_models(self.permission_test_models)
+        self.test_models["mediafile/17"]["mimetype"] = "text/plain"
+        self.set_models(self.test_models)
         response = self.request(
             "meeting.set_font", {"id": 1, "mediafile_id": 17, "place": "bold"}
         )
@@ -88,13 +88,13 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
 
     def test_set_font_published_root_orga_mediafile(self) -> None:
-        self.permission_test_models["mediafile/17"].update(
+        self.test_models["mediafile/17"].update(
             {
                 "owner_id": ONE_ORGANIZATION_FQID,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
             }
         )
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         response = self.request(
             "meeting.set_font", {"id": 1, "mediafile_id": 17, "place": "bold"}
         )
@@ -169,14 +169,14 @@ class MeetingSetFontActionTest(BaseActionTestCase):
 
     def test_set_font_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.set_font",
             {"id": 1, "mediafile_id": 17, "place": "bold"},
         )
 
     def test_set_font_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.set_font",
             {"id": 1, "mediafile_id": 17, "place": "bold"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
@@ -184,7 +184,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
 
     def test_set_font_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.set_font",
             {"id": 1, "mediafile_id": 17, "place": "bold"},
         )

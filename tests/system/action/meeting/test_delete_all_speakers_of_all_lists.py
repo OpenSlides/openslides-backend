@@ -8,7 +8,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "motion/1": {
                 "title": "motion1",
                 "sequential_number": 1,
@@ -33,13 +33,13 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_1_los_1_speaker(self) -> None:
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("speaker/1")
 
     def test_1_los_2_speakers(self) -> None:
-        self.set_models(self.permission_test_models)
+        self.set_models(self.test_models)
         self.set_models({"speaker/2": {"list_of_speakers_id": 11, "meeting_id": 1}})
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 1})
         self.assert_status_code(response, 200)
@@ -66,14 +66,14 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
 
     def test_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.delete_all_speakers_of_all_lists",
             {"id": 1},
         )
 
     def test_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.delete_all_speakers_of_all_lists",
             {"id": 1},
             Permissions.ListOfSpeakers.CAN_MANAGE,
@@ -81,7 +81,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
 
     def test_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "meeting.delete_all_speakers_of_all_lists",
             {"id": 1},
         )

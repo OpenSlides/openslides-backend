@@ -280,7 +280,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_with_no_admins(self) -> None:
-        self.base_action_data.pop("admin_ids", None)
+        del self.base_action_data["admin_ids"]
         self.basic_test(
             set_400_str="Cannot create non-template meeting without admin_ids"
         )
@@ -291,7 +291,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 
     def test_create_set_as_template_with_no_admins_array(self) -> None:
-        self.base_action_data.pop("admin_ids", None)
+        del self.base_action_data["admin_ids"]
         self.basic_test({"set_as_template": True})
         self.assert_model_exists("meeting/1", {"template_for_organization_id": 1})
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})

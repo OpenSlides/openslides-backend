@@ -146,7 +146,7 @@ def export_meeting(
             for field_name, value in data.items():
                 if field_name not in all_collection_fields:
                     pass
-            instances[id] = {
+            instances[id_] = {
                 field_name: value
                 for field_name, value in data.items()
                 if field_name in all_collection_fields and value is not None

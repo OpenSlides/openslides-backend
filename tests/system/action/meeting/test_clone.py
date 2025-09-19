@@ -171,21 +171,28 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee_id": 63,
                 "meeting_id": 1,
-                "admin_ids": [admin_ids_user],
-                "user_ids": [user_ids_user],
+                "admin_ids": [admin_ids_user_id],
+                "user_ids": [user_ids_user_id],
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/1", {"user_ids": [1, 2]})
+        self.assert_model_exists(
+            "meeting/1", {"user_ids": [1, original_user_ids_user_id]}
+        )
         self.assert_model_exists(
             "meeting/2",
             {
                 "committee_id": 63,
-                "motion_submitter_ids": [2],
+                "motion_submitter_ids": [original_user_ids_user_id],
                 "motion_ids": [2],
                 "group_ids": [4, 5, 6],
                 "meeting_user_ids": [3, 4, 5, 6],
-                "user_ids": [1, 2, 3, 4],
+                "user_ids": [
+                    1,
+                    original_user_ids_user_id,
+                    admin_ids_user_id,
+                    user_ids_user_id,
+                ],
             },
         )
         # Order of assigning ids to meeting users in cloned meeting:
@@ -223,11 +230,11 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/2",
-            {"user_id": original_user_ids_user, "meeting_id": 1, "group_ids": [1]},
+            {"user_id": original_user_ids_user_id, "meeting_id": 1, "group_ids": [1]},
         )
         self.assert_model_exists(
             "meeting_user/4",
-            {"user_id": original_user_ids_user, "meeting_id": 2, "group_ids": [4]},
+            {"user_id": original_user_ids_user_id, "meeting_id": 2, "group_ids": [4]},
         )
 
         self.assert_model_exists(
@@ -241,7 +248,7 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/6",
-            {"user_id": admin_ids_user, "meeting_id": 2, "group_ids": [5]},
+            {"user_id": admin_ids_user_id, "meeting_id": 2, "group_ids": [5]},
         )
 
         self.assert_model_exists(
@@ -255,7 +262,7 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/5",
-            {"user_id": user_ids_user, "meeting_id": 2, "group_ids": [4]},
+            {"user_id": user_ids_user_id, "meeting_id": 2, "group_ids": [4]},
         )
 
         self.assert_model_exists(
@@ -367,9 +374,6 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_user_ids_and_admin_ids(self) -> None:
-        """
-        Action is
-        """
         del self.meeting_data["template_for_organization_id"]
         self.set_test_data()
         new_admin_user_id = self.create_user("new_admin_user")
@@ -377,7 +381,7 @@ class MeetingClone(BaseActionTestCase):
         new_and_old_default_group_user_id = self.create_user(
             "new_and_old_default_group_user", [1]
         )
-        new_default_group_old_admin_user = self.create_user(
+        new_default_group_old_admin_user_id = self.create_user(
             "new_default_group_old_admin_user", [2]
         )
         response = self.request(
@@ -385,11 +389,11 @@ class MeetingClone(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "user_ids": [
-                    new_default_group_user,
-                    new_and_old_default_group_user,
-                    new_default_group_old_admin_user,
+                    new_default_group_user_id,
+                    new_and_old_default_group_user_id,
+                    new_default_group_old_admin_user_id,
                 ],
-                "admin_ids": [new_admin_user],
+                "admin_ids": [new_admin_user_id],
                 "set_as_template": False,
             },
         )
@@ -397,7 +401,15 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("organization/1", {"template_meeting_ids": None})
         self.assert_model_exists(
             "meeting/2",
-            {"template_for_organization_id": None, "user_ids": [2, 3, 4, 5]},
+            {
+                "template_for_organization_id": None,
+                "user_ids": [
+                    new_admin_user_id,
+                    new_default_group_user_id,
+                    new_and_old_default_group_user_id,
+                    new_default_group_old_admin_user_id,
+                ],
+            },
         )
         self.assert_model_exists("group/4", {"meeting_user_ids": [3, 4, 5]})
         self.assert_model_exists("group/5", {"meeting_user_ids": [4, 6]})
@@ -410,7 +422,8 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/6", {"meeting_id": 2, "user_id": 2, "group_ids": [5]}
+            "meeting_user/6",
+            {"meeting_id": 2, "user_id": new_admin_user_id, "group_ids": [5]},
         )
         self.assert_model_exists(
             "user/3",
@@ -421,7 +434,8 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/5", {"meeting_id": 2, "user_id": 3, "group_ids": [4]}
+            "meeting_user/5",
+            {"meeting_id": 2, "user_id": new_default_group_user_id, "group_ids": [4]},
         )
 
         self.assert_model_exists(
@@ -433,10 +447,20 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": 4, "group_ids": [1]}
+            "meeting_user/1",
+            {
+                "meeting_id": 1,
+                "user_id": new_and_old_default_group_user_id,
+                "group_ids": [1],
+            },
         )
         self.assert_model_exists(
-            "meeting_user/3", {"meeting_id": 2, "user_id": 4, "group_ids": [4]}
+            "meeting_user/3",
+            {
+                "meeting_id": 2,
+                "user_id": new_and_old_default_group_user_id,
+                "group_ids": [4],
+            },
         )
 
         self.assert_model_exists(
@@ -448,10 +472,20 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 1, "user_id": 5, "group_ids": [2]}
+            "meeting_user/2",
+            {
+                "meeting_id": 1,
+                "user_id": new_default_group_old_admin_user_id,
+                "group_ids": [2],
+            },
         )
         self.assert_model_exists(
-            "meeting_user/4", {"meeting_id": 2, "user_id": 5, "group_ids": [4, 5]}
+            "meeting_user/4",
+            {
+                "meeting_id": 2,
+                "user_id": new_default_group_old_admin_user_id,
+                "group_ids": [4, 5],
+            },
         )
 
     def test_clone_new_committee_and_user_with_group(self) -> None:
@@ -1305,7 +1339,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_not_exists("import_preview/2")
 
     def test_clone_with_2_existing_meetings(self) -> None:
-        self.test_models.pop("committee/63", None)
+        del self.test_models["committee/63"]
         self.set_test_data()
         self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_user_groups(1, [2, 5])
@@ -1445,7 +1479,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_non_template_and_committee_change_not_allowed(self) -> None:
-        self.meeting_data.pop("template_for_organization_id", None)
+        del self.meeting_data["template_for_organization_id"]
         self.set_test_data()
         self.set_committee_management_level([60, 63])
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 63})
