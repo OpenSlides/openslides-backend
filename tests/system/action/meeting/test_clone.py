@@ -1006,7 +1006,6 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_permissions_oml_can_manage(self) -> None:
-        self.test_models["committee/63"]["manager_ids"] = [1]
         self.set_test_data_with_admin()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
