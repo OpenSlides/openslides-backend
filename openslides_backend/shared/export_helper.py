@@ -143,9 +143,6 @@ def export_meeting(
             field.get_own_field_name() for field in model.get_fields()
         }
         for id_, data in instances.items():
-            for field_name, value in data.items():
-                if field_name not in all_collection_fields:
-                    pass
             instances[id_] = {
                 field_name: value
                 for field_name, value in data.items()
