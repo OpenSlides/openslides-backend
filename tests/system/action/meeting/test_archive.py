@@ -1,5 +1,4 @@
-from math import floor
-from time import time
+from datetime import datetime, timedelta
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -10,18 +9,7 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingArchiveTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "active_meeting_ids": [1],
-                },
-                "committee/1": {
-                    "name": "test_committee",
-                    "organization_id": 1,
-                },
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
 
     def test_archive_simple(self) -> None:
         response = self.request("meeting.archive", {"id": 1})
@@ -32,48 +20,36 @@ class MeetingArchiveTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
-            {"active_meeting_ids": [], "archived_meeting_ids": [1]},
+            {"active_meeting_ids": None, "archived_meeting_ids": [1]},
         )
 
     def test_archive_2_meetings(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "active_meeting_ids": [1, 2],
-                },
-            }
-        )
+        self.create_meeting(4)
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [2]})
+        self.assert_model_exists("meeting/4", {"is_active_in_organization_id": 1})
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {"active_meeting_ids": [4], "archived_meeting_ids": [1]},
+        )
 
     def test_archive_no_permissions(self) -> None:
-        self.set_models(
-            {
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-                }
-            }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 403)
-        self.assertIn(
+        self.assertEqual(
             "Missing permissions: Not Committee can_manage and not can_manage_organization",
             response.json["message"],
         )
 
     def test_archive_permission_cml(self) -> None:
-        self.set_models(
-            {
-                "user/1": {
-                    "committee_management_ids": [1],
-                    "committee_ids": [1],
-                }
-            }
-        )
+        self.set_committee_management_level([60])
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
 
     def test_archive_locked_meeting(self) -> None:
         self.set_models({"meeting/1": {"locked_from_inside": True}})
@@ -81,43 +57,42 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_archive_permission_oml(self) -> None:
-        self.set_models(
-            {
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
-                }
-            }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
 
     def test_archive_meeting_is_archived(self) -> None:
         self.update_model("meeting/1", {"is_active_in_organization_id": None})
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "Meeting /1 cannot be changed, because it is archived",
+        self.assertEqual(
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
     def test_archive_wrong_meeting(self) -> None:
         response = self.request("meeting.archive", {"id": 2})
         self.assert_status_code(response, 400)
-        self.assertIn("Model 'meeting/2' does not exist.", response.json["message"])
+        self.assertEqual("Model 'meeting/2' does not exist.", response.json["message"])
 
     def test_archive_meeting_with_inactive_speakers(self) -> None:
-        now = floor(time())
+        self.create_motion(1)
+        now = datetime.now()
         self.set_models(
             {
                 "list_of_speakers/1": {
+                    "sequential_number": 1,
                     "meeting_id": 1,
-                    "speaker_ids": [1, 2],
+                    "content_object_id": "motion/1",
                 },
                 "speaker/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "begin_time": now - 200,
-                    "end_time": now - 100,
+                    "begin_time": now - timedelta(seconds=200),
+                    "end_time": now,
                 },
                 "speaker/2": {
                     "list_of_speakers_id": 1,
@@ -128,83 +103,82 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
 
-    def test_archive_meeting_with_inactive_polls(self) -> None:
+    def create_poll(self, base: int, state: str) -> None:
         self.set_models(
             {
-                "poll/1": {
-                    "state": Poll.STATE_CREATED,
+                f"poll/{base}": {
+                    "title": f"Poll {base}",
+                    "type": Poll.TYPE_NAMED,
+                    "backend": "fast",
+                    "pollmethod": "YNA",
+                    "onehundred_percent_base": "YNA",
                     "meeting_id": 1,
-                },
-                "poll/2": {
-                    "state": Poll.STATE_FINISHED,
-                    "meeting_id": 1,
-                },
-                "poll/3": {
-                    "state": Poll.STATE_PUBLISHED,
-                    "meeting_id": 1,
-                },
+                    "sequential_number": base,
+                    "content_object_id": "motion/1",
+                    "state": state,
+                }
             }
         )
+
+    def test_archive_meeting_with_inactive_polls(self) -> None:
+        self.create_motion(1)
+        self.create_poll(1, Poll.STATE_CREATED)
+        self.create_poll(2, Poll.STATE_FINISHED)
+        self.create_poll(3, Poll.STATE_PUBLISHED)
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
 
     def test_archive_meeting_with_active_speaker(self) -> None:
+        self.create_motion(1)
         self.set_models(
             {
                 "list_of_speakers/1": {
+                    "sequential_number": 1,
                     "meeting_id": 1,
-                    "speaker_ids": [1],
+                    "content_object_id": "motion/1",
                 },
                 "speaker/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "begin_time": floor(time()) - 100,
+                    "begin_time": datetime.now(),
                 },
             }
         )
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "Cannot archive meeting with active speakers."
+        self.assertEqual(
+            response.json["message"], "Cannot archive meeting with active speakers."
         )
 
     def test_archive_meeting_with_active_poll(self) -> None:
-        self.set_models(
-            {
-                "poll/1": {
-                    "state": Poll.STATE_STARTED,
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.create_motion(1)
+        self.create_poll(1, Poll.STATE_STARTED)
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        assert response.json["message"] == "Cannot archive meeting with active polls."
+        self.assertEqual(
+            "Cannot archive meeting with active polls.", response.json["message"]
+        )
 
     def test_archive_meeting_with_active_speaker_and_polls(self) -> None:
+        self.create_motion(1)
         self.set_models(
             {
                 "list_of_speakers/1": {
+                    "sequential_number": 1,
                     "meeting_id": 1,
+                    "content_object_id": "motion/1",
                 },
                 "speaker/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "begin_time": floor(time()) - 100,
-                },
-                "poll/1": {
-                    "state": Poll.STATE_STARTED,
-                    "meeting_id": 1,
-                },
-                "poll/2": {
-                    "state": Poll.STATE_STARTED,
-                    "meeting_id": 1,
+                    "begin_time": datetime.now(),
                 },
             }
         )
+        self.create_poll(1, Poll.STATE_STARTED)
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "Cannot archive meeting with active speakers and polls."
+        self.assertEqual(
+            response.json["message"],
+            "Cannot archive meeting with active speakers and polls.",
         )

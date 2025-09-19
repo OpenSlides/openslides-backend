@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, cast
 
@@ -126,6 +126,11 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        # Set proper types for TimestampFields
+        for field_name in ["start_time", "end_time"]:
+            if (value := instance.get(field_name)) and isinstance(value, int):
+                instance[field_name] = datetime.fromtimestamp(value)
+
         meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
@@ -208,7 +213,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             text2="",
         )
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
         mediafiles = {
             int(id_): data for id_, data in meeting_json.pop("mediafile", {}).items()
