@@ -1,9 +1,10 @@
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 from ..test_internal_actions import BaseInternalActionTest
@@ -77,6 +78,8 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         Also checks if the correct password is stored from the given default_password
         """
+        self.create_meeting(110)
+        self.create_meeting(114)
         self.set_models(
             {
                 "meeting/110": {
@@ -84,15 +87,13 @@ class UserCreateActionTest(BaseActionTestCase):
                     "committee_id": 78,
                     "is_active_in_organization_id": 1,
                 },
-                "meeting/111": {
+                "meeting/114": {
                     "name": "name_xXRGTLAJ",
                     "committee_id": 79,
-                    "group_ids": [111],
                     "is_active_in_organization_id": 1,
                 },
-                "group/111": {"meeting_id": 111},
                 "committee/78": {"name": "name_TSXpBGdt", "meeting_ids": [110]},
-                "committee/79": {"name": "name_hOldWvVF", "meeting_ids": [111]},
+                "committee/79": {"name": "name_hOldWvVF", "meeting_ids": [114]},
             }
         )
         response = self.request(
@@ -104,8 +105,8 @@ class UserCreateActionTest(BaseActionTestCase):
                 "organization_management_level": "can_manage_users",
                 "default_password": "password",
                 "committee_management_ids": [78],
-                "meeting_id": 111,
-                "group_ids": [111],
+                "meeting_id": 114,
+                "group_ids": [114],
                 "member_number": "abcdefg1234567",
             },
         )
@@ -115,7 +116,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "pronoun": "Test",
                 "username": "test_Xcdfgee",
-                "default_vote_weight": "1.500000",
+                "default_vote_weight": Decimal("1.500000"),
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "default_password": "password",
                 "committee_management_ids": [78],
@@ -130,23 +131,28 @@ class UserCreateActionTest(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result == {"id": 2, "meeting_user_id": 1}
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 111, "user_id": 2, "group_ids": [111]}
+            "meeting_user/1", {"meeting_id": 114, "user_id": 2, "group_ids": [114]}
         )
         self.assert_model_exists(
             "committee/78", {"meeting_ids": [110], "user_ids": [2]}
         )
         self.assert_model_exists(
-            "committee/79", {"meeting_ids": [111], "user_ids": [2]}
+            "committee/79", {"meeting_ids": [114], "user_ids": [2]}
         )
         self.assert_history_information(
             "user/2",
-            ["Account created", "Participant added to meeting {}", "meeting/111"],
+            [
+                "Account created",
+                "Participant added to meeting {}.",
+                "meeting/114",
+                "Participant added to group {} in meeting {}.",
+                "group/111",
+                "meeting/114",
+            ],
         )
 
     def test_create_comment(self) -> None:
-        self.set_models(
-            {"meeting/1": {"name": "test meeting 1", "is_active_in_organization_id": 1}}
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
@@ -166,21 +172,10 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_comment_without_meeting_id(self) -> None:
-        self.set_models(
-            {
-                "meeting/11": {
-                    "name": "meeting11",
-                    "committee_id": 79,
-                    "group_ids": [111],
-                    "is_active_in_organization_id": 1,
-                },
-                "group/111": {"meeting_id": 11},
-            }
-        )
-
+        self.create_meeting()
         response = self.request(
             "user.create",
-            {"username": "test_Xcdfgee", "group_ids": [111]},
+            {"username": "test_Xcdfgee", "group_ids": [3]},
         )
         self.assert_status_code(response, 400)
         assert (
@@ -189,19 +184,18 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_with_meeting_user_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "committee/1": {"name": "C1", "meeting_ids": [1]},
                 "committee/2": {"name": "C2"},
                 "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [31],
                 },
-                "user/222": {"meeting_ids": [1], "meeting_user_ids": [1]},
-                "meeting_user/1": {"meeting_id": 1, "user_id": 222},
-                "group/11": {"meeting_id": 1},
-                "structure_level/31": {"meeting_id": 1},
+                "user/222": {
+                    "username": "timtari",
+                },
+                "meeting_user/1": {"meeting_id": 1, "user_id": 222, "group_ids": []},
+                "structure_level/31": {"name": "Gondor", "meeting_id": 1},
             }
         )
         response = self.request(
@@ -209,7 +203,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "meeting_id": 1,
-                "group_ids": [11],
+                "group_ids": [3],
                 "vote_delegations_from_ids": [1],
                 "comment": "comment<iframe></iframe>",
                 "number": "number1",
@@ -224,7 +218,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/223",
             {
                 "committee_management_ids": [2],
-                "committee_ids": [1, 2],
+                "committee_ids": [2, 60],
                 "meeting_user_ids": [2],
                 "meeting_ids": [1],
             },
@@ -234,28 +228,22 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/2",
             {
-                "group_ids": [11],
+                "group_ids": [3],
                 "vote_delegations_from_ids": [1],
                 "comment": "comment&lt;iframe&gt;&lt;/iframe&gt;",
                 "number": "number1",
                 "structure_level_ids": [31],
                 "about_me": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
             },
         )
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting_user/1", {"vote_delegated_to_id": 2})
-        self.assert_model_exists("group/11", {"meeting_user_ids": [2]})
+        self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
         self.assert_model_exists("meeting/1", {"user_ids": [223]})
 
     def test_invalid_committee_management_ids(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {"name": "C1", "meeting_ids": [1]},
-                "meeting/1": {"committee_id": 1},
-                "user/222": {"meeting_ids": [1]},
-            }
-        )
+        self.create_committee()
         response = self.request(
             "user.create",
             {
@@ -267,7 +255,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assertIn("'committee/2' does not exist.", response.json["message"])
 
     def test_invalid_invalid_meeting_for_meeting_user(self) -> None:
-        self.create_model("meeting/1")
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
@@ -284,28 +272,25 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_invalid_group_id(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1, 2]},
-                "meeting/1": {"committee_id": 1},
-                "meeting/2": {
-                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
-                    "committee_id": 1,
-                },
-                "group/11": {"meeting_id": 1},
+                "committee/60": {"meeting_ids": [1, 4]},
+                "meeting/4": {"committee_id": 60},
             }
         )
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "meeting_id": 2,
-                "group_ids": [11],
+                "meeting_id": 4,
+                "group_ids": [3],
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 2: ['group/11']",
+            "The following models do not belong to meeting 4: ['group/3']",
             response.json["message"],
         )
 
@@ -373,11 +358,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/2", {"member_number": None})
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
@@ -393,7 +374,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": []},
+            {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": None},
         )
 
     def test_create_committee_manager_without_committee_ids(self) -> None:
@@ -527,7 +508,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user_id": 3,
                 "meeting_id": 1,
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
                 "group_ids": [1],
             },
         )
@@ -536,7 +517,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user_id": 3,
                 "meeting_id": 1,
-                "vote_weight": "1.000000",
+                "vote_weight": Decimal("1.000000"),
                 "group_ids": [1],
             },
         )
@@ -549,7 +530,13 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request_json(
@@ -565,7 +552,7 @@ class UserCreateActionTest(BaseActionTestCase):
                             "is_active": True,
                             "is_physical_person": True,
                             "default_password": "new default_password",
-                            "gender": "female",
+                            "gender_id": 2,
                             "email": "info@openslides.com",
                             "default_vote_weight": "1.234000",
                             "can_change_own_password": False,
@@ -598,9 +585,9 @@ class UserCreateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
-                "default_vote_weight": "1.234000",
+                "default_vote_weight": Decimal("1.234000"),
                 "can_change_own_password": False,
                 "committee_ids": [60, 63],
                 "meeting_ids": [1, 4],
@@ -616,12 +603,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.create_meeting(base=4)
         self.set_models(
             {
-                f"user/{self.user_id}": {
-                    "committee_management_ids": [60],
-                    "committee_ids": [60],
-                },
+                f"user/{self.user_id}": {"committee_ids": [60]},
                 "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
-                "committee/60": {"meeting_ids": [1, 4]},
+                "committee/60": {
+                    "name": "minish council",
+                    "meeting_ids": [1, 4],
+                    "manager_ids": [self.user_id],
+                },
             }
         )
 
@@ -692,12 +680,14 @@ class UserCreateActionTest(BaseActionTestCase):
         """May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
-        self.update_model(
-            f"user/{self.user_id}",
+        self.set_models(
             {
-                "committee_management_ids": [60, 63],
-                "committee_ids": [60, 63],
-            },
+                f"user/{self.user_id}": {
+                    "committee_ids": [60, 63],
+                },
+                "committee/60": {"manager_ids": [self.user_id]},
+                "committee/63": {"manager_ids": [self.user_id]},
+            }
         )
 
         response = self.request(
@@ -724,7 +714,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "structure_level_ids": [31],
                 },
-                "structure_level/31": {"meeting_id": 1},
+                "structure_level/31": {"name": "user 4 alone", "meeting_id": 1},
             }
         )
         self.set_user_groups(5, [1])
@@ -763,7 +753,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "user_id": 7,
                 "number": "number1",
                 "structure_level_ids": [31],
-                "vote_weight": "12.002345",
+                "vote_weight": Decimal("12.002345"),
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
                 "vote_delegations_from_ids": [2, 3],
@@ -816,7 +806,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
         self.set_organization_management_level(
-            OrganizationManagementLevel.SUPERADMIN, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
         )
         self.create_meeting(4)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
@@ -836,6 +826,28 @@ class UserCreateActionTest(BaseActionTestCase):
             "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
+
+    def test_create_permission_group_B_locked_meeting_with_perm(self) -> None:
+        """Group B fields needs explicit user.can_manage permission for meeting"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.create_meeting(4)
+        self.set_user_groups(self.user_id, [5])
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+                "is_present_in_meeting_ids": [4],
+                "number": "number1",
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_permission_group_C_oml_manager(self) -> None:
         """May create group C group_ids by OML permission"""
@@ -963,6 +975,29 @@ class UserCreateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(4)
         self.set_committee_management_level([63], self.user_id)
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs Permission user.can_manage for meeting 4",
+            response.json["message"],
+        )
+
+    def test_create_permission_group_C_parent_cml_locked_meeting(self) -> None:
+        """May not create group C group_ids in locked meetings as a committee manager of a parent committee"""
+        self.permission_setup()
+        self.create_meeting(4)
+        self.create_committee()
+        self.create_committee(63, parent_id=1)
+        self.set_committee_management_level([1], self.user_id)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
 
         response = self.request(
@@ -1182,6 +1217,34 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_participant_as_orga_admin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_user_groups(self.user_id, [])
+        response = self.request(
+            "user.create",
+            {
+                "first_name": "",
+                "last_name": "",
+                "is_active": True,
+                "is_physical_person": True,
+                "email": "",
+                "username": "username3",
+                "meeting_id": 1,
+                "group_ids": [3],
+                "vote_delegations_from_ids": [],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/3", {"username": "username3"})
+        assert len(meeting_user_ids := user.get("meeting_user_ids", [])) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
+        )
+
     def test_create_forbidden_username(self) -> None:
         response = self.request(
             "user.create",
@@ -1204,26 +1267,23 @@ class UserCreateActionTest(BaseActionTestCase):
         assert "Username may not contain spaces" in response.json["message"]
 
     def test_create_gender(self) -> None:
-        self.set_models({"organization/1": {"genders": ["male", "female"]}})
+        self.set_models({"organization/1": {"gender_ids": [1, 2]}})
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "gender": "test",
+                "gender_id": 5,
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Gender 'test' is not in the allowed gender list."
-            in response.json["message"]
-        )
+        assert "Model 'gender/5' does not exist." in response.json["message"]
 
     def test_exceed_limit_of_users(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
+                "user/2": {"username": "timtari", "is_active": True},
+                "user/3": {"username": "timtari", "is_active": True},
             }
         )
         response = self.request(
@@ -1287,25 +1347,8 @@ class UserCreateActionTest(BaseActionTestCase):
         user = self.get_model("user/2")
         assert "default_vote_weight" not in user
 
-    def test_create_forwarding_committee_ids_not_allowed(self) -> None:
-        self.set_models({"meeting/1": {"is_active_in_organization_id": 1}})
-        response = self.request(
-            "user.create",
-            {
-                "username": "test_Xcdfgee",
-                "forwarding_committee_ids": [],
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "forwarding_committee_ids is not allowed." in response.json["message"]
-
     def test_create_negative_vote_weight(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
@@ -1322,37 +1365,31 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_variant(self) -> None:
         """
-        The replacement on both sides user and committe is the committee_management_level,
+        The replacement on both sides user and committee is the committee_management_level,
         the ids are the user_ids and on user-side the committee_ids.
         """
+        self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
-                "committee/1": {
-                    "name": "C1",
-                    "meeting_ids": [1],
-                    "user_ids": [222],
+                "committee/60": {
                     "manager_ids": [222],
                 },
-                "committee/2": {
-                    "name": "C2",
-                    "meeting_ids": [2],
-                    "user_ids": [222],
+                "committee/63": {
                     "manager_ids": [222],
                 },
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/222": {
-                    "committee_management_ids": [1, 2],
+                    "username": "timtari",
                 },
-                "group/22": {"meeting_id": 2},
+                "group/22": {"name": "deminish cap", "meeting_id": 4},
             }
         )
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "committee_management_ids": [1],
-                "meeting_id": 2,
+                "committee_management_ids": [60],
+                "meeting_id": 4,
                 "group_ids": [22],
             },
         )
@@ -1360,31 +1397,31 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/223",
             {
-                "committee_management_ids": [1],
-                "meeting_ids": [2],
-                "committee_ids": [1, 2],
+                "committee_management_ids": [60],
+                "meeting_ids": [4],
+                "committee_ids": [60, 63],
                 "meeting_user_ids": [1],
             },
         )
         self.assert_model_exists(
             "meeting_user/1",
             {
-                "meeting_id": 2,
+                "meeting_id": 4,
                 "user_id": 223,
                 "group_ids": [22],
             },
         )
 
         self.assert_model_exists(
-            "committee/1", {"user_ids": [222, 223], "manager_ids": [222, 223]}
+            "committee/60", {"user_ids": [222, 223], "manager_ids": [222, 223]}
         )
         self.assert_model_exists(
-            "committee/2", {"user_ids": [222, 223], "manager_ids": [222]}
+            "committee/63", {"user_ids": [222, 223], "manager_ids": [222]}
         )
         self.assert_model_exists("group/22", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting/1", {"user_ids": None})
         self.assert_model_exists(
-            "meeting/2", {"user_ids": [223], "meeting_user_ids": [1]}
+            "meeting/4", {"user_ids": [223], "meeting_user_ids": [1]}
         )
 
     def assert_lock_out_user(
@@ -1418,6 +1455,22 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_locked_out_user_foreign_cml_allowed(self) -> None:
         self.assert_lock_out_user(1, {"committee_management_ids": [63]})
 
+    def test_create_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 60})
+
+    def test_create_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
+
+    def test_create_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
+
     def test_create_locked_out_user_superadmin_error(self) -> None:
         self.assert_lock_out_user(
             1,
@@ -1436,7 +1489,16 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             1,
             {"committee_management_ids": [60]},
-            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            1,
+            {"committee_management_ids": [59]},
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
         )
 
     def test_create_locked_out_user_meeting_admin_error(self) -> None:
@@ -1457,6 +1519,150 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             4,
             {"group_ids": [6]},
+        )
+
+    def test_create_with_home_committee(self) -> None:
+        self.create_committee(3)
+        response = self.request(
+            "user.create",
+            {"username": "dracula", "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"username": "dracula", "home_committee_id": 3, "committee_ids": [3]},
+        )
+
+    def test_create_with_all_committee_fields(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4)
+        self.create_committee(5)
+        self.create_committee(6, parent_id=5)
+        self.create_meeting()
+        response = self.request(
+            "user.create",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_user_ids": [1],
+                "committee_ids": [3, 4, 6, 60],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+
+    def test_create_with_home_committee_cml(self) -> None:
+        self.create_committee(3)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {"username": "mina", "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "mina", "home_committee_id": 3, "committee_ids": [3]}
+        )
+
+    def test_create_with_external_true(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "jonathan", "external": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jonathan", "external": True})
+
+    def test_create_with_external_false(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "jack", "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jack", "external": False})
+
+    def test_create_with_with_home_committee_and_external_true(self) -> None:
+        self.create_committee(3)
+        response = self.request(
+            "user.create",
+            {"username": "renfield", "home_committee_id": 3, "external": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set external to true and set a home committee at the same time.",
+            response.json["message"],
+        )
+
+    def test_create_with_home_committee_and_external_false(self) -> None:
+        """Also tests for parent CML"""
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {"username": "vanHelsing", "home_committee_id": 3, "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "vanHelsing",
+                "home_committee_id": 3,
+                "external": False,
+                "committee_ids": [3],
+            },
+        )
+
+    def test_create_with_home_committee_wrong_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {
+                "username": "quincy",
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_create_with_home_committee_no_perm(self) -> None:
+        self.create_committee(3)
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {
+                "username": "arthur",
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
         )
 
 
@@ -1541,8 +1747,8 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"group_ids": [1, 2, 3, 4]},
-                "group/4": {"anonymous_group_for_meeting_id": 1},
+                "meeting/1": {"group_ids": [1, 2, 3, 4], "anonymous_group_id": 4},
+                "group/4": {"name": "anonymous", "meeting_id": 1},
             }
         )
         response = self.request(

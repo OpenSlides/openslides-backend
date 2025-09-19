@@ -1,5 +1,10 @@
 from typing import Any
+from unittest.mock import MagicMock
 
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import id_from_fqid
@@ -23,13 +28,30 @@ class TestCheckMediafileId(BasePresenterTestCase):
             user_id=user_id,
             locked_fields={},
         )
-        self.datastore.write(request)
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, MagicMock(), MagicMock()).write(request)
 
     def remove_timestamps(self, information: list[dict[str, Any]]) -> None:
         for position in information:
             del position["timestamp"]
 
     def test_simple(self) -> None:
+        self.set_models(
+            {
+                "motion_workflow/1": {
+                    "name": "work",
+                    "sequential_number": 1,
+                    "first_state_id": 1,
+                    "meeting_id": 1,
+                },
+                "motion_state/1": {
+                    "name": "TODO",
+                    "weight": 1,
+                    "workflow_id": 1,
+                    "meeting_id": 1,
+                },
+            }
+        )
         self.create_model_with_information("meeting/1", {}, ["Created"])
         self.create_model_with_information(
             "motion/1",

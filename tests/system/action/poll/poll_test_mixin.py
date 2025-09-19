@@ -9,6 +9,7 @@ class PollTestMixin(BaseActionTestCase):
 
     def prepare_users_and_poll(self, user_count: int) -> list[int]:
         user_ids = list(range(2, user_count + 2))
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -23,11 +24,14 @@ class PollTestMixin(BaseActionTestCase):
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
+                    "sequential_number": 1,
+                    "onehundred_percent_base": "YNA",
+                    "title": "Poll 1",
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 **{
                     f"user/{i}": {
-                        **self._get_user_data(f"user{i}", {1: [{"id": 3}]}),
+                        **self._get_user_data(f"user{i}"),
                         "is_present_in_meeting_ids": [1],
                         "meeting_ids": [1],
                         "meeting_user_ids": [i + 10],
@@ -49,7 +53,6 @@ class PollTestMixin(BaseActionTestCase):
                 "meeting/1": {
                     "user_ids": user_ids,
                     "group_ids": [3],
-                    "is_active_in_organization_id": 1,
                     "name": "test",
                 },
             }

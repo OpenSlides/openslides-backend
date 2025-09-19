@@ -16,12 +16,9 @@ class PointOfOrderCategoryUpdate(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting(110)
         self.set_models(
             {
-                "meeting/110": {
-                    "is_active_in_organization_id": 1,
-                    "point_of_order_category_ids": [45],
-                },
                 "point_of_order_category/45": {
                     "text": "blablabla",
                     "rank": 11,

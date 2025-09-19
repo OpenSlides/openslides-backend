@@ -22,21 +22,22 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        assignment_candidate = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            mapped_fields=["assignment_id"],
-        )
-        assignment = self.datastore.get(
-            fqid_from_collection_and_id(
-                "assignment", assignment_candidate["assignment_id"]
-            ),
-            mapped_fields=["phase", "meeting_id"],
-            lock_result=False,
-        )
-        if assignment.get("phase") == "finished" and not self.is_meeting_deleted(
-            assignment.get("meeting_id", 0)
-        ):
-            raise ActionException(
-                "It is not permitted to remove a candidate from a finished assignment!"
+        if not self.internal:
+            assignment_candidate = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                mapped_fields=["assignment_id"],
             )
+            assignment = self.datastore.get(
+                fqid_from_collection_and_id(
+                    "assignment", assignment_candidate["assignment_id"]
+                ),
+                mapped_fields=["phase", "meeting_id"],
+                lock_result=False,
+            )
+            if assignment.get("phase") == "finished" and not self.is_meeting_deleted(
+                assignment.get("meeting_id", 0)
+            ):
+                raise ActionException(
+                    "It is not permitted to remove a candidate from a finished assignment!"
+                )
         return instance

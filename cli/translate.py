@@ -1,25 +1,23 @@
+import logging
+import os
 import sys
 from typing import Any
 
-from openslides_backend.datastore.reader.core import GetAllRequest, GetRequest, Reader
-from openslides_backend.datastore.reader.services import (
-    register_services as register_reader_services,
-)
-from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
-from openslides_backend.datastore.writer.core import (
-    RequestUpdateEvent,
-    Writer,
-    WriteRequest,
-)
-from openslides_backend.datastore.writer.services import (
-    register_services as register_writer_services,
-)
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.models.models import Organization
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
+from openslides_backend.shared.env import Environment
+from openslides_backend.shared.interfaces.write_request import (
+    RequestUpdateEvent,
+    WriteRequest,
+)
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+env = Environment(os.environ)
 collection_to_fields_map = {
     "organization": [
         "name",
@@ -50,13 +48,11 @@ possible_languages = Organization().default_language.constraints["enum"]
 
 
 def read_collection(collection: str, fields: list[str]) -> Any:
-    reader: Reader = injector.get(Reader)
-    with reader.get_database_context():
-        response = reader.get_all(
-            GetAllRequest(
-                collection, ["id", *fields], DeletedModelsBehaviour.NO_DELETED
-            )
+    with get_new_os_conn() as conn:
+        response = ExtendedDatabase(conn, logging, env).get_all(
+            collection, ["id", *fields]
         )
+
     return response.items()
 
 
@@ -68,9 +64,11 @@ def check_language(language: str) -> None:
 
 
 def check_organization_language() -> None:
-    reader: Reader = injector.get(Reader)
-    with reader.get_database_context():
-        response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
+    with get_new_os_conn() as conn:
+        response = ExtendedDatabase(conn, logging, env).get(
+            ONE_ORGANIZATION_FQID, ["default_language"]
+        )
+
     if response["default_language"] != "en":
         print("Cannot translate from source languages other than `en`.")
         print_help()
@@ -92,8 +90,6 @@ def main() -> None:
     check_language(language)
     Translator.set_translation_language(language)
 
-    register_reader_services()
-    register_writer_services()
     check_organization_language()
 
     # translate and generate events
@@ -122,8 +118,8 @@ def main() -> None:
     # write events into the datastore
     if events:
         write_request = WriteRequest(events, None, 0, {})  # type: ignore
-        writer: Writer = injector.get(Writer)
-        writer.write([write_request])
+        with get_new_os_conn() as conn:
+            ExtendedDatabase(conn, logging, env).write([write_request])
 
 
 if __name__ == "__main__":

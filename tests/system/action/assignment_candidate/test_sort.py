@@ -8,19 +8,15 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-            "user/233": {"username": "username_233", "meeting_user_ids": [233]},
-            "user/234": {"username": "username_234", "meeting_user_ids": [234]},
-            "meeting_user/233": {
+            "assignment/222": {
+                "sequential_number": 1,
+                "title": "title_SNLGsvIV",
                 "meeting_id": 1,
-                "user_id": 233,
-                "assignment_candidate_ids": [31],
             },
-            "meeting_user/234": {
-                "meeting_id": 1,
-                "user_id": 234,
-                "assignment_candidate_ids": [32],
-            },
+            "user/233": {"username": "username_233"},
+            "user/234": {"username": "username_234"},
+            "meeting_user/233": {"meeting_id": 1, "user_id": 233},
+            "meeting_user/234": {"meeting_id": 1, "user_id": 234},
             "assignment_candidate/31": {
                 "assignment_id": 222,
                 "meeting_user_id": 233,
@@ -34,22 +30,18 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
         }
 
     def test_sort_correct_1(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
-                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
-                "meeting_user/233": {
+                "assignment/222": {
+                    "sequential_number": 1,
+                    "title": "title_SNLGsvIV",
                     "meeting_id": 1,
-                    "user_id": 233,
-                    "assignment_candidate_ids": [31],
                 },
-                "meeting_user/234": {
-                    "meeting_id": 1,
-                    "user_id": 234,
-                    "assignment_candidate_ids": [32],
-                },
+                "user/233": {"username": "username_233"},
+                "user/234": {"username": "username_234"},
+                "meeting_user/233": {"meeting_id": 1, "user_id": 233},
+                "meeting_user/234": {"meeting_id": 1, "user_id": 234},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,
@@ -73,22 +65,18 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
         assert model_32.get("weight") == 1
 
     def test_sort_missing_model(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
-                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
-                "meeting_user/233": {
+                "assignment/222": {
+                    "sequential_number": 1,
+                    "title": "title_SNLGsvIV",
                     "meeting_id": 1,
-                    "user_id": 233,
-                    "assignment_candidate_ids": [31],
                 },
-                "meeting_user/234": {
-                    "meeting_id": 1,
-                    "user_id": 234,
-                    "assignment_candidate_ids": [32],
-                },
+                "user/233": {"username": "username_233"},
+                "user/234": {"username": "username_234"},
+                "meeting_user/233": {"meeting_id": 1, "user_id": 233},
+                "meeting_user/234": {"meeting_id": 1, "user_id": 234},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,
@@ -107,28 +95,20 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
         )
 
     def test_sort_another_section_db(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
+                "assignment/222": {
+                    "sequential_number": 1,
+                    "title": "title_SNLGsvIV",
+                    "meeting_id": 1,
+                },
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
                 "user/236": {"username": "username_236"},
-                "meeting_user/233": {
-                    "meeting_id": 1,
-                    "user_id": 233,
-                    "assignment_candidate_ids": [31],
-                },
-                "meeting_user/234": {
-                    "meeting_id": 1,
-                    "user_id": 234,
-                    "assignment_candidate_ids": [32],
-                },
-                "meeting_user/236": {
-                    "meeting_id": 1,
-                    "user_id": 236,
-                    "assignment_candidate_ids": [33],
-                },
+                "meeting_user/233": {"meeting_id": 1, "user_id": 233},
+                "meeting_user/234": {"meeting_id": 1, "user_id": 234},
+                "meeting_user/236": {"meeting_id": 1, "user_id": 236},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,

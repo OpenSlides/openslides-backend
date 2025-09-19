@@ -8,6 +8,8 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
                 "meeting/1": {
                     "motion_poll_default_group_ids": [1],
                     "is_active_in_organization_id": 1,
+                    "language": "en",
+                    "committee_id": 1,
                 },
                 "group/1": {"used_as_motion_poll_default_id": 1},
                 "group/2": {"name": "2", "used_as_motion_poll_default_id": None},
@@ -29,7 +31,13 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
 
     def test_html_field_iframe(self) -> None:
         self.create_model(
-            "meeting/1", {"welcome_text": "Hi", "is_active_in_organization_id": 1}
+            "meeting/1",
+            {
+                "welcome_text": "Hi",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "meeting.update", {"id": 1, "welcome_text": '<iframe allow="yes">'}
@@ -43,7 +51,13 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
 
     def test_html_field_iframe_attributes(self) -> None:
         self.create_model(
-            "meeting/1", {"welcome_text": "Hi", "is_active_in_organization_id": 1}
+            "meeting/1",
+            {
+                "welcome_text": "Hi",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "meeting.update",
@@ -61,7 +75,13 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
 
     def test_html_field_script(self) -> None:
         self.create_model(
-            "meeting/1", {"welcome_text": "Hi", "is_active_in_organization_id": 1}
+            "meeting/1",
+            {
+                "welcome_text": "Hi",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "meeting.update",

@@ -7,62 +7,48 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/22": {"meeting_id": 1, "title": "test1"},
+            "motion/22": {
+                "title": "motion22",
+                "sequential_number": 22,
+                "state_id": 1,
+                "meeting_id": 1,
+            },
         }
 
-    def test_sort_singe_node_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/22": {"meeting_id": 222, "title": "test1"},
-            }
-        )
+    def test_sort_single_node_correct(self) -> None:
+        self.create_motion(222, 22)
         response = self.request(
             "motion.sort", {"meeting_id": 222, "tree": [{"id": 22}]}
         )
         self.assert_status_code(response, 200)
-        assert "Actions handled successfully" in response.json["message"]
-        model_22 = self.get_model("motion/22")
-        assert model_22.get("sort_weight") == 1
-        assert model_22.get("sort_parent_id") is None
-        assert model_22.get("sort_child_ids") == []
+        self.assertEqual("Actions handled successfully", response.json["message"])
+        self.assert_model_exists(
+            "motion/22",
+            {
+                "sort_weight": 1,
+                "sort_parent_id": None,
+                "sort_child_ids": None,
+            },
+        )
 
     def test_sort_not_all_sorted(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/22": {"meeting_id": 222, "title": "test1"},
-                "motion/23": {"meeting_id": 222, "title": "test"},
-            }
-        )
+        self.create_motion(222, 22)
+        self.create_motion(222, 23)
         response = self.request(
             "motion.sort", {"meeting_id": 222, "tree": [{"id": 22}]}
         )
         self.assert_status_code(response, 400)
-        assert "Did not recieve 2 ids, got 1" in response.json["message"]
+        self.assertEqual("Did not recieve 2 ids, got 1.", response.json["message"])
 
     def test_sort_complex_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/1": {"meeting_id": 222, "title": "test_root"},
-                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
-                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
-                "motion/21": {"meeting_id": 222, "title": "test_2_1"},
-                "motion/22": {"meeting_id": 222, "title": "test_2_2"},
-                "motion/23": {"meeting_id": 222, "title": "test_2_3"},
-            }
-        )
+        self.create_motion(222, 1)
+        self.create_motion(222, 11)
+        self.create_motion(222, 12)
+        self.create_motion(222, 21)
+        self.create_motion(222, 22)
+        self.create_motion(222, 23)
 
         valid_data = {
             "meeting_id": 222,
@@ -87,18 +73,9 @@ class MotionSortActionTest(BaseActionTestCase):
         self.assert_model_exists("motion/23", {"sort_weight": 2})
 
     def test_sort_not_a_tree(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/1": {"meeting_id": 222, "title": "test_root"},
-                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
-                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
-            }
-        )
-
+        self.create_motion(222, 1)
+        self.create_motion(222, 11)
+        self.create_motion(222, 12)
         not_tree_data = {
             "meeting_id": 222,
             "tree": [
@@ -110,20 +87,12 @@ class MotionSortActionTest(BaseActionTestCase):
         }
         response = self.request("motion.sort", not_tree_data)
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 12" in response.json["message"]
+        self.assertEqual("Duplicate id in sort tree: 12", response.json["message"])
 
     def test_sort_circle_fail(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/1": {"meeting_id": 222, "title": "test_root"},
-                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
-                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
-            }
-        )
+        self.create_motion(222, 1)
+        self.create_motion(222, 11)
+        self.create_motion(222, 12)
 
         circle_data = {
             "meeting_id": 222,
@@ -138,20 +107,12 @@ class MotionSortActionTest(BaseActionTestCase):
         }
         response = self.request("motion.sort", circle_data)
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 1" in response.json["message"]
+        self.assertEqual("Duplicate id in sort tree: 1", response.json["message"])
 
     def test_small_tree_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/1": {"meeting_id": 222, "title": "test_root"},
-                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
-                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
-            }
-        )
+        self.create_motion(222, 1)
+        self.create_motion(222, 11)
+        self.create_motion(222, 12)
 
         small_tree_data = {
             "meeting_id": 222,
@@ -159,39 +120,44 @@ class MotionSortActionTest(BaseActionTestCase):
         }
         response = self.request("motion.sort", small_tree_data)
         self.assert_status_code(response, 200)
-        model_1 = self.get_model("motion/1")
-        assert model_1.get("sort_weight") == 1
-        assert model_1.get("sort_parent_id") is None
-        assert model_1.get("sort_child_ids") == [11, 12]
-        model_11 = self.get_model("motion/11")
-        assert model_11.get("sort_weight") == 1
-        assert model_11.get("sort_parent_id") == 1
-        assert model_11.get("sort_child_ids") == []
-        model_12 = self.get_model("motion/12")
-        assert model_12.get("sort_weight") == 2
-        assert model_12.get("sort_parent_id") == 1
-        assert model_12.get("sort_child_ids") == []
-
-    def test_extra_id(self) -> None:
-        self.set_models(
+        self.assert_model_exists(
+            "motion/1",
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/1": {"meeting_id": 222, "title": "test_root"},
-                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
-                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
-            }
+                "sort_weight": 1,
+                "sort_parent_id": None,
+                "sort_child_ids": [11, 12],
+            },
+        )
+        self.assert_model_exists(
+            "motion/11",
+            {
+                "sort_weight": 1,
+                "sort_parent_id": 1,
+                "sort_child_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "motion/12",
+            {
+                "sort_weight": 2,
+                "sort_parent_id": 1,
+                "sort_child_ids": None,
+            },
         )
 
+    def test_extra_id(self) -> None:
+        self.create_motion(222, 1)
+        self.create_motion(222, 11)
+        self.create_motion(222, 12)
         data = {
             "meeting_id": 222,
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}, {"id": 111}]}],
         }
         response = self.request("motion.sort", data)
         self.assert_status_code(response, 400)
-        assert "Id in sort tree does not exist: 111" in response.json["message"]
+        self.assertEqual(
+            "Id in sort tree does not exist: 111", response.json["message"]
+        )
 
     def test_sort_no_permission(self) -> None:
         self.base_permission_test(

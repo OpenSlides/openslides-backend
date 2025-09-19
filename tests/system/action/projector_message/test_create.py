@@ -5,7 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorMessageCreate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models({"meeting/1": {"is_active_in_organization_id": 1}})
+        self.create_meeting()
 
     def test_create(self) -> None:
         response = self.request(
@@ -16,17 +16,17 @@ class ProjectorMessageCreate(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        projector_message = self.get_model("projector_message/1")
-        assert projector_message.get("meeting_id") == 1
-        assert projector_message.get("message") == "&lt;b&gt;TEST&lt;/b&gt;"
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("projector_message_ids") == [1]
+        self.assert_model_exists(
+            "projector_message/1",
+            {"meeting_id": 1, "message": "&lt;b&gt;TEST&lt;/b&gt;"},
+        )
+        self.assert_model_exists("meeting/1", {"projector_message_ids": [1]})
 
     def test_create_empty_data(self) -> None:
         response = self.request("projector_message.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['meeting_id', 'message'] properties",
+        self.assertEqual(
+            "Action projector_message.create: data must contain ['meeting_id', 'message'] properties",
             response.json["message"],
         )
 
@@ -34,20 +34,14 @@ class ProjectorMessageCreate(BaseActionTestCase):
         self.base_permission_test(
             {},
             "projector_message.create",
-            {
-                "meeting_id": 1,
-                "message": "<b>TEST</b>",
-            },
+            {"meeting_id": 1, "message": "<b>TEST</b>"},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
             {},
             "projector_message.create",
-            {
-                "meeting_id": 1,
-                "message": "<b>TEST</b>",
-            },
+            {"meeting_id": 1, "message": "<b>TEST</b>"},
             Permissions.Projector.CAN_MANAGE,
         )
 
@@ -55,8 +49,5 @@ class ProjectorMessageCreate(BaseActionTestCase):
         self.base_locked_out_superadmin_permission_test(
             {},
             "projector_message.create",
-            {
-                "meeting_id": 1,
-                "message": "<b>TEST</b>",
-            },
+            {"meeting_id": 1, "message": "<b>TEST</b>"},
         )

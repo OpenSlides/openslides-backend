@@ -1,4 +1,5 @@
-from time import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -19,7 +20,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -35,7 +36,7 @@ class UserForgetPassword(BaseActionTestCase):
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -110,7 +111,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user/3": {"email": "user@ntvtn.de", "username": "test3"},
             }
         )
-        start_time = int(time())
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -141,6 +142,55 @@ class UserForgetPassword(BaseActionTestCase):
             "test2" in handler.emails[1]["data"]
         )
         assert "https://openslides.example.com" in handler.emails[1]["data"]
+
+    def test_forget_password_two_users_case_insensitive(self) -> None:
+        id_to_email = {1: "Test@ntvtn.dE", 2: "tEst@nTVTN.de"}
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"url": "https://openslides.example.com"},
+                "user/1": {"email": id_to_email[1]},
+                "user/2": {"email": id_to_email[2], "username": "test2"},
+            }
+        )
+        start_time = datetime.now(ZoneInfo("UTC"))
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password", {"email": "TEST@ntvtn.de"}, anonymous=True
+            )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/1")
+        assert user.get("last_email_sent", 0) >= start_time
+        user2 = self.get_model("user/2")
+        assert user2.get("last_email_sent", 0) >= start_time
+        assert handler.emails[0]["from"] == EmailSettings.default_from_email
+
+        index_of_user_1 = 0 if handler.emails[0]["to"][0] == id_to_email[1] else 1
+        assert handler.emails[index_of_user_1]["to"][0] == id_to_email[1]
+        assert (
+            "Reset your OpenSlides password: admin"
+            in handler.emails[index_of_user_1]["data"]
+        )
+        assert (
+            "https://openslides.example.com" in handler.emails[index_of_user_1]["data"]
+        )
+
+        assert (
+            handler.emails[1 - index_of_user_1]["from"]
+            == EmailSettings.default_from_email
+        )
+        assert handler.emails[1 - index_of_user_1]["to"][0] == id_to_email[2]
+        assert (
+            "Reset your OpenSlides password: test2"
+            in handler.emails[1 - index_of_user_1]["data"]
+        )
+        assert ("test2" in handler.emails[0]["data"]) != (
+            "test2" in handler.emails[1]["data"]
+        )
+        assert (
+            "https://openslides.example.com"
+            in handler.emails[1 - index_of_user_1]["data"]
+        )
 
     def test_forget_password_no_user_found(self) -> None:
         self.set_models({ONE_ORGANIZATION_FQID: {"url": None}})

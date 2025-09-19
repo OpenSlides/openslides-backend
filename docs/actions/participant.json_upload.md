@@ -14,7 +14,7 @@ The types noted below are the internal types after conversion in the backend. Se
           member_number: string, // unique member_number, info: done, error, new (newly added) or remove (missing field permission)
           title: string,  // info: done or remove (missing field permission)
           pronoun: string,  // info: done or remove (missing field permission)
-          gender: string, // as defined in organization/genders, info: done, warning (undefined gender) or remove (missing field permission)
+          gender: string, // info: done, warning (undefined gender) or remove (missing field permission)
           default_password: string,  // info: generated, done, warning or remove (missing field permission)
           is_active: boolean,  // info: done or remove (missing field permission)
           is_physical_person: boolean,  // info: done or remove (missing field permission)
@@ -32,7 +32,7 @@ The types noted below are the internal types after conversion in the backend. Se
 ## Objects (fields with additional info) in the resulting preview-data
 
 See general user fields in [account.json_upload#user-matching](account.json_upload.md#user-matching) with some additions:
-- `groups`: object with info "warning" for not found groups, "done" for a found group. If there is no group found at all, the default group will added automatically with state "generated".
+- `groups`: object with state "done" for the found existing groups or state "new" for the groups created within this action. If no groups were provided in the payload, the default group will be added automatically with the state "generated".
 - `vote_weight` doesn't allow 0 values
 - `structure_level` will return `new` if it is not found, in such cases the structure level will be created in the import
 - `locked_out` will be checked against corresponding (orga-, committee-, and meeting-) admin and `user.can_manage` permissions with field state `error` being set if both things would be there in the end result.

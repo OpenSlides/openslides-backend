@@ -108,7 +108,7 @@ class TestInternalActionsDev(BaseInternalActionTest):
     def test_internal_user_delete(self) -> None:
         response = self.internal_request("user.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/1")
+        self.assert_model_not_exists("user/1")
 
     def test_internal_user_set_password(self) -> None:
         response = self.internal_request(

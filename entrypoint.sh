@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source scripts/export_datastore_variables.sh
-scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
+if [ ! $ANONYMOUS_ONLY ]; then
+  meta/dev/scripts/wait-for-database.sh
+fi
 
 exec "$@"

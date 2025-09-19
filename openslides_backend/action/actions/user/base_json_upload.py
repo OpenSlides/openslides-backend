@@ -1,8 +1,12 @@
 from collections import defaultdict
 from typing import Any, cast
 
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsFailingFields,
+    PermissionVarStore,
+)
+
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
@@ -14,7 +18,7 @@ from ...mixins.import_mixins import (
 from ...mixins.send_email_mixin import EmailUtils
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixins import UsernameMixin, check_gender_helper
+from .user_mixins import UsernameMixin
 
 
 class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
@@ -32,6 +36,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "pronoun", "type": "string"},
         {"property": "saml_id", "type": "string", "is_object": True},
         {"property": "member_number", "type": "string", "is_object": True},
+        {"property": "home_committee", "type": "string", "is_object": True},
+        {"property": "external", "type": "boolean", "is_object": True},
     ]
     skip_archived_meeting_check = True
     row_state: ImportState
@@ -40,6 +46,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
     member_number_lookup: Lookup
+    committee_lookup: Lookup
 
     @classmethod
     def get_schema(
@@ -61,14 +68,16 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "email",
                                 "title",
                                 "pronoun",
-                                "gender",
                                 "default_password",
                                 "is_active",
                                 "is_physical_person",
                                 "saml_id",
                                 "member_number",
+                                "external",
                             ),
                             **additional_user_fields,
+                            "gender": {"type": "string"},
+                            "home_committee": {"type": "string"},
                         },
                         "additionalProperties": False,
                     },
@@ -78,9 +87,25 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             }
         )
 
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+
+        permstore = PermissionVarStore(self.datastore, self.user_id)
+        self.permission_check = CreateUpdatePermissionsFailingFields(
+            self.user_id,
+            permstore,
+            self.services,
+            self.datastore,
+            self.relation_manager,
+            self.logging,
+            self.env,
+            self.skip_archived_meeting_check,
+            self.use_meeting_ids_for_archived_meeting_check,
+        )
+
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
-        data = self.add_payload_index_to_action_data(data)
+        data = list(self.add_payload_index_to_action_data(data))
         self.setup_lookups(data)
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
@@ -355,10 +380,20 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.handle_default_password(entry)
 
         if gender := entry.get("gender"):
-            try:
-                check_gender_helper(self.datastore, entry)
-                entry["gender"] = {"info": ImportState.DONE, "value": gender}
-            except ActionException:
+            if gender_model := next(
+                (
+                    model
+                    for model in self.gender_dict.values()
+                    if model["name"] == gender
+                ),
+                None,
+            ):
+                entry["gender"] = {
+                    "info": ImportState.DONE,
+                    "value": gender,
+                    "id": gender_model["id"],
+                }
+            else:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
 
@@ -370,7 +405,149 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 self.row_state = ImportState.ERROR
                 messages.append(f"Error: '{email}' is not a valid email address.")
 
+        if home_committee := entry.get("home_committee"):
+            result = self.committee_lookup.check_duplicate(home_committee)
+            if result == ResultType.FOUND_ID:
+                home_committee_id: int = cast(
+                    int, self.committee_lookup.get_field_by_name(home_committee, "id")
+                )
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.DONE,
+                    "id": home_committee_id,
+                }
+            elif result == ResultType.NOT_FOUND:
+                self.row_state = ImportState.ERROR
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.ERROR,
+                }
+                messages.append("Error: Home committee not found.")
+            elif result == ResultType.FOUND_MORE_IDS:
+                self.row_state = ImportState.ERROR
+                entry["home_committee"] = {
+                    "value": home_committee,
+                    "info": ImportState.ERROR,
+                }
+                messages.append(
+                    "Error: Found multiple committees with the same name as the home committee."
+                )
+            if (external := entry.get("external")) is False:
+                entry["external"] = {"value": False, "info": ImportState.DONE}
+            elif external and entry["home_committee"]["info"] != ImportState.REMOVE:
+                self.row_state = ImportState.ERROR
+                entry["external"] = {"value": external, "info": ImportState.ERROR}
+                messages.append(
+                    "Error: Cannot set external to true while setting home committee."
+                )
+            elif external:
+                entry["external"] = {"value": external, "info": ImportState.DONE}
+            elif entry["home_committee"]["info"] != ImportState.REMOVE:
+                entry["external"] = {"value": False, "info": ImportState.GENERATED}
+        elif (external := entry.get("external")) is not None:
+            if external is True:
+                entry["external"] = {
+                    "value": external,
+                    "info": ImportState.DONE,
+                }
+                entry["home_committee"] = {
+                    "value": None,
+                    "info": ImportState.GENERATED,
+                }
+                messages.append(
+                    "If external is set to true, any home_committee that was set will be removed."
+                )
+            else:
+                entry["external"] = {
+                    "value": external,
+                    "info": ImportState.DONE,
+                }
+
+        if self.user_id == entry.get("id") and not (
+            is_active := entry.get("is_active", True)
+        ):
+            entry["is_active"] = {
+                "value": is_active,
+                "info": ImportState.ERROR,
+            }
+            messages.append("A superadmin is not allowed to set himself inactive.")
+
         return {"state": self.row_state, "messages": messages, "data": entry}
+
+    def remove_helper_fields_from_entry_in_field_failure_check(
+        self, entry: dict[str, Any]
+    ) -> None:
+        """
+        This method is supposed to remove subclass-specific helper fields that were
+        added for the sake of checking the values in the failing fields check before remove infos are calculated.
+        Should be overwritten by subclasses if it is required.
+        """
+
+    def check_field_failures(
+        self,
+        entry: dict[str, Any],
+        messages: list[str],
+        failing_msg: str,
+        field_groups: str = "ABDEFGHIJ",
+    ) -> None:
+        payload_index = entry.pop("payload_index", None)
+        # swapping needed for get_failing_fields and setting import states not to fail
+        if entry.get("gender"):
+            entry["gender_id"] = entry.pop("gender")
+        if home_committee := entry.pop("home_committee", None):
+            if (home_committee_id := home_committee.get("id")) or home_committee[
+                "value"
+            ] is None:
+                entry["home_committee_id"] = home_committee_id
+        if external := entry.pop("external", None):
+            entry["external"] = external["value"]
+        failing_fields = self.permission_check.get_failing_fields(entry, field_groups)
+        self.remove_helper_fields_from_entry_in_field_failure_check(entry)
+
+        if not entry.get("id"):
+            if "username" in failing_fields:
+                failing_fields.remove("username")
+            if "member_number" in failing_fields:
+                failing_fields.remove("member_number")
+
+        verbose_ff = [
+            field if field != "home_committee_id" else "home_committee"
+            for field in failing_fields
+        ]
+        if failing_fields:
+            messages.append(f"{failing_msg} {', '.join(verbose_ff)}")
+        field_to_fail = set(
+            entry.keys()
+        ) & self.permission_check.get_all_checked_fields(field_groups)
+        if home_committee:
+            entry["home_committee"] = home_committee
+            entry.pop("home_committee_id", None)
+        if external:
+            entry["external"] = external
+        for field in field_to_fail:
+            actual_field = (
+                field[:-3] if field not in entry and field.endswith("_id") else field
+            )
+            if field in failing_fields:
+                if isinstance(entry[actual_field], dict):
+                    if entry[actual_field]["info"] != ImportState.ERROR:
+                        entry[actual_field]["info"] = ImportState.REMOVE
+                else:
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.REMOVE,
+                    }
+            else:
+                if not isinstance(entry[actual_field], dict):
+                    entry[actual_field] = {
+                        "value": entry[field],
+                        "info": ImportState.DONE,
+                    }
+
+        if payload_index:
+            entry["payload_index"] = payload_index
+        if entry.get("gender_id"):
+            entry["gender"] = entry.pop("gender_id")
 
     def create_usernames(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         usernames: list[str] = []
@@ -489,6 +666,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             field="member_number",
             mapped_fields=["username", "member_number", "saml_id"],
         )
+        self.gender_dict = self.datastore.get_all(
+            "gender", ["id", "name"], lock_result=False
+        )
 
         self.all_id_mapping: dict[int, list[SearchFieldType]] = defaultdict(list)
         for lookup in (
@@ -498,6 +678,16 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         ):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
+        home_committee_names: set[str] = {
+            home_committee
+            for entry in data
+            if (home_committee := entry.get("home_committee"))
+        }
+        self.committee_lookup = Lookup(
+            self.datastore,
+            "committee",
+            [(home_committee, {}) for home_committee in home_committee_names],
+        )
 
     def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:
         for entry in data:

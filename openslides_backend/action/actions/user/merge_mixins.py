@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import (
     AssignmentCandidate,
@@ -11,7 +11,7 @@ from ....models.models import (
     PersonalNote,
     Speaker,
 )
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, fqid_from_collection_and_id
@@ -197,11 +197,11 @@ class MeetingUserMergeMixin(
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
-                    "motion_editor_ids": "motion_editor",
-                    "motion_working_group_speaker_ids": "motion_working_group_speaker",
                 },
                 "deep_create_merge": {
+                    "motion_editor_ids": "motion_editor",
                     "motion_submitter_ids": "motion_submitter",
+                    "motion_working_group_speaker_ids": "motion_working_group_speaker",
                     "personal_note_ids": "personal_note",
                     "speaker_ids": "speaker",
                 },

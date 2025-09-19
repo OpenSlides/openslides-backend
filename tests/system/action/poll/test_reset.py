@@ -31,7 +31,8 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
             "vote/1": {"option_id": 1, "meeting_id": 1},
             "vote/2": {"option_id": 1, "meeting_id": 1},
             "vote/3": {"option_id": 2, "meeting_id": 1},
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/1": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
     def test_reset_correct(self) -> None:
@@ -64,9 +65,9 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         assert poll.get("votescast") is None
 
         # check if the votes are deleted
-        self.assert_model_deleted("vote/1")
-        self.assert_model_deleted("vote/2")
-        self.assert_model_deleted("vote/3")
+        self.assert_model_not_exists("vote/1")
+        self.assert_model_not_exists("vote/2")
+        self.assert_model_not_exists("vote/3")
 
         # check if the option.vote_ids fields are cleared
         option_1 = self.get_model("option/1")
@@ -128,7 +129,12 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
                     "max_votes_per_option": 1,
                     "type": "named",
                     "backend": "long",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
+                    "onehundred_percent_base": "Y",
+                    "content_object_id": "topic/1",
                 },
+                "topic/1": {"meeting_id": 1, "poll_ids": [1], "title": "Tim the topic"},
             }
         )
         self.vote_service.start(1)
@@ -155,6 +161,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
 
     @performance
     def test_reset_performance(self) -> None:
+        # TODO this needs a different idea
         self.prepare_users_and_poll(100)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)

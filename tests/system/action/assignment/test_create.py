@@ -4,15 +4,18 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AssignmentCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(110)
+
     def test_create(self) -> None:
-        self.create_model(
-            "meeting/110",
+        self.set_models(
             {
-                "name": "name_zvfbAjpZ",
-                "agenda_item_creation": "always",
-                "list_of_speakers_initially_closed": True,
-                "is_active_in_organization_id": 1,
-            },
+                "meeting/110": {
+                    "agenda_item_creation": "always",
+                    "list_of_speakers_initially_closed": True,
+                }
+            }
         )
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
@@ -33,14 +36,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_other_agenda_item_check(self) -> None:
-        self.create_model(
-            "meeting/110",
-            {
-                "name": "name_zvfbAjpZ",
-                "agenda_item_creation": "default_yes",
-                "is_active_in_organization_id": 1,
-            },
-        )
+        self.set_models({"meeting/110": {"agenda_item_creation": "default_yes"}})
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
@@ -53,14 +49,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
 
     def test_create_other_agenda_item_check_2(self) -> None:
-        self.create_model(
-            "meeting/110",
-            {
-                "name": "name_zvfbAjpZ",
-                "agenda_item_creation": "default_no",
-                "is_active_in_organization_id": 1,
-            },
-        )
+        self.set_models({"meeting/110": {"agenda_item_creation": "default_no"}})
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
@@ -71,14 +60,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_other_agenda_item_check_3(self) -> None:
-        self.create_model(
-            "meeting/110",
-            {
-                "name": "name_zvfbAjpZ",
-                "agenda_item_creation": "never",
-                "is_active_in_organization_id": 1,
-            },
-        )
+        self.set_models({"meeting/110": {"agenda_item_creation": "never"}})
         response = self.request(
             "assignment.create",
             {
@@ -94,10 +76,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_agenda_item_no_default(self) -> None:
-        self.create_model(
-            "meeting/110",
-            {"agenda_item_creation": "default_no", "is_active_in_organization_id": 1},
-        )
+        self.set_models({"meeting/110": {"agenda_item_creation": "default_no"}})
         response = self.request(
             "assignment.create",
             {
@@ -114,19 +93,15 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert agenda_item.get("content_object_id") == "assignment/1"
 
     def test_create_full_fields(self) -> None:
+        self.create_mediafile(1, 110)
         self.set_models(
             {
-                "meeting/110": {
-                    "name": "name_zvfbAjpZ",
-                    "agenda_item_creation": "default_yes",
-                    "is_active_in_organization_id": 1,
-                    "meeting_mediafile_ids": [11],
+                "meeting/110": {"agenda_item_creation": "default_yes"},
+                "meeting_mediafile/11": {
+                    "is_public": True,
+                    "mediafile_id": 1,
+                    "meeting_id": 110,
                 },
-                "mediafile/1": {
-                    "owner_id": "meeting/110",
-                    "meeting_mediafile_ids": [11],
-                },
-                "meeting_mediafile/11": {"mediafile_id": 1, "meeting_id": 110},
             }
         )
         response = self.request(
@@ -164,16 +139,8 @@ class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create_non_published_orga_attachments(self) -> None:
         self.set_models(
             {
-                "meeting/110": {
-                    "name": "name_zvfbAjpZ",
-                    "agenda_item_creation": "default_yes",
-                    "is_active_in_organization_id": 1,
-                    "admin_group_id": 1,
-                },
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-                "group/1": {"admin_group_for_meeting_id": 1},
+                "meeting/110": {"agenda_item_creation": "default_yes"},
+                "mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID},
             }
         )
         response = self.request(
@@ -204,9 +171,6 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model(
-            "meeting/110", {"name": "name_zvfbAjpZ", "is_active_in_organization_id": 1}
-        )
         response = self.request(
             "assignment.create",
             {

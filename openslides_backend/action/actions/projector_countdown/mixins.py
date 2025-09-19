@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum, auto
 from time import time
 
@@ -5,7 +6,7 @@ from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
 )
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
@@ -75,7 +76,9 @@ class CountdownControl(UpdateAction):
                 meeting["list_of_speakers_countdown_id"], command, default_time
             )
 
-    def start_structure_level_countdown(self, now: int, speaker: PartialModel) -> None:
+    def start_structure_level_countdown(
+        self, now: datetime, speaker: PartialModel
+    ) -> None:
         if (
             (level_id := speaker.get("structure_level_list_of_speakers_id"))
             and (
@@ -98,7 +101,7 @@ class CountdownControl(UpdateAction):
             )
 
     def decrease_structure_level_countdown(
-        self, now: int, speaker: PartialModel
+        self, now: datetime, speaker: PartialModel
     ) -> None:
         if (
             (level_id := speaker.get("structure_level_list_of_speakers_id"))
@@ -113,13 +116,14 @@ class CountdownControl(UpdateAction):
         ):
             # only update the level if the speaker was not paused and the speech state demands it
             start_time = speaker.get("unpause_time", speaker["begin_time"])
+            assert start_time
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
                 [
                     {
                         "id": level_id,
                         "current_start_time": None,
-                        "spoken_time": now - start_time,
+                        "spoken_time": int((now - start_time).total_seconds()),
                     }
                 ],
             )

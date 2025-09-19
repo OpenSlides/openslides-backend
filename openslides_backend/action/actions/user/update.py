@@ -2,6 +2,9 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
+    CreateUpdatePermissionsMixin,
+)
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
@@ -17,18 +20,18 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
-from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
-    check_gender_helper,
+    check_gender_exists,
 )
 
 
 @register_action("user.update")
 class UserUpdate(
+    UserMixin,
     EmailCheckMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
@@ -63,7 +66,7 @@ class UserUpdate(
             "is_physical_person",
             "default_password",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "organization_management_level",
@@ -71,6 +74,8 @@ class UserUpdate(
             "is_demo_user",
             "saml_id",
             "member_number",
+            "external",
+            "home_committee_id",
             *internal_id_fields,
         ],
         additional_optional_fields={
@@ -80,6 +85,19 @@ class UserUpdate(
     )
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+        if instance.get("external"):
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]),
+                mapped_fields=[
+                    "home_committee_id",
+                ],
+                lock_result=False,
+            )
+            if user.get("home_committee_id"):
+                self.check_group_I(["home_committee_id"], user)
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -97,6 +115,7 @@ class UserUpdate(
             instance.get("meeting_id"), instance, instance["id"], None
         )
         instance = super().update_instance(instance)
+        home_committee_id = instance.get("home_committee_id")
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
@@ -104,8 +123,17 @@ class UserUpdate(
                 "organization_management_level",
                 "saml_id",
                 "password",
+                "home_committee_id",
             ],
         )
+        if instance.get("external"):
+            if home_committee_id:
+                raise ActionException(
+                    "Cannot set external to true and set a home committee at the same time."
+                )
+            instance["home_committee_id"] = None
+        elif home_committee_id:
+            instance["external"] = False
         if user.get("saml_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):
@@ -137,10 +165,13 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-        if instance.get("is_active") and not user.get("is_active"):
-            self.check_limit_of_user(1)
+        if is_active := instance.get("is_active"):
+            if not user.get("is_active"):
+                self.check_limit_of_user(1)
+        elif is_active is False and user.get("is_active"):
+            self.auth.clear_sessions_by_user_id(instance["id"])
 
-        check_gender_helper(self.datastore, instance)
+        check_gender_exists(self.datastore, instance)
         return instance
 
     @original_instances

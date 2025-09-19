@@ -12,7 +12,11 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         self.password = "pw_quSEYapV"
         self.create_model(
             "user/111",
-            {"username": "username_srtgb123", "default_password": self.password},
+            {
+                "id": 111,
+                "username": "username_srtgb123",
+                "default_password": self.password,
+            },
         )
 
     def test_reset_password_to_default(self) -> None:
@@ -34,7 +38,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_update in meeting 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60 or Permission user.can_update in meeting 1",
             response.json["message"],
         )
 
@@ -66,7 +70,6 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         self, permission: Permission
     ) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting, permission)
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Meeting)
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
@@ -80,7 +83,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 
@@ -108,7 +111,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 
@@ -118,7 +121,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
 
@@ -133,23 +136,6 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
-        self.set_models(
-            {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                "user/111": {"id": 111},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
-            }
-        )
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -166,13 +152,46 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         assert self.auth.is_equal(self.password, model.get("password", ""))
         self.assert_logged_in()
 
-    def test_scope_organization_permission_in_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
-        self.setup_scoped_user(UserScope.Organization)
+    def test_scope_organization_permission_in_one_meeting_one_shared_meeting(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2])
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_scope_organization_permission_in_one_meeting_two_shared_meetings(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2, 4])
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_scope_organization_permission_in_all_meetings(self) -> None:
+        self.setup_scope_organization_with_permission_in_all_meetings()
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equal(self.password, model.get("password", ""))
+        self.assert_logged_in()
+
+    def test_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
+        self,
+    ) -> None:
+        self.setup_archived_meetings_in_different_committees()
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committees {60, 63}",
             response.json["message"],
         )
 

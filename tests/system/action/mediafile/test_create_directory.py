@@ -1,5 +1,3 @@
-from typing import Any
-
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -7,36 +5,14 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "group/7": {
-                "name": "group_LxAHErRs",
-                "meeting_user_ids": [],
-                "meeting_id": 1,
-            },
-        }
-
     def test_create_directory_correct(self) -> None:
-        self.set_models(
-            {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                },
-            }
-        )
+        self.create_meeting(110)
         response = self.request(
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [112],
             },
         )
         self.assert_status_code(response, 200)
@@ -54,8 +30,8 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 1,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [112],
+                "inherited_access_group_ids": [112],
                 "is_public": False,
             },
         )
@@ -81,16 +57,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             assert field not in mediafile
 
     def test_create_directory_organization_with_published_parent(self) -> None:
-        self.set_models(
-            {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                }
-            }
-        )
+        self.create_mediafile(1, is_directory=True)
         response = self.request(
             "mediafile.create_directory",
             {
@@ -120,51 +87,32 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_mediafile(1, is_directory=True)
+        self.create_mediafile(2, is_directory=True)
         self.set_models(
             {
-                "mediafile/1": {
-                    "title": "published",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                    "meeting_mediafile_ids": [11, 41],
-                },
-                "mediafile/2": {
-                    "title": "publishedToo",
-                    "is_directory": True,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": 1,
-                    "meeting_mediafile_ids": [42],
-                },
-                "meeting/1": {"meeting_mediafile_ids": [11]},
                 "meeting_mediafile/11": {
                     "meeting_id": 1,
                     "mediafile_id": 1,
                     "is_public": True,
-                    "inherited_access_group_ids": [],
                 },
-                "meeting/4": {"meeting_mediafile_ids": [41, 42]},
                 "meeting_mediafile/41": {
                     "meeting_id": 4,
                     "mediafile_id": 1,
-                    "access_group_ids": [5, 6],
                     "is_public": False,
-                    "inherited_access_group_ids": [5],
                 },
                 "meeting_mediafile/42": {
                     "meeting_id": 4,
                     "mediafile_id": 2,
-                    "access_group_ids": [5, 6],
                     "is_public": False,
-                    "inherited_access_group_ids": [6],
                 },
                 "group/5": {
                     "meeting_mediafile_access_group_ids": [41, 42],
-                    "meeting_mediafile_inherited_access_group_ids": [41],
+                    "meeting_mediafile_inherited_access_group_ids": [41, 42],
                 },
                 "group/6": {
                     "meeting_mediafile_access_group_ids": [41, 42],
-                    "meeting_mediafile_inherited_access_group_ids": [42],
+                    "meeting_mediafile_inherited_access_group_ids": [41, 42],
                 },
             }
         )
@@ -194,7 +142,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "mediafile_id": 3,
                 "is_public": True,
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
             },
         )
         self.assert_model_exists(
@@ -203,31 +151,21 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 4,
                 "mediafile_id": 3,
                 "is_public": False,
-                "inherited_access_group_ids": [5],
+                "inherited_access_group_ids": [5, 6],
             },
         )
         self.assert_model_not_exists("meeting_mediafile/45")
 
     def test_create_directory_parent(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
+                "meeting_mediafile/1100": {
+                    "mediafile_id": 110,
+                    "is_public": True,
                     "meeting_id": 110,
                 },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                    "meeting_mediafile_ids": [1100],
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
-                },
-                "meeting_mediafile/1100": {"mediafile_id": 110, "meeting_id": 110},
             }
         )
         response = self.request(
@@ -235,7 +173,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [112],
                 "parent_id": 110,
             },
         )
@@ -254,40 +192,24 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [7],
+                "access_group_ids": [112],
+                "inherited_access_group_ids": [112],
                 "is_public": False,
             },
         )
 
     def test_create_directory_parent_inherited_list(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "group/8": {
-                    "name": "group_sdfafd",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                    "meeting_mediafile_ids": [1100],
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
+                "group/110": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
                     "meeting_id": 110,
-                    "inherited_access_group_ids": [8],
                     "is_public": False,
                 },
             }
@@ -297,7 +219,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [112],
                 "parent_id": 110,
             },
         )
@@ -316,32 +238,21 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [7],
-                "inherited_access_group_ids": [],
+                "access_group_ids": [112],
+                "inherited_access_group_ids": None,
                 "is_public": False,
             },
         )
 
     def test_create_directory_parent_case1(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
-                },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
                     "meeting_id": 110,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "is_public": True,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                    "meeting_mediafile_ids": [1100],
                 },
             }
         )
@@ -369,42 +280,29 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [],
-                "inherited_access_group_ids": [],
+                "access_group_ids": None,
+                "inherited_access_group_ids": None,
                 "is_public": True,
             },
         )
 
     def test_create_directory_parent_case2(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/2": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
+                "group/112": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
-                "group/4": {
-                    "name": "group_sdfafd",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                    "meeting_mediafile_ids": [1100],
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "child_ids": [111],
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
+                "group/110": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
+                    "is_public": False,
                     "meeting_id": 110,
-                    "inherited_access_group_ids": [2, 4],
-                    "access_group_ids": [2, 4],
                 },
             }
         )
@@ -413,7 +311,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [],
+                "access_group_ids": None,
                 "parent_id": 110,
             },
         )
@@ -432,41 +330,21 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [],
-                "inherited_access_group_ids": [2, 4],
+                "access_group_ids": None,
+                "inherited_access_group_ids": [110, 112],
                 "is_public": False,
             },
         )
 
     def test_create_directory_parent_case3(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/3": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "group/6": {
-                    "name": "group_sdfafd",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "child_ids": [111],
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
-                },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
+                    "is_public": True,
                     "meeting_id": 110,
-                    "inherited_access_group_ids": [],
-                    "access_group_ids": [],
                 },
             }
         )
@@ -475,7 +353,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [3, 6],
+                "access_group_ids": [110, 112],
                 "parent_id": 110,
             },
         )
@@ -494,46 +372,29 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [3, 6],
-                "inherited_access_group_ids": [3, 6],
+                "access_group_ids": [110, 112],
+                "inherited_access_group_ids": [110, 112],
                 "is_public": False,
             },
         )
 
     def test_create_directory_parent_case4(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/1": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
+                "group/110": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
-                "group/2": {
-                    "name": "group_sdfafd",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "group/3": {
-                    "name": "group_ghjeei",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "child_ids": [111],
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
+                "group/111": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
+                    "is_public": False,
                     "meeting_id": 110,
-                    "inherited_access_group_ids": [1, 2],
-                    "access_group_ids": [1, 2],
                 },
             }
         )
@@ -542,7 +403,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [2, 3],
+                "access_group_ids": [110, 112],
                 "parent_id": 110,
             },
         )
@@ -561,47 +422,29 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [2, 3],
-                "inherited_access_group_ids": [2],
+                "access_group_ids": [110, 112],
+                "inherited_access_group_ids": [110],
                 "is_public": False,
             },
         )
 
     def test_create_directory_parent_case5(self) -> None:
+        self.create_meeting(110)
+        self.create_mediafile(110, 110, is_directory=True)
         self.set_models(
             {
-                "group/1": {
-                    "name": "group_LxAHErRs",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
+                "group/110": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
-                "group/2": {
-                    "name": "group_sdfafd",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "group/3": {
-                    "name": "group_ghjeei",
-                    "meeting_user_ids": [],
-                    "meeting_id": 110,
-                },
-                "meeting/110": {
-                    "name": "meeting110",
-                    "is_active_in_organization_id": 1,
-                },
-                "mediafile/110": {
-                    "title": "title_srtgb199",
-                    "child_ids": [111],
-                    "owner_id": "meeting/110",
-                    "is_directory": True,
-                    "meeting_mediafile_ids": [1100],
+                "group/111": {
+                    "meeting_mediafile_access_group_ids": [1100],
+                    "meeting_mediafile_inherited_access_group_ids": [1100],
                 },
                 "meeting_mediafile/1100": {
                     "mediafile_id": 110,
                     "meeting_id": 110,
-                    "inherited_access_group_ids": [1, 2],
                     "is_public": False,
-                    "access_group_ids": [1, 2],
                 },
             }
         )
@@ -610,7 +453,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [3],
+                "access_group_ids": [112],
                 "parent_id": 110,
             },
         )
@@ -629,18 +472,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "meeting_id": 110,
                 "mediafile_id": 111,
-                "access_group_ids": [3],
-                "inherited_access_group_ids": [],
+                "access_group_ids": [112],
+                "inherited_access_group_ids": None,
                 "is_public": False,
             },
         )
 
     def test_create_directory_no_access_group_ids(self) -> None:
-        self.set_models(
-            {
-                "meeting/110": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting(110)
         response = self.request(
             "mediafile.create_directory",
             {
@@ -670,22 +509,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_id": 110,
                 "mediafile_id": 1,
                 "access_group_ids": None,
-                "inherited_access_group_ids": [],
+                "inherited_access_group_ids": None,
                 "is_public": True,
             },
         )
 
     def test_create_directory_parent_id_parent_not_directory(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "name": "meeting_1",
-                    "mediafile_ids": [7],
-                    "is_active_in_organization_id": 1,
-                },
-                "mediafile/7": {"owner_id": "meeting/1"},
-            }
-        )
+        self.create_meeting()
+        self.create_mediafile(7, 1)
         response = self.request(
             "mediafile.create_directory",
             {
@@ -698,17 +529,13 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert "Parent is not a directory." in response.json["message"]
 
     def test_create_directory_parent_id_owner_mismatch(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"mediafile_ids": [7], "is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
-            }
-        )
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_mediafile(7, 1, is_directory=True)
         response = self.request(
             "mediafile.create_directory",
             {
-                "owner_id": "meeting/2",
+                "owner_id": "meeting/4",
                 "title": "title_1",
                 "parent_id": 7,
             },
@@ -717,12 +544,8 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert "Owner and parent don't match." in response.json["message"]
 
     def test_create_directory_mix_meeting_and_orga(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"mediafile_ids": [7], "is_active_in_organization_id": 1},
-                "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
-            }
-        )
+        self.create_meeting()
+        self.create_mediafile(7, 1, is_directory=True)
         response = self.request(
             "mediafile.create_directory",
             {
@@ -735,71 +558,45 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert "Owner and parent don't match." in response.json["message"]
 
     def test_create_directory_title_parent_id_unique(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "mediafile_ids": [6, 7],
-                    "is_active_in_organization_id": 1,
-                },
-                "mediafile/6": {
-                    "title": "parent_title_1",
-                    "is_directory": True,
-                    "owner_id": "meeting/1",
-                    "child_ids": [7],
-                },
-                "mediafile/7": {
-                    "title": "title_1",
-                    "owner_id": "meeting/1",
-                    "parent_id": 6,
-                },
-            }
-        )
+        self.create_meeting()
+        self.create_mediafile(6, 1, is_directory=True)
+        self.create_mediafile(7, 1, parent_id=6)
         response = self.request(
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
-                "title": "title_1",
+                "title": "file_7",
                 "parent_id": 6,
             },
         )
         self.assert_status_code(response, 400)
         assert (
-            "File 'title_1' already exists in folder 'parent_title_1'."
+            "File 'file_7' already exists in folder 'folder_6'."
             in response.json["message"]
         )
 
     def test_create_directory_owner_access_groups_dont_match(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "group/11": {"meeting_id": 1},
-            }
-        )
+        self.create_meeting()
+        self.create_meeting(4)
         response = self.request(
             "mediafile.create_directory",
             {
-                "owner_id": "meeting/2",
+                "owner_id": "meeting/4",
                 "title": "title_1",
-                "access_group_ids": [11],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]
 
     def test_create_directory_access_groups_on_orga_owner(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
-                "group/11": {"meeting_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "mediafile.create_directory",
             {
                 "owner_id": "organization/1",
                 "title": "title_1",
-                "access_group_ids": [11],
+                "access_group_ids": [3],
             },
         )
         self.assert_status_code(response, 400)
@@ -809,17 +606,12 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         )
 
     def test_create_directory_two_meetings(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "group/11": {"meeting_id": 1},
-            }
-        )
+        self.create_meeting()
+        self.create_meeting(4)
         response = self.request(
             "mediafile.create_directory",
             {
-                "owner_id": "meeting/2",
+                "owner_id": "meeting/4",
                 "title": "title_1",
             },
         )
@@ -836,41 +628,41 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
 
     def test_create_directory_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
             Permissions.Mediafile.CAN_MANAGE,
         )
 
     def test_create_directory_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
+            {},
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
                 "title": "title_Xcdfgee",
-                "access_group_ids": [7],
+                "access_group_ids": [3],
             },
         )
 
     def test_create_directory_no_permissions_orga_owner(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "mediafile.create_directory",
             {
                 "owner_id": ONE_ORGANIZATION_FQID,
@@ -880,7 +672,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_permissions_orga_owner(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "mediafile.create_directory",
             {
                 "owner_id": ONE_ORGANIZATION_FQID,

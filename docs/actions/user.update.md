@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     id: Id;
@@ -14,7 +14,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
@@ -50,6 +50,12 @@
 // Group H
     saml_id: string;
 
+// Group I
+    home_committee_id: Id;
+
+// Group J
+    external: boolean;
+
 // only internal
     is_present_in_meeting_ids: Id[];
     option_ids: Id[];
@@ -70,6 +76,11 @@ Updates a user.
 * The `member_number` must be unique within all users.
 * Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
+* `external` can't be true if `home_committee_id` is set.
+    * When setting `home_committee_id`, `external` will be set to `false`.
+    * When setting `external` to `true`, if the user already has a home committee:
+        * If the user has Group I permissions, automatically set `home_committee_id` to none
+        * Else raise an exception.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
@@ -119,3 +130,13 @@ The request user needs the OML `superadmin`.
 Group H:
 
 Group H fields are only allowed in internal requests
+
+Group I:
+
+If the user already has a `home_committee_id`, the CML `can_manage` for that committee is required.
+If a new `home_committee_id` is set, the CML `can_manage` of that is required.
+Depending on the circumstances, the caller may therefore need manage rights for 2, 1 or 0 committees.
+
+Group J:
+
+Group I permissions and if there is no home committee (old or new) Group A Permissions

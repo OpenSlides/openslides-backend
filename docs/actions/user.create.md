@@ -1,20 +1,21 @@
 ## Payload
-```
+```js
 {
 // Optional
 // Group A
     title: string;
+    username: string;
+    pronoun: string;
     first_name: string;
     last_name: string;
-    username: string;
-    member_number: string;
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
-    pronoun: string;
+    gender_id: Id;
     email: string;
+    member_number: string;
     default_vote_weight: decimal(6);
+    external: boolean;
 
 // Group B
     number: string;
@@ -47,24 +48,34 @@
 
 // Group H
     saml_id: boolean;
+
+// Group I
+    home_committee_id: Id;
+
+// Group J
+    external: boolean;
+
+// Only internal
+    forwarding_committee_ids
 }
 ```
 
 ## Action
-Creates a user. 
+Creates a user.
 * The field `organization_management_level` can only be set as high as the request users `organization_management_level` and defaults to `null`.
 * If no `default_password` is given a random one is generated. The default password is hashed via the auth service and the hash is saved within `password`. A given `default_password`is also stored as hashed password.
-* If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error must be returned. If the `username` is not given, 1. the saml_id will be used or 2. it has to be generated (see [user.create#generate-a-username](user.create.md#generate-a-username) below). Also the username may not contain spaces.
+* If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error is returned. If the `username` is not given, 1. the saml_id is used or 2. it has to be generated (see [user.create#generate-a-username](user.create.md#generate-a-username) below). Also the username may not contain spaces.
 * The `organization_management_level` as restring can be taken from the enum of this user field.
-* Remove starting and trailing spaces from `username`, `first_name` and `last_name`
-* The given `gender` must be present in `organization/genders`
+* Remove starting and trailing spaces from `username`, `first_name` and `last_name`.
+* The given `gender_id` must be present in the database.
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
 * The `member_number` must be unique within all users.
-* Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
-* The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
+* Throws an error if the `group_ids` contain the meetings `anonymous_group_id`.
+* Checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
+* `external` can't be true if `home_committee_id` is set.
 
 ### Generate a username
-If no username is given, it will be set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Join all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.
+If no username is given, it is set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Joins all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.
 
 Check, if the generated username is unique. If not do the following in a loop:
 
@@ -72,10 +83,10 @@ Append a number starting at 1 to the username (append with a space). Check if th
 
 ### Return value
 
-```
+```js
 {
     id: Id;
-    meeting_user_id?: Id; // only if `meeting_id` was present in the payload
+    meeting_user_id: Id; // Optional, only if `meeting_id` was present in the payload
 }
 ```
 
@@ -119,3 +130,11 @@ The request user needs the OML superadmin.
 Group H:
 
 Group H fields are only allowed in internal requests or, exclusive for user.create, with OML permission `can_manage_users`
+
+Group I:
+
+CML `can_manage` for the `home_committee_id`. If there is none in the payload, no permission is required.
+
+Group J:
+
+Group I permissions and if there is no home committee Group A Permissions

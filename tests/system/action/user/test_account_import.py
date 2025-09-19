@@ -1,4 +1,8 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.import_mixins import BaseImportAction, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -12,75 +16,91 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "jonny",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "jonny",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "first_name": "Testy",
                                     },
-                                    "first_name": "Testy",
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
                 "import_preview/3": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "TestyTester",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "first_name": "Testy",
-                                    "last_name": "Tester",
-                                    "email": {
-                                        "value": "email@test.com",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "gender": {
-                                        "value": "male",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "TestyTester",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "first_name": "Testy",
+                                        "last_name": "Tester",
+                                        "email": {
+                                            "value": "email@test.com",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "gender_id": {
+                                            "value": 1,
+                                            "info": ImportState.DONE,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
                 "import_preview/4": {
                     "state": ImportState.ERROR,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.ERROR,
-                                "messages": ["test"],
-                                "data": {
-                                    "gender": {
-                                        "value": "male",
-                                        "info": ImportState.DONE,
-                                    }
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.ERROR,
+                                    "messages": ["test"],
+                                    "data": {
+                                        "gender_id": {
+                                            "value": 1,
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
-                "import_preview/5": {"result": None},
+                "import_preview/5": {
+                    "state": ImportState.WARNING,
+                    "name": "participant",
+                    "created": datetime.now(),
+                    "result": None,
+                },
                 "user/2": {
                     "username": "test",
                     "default_password": "secret",
@@ -89,30 +109,33 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/6": {
                     "state": ImportState.WARNING,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 2,
-                                    "username": {
-                                        "value": "test",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 2,
-                                    },
-                                    "saml_id": {
-                                        "value": "12345",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "default_password": {
-                                        "value": "",
-                                        "info": ImportState.WARNING,
+                                        "username": {
+                                            "value": "test",
+                                            "info": ImportState.DONE,
+                                            "id": 2,
+                                        },
+                                        "saml_id": {
+                                            "value": "12345",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "default_password": {
+                                            "value": "",
+                                            "info": ImportState.WARNING,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -150,35 +173,36 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 1,
-                                    "username": {
-                                        "value": "user1",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 1,
-                                    },
-                                    "first_name": "Testy",
-                                    "gender": {
-                                        "value": "non-binary",
-                                        "info": ImportState.DONE,
+                                        "username": {
+                                            "value": "user1",
+                                            "info": ImportState.DONE,
+                                            "id": 1,
+                                        },
+                                        "first_name": "Testy",
+                                        "gender_id": {
+                                            "value": 4,
+                                            "info": ImportState.DONE,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/1", {"first_name": "Testy", "gender": "non-binary"}
-        )
+        self.assert_model_exists("user/1", {"first_name": "Testy", "gender_id": 4})
 
     def test_ignore_unknown_gender(self) -> None:
         self.set_models(
@@ -189,35 +213,38 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [
-                                    "Gender 'notAGender' is not in the allowed gender list."
-                                ],
-                                "data": {
-                                    "id": 1,
-                                    "username": {
-                                        "value": "user1",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [
+                                        "GenderId '5' is not in the allowed gender list."
+                                    ],
+                                    "data": {
                                         "id": 1,
-                                    },
-                                    "gender": {
-                                        "value": "notAGender",
-                                        "info": ImportState.WARNING,
+                                        "username": {
+                                            "value": "user1",
+                                            "info": ImportState.DONE,
+                                            "id": 1,
+                                        },
+                                        "gender_id": {
+                                            "value": 5,
+                                            "info": ImportState.WARNING,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
         user = self.assert_model_exists("user/1")
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_names_and_email_and_create(self) -> None:
         response = self.request("account.import", {"id": 3, "import": True})
@@ -227,7 +254,7 @@ class AccountJsonImport(BaseActionTestCase):
             {
                 "username": "TestyTester",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
             },
@@ -249,15 +276,18 @@ class AccountJsonImport(BaseActionTestCase):
             f"import_preview/{number}": {
                 "state": get_import_state(),
                 "name": "account",
-                "result": {
-                    "rows": [
-                        {
-                            "state": row_state,
-                            "messages": [],
-                            "data": data,
-                        },
-                    ],
-                },
+                "created": datetime.now(),
+                "result": Jsonb(
+                    {
+                        "rows": [
+                            {
+                                "state": row_state,
+                                "messages": [],
+                                "data": data,
+                            },
+                        ],
+                    }
+                ),
             }
         }
 
@@ -374,30 +404,33 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "durban",
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "durban",
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 }
             }
         )
@@ -469,7 +502,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "test_saml_id",
                 "default_password": "",
                 "can_change_own_password": False,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "organization_id": 1,
                 "is_physical_person": True,
             },
@@ -480,7 +513,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test_saml_id1",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user36["default_password"]
@@ -492,7 +525,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test_saml_id21",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user37["default_password"]
@@ -530,7 +563,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "",
                 "can_change_own_password": False,
                 "password": "",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_not_exists("import_preview/1")
@@ -544,7 +577,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             {
                 "username": "test",
                 "saml_id": "new_one",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_not_exists("import_preview/1")
@@ -563,8 +596,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "error", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -579,8 +612,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 34,
             "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "done", "value": "test"},
-            "last_name": "Mustermann",
-            "first_name": "Max",
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "first_name": {"value": "Max", "info": ImportState.DONE},
             "default_password": {"info": "done", "value": "new default password"},
         }
 
@@ -600,7 +633,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "first_name": "Max",
                 "organization_id": 1,
                 "is_physical_person": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "can_change_own_password": True,
             },
         )
@@ -633,7 +666,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test",
                 "organization_id": 1,
                 "is_physical_person": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "can_change_own_password": True,
             },
         )
@@ -663,7 +696,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
@@ -689,7 +722,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "test_saml_id2",
                 "username": "user2",
                 "default_password": "",
-                "default_vote_weight": "2.345678",
+                "default_vote_weight": Decimal("2.345678"),
                 "password": "",
                 "can_change_own_password": False,
             },
@@ -701,7 +734,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "saml3",
                 "username": "user3",
                 "default_password": "",
-                "default_vote_weight": "3.345678",
+                "default_vote_weight": Decimal("3.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -714,7 +747,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "first_name": "Martin",
                 "last_name": "Luther King",
                 "default_password": "secret",
-                "default_vote_weight": "4.345678",
+                "default_vote_weight": Decimal("4.345678"),
                 "can_change_own_password": True,
             },
         )
@@ -725,7 +758,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "saml5",
                 "username": "new_user5",
                 "default_password": "",
-                "default_vote_weight": "5.345678",
+                "default_vote_weight": Decimal("5.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -736,7 +769,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "new_saml6",
                 "username": "new_saml6",
                 "default_password": "",
-                "default_vote_weight": "6.345678",
+                "default_vote_weight": Decimal("6.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -747,7 +780,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "JoanBaez7",
                 "first_name": "Joan",
                 "last_name": "Baez7",
-                "default_vote_weight": "7.345678",
+                "default_vote_weight": Decimal("7.345678"),
                 "can_change_own_password": True,
             },
         )
@@ -806,8 +839,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 4,
             "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
-            "last_name": "Luther King",
-            "first_name": "Martin",
+            "last_name": {"value": "Luther King", "info": ImportState.DONE},
+            "first_name": {"value": "Martin", "info": ImportState.DONE},
             "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
@@ -854,14 +887,14 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender" not in user.keys()
+        assert "gender_id" not in user.keys()
 
     def test_json_upload_wrong_gender_2(self) -> None:
         self.json_upload_wrong_gender_2()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         user = self.assert_model_exists("user/2", {"username": "test"})
-        assert "gender" not in user.keys()
+        assert "gender_id" not in user.keys()
 
     def test_json_upload_legacy_username(self) -> None:
         self.json_upload_legacy_username()
@@ -878,7 +911,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "saml_id": "old_one",
-                "default_vote_weight": "4.500000",
+                "default_vote_weight": Decimal("4.5"),
             },
         )
 
@@ -946,7 +979,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "member_number": "old_one",
-                "default_vote_weight": "4.345678",
+                "default_vote_weight": Decimal("4.345678"),
             },
         )
 
@@ -991,5 +1024,224 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_set_home_committee(self) -> None:
+        self.json_upload_set_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "external": False},
+        )
+
+    def test_json_upload_set_home_committee_and_external_false(self) -> None:
+        self.json_upload_set_home_committee(external=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "external": False},
+        )
+
+    def test_json_upload_update_home_committee(self) -> None:
+        self.json_upload_update_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 2,
+                "external": False,
+                "first_name": "alice",
+            },
+        )
+
+    def test_json_upload_set_external_to_true(self) -> None:
+        self.json_upload_set_external_to_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": True},
+        )
+
+    def test_json_upload_update_external_true_without_home_committee(self) -> None:
+        self.json_upload_update_external_true()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": True},
+        )
+
+    def test_json_upload_update_external_false_without_home_committee(self) -> None:
+        self.json_upload_update_external_false_without_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": False},
+        )
+
+    def test_json_upload_update_external_true_with_home_committee(self) -> None:
+        self.json_upload_update_external_true(with_home_committee=True)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": None, "external": True},
+        )
+
+    def test_json_upload_update_external_false_with_home_committee(self) -> None:
+        self.json_upload_update_external_false_with_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "home_committee_id": 1, "external": False},
+        )
+
+    def test_json_upload_update_external_true_without_home_committee_perms(
+        self,
+    ) -> None:
+        self.json_upload_update_external_true(
+            with_home_committee=True, has_home_committee_perms=False
+        )
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice", "external": None},
+        )
+
+    def test_json_upload_update_external_false_without_home_committee_perms(
+        self,
+    ) -> None:
+        self.json_upload_update_external_false_without_home_committee_perms()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": None},
+        )
+
+    def test_json_upload_set_home_committee_no_perms(self) -> None:
+        self.json_upload_set_home_committee(has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+            },
+        )
+
+    def test_json_upload_set_home_committee_and_external_false_no_perms(self) -> None:
+        self.json_upload_set_home_committee(external=False, has_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": None, "home_committee_id": None},
+        )
+
+    def test_json_upload_update_home_committee_no_perms_old(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "Alice",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_update_home_committee_no_perms_both(self) -> None:
+        self.json_upload_update_home_committee(old_perm=False, new_perm=False)
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "first_name": "alice"},
+        )
+
+    def test_json_upload_update_home_committee_and_external_false_no_perms_new(
+        self,
+    ) -> None:
+        self.json_upload_update_home_committee_and_external_false_no_perms_new()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "Alice", "external": None, "home_committee_id": 1},
+        )
+
+    def test_json_upload_with_gender_as_orga_admin(self) -> None:
+        self.json_upload_with_gender_as_orga_admin()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "username": "man", "gender_id": 1},
+        )
+
+    def test_json_upload_multiple_with_same_home_committee(self) -> None:
+        self.json_upload_multiple_with_same_home_committee()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"id": 2, "first_name": "Tick", "username": "Huey", "home_committee_id": 1},
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "first_name": "Trick",
+                "username": "Dewey",
+                "home_committee_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "Track",
+                "username": "Louie",
+                "home_committee_id": 1,
+            },
+        )
+
+    def test_json_upload_multiple_with_x(self) -> None:
+        self.json_upload_multiple_with_x()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {"id": 3, "first_name": "Gustav", "username": "schwante"},
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "first_name": "bib",
+                "last_name": "lib",
+                "username": "biblib",
+            },
+        )
+        self.assert_model_exists(
+            "user/5",
+            {
+                "id": 5,
+                "first_name": "Loki",
+                "username": "witz",
+                "email": "loki@asen.sk",
             },
         )

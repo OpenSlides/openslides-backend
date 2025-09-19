@@ -13,7 +13,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.reset_redis()
 
     def test_update_correct(self) -> None:
-        self.create_model("user/2", {"password": "old_pw"})
+        self.create_model("user/2", {"username": "klaus", "password": "old_pw"})
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
@@ -43,7 +43,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_update in meeting 1",
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60 or Permission user.can_update in meeting 1",
             response.json["message"],
         )
 
@@ -79,7 +79,6 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self, permission: Permission
     ) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting, permission)
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Meeting)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
@@ -97,7 +96,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 
@@ -131,7 +130,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 
@@ -143,7 +142,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
             response.json["message"],
         )
 
@@ -162,19 +161,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                "user/111": {"id": 111},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
+                "user/111": {"username": "peter", "id": 111},
             }
         )
         response = self.request(
@@ -197,20 +184,59 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
         self.assert_logged_in()
 
-    def test_scope_organization_permission_in_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
-        self.setup_scoped_user(UserScope.Organization)
+    def test_scope_organization_permission_in_one_meeting_one_shared_meeting(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2])
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_scope_organization_permission_in_one_meeting_two_shared_meetings(
+        self,
+    ) -> None:
+        self.setup_two_meetings_in_different_committees()
+        self.set_user_groups(1, [2, 4])
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
+            response.json["message"],
+        )
+
+    def test_scope_organization_permission_in_all_meetings(self) -> None:
+        self.setup_scope_organization_with_permission_in_all_meetings()
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
+
+    def test_scope_organization_permission_in_meeting_archived_meetings_in_different_committees(
+        self,
+    ) -> None:
+        self.setup_archived_meetings_in_different_committees()
+        response = self.request(
+            "user.set_password", {"id": 111, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.set_password. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committees {60, 63}",
             response.json["message"],
         )
 
     def test_scope_superadmin_with_oml_usermanager(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Organization)
         self.set_models(
             {
@@ -229,7 +255,9 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_saml_id_error(self) -> None:
-        self.create_model("user/2", {"password": "pw", "saml_id": "111"})
+        self.create_model(
+            "user/2", {"username": "giesela", "password": "pw", "saml_id": "111"}
+        )
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )

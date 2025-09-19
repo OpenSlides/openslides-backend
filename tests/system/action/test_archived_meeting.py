@@ -154,44 +154,18 @@ class MeetingActions(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "meeting/1",
-            {
-                "is_active_in_organization_id": None,
-                "committee_id": 1,
-                "group_ids": [1],
-                "list_of_speakers_ids": [11, 12],
-                "motion_ids": [1],
-                "speaker_ids": [1, 2, 3],
-                "meeting_user_ids": [3, 4],
-            },
-        )
+        self.assert_model_not_exists("meeting/1")
         self.assert_model_exists(
             "user/2",
             {
                 "is_active": True,
             },
         )
-        self.assert_model_deleted("meeting_user/3")
-        self.assert_model_deleted("group/1", {"meeting_user_ids": [3], "meeting_id": 1})
-        self.assert_model_deleted(
-            "list_of_speakers/11",
-            {"speaker_ids": [1, 2], "meeting_id": 1},
-        )
-        self.assert_model_deleted(
-            "speaker/2",
-            {
-                "meeting_user_id": 3,
-                "list_of_speakers_id": 11,
-                "meeting_id": 1,
-            },
-        )
-        self.assert_model_deleted(
-            "motion/1",
-            {
-                "meeting_id": 1,
-            },
-        )
+        self.assert_model_not_exists("meeting_user/3")
+        self.assert_model_not_exists("group/1")
+        self.assert_model_not_exists("list_of_speakers/11")
+        self.assert_model_not_exists("speaker/2")
+        self.assert_model_not_exists("motion/1")
 
 
 class OutMeetingActions(BaseActionTestCase):
@@ -264,7 +238,7 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/2", {"meeting_user_ids": [2]})
+        self.assert_model_not_exists("user/2")
         self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_exists("meeting/1", {"group_ids": [1], "user_ids": [1]})
 
@@ -290,8 +264,6 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "organization_tag/1", {"tagged_ids": ["meeting/1", "committee/1"]}
-        )
+        self.assert_model_not_exists("organization_tag/1")
         self.assert_model_exists("committee/1", {"organization_tag_ids": [2]})
         self.assert_model_exists("meeting/1", {"organization_tag_ids": [2]})

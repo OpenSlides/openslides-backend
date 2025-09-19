@@ -7,30 +7,28 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySystemTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
+        self.set_models(
+            {
+                "motion_category/111": {
+                    "name": "name_srtgb123",
+                    "prefix": "prefix_JmDHFgvH",
+                    "meeting_id": 1,
+                    "sequential_number": 111,
+                }
+            }
+        )
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/89": {"meeting_id": 1},
-            "motion_category/111": {
-                "name": "name_srtgb123",
-                "prefix": "prefix_JmDHFgvH",
+            "motion/89": {
+                "title": "motion 89",
                 "meeting_id": 1,
+                "state_id": 1,
+                "sequential_number": 89,
             },
         }
 
     def test_update_correct_all_fields(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/89": {"meeting_id": 222},
-                "motion_category/111": {
-                    "name": "name_srtgb123",
-                    "prefix": "prefix_JmDHFgvH",
-                    "meeting_id": 222,
-                },
-            }
-        )
+        self.set_models(self.permission_test_models)
         response = self.request(
             "motion_category.update",
             {
@@ -41,86 +39,52 @@ class MotionCategorySystemTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-
-        self.assert_model_exists("motion_category/111")
-        model = self.get_model("motion_category/111")
-        assert model.get("name") == "name_Xcdfgee"
-        assert model.get("prefix") == "prefix_sthyAKrW"
-        assert model.get("motion_ids") == [89]
+        self.assert_model_exists(
+            "motion_category/111",
+            {"name": "name_Xcdfgee", "prefix": "prefix_sthyAKrW", "motion_ids": [89]},
+        )
 
     def test_update_delete_prefix(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"is_active_in_organization_id": 1},
-                "motion_category/111": {
-                    "name": "name_srtgb123",
-                    "prefix": "prefix_JmDHFgvH",
-                    "meeting_id": 222,
-                },
-            }
-        )
-        response = self.request(
-            "motion_category.update",
-            {
-                "id": 111,
-                "prefix": None,
-            },
-        )
+        response = self.request("motion_category.update", {"id": 111, "prefix": None})
         self.assert_status_code(response, 200)
-        model = self.get_model("motion_category/111")
-        assert "prefix" not in model
+        self.assert_model_exists("motion_category/111", {"prefix": None})
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
-                    "meeting_id": 222,
-                },
+                    "meeting_id": 1,
+                    "sequential_number": 111,
+                }
             }
         )
         response = self.request(
             "motion_category.update", {"id": 112, "name": "name_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
-        model = self.get_model("motion_category/111")
-        assert model.get("name") == "name_srtgb123"
+        self.assert_model_exists("motion_category/111", {"name": "name_srtgb123"})
 
     def test_update_non_unique_prefix(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"is_active_in_organization_id": 1},
-                "motion_category/111": {
-                    "name": "name_srtgb123",
-                    "prefix": "bla",
-                    "meeting_id": 222,
-                },
                 "motion_category/110": {
                     "name": "name_already",
                     "prefix": "test",
-                    "meeting_id": 222,
+                    "meeting_id": 1,
+                    "sequential_number": 110,
                 },
             }
         )
-        response = self.request(
-            "motion_category.update",
-            {
-                "id": 111,
-                "prefix": "test",
-            },
-        )
+        response = self.request("motion_category.update", {"id": 111, "prefix": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion_category/111",
             {
                 "name": "name_srtgb123",
                 "prefix": "test",
-                "meeting_id": 222,
+                "meeting_id": 1,
             },
         )
 
@@ -128,20 +92,14 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion_category.update",
-            {
-                "id": 111,
-                "name": "name_Xcdfgee",
-            },
+            {"id": 111, "name": "name_Xcdfgee"},
         )
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "motion_category.update",
-            {
-                "id": 111,
-                "name": "name_Xcdfgee",
-            },
+            {"id": 111, "name": "name_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,
         )
 
@@ -149,8 +107,5 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.base_locked_out_superadmin_permission_test(
             self.permission_test_models,
             "motion_category.update",
-            {
-                "id": 111,
-                "name": "name_Xcdfgee",
-            },
+            {"id": 111, "name": "name_Xcdfgee"},
         )

@@ -1,10 +1,11 @@
-version: "3"
 services:
     backend:
         build:
             context: ..
-            dockerfile: dev/Dockerfile.dev
-        image: openslides-backend-dev
+            target: "$CONTEXT"
+            args:
+                CONTEXT: "$CONTEXT"
+        image: openslides-backend-$CONTEXT
         user: $USER_ID:$GROUP_ID
         ports:
             - "9002:9002"
@@ -15,53 +16,25 @@ services:
             - ../openslides_backend:/app/openslides_backend
             - ../tests:/app/tests
             - ../cli:/app/cli
-            - ../global:/app/global
+            - ../data:/app/data
+            - ../meta:/app/meta
+            - ../requirements:/app/requirements
             - ../scripts:/app/scripts
         environment:
-            - DATASTORE_READER_HOST=datastore-reader
-            - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=datastore-writer
-            - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
             - DATABASE_HOST=postgres
-            - DATASTORE_LOG_LEVEL=CRITICAL
-        depends_on:
-            - datastore-writer
-    datastore-reader:
-        build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
-            args:
-                MODULE: "reader"
-                PORT: "9010"
-        image: openslides-datastore-reader
-        ports:
-            - "9010:9010"
-        environment:
-            - OPENSLIDES_DEVELOPMENT=1
-            - DATABASE_HOST=postgres
         depends_on:
             - postgres
-    datastore-writer:
-        build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
-            args:
-                MODULE: "writer"
-                PORT: "9011"
-        image: openslides-datastore-writer
-        ports:
-            - "9011:9011"
-        environment:
-            - OPENSLIDES_DEVELOPMENT=1
-            - DATABASE_HOST=postgres
-        depends_on:
-            - postgres
-            - redis
+            - auth
+            - vote
     auth:
         build:
             context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
-            dockerfile: "Dockerfile.dev"
+            target: "dev"
+            args:
+                CONTEXT: "dev"
         image: openslides-auth-dev
         ports:
             - "9004:9004"
@@ -70,31 +43,26 @@ services:
             - ACTION_PORT=9002
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
-            - DATASTORE_READER_HOST=datastore-reader
-            - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=datastore-writer
-            - DATASTORE_WRITER_PORT=9011
         depends_on:
-            - datastore-reader
-            - datastore-writer
             - redis
     vote:
         build:
             context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
+            target: "dev"
+            args:
+                CONTEXT: "dev"
         image: openslides-vote-dev
         ports:
             - "9013:9013"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
             - MESSAGING=redis
-            - DATASTORE_READER_HOST=datastore-reader
             - AUTH_HOST=auth
             - DATABASE_HOST=postgres
             - VOTE_DATABASE_HOST=postgres
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
         depends_on:
-            - datastore-reader
             - redis
             - auth
     postgres:

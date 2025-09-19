@@ -1,12 +1,11 @@
 import re
 import time
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
-from openslides_backend.migrations.migration_wrapper import MigrationWrapperMemory
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -22,7 +21,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.permissions.permission_helper import (
     has_organization_management_level,
 )
-from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType
@@ -33,11 +32,14 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.schema import models_map_object
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields, ListFieldsDict
-from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_ID, validate_html
-from ...action import RelationUpdates
+from ....shared.util import (
+    ALLOWED_HTML_TAGS_STRICT,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    validate_html,
+)
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
@@ -96,6 +98,7 @@ class MeetingImport(
             e.message = msg + " " + e.message
             raise e
         instance = self.base_update_instance(instance)
+        self.check_unique(next(iter(instance["meeting"]["meeting"].values())))
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
@@ -138,7 +141,7 @@ class MeetingImport(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["committee_ids", "committee_management_ids"],
+                    ["committee_ids", "committee_management_ids", "home_committee_id"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -146,9 +149,10 @@ class MeetingImport(
     def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.check_one_meeting(instance)
         self.check_locked(instance)
+        self.stash_gender_relations(instance)
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
-        instance = self.migrate_data(instance)
+        self.check_data_migration_index(instance)
         self.unset_committee_and_orga_relation(instance)
         return instance
 
@@ -156,9 +160,26 @@ class MeetingImport(
         if len(instance["meeting"]["meeting"]) != 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
 
+    def check_unique(self, instance: dict[str, Any]) -> None:
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+                instance["id"],
+            )
+
     def check_locked(self, instance: dict[str, Any]) -> None:
         if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
             raise ActionException("Cannot import a locked meeting.")
+
+    def stash_gender_relations(self, instance: dict[str, Any]) -> None:
+        # The Checker will not allow the gender to have or not to have an orga relation. So we need to circumvent it.
+        self.user_id_to_gender = {}
+        users = instance["meeting"].get("user", {})
+        for user in users.values():
+            if gender := user.pop("gender", None):
+                self.user_id_to_gender[user["id"]] = gender
 
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
@@ -167,7 +188,7 @@ class MeetingImport(
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
-            user.pop("forwarding_committee_ids", None)
+            user.pop("home_committee_id", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)
@@ -209,11 +230,15 @@ class MeetingImport(
             mode="external",
             repair=True,
             fields_to_remove={
+                "meeting": [
+                    "forwarded_motion_ids",
+                ],
                 "motion": [
                     "origin_id",
                     "derived_motion_ids",
-                    "all_origin_id",
+                    "all_origin_ids",
                     "all_derived_motion_ids",
+                    "origin_meeting_id",
                 ],
                 "user": [
                     "password",
@@ -230,12 +255,6 @@ class MeetingImport(
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
 
-        for entry in meeting_json.get("motion", {}).values():
-            if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
-                raise ActionException(
-                    "Motion all_origin_ids and all_derived_motion_ids should be empty."
-                )
-
         self.check_limit_of_meetings()
         self.update_meeting_and_users(instance)
 
@@ -245,6 +264,7 @@ class MeetingImport(
         meeting_json = instance["meeting"]
         self.update_admin_group(meeting_json)
         self.upload_mediadata()
+        self.handle_gender_string(instance)
         return instance
 
     def empty_if_none(self, value: str | None) -> str:
@@ -303,6 +323,44 @@ class MeetingImport(
 
         for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
+
+    def handle_gender_string(self, instance: dict[str, Any]) -> None:
+        for user_id in list(self.user_id_to_gender.keys()):
+            if user_id in self.merge_user_map:
+                del self.user_id_to_gender[user_id]
+        genders = self.datastore.get_all("gender", ["id", "name"], lock_result=True)
+        gender_dict = {gender.get("name", ""): gender for gender in genders.values()}
+        new_genders = list(
+            {value for value in self.user_id_to_gender.values()}.difference(gender_dict)
+        )
+        if new_genders:
+            new_genders.sort()  # fix order for tests
+            new_gender_ids = self.datastore.reserve_ids("gender", len(new_genders))
+            new_gender_dict = {
+                new_gender: {
+                    "id": new_gender_id,
+                    "name": new_gender,
+                    "meta_new": True,
+                    "organization_id": ONE_ORGANIZATION_ID,
+                }
+                for new_gender, new_gender_id in zip(new_genders, new_gender_ids)
+            }
+            gender_dict.update(new_gender_dict)
+        instance["meeting"]["gender"] = {
+            str(gender["id"]): gender for gender in gender_dict.values()
+        }
+        for user_id, gender in self.user_id_to_gender.items():
+            gender_id = gender_dict[gender]["id"]
+            replace_user_id = self.replace_map["user"][user_id]
+            instance["meeting"]["user"][str(replace_user_id)]["gender_id"] = gender_id
+            try:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"].append(
+                    replace_user_id
+                )
+            except KeyError:
+                instance["meeting"]["gender"][str(gender_id)]["user_ids"] = [
+                    replace_user_id
+                ]
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "
@@ -506,7 +564,13 @@ class MeetingImport(
             meeting["meeting_user_ids"].append(new_meeting_user_id)
             request_user = self.datastore.get(
                 fqid_user := fqid_from_collection_and_id("user", self.user_id),
-                ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"],
+                [
+                    "id",
+                    "meeting_user_ids",
+                    "committee_management_ids",
+                    "committee_ids",
+                    "home_committee_id",
+                ],
             )
             request_user.pop("meta_position", None)
             request_user["meeting_user_ids"] = (
@@ -549,11 +613,14 @@ class MeetingImport(
         meeting_id = meeting["id"]
         events = []
         update_events = []
+        add_genders_to_organisation = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 fqid = fqid_from_collection_and_id(collection, entry["id"])
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
+                    if collection == "gender":
+                        add_genders_to_organisation.append(entry["id"])
                     events.append(
                         self.build_event(
                             EventType.Create,
@@ -561,20 +628,19 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection == "user":
+                elif collection in ["user", "gender"]:
                     list_fields: ListFields = {"add": {}, "remove": {}}
-                    fields: dict[str, Any] = {}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
                         if isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                    if fields or list_fields["add"]:
+                    if list_fields["add"]:
                         update_events.append(
                             self.build_event(
                                 EventType.Update,
                                 fqid,
-                                fields=fields if fields else None,
-                                list_fields=list_fields if list_fields["add"] else None,
+                                fields=None,
+                                list_fields=list_fields,
                             )
                         )
                 elif collection == "meeting_user":
@@ -599,12 +665,14 @@ class MeetingImport(
             )
         )
 
-        # add meetings to organization if set in meeting
+        # add meetings to organization if set in meeting, also genders if new created
         adder: ListFieldsDict = {}
         if meeting.get("is_active_in_organization_id"):
             adder["active_meeting_ids"] = [meeting_id]
         if meeting.get("template_for_organization_id"):
             adder["template_meeting_ids"] = [meeting_id]
+        if add_genders_to_organisation:
+            adder["gender_ids"] = add_genders_to_organisation
 
         if adder:
             events.append(
@@ -619,9 +687,6 @@ class MeetingImport(
             )
 
         self.append_extra_events(events, instance["meeting"])
-
-        # handle the calc fields.
-        events.extend(self.handle_calculated_fields(instance))
         return events
 
     def append_extra_events(
@@ -647,35 +712,6 @@ class MeetingImport(
                 )
             )
 
-    def handle_calculated_fields(self, instance: dict[str, Any]) -> Iterable[Event]:
-        regex = re.compile(
-            r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
-        )
-        json_data = instance["meeting"]
-        relations: RelationUpdates = {}
-        for collection in json_data:
-            for entry in json_data[collection].values():
-                model = model_registry[collection]()
-                relations.update(
-                    self.relation_manager.get_relation_updates(
-                        model,
-                        entry,
-                        "meeting.import",
-                        process_calculated_fields_only=True,
-                    )
-                )
-        # Fix bug in calculated fields, see #1367
-        entries_to_remove: list[str] = []
-        for field, entry in relations.items():
-            if regex.search(field):
-                if entry["add"]:
-                    entry["remove"] = []
-                else:
-                    entries_to_remove.append(field)
-        for field in entries_to_remove:
-            del relations[field]
-        return self.handle_relation_updates_helper(relations)
-
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
@@ -688,13 +724,9 @@ class MeetingImport(
             result["number_of_merged_users"] = self.number_of_merged_users
         return result
 
-    def migrate_data(self, instance: dict[str, Any]) -> dict[str, Any]:
+    def check_data_migration_index(self, instance: dict[str, Any]) -> None:
         """
-        1. Check for valid migration index
-        2. Build models map from data and prepend organization and committee
-        3. Do the migrations
-        4. Get the migrated models from migration wrapper
-        5. Change the mapping back to collection->id->model
+        Check for valid migration index.
         """
         start_migration_index = instance["meeting"].pop("_migration_index")
         backend_migration_index = get_backend_migration_index()
@@ -703,57 +735,6 @@ class MeetingImport(
                 f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"
             )
         if backend_migration_index > start_migration_index:
-            migration_wrapper = MigrationWrapperMemory()
-
-            # fetch necessary data
-            organization = self.datastore.get(
-                ONE_ORGANIZATION_FQID,
-                [
-                    "id",
-                    "committee_ids",
-                    "active_meeting_ids",
-                    "archived_meeting_ids",
-                    "template_meeting_ids",
-                    "organization_tag_ids",
-                ],
-                lock_result=False,
+            raise ActionException(
+                f"Your data migration index '{start_migration_index}' is lower than the migration index of this backend '{backend_migration_index}'! Please, use a more recent file!"
             )
-            committee_fqid = fqid_from_collection_and_id(
-                "committee", instance["committee_id"]
-            )
-            committee = self.datastore.get(
-                committee_fqid,
-                ["id", "meeting_ids"],
-                lock_result=False,
-            )
-
-            # Build import models. Use OrderedDict to ensure that organization and committee are
-            # available for the migration
-            models = OrderedDict(
-                [
-                    (ONE_ORGANIZATION_FQID, organization),
-                    (committee_fqid, committee),
-                ]
-            )
-            models.update(
-                (fqid_from_collection_and_id(collection, id), model)
-                for collection, models in instance["meeting"].items()
-                for id, model in models.items()
-            )
-            migration_wrapper.set_import_data(
-                models,
-                start_migration_index,
-            )
-
-            # finalize and read back migrated models
-            migration_wrapper.execute_command("finalize")
-            migrated_models = migration_wrapper.get_migrated_models()
-
-            instance["meeting"] = defaultdict(dict)
-            for fqid, model in migrated_models.items():
-                collection, id = collection_and_id_from_fqid(fqid)
-                if collection not in ("organization", "committee", "theme"):
-                    instance["meeting"][collection][str(id)] = model
-
-        instance["meeting"]["_migration_index"] = backend_migration_index
-        return instance

@@ -4,6 +4,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionWorkflowImport(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(42)
+
     def get_state(
         self,
         name: str,
@@ -28,13 +32,10 @@ class MotionWorkflowImport(BaseActionTestCase):
             "weight": weight,
             "set_workflow_timestamp": True,
             "allow_motion_forwarding": True,
+            "allow_amendment_forwarding": True,
         }
 
     def test_import_simple_case(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -48,30 +49,27 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion_workflow/1",
+            "motion_workflow/43",
             {
                 "name": "test_Xcdfgee",
-                "first_state_id": 1,
-                "sequential_number": 1,
+                "first_state_id": 43,
+                "sequential_number": 43,
             },
         )
         self.assert_model_exists(
-            "motion_state/1",
+            "motion_state/43",
             {
-                "workflow_id": 1,
+                "workflow_id": 43,
                 "name": "begin",
-                "first_state_of_workflow_id": 1,
+                "first_state_of_workflow_id": 43,
                 "weight": 1,
                 "set_workflow_timestamp": True,
                 "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
             },
         )
 
     def test_import_one_state_no_first_state_name(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -83,22 +81,15 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion_workflow/1",
-            {
-                "name": "test_Xcdfgee",
-                "first_state_id": 1,
-            },
+            "motion_workflow/43",
+            {"name": "test_Xcdfgee", "first_state_id": 43},
         )
         self.assert_model_exists(
-            "motion_state/1",
-            {"workflow_id": 1, "name": "begin", "first_state_of_workflow_id": 1},
+            "motion_state/43",
+            {"workflow_id": 43, "name": "begin", "first_state_of_workflow_id": 43},
         )
 
     def test_import_missing_state(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -109,16 +100,12 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list."
-            in response.json["message"]
+        self.assertEqual(
+            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list.",
+            response.json["message"],
         )
 
     def test_import_missing_state_next(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -129,16 +116,12 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list."
-            in response.json["message"]
+        self.assertEqual(
+            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list.",
+            response.json["message"],
         )
 
     def test_import_missing_state_previous(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -149,16 +132,12 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list."
-            in response.json["message"]
+        self.assertEqual(
+            "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list.",
+            response.json["message"],
         )
 
     def test_import_next_previous_states(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -175,58 +154,54 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion_workflow/1",
+            "motion_workflow/43",
             {
                 "name": "test_Xcdfgee",
-                "first_state_id": 1,
+                "first_state_id": 43,
             },
         )
         self.assert_model_exists(
-            "motion_state/1",
+            "motion_state/43",
             {
-                "workflow_id": 1,
+                "workflow_id": 43,
                 "name": "begin",
-                "first_state_of_workflow_id": 1,
-                "next_state_ids": [2, 3],
+                "first_state_of_workflow_id": 43,
+                "next_state_ids": [44, 45],
                 "weight": 10,
             },
         )
         self.assert_model_exists(
-            "motion_state/2",
+            "motion_state/44",
             {
-                "workflow_id": 1,
+                "workflow_id": 43,
                 "name": "edit",
-                "next_state_ids": [4],
-                "previous_state_ids": [1],
+                "next_state_ids": [46],
+                "previous_state_ids": [43],
                 "weight": 11,
             },
         )
         self.assert_model_exists(
-            "motion_state/3",
+            "motion_state/45",
             {
-                "workflow_id": 1,
+                "workflow_id": 43,
                 "name": "read",
-                "next_state_ids": [],
-                "previous_state_ids": [1],
+                "next_state_ids": None,
+                "previous_state_ids": [43],
                 "weight": 12,
             },
         )
         self.assert_model_exists(
-            "motion_state/4",
+            "motion_state/46",
             {
-                "workflow_id": 1,
+                "workflow_id": 43,
                 "name": "end",
-                "next_state_ids": [],
-                "previous_state_ids": [2],
+                "next_state_ids": None,
+                "previous_state_ids": [44],
                 "weight": 13,
             },
         )
 
     def test_import_wrong_prev_state(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -242,13 +217,11 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "State begin is not in previous of edit." in response.json["message"]
+        self.assertEqual(
+            "State begin is not in previous of edit.", response.json["message"]
+        )
 
     def test_import_wrong_next_state(self) -> None:
-        self.create_model(
-            "meeting/42",
-            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -264,4 +237,6 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "State edit is not in next of begin." in response.json["message"]
+        self.assertEqual(
+            "State edit is not in next of begin.", response.json["message"]
+        )

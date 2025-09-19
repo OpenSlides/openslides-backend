@@ -1,12 +1,14 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.interface import PartialModel
+from psycopg.types.json import Jsonb
+
+from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
@@ -19,11 +21,11 @@ from ...util.typing import ActionData
 from ..assignment_candidate.delete import AssignmentCandidateDelete
 from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
-from ..motion_editor.delete import MotionEditorDeleteAction
+from ..motion_editor.create import MotionEditorCreateAction
 from ..motion_editor.update import MotionEditorUpdateAction
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
-from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
+from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreateAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
@@ -57,7 +59,7 @@ class UserMergeTogether(
             "is_active",
             "is_physical_person",
             "default_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "pronoun",
@@ -83,6 +85,7 @@ class UserMergeTogether(
                     "last_email_sent",
                     "last_login",
                     "meeting_ids",
+                    "committee_ids",
                     "username",
                     "is_active",
                     "is_physical_person",
@@ -90,19 +93,16 @@ class UserMergeTogether(
                     "title",
                     "first_name",
                     "last_name",
-                    "gender",
+                    "gender_id",
                     "email",
                     "default_vote_weight",
-                ],
-                "highest": [
-                    "can_change_own_password",
+                    "external",
+                    "home_committee_id",
                 ],
                 "error": [
                     "is_demo_user",
-                    "forwarding_committee_ids",
                 ],
                 "merge": [
-                    "committee_ids",
                     "committee_management_ids",
                     "option_ids",  # throw error if conflict on same poll
                     "poll_voted_ids",  # throw error if conflict on same poll
@@ -118,6 +118,7 @@ class UserMergeTogether(
                     "organization_management_level",
                     "saml_id",  # error if set on secondary users, otherwise ignore the field
                     "member_number",
+                    "can_change_own_password",  # ignore on secondary users if primary has a saml_id, else highest
                 ],
             },
         )
@@ -176,7 +177,7 @@ class UserMergeTogether(
             "poll",
             And(
                 FilterOperator("entitled_users_at_stop", "!=", None),
-                FilterOperator("entitled_users_at_stop", "!=", []),
+                FilterOperator("entitled_users_at_stop", "!=", Jsonb([])),
             ),
             ["entitled_users_at_stop"],
         )
@@ -236,13 +237,10 @@ class UserMergeTogether(
         update_operations["user"]["update"].append(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
         )
-        committee_ids = update_operations["user"]["update"][0].pop(
-            "committee_ids", None
-        )
 
         self.call_other_actions(update_operations)
 
-        result = {"id": into["id"], "committee_ids": committee_ids}
+        result = {"id": into["id"]}
         self._history_replacement_groups["user"].append(
             (result, [into["id"], *instance["user_ids"]], False)
         )
@@ -254,7 +252,7 @@ class UserMergeTogether(
         if len(update_operations["user"]["update"]) != 1:
             raise BadCodingException("Calculated wrong amount of user payloads")
         main_user_payload = update_operations["user"]["update"][0]
-        user_id = main_user_payload["id"]
+        main_user_id = main_user_payload["id"]
         meeting_user_create_payloads = update_operations["meeting_user"]["create"]
         if len(
             update_payloads := [
@@ -265,11 +263,9 @@ class UserMergeTogether(
             meeting_user_via_user_payloads = []
             for payload_index in range(len(update_payloads)):
                 current = update_payloads[payload_index]
-                if current.get("vote_weight") == "0.000000":
-                    current["vote_weight"] = "0.000001"
                 meeting_user_via_user_payloads.append(
                     {
-                        "id": user_id,
+                        "id": main_user_id,
                         "meeting_id": current["meeting_id"],
                         **{
                             field: current.pop(field)
@@ -286,14 +282,13 @@ class UserMergeTogether(
                 if len(payload) > 1
             ]
             new_meeting_ids = [
-                m_user["meeting_id"]
-                for m_user in update_operations["meeting_user"]["create"]
+                m_user["meeting_id"] for m_user in meeting_user_create_payloads
             ]
             if len(new_meeting_ids):
                 new_meeting_users = self.datastore.filter(
                     "meeting_user",
                     And(
-                        FilterOperator("user_id", "=", user_id),
+                        FilterOperator("user_id", "=", main_user_id),
                         Or(
                             FilterOperator("meeting_id", "=", meeting_id)
                             for meeting_id in new_meeting_ids
@@ -306,7 +301,7 @@ class UserMergeTogether(
             meeting_user_ids_by_meeting_ids = {
                 m_user["meeting_id"]: id_ for id_, m_user in new_meeting_users.items()
             }
-            for payload in update_operations["meeting_user"]["create"]:
+            for payload in meeting_user_create_payloads:
                 if len(payload):
                     payload["id"] = meeting_user_ids_by_meeting_ids[
                         payload["meeting_id"]
@@ -329,7 +324,7 @@ class UserMergeTogether(
                 model["meeting_id"]: id_
                 for id_, model in self.datastore.filter(
                     "meeting_user",
-                    FilterOperator("user_id", "=", user_id),
+                    FilterOperator("user_id", "=", main_user_id),
                     ["meeting_id"],
                 ).items()
             }
@@ -354,11 +349,11 @@ class UserMergeTogether(
                 },
                 "motion_editor": {
                     "update": MotionEditorUpdateAction,
-                    "delete": MotionEditorDeleteAction,
+                    "create": MotionEditorCreateAction,
                 },
                 "motion_working_group_speaker": {
                     "update": MotionWorkingGroupSpeakerUpdateAction,
-                    "delete": MotionWorkingGroupSpeakerDeleteAction,
+                    "create": MotionWorkingGroupSpeakerCreateAction,
                 },
             }
 
@@ -394,14 +389,12 @@ class UserMergeTogether(
                         [{"id": id_} for id_ in to_delete],
                     )
 
-            if main_user_payload.get("default_vote_weight") == "0.000000":
-                main_user_payload["default_vote_weight"] = "0.000001"
-            self.execute_other_action(UserUpdate, [main_user_payload])
-            if len(to_delete := update_operations["user"]["delete"]):
-                self.execute_other_action(
-                    UserDelete,
-                    [{"id": id_} for id_ in to_delete],
-                )
+        self.execute_other_action(UserUpdate, [main_user_payload])
+        if len(to_delete := update_operations["user"]["delete"]):
+            self.execute_other_action(
+                UserDelete,
+                [{"id": id_} for id_ in to_delete],
+            )
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]
@@ -589,6 +582,19 @@ class UserMergeTogether(
                     self.check_equality(
                         collection, into_, ranked_others, into_["id"], field
                     )
+                    return None
+                case "can_change_own_password":
+                    if into_.get("saml_id"):
+                        return None
+                    if len(
+                        comp_data := [
+                            date
+                            for model in [into_, *ranked_others]
+                            if (date := model.get("can_change_own_password"))
+                            is not None
+                        ]
+                    ):
+                        return any(comp_data)
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations

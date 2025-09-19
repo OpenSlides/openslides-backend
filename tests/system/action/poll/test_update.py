@@ -24,6 +24,7 @@ class UpdatePollTestCase(BasePollTestCase):
                 "vote_delegated_to_user_id": 2,
             },
         ]
+        self.create_meeting()
         self.set_models(
             {
                 "assignment/1": {
@@ -31,8 +32,6 @@ class UpdatePollTestCase(BasePollTestCase):
                     "open_posts": 1,
                 },
                 "meeting/1": {
-                    "name": "my meeting",
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [11],
                 },
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
@@ -203,14 +202,14 @@ class UpdatePollTestCase(BasePollTestCase):
         assert poll.get("entitled_group_ids") == []
 
     def test_update_groups(self) -> None:
-        self.create_model("group/2", {"meeting_id": 1, "poll_ids": []})
+        self.create_model("group/4", {"meeting_id": 1, "poll_ids": []})
         response = self.request(
             "poll.update",
-            {"entitled_group_ids": [2], "id": 1},
+            {"entitled_group_ids": [4], "id": 1},
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("entitled_group_ids"), [2])
+        self.assertEqual(poll.get("entitled_group_ids"), [4])
 
     def test_update_groups_with_anonymous(self) -> None:
         group_id = self.set_anonymous()
@@ -247,11 +246,34 @@ class UpdatePollTestCase(BasePollTestCase):
     def test_update_max_votes_per_option(self) -> None:
         response = self.request(
             "poll.update",
-            {"max_votes_per_option": 5, "id": 1},
+            {"max_votes_per_option": 5, "max_votes_amount": 5, "id": 1},
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("max_votes_per_option"), 5)
+        self.assert_model_exists("poll/1", {"max_votes_per_option": 5})
+
+    def test_max_votes_per_option_smaller_max_votes_amount(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"max_votes_per_option": 5, "max_votes_amount": 1, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The maximum votes per option cannot be higher than the maximum amount of votes in total."
+        )
+        self.assert_model_exists("poll/1", {"max_votes_per_option": 1})
+
+    def test_max_votes_amount_smaller_min(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"min_votes_amount": 5, "max_votes_amount": 1, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The minimum amount of votes cannot be higher than the maximum amount of votes."
+        )
+        self.assert_model_exists("poll/1", {"min_votes_amount": 1})
 
     def test_update_negative_fields(self) -> None:
         for field in ("max_votes_per_option", "max_votes_amount", "min_votes_amount"):
@@ -292,6 +314,7 @@ class UpdatePollTestCase(BasePollTestCase):
                 "global_no": True,
                 "global_abstain": False,
                 "max_votes_per_option": 2,
+                "max_votes_amount": 2,
             },
         )
         self.assert_status_code(response, 200)
@@ -598,3 +621,47 @@ class UpdatePollTestCase(BasePollTestCase):
                 ]
             },
         )
+
+    def test_live_voting_named_motion_poll(self) -> None:
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "state_id": 444},
+                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+            }
+        )
+        self.update_model(
+            "poll/1", {"type": Poll.TYPE_NAMED, "content_object_id": "motion/3"}
+        )
+
+        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"live_voting_enabled": True})
+
+    def test_live_voting_not_allowed_type_analog(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_ANALOG, True)
+
+    def test_live_voting_not_allowed_type_pseudoanonymous(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_PSEUDOANONYMOUS, True)
+
+    def test_live_voting_not_allowed_is_motion_poll_false(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_NAMED, False)
+
+    def base_live_voting_not_allowed(
+        self, poll_type: str, is_motion_poll: bool
+    ) -> None:
+        if is_motion_poll:
+            self.set_models(
+                {
+                    "motion/3": {"meeting_id": 1, "state_id": 444},
+                    "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+                }
+            )
+            self.update_model("poll/1", {"content_object_id": "motion/3"})
+        self.update_model("poll/1", {"type": poll_type})
+
+        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("poll/1", {"live_voting_enabled": None})
+        assert (
+            "live_voting_enabled only allowed for named motion polls."
+        ) in response.json["message"]

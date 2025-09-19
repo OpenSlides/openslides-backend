@@ -4,11 +4,11 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemSystemTest(BaseActionTestCase):
-    def test_create(self) -> None:
+    def test_create_simple(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
             }
         )
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
@@ -28,18 +28,23 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(model.get("agenda_item_id"), 1)
 
     def test_create_more_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 1},
-                "agenda_item/42": {"comment": "test", "meeting_id": 1},
-                "tag/561": {"meeting_id": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
+                "agenda_item/42": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                },
+                "tag/561": {"meeting_id": 1, "name": "Tag 1 von 365"},
             }
         )
         response = self.request(
             "agenda_item.create",
             {
-                "content_object_id": "topic/1",
+                "content_object_id": "topic/2",
                 "comment": "test_comment_oiuoitesfd",
                 "type": AgendaItem.INTERNAL_ITEM,
                 "parent_id": 42,
@@ -62,11 +67,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
 
     def test_create_twice_without_parent(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 1},
-                "topic/2": {"meeting_id": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
             }
         )
         for i in range(1, 3):
@@ -78,23 +83,29 @@ class AgendaItemSystemTest(BaseActionTestCase):
             self.assert_model_exists(f"agenda_item/{i}", {"weight": i})
 
     def test_create_parent_weight(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 1},
-                "topic/2": {"meeting_id": 1},
-                "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10},
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
+                "topic/3": {"meeting_id": 1, "title": "feever", "sequential_number": 3},
+                "agenda_item/42": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "content_object_id": "topic/1",
+                },
             }
         )
         response = self.request_multi(
             "agenda_item.create",
             [
                 {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "parent_id": 42,
                 },
                 {
-                    "content_object_id": "topic/2",
+                    "content_object_id": "topic/3",
                     "parent_id": 42,
                 },
             ],
@@ -108,10 +119,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 2)
 
     def test_create_same_content_object(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
             }
         )
         response = self.request_multi(
@@ -125,14 +136,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 },
             ],
         )
-        # This should not work! The relation handling is broken here
-        self.assert_status_code(response, 200)
-        agenda_item = self.get_model("agenda_item/1")
-        self.assertEqual(agenda_item["content_object_id"], "topic/1")
-        agenda_item = self.get_model("agenda_item/2")
-        self.assertEqual(agenda_item["content_object_id"], "topic/1")
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("agenda_item/1")
+        self.assert_model_not_exists("agenda_item/2")
         topic = self.get_model("topic/1")
-        self.assertEqual(topic["agenda_item_id"], 2)
+        self.assertEqual(topic.get("agenda_item_id"), None)
 
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
@@ -140,41 +148,34 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_differing_meeting_ids(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 1},
-                "agenda_item/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 4, "title": "jungle", "sequential_number": 2},
+                "agenda_item/1": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                },
             }
         )
         response = self.request(
-            "agenda_item.create", {"content_object_id": "topic/1", "parent_id": 1}
+            "agenda_item.create", {"content_object_id": "topic/2", "parent_id": 1}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['agenda_item/1']",
+            "The following models do not belong to meeting 4: ['agenda_item/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("agenda_item/2")
 
-    def test_create_meeting_does_not_exist(self) -> None:
-        self.create_model("topic/1", {"meeting_id": 2})
-        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("agenda_item/1")
-
-    def test_create_no_meeting_id(self) -> None:
-        self.create_model("topic/1")
-        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("agenda_item/1")
-
     def test_create_calc_fields_no_parent_agenda_type(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
             }
         )
         response = self.request(
@@ -188,10 +189,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_no_parent_hidden_type(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
             }
         )
         response = self.request(
@@ -205,11 +206,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_no_parent_internal_type(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
-                "topic/2": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
             }
         )
         response = self.request(
@@ -226,10 +227,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_parent_agenda_internal(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
                     "type": AgendaItem.AGENDA_ITEM,
@@ -255,10 +257,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 1
 
     def test_create_calc_fields_parent_internal_internal(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
                     "type": AgendaItem.INTERNAL_ITEM,
@@ -283,10 +286,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 1
 
     def test_create_calc_fields_parent_internal_hidden(self) -> None:
+        self.create_meeting(2)
         self.set_models(
             {
-                "meeting/2": {"is_active_in_organization_id": 1},
-                "topic/1": {"meeting_id": 2},
+                "topic/1": {"meeting_id": 2, "title": "tropic", "sequential_number": 1},
+                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
                     "type": AgendaItem.INTERNAL_ITEM,
@@ -313,14 +317,14 @@ class AgendaItemSystemTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
+            {"topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1}},
             "agenda_item.create",
             {"content_object_id": "topic/1"},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
+            {"topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1}},
             "agenda_item.create",
             {"content_object_id": "topic/1"},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -328,38 +332,23 @@ class AgendaItemSystemTest(BaseActionTestCase):
 
     def test_create_permissions_with_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {"topic/1": {"meeting_id": 1}},
+            {"topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1}},
             "agenda_item.create",
             {"content_object_id": "topic/1"},
-        )
-
-    def test_create_moderator_notes_no_permissions(self) -> None:
-        self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
-            "agenda_item.create",
-            {"content_object_id": "topic/1", "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE,
-            fail=True,
-        )
-
-    def test_create_moderator_notes_permissions(self) -> None:
-        self.base_permission_test(
-            {"topic/1": {"meeting_id": 1}},
-            "agenda_item.create",
-            {"content_object_id": "topic/1", "moderator_notes": "test"},
-            [
-                Permissions.AgendaItem.CAN_MANAGE,
-                Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
-            ],
         )
 
     def test_create_replace_reverse_of_multi_content_object_id_required_error(
         self,
     ) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "assignment/1": {"meeting_id": 1, "agenda_item_id": 1},
+                "assignment/1": {
+                    "meeting_id": 1,
+                    "agenda_item_id": 1,
+                    "title": "just do it",
+                    "sequential_number": 1,
+                },
                 "agenda_item/1": {"meeting_id": 1, "content_object_id": "assignment/1"},
             }
         )

@@ -14,12 +14,14 @@ The types noted below are the internal types after conversion in the backend. Se
         member_number: string, // unique member_number, info: done (used as matching field), new (newly added) or error
         title: string,
         pronoun: string,
-        gender: string, // as defined in organization/genders, info: done or warning
+        gender: string, // info: done or warning
         default_password: string,  // info: generated, done or warning
         is_active: boolean,
         is_physical_person: boolean,
         default_vote_weight: decimal(6),  // info: done or error
         saml_id: string,  // unique saml_id, info: new, done or error
+        home_committee: string, // info: done, error, generated or remove (missing field permission)
+        external: boolean // info: done, error, generated or remove (missing field permission)
     }[];
 }
 ```
@@ -33,7 +35,10 @@ Besides the usual headers as seen in payload (name and type), there are these di
     - `default_password`: object with info "generated" or "done", depending on whether the default_password was generated or not. The info "warning" signalizes, that `default_password`, `password` and `can_change_own_password` will be removed by setting `saml_id`, because local login will not be possible anymore.
     - `email` must be a valid email
     - `member_number`: object with info "new" or "done", depending on whether the member number will be newly added to an existing user or not. Overwriting a pre-existing value is not permitted and "error" will be used if it is tried. "error" will also be used if the member_number is not unique or matches a different user than the other matching criteria
-- `default_vote_weight` doesn't allow 0 values
+    - `default_vote_weight` doesn't allow 0 values
+    - `home_committee` points to the `user/home_committee_id` field and references an existing committee. Will be marked as `error` if it is not found. Marked as `remove` if the caller lacks necessary permissions to change it (see user.update doc for the correct permissions), this means it will be ignored upon import, unless the permissions change. Will receive an empty value with a `generated` state if `external` is set to true, since the field will be unset if that succeeds.
+    - `external` will be `error` if the value is true and the caller is also trying to set `home_committee_id`, it is marked as `remove` if the caller lacks permission to set it (see user.update doc for the correct permissions) and it will be set to false and marked as `generated` if home committee is set and the field is empty.
+
 
 The row state can be one of "new", "done" or "error". In case of an error, no import should be possible.
 

@@ -87,6 +87,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motions_default_line_numbering": "outside",
             "motions_line_length": 85,
             "motions_reason_required": False,
+            "motions_origin_motion_toggle_default": False,
+            "motions_enable_origin_motion_display": False,
             "motions_enable_text_on_projector": False,
             "motions_enable_reason_on_projector": False,
             "motions_enable_sidebox_on_projector": False,
@@ -98,7 +100,6 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motions_number_type": "per_category",
             "motions_number_min_digits": 2,
             "motions_number_with_blank": False,
-            "motions_statutes_enabled": False,
             "motions_amendments_enabled": True,
             "motions_amendments_in_main_list": True,
             "motions_amendments_of_amendments": False,
@@ -114,6 +115,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
+            "motion_poll_projection_name_order_first": "last_name",
+            "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
             "users_enable_vote_delegations": True,
@@ -136,6 +139,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "poll_default_type": "analog",
             "poll_default_onehundred_percent_base": "YNA",
             "poll_default_backend": "fast",
+            "poll_default_live_voting_enabled": False,
             "poll_couple_countdown": True,
         }
 
@@ -151,7 +155,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -160,7 +164,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_group_id": 1,
                     "admin_group_id": 2,
                     "motions_default_amendment_workflow_id": 1,
-                    "motions_default_statute_amendment_workflow_id": 1,
                     "motions_default_workflow_id": 1,
                     "reference_projector_id": 1,
                     "projector_countdown_default_time": 60,
@@ -190,7 +193,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "blup",
                     "first_state_id": 1,
                     "default_amendment_workflow_meeting_id": 1,
-                    "default_statute_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
                     "sequential_number": 1,
@@ -253,6 +255,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         }
 
     def test_correct_relations(self) -> None:
+        """Also asserts that the internal flag of meeting export is used for the gender"""
         self.set_models(
             {
                 "organization/1": {
@@ -285,7 +288,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_id": 1,
                     "tagged_ids": ["meeting/1"],
                 },
-                "committee/1": {"organization_id": 1, "default_meeting_id": 1},
+                "committee/1": {
+                    "name": "!",
+                    "organization_id": 1,
+                    "default_meeting_id": 1,
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -294,7 +301,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_group_id": 1,
                     "admin_group_id": 2,
                     "motions_default_amendment_workflow_id": 1,
-                    "motions_default_statute_amendment_workflow_id": 1,
                     "motions_default_workflow_id": 1,
                     "reference_projector_id": 1,
                     "projector_countdown_default_time": 60,
@@ -339,11 +345,13 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "admin_group_for_meeting_id": 1,
                 },
                 "user/1": {
+                    "username": "no",
                     "meeting_user_ids": [11],
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
                     "organization_id": 1,
+                    "gender_id": 2,
                 },
                 "user/2": self.get_new_user(
                     "present_user",
@@ -415,7 +423,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "blup",
                     "first_state_id": 1,
                     "default_amendment_workflow_meeting_id": 1,
-                    "default_statute_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
                     "sequential_number": 1,
@@ -551,7 +558,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -560,7 +567,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_group_id": 1,
                     "admin_group_id": 2,
                     "motions_default_amendment_workflow_id": 1,
-                    "motions_default_statute_amendment_workflow_id": 1,
                     "motions_default_workflow_id": 1,
                     "reference_projector_id": 1,
                     "projector_countdown_default_time": 60,
@@ -592,7 +598,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "blup",
                     "first_state_id": 1,
                     "default_amendment_workflow_meeting_id": 1,
-                    "default_statute_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
                     "sequential_number": 1,
@@ -646,7 +651,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_group_id": 3,
                     "admin_group_id": 4,
                     "motions_default_amendment_workflow_id": 2,
-                    "motions_default_statute_amendment_workflow_id": 2,
                     "motions_default_workflow_id": 2,
                     "reference_projector_id": 2,
                     "projector_countdown_default_time": 60,
@@ -678,7 +682,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "blup",
                     "first_state_id": 2,
                     "default_amendment_workflow_meeting_id": 2,
-                    "default_statute_amendment_workflow_meeting_id": 2,
                     "default_workflow_meeting_id": 2,
                     "state_ids": [2],
                     "sequential_number": 2,
@@ -770,7 +773,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             {
                 "meeting/1": {"name": "test_foo"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                    "username": "no",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                 },
             }
         )

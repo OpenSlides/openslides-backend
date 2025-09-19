@@ -1,5 +1,5 @@
 ## Payload
-```
+```js
 {
 // Required
     name: string;
@@ -8,11 +8,12 @@
 // Optional
     permissions: string[];
     external_id: string;
+    weight: number
 }
 ```
 
 ## Action
-Creates a new group.
+Creates a new group. The weight is only used during creation of an anonymous group if the meeting updates `enable_anonymous` is set. Otherwise it will be calculated.
 
 ## Permissions
 The user needs `user.can_manage`.

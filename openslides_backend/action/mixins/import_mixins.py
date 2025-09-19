@@ -2,11 +2,14 @@ import copy
 import csv
 from collections import defaultdict
 from collections.abc import Callable
+from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-from time import mktime, strptime, time
+from enum import Enum, StrEnum
+from time import mktime, strptime
 from typing import Any, TypedDict, Union, cast
+from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
 from typing_extensions import NotRequired
 
 from openslides_backend.action.action import Action
@@ -15,7 +18,7 @@ from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
-from ...shared.interfaces.services import DatastoreService
+from ...shared.interfaces.services import Database
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ...shared.schema import required_id_schema
@@ -30,7 +33,7 @@ FALSE_VALUES = ("0", "false", "no", "n", "f")
 SearchFieldType = Union[str, tuple[str, ...]]
 
 
-class ImportState(str, Enum):
+class ImportState(StrEnum):
     WARNING = "warning"
     NEW = "new"
     DONE = "done"
@@ -57,7 +60,7 @@ class ResultType(Enum):
 class Lookup:
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         collection: str,
         name_entries: list[tuple[SearchFieldType, dict[str, Any]]],
         field: SearchFieldType = "name",
@@ -163,7 +166,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def count_warnings_in_payload(
-        data: list[dict[str, str] | list[Any]] | dict[str, Any]
+        data: list[dict[str, str] | list[Any]] | dict[str, Any],
     ) -> int:
         count = 0
         for col in data:
@@ -176,7 +179,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def get_value_from_union_str_object(
-        field: str | dict[str, Any] | None
+        field: str | dict[str, Any] | None,
     ) -> str | None:
         if type(field) is dict:
             return field.get("value", "")
@@ -317,7 +320,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
     ) -> list[ImportRow]:
         """The self.rows will be deepcopied, flattened and returned, without
         changes on the self.rows.
-        This is necessary for using the data in the executution of actions.
+        This is necessary for using the data in the execution of actions.
         The requests response should be given with the unchanged self.rows.
         Parameter:
         hook_method:
@@ -351,7 +354,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
                 store_id = instance["id"]
                 if self.import_state == ImportState.ERROR:
                     continue
-                self.datastore.write_without_events(
+                self.datastore.write(
                     WriteRequest(
                         events=[
                             Event(
@@ -405,11 +408,11 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     def store_rows_in_the_import_preview(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
-        time_created = int(time())
+        time_created = datetime.now(ZoneInfo("UTC"))
         result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
-        self.datastore.write_without_events(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(
@@ -418,7 +421,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": result,
+                            "result": Jsonb(result),
                             "created": time_created,
                             "state": self.import_state,
                         },

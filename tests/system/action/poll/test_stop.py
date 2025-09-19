@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import Mock, patch
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
@@ -23,11 +24,23 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "content_object_id": "topic/1",
                 "state": Poll.STATE_STARTED,
                 "meeting_id": 1,
+                "sequential_number": 1,
+                "title": "Poll 1",
+                "onehundred_percent_base": "Y",
             },
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/1": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
-    def test_stop_correct(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_stop_correct(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
+        self.create_meeting()
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
@@ -43,6 +56,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "group/1": {"meeting_id": 1},
@@ -51,7 +67,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "default_group_id": 1,
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 1,
-                    "is_active_in_organization_id": 1,
                     "group_ids": [1],
                     "users_enable_vote_delegations": True,
                 },
@@ -138,11 +153,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
+        assert clear_called_on == [1]
 
     def test_stop_assignment_poll(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/1": {
                     "meeting_id": 1,
                 },
@@ -153,6 +169,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "backend": "fast",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
             }
         )
@@ -162,6 +181,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_history_information("assignment/1", ["Ballot stopped"])
 
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -175,6 +195,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3, 4],
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
                 "user/2": {
                     "is_present_in_meeting_ids": [1],
@@ -190,7 +213,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "meeting/1": {
                     "group_ids": [3, 4],
                     "meeting_user_ids": [1],
-                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -208,6 +230,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
 
     def test_stop_entitled_users_not_present(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -221,6 +244,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
                 "user/2": {
                     "meeting_user_ids": [12],
@@ -238,7 +264,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "user_ids": [2, 3],
                     "group_ids": [3, 4],
                     "meeting_user_ids": [12, 13],
-                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -256,6 +281,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
 
     def test_stop_entitled_users_with_delegations(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -269,6 +295,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
                 "user/2": {
                     "meeting_user_ids": [12],
@@ -296,7 +325,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "user_ids": [2, 3],
                     "group_ids": [3, 4],
                     "meeting_user_ids": [12, 13],
-                    "is_active_in_organization_id": 1,
                     "users_enable_vote_delegations": True,
                 },
             }
@@ -315,6 +343,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
 
     def test_stop_entitled_users_with_delegations_turned_off(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -328,6 +357,9 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "title": "Poll 1",
                 },
                 "user/2": {
                     "meeting_user_ids": [12],
@@ -355,7 +387,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "user_ids": [2, 3],
                     "group_ids": [3, 4],
                     "meeting_user_ids": [12, 13],
-                    "is_active_in_organization_id": 1,
                     "users_enable_vote_delegations": False,
                 },
             }
@@ -374,6 +405,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         ]
 
     def test_stop_published(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -384,7 +416,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_PUBLISHED,
                     "meeting_id": 1,
                 },
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.stop", {"id": 1})
@@ -397,6 +428,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         )
 
     def test_stop_created(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "motion/1": {
@@ -407,7 +439,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
                 },
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.stop", {"id": 1})
@@ -419,10 +450,19 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             in response.json["message"]
         )
 
-    def test_stop_no_permissions(self) -> None:
+    @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
+    def test_stop_no_permissions(self, clear: Mock) -> None:
+        clear_called_on: list[int] = []
+
+        def add_to_list(id_: int) -> None:
+            clear_called_on.append(id_)
+
+        clear.side_effect = add_to_list
         self.set_models(self.test_models)
         self.start_poll(1)
         self.base_permission_test({}, "poll.stop", {"id": 1})
+
+        assert clear_called_on == []
 
     def test_stop_permissions(self) -> None:
         self.set_models(self.test_models)

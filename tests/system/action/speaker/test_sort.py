@@ -8,16 +8,34 @@ class SpeakerSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "list_of_speakers/222": {"meeting_id": 1},
+            "topic/1337": {
+                "title": "introduction leek gathering",
+                "sequential_number": 1337,
+                "meeting_id": 1,
+            },
+            "list_of_speakers/222": {
+                "sequential_number": 222,
+                "content_object_id": "topic/1337",
+                "meeting_id": 1,
+            },
             "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
             "speaker/32": {"list_of_speakers_id": 222, "meeting_id": 1},
         }
 
     def test_sort_correct_1(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "list_of_speakers/222": {"meeting_id": 1},
+                "topic/1337": {
+                    "title": "introduction leek gathering",
+                    "sequential_number": 1337,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/222": {
+                    "sequential_number": 222,
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 1,
+                },
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
                 "speaker/32": {"list_of_speakers_id": 222, "meeting_id": 1},
             }
@@ -32,10 +50,19 @@ class SpeakerSortActionTest(BaseActionTestCase):
         assert model_32.get("weight") == 1
 
     def test_sort_missing_model(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "list_of_speakers/222": {"meeting_id": 1},
+                "topic/1337": {
+                    "title": "introduction leek gathering",
+                    "sequential_number": 1337,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/222": {
+                    "sequential_number": 222,
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 1,
+                },
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
             }
         )
@@ -49,10 +76,19 @@ class SpeakerSortActionTest(BaseActionTestCase):
         )
 
     def test_sort_another_section_db(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "list_of_speakers/222": {"meeting_id": 1},
+                "topic/1337": {
+                    "title": "introduction leek gathering",
+                    "sequential_number": 1337,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/222": {
+                    "sequential_number": 222,
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 1,
+                },
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
                 "speaker/32": {"list_of_speakers_id": 222, "meeting_id": 1},
                 "speaker/33": {"list_of_speakers_id": 222, "meeting_id": 1},
