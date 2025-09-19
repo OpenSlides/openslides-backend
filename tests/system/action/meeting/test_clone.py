@@ -154,9 +154,9 @@ class MeetingClone(BaseActionTestCase):
         self.set_test_data()
         self.create_motion(1)
         self.set_user_groups(1, [1])
-        original_user_ids_user = self.create_user_for_meeting(1)
-        admin_ids_user = self.create_user("admin_ids_user")
-        user_ids_user = self.create_user("user_ids_user")
+        original_user_ids_user_id = self.create_user_for_meeting(1)
+        admin_ids_user_id = self.create_user("admin_ids_user")
+        user_ids_user_id = self.create_user("user_ids_user")
         self.set_models(
             {
                 "motion_submitter/1": {
