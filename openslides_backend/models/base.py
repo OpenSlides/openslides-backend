@@ -88,8 +88,8 @@ class Model(metaclass=ModelMetaClass):
         Yields all writable fields of this model.
         """
         for model_field in self.get_fields():
-            if not isinstance(model_field, fields.RelationListField) or not (
-                model_field.is_view_field and not model_field.write_fields
+            if not isinstance(model_field, fields.RelationListField) or (
+                not model_field.is_view_field or model_field.write_fields
             ):
                 yield model_field
 
