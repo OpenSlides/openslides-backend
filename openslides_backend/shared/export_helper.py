@@ -12,7 +12,7 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Meeting, User
+from ..models.models import Meeting
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
@@ -30,12 +30,10 @@ def export_meeting(
     # fetch meeting
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        [],
+        list(get_fields_for_export("meeting") - set(FORBIDDEN_FIELDS)),
         lock_result=False,
         use_changed_models=False,
     )
-    for forbidden_field in FORBIDDEN_FIELDS:
-        meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
@@ -46,7 +44,11 @@ def export_meeting(
     # fetch related models
     relation_fields = list(get_relation_fields())
     get_many_requests = [
-        GetManyRequest(field.get_target_collection(), ids)
+        GetManyRequest(
+            field.get_target_collection(),
+            ids,
+            get_fields_for_export(field.get_target_collection()),
+        )
         for field in relation_fields
         if (ids := meeting.get(field.get_own_field_name()))
     ]
@@ -134,25 +136,30 @@ def export_meeting(
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
 
+    # Sort instances by id within each collection
     for collection, instances in export.items():
         if collection == "_migration_index":
             continue
-        model = model_registry[collection]()
-        # Exclude view fields
-        all_collection_fields = {
-            field.get_own_field_name() for field in model.get_fields()
-        }
-        for id_, data in instances.items():
-            instances[id_] = {
-                field_name: value
-                for field_name, value in data.items()
-                if field_name in all_collection_fields and value is not None
-            }
-        # Sort instances by id within each collection
         export[collection] = dict(
             sorted(instances.items(), key=lambda item: int(item[0]))
         )
     return export
+
+
+# TODO (when removing back relations): replace with Model.get_writable_fields()
+def get_fields_for_export(collection: str) -> set[str]:
+    """
+    Returns writable fields of the collection with the given name.
+    """
+    model = model_registry[collection]()
+    return {
+        field.get_own_field_name()
+        for field in model.get_fields()
+        if (
+            not isinstance(field, RelationListField)
+            or not (field.is_view_field and not field.write_fields and field.read_only)
+        )
+    }
 
 
 def add_users(
@@ -164,12 +171,11 @@ def add_users(
 ) -> None:
     if not user_ids:
         return
-    fields = [field.own_field_name for field in User().get_fields()]
 
     gmr = GetManyRequest(
         "user",
         user_ids,
-        fields,
+        get_fields_for_export("user"),
     )
     users = remove_meta_fields(
         transfer_keys(
@@ -180,7 +186,6 @@ def add_users(
     )
 
     for user in users.values():
-        user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:

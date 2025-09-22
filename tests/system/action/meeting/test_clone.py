@@ -12,6 +12,7 @@ from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
@@ -45,6 +46,26 @@ class MeetingClone(BaseActionTestCase):
     def set_test_data_with_admin(self) -> None:
         self.set_test_data()
         self.set_user_groups(1, [2])
+
+    def create_meeting_with_internal_action(self, admin_ids: list[int] = [1]) -> None:
+        self.create_user("user2")
+        self.create_user("user3")
+        self.create_committee()
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": admin_ids,
+                "organization_tag_ids": [],
+                "language": "en",
+            },
+        )
 
     def test_clone_without_users(self) -> None:
         self.set_test_data()
@@ -949,24 +970,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
 
     def test_create_clone(self) -> None:
-        self.create_committee()
-        self.create_user("user2")
-        self.create_user("user3")
-        self.execute_action_internally(
-            "meeting.create",
-            {
-                "committee_id": 1,
-                "name": "meeting",
-                "description": "",
-                "location": "",
-                "start_time": 1633039200,
-                "end_time": 1633039200,
-                "user_ids": [2, 3],
-                "admin_ids": [2],
-                "organization_tag_ids": [],
-                "language": "en",
-            },
-        )
+        self.create_meeting_with_internal_action(admin_ids=[2])
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1000,25 +1004,14 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_create_clone_without_admin(self) -> None:
-        self.create_committee()
-        self.create_user("user2")
-        self.create_user("user3")
-        self.execute_action_internally(
-            "meeting.create",
-            {
-                "committee_id": 1,
-                "name": "meeting",
-                "description": "",
-                "location": "",
-                "start_time": 1633039200,
-                "end_time": 1633039200,
-                "user_ids": [2, 3],
-                "admin_ids": [1],
-                "organization_tag_ids": [],
-                "language": "en",
-            },
+        self.create_meeting_with_internal_action()
+        self.created_fqids.update(
+            [
+                fqid_from_collection_and_id(collection, id_)
+                for collection, data in self.datastore.get_everything().items()
+                for id_ in data.keys()
+            ]
         )
-        # TODO (for set_user_groups): fix `Missing fields 'name' in 'group/2'`
         self.set_user_groups(1, [])
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
@@ -1468,20 +1461,8 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("committee/60", {"meeting_ids": [1, 4, 5]})
 
-    def prepare_datastore_performance_test(self) -> None:
-        self.create_meeting(
-            meeting_data={
-                "template_for_organization_id": 1,
-                "start_time": datetime.fromtimestamp(1633039200),
-                "end_time": datetime.fromtimestamp(1633039200),
-            }
-        )
-        self.set_user_groups(1, [2])
-        self.create_user("user2", [1])
-        self.create_user("user3", [1])
-
     def test_clone_datastore_calls(self) -> None:
-        self.prepare_datastore_performance_test()
+        self.create_meeting_with_internal_action()
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
@@ -1489,7 +1470,7 @@ class MeetingClone(BaseActionTestCase):
 
     @performance
     def test_clone_performance(self) -> None:
-        self.prepare_datastore_performance_test()
+        self.create_meeting_with_internal_action()
         with Profiler("test_meeting_clone_performance.prof"):
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)

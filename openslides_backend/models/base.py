@@ -83,6 +83,16 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
+    def get_writable_fields(self) -> Iterable[fields.Field]:
+        """
+        Yields all writable fields of this model.
+        """
+        for model_field in self.get_fields():
+            if not isinstance(model_field, fields.RelationListField) or not (
+                model_field.is_view_field and not model_field.write_fields
+            ):
+                yield model_field
+
     def get_property(self, field_name: str) -> fields.Schema:
         """
         Returns JSON schema for the given field. Throws an error if it's read_only.
