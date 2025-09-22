@@ -155,9 +155,11 @@ def get_fields_for_export(collection: str) -> set[str]:
     return {
         field.get_own_field_name()
         for field in model.get_fields()
-        if (
-            not isinstance(field, RelationListField)
-            or not (field.is_view_field and not field.write_fields and field.read_only)
+        if not (
+            isinstance(field, RelationListField)
+            and field.is_view_field
+            and field.read_only
+            and not field.write_fields
         )
     }
 

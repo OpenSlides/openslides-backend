@@ -116,7 +116,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         return response, action_data
 
     def test_update_projector_related_fields(self) -> None:
-        response, data = self.setup_test_update_projector_related_fields()
+        response, data = self.setup_projector_related_fields()
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1", {**data, "default_projector_motion_ids": [1]}
@@ -141,7 +141,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_projector_related_fields2(self) -> None:
-        self.setup_test_update_projector_related_fields()
+        self.setup_projector_related_fields()
         response = self.request(
             "meeting.update", {"id": 1, "default_projector_current_los_ids": [2]}
         )

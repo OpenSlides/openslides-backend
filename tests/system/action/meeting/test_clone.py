@@ -66,6 +66,13 @@ class MeetingClone(BaseActionTestCase):
                 "language": "en",
             },
         )
+        self.created_fqids.update(
+            [
+                fqid_from_collection_and_id(collection, id_)
+                for collection, data in self.datastore.get_everything().items()
+                for id_ in data.keys()
+            ]
+        )
 
     def test_clone_without_users(self) -> None:
         self.set_test_data()
@@ -1005,13 +1012,6 @@ class MeetingClone(BaseActionTestCase):
 
     def test_create_clone_without_admin(self) -> None:
         self.create_meeting_with_internal_action()
-        self.created_fqids.update(
-            [
-                fqid_from_collection_and_id(collection, id_)
-                for collection, data in self.datastore.get_everything().items()
-                for id_ in data.keys()
-            ]
-        )
         self.set_user_groups(1, [])
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
