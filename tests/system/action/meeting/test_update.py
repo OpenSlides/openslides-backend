@@ -94,7 +94,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response_message,
         )
 
-    def setup_test_update_projector_related_fields(
+    def setup_projector_related_fields(
         self,
     ) -> tuple[Response, dict[str, Any]]:
         self.create_meeting()
