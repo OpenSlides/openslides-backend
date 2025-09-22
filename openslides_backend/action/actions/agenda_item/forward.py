@@ -7,6 +7,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
@@ -26,6 +27,9 @@ from ..structure_level_list_of_speakers.create import (
 )
 from ..structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
+)
+from ..structure_level_list_of_speakers.add_time import (
+    StructureLevelListOfSpeakersAddTimeAction,
 )
 from ..topic.create import TopicCreate
 
@@ -474,9 +478,11 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         mediafile_matches = self.create_mediafile_meeting_models(
             target_meeting_id, origin_mediafiles
         )
+        max_weight = self.datastore.max("agenda_item", FilterOperator("meeting_id", "=", target_meeting_id), "weight", use_changed_models=False) or 0
         yield from self.get_updated_instances_from_tree_node(
             target_meeting_id,
             target_meeting,
+            max_weight,
             origin_tree_list,
             muser_matches,
             group_matches,
@@ -489,6 +495,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         self,
         target_meeting_id: int,
         target_meeting: dict[str, Any],
+        max_meeting_agenda_weight: int,
         origin_tree_list: list[TreeNode],
         muser_matches: dict[int, int],
         group_matches: dict[int, int],
@@ -517,7 +524,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     )
                     else {}
                 ),
-                **{f"agenda_{field}": val for field, val in agenda_item.items()},
+                **{f"agenda_{field}": (val if field != "weight" else val + max_meeting_agenda_weight) for field, val in agenda_item.items()},
             }
             for agenda_item, topic, los, speakers, sllos, list_of_children in origin_tree_list
         ]
@@ -648,6 +655,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 yield from self.get_updated_instances_from_tree_node(
                     target_meeting_id,
                     target_meeting,
+                    max_meeting_agenda_weight,
                     tree_node[5],
                     muser_matches,
                     group_matches,
@@ -840,14 +848,14 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     "user_id": origin_musers[id_]["user_id"],
                     "group_ids": [
                         *target_meeting_models.get("meeting_user", {})
-                        .get(muser_matches[id_], {})
+                        .get(muser_matches.get(id_, 0), {})
                         .get("group_ids", []),
                         *[
                             group_matches[group_id]
                             for group_id in origin_musers[id_].get("group_ids", [])
                             if group_matches[group_id]
                             not in target_meeting_models.get("meeting_user", {})
-                            .get(muser_matches[id_], {})
+                            .get(muser_matches.get(id_, 0), {})
                             .get("group_ids", [])
                         ],
                     ],
@@ -862,13 +870,14 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                                 )
                             ],
                             **{
-                                field: origin_musers[id_][field]
+                                field: val
                                 for field in TRANSFERRABLE_MEETING_USER_FIELDS
+                                if (val := origin_musers.get(id_,{}).get(field))
                             },
                         }
                     ),
                 }
-                for id_, target in muser_matches.items()
+                for id_, target in [*muser_matches.items(), *[(mu_id, None) for mu_id in unmatched_muser_ids]]
             ]
             new_musers = self.execute_other_action(MeetingUserSetData, muser_payloads)
             assert new_musers is not None
