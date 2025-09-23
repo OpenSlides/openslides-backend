@@ -147,9 +147,14 @@ def export_meeting(
 
 
 # TODO (when removing back relations): replace with Model.get_writable_fields()
+# in `export_meeting` and its helper methods.
+# Reason: Model.get_writable_fields() excludes back relations, so it is not suitable
+# for passing the relations checks in the checker.
+# This method is needed only in `export_meeting` and should be removed after the replacement.
 def get_fields_for_export(collection: str) -> set[str]:
     """
     Returns writable fields of the collection with the given name.
+    Excludes fields calculated by db.
     """
     model = model_registry[collection]()
     return {
