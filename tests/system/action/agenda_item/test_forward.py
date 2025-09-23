@@ -22,20 +22,57 @@ SpeakerData = tuple[
 # structure_level_id, initial_time, additional_time, remaining_time, speaker_ids
 SLLOSData = tuple[int, int, int | None, int, list[int]]
 
+FileEndString = Literal["png", "txt", "pdf"]
 
 EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
     [
-        (100, 200, None, SpeechState.PRO, None, "a note", False, 4),
-        (200,300,50,None,None,"This is a finished point of order, so it's okay.",True,5),
+        (100, 200, None, SpeechState.PRO, None, None, False, 4),
+        (
+            200,
+            300,
+            50,
+            None,
+            None,
+            "This is a finished point of order, so it's okay.",
+            True,
+            5,
+        ),
         (300, 400, None, SpeechState.INTERVENTION, None, None, None, 6),
         (None, None, None, SpeechState.INTERVENTION, True, None, None, 4),
     ],
     [
         (400, 600, 100, None, None, None, None, 7),
-        (600,700,50,SpeechState.INTERPOSED_QUESTION,False,None,None,8),
-        (625,675,None,SpeechState.INTERPOSED_QUESTION,True,None,None,7,),
-        (700,800,None,None,None,"Another finished point of order. With a category.",True,9),
-        (800,900,None,None,None,"Yet another finished point of order. With a category.",True,4),
+        (600, 700, 50, SpeechState.INTERPOSED_QUESTION, False, None, None, 8),
+        (
+            625,
+            675,
+            None,
+            SpeechState.INTERPOSED_QUESTION,
+            True,
+            None,
+            None,
+            7,
+        ),
+        (
+            700,
+            800,
+            None,
+            None,
+            None,
+            "Another finished point of order. With a category.",
+            True,
+            9,
+        ),
+        (
+            800,
+            900,
+            None,
+            None,
+            None,
+            "Yet another finished point of order. With a category.",
+            True,
+            4,
+        ),
     ],
     [
         (None, None, None, None, None, None, None, 1),  # 10
@@ -50,21 +87,30 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
         (None, None, None, None, None, None, None, 16),  # 19
     ],
     [
-        (900,1000,None,None,None,"These are all with a category btw",True,11),  # 20
+        (
+            900,
+            1000,
+            None,
+            None,
+            None,
+            "These are all with a category btw",
+            True,
+            11,
+        ),  # 20
         (1000, 1100, None, None, None, None, True, 13),  # 21
         (1100, 1200, None, None, None, None, True, 16),  # 22
     ],
     [
-        (1200,1300,None,SpeechState.CONTRIBUTION,None,None,None,4),  # 23
+        (1200, 1300, None, SpeechState.CONTRIBUTION, None, None, None, 4),  # 23
         (1300, 1400, None, None, None, None, None, 5),  # 24
         (1400, 1500, 50, None, None, None, None, 6),  # 25
         (1500, 1600, None, None, None, None, None, 7),  # 26
         (None, None, None, None, None, None, None, 8),  # 27
         (None, None, None, None, None, None, None, 9),  # 28
-    ]
+    ],
 ]
 
-EXAMPLE_SLLOS_DATA = [
+EXAMPLE_SLLOS_DATA: list[list[SLLOSData]] = [
     [
         (1, 600, None, 600, [10]),
         (2, 600, None, 600, [12]),
@@ -86,6 +132,7 @@ EXAMPLE_SLLOS_DATA = [
         (12, 600, None, 600, [28]),
     ],
 ]
+
 
 class AgendaItemForwardActionTest(BaseActionTestCase):
     @with_database_context
@@ -295,6 +342,12 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     )
                 },
                 **data,
+                **{
+                    f"speaker/{speaker_id}": {
+                        "structure_level_list_of_speakers_id": sllos_id
+                    }
+                    for speaker_id, sllos_id in speaker_to_sllos_id.items()
+                },
             }
         )
 
@@ -353,9 +406,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 },
             }
         )
-    
+
     def get_mediafile_data(
-        self, name: str, filetype: Literal["png", "txt", "pdf"] | None = None
+        self, name: str, filetype: FileEndString | None = None
     ) -> dict[str, Any]:
         title = f"{name}.{filetype}" if filetype else name
         data: dict[str, Any] = {
@@ -400,9 +453,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "duration": 600,
                 "is_internal": True,
             },
-            extra_los_fields={
-                "moderator_notes": "This is a slightly longer mod note."
-            },
+            extra_los_fields={"moderator_notes": "This is a slightly longer mod note."},
         )
         self.create_topic_agenda_item(3, 33, parent_id=1)
         self.create_topic_agenda_item(
@@ -461,14 +512,20 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             self.create_user("haley", [2, 5])  # 8, musers: 11,12
             self.create_user("isabella", [3, 6, 9])  # 9, musers: 13,14,15
             self.create_user("john", [1, 2, 4])  # 10, musers: 16,17
-            self.set_models({
-                f"meeting_user/{id_}": { field: val for field, val in [
-                    ("number", f"MTNGUSR{id_}"),
-                    ("comment", f"Comment of meeting user{id_}"),
-                    ("about_me", f"I am meeting user {id_}")
-                ] if len(field)-6 != id_ % 3}
-                for id_ in range(1,18)
-            })
+            self.set_models(
+                {
+                    f"meeting_user/{id_}": {
+                        field: val
+                        for field, val in [
+                            ("number", f"MTNGUSR{id_}"),
+                            ("comment", f"Comment of meeting user{id_}"),
+                            ("about_me", f"I am meeting user {id_}"),
+                        ]
+                        if len(field) - 6 != id_ % 3
+                    }
+                    for id_ in range(1, 18)
+                }
+            )
             self.create_structure_levels(
                 {
                     "red": "#ff0000",
@@ -587,6 +644,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     },
                     "mediafile/1": {
                         "child_ids": [2, 3],
+                        "is_directory": True,
                         "create_timestamp": 100,
                         **self.get_mediafile_data("A"),
                         **orga_data,
@@ -594,10 +652,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "mediafile/2": {
                         "parent_id": 1,
                         "child_ids": [4],
-                        "is_directory": False,
+                        "is_directory": True,
                         "filesize": 100,
                         "create_timestamp": 200,
-                        **self.get_mediafile_data("B", "txt"),
+                        **self.get_mediafile_data("B"),
                         **orga_data,
                         "meeting_mediafile_ids": [21, 24],
                     },
@@ -612,7 +670,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "mediafile/3": {
                         "parent_id": 1,
                         "create_timestamp": 300,
-                        **self.get_mediafile_data("C"),
+                        **self.get_mediafile_data("C", "txt"),
                         **orga_data,
                         "meeting_mediafile_ids": [31, 34],
                     },
@@ -651,6 +709,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         "mediafile_id": 5,
                         "meeting_id": 1,
                     },
+                    # Meeting specific
                     "mediafile/6": {
                         "owner_id": "meeting/1",
                         "filesize": 150,
@@ -665,6 +724,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "mediafile/7": {
                         "owner_id": "meeting/1",
                         "child_ids": [8],
+                        "is_directory": True,
                         "create_timestamp": 700,
                         **self.get_mediafile_data("G"),
                         "meeting_mediafile_ids": [71],
@@ -677,6 +737,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         "owner_id": "meeting/1",
                         "parent_id": 7,
                         "child_ids": [9],
+                        "is_directory": True,
                         "create_timestamp": 800,
                         **self.get_mediafile_data("H"),
                         "meeting_mediafile_ids": [81],
@@ -689,6 +750,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         "owner_id": "meeting/1",
                         "parent_id": 8,
                         "child_ids": [10],
+                        "is_directory": True,
                         "create_timestamp": 900,
                         **self.get_mediafile_data("I"),
                         "meeting_mediafile_ids": [91],
@@ -718,107 +780,385 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     66: [21, 31, 51, 61, 71],  # All root-level
                 }
             )
-    
+
     def assert_full_dataset(
         self,
         forwarded_ids: list[int],
         to_ids: list[int],
-        with_speakers:bool=False,
-        with_moderator_notes:bool=False,
-        next_agenda_id=8,
-        next_topic_id=78,
-        next_los_id=771,
-        base_agenda_weight_per_meeting: dict[int,int]= {4:0, 7:7}
-    ) -> tuple[dict[int,dict[int,int]],dict[int,dict[int,int]],dict[int,dict[int,int]]]:
+        with_speakers: bool = False,
+        with_moderator_notes: bool = False,
+        next_agenda_id: int = 8,
+        next_topic_id: int = 78,
+        next_los_id: int = 771,
+        base_agenda_weight_per_meeting: dict[int, int] = {4: 0, 7: 7},
+    ) -> tuple[
+        dict[int, dict[int, int]], dict[int, dict[int, int]], dict[int, dict[int, int]]
+    ]:
         """
         Tests if the content of agenda_items, topics and attachments is correct.
         Returns the old_id to new_id matches per meeting for agenda_item, topic and los
         """
         # agenda_item_id = agenda_item data, topic data, los data
-        expected_agenda_creation_order = {
-            1:({},{
-                "closed": True,
-                "moderator_notes": "This is a short mod note.",
-            }),
-            6:({
-                "comment": "This one is hidden.",
-                "type": "hidden",
-            },{"closed": True}),
-            2:({
-                "comment": "This is a comment.",
-                "type": "internal",
-            },{
-                "moderator_notes": "This is a slightly longer mod note."
-            }),
-            3:({},{}),
-            4:({},{}),
-            5:({},{})
-        }
-        id_to_in_order_parents = {
-            1:[],
-            2:[1],
-            3:[1],
-            4:[2,1],
-            5:[2,1],
-            6:[]
-        }
-        model_matches:tuple[dict[int,dict[int,int]],dict[int,dict[int,int]],dict[int,dict[int,int]]] = (
-            {}, {}, {},
+        expected_agenda_creation_order: list[
+            tuple[int, tuple[dict[str, Any], dict[str, Any]]]
+        ] = [
+            (
+                1,
+                (
+                    {},
+                    {
+                        "closed": True,
+                        "moderator_notes": "This is a short mod note.",
+                    },
+                ),
+            ),
+            (
+                6,
+                (
+                    {
+                        "comment": "This one is hidden.",
+                        "type": "hidden",
+                    },
+                    {"closed": True},
+                ),
+            ),
+            (
+                2,
+                (
+                    {
+                        "comment": "This is a comment.",
+                        "type": "internal",
+                    },
+                    {"moderator_notes": "This is a slightly longer mod note."},
+                ),
+            ),
+            (3, ({}, {})),
+            (4, ({}, {})),
+            (5, ({}, {})),
+        ]
+        id_to_in_order_parents = {1: [], 2: [1], 3: [1], 4: [2, 1], 5: [2, 1], 6: []}
+        model_matches: tuple[
+            dict[int, dict[int, int]],
+            dict[int, dict[int, int]],
+            dict[int, dict[int, int]],
+        ] = (
+            {},
+            {},
+            {},
         )
         for meeting_id in to_ids:
             for i in range(3):
-                model_matches[i][meeting_id]={}
-            for id_, data in expected_agenda_creation_order.items():
+                model_matches[i][meeting_id] = {}
+            for id_, data in expected_agenda_creation_order:
                 if id_ in forwarded_ids:
-                    parent_id = next((i for i in id_to_in_order_parents[id_] if i in forwarded_ids), None)
+                    parent_id = next(
+                        (i for i in id_to_in_order_parents[id_] if i in forwarded_ids),
+                        None,
+                    )
                     model_matches[0][meeting_id][id_] = next_agenda_id
-                    model_matches[1][meeting_id][id_*11] = next_topic_id
-                    model_matches[2][meeting_id][id_*110] = next_los_id
+                    model_matches[1][meeting_id][id_ * 11] = next_topic_id
+                    model_matches[2][meeting_id][id_ * 110] = next_los_id
 
                     self.assert_model_exists(
                         f"agenda_item/{next_agenda_id}",
                         {
-                            "content_object_id":f"topic/{next_topic_id}",
+                            "content_object_id": f"topic/{next_topic_id}",
                             "meeting_id": meeting_id,
                             "tag_ids": None,
-                            "weight": id_+base_agenda_weight_per_meeting[meeting_id],
-                            **({"parent_id":model_matches[0][meeting_id][parent_id]} if parent_id else {}),
-                            **{
-                                field:val
-                                for field,val in data[0].items()
-                            }
-                        }
+                            "weight": id_ + base_agenda_weight_per_meeting[meeting_id],
+                            **(
+                                {"parent_id": model_matches[0][meeting_id][parent_id]}
+                                if parent_id
+                                else {}
+                            ),
+                            **{field: val for field, val in data[0].items()},
+                        },
                     )
                     self.assert_model_exists(
                         f"topic/{next_topic_id}",
                         {
-                            "agenda_item_id":next_agenda_id,
+                            "agenda_item_id": next_agenda_id,
                             "list_of_speakers_id": next_los_id,
                             "meeting_id": meeting_id,
                             "title": f"Topic {id_*11}",
                             "text": f"This is the text of topic {id_*11}",
-                        }
+                        },
                     )
                     self.assert_model_exists(
                         f"list_of_speakers/{next_los_id}",
                         {
-                            "content_object_id":f"topic/{next_topic_id}",
+                            "content_object_id": f"topic/{next_topic_id}",
                             "meeting_id": meeting_id,
                             **{
-                                field:val
-                                for field,val in data[1].items()
-                                if (field != "closed" or with_speakers) and (field != "moderator_notes" or with_moderator_notes)
-                            }
-                        }
+                                field: val
+                                for field, val in data[1].items()
+                                if (field != "closed" or with_speakers)
+                                and (field != "moderator_notes" or with_moderator_notes)
+                            },
+                        },
                     )
 
-                    next_agenda_id+=1
-                    next_topic_id+=1
-                    next_los_id+=1
+                    next_agenda_id += 1
+                    next_topic_id += 1
+                    next_los_id += 1
         self.assert_model_not_exists(f"agenda_item/{next_agenda_id}")
         self.assert_model_not_exists(f"topic/{next_topic_id}")
         self.assert_model_not_exists(f"list_of_speakers/{next_los_id}")
         return model_matches
+
+    def assert_group_data(self, expected_group_data: dict[int, dict[int, str]]) -> None:
+        """
+        Takes group data in the format
+        {
+            meeting_id: { group_id: name }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for meeting_id, meeting_group_data in expected_group_data.items():
+            for group_id, name in meeting_group_data.items():
+                self.assert_model_exists(
+                    f"group/{group_id}", {"meeting_id": meeting_id, "name": name}
+                )
+
+    def assert_structure_level_data(
+        self,
+        expected_structure_level_data: dict[int, dict[int, tuple[str, str | None]]],
+    ) -> None:
+        """
+        Takes structure_level data in the format
+        {
+            meeting_id: { structure_level_id: ( name, color ) }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for (
+            meeting_id,
+            meeting_structure_level_data,
+        ) in expected_structure_level_data.items():
+            for structure_level_id, data in meeting_structure_level_data.items():
+                self.assert_model_exists(
+                    f"structure_level/{structure_level_id}",
+                    {"meeting_id": meeting_id, "name": data[0], "color": data[1]},
+                )
+
+    def assert_meeting_user_data(
+        self,
+        expected_meeting_user_data: dict[
+            int,
+            dict[int, tuple[int, list[int], list[int] | None, dict[str, str | None]]],
+        ],
+    ) -> None:
+        """
+        Takes meeting_user data in the format
+        {
+            meeting_id: { meeting_user_id: (
+                user_id,
+                group_ids,
+                structure_level_ids,
+                transferable_meeting_user_data
+            ) }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for meeting_id, meeting_muser_data in expected_meeting_user_data.items():
+            for muser_id, data in meeting_muser_data.items():
+                self.assert_model_exists(
+                    f"meeting_user/{muser_id}",
+                    {
+                        "meeting_id": meeting_id,
+                        "user_id": data[0],
+                        "group_ids": data[1],
+                        "structure_level_ids": data[2],
+                        **data[3],
+                    },
+                )
+
+    def assert_speaker_data(
+        self,
+        expected_speaker_data: dict[int, dict[int, list[tuple[int, SpeakerData]]]],
+        meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]],
+    ) -> None:
+        """
+        Takes speaker data in the format
+        {
+            meeting_id: { los_id: [ ( speaker_id, SpeakerData ) ] }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for meeting_id, meeting_speaker_data in expected_speaker_data.items():
+            for los_id, los_speaker_data in meeting_speaker_data.items():
+                for speaker_id, date in los_speaker_data:
+                    self.assert_model_exists(
+                        f"speaker/{speaker_id}",
+                        {
+                            "meeting_id": meeting_id,
+                            "list_of_speakers_id": los_id,
+                            "meeting_user_id": meeting_id_to_old_to_new_muser_id[
+                                meeting_id
+                            ][date[7]],
+                            **{
+                                field: val
+                                for j, field in enumerate(
+                                    [
+                                        "begin_time",
+                                        "end_time",
+                                        "total_pause",
+                                        "speech_state",
+                                        "answer",
+                                        "note",
+                                        "point_of_order",
+                                    ]
+                                )
+                                if (val := date[j]) is not None
+                            },
+                        },
+                    )
+
+    def assert_sllos_data(
+        self,
+        expected_sllos_data: dict[int, dict[int, list[tuple[int, SLLOSData]]]],
+        meeting_to_old_to_new_structure_level_id: dict[int, dict[int, int]],
+        meeting_to_old_to_new_speaker_id: dict[int, dict[int, int]],
+    ) -> None:
+        """
+        Takes sllos data in the format
+        {
+            meeting_id: { los_id: [ ( sllos_id, SLLOSData ) ] }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for meeting_id, meeting_sllos_data in expected_sllos_data.items():
+            for los_id, los_sllos_data in meeting_sllos_data.items():
+                for sllos_id, sllos_date in los_sllos_data:
+                    (
+                        structure_level_id,
+                        initial_time,
+                        additional_time,
+                        remaining_time,
+                        speaker_ids,
+                    ) = sllos_date
+                    self.assert_model_exists(
+                        f"structure_level_list_of_speakers/{sllos_id}",
+                        {
+                            "meeting_id": meeting_id,
+                            "list_of_speakers_id": los_id,
+                            "structure_level_id": meeting_to_old_to_new_structure_level_id[
+                                meeting_id
+                            ][
+                                structure_level_id
+                            ],
+                            "initial_time": initial_time,
+                            "remaining_time": remaining_time,
+                            "speaker_ids": [
+                                meeting_to_old_to_new_speaker_id[meeting_id][s_id]
+                                for s_id in speaker_ids
+                            ],
+                            **(
+                                {"additional_time": additional_time}
+                                if additional_time is not None
+                                else {}
+                            ),
+                        },
+                    )
+
+    def assert_pooc_data(
+        self, expected_pooc_data: dict[int, dict[int, tuple[str, int, list[int]]]]
+    ) -> None:
+        """
+        Takes pooc data in the format
+        {
+            meeting_id: {
+                pooc_id: ( text, rank, new_speaker_ids )
+            }
+        }
+        and checks if this represents the current state of the data.
+        """
+        for meeting_id, meeting_pooc_data in expected_pooc_data.items():
+            for pooc_id, data in meeting_pooc_data.items():
+                self.assert_model_exists(
+                    f"point_of_order_category/{pooc_id}",
+                    {
+                        "meeting_id": meeting_id,
+                        "text": data[0],
+                        "rank": data[1],
+                        "speaker_ids": data[2],
+                    },
+                )
+
+    def assert_mediafile_data(
+        self,
+        expected_mediafile_data: dict[
+            str,
+            dict[
+                int,
+                tuple[
+                    dict[str, Any],
+                    tuple[str, FileEndString | None],
+                    dict[int, tuple[int, list[int], dict[str, Any]]],
+                ],
+            ],
+        ],
+    ) -> None:
+        """
+        Takes mediafile data in the format
+        {
+            owner_id: {
+                mediafile_id: (
+                    { mediafile_key: value },
+                    ( file_name, file_ending ),
+                    {
+                        meeting_mediafile_id: (
+                            meeting_id,
+                            attachment_topic_ids,
+                            meeting_mediafile_data
+                        )
+                    }
+                )
+            }
+        }
+        and checks if this represents the current state of the data.
+        The method assumes that all orga files are published.
+        """
+        for owner_id, owner_data in expected_mediafile_data.items():
+            data: dict[str, Any] = {"owner_id": owner_id}
+            if owner_id == ONE_ORGANIZATION_FQID:
+                data.update(
+                    {
+                        "owner_id": ONE_ORGANIZATION_FQID,
+                        "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    }
+                )
+            for mediafile_id, mediafile_data in owner_data.items():
+                self.assert_model_exists(
+                    f"mediafile/{mediafile_id}",
+                    {
+                        **data,
+                        **mediafile_data[0],
+                        **self.get_mediafile_data(*mediafile_data[1]),
+                        "meeting_mediafile_ids": (
+                            list(mediafile_data[2].keys())
+                            if mediafile_data[2]
+                            else None
+                        ),
+                    },
+                )
+                for mmediafile_id, mmediafile_data in mediafile_data[2].items():
+                    self.assert_model_exists(
+                        f"meeting_mediafile/{mmediafile_id}",
+                        {
+                            "meeting_id": mmediafile_data[0],
+                            "mediafile_id": mediafile_id,
+                            "attachment_ids": (
+                                [
+                                    f"topic/{topic_id}"
+                                    for topic_id in sorted(mmediafile_data[1])
+                                ]
+                                if mmediafile_data[1]
+                                else None
+                            ),
+                            **mmediafile_data[2],
+                        },
+                    )
 
     def test_simple(self) -> None:
         self.create_meeting()
@@ -1199,7 +1539,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_full_dataset([1,2,3,4,5,6], [4,7])
+        self.assert_full_dataset([1, 2, 3, 4, 5, 6], [4, 7])
         for collection, id_ in {
             "mediafile": 11,
             "meeting_mediafile": 102,
@@ -1212,12 +1552,14 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             self.assert_model_not_exists(f"{collection}/{id_}")
         self.assert_model_not_exists("group/10")
 
-    def test_full_dataset_everywhere_speaker_flag(self) -> None:
-        self.set_models({
-            "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
-            "meeting/7": {"list_of_speakers_default_structure_level_time": 60},
-        })
-        self.create_full_dataset(with_mediafiles=False)
+    def test_full_dataset_everything_everywhere_all_flags(self) -> None:
+        self.create_full_dataset()
+        self.set_models(
+            {
+                "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
+                "meeting/7": {"list_of_speakers_default_structure_level_time": 60},
+            }
+        )
 
         response = self.request(
             "agenda_item.forward",
@@ -1225,40 +1567,563 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting_ids": [4, 7],
                 "agenda_item_ids": [1, 2, 3, 4, 5, 6],
                 "with_speakers": True,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_full_dataset([1,2,3,4,5,6], [4,7], with_speakers=True)
-        for collection, id_ in {
-            "mediafile": 11,
-            "meeting_mediafile": 102,
-        }.items():
-            self.assert_model_not_exists(f"{collection}/{id_}")
-
-    def test_full_dataset_everywhere_moderator_notes_flag(self) -> None:
-        self.create_full_dataset(with_mediafiles=False)
-
-        response = self.request(
-            "agenda_item.forward",
-            {
-                "meeting_ids": [4, 7],
-                "agenda_item_ids": [1, 2, 3, 4, 5, 6],
                 "with_moderator_notes": True,
+                "with_attachments": True,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_full_dataset([1,2,3,4,5,6], [4,7], with_moderator_notes=True)
-        for collection, id_ in {
-            "mediafile": 11,
-            "meeting_mediafile": 102,
-            "speaker": 29,
-            "structure_level_list_of_speakers": 15,
-            "point_of_order_category": 8,
-            "structure_level": 21,
-            "meeting_user": 18,
-        }.items():
-            self.assert_model_not_exists(f"{collection}/{id_}")
-        self.assert_model_not_exists("group/10")
+        self.assert_full_dataset(
+            [1, 2, 3, 4, 5, 6], [4, 7], with_speakers=True, with_moderator_notes=True
+        )
+        self.assert_group_data(
+            {
+                4: {10: "Delegate"},
+                7: {
+                    11: "Default",
+                    12: "Admin",
+                    13: "Delegate",
+                },
+            }
+        )
+        meeting_to_old_to_new_structure_level_id: dict[int, dict[int, int]] = {
+            4: {
+                1: 13,
+                2: 14,
+                3: 21,
+                4: 15,
+                5: 22,
+                6: 23,
+                7: 24,
+                8: 25,
+                9: 26,
+                10: 27,
+                11: 28,
+                12: 29,
+            },
+            7: {id_: id_ + 29 for id_ in range(1, 13)},
+        }
+        self.assert_structure_level_data(
+            {
+                4: {
+                    13: ("red", None),
+                    14: ("orange", "#ff8000"),
+                    15: ("green", "#00ff33"),
+                    16: ("ocean", "#0000ff"),
+                    17: ("whitecat", "#ffffff"),
+                    18: ("greycat", "#808080"),
+                    19: ("blackcat", "#000000"),
+                    20: ("void", None),
+                    21: ("yellow", "#ffff00"),
+                    22: ("cyan", "#00ffff"),
+                    23: ("blue", "#0000ff"),
+                    24: ("pink", "#ff00ff"),
+                    25: ("purple", "#8000ff"),
+                    26: ("white", "#ffffff"),
+                    27: ("grey", "#808080"),
+                    28: ("black", "#000000"),
+                    29: ("nothing", None),
+                },
+                7: {
+                    30: ("red", "#ff0000"),
+                    31: ("orange", "#ff8000"),
+                    32: ("yellow", "#ffff00"),
+                    33: ("green", "#00ff00"),
+                    34: ("cyan", "#00ffff"),
+                    35: ("blue", "#0000ff"),
+                    36: ("pink", "#ff00ff"),
+                    37: ("purple", "#8000ff"),
+                    38: ("white", "#ffffff"),
+                    39: ("grey", "#808080"),
+                    40: ("black", "#000000"),
+                    41: ("nothing", None),
+                },
+            }
+        )
+
+        def get_meeting_user_data(id_: int) -> dict[str, str | None]:
+            return {
+                field: (val if len(field) - 6 != id_ % 3 else None)
+                for field, val in [
+                    ("number", f"MTNGUSR{id_}"),
+                    ("comment", f"Comment of meeting user{id_}"),
+                    ("about_me", f"I am meeting user {id_}"),
+                ]
+            }
+
+        meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
+            4: {
+                1: 2,
+                4: 18,
+                5: 19,
+                6: 20,
+                7: 21,
+                8: 22,
+                9: 10,
+                11: 12,
+                13: 14,
+                16: 17,
+            },
+            7: {
+                1: 3,
+                4: 23,
+                5: 24,
+                6: 25,
+                7: 26,
+                8: 27,
+                9: 28,
+                11: 29,
+                13: 15,
+                16: 30,
+            },
+        }
+        self.assert_meeting_user_data(
+            {
+                4: {
+                    2: (1, [4, 5], [17], get_meeting_user_data(2)),  # Take 4 add 5
+                    18: (2, [4], [13], get_meeting_user_data(4)),  # From meeting_user 4
+                    19: (3, [5], [14], get_meeting_user_data(5)),  # From meeting_user 5
+                    20: (
+                        4,
+                        [10],
+                        [21],
+                        get_meeting_user_data(6),
+                    ),  # From meeting_user 6
+                    21: (
+                        5,
+                        [4, 5],
+                        [29],
+                        get_meeting_user_data(7),
+                    ),  # From meeting_user 7
+                    22: (
+                        6,
+                        [5, 10],
+                        [14, 15, 23, 25, 27, 29],
+                        get_meeting_user_data(8),
+                    ),  # From meeting_user 8
+                    10: (
+                        7,
+                        [4, 10],
+                        [13, 14, 15],
+                        get_meeting_user_data(10),
+                    ),  # Take 4 add 10
+                    12: (
+                        8,
+                        [5],
+                        [16, 17, 18, 19, 20],
+                        get_meeting_user_data(12),
+                    ),  # Take 5
+                    14: (9, [6, 10], [], get_meeting_user_data(14)),  # Take 6 add 10
+                    17: (
+                        10,
+                        [4, 5],
+                        [14, 16, 18, 20],
+                        get_meeting_user_data(17),
+                    ),  # Take 4 add 5
+                },
+                7: {
+                    3: (
+                        1,
+                        [8, 9, 12],
+                        None,
+                        get_meeting_user_data(3),
+                    ),  # Take 8, 9 add 12
+                    23: (
+                        2,
+                        [11],
+                        [30],
+                        get_meeting_user_data(4),
+                    ),  # From meeting_user 4
+                    24: (
+                        3,
+                        [12],
+                        [31],
+                        get_meeting_user_data(5),
+                    ),  # From meeting_user 5
+                    25: (
+                        4,
+                        [13],
+                        [32],
+                        get_meeting_user_data(6),
+                    ),  # From meeting_user 6
+                    26: (
+                        5,
+                        [11, 12],
+                        [41],
+                        get_meeting_user_data(7),
+                    ),  # From meeting_user 7
+                    27: (
+                        6,
+                        [12, 13],
+                        [31, 33, 35, 37, 39, 41],
+                        get_meeting_user_data(8),
+                    ),  # From meeting_user 8
+                    28: (
+                        7,
+                        [13],
+                        [30, 32, 34, 36, 38, 40],
+                        get_meeting_user_data(9),
+                    ),  # From meeting_user 9
+                    29: (
+                        8,
+                        [12],
+                        [],
+                        get_meeting_user_data(11),
+                    ),  # From meeting_user 11
+                    15: (9, [9, 13], None, get_meeting_user_data(15)),  # Take 9 add 13
+                    30: (
+                        10,
+                        [11, 12],
+                        list(range(30, 42)),
+                        get_meeting_user_data(16),
+                    ),  # From meeting_user 16
+                },
+            }
+        )
+        meeting_to_old_to_new_speaker_id = {
+            4: {old_id: old_id + 28 for old_id in range(1, 29)},
+            7: {old_id: old_id + 56 for old_id in range(1, 29)},
+        }
+        # {meeting_id -> {los_id -> (speaker_id, SpeakerData)[]}}
+        self.assert_speaker_data(
+            {
+                4: {
+                    771: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 29)
+                    ),  # 110, speaker 1-4 -> 29-32
+                    773: list(
+                        enumerate(EXAMPLE_LOS_DATA[1], 33)
+                    ),  # 220, speaker 5-9 -> 33-37
+                    774: list(
+                        enumerate(EXAMPLE_LOS_DATA[2], 38)
+                    ),  # 330, speaker 10-19 -> 38-47
+                    775: list(
+                        enumerate(EXAMPLE_LOS_DATA[3], 48)
+                    ),  # 440, speaker 20-22 -> 48-50
+                    776: list(
+                        enumerate(EXAMPLE_LOS_DATA[4], 51)
+                    ),  # 550, speaker 23-28 -> 51-56
+                },
+                7: {
+                    777: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 57)
+                    ),  # 110, speaker 1-4 -> 57-60
+                    779: list(
+                        enumerate(EXAMPLE_LOS_DATA[1], 61)
+                    ),  # 220, speaker 5-9 -> 61-65
+                    780: list(
+                        enumerate(EXAMPLE_LOS_DATA[2], 66)
+                    ),  # 330, speaker 10-19 -> 66-75
+                    781: list(
+                        enumerate(EXAMPLE_LOS_DATA[3], 76)
+                    ),  # 440, speaker 20-22 -> 76-78
+                    782: list(
+                        enumerate(EXAMPLE_LOS_DATA[4], 79)
+                    ),  # 550, speaker 23-28 -> 79-84
+                },
+            },
+            meeting_id_to_old_to_new_muser_id,
+        )
+        next_sllos_id = sum(len(sllos) for sllos in EXAMPLE_SLLOS_DATA) + 1
+        self.assert_sllos_data(
+            {
+                4: {
+                    774: list(enumerate(EXAMPLE_SLLOS_DATA[0], next_sllos_id)),
+                    775: list(enumerate(EXAMPLE_SLLOS_DATA[1], next_sllos_id + 7)),
+                    776: list(enumerate(EXAMPLE_SLLOS_DATA[2], next_sllos_id + 9)),
+                },
+                7: {
+                    780: list(enumerate(EXAMPLE_SLLOS_DATA[0], next_sllos_id + 14)),
+                    781: list(enumerate(EXAMPLE_SLLOS_DATA[1], next_sllos_id + 21)),
+                    782: list(enumerate(EXAMPLE_SLLOS_DATA[2], next_sllos_id + 23)),
+                },
+            },
+            meeting_to_old_to_new_structure_level_id,
+            meeting_to_old_to_new_speaker_id,
+        )
+        self.assert_pooc_data(
+            {
+                4: {
+                    4: ("You have", 1, []),
+                    5: ("A point", 2, [37]),
+                    6: ("A", 3, []),
+                    7: ("Small point", 4, [50]),
+                    8: ("Big point", 1, [36, 48, 49]),  # new
+                },
+                7: {
+                    9: ("Big point", 1, [64, 76, 77]),  # new
+                    10: ("A point", 2, [65]),  # new
+                    11: ("Small point", 3, [78]),  # new
+                },
+            }
+        )
+        self.assert_mediafile_data(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    1: (
+                        {
+                            "child_ids": [2, 3],
+                            "is_directory": True,
+                            "create_timestamp": 100,
+                        },
+                        ("A", None),
+                        {},
+                    ),
+                    2: (
+                        {
+                            "parent_id": 1,
+                            "child_ids": [4],
+                            "is_directory": True,
+                            "filesize": 100,
+                            "create_timestamp": 200,
+                        },
+                        ("B", None),
+                        {
+                            21: (1, [66], {}),
+                            24: (4, [79], {}),
+                            113: (
+                                7,
+                                [85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    3: (
+                        {
+                            "parent_id": 1,
+                            "create_timestamp": 300,
+                        },
+                        ("C", "txt"),
+                        {
+                            31: (1, [44, 55, 66], {}),
+                            34: (4, [82, 83, 79], {}),
+                            114: (
+                                7,
+                                [88, 89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    4: (
+                        {
+                            "parent_id": 2,
+                            "filesize": 200,
+                            "create_timestamp": 400,
+                        },
+                        ("D", "png"),
+                        {
+                            41: (1, [55], {}),
+                            44: (4, [83], {}),
+                            116: (
+                                7,
+                                [89],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    5: (
+                        {
+                            "filesize": 300,
+                            "create_timestamp": 500,
+                        },
+                        ("E", "png"),
+                        {
+                            51: (1, [44, 55, 66], {}),
+                            107: (
+                                4,
+                                [82, 83, 79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            ),
+                            115: (
+                                7,
+                                [88, 89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                },
+                "meeting/1": {
+                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}),
+                    7: ({}, ("G", None), {71: (1, [66], {})}),
+                    8: ({}, ("H", None), {81: (1, [], {})}),
+                    9: ({}, ("I", None), {91: (1, [], {})}),
+                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}),
+                },
+                "meeting/4": {
+                    11: (
+                        {"filesize": 150},
+                        ("F", "pdf"),
+                        {
+                            102: (
+                                4,
+                                [83, 79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    12: (
+                        {"child_ids": [13], "is_directory": True},
+                        ("G", None),
+                        {
+                            103: (
+                                4,
+                                [79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    13: (
+                        {"parent_id": 12, "child_ids": [14], "is_directory": True},
+                        ("H", None),
+                        {
+                            104: (
+                                4,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    14: (
+                        {"parent_id": 13, "child_ids": [15], "is_directory": True},
+                        ("I", None),
+                        {
+                            105: (
+                                4,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    15: (
+                        {"parent_id": 14, "filesize": 100},
+                        ("J", "txt"),
+                        {
+                            106: (
+                                4,
+                                [82, 83],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                },
+                "meeting/7": {
+                    16: (
+                        {"filesize": 150},
+                        ("F", "pdf"),
+                        {
+                            108: (
+                                7,
+                                [89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    17: (
+                        {"child_ids": [18], "is_directory": True},
+                        ("G", None),
+                        {
+                            109: (
+                                7,
+                                [85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    18: (
+                        {"parent_id": 17, "child_ids": [19], "is_directory": True},
+                        ("H", None),
+                        {
+                            110: (
+                                7,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    19: (
+                        {"parent_id": 18, "child_ids": [20], "is_directory": True},
+                        ("I", None),
+                        {
+                            111: (
+                                7,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    20: (
+                        {"parent_id": 19, "filesize": 100},
+                        ("J", "txt"),
+                        {
+                            112: (
+                                7,
+                                [88, 89],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                },
+            }
+        )
 
     def test_full_dataset_everywhere_attachments_flag(self) -> None:
         self.create_full_dataset(with_los_related_data=False)
@@ -1272,7 +2137,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_full_dataset([1,2,3,4,5,6], [4,7])
+        self.assert_full_dataset([1, 2, 3, 4, 5, 6], [4, 7])
         for collection, id_ in {
             "speaker": 29,
             "structure_level_list_of_speakers": 15,
@@ -1282,13 +2147,308 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         }.items():
             self.assert_model_not_exists(f"{collection}/{id_}")
         self.assert_model_not_exists("group/10")
+        self.assert_mediafile_data(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    1: (
+                        {
+                            "child_ids": [2, 3],
+                            "is_directory": True,
+                            "create_timestamp": 100,
+                        },
+                        ("A", None),
+                        {},
+                    ),
+                    2: (
+                        {
+                            "parent_id": 1,
+                            "child_ids": [4],
+                            "is_directory": True,
+                            "filesize": 100,
+                            "create_timestamp": 200,
+                        },
+                        ("B", None),
+                        {
+                            21: (1, [66], {}),
+                            24: (4, [79], {}),
+                            113: (
+                                7,
+                                [85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    3: (
+                        {
+                            "parent_id": 1,
+                            "create_timestamp": 300,
+                        },
+                        ("C", "txt"),
+                        {
+                            31: (1, [44, 55, 66], {}),
+                            34: (4, [82, 83, 79], {}),
+                            114: (
+                                7,
+                                [88, 89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    4: (
+                        {
+                            "parent_id": 2,
+                            "filesize": 200,
+                            "create_timestamp": 400,
+                        },
+                        ("D", "png"),
+                        {
+                            41: (1, [55], {}),
+                            44: (4, [83], {}),
+                            116: (
+                                7,
+                                [89],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": None,
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                    5: (
+                        {
+                            "filesize": 300,
+                            "create_timestamp": 500,
+                        },
+                        ("E", "png"),
+                        {
+                            51: (1, [44, 55, 66], {}),
+                            107: (
+                                4,
+                                [82, 83, 79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            ),
+                            115: (
+                                7,
+                                [88, 89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                    ),
+                },
+                "meeting/1": {
+                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}),
+                    7: ({}, ("G", None), {71: (1, [66], {})}),
+                    8: ({}, ("H", None), {81: (1, [], {})}),
+                    9: ({}, ("I", None), {91: (1, [], {})}),
+                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}),
+                },
+                "meeting/4": {
+                    11: (
+                        {"filesize": 150},
+                        ("F", "pdf"),
+                        {
+                            102: (
+                                4,
+                                [83, 79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    12: (
+                        {"child_ids": [13], "is_directory": True},
+                        ("G", None),
+                        {
+                            103: (
+                                4,
+                                [79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    13: (
+                        {"parent_id": 12, "child_ids": [14], "is_directory": True},
+                        ("H", None),
+                        {
+                            104: (
+                                4,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    14: (
+                        {"parent_id": 13, "child_ids": [15], "is_directory": True},
+                        ("I", None),
+                        {
+                            105: (
+                                4,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                    15: (
+                        {"parent_id": 14, "filesize": 100},
+                        ("J", "txt"),
+                        {
+                            106: (
+                                4,
+                                [82, 83],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            )
+                        },
+                    ),
+                },
+                "meeting/7": {
+                    16: (
+                        {"filesize": 150},
+                        ("F", "pdf"),
+                        {
+                            108: (
+                                7,
+                                [89, 85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    17: (
+                        {"child_ids": [18], "is_directory": True},
+                        ("G", None),
+                        {
+                            109: (
+                                7,
+                                [85],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    18: (
+                        {"parent_id": 17, "child_ids": [19], "is_directory": True},
+                        ("H", None),
+                        {
+                            110: (
+                                7,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    19: (
+                        {"parent_id": 18, "child_ids": [20], "is_directory": True},
+                        ("I", None),
+                        {
+                            111: (
+                                7,
+                                [],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                    20: (
+                        {"parent_id": 19, "filesize": 100},
+                        ("J", "txt"),
+                        {
+                            112: (
+                                7,
+                                [88, 89],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            )
+                        },
+                    ),
+                },
+            }
+        )
 
-    def test_full_dataset_everything_everywhere_all_flags(self) -> None:
-        self.create_full_dataset()
-        self.set_models({
-            "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
-            "meeting/7": {"list_of_speakers_default_structure_level_time": 60},
-        })
+    def test_full_dataset_everywhere_moderator_notes_flag(self) -> None:
+        self.create_full_dataset(with_mediafiles=False)
+
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4, 7],
+                "agenda_item_ids": [1, 2, 3, 4, 5, 6],
+                "with_moderator_notes": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_full_dataset([1, 2, 3, 4, 5, 6], [4, 7], with_moderator_notes=True)
+        for collection, id_ in {
+            "mediafile": 11,
+            "meeting_mediafile": 102,
+            "speaker": 29,
+            "structure_level_list_of_speakers": 15,
+            "point_of_order_category": 8,
+            "structure_level": 21,
+            "meeting_user": 18,
+        }.items():
+            self.assert_model_not_exists(f"{collection}/{id_}")
+        self.assert_model_not_exists("group/10")
+
+    def test_full_dataset_everywhere_speaker_flag(self) -> None:
+        self.set_models(
+            {
+                "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
+                "meeting/7": {"list_of_speakers_default_structure_level_time": 60},
+            }
+        )
+        self.create_full_dataset(with_mediafiles=False)
 
         response = self.request(
             "agenda_item.forward",
@@ -1296,109 +2456,91 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting_ids": [4, 7],
                 "agenda_item_ids": [1, 2, 3, 4, 5, 6],
                 "with_speakers": True,
-                "with_moderator_notes": True,
-                "with_attachments": True,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_full_dataset([1,2,3,4,5,6], [4,7], with_speakers=True, with_moderator_notes=True)
-        # meeting_id: targ_muser_id: user_id, group_ids
-        group_data: dict[int, dict[int, str]] = {
-            4: {
-                10: "Delegate"
-            },
-            7: {
-                11: "Default",
-                12: "Admin",
-                13: "Delegate",
+        self.assert_full_dataset([1, 2, 3, 4, 5, 6], [4, 7], with_speakers=True)
+        for collection, id_ in {
+            "mediafile": 11,
+            "meeting_mediafile": 102,
+        }.items():
+            self.assert_model_not_exists(f"{collection}/{id_}")
+        self.assert_group_data(
+            {
+                4: {10: "Delegate"},
+                7: {
+                    11: "Default",
+                    12: "Admin",
+                    13: "Delegate",
+                },
             }
-        }
-        for meeting_id, meeting_group_data in group_data.items():
-            for group_id, name in meeting_group_data.items():
-                self.assert_model_exists(f"group/{group_id}", {"meeting_id":meeting_id, "name": name})
-        structure_level_data: dict[int, dict[int, tuple[str, str|None]]]={
+        )
+        meeting_to_old_to_new_structure_level_id: dict[int, dict[int, int]] = {
             4: {
-                13: ("red", None),
-                14: ("orange", "#ff8000"),
-                15: ("green", "#00ff33"),
-                16: ("ocean", "#0000ff"),
-                17: ("whitecat", "#ffffff"),
-                18: ("greycat", "#808080"),
-                19: ("blackcat", "#000000"),
-                20: ("void", None),
-                21: ("yellow", "#ffff00"),
-                22: ("cyan", "#00ffff"),
-                23: ("blue", "#0000ff"),
-                24: ("pink", "#ff00ff"),
-                25: ("purple", "#8000ff"),
-                26: ("white", "#ffffff"),
-                27: ("grey", "#808080"),
-                28: ("black", "#000000"),
-                29: ("nothing", None),
+                1: 13,
+                2: 14,
+                3: 21,
+                4: 15,
+                5: 22,
+                6: 23,
+                7: 24,
+                8: 25,
+                9: 26,
+                10: 27,
+                11: 28,
+                12: 29,
             },
-            7: {
-                30: ("red", "#ff0000"),
-                31: ("orange", "#ff8000"),
-                32: ("yellow", "#ffff00"),
-                33: ("green", "#00ff00"),
-                34: ("cyan", "#00ffff"),
-                35: ("blue", "#0000ff"),
-                36: ("pink", "#ff00ff"),
-                37: ("purple", "#8000ff"),
-                38: ("white", "#ffffff"),
-                39: ("grey", "#808080"),
-                40: ("black", "#000000"),
-                41: ("nothing", None),
-            }
+            7: {id_: id_ + 29 for id_ in range(1, 13)},
         }
-        for meeting_id, meeting_structure_level_data in structure_level_data.items():
-            for structure_level_id, data in meeting_structure_level_data.items():
-                self.assert_model_exists(f"structure_level/{structure_level_id}", {"meeting_id":meeting_id, "name": data[0], "color": data[1]})
-        def get_meeting_user_data(id_:int)-> dict[str, str|None]:
-            return { field: (val if len(field)-6 != id_ % 3 else None) for field, val in [
+        self.assert_structure_level_data(
+            {
+                4: {
+                    13: ("red", None),
+                    14: ("orange", "#ff8000"),
+                    15: ("green", "#00ff33"),
+                    16: ("ocean", "#0000ff"),
+                    17: ("whitecat", "#ffffff"),
+                    18: ("greycat", "#808080"),
+                    19: ("blackcat", "#000000"),
+                    20: ("void", None),
+                    21: ("yellow", "#ffff00"),
+                    22: ("cyan", "#00ffff"),
+                    23: ("blue", "#0000ff"),
+                    24: ("pink", "#ff00ff"),
+                    25: ("purple", "#8000ff"),
+                    26: ("white", "#ffffff"),
+                    27: ("grey", "#808080"),
+                    28: ("black", "#000000"),
+                    29: ("nothing", None),
+                },
+                7: {
+                    30: ("red", "#ff0000"),
+                    31: ("orange", "#ff8000"),
+                    32: ("yellow", "#ffff00"),
+                    33: ("green", "#00ff00"),
+                    34: ("cyan", "#00ffff"),
+                    35: ("blue", "#0000ff"),
+                    36: ("pink", "#ff00ff"),
+                    37: ("purple", "#8000ff"),
+                    38: ("white", "#ffffff"),
+                    39: ("grey", "#808080"),
+                    40: ("black", "#000000"),
+                    41: ("nothing", None),
+                },
+            }
+        )
+
+        def get_meeting_user_data(id_: int) -> dict[str, str | None]:
+            return {
+                field: (val if len(field) - 6 != id_ % 3 else None)
+                for field, val in [
                     ("number", f"MTNGUSR{id_}"),
                     ("comment", f"Comment of meeting user{id_}"),
-                    ("about_me", f"I am meeting user {id_}")
-                ]}
-        meeting_user_data: dict[int, dict[int, tuple[int, list[int], list[int], dict[str, str|None]]]] = {
-            4: {
-                2: (1, [4,5], [17], get_meeting_user_data(2)), # Take 4 add 5
-                18: (2, [4], [13], get_meeting_user_data(4)), # From meeting_user 4
-                19: (3, [5], [14], get_meeting_user_data(5)), # From meeting_user 5
-                20: (4, [13], [21], get_meeting_user_data(6)), # From meeting_user 6
-                21: (5, [4,5], [29], get_meeting_user_data(7)), # From meeting_user 7
-                22: (6, [5,13], [14, 15, 23, 25,27,29], get_meeting_user_data(8)), # From meeting_user 8
-                10: (7, [4, 10], [13,14,15], get_meeting_user_data(10)), # Take 4 add 10
-                12: (8, [5], [16,17,18,19,20], get_meeting_user_data(12)), # Take 5
-                14: (9, [6, 10], [], get_meeting_user_data(14)), # Take 6 add 10
-                17: (10, [4, 5], [14,16,18,20], get_meeting_user_data(17)), # Take 4 add 5
-            },
-            7: {
-                3: (1, [8,9,12], [], get_meeting_user_data(3)), # Take 8, 9 add 12
-                23: (2, [11], [30], get_meeting_user_data(4)), # From meeting_user 4
-                24: (3, [12], [31], get_meeting_user_data(5)), # From meeting_user 5
-                25: (4, [13], [32], get_meeting_user_data(6)), # From meeting_user 6
-                26: (5, [11,12], [41], get_meeting_user_data(7)), # From meeting_user 7
-                27: (6, [12,13], [31,33,35,37,39,41], get_meeting_user_data(8)), # From meeting_user 8
-                28: (7, [13], [30,32,33,36,38,40], get_meeting_user_data(9)), # From meeting_user 9
-                29: (8, [12], [], get_meeting_user_data(11)), # From meeting_user 11
-                15: (9, [9,13], [], get_meeting_user_data(15)), # Take 9 add 13
-                30: (10, [11,12], list(range(30,42)), get_meeting_user_data(16)), # From meeting_user 16
+                    ("about_me", f"I am meeting user {id_}"),
+                ]
             }
-        }
-        for meeting_id, meeting_muser_data in meeting_user_data.items():
-            for muser_id, data in meeting_muser_data.items():
-                self.assert_model_exists(
-                    f"meeting_user/{muser_id}",
-                    {
-                        "meeting_id":meeting_id,
-                        "user_id": data[0],
-                        "group_ids": data[1],
-                        "structure_level_ids": data[2],
-                        **data[3]
-                    }
-                )
-        meeting_id_to_old_to_new_muser_id: dict[int, dict[int,int]] = {
+
+        meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
             4: {
                 1: 2,
                 4: 18,
@@ -1411,7 +2553,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 13: 14,
                 16: 17,
             },
-            4: {
+            7: {
                 1: 3,
                 4: 23,
                 5: 24,
@@ -1424,408 +2566,186 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 16: 30,
             },
         }
-        # {meeting_id -> {los_id -> (speaker_id, SpeakerData)[]}}
-        speaker_data: dict[int, dict[int, list[tuple[int, SpeakerData]]]] = {
-            4: {
-                771: list(enumerate(EXAMPLE_LOS_DATA[0], 29)), # speaker 1-4 -> 29-32
-                772: list(enumerate(EXAMPLE_LOS_DATA[1], 33)), # speaker 5-9 -> 33-37
-                773: list(enumerate(EXAMPLE_LOS_DATA[2], 38)), # speaker 10-19 -> 38-47
-                774: list(enumerate(EXAMPLE_LOS_DATA[3], 48)), # speaker 20-22 -> 48-50
-                775: list(enumerate(EXAMPLE_LOS_DATA[4], 51)), # speaker 23-28 -> 51-56
-            },
-            7: {
-
-                777: list(enumerate(EXAMPLE_LOS_DATA[0], 57)), # speaker 1-4 -> 57-60
-                778: list(enumerate(EXAMPLE_LOS_DATA[1], 61)), # speaker 5-9 -> 61-65
-                779: list(enumerate(EXAMPLE_LOS_DATA[2], 66)), # speaker 10-19 -> 66-75
-                780: list(enumerate(EXAMPLE_LOS_DATA[3], 76)), # speaker 20-22 -> 76-78
-                781: list(enumerate(EXAMPLE_LOS_DATA[4], 79)), # speaker 23-28 -> 79-84
+        self.assert_meeting_user_data(
+            {
+                4: {
+                    2: (1, [4, 5], [17], get_meeting_user_data(2)),  # Take 4 add 5
+                    18: (2, [4], [13], get_meeting_user_data(4)),  # From meeting_user 4
+                    19: (3, [5], [14], get_meeting_user_data(5)),  # From meeting_user 5
+                    20: (
+                        4,
+                        [10],
+                        [21],
+                        get_meeting_user_data(6),
+                    ),  # From meeting_user 6
+                    21: (
+                        5,
+                        [4, 5],
+                        [29],
+                        get_meeting_user_data(7),
+                    ),  # From meeting_user 7
+                    22: (
+                        6,
+                        [5, 10],
+                        [14, 15, 23, 25, 27, 29],
+                        get_meeting_user_data(8),
+                    ),  # From meeting_user 8
+                    10: (
+                        7,
+                        [4, 10],
+                        [13, 14, 15],
+                        get_meeting_user_data(10),
+                    ),  # Take 4 add 10
+                    12: (
+                        8,
+                        [5],
+                        [16, 17, 18, 19, 20],
+                        get_meeting_user_data(12),
+                    ),  # Take 5
+                    14: (9, [6, 10], [], get_meeting_user_data(14)),  # Take 6 add 10
+                    17: (
+                        10,
+                        [4, 5],
+                        [14, 16, 18, 20],
+                        get_meeting_user_data(17),
+                    ),  # Take 4 add 5
+                },
+                7: {
+                    3: (
+                        1,
+                        [8, 9, 12],
+                        None,
+                        get_meeting_user_data(3),
+                    ),  # Take 8, 9 add 12
+                    23: (
+                        2,
+                        [11],
+                        [30],
+                        get_meeting_user_data(4),
+                    ),  # From meeting_user 4
+                    24: (
+                        3,
+                        [12],
+                        [31],
+                        get_meeting_user_data(5),
+                    ),  # From meeting_user 5
+                    25: (
+                        4,
+                        [13],
+                        [32],
+                        get_meeting_user_data(6),
+                    ),  # From meeting_user 6
+                    26: (
+                        5,
+                        [11, 12],
+                        [41],
+                        get_meeting_user_data(7),
+                    ),  # From meeting_user 7
+                    27: (
+                        6,
+                        [12, 13],
+                        [31, 33, 35, 37, 39, 41],
+                        get_meeting_user_data(8),
+                    ),  # From meeting_user 8
+                    28: (
+                        7,
+                        [13],
+                        [30, 32, 34, 36, 38, 40],
+                        get_meeting_user_data(9),
+                    ),  # From meeting_user 9
+                    29: (
+                        8,
+                        [12],
+                        [],
+                        get_meeting_user_data(11),
+                    ),  # From meeting_user 11
+                    15: (9, [9, 13], None, get_meeting_user_data(15)),  # Take 9 add 13
+                    30: (
+                        10,
+                        [11, 12],
+                        list(range(30, 42)),
+                        get_meeting_user_data(16),
+                    ),  # From meeting_user 16
+                },
             }
-        }
+        )
         meeting_to_old_to_new_speaker_id = {
-            4: {old_id: old_id+28 for old_id in range(1,29)},
-            4: {old_id: old_id+56 for old_id in range(1,29)},
+            4: {old_id: old_id + 28 for old_id in range(1, 29)},
+            7: {old_id: old_id + 56 for old_id in range(1, 29)},
         }
-        for meeting_id, meeting_speaker_data in speaker_data.items():
-            for los_id, los_speaker_data in meeting_speaker_data.items():
-                for speaker_id, date in los_speaker_data:
-                    self.assert_model_exists(
-                        f"speaker/{speaker_id}",
-                        {
-                            "meeting_id":meeting_id,
-                            "list_of_speaker_ids": los_id,
-                            "meeting_user_id": meeting_id_to_old_to_new_muser_id[meeting_id][date[7]],
-                            **{
-                                field: val
-                                for j, field in enumerate(
-                                    [
-                                        "begin_time",
-                                        "end_time",
-                                        "total_pause",
-                                        "speech_state",
-                                        "answer",
-                                        "note",
-                                        "point_of_order",
-                                    ]
-                                )
-                                if (val := date[j]) is not None
-                            },
-                        }
-                    )
-        sllos_data = {
-            4: {
-                773: EXAMPLE_SLLOS_DATA[0],
-                774: EXAMPLE_SLLOS_DATA[1],
-                775: EXAMPLE_SLLOS_DATA[2],
+        # {meeting_id -> {los_id -> (speaker_id, SpeakerData)[]}}
+        self.assert_speaker_data(
+            {
+                4: {
+                    771: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 29)
+                    ),  # 110, speaker 1-4 -> 29-32
+                    773: list(
+                        enumerate(EXAMPLE_LOS_DATA[1], 33)
+                    ),  # 220, speaker 5-9 -> 33-37
+                    774: list(
+                        enumerate(EXAMPLE_LOS_DATA[2], 38)
+                    ),  # 330, speaker 10-19 -> 38-47
+                    775: list(
+                        enumerate(EXAMPLE_LOS_DATA[3], 48)
+                    ),  # 440, speaker 20-22 -> 48-50
+                    776: list(
+                        enumerate(EXAMPLE_LOS_DATA[4], 51)
+                    ),  # 550, speaker 23-28 -> 51-56
+                },
+                7: {
+                    777: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 57)
+                    ),  # 110, speaker 1-4 -> 57-60
+                    779: list(
+                        enumerate(EXAMPLE_LOS_DATA[1], 61)
+                    ),  # 220, speaker 5-9 -> 61-65
+                    780: list(
+                        enumerate(EXAMPLE_LOS_DATA[2], 66)
+                    ),  # 330, speaker 10-19 -> 66-75
+                    781: list(
+                        enumerate(EXAMPLE_LOS_DATA[3], 76)
+                    ),  # 440, speaker 20-22 -> 76-78
+                    782: list(
+                        enumerate(EXAMPLE_LOS_DATA[4], 79)
+                    ),  # 550, speaker 23-28 -> 79-84
+                },
             },
-            7: {
-                779: EXAMPLE_SLLOS_DATA[0],
-                780: EXAMPLE_SLLOS_DATA[1],
-                781: EXAMPLE_SLLOS_DATA[2],
+            meeting_id_to_old_to_new_muser_id,
+        )
+        next_sllos_id = sum(len(sllos) for sllos in EXAMPLE_SLLOS_DATA) + 1
+        self.assert_sllos_data(
+            {
+                4: {
+                    774: list(enumerate(EXAMPLE_SLLOS_DATA[0], next_sllos_id)),
+                    775: list(enumerate(EXAMPLE_SLLOS_DATA[1], next_sllos_id + 7)),
+                    776: list(enumerate(EXAMPLE_SLLOS_DATA[2], next_sllos_id + 9)),
+                },
+                7: {
+                    780: list(enumerate(EXAMPLE_SLLOS_DATA[0], next_sllos_id + 14)),
+                    781: list(enumerate(EXAMPLE_SLLOS_DATA[1], next_sllos_id + 21)),
+                    782: list(enumerate(EXAMPLE_SLLOS_DATA[2], next_sllos_id + 23)),
+                },
             },
-        }
-        for meeting_id, meeting_sllos_data in sllos_data.items():
-            for los_id, los_sllos_data in meeting_sllos_data.items():
-                for sllos_id, sllos_date in los_sllos_data.items():
-                    (
-                        structure_level_id,
-                        initial_time,
-                        additional_time,
-                        remaining_time,
-                        speaker_ids,
-                    ) = sllos_date
-                    self.assert_model_exists(
-                        f"structure_level_list_of_speakers/{sllos_id}",
-                        {
-                            "meeting_id":meeting_id,
-                            "list_of_speakers_id": los_id,
-                            "structure_level_id": structure_level_id,
-                            "initial_time": initial_time,
-                            "remaining_time": remaining_time,
-                            "speaker_ids": [meeting_to_old_to_new_speaker_id[s_id] for s_id in speaker_ids],
-                            **({"additional_time": additional_time} if additional_time is not None else {})
-                        }
-                    )
-        pooc_data: dict[int, dict[int,tuple[str,int,list[int]]]] = {
-            4: {
-                4: ("You have", 1, []),
-                5: ("A point", 2, [37]),
-                6: ("A", 3, []),
-                7: ("Small point", 4, [50]),
-                8: ("Big point", 1, [36, 48, 49]), #new
-            },
-            7: {
-                9: ("Big point", 1, [64, 76, 77]), #new
-                10: ("A point", 2, [65]), #new
-                11: ("Small point", 3, [78]), #new
+            meeting_to_old_to_new_structure_level_id,
+            meeting_to_old_to_new_speaker_id,
+        )
+        self.assert_pooc_data(
+            {
+                4: {
+                    4: ("You have", 1, []),
+                    5: ("A point", 2, [37]),
+                    6: ("A", 3, []),
+                    7: ("Small point", 4, [50]),
+                    8: ("Big point", 1, [36, 48, 49]),  # new
+                },
+                7: {
+                    9: ("Big point", 1, [64, 76, 77]),  # new
+                    10: ("A point", 2, [65]),  # new
+                    11: ("Small point", 3, [78]),  # new
+                },
             }
-        }
-        for meeting_id, meeting_pooc_data in pooc_data.items():
-            for pooc_id, data in meeting_pooc_data.items():
-                self.assert_model_exists(
-                    f"point_of_order_category/{pooc_id}",
-                    {
-                        "meeting_id":meeting_id,
-                        "text": data[0],
-                        "rank": data[1],
-                        "speaker_ids": data[2],
-                    }
-                )
-        # TODO: mediafile data
-        orga_data = {
-            "owner_id": ONE_ORGANIZATION_FQID,
-            "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-        }
-        mediafile_data: dict[str, dict[str,Any]] = {
-            "mediafile/1": {
-                "child_ids": [2, 3],
-                "create_timestamp": 100,
-                **self.get_mediafile_data("A"),
-                **orga_data,
-            },
-            "mediafile/2": {
-                "parent_id": 1,
-                "child_ids": [4],
-                "is_directory": False,
-                "filesize": 100,
-                "create_timestamp": 200,
-                **self.get_mediafile_data("B", "txt"),
-                **orga_data,
-                "meeting_mediafile_ids": [21, 24,102],
-            },
-            "meeting_mediafile/21": {
-                "mediafile_id": 2,
-                "meeting_id": 1,
-            },
-            "meeting_mediafile/24": {
-                "mediafile_id": 2,
-                "meeting_id": 4,
-                "attachment_ids": [77+6]
-            },
-            "meeting_mediafile/102": {
-                "mediafile_id": 2,
-                "meeting_id": 7,
-                "access_group_ids":[8],
-                "attachment_ids": [77+12]
-            },
-            "mediafile/3": {
-                "parent_id": 1,
-                "create_timestamp": 300,
-                **self.get_mediafile_data("C"),
-                **orga_data,
-                "meeting_mediafile_ids": [31, 34,103],
-            },
-            "meeting_mediafile/31": {
-                "mediafile_id": 3,
-                "meeting_id": 1,
-            },
-            "meeting_mediafile/34": {
-                "mediafile_id": 3,
-                "meeting_id": 4,
-                "attachment_ids": [77+4,77+5,77+6]
-            },
-            "meeting_mediafile/103": {
-                "mediafile_id": 3,
-                "meeting_id": 7,
-                "access_group_ids":[],
-                "attachment_ids": [77+10,77+11,77+12]
-            },
-            "mediafile/4": {
-                "parent_id": 2,
-                "filesize": 200,
-                "create_timestamp": 400,
-                **self.get_mediafile_data("D", "png"),
-                **orga_data,
-                "meeting_mediafile_ids": [41, 44,104],
-            },
-            "meeting_mediafile/41": {
-                "mediafile_id": 4,
-                "meeting_id": 1,
-            },
-            "meeting_mediafile/44": {
-                "mediafile_id": 4,
-                "meeting_id": 4,
-                "attachment_ids": [77+5]
-            },
-            "meeting_mediafile/104": {
-                "mediafile_id": 4,
-                "meeting_id": 7,
-                "access_group_ids":[],
-                "attachment_ids": [77+11]
-            },
-            "mediafile/5": {
-                "filesize": 300,
-                "create_timestamp": 500,
-                **self.get_mediafile_data("E", "png"),
-                **orga_data,
-                "meeting_mediafile_ids": [51,105,106],
-            },
-            "meeting_mediafile/51": {
-                "mediafile_id": 5,
-                "meeting_id": 1,
-            },
-            "meeting_mediafile/105": {
-                "mediafile_id": 5,
-                "meeting_id": 4,
-                "attachment_ids": [77+4,77+5,77+6]
-            },
-            "meeting_mediafile/106": {
-                "mediafile_id": 5,
-                "meeting_id": 7,
-                "access_group_ids":[],
-                "attachment_ids": [77+10,77+11,77+12]
-            },
-            "mediafile/6": {
-                "owner_id": "meeting/1",
-                "filesize": 150,
-                "create_timestamp": 600,
-                **self.get_mediafile_data("F", "pdf"),
-                "meeting_mediafile_ids": [61],
-            },
-            "meeting_mediafile/61": {
-                "mediafile_id": 6,
-                "meeting_id": 1,
-            },
-            "mediafile/7": {
-                "owner_id": "meeting/1",
-                "child_ids": [8],
-                "create_timestamp": 700,
-                **self.get_mediafile_data("G"),
-                "meeting_mediafile_ids": [71],
-            },
-            "meeting_mediafile/71": {
-                "mediafile_id": 7,
-                "meeting_id": 1,
-            },
-            "mediafile/8": {
-                "owner_id": "meeting/1",
-                "parent_id": 7,
-                "child_ids": [9],
-                "create_timestamp": 800,
-                **self.get_mediafile_data("H"),
-                "meeting_mediafile_ids": [81],
-            },
-            "meeting_mediafile/81": {
-                "mediafile_id": 8,
-                "meeting_id": 1,
-            },
-            "mediafile/9": {
-                "owner_id": "meeting/1",
-                "parent_id": 8,
-                "child_ids": [10],
-                "create_timestamp": 900,
-                **self.get_mediafile_data("I"),
-                "meeting_mediafile_ids": [91],
-            },
-            "meeting_mediafile/91": {
-                "mediafile_id": 9,
-                "meeting_id": 1,
-            },
-            "mediafile/10": {
-                "owner_id": "meeting/1",
-                "parent_id": 9,
-                "filesize": 100,
-                "create_timestamp": 1000,
-                **self.get_mediafile_data("J", "txt"),
-                "meeting_mediafile_ids": [101],
-            },
-            "meeting_mediafile/101": {
-                "mediafile_id": 10,
-                "meeting_id": 1,
-            },
-
-            "mediafile/11": {
-                "owner_id": "meeting/4",
-                "filesize": 150,
-                **self.get_mediafile_data("F", "pdf"),
-                "meeting_mediafile_ids": [107],
-            },
-            "meeting_mediafile/107": {
-                "mediafile_id": 11,
-                "meeting_id": 4,
-                "access_group_ids": [5],
-                "attachment_ids": [77+6,77+6]
-            },
-            "mediafile/12": {
-                "owner_id": "meeting/4",
-                "child_ids": [13],
-                **self.get_mediafile_data("G"),
-                "meeting_mediafile_ids": [108],
-            },
-            "meeting_mediafile/108": {
-                "mediafile_id": 12,
-                "meeting_id": 4,
-                "access_group_ids": [5],
-                "attachment_ids": [77+6]
-            },
-            "mediafile/13": {
-                "owner_id": "meeting/4",
-                "parent_id": 12,
-                "child_ids": [14],
-                **self.get_mediafile_data("H"),
-                "meeting_mediafile_ids": [109],
-            },
-            "meeting_mediafile/109": {
-                "mediafile_id": 13,
-                "meeting_id": 4,
-                "access_group_ids": [],
-                "attachment_ids": []
-            },
-            "mediafile/14": {
-                "owner_id": "meeting/4",
-                "parent_id": 13,
-                "child_ids": [15],
-                **self.get_mediafile_data("I"),
-                "meeting_mediafile_ids": [110],
-            },
-            "meeting_mediafile/110": {
-                "mediafile_id": 14,
-                "meeting_id": 4,
-                "access_group_ids": [],
-                "attachment_ids": []
-            },
-            "mediafile/15": {
-                "owner_id": "meeting/4",
-                "parent_id": 14,
-                "filesize": 100,
-                "create_timestamp": 1000,
-                **self.get_mediafile_data("J", "txt"),
-                "meeting_mediafile_ids": [111],
-            },
-            "meeting_mediafile/111": {
-                "mediafile_id": 15,
-                "meeting_id": 4,
-                "access_group_ids": [],
-                "attachment_ids": [77+4,77+5]
-            },
-
-            "mediafile/16": {
-                "owner_id": "meeting/7",
-                "filesize": 150,
-                **self.get_mediafile_data("F", "pdf"),
-                "meeting_mediafile_ids": [112],
-            },
-            "meeting_mediafile/112": {
-                "mediafile_id": 16,
-                "meeting_id": 7,
-                "access_group_ids": [8],
-                "attachment_ids": [77+12,77+12]
-            },
-            "mediafile/17": {
-                "owner_id": "meeting/7",
-                "child_ids": [18],
-                **self.get_mediafile_data("G"),
-                "meeting_mediafile_ids": [113],
-            },
-            "meeting_mediafile/113": {
-                "mediafile_id": 17,
-                "meeting_id": 7,
-                "access_group_ids": [8],
-                "attachment_ids": [77+12]
-            },
-            "mediafile/18": {
-                "owner_id": "meeting/7",
-                "parent_id": 17,
-                "child_ids": [19],
-                **self.get_mediafile_data("H"),
-                "meeting_mediafile_ids": [114],
-            },
-            "meeting_mediafile/114": {
-                "mediafile_id": 18,
-                "meeting_id": 7,
-                "access_group_ids": [],
-                "attachment_ids": []
-            },
-            "mediafile/19": {
-                "owner_id": "meeting/7",
-                "parent_id": 13,
-                "child_ids": [20],
-                **self.get_mediafile_data("I"),
-                "meeting_mediafile_ids": [115],
-            },
-            "meeting_mediafile/115": {
-                "mediafile_id": 19,
-                "meeting_id": 7,
-                "access_group_ids": [],
-                "attachment_ids": []
-            },
-            "mediafile/20": {
-                "owner_id": "meeting/7",
-                "parent_id": 14,
-                "filesize": 100,
-                "create_timestamp": 1000,
-                **self.get_mediafile_data("J", "txt"),
-                "meeting_mediafile_ids": [116],
-            },
-            "meeting_mediafile/116": {
-                "mediafile_id": 20,
-                "meeting_id": 7,
-                "access_group_ids": [],
-                "attachment_ids": [77+10,77+11]
-            },
-        }
-        for fqid, data in mediafile_data.items():
-            self.assert_model_exists(fqid, data)
+        )
 
     # TODO: Test with smaller more specific subcases of the dataset
     # TODO: Test edge cases, permissions and errors

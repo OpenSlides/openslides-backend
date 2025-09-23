@@ -5,9 +5,9 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
-from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
@@ -18,6 +18,7 @@ from ..list_of_speakers.update import ListOfSpeakersUpdateAction
 from ..mediafile.duplicate_to_another_meeting import (
     MediafileDuplicateToAnotherMeetingAction,
 )
+from ..meeting_mediafile.create import MeetingMediafileCreate
 from ..meeting_user.set_data import MeetingUserSetData
 from ..point_of_order_category.create import PointOfOrderCategoryCreate
 from ..speaker.create_for_merge import SpeakerCreateForMerge
@@ -27,9 +28,6 @@ from ..structure_level_list_of_speakers.create import (
 )
 from ..structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
-)
-from ..structure_level_list_of_speakers.add_time import (
-    StructureLevelListOfSpeakersAddTimeAction,
 )
 from ..topic.create import TopicCreate
 
@@ -51,6 +49,7 @@ MEDIAFILE_FIELDS = [
     "pdf_information",
     "published_to_meetings_in_organization_id",
     "child_ids",
+    "parent_id",
 ]
 TRANSFERRABLE_POOC_FIELDS = ["text", "rank"]
 TRANSFERRABLE_STRUCTURE_LEVEL_FIELDS = ["name", "color"]
@@ -476,9 +475,17 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             )
         )
         mediafile_matches = self.create_mediafile_meeting_models(
-            target_meeting_id, origin_mediafiles
+            target_meeting_id, origin_mediafiles, target_meeting
         )
-        max_weight = self.datastore.max("agenda_item", FilterOperator("meeting_id", "=", target_meeting_id), "weight", use_changed_models=False) or 0
+        max_weight = (
+            self.datastore.max(
+                "agenda_item",
+                FilterOperator("meeting_id", "=", target_meeting_id),
+                "weight",
+                use_changed_models=False,
+            )
+            or 0
+        )
         yield from self.get_updated_instances_from_tree_node(
             target_meeting_id,
             target_meeting,
@@ -489,6 +496,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             structure_level_matches,
             pooc_matches,
             mediafile_matches,
+            origin_meeting_mediafiles,
         )
 
     def get_updated_instances_from_tree_node(
@@ -502,6 +510,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         structure_level_matches: dict[int, int],
         pooc_matches: dict[int, int],
         mediafile_matches: dict[int, int],
+        origin_meeting_mediafiles: dict[int, dict[str, Any]],
         parent_id: int | None = None,
     ) -> ActionData:
         parent_data_dict = {"agenda_parent_id": parent_id} if parent_id else {}
@@ -516,15 +525,25 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 },
                 **(
                     {"attachment_mediafile_ids": mediafile_ids}
-                    if (
+                    if origin_meeting_mediafiles
+                    and (
                         mediafile_ids := [
-                            mediafile_matches[origin_id]
-                            for origin_id in topic.get("attachment_mediafile_ids", [])
+                            mediafile_matches[
+                                origin_meeting_mediafiles[origin_id]["mediafile_id"]
+                            ]
+                            for origin_id in topic.get(
+                                "attachment_meeting_mediafile_ids", []
+                            )
                         ]
                     )
                     else {}
                 ),
-                **{f"agenda_{field}": (val if field != "weight" else val + max_meeting_agenda_weight) for field, val in agenda_item.items()},
+                **{
+                    f"agenda_{field}": (
+                        val if field != "weight" else val + max_meeting_agenda_weight
+                    )
+                    for field, val in agenda_item.items()
+                },
             }
             for agenda_item, topic, los, speakers, sllos, list_of_children in origin_tree_list
         ]
@@ -644,7 +663,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                         if (val := speaker.get(field)) is not None
                     },
                 }
-                for topic_id, node in topic_id_to_tree_node_with_sllos_data.items()
+                for topic_id, node in topic_id_to_tree_node_with_speaker_data.items()
                 for origin_speaker_id, speaker in node[3].items()
             ]
             result = self.execute_other_action(SpeakerCreateForMerge, speaker_payloads)
@@ -662,6 +681,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     structure_level_matches,
                     pooc_matches,
                     mediafile_matches,
+                    origin_meeting_mediafiles,
                     agenda_item_id,
                 )
 
@@ -669,6 +689,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         self,
         target_meeting_id: int,
         origin_mediafiles: dict[int, dict[str, Any]],
+        target_meeting: dict[str, Any],
     ) -> dict[int, int]:
         matches = {
             id_: id_
@@ -696,14 +717,30 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     **(
                         {"parent_id": origin_to_new_id[parent_id]}
                         if (parent_id := origin_mediafiles[origin_id].get("parent_id"))
+                        and parent_id in origin_to_new_id
                         else {}
                     ),
                 }
                 for origin_id, id_ in origin_to_new_id.items()
             ]
+            mm_payloads = [
+                {
+                    "meeting_id": target_meeting_id,
+                    "mediafile_id": payload["id"],
+                    "is_public": False,
+                    "inherited_access_group_ids": [target_meeting["admin_group_id"]],
+                    "access_group_ids": (
+                        [target_meeting["admin_group_id"]]
+                        if not payload.get("parent_id")
+                        else []
+                    ),
+                }
+                for payload in payloads
+            ]
             self.execute_other_action(
                 MediafileDuplicateToAnotherMeetingAction, payloads
             )
+            self.execute_other_action(MeetingMediafileCreate, mm_payloads)
             matches.update(origin_to_new_id)
         return matches
 
@@ -872,17 +909,22 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                             **{
                                 field: val
                                 for field in TRANSFERRABLE_MEETING_USER_FIELDS
-                                if (val := origin_musers.get(id_,{}).get(field))
+                                if (val := origin_musers.get(id_, {}).get(field))
                             },
                         }
                     ),
                 }
-                for id_, target in [*muser_matches.items(), *[(mu_id, None) for mu_id in unmatched_muser_ids]]
+                for id_, target in [
+                    *muser_matches.items(),
+                    *[(mu_id, None) for mu_id in unmatched_muser_ids],
+                ]
             ]
             new_musers = self.execute_other_action(MeetingUserSetData, muser_payloads)
             assert new_musers is not None
             for muser, payload, origin_id in zip(
-                new_musers, muser_payloads, unmatched_muser_ids
+                new_musers,
+                muser_payloads,
+                [*muser_matches.keys(), *unmatched_muser_ids],
             ):
                 assert muser is not None
                 muser_matches[origin_id] = muser["id"]

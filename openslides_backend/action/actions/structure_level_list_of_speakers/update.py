@@ -14,7 +14,12 @@ from ...util.register import register_action
 class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     model = StructureLevelListOfSpeakers()
     schema = DefaultSchema(StructureLevelListOfSpeakers()).get_update_schema(
-        optional_properties=["initial_time", "current_start_time", "remaining_time", "additional_time"],
+        optional_properties=[
+            "initial_time",
+            "current_start_time",
+            "remaining_time",
+            "additional_time",
+        ],
         additional_optional_fields={
             "spoken_time": {"type": "integer", "minimum": 0},
         },
