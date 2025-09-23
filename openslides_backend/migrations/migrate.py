@@ -1,6 +1,7 @@
 import sys
 from argparse import ArgumentParser
 
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.migration_wrapper import (
     InvalidMigrationCommand,
     MigrationWrapper,
@@ -66,6 +67,7 @@ def main() -> int:
     else:
         try:
             handler.execute_command(args.command)
+            MigrationHelper.run_migrations()
         except InvalidMigrationCommand:
             print(f"Unknown command {args.command}\n")
             parser.print_help()
