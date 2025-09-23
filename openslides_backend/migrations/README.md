@@ -1,3 +1,4 @@
+# TODO This README is not up to date and needs to be updated before merging back into main branch.
 # Migrations for the Datastore
 
 The `migrate.py` script is the main entrypoint to execute migrations. The migrations itself are in the `migrations` folder. Each file can be arbitrarily named but must include a class called `Migration` that can be found by the loader. Note that all docker related files in this folder are only for **developing** migrations, not execute them. For execution in the dev mode, see the actual backend target for the dockerfile (`target dev`) and `dev/entrypoint.sh`.

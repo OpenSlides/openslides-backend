@@ -26,13 +26,25 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     """
     login_patch.start()
     auth_http_adapter_patch.start()
+    OLD_TABLES = (
+        "models",
+        "events",
+        "positions",
+        "id_sequences",
+        "collectionfields",
+        "events_to_collectionfields",
+        "migration_keyframes",
+        "migration_keyframe_models",
+        "migration_events",
+        "migration_positions",
+    )
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
             rows = curs.execute(
                 "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
             ).fetchall()
             tablenames = tuple(
-                f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows  # type: ignore
+                f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows if row not in OLD_TABLES  # type: ignore
             )
             curs.execute(
                 f"TRUNCATE TABLE {','.join(tablenames)} RESTART IDENTITY CASCADE"

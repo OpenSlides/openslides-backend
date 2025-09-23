@@ -1,3 +1,4 @@
+# TODO This README is not up to date and needs to be updated before merging back into main branch.
 # Migration Route
 
 Migrations are available via the internal route `/internal/migrations/` with the following payload:

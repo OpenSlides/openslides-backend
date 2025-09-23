@@ -2,11 +2,11 @@ from importlib import import_module
 from os import listdir
 from re import Match, match
 
-from openslides_backend.database.db_connection_handling import os_conn_pool
+from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 
 # relative path to the migrations
-MIGRATIONS_RELATIVE_DIRECTORY_PATH = ""
-LAST_NON_REL_MIGRATION = 55
+MIGRATIONS_PATH = "openslides_backend/migrations/migrations_reldb/"
+LAST_NON_REL_MIGRATION = 69
 
 
 class MigrationHelper:
@@ -49,9 +49,9 @@ class MigrationHelper:
             migration_index >= LAST_NON_REL_MIGRATION
         ), f"Migration Index {migration_index} should be at least {LAST_NON_REL_MIGRATION}."
 
-        migrations = listdir(MIGRATIONS_RELATIVE_DIRECTORY_PATH)
+        migrations = listdir(MIGRATIONS_PATH)
 
-        for n, migration in enumerate(migrations[:]):
+        for migration in migrations:
             reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
             # \d{4}_.*\.py : 4 digits, 1 underscore, any characters, [dot]py
             if reMatch is not None:
@@ -85,7 +85,7 @@ class MigrationHelper:
                 assert row is not None, "No migration_index could be found."
 
                 # the row consists of only the column max, but it's presented as dictionary anyways
-                migration_index = getattr(row, "max", 0)
+                migration_index = row["max"]
 
         assert isinstance(
             migration_index, int
@@ -106,10 +106,10 @@ class MigrationHelper:
         module_path: str
         module_name: str
 
-        module_path = MIGRATIONS_RELATIVE_DIRECTORY_PATH.replace("/", ".")
+        module_path = MIGRATIONS_PATH.replace("/", ".")
 
         for index, migration in MigrationHelper.migrations.items():
-            module_name = migration.replace(".py", "")
+            module_name = migration[:-3]  # remove .py of filename
             migration_module = import_module(f"{module_path}{module_name}")
             if getattr(migration_module, "IN_MEMORY", False):
                 migration_module.in_memory_method()
@@ -121,5 +121,10 @@ class MigrationHelper:
                     migration_module.data_manipulation()
                 if callable(getattr(migration_module, "cleanup", None)):
                     migration_module.cleanup()
+            with os_conn_pool.connection() as conn:
+                with conn.cursor() as curs:
+                    curs.execute(
+                        f"INSERT INTO version (migration_index) VALUES ({index});"
+                    )
 
             # TODO In-Memory migration

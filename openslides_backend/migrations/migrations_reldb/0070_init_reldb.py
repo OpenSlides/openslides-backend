@@ -1,15 +1,16 @@
 import os
-import sys
 from datetime import datetime
+from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
 
 from psycopg.rows import dict_row
 
-from openslides_backend.database.db_connection_handling import os_conn_pool
+from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
+    DecimalField,
     Field,
     GenericRelationListField,
     OrganizationField,
@@ -17,10 +18,7 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
-
-sys.path.append("global")
-
-from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
+from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 
@@ -94,11 +92,12 @@ class Sql_helper:
     # END OF FUNCTION
 
     @staticmethod
-    def cast_data(data: Any, field: Field | None = None) -> Any:
+    def transform_data(data: Any, field: Field | None = None) -> Any:
         """
         Purpose:
             Casts data so it is psycopg friendly in case it is not parsable by psycopg.
             Known and implemented cases:
+                - Decimals
                 - Dictionaries
                 - Timestamps
         Input:
@@ -109,10 +108,10 @@ class Sql_helper:
 
         if field is None:
             return data
-
+        elif isinstance(field, DecimalField):
+            data = Decimal(data)
         elif isinstance(field, TimestampField):
             data = datetime.fromtimestamp(data)
-
         elif isinstance(data, dict):
             data = json_dumps(data)
 
@@ -211,7 +210,7 @@ def data_definition() -> None:
     with os_conn_pool.connection() as conn:
         with conn.cursor() as cur:
             path = os.path.realpath(
-                os.path.join("global", "meta", "dev", "sql", "schema_relational.sql")
+                os.path.join("meta", "dev", "sql", "schema_relational.sql")
             )
             try:
                 cur.execute(open(path).read())
@@ -295,7 +294,7 @@ def data_manipulation() -> None:
                                     continue
 
                                 # 5.3) If field is non relational simply write
-                                value = Sql_helper.cast_data(
+                                value = Sql_helper.transform_data(
                                     data[field], model.get_field(field)
                                 )
                                 if len(sql_fields) == 0:
@@ -318,6 +317,21 @@ def data_manipulation() -> None:
                 for command, values in insert_intermediate_t_commands:
                     cur.execute(command, values)
             # 7) END TRANSACTION
+            # Delete old tables
+            OLD_TABLES = (
+                "models",
+                "events",
+                "positions",
+                "id_sequences",
+                "collectionfields",
+                "events_to_collectionfields",
+                "migration_keyframes",
+                "migration_keyframe_models",
+                "migration_events",
+                "migration_positions",
+            )
+            for table_name in OLD_TABLES:
+                cur.execute(f"DROP TABLE {table_name} CASCADE;")
         # 8) Exit cursor
     # 9) Exit connection
 
