@@ -126,16 +126,17 @@ def check_decimal(value: Any) -> bool:
 
 
 def check_json(value: Any, root: bool = True) -> bool:
-    if value is None:
-        return True
-    if not root and (isinstance(value, int) or isinstance(value, str)):
-        return True
-    if isinstance(value, list):
-        return all(check_json(x, root=False) for x in value)
-    elif isinstance(value, dict):
-        return all(check_json(x, root=False) for x in value.values())
-    elif isinstance(value, Jsonb):
-        return check_json(value.obj, root=True)
+    match value:  # matches type
+        case None:
+            return True
+        case int() | str():
+            return not root
+        case list():
+            return all(check_json(x, root=False) for x in value)
+        case dict():
+            return all(check_json(x, root=False) for x in value.values())
+        case Jsonb():
+            return check_json(value.obj, root=True)
     return False
 
 
