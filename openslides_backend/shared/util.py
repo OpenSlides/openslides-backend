@@ -188,6 +188,6 @@ def validate_html(
     )
 
 
-def get_initial_data_file(file: str) -> Any:
+def get_initial_data_file(file: str) -> dict[str, Any]:
     with open(file) as fileh:
         return json.load(fileh)

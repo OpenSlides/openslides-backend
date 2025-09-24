@@ -46,6 +46,11 @@ class Organization(Model):
     saml_metadata_idp = fields.TextField()
     saml_metadata_sp = fields.TextField()
     saml_private_key = fields.TextField()
+    vote_decrypt_public_main_key = fields.CharField(
+        constraints={
+            "description": "Public key from vote decrypt to validate cryptographic votes."
+        }
+    )
     committee_ids = fields.RelationListField(
         to={"committee": "organization_id"}, is_view_field=True, is_primary=True
     )
@@ -168,6 +173,12 @@ class User(Model):
         to={"poll_candidate": "user_id"}, is_view_field=True
     )
     home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
+    history_position_ids = fields.RelationListField(
+        to={"history_position": "user_id"}, is_view_field=True
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
+    )
     meeting_ids = fields.RelationListField(
         to={"meeting": "user_ids"},
         is_view_field=True,
@@ -1177,6 +1188,9 @@ class Meeting(Model, MeetingModelMixin):
     anonymous_group_id = fields.RelationField(
         to={"group": "anonymous_group_for_meeting_id"}
     )
+    relevant_history_entry_ids = fields.RelationListField(
+        to={"history_entry": "meeting_id"}, is_view_field=True
+    )
 
 
 class StructureLevel(Model):
@@ -1222,6 +1236,7 @@ class Group(Model):
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
                 "assignment.can_manage",
+                "assignment.can_manage_polls",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
                 "assignment.can_see",
@@ -1634,6 +1649,7 @@ class Speaker(Model):
             ]
         }
     )
+    answer = fields.BooleanField()
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField(constant=True)
     list_of_speakers_id = fields.RelationField(
@@ -1965,6 +1981,9 @@ class Motion(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_ids"}, required=True, constant=True
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
     )
 
 
@@ -2390,6 +2409,11 @@ class Poll(Model, PollModelMixin):
             "description": "If true, the vote service sends the votes of the users to the autoupdate service."
         },
     )
+    live_votes = fields.JSONField(
+        constraints={
+            "description": "dict from user to their vote. The value is null, when live voting is disabled."
+        }
+    )
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
@@ -2591,6 +2615,9 @@ class Assignment(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_ids"}, required=True, constant=True
+    )
+    history_entry_ids = fields.RelationListField(
+        to={"history_entry": "model_id"}, is_view_field=True
     )
 
 
@@ -2929,6 +2956,7 @@ class Projection(Model):
     stable = fields.BooleanField(default=False)
     weight = fields.IntegerField()
     type = fields.CharField()
+    content = fields.JSONField()
     current_projector_id = fields.RelationField(
         to={"projector": "current_projection_ids"}, equal_fields="meeting_id"
     )
@@ -3102,3 +3130,38 @@ class ImportPreview(Model):
     )
     created = fields.TimestampField(required=True)
     result = fields.JSONField()
+
+
+class HistoryPosition(Model):
+    collection = "history_position"
+    verbose_name = "history position"
+
+    id = fields.IntegerField(required=True, constant=True)
+    timestamp = fields.TimestampField(read_only=True)
+    original_user_id = fields.IntegerField(constant=True)
+    user_id = fields.RelationField(to={"user": "history_position_ids"})
+    entry_ids = fields.RelationListField(
+        to={"history_entry": "position_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+
+
+class HistoryEntry(Model):
+    collection = "history_entry"
+    verbose_name = "history entry"
+
+    id = fields.IntegerField(required=True, constant=True)
+    entries = fields.CharArrayField()
+    original_model_id = fields.CharField(constant=True)
+    model_id = fields.GenericRelationField(
+        to={
+            "user": "history_entry_ids",
+            "motion": "history_entry_ids",
+            "assignment": "history_entry_ids",
+        }
+    )
+    position_id = fields.RelationField(
+        to={"history_position": "entry_ids"}, required=True, constant=True
+    )
+    meeting_id = fields.RelationField(to={"meeting": "relevant_history_entry_ids"})

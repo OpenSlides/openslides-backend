@@ -28,6 +28,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "speaker_ids": [1],
@@ -117,6 +121,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "topic/1337": {
                     "title": "leet improvement discussion",
                     "sequential_number": 1337,
+                    "meeting_id": 7844,
+                },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
@@ -225,6 +233,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "speaker_ids": [1, 2, 3, 4],
@@ -321,6 +333,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "speaker_ids": [1],
@@ -370,6 +386,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "speaker_ids": [42],
@@ -410,6 +430,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "speaker_ids": [],
@@ -444,6 +468,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "topic/1337": {
                     "title": "leet improvement discussion",
                     "sequential_number": 1337,
+                    "meeting_id": 7844,
+                },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
@@ -482,6 +510,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "topic/1337": {
                     "title": "leet improvement discussion",
                     "sequential_number": 1337,
+                    "meeting_id": 7844,
+                },
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {

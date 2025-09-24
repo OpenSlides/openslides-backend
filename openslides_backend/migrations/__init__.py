@@ -35,7 +35,7 @@ def get_datastore_migration_index() -> int:
     #     datastore_migration_index = read_db.get_current_migration_index()
     # return datastore_migration_index
 
-    return 0
+    return 1
 
 
 def assert_migration_index() -> None:

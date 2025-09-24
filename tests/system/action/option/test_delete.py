@@ -5,15 +5,10 @@ class OptionDeleteTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        self.create_motion(1)
         self.set_models(
             {
                 "option/111": {"meeting_id": 1, "content_object_id": "motion/1"},
-                "motion/1": {
-                    "sequential_number": 1,
-                    "title": "moshen",
-                    "state_id": 1,
-                    "meeting_id": 1,
-                },
             }
         )
 

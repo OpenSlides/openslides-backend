@@ -1,9 +1,12 @@
 import re
 from collections.abc import Callable, Iterable
-from decimal import InvalidOperation
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from math import floor
 from typing import Any, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
@@ -113,21 +116,34 @@ def check_x_list(value: Any, fn: Callable) -> bool:
 
 
 def check_decimal(value: Any) -> bool:
-    return value is None or bool(
-        isinstance(value, str) and DECIMAL_PATTERN.match(value)
+    return (
+        value is None
+        or bool(isinstance(value, str) and DECIMAL_PATTERN.match(value))
+        or isinstance(value, Decimal)
+        and value.is_finite()
+        and cast(int, value.normalize().as_tuple().exponent) >= -6
     )
 
 
 def check_json(value: Any, root: bool = True) -> bool:
-    if value is None:
-        return True
-    if not root and (isinstance(value, int) or isinstance(value, str)):
-        return True
-    if isinstance(value, list):
-        return all(check_json(x, root=False) for x in value)
-    if isinstance(value, dict):
-        return all(check_json(x, root=False) for x in value.values())
+    match value:  # matches type
+        case None:
+            return True
+        case int() | str():
+            return not root
+        case list():
+            return all(check_json(x, root=False) for x in value)
+        case dict():
+            return all(check_json(x, root=False) for x in value.values())
+        case Jsonb():
+            return check_json(value.obj, root=True)
     return False
+
+
+def check_timestamp(value: Any) -> bool:
+    if isinstance(value, datetime):
+        value = floor(value.timestamp())
+    return check_number(value)
 
 
 checker_map: dict[type[Field], Callable[..., bool]] = {
@@ -136,7 +152,7 @@ checker_map: dict[type[Field], Callable[..., bool]] = {
     HTMLPermissiveField: check_string,
     GenericRelationField: check_string,
     IntegerField: check_number,
-    TimestampField: check_number,
+    TimestampField: check_timestamp,
     RelationField: check_number,
     FloatField: check_float,
     BooleanField: check_boolean,
@@ -239,7 +255,8 @@ class Checker:
 
     def run_check(self) -> None:
         self.check_json()
-        self.check_migration_index()
+        # TODO reenable when import migration works
+        # self.check_migration_index()
         self.check_collections()
         for collection, models in self.data.items():
             if collection.startswith("_"):

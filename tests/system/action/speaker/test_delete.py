@@ -34,6 +34,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "content_object_id": "topic/1337",
                 "meeting_id": 1,
             },
+            "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/1337"},
             "speaker/890": {
                 "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
@@ -62,6 +63,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "topic/1337",
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "speaker/890": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -90,6 +92,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -157,6 +160,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "topic/1337",
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "speaker/890": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -189,6 +193,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "topic/1337",
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "speaker/890": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -215,6 +220,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "topic/1337",
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "speaker/890": {
                     "list_of_speakers_id": 23,
                     "meeting_id": 111,
@@ -323,6 +329,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "sequential_number": 1337,
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "list_of_speakers/23": {
                     "sequential_number": 23,
                     "content_object_id": "topic/1337",
@@ -392,6 +399,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "topic/1337",
                     "meeting_id": 111,
                 },
+                "agenda_item/8": {"meeting_id": 111, "content_object_id": "topic/1337"},
                 "speaker/890": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -447,7 +455,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "countdown_time": now + 100,
                     "meeting_id": 1,
                 },
-                "speaker/890": {"begin_time": now + 100},
+                "speaker/890": {"begin_time": datetime.fromtimestamp(now + 100)},
             }
         )
         return now
@@ -495,6 +503,4 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
-        self.assertAlmostEqual(
-            countdown["countdown_time"], datetime.fromtimestamp(now), delta=200
-        )
+        self.assertAlmostEqual(countdown["countdown_time"], now, delta=200)

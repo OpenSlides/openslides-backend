@@ -12,33 +12,10 @@ from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
 
 
-class MotionUpdateActionTest(BaseActionTestCase):
+class BaseMotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/111": {
-                "title": "title_srtgb123",
-                "sequential_number": 111,
-                "meeting_id": 1,
-                "state_id": 1,
-                "number": "123",
-                "text": "<i>test</i>",
-                "reason": "<b>test2</b>",
-                "modified_final_version": "blablabla",
-                "amendment_paragraphs": Jsonb({"3": "testtesttest"}),
-            },
-            "meeting_user/1": {
-                "meeting_id": 1,
-                "user_id": 1,
-            },
-            "motion_submitter/1": {
-                "meeting_id": 1,
-                "motion_id": 111,
-                "meeting_user_id": 1,
-            },
-            "motion_state/1": {"allow_submitter_edit": True},
-        }
 
     def set_test_models(self, motion_111_data: dict[str, Any] = {}) -> None:
         self.create_motion(
@@ -76,6 +53,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
             }
         )
 
+
+class MotionUpdateActionTest(BaseMotionUpdateActionTest):
     def test_update_correct(self) -> None:
         self.set_test_models({"created": datetime.fromtimestamp(1687339000)})
         with CountDatastoreCalls() as counter:
@@ -206,7 +185,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "title": "title_ddyvpXch",
                     "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -347,7 +330,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "title": "title_ddyvpXch",
                     "meeting_id": 1,
                     "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -474,8 +461,83 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("motion/3", {"identical_motion_ids": [2]})
 
-    def test_update_no_permissions(self) -> None:
+    def test_update_check_not_unique_number(self) -> None:
+        self.create_motion(1, 1, motion_data={"number": "T001"})
+        self.create_motion(1, 2, motion_data={"number": "A001"})
+        response = self.request("motion.update", {"id": 1, "number": "A001"})
+        self.assert_status_code(response, 400)
+        self.assertEqual("Number is not unique.", response.json["message"])
+
+    def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
         self.set_test_models()
+        self.create_mediafile(1)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/1",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": [2],
+                "inherited_access_group_ids": [2],
+                "is_public": False,
+            },
+        )
+
+    def test_update_with_published_orga_mediafile(self) -> None:
+        self.set_test_models()
+        self.create_mediafile(1)
+        self.set_models(
+            {
+                "meeting_mediafile/11": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "is_public": True,
+                },
+            },
+        )
+        response = self.request(
+            "motion.update",
+            {"id": 111, "attachment_mediafile_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/11",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": None,
+                "inherited_access_group_ids": None,
+                "is_public": True,
+            },
+        )
+
+
+class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_test_models()
+        self.permission_test_models: dict[str, dict[str, Any]] = {
+            "meeting_user/1": {
+                "meeting_id": 1,
+                "user_id": 1,
+            },
+            "motion_submitter/1": {
+                "meeting_id": 1,
+                "motion_id": 111,
+                "meeting_user_id": 1,
+            },
+        }
+
+    def test_update_no_permissions(self) -> None:
         self.set_organization_management_level(None)
         self.set_user_groups(1, [3])
         self.set_models({"motion_state/1": {"allow_submitter_edit": False}})
@@ -532,7 +594,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def setup_can_manage_metadata(self) -> None:
-        self.set_test_models()
         self.set_organization_management_level(None)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
@@ -576,7 +637,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "title": "blocky",
                     "sequential_number": 4,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/4",
+                    "sequential_number": 11,
+                    "meeting_id": 1,
                 },
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
@@ -652,13 +717,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_update_check_not_unique_number(self) -> None:
-        self.create_motion(1, 1, motion_data={"number": "T001"})
-        self.create_motion(1, 2, motion_data={"number": "A001"})
-        response = self.request("motion.update", {"id": 1, "number": "A001"})
-        self.assert_status_code(response, 400)
-        self.assertEqual("Number is not unique.", response.json["message"])
-
     def test_update_permission_with_mediafile(self) -> None:
         self.setup_can_manage_metadata()
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
@@ -679,56 +737,4 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_mediafile/11", {"attachment_ids": ["motion/111"]}
-        )
-
-    def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
-        self.set_test_models()
-        self.create_mediafile(1)
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "attachment_mediafile_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_mediafile/1",
-            {
-                "attachment_ids": ["motion/111"],
-                "meeting_id": 1,
-                "mediafile_id": 1,
-                "access_group_ids": [2],
-                "inherited_access_group_ids": [2],
-                "is_public": False,
-            },
-        )
-
-    def test_update_with_published_orga_mediafile(self) -> None:
-        self.set_test_models()
-        self.create_mediafile(1)
-        self.set_models(
-            {
-                "meeting_mediafile/11": {
-                    "meeting_id": 1,
-                    "mediafile_id": 1,
-                    "is_public": True,
-                },
-            },
-        )
-        response = self.request(
-            "motion.update",
-            {"id": 111, "attachment_mediafile_ids": [1]},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_mediafile/11",
-            {
-                "attachment_ids": ["motion/111"],
-                "meeting_id": 1,
-                "mediafile_id": 1,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
-                "is_public": True,
-            },
         )
