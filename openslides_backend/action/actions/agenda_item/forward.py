@@ -104,6 +104,10 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 fqid_from_collection_and_id("agenda_item", origin_item_ids[0]),
                 ["meeting_id"],
             )["meeting_id"]
+        elif origin_item_ids == []:
+            raise ActionException(
+                "Cannot forward an agenda without the agenda_item_ids."
+            )
         if "id" in instance or "meeting_id" in instance:
             super().get_meeting_id(instance)
         return self.meeting_id
@@ -177,9 +181,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
 
         self.meeting_id = origin_meeting_id
         if origin_meeting_id in target_meeting_ids:
-            raise ActionException(
-                f"Cannot forward agenda to the same meeting: meeting/{origin_meeting_id}"
-            )
+            raise ActionException("Cannot forward agenda to the same meeting")
         transferable_topic_fields = [
             "title",
             "text",
@@ -301,7 +303,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     if not speaker.get("end_time"):
                         if speaker.get("begin_time"):
                             raise ActionException(
-                                "Cannot forward when there are running speakers."
+                                "Cannot forward when there are running or paused speakers."
                             )
                         if speaker.get("point_of_order"):
                             raise ActionException(

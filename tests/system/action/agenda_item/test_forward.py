@@ -1,6 +1,7 @@
 from typing import Any, Literal
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
@@ -427,6 +428,16 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             data["is_directory"] = True
         return data
 
+    def get_meeting_user_data(self, id_: int) -> dict[str, str | None]:
+        return {
+            field: (val if len(field) - 6 != id_ % 3 else None)
+            for field, val in [
+                ("number", f"MTNGUSR{id_}"),
+                ("comment", f"Comment of meeting user{id_}"),
+                ("about_me", f"I am meeting user {id_}"),
+            ]
+        }
+
     def create_full_dataset(
         self, with_mediafiles: bool = True, with_los_related_data: bool = True
     ) -> None:
@@ -482,7 +493,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "committee/67": {"receive_agenda_forwardings_from_committee_ids": [60]},
                 "group/1": {"name": "Default"},
                 "group/2": {"name": "Admin"},
-                "group/3": {"name": "Delegate"},
+                "group/3": {"name": "Delegate", "permissions": ["user.can_see"]},
                 "group/4": {"name": "Default"},
                 "group/5": {"name": "Admin"},
                 "group/6": {"name": "Gremlins"},
@@ -512,18 +523,27 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             self.create_user("haley", [2, 5])  # 8, musers: 11,12
             self.create_user("isabella", [3, 6, 9])  # 9, musers: 13,14,15
             self.create_user("john", [1, 2, 4])  # 10, musers: 16,17
+            non_transferrable_items = [
+                ("locked_out", True),
+                ("locked_out", False),
+                ("vote_weight", "2.000000"),
+            ]
             self.set_models(
                 {
-                    f"meeting_user/{id_}": {
-                        field: val
-                        for field, val in [
-                            ("number", f"MTNGUSR{id_}"),
-                            ("comment", f"Comment of meeting user{id_}"),
-                            ("about_me", f"I am meeting user {id_}"),
-                        ]
-                        if len(field) - 6 != id_ % 3
-                    }
-                    for id_ in range(1, 18)
+                    **{
+                        f"meeting_user/{id_}": {
+                            **self.get_meeting_user_data(id_),
+                            non_transferrable_items[id_ % 2][
+                                0
+                            ]: non_transferrable_items[id_ % 2][1],
+                        }
+                        for id_ in range(1, 18)
+                    },
+                    "meeting/1": {"present_user_ids": [1, 3, 5, 7, 9]},
+                    **{
+                        f"user/{id_}": {"is_present_in_meeting_ids": [1]}
+                        for id_ in range(1, 10, 2)
+                    },
                 }
             )
             self.create_structure_levels(
@@ -917,7 +937,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         for meeting_id, meeting_group_data in expected_group_data.items():
             for group_id, name in meeting_group_data.items():
                 self.assert_model_exists(
-                    f"group/{group_id}", {"meeting_id": meeting_id, "name": name}
+                    f"group/{group_id}",
+                    {"meeting_id": meeting_id, "name": name, "permissions": None},
                 )
 
     def assert_structure_level_data(
@@ -945,7 +966,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self,
         expected_meeting_user_data: dict[
             int,
-            dict[int, tuple[int, list[int], list[int] | None, dict[str, str | None]]],
+            dict[
+                int,
+                tuple[int, list[int], list[int] | None, dict[str, str | None], bool],
+            ],
         ],
     ) -> None:
         """
@@ -955,14 +979,15 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 user_id,
                 group_ids,
                 structure_level_ids,
-                transferable_meeting_user_data
+                transferable_meeting_user_data,
+                is_new
             ) }
         }
         and checks if this represents the current state of the data.
         """
         for meeting_id, meeting_muser_data in expected_meeting_user_data.items():
             for muser_id, data in meeting_muser_data.items():
-                self.assert_model_exists(
+                meeting_user = self.assert_model_exists(
                     f"meeting_user/{muser_id}",
                     {
                         "meeting_id": meeting_id,
@@ -972,6 +997,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         **data[3],
                     },
                 )
+                if data[4]:
+                    assert meeting_user.get("locked_out") is None
+                    assert meeting_user.get("vote_weight") is None
 
     def assert_speaker_data(
         self,
@@ -1095,6 +1123,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     dict[str, Any],
                     tuple[str, FileEndString | None],
                     dict[int, tuple[int, list[int], dict[str, Any]]],
+                    bool,
                 ],
             ],
         ],
@@ -1112,7 +1141,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                             attachment_topic_ids,
                             meeting_mediafile_data
                         )
-                    }
+                    },
+                    is_new
                 )
             }
         }
@@ -1129,7 +1159,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     }
                 )
             for mediafile_id, mediafile_data in owner_data.items():
-                self.assert_model_exists(
+                med_file = self.assert_model_exists(
                     f"mediafile/{mediafile_id}",
                     {
                         **data,
@@ -1142,6 +1172,11 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         ),
                     },
                 )
+                if mediafile_data[3]:
+                    # For new mediafiles, if the create_timestamp is over 9000,
+                    # we can assume that it was set to current time
+                    # and not copied over
+                    assert med_file["create_timestamp"] > 9000
                 for mmediafile_id, mmediafile_data in mediafile_data[2].items():
                     self.assert_model_exists(
                         f"meeting_mediafile/{mmediafile_id}",
@@ -1160,10 +1195,474 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         },
                     )
 
-    def test_simple(self) -> None:
+    def test_forward_not_in_permitted_committee_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_meeting(7)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4, 7],
+                "agenda_item_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward to the following committee(s): {66}",
+            response.json["message"],
+        )
+
+    def test_forward_only_in_permitted_committee_back_relation_still_error(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "committee/60": {"receive_agenda_forwardings_from_committee_ids": [63]},
+                "committee/63": {"forward_agenda_to_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward to the following committee(s): {63}",
+            response.json["message"],
+        )
+
+    def test_forward_running_speaker_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {"speaker_ids": [1000]},
+                "list_of_speakers/100": {"speaker_ids": [1000]},
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "begin_time": 100,
+                    "weight": 1,
+                },
+                "meeting_user/1": {"speaker_ids": [1000]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward when there are running or paused speakers.",
+            response.json["message"],
+        )
+
+    def test_forward_broken_finished_speaker_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {"speaker_ids": [1000]},
+                "list_of_speakers/100": {"speaker_ids": [1000]},
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "begin_time": 100,
+                    "end_time": 50,
+                    "weight": 1,
+                },
+                "meeting_user/1": {"speaker_ids": [1000]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "In list_of_speakers/101: Can not create finished speaker as the end_time is before the begin_time",
+            response.json["message"],
+        )
+
+    def test_forward_paused_speaker_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {"speaker_ids": [1000]},
+                "list_of_speakers/100": {"speaker_ids": [1000]},
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "begin_time": 100,
+                    "pause_time": 200,
+                    "weight": 1,
+                },
+                "meeting_user/1": {"speaker_ids": [1000]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward when there are running or paused speakers.",
+            response.json["message"],
+        )
+
+    def test_forward_waiting_point_of_order_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {"speaker_ids": [1000]},
+                "list_of_speakers/100": {"speaker_ids": [1000]},
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "point_of_order": True,
+                    "weight": 1,
+                },
+                "meeting_user/1": {"speaker_ids": [1000]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward when there are waiting points of order.",
+            response.json["message"],
+        )
+
+    def test_forward_speakers_target_sllos_speaking_time_turned_off_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {
+                    "speaker_ids": [1000],
+                    "structure_level_list_of_speakers_ids": [1005],
+                    "structure_level_ids": [5],
+                },
+                "list_of_speakers/100": {
+                    "speaker_ids": [1000],
+                    "structure_level_list_of_speakers_ids": [1005],
+                },
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "structure_level_list_of_speakers_id": 1005,
+                    "weight": 1,
+                },
+                "meeting_user/1": {
+                    "speaker_ids": [1000],
+                },
+                "structure_level/5": {
+                    "meeting_id": 1,
+                    "name": "SLevel",
+                    "structure_level_list_of_speakers_ids": [1005],
+                },
+                "structure_level_list_of_speakers/1005": {
+                    "meeting_id": 1,
+                    "speaker_ids": [1000],
+                    "structure_level_id": 5,
+                    "list_of_speakers_id": 100,
+                    "initial_time": 300,
+                    "remaining_time": 200,
+                },
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Structure level countdowns are deactivated", response.json["message"]
+        )
+
+    def test_forward_without_target_meetings_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [],
+                "agenda_item_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward without target meetings.", response.json["message"]
+        )
+
+    def test_forward_without_agenda_items_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward an agenda without the agenda_item_ids.",
+            response.json["message"],
+        )
+
+    def test_forward_agenda_items_from_different_meetings_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_meeting(7)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [66]},
+                "committee/63": {"forward_agenda_to_committee_ids": [66]},
+                "committee/67": {
+                    "receive_agenda_forwardings_from_committee_ids": [60, 63]
+                },
+            }
+        )
+        self.create_topic_agenda_item()
+        self.create_topic_agenda_item(4, 40, 4)
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [7],
+                "agenda_item_ids": [1, 4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Agenda forwarding requires all agenda_items to be part of the same meeting.",
+            response.json["message"],
+        )
+
+    def test_forward_non_topic_agenda_item_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.set_models(
+            {
+                "meeting/1": {
+                    "agenda_item_ids": [10],
+                    "motion_ids": [100],
+                    "list_of_speakers_ids": [1000],
+                },
+                "agenda_item/10": {
+                    "content_object_id": "motion/100",
+                    "meeting_id": 1,
+                    "weight": 1,
+                },
+                "motion/100": {
+                    "agenda_item_id": 10,
+                    "list_of_speakers_id": 1000,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/1000": {
+                    "content_object_id": "motion/100",
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                },
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [10],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward agenda_item/10: Not linked to a topic.",
+            response.json["message"],
+        )
+
+    def test_forward_to_same_meeting_error(self) -> None:
+        self.create_meeting(1)
+        self.set_models(
+            {
+                "committee/60": {
+                    "forward_agenda_to_committee_ids": [60],
+                    "receive_agenda_forwardings_from_committee_ids": [60],
+                },
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [1],
+                "agenda_item_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward agenda to the same meeting", response.json["message"]
+        )
+
+    def test_forward_permission_simple_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_user_groups(1, [3])
+        self.set_organization_management_level(None, 1)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action agenda_item.forward. Missing Permission: agenda_item.can_forward",
+            response.json["message"],
+        )
+
+    def test_forward_with_speaker_permission_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_user_groups(1, [3])
+        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_FORWARD])
+        self.set_organization_management_level(None, 1)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action agenda_item.forward. Missing permission: Permission user.can_manage in meeting {4}",
+            response.json["message"],
+        )
+
+    def test_forward_with_speaker_no_permission_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_user_groups(1, [3])
+        self.set_organization_management_level(None, 1)
+        self.set_models(
+            {
+                "committee/60": {"forward_agenda_to_committee_ids": [63]},
+                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
+            }
+        )
+        self.create_topic_agenda_item()
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action agenda_item.forward. Missing Permission: agenda_item.can_forward",
+            response.json["message"],
+        )
+
+    def test_forward_simple(self) -> None:
+        """
+        Also test with permissions
+        """
         self.create_meeting()
         self.create_meeting(4)
         self.create_meeting(7)
+        self.set_user_groups(1, [3])
+        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_MANAGE])
+        self.set_organization_management_level(None, 1)
         self.set_models(
             {
                 "committee/60": {"forward_agenda_to_committee_ids": [63, 66]},
@@ -1377,14 +1876,21 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             "structure_level_list_of_speakers",
             "point_of_order_category",
             "structure_level",
-            "meeting_user",
         ]:
             self.assert_model_not_exists(f"{collection}/1")
+        self.assert_model_not_exists("meeting_user/2")
         self.assert_model_not_exists("group/10")
 
-    def test_simple_with_all_flags(self) -> None:
+    def test_forward_simple_with_all_flags(self) -> None:
+        """
+        Also test with permissions
+        """
         self.create_meeting()
         self.create_meeting(4)
+        self.set_user_groups(1, [3, 6])
+        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_MANAGE])
+        self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
+        self.set_organization_management_level(None, 1)
         self.set_models(
             {
                 "committee/60": {"forward_agenda_to_committee_ids": [63]},
@@ -1523,12 +2029,12 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             "structure_level_list_of_speakers",
             "point_of_order_category",
             "structure_level",
-            "meeting_user",
         ]:
             self.assert_model_not_exists(f"{collection}/1")
+        self.assert_model_not_exists("meeting_user/3")
         self.assert_model_not_exists("group/7")
 
-    def test_full_dataset_everything_everywhere_no_flags(self) -> None:
+    def test_forward_full_dataset_everything_everywhere_no_flags(self) -> None:
         self.create_full_dataset()
 
         response = self.request(
@@ -1552,7 +2058,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             self.assert_model_not_exists(f"{collection}/{id_}")
         self.assert_model_not_exists("group/10")
 
-    def test_full_dataset_everything_everywhere_all_flags(self) -> None:
+    def test_forward_full_dataset_everything_everywhere_all_flags(self) -> None:
         self.create_full_dataset()
         self.set_models(
             {
@@ -1575,6 +2081,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_full_dataset(
             [1, 2, 3, 4, 5, 6], [4, 7], with_speakers=True, with_moderator_notes=True
         )
+        for id_ in 4, 7:
+            self.assert_model_exists(
+                f"meeting/{id_}", {"is_present_in_meeting_ids": None}
+            )
         self.assert_group_data(
             {
                 4: {10: "Delegate"},
@@ -1640,16 +2150,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             }
         )
 
-        def get_meeting_user_data(id_: int) -> dict[str, str | None]:
-            return {
-                field: (val if len(field) - 6 != id_ % 3 else None)
-                for field, val in [
-                    ("number", f"MTNGUSR{id_}"),
-                    ("comment", f"Comment of meeting user{id_}"),
-                    ("about_me", f"I am meeting user {id_}"),
-                ]
-            }
-
         meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
             4: {
                 1: 2,
@@ -1679,45 +2179,75 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_meeting_user_data(
             {
                 4: {
-                    2: (1, [4, 5], [17], get_meeting_user_data(2)),  # Take 4 add 5
-                    18: (2, [4], [13], get_meeting_user_data(4)),  # From meeting_user 4
-                    19: (3, [5], [14], get_meeting_user_data(5)),  # From meeting_user 5
+                    2: (
+                        1,
+                        [4, 5],
+                        [17],
+                        self.get_meeting_user_data(2),
+                        False,
+                    ),  # Take 4 add 5
+                    18: (
+                        2,
+                        [4],
+                        [13],
+                        self.get_meeting_user_data(4),
+                        True,
+                    ),  # From meeting_user 4
+                    19: (
+                        3,
+                        [5],
+                        [14],
+                        self.get_meeting_user_data(5),
+                        True,
+                    ),  # From meeting_user 5
                     20: (
                         4,
                         [10],
                         [21],
-                        get_meeting_user_data(6),
+                        self.get_meeting_user_data(6),
+                        True,
                     ),  # From meeting_user 6
                     21: (
                         5,
                         [4, 5],
                         [29],
-                        get_meeting_user_data(7),
+                        self.get_meeting_user_data(7),
+                        True,
                     ),  # From meeting_user 7
                     22: (
                         6,
                         [5, 10],
                         [14, 15, 23, 25, 27, 29],
-                        get_meeting_user_data(8),
+                        self.get_meeting_user_data(8),
+                        True,
                     ),  # From meeting_user 8
                     10: (
                         7,
                         [4, 10],
                         [13, 14, 15],
-                        get_meeting_user_data(10),
+                        self.get_meeting_user_data(10),
+                        False,
                     ),  # Take 4 add 10
                     12: (
                         8,
                         [5],
                         [16, 17, 18, 19, 20],
-                        get_meeting_user_data(12),
+                        self.get_meeting_user_data(12),
+                        False,
                     ),  # Take 5
-                    14: (9, [6, 10], [], get_meeting_user_data(14)),  # Take 6 add 10
+                    14: (
+                        9,
+                        [6, 10],
+                        [],
+                        self.get_meeting_user_data(14),
+                        False,
+                    ),  # Take 6 add 10
                     17: (
                         10,
                         [4, 5],
                         [14, 16, 18, 20],
-                        get_meeting_user_data(17),
+                        self.get_meeting_user_data(17),
+                        False,
                     ),  # Take 4 add 5
                 },
                 7: {
@@ -1725,56 +2255,71 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         1,
                         [8, 9, 12],
                         None,
-                        get_meeting_user_data(3),
+                        self.get_meeting_user_data(3),
+                        False,
                     ),  # Take 8, 9 add 12
                     23: (
                         2,
                         [11],
                         [30],
-                        get_meeting_user_data(4),
+                        self.get_meeting_user_data(4),
+                        True,
                     ),  # From meeting_user 4
                     24: (
                         3,
                         [12],
                         [31],
-                        get_meeting_user_data(5),
+                        self.get_meeting_user_data(5),
+                        True,
                     ),  # From meeting_user 5
                     25: (
                         4,
                         [13],
                         [32],
-                        get_meeting_user_data(6),
+                        self.get_meeting_user_data(6),
+                        True,
                     ),  # From meeting_user 6
                     26: (
                         5,
                         [11, 12],
                         [41],
-                        get_meeting_user_data(7),
+                        self.get_meeting_user_data(7),
+                        True,
                     ),  # From meeting_user 7
                     27: (
                         6,
                         [12, 13],
                         [31, 33, 35, 37, 39, 41],
-                        get_meeting_user_data(8),
+                        self.get_meeting_user_data(8),
+                        True,
                     ),  # From meeting_user 8
                     28: (
                         7,
                         [13],
                         [30, 32, 34, 36, 38, 40],
-                        get_meeting_user_data(9),
+                        self.get_meeting_user_data(9),
+                        True,
                     ),  # From meeting_user 9
                     29: (
                         8,
                         [12],
                         [],
-                        get_meeting_user_data(11),
+                        self.get_meeting_user_data(11),
+                        True,
                     ),  # From meeting_user 11
-                    15: (9, [9, 13], None, get_meeting_user_data(15)),  # Take 9 add 13
+                    15: (
+                        9,
+                        [9, 13],
+                        None,
+                        self.get_meeting_user_data(15),
+                        False,
+                    ),  # Take 9 add 13
                     30: (
                         10,
                         [11, 12],
                         list(range(30, 42)),
-                        get_meeting_user_data(16),
+                        self.get_meeting_user_data(16),
+                        True,
                     ),  # From meeting_user 16
                 },
             }
@@ -1867,6 +2412,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         },
                         ("A", None),
                         {},
+                        False,
                     ),
                     2: (
                         {
@@ -1890,6 +2436,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     3: (
                         {
@@ -1910,6 +2457,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     4: (
                         {
@@ -1931,6 +2479,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     5: (
                         {
@@ -1959,14 +2508,15 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                 },
                 "meeting/1": {
-                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}),
-                    7: ({}, ("G", None), {71: (1, [66], {})}),
-                    8: ({}, ("H", None), {81: (1, [], {})}),
-                    9: ({}, ("I", None), {91: (1, [], {})}),
-                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}),
+                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
+                    7: ({}, ("G", None), {71: (1, [66], {})}, False),
+                    8: ({}, ("H", None), {81: (1, [], {})}, False),
+                    9: ({}, ("I", None), {91: (1, [], {})}, False),
+                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
                     11: (
@@ -1983,6 +2533,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     12: (
                         {"child_ids": [13], "is_directory": True},
@@ -1998,6 +2549,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     13: (
                         {"parent_id": 12, "child_ids": [14], "is_directory": True},
@@ -2013,6 +2565,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     14: (
                         {"parent_id": 13, "child_ids": [15], "is_directory": True},
@@ -2028,6 +2581,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     15: (
                         {"parent_id": 14, "filesize": 100},
@@ -2043,6 +2597,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                 },
                 "meeting/7": {
@@ -2060,6 +2615,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     17: (
                         {"child_ids": [18], "is_directory": True},
@@ -2075,6 +2631,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     18: (
                         {"parent_id": 17, "child_ids": [19], "is_directory": True},
@@ -2090,6 +2647,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     19: (
                         {"parent_id": 18, "child_ids": [20], "is_directory": True},
@@ -2105,6 +2663,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     20: (
                         {"parent_id": 19, "filesize": 100},
@@ -2120,6 +2679,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                 },
             }
@@ -2158,6 +2718,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         },
                         ("A", None),
                         {},
+                        False,
                     ),
                     2: (
                         {
@@ -2181,6 +2742,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     3: (
                         {
@@ -2201,6 +2763,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     4: (
                         {
@@ -2222,6 +2785,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                     5: (
                         {
@@ -2250,14 +2814,15 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             ),
                         },
+                        False,
                     ),
                 },
                 "meeting/1": {
-                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}),
-                    7: ({}, ("G", None), {71: (1, [66], {})}),
-                    8: ({}, ("H", None), {81: (1, [], {})}),
-                    9: ({}, ("I", None), {91: (1, [], {})}),
-                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}),
+                    6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
+                    7: ({}, ("G", None), {71: (1, [66], {})}, False),
+                    8: ({}, ("H", None), {81: (1, [], {})}, False),
+                    9: ({}, ("I", None), {91: (1, [], {})}, False),
+                    10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
                     11: (
@@ -2274,6 +2839,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     12: (
                         {"child_ids": [13], "is_directory": True},
@@ -2289,6 +2855,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     13: (
                         {"parent_id": 12, "child_ids": [14], "is_directory": True},
@@ -2304,6 +2871,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     14: (
                         {"parent_id": 13, "child_ids": [15], "is_directory": True},
@@ -2319,6 +2887,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     15: (
                         {"parent_id": 14, "filesize": 100},
@@ -2334,6 +2903,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                 },
                 "meeting/7": {
@@ -2351,6 +2921,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     17: (
                         {"child_ids": [18], "is_directory": True},
@@ -2366,6 +2937,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     18: (
                         {"parent_id": 17, "child_ids": [19], "is_directory": True},
@@ -2381,6 +2953,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     19: (
                         {"parent_id": 18, "child_ids": [20], "is_directory": True},
@@ -2396,6 +2969,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                     20: (
                         {"parent_id": 19, "filesize": 100},
@@ -2411,6 +2985,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 },
                             )
                         },
+                        True,
                     ),
                 },
             }
@@ -2530,16 +3105,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             }
         )
 
-        def get_meeting_user_data(id_: int) -> dict[str, str | None]:
-            return {
-                field: (val if len(field) - 6 != id_ % 3 else None)
-                for field, val in [
-                    ("number", f"MTNGUSR{id_}"),
-                    ("comment", f"Comment of meeting user{id_}"),
-                    ("about_me", f"I am meeting user {id_}"),
-                ]
-            }
-
         meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
             4: {
                 1: 2,
@@ -2569,45 +3134,75 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_meeting_user_data(
             {
                 4: {
-                    2: (1, [4, 5], [17], get_meeting_user_data(2)),  # Take 4 add 5
-                    18: (2, [4], [13], get_meeting_user_data(4)),  # From meeting_user 4
-                    19: (3, [5], [14], get_meeting_user_data(5)),  # From meeting_user 5
+                    2: (
+                        1,
+                        [4, 5],
+                        [17],
+                        self.get_meeting_user_data(2),
+                        False,
+                    ),  # Take 4 add 5
+                    18: (
+                        2,
+                        [4],
+                        [13],
+                        self.get_meeting_user_data(4),
+                        True,
+                    ),  # From meeting_user 4
+                    19: (
+                        3,
+                        [5],
+                        [14],
+                        self.get_meeting_user_data(5),
+                        True,
+                    ),  # From meeting_user 5
                     20: (
                         4,
                         [10],
                         [21],
-                        get_meeting_user_data(6),
+                        self.get_meeting_user_data(6),
+                        True,
                     ),  # From meeting_user 6
                     21: (
                         5,
                         [4, 5],
                         [29],
-                        get_meeting_user_data(7),
+                        self.get_meeting_user_data(7),
+                        True,
                     ),  # From meeting_user 7
                     22: (
                         6,
                         [5, 10],
                         [14, 15, 23, 25, 27, 29],
-                        get_meeting_user_data(8),
+                        self.get_meeting_user_data(8),
+                        True,
                     ),  # From meeting_user 8
                     10: (
                         7,
                         [4, 10],
                         [13, 14, 15],
-                        get_meeting_user_data(10),
+                        self.get_meeting_user_data(10),
+                        False,
                     ),  # Take 4 add 10
                     12: (
                         8,
                         [5],
                         [16, 17, 18, 19, 20],
-                        get_meeting_user_data(12),
+                        self.get_meeting_user_data(12),
+                        False,
                     ),  # Take 5
-                    14: (9, [6, 10], [], get_meeting_user_data(14)),  # Take 6 add 10
+                    14: (
+                        9,
+                        [6, 10],
+                        [],
+                        self.get_meeting_user_data(14),
+                        False,
+                    ),  # Take 6 add 10
                     17: (
                         10,
                         [4, 5],
                         [14, 16, 18, 20],
-                        get_meeting_user_data(17),
+                        self.get_meeting_user_data(17),
+                        False,
                     ),  # Take 4 add 5
                 },
                 7: {
@@ -2615,56 +3210,71 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         1,
                         [8, 9, 12],
                         None,
-                        get_meeting_user_data(3),
+                        self.get_meeting_user_data(3),
+                        False,
                     ),  # Take 8, 9 add 12
                     23: (
                         2,
                         [11],
                         [30],
-                        get_meeting_user_data(4),
+                        self.get_meeting_user_data(4),
+                        True,
                     ),  # From meeting_user 4
                     24: (
                         3,
                         [12],
                         [31],
-                        get_meeting_user_data(5),
+                        self.get_meeting_user_data(5),
+                        True,
                     ),  # From meeting_user 5
                     25: (
                         4,
                         [13],
                         [32],
-                        get_meeting_user_data(6),
+                        self.get_meeting_user_data(6),
+                        True,
                     ),  # From meeting_user 6
                     26: (
                         5,
                         [11, 12],
                         [41],
-                        get_meeting_user_data(7),
+                        self.get_meeting_user_data(7),
+                        True,
                     ),  # From meeting_user 7
                     27: (
                         6,
                         [12, 13],
                         [31, 33, 35, 37, 39, 41],
-                        get_meeting_user_data(8),
+                        self.get_meeting_user_data(8),
+                        True,
                     ),  # From meeting_user 8
                     28: (
                         7,
                         [13],
                         [30, 32, 34, 36, 38, 40],
-                        get_meeting_user_data(9),
+                        self.get_meeting_user_data(9),
+                        True,
                     ),  # From meeting_user 9
                     29: (
                         8,
                         [12],
                         [],
-                        get_meeting_user_data(11),
+                        self.get_meeting_user_data(11),
+                        True,
                     ),  # From meeting_user 11
-                    15: (9, [9, 13], None, get_meeting_user_data(15)),  # Take 9 add 13
+                    15: (
+                        9,
+                        [9, 13],
+                        None,
+                        self.get_meeting_user_data(15),
+                        False,
+                    ),  # Take 9 add 13
                     30: (
                         10,
                         [11, 12],
                         list(range(30, 42)),
-                        get_meeting_user_data(16),
+                        self.get_meeting_user_data(16),
+                        True,
                     ),  # From meeting_user 16
                 },
             }
@@ -2747,5 +3357,544 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             }
         )
 
-    # TODO: Test with smaller more specific subcases of the dataset
-    # TODO: Test edge cases, permissions and errors
+    def test_forward_structure_level_transfer_only_via_meeting_users(self) -> None:
+        """
+        Test case where transferred speakers have no sllos and no pooc.
+        Also tests
+            - if this skips structure_levels that only belonged to users
+              that were already in the meeting.
+            - what happens if it's not allowed to set non-present
+              people as speakers in the target meeting.
+            - that polls are not transferred.
+            - if forwarding only orga files works
+        """
+        self.create_full_dataset(with_mediafiles=False)
+
+        # This should cause user 4 to not get a structure_level in meeting 2
+        # It should therefore cause his structure_level not to be generated
+        self.set_user_groups(4, [3, 6])
+
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "mediafile_ids": [3],
+                    "published_mediafile_ids": [3],
+                },
+                "meeting/1": {
+                    "meeting_mediafile_ids": [31],
+                },
+                "meeting/4": {
+                    "meeting_mediafile_ids": [34],
+                },
+                "meeting/7": {"list_of_speakers_present_users_only": True},
+                "topic/11": {
+                    "poll_ids": [1234],
+                    "attachment_meeting_mediafile_ids": [31],
+                },
+                "poll/1234": {
+                    "meeting_id": 1,
+                    "title": "Will not transfer",
+                    "type": "pseudoanonymous",
+                    "backend": "fast",
+                    "pollmethod": "Y",
+                    "state": "created",
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                    "onehundred_percent_base": "Y",
+                    "sequential_number": 1,
+                    "content_object_id": "topic/10",
+                    "option_ids": [123, 234],
+                },
+                "option/123": {"meeting_id": 1, "poll_id": 1234, "text": "Option A"},
+                "option/234": {"meeting_id": 1, "poll_id": 1234, "text": "Option B"},
+                # mediafiles
+                "mediafile/3": {
+                    "create_timestamp": 300,
+                    **self.get_mediafile_data("C", "txt"),
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "meeting_mediafile_ids": [31, 34],
+                },
+                "meeting_mediafile/31": {
+                    "mediafile_id": 3,
+                    "meeting_id": 1,
+                    "attachment_ids": ["topic/11"],
+                },
+                "meeting_mediafile/34": {
+                    "mediafile_id": 3,
+                    "meeting_id": 4,
+                },
+            }
+        )
+
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4, 7],
+                "agenda_item_ids": [1],
+                "with_speakers": True,
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_full_dataset([1], [4, 7], with_speakers=True)
+
+        self.assert_group_data(
+            {
+                4: {10: "Delegate"},
+                7: {
+                    11: "Default",
+                    12: "Admin",
+                    13: "Delegate",
+                },
+            }
+        )
+        self.assert_structure_level_data(
+            {
+                4: {
+                    13: ("red", None),
+                    14: ("orange", "#ff8000"),
+                    15: ("green", "#00ff33"),
+                    16: ("ocean", "#0000ff"),
+                    17: ("whitecat", "#ffffff"),
+                    18: ("greycat", "#808080"),
+                    19: ("blackcat", "#000000"),
+                    20: ("void", None),
+                },
+                7: {
+                    21: ("red", "#ff0000"),
+                    22: ("orange", "#ff8000"),
+                    23: ("yellow", "#ffff00"),
+                },
+            }
+        )
+
+        meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
+            4: {
+                4: 19,
+                5: 20,
+                6: 18,
+            },
+            7: {
+                4: 21,
+                5: 22,
+                6: 23,
+            },
+        }
+        self.assert_meeting_user_data(
+            {
+                4: {
+                    19: (
+                        2,
+                        [4],
+                        [13],
+                        self.get_meeting_user_data(4),
+                        True,
+                    ),  # From meeting_user 4
+                    20: (
+                        3,
+                        [5],
+                        [14],
+                        self.get_meeting_user_data(5),
+                        True,
+                    ),  # From meeting_user 5
+                    18: (
+                        4,
+                        [6, 10],
+                        None,
+                        {"number": None, "comment": None, "about_me": None},
+                        False,
+                    ),  # From meeting_user 6
+                },
+                7: {
+                    21: (
+                        2,
+                        [11],
+                        [21],
+                        self.get_meeting_user_data(4),
+                        True,
+                    ),  # From meeting_user 4
+                    22: (
+                        3,
+                        [12],
+                        [22],
+                        self.get_meeting_user_data(5),
+                        True,
+                    ),  # From meeting_user 5
+                    23: (
+                        4,
+                        [13],
+                        [23],
+                        self.get_meeting_user_data(6),
+                        True,
+                    ),  # From meeting_user 6
+                },
+            }
+        )
+        self.assert_speaker_data(
+            {
+                4: {
+                    771: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 29)
+                    ),  # 110, speaker 1-4 -> 29-32
+                },
+                7: {
+                    772: list(
+                        enumerate(EXAMPLE_LOS_DATA[0], 33)
+                    ),  # 110, speaker 1-4 -> 33-37
+                },
+            },
+            meeting_id_to_old_to_new_muser_id,
+        )
+        self.assert_mediafile_data(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    3: (
+                        {
+                            "create_timestamp": 300,
+                        },
+                        ("C", "txt"),
+                        {
+                            31: (1, [11], {}),
+                            34: (4, [78], {}),
+                            35: (
+                                7,
+                                [79],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [8],
+                                    "inherited_access_group_ids": [8],
+                                },
+                            ),
+                        },
+                        False,
+                    ),
+                },
+            }
+        )
+
+        for id_ in [4, 7]:
+            self.assert_model_exists(f"meeting/{id_}", {"present_user_ids": None})
+
+        for collection, id_ in {
+            "mediafile": 4,
+            "meeting_mediafile": 36,
+            "poll": 1235,
+            "option": 235,
+            "speaker": 38,
+            "structure_level_list_of_speakers": 15,
+            "point_of_order_category": 8,
+            "structure_level": 24,
+            "meeting_user": 24,
+        }.items():
+            self.assert_model_not_exists(f"{collection}/{id_}")
+        self.assert_model_not_exists("group/14")
+
+    def test_forward_only_create_groups_of_transferred_users(self) -> None:
+        """
+        Test case where there are groups that should not be transferred,
+        because the speakers are in other agenda items los.
+        Also tests
+            - if datasets where structure_levels can only be matched to sllos
+              can be successfully processed.
+            - what happens with multiple waiting speeches by the same user in
+              one list, when it is not allowed in the meeting settings (should still work).
+            - that the calculated `agenda_item/is_internal` field is re_calculated
+              according the actual new data and doesn't take over the value from the
+              original data.
+            - if forwarding only meeting files works
+            - if forwarding poocs to a meeting, where poocs with the same names already
+              exist, works
+            - if forwarding to the same committee works
+        """
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_topic_agenda_item(
+            1,
+            11,
+            extra_agenda_fields={
+                "type": "internal",
+                "is_internal": True,
+            },
+        )
+        self.create_topic_agenda_item(
+            2,
+            22,
+            parent_id=1,
+            extra_agenda_fields={
+                "is_internal": True,
+            },
+        )
+        self.set_models(
+            {
+                "meeting/1": {
+                    "mediafile_ids": [1],
+                    "meeting_mediafile_ids": [11],
+                    "group_ids": [1, 2, 3, 7],
+                },
+                "meeting/4": {
+                    "committee_id": 60,
+                    "list_of_speakers_default_structure_level_time": 60,
+                },
+                "committee/60": {
+                    "meeting_ids": [1, 4],
+                    "forward_agenda_to_committee_ids": [60],
+                    "receive_agenda_forwardings_from_committee_ids": [60],
+                },
+                "committee/63": {"meeting_ids": []},
+                "group/1": {"name": "Default"},
+                "group/2": {"name": "Admin"},
+                "group/3": {"name": "Delegate"},
+                "group/7": {"name": "Staff", "meeting_id": 1},
+                "group/4": {"name": "Cherries"},
+                "group/5": {"name": "Apples"},
+                "group/6": {"name": "Bananas"},
+                "topic/22": {"attachment_meeting_mediafile_ids": [11]},
+                "mediafile/1": {
+                    "create_timestamp": 300,
+                    **self.get_mediafile_data("C", "txt"),
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [11],
+                },
+                "meeting_mediafile/11": {
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "attachment_ids": ["topic/22"],
+                },
+            }
+        )
+        self.set_user_groups(1, [4])
+        self.create_user("bob", [1])  # 2, musers: 2
+        self.create_user("colin", [2])  # 3, musers: 3
+        self.create_user("dan", [3])  # 4, musers: 4
+
+        self.create_structure_levels(
+            {
+                "red": "#ff0000",
+                "green": "#00ff00",
+            },
+            base_level_id=1,
+            meeting_id=1,
+        )
+        self.create_speakers_for_los(
+            los_id=110,
+            speaker_data=[
+                (100, 200, 20, None, None, "a point of order", True, 1),
+            ],
+        )
+        self.create_speakers_for_los(
+            los_id=220,
+            speaker_data=[
+                (100, 200, 20, None, None, "a point of order", True, 2),
+                (200, 300, None, None, None, "a second point of order", True, 3),
+                (300, 400, None, None, None, "a second point of order", True, 4),
+                (None, None, None, None, None, None, None, 2),
+                (None, None, None, None, None, None, None, 2),
+            ],
+            base_speaker_id=2,
+        )
+        self.create_poocs(
+            {
+                1: {
+                    1: ("A", 1, [4]),
+                    2: ("B", 2, [3]),
+                    3: ("C", 3, [2]),
+                },
+                4: {
+                    4: ("A", 1, []),
+                    5: ("B", 2, []),
+                    6: ("C", 3, []),
+                },
+            }
+        )
+        self.create_sllos(
+            {
+                220: [
+                    (1, 500, None, 420, [2, 5]),
+                    (2, 500, None, 300, [3, 4, 6]),
+                ]
+            }
+        )
+
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [2],
+                "with_speakers": True,
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+        self.assert_model_exists(
+            "agenda_item/3",
+            {"content_object_id": "topic/23", "meeting_id": 4, "is_internal": False},
+        )
+        self.assert_model_exists(
+            "topic/23",
+            {
+                "agenda_item_id": 3,
+                "list_of_speakers_id": 221,
+                "meeting_id": 4,
+                "title": "Topic 22",
+                "text": "This is the text of topic 22",
+            },
+        )
+        self.assert_model_exists(
+            "list_of_speakers/221",
+            {
+                "content_object_id": "topic/23",
+                "meeting_id": 4,
+            },
+        )
+        self.assert_group_data(
+            {
+                4: {
+                    4: "Cherries",
+                    5: "Apples",
+                    6: "Bananas",
+                    8: "Default",
+                    9: "Admin",
+                    10: "Delegate",
+                },
+            }
+        )
+        self.assert_structure_level_data(
+            {
+                4: {
+                    3: ("red", "#ff0000"),
+                    4: ("green", "#00ff00"),
+                },
+            }
+        )
+        meeting_id_to_old_to_new_muser_id: dict[int, dict[int, int]] = {
+            4: {
+                2: 5,
+                3: 6,
+                4: 7,
+            },
+        }
+        self.assert_meeting_user_data(
+            {
+                4: {
+                    5: (2, [8], [], {}, True),
+                    6: (3, [9], [], {}, True),
+                    7: (4, [10], [], {}, False),
+                },
+            }
+        )
+        self.assert_speaker_data(
+            {
+                4: {
+                    221: [
+                        (7, (100, 200, 20, None, None, "a point of order", True, 2)),
+                        (
+                            8,
+                            (
+                                200,
+                                300,
+                                None,
+                                None,
+                                None,
+                                "a second point of order",
+                                True,
+                                3,
+                            ),
+                        ),
+                        (
+                            9,
+                            (
+                                300,
+                                400,
+                                None,
+                                None,
+                                None,
+                                "a second point of order",
+                                True,
+                                4,
+                            ),
+                        ),
+                        (10, (None, None, None, None, None, None, None, 2)),
+                        (11, (None, None, None, None, None, None, None, 2)),
+                    ],
+                },
+            },
+            meeting_id_to_old_to_new_muser_id,
+        )
+        self.assert_pooc_data(
+            {
+                4: {
+                    4: ("A", 1, [9]),
+                    5: ("B", 2, [8]),
+                    6: ("C", 3, [7]),
+                }
+            }
+        )
+        self.assert_sllos_data(
+            {
+                4: {
+                    221: [
+                        (3, (1, 500, None, 420, [2, 5])),
+                        (4, (2, 500, None, 300, [3, 4, 6])),
+                    ]
+                }
+            },
+            meeting_to_old_to_new_structure_level_id={4: {1: 3, 2: 4}},
+            meeting_to_old_to_new_speaker_id={4: {2: 7, 3: 8, 4: 9, 5: 10, 6: 11}},
+        )
+        self.assert_mediafile_data(
+            {
+                "meeting/4": {
+                    2: (
+                        {},
+                        ("C", "txt"),
+                        {
+                            12: (
+                                4,
+                                [23],
+                                {
+                                    "is_public": False,
+                                    "access_group_ids": [5],
+                                    "inherited_access_group_ids": [5],
+                                },
+                            ),
+                        },
+                        True,
+                    ),
+                },
+            }
+        )
+
+        for collection, id_ in {
+            "mediafile": 3,
+            "meeting_mediafile": 24,
+            "speaker": 12,
+            "structure_level_list_of_speakers": 5,
+            "point_of_order_category": 7,
+            "structure_level": 5,
+            "meeting_user": 8,
+            "group": 12,
+        }.items():
+            self.assert_model_not_exists(f"{collection}/{id_}")
+
+    def test_forward_no_speakers_target_sllos_speaking_time_turned_off(self) -> None:
+        # TODO: write test
+        pass
+
+    def test_forward_only_target_meeting_users(self) -> None:
+        # TODO: write test
+        pass
+
+    def test_forward_no_creatable_groups(self) -> None:
+        # TODO: write test
+        pass
+
+    def test_forward_no_creatable_structure_levels(self) -> None:
+        # TODO: write test
+        pass
+
+    def test_forward_complete_structure_level_match(self) -> None:
+        # TODO: write test
+        pass
