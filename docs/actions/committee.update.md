@@ -16,10 +16,11 @@
 // Group B
     forward_to_committee_ids: Id[];
     receive_forwardings_from_committee_ids: Id[];
+// Group C
     forward_agenda_to_committee_ids: Id[];
     receive_agenda_forwardings_from_committee_ids: Id[];
 
-// Group C
+// Group D
     parent_id: Id;
 }
 ```
@@ -33,4 +34,5 @@ Re-calculates `committee/all_parent_ids` from the new `parent_id` for this and a
 ## Permissions
 - Group A: The user needs the CML `can_manage` or the OML `can_manage_organization`
 - Group B: The user needs the OML `can_manage_organization` or the CML `can_manage` for all target committees that were added/removed from the list
-- Group C: The user needs the OML `can_manage_organization` or the CML `can_manage` for a committee that is an _ancestor_ of the intended child committee and either the intended parent committee or one of its ancestors. Only organization managers may set this field to `None`.
+- Group B: The user needs the CML `can_manage` for all target committees that were added/removed from the list, unless `organization/forbid_committee_admins_to_set_agenda_forwarding_relations` is true, then OML `can_manage_organization` is required
+- Group D: The user needs the OML `can_manage_organization` or the CML `can_manage` for a committee that is an _ancestor_ of the intended child committee and either the intended parent committee or one of its ancestors. Only organization managers may set this field to `None`.

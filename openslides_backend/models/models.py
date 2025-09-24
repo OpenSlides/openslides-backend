@@ -16,6 +16,7 @@ class Organization(Model):
     privacy_policy = fields.TextField()
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
+    forbid_committee_admins_to_set_agenda_forwarding_relations = fields.BooleanField()
     gender_ids = fields.RelationListField(to={"gender": "organization_id"})
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()

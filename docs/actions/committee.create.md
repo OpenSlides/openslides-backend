@@ -16,6 +16,7 @@
     // Needs parent_id set and manage rights for all target committees
     forward_to_committee_ids: Id[];
     receive_forwardings_from_committee_ids: Id[];
+    // same as above, unless organization/forbid_committee_admins_to_set_agenda_forwarding_relations is true, then the user needs organization manage rights
     forward_agenda_to_committee_ids: Id[];
     receive_agenda_forwardings_from_committee_ids: Id[];
 }

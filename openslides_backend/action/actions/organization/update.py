@@ -32,6 +32,7 @@ class OrganizationUpdate(
         "login_text",
         "theme_id",
         "default_language",
+        "forbid_committee_admins_to_set_agenda_forwarding_relations",
         "users_email_sender",
         "users_email_replyto",
         "users_email_subject",

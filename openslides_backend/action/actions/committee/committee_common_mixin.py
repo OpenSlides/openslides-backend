@@ -9,7 +9,7 @@ from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import get_failing_committee_management_levels
+from ....permissions.permission_helper import get_failing_committee_management_levels, has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID
@@ -20,12 +20,24 @@ class CommitteeCommonCreateUpdateMixin(
 ):
     def check_forwarding_fields(self, instance: dict[str, Any]) -> None:
         id_ = instance.get("id")
-        forwarding_fields = [
-            "forward_to_committee_ids",
-            "receive_forwardings_from_committee_ids",
+        agenda_forwarding_fields = [
             "forward_agenda_to_committee_ids",
             "receive_agenda_forwardings_from_committee_ids",
         ]
+        forwarding_fields = [
+            "forward_to_committee_ids",
+            "receive_forwardings_from_committee_ids",
+        ]
+        if self.datastore.get("organization/1", ["forbid_committee_admins_to_set_agenda_forwarding_relations"]).get("forbid_committee_admins_to_set_agenda_forwarding_relations") and any(
+            field in instance for field in agenda_forwarding_fields
+        ):
+            # TODO write test for this
+            if not has_organization_management_level(
+                self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+            ):
+                raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
+        else:
+            forwarding_fields.extend(agenda_forwarding_fields)
         if id_:
             committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", id_),
