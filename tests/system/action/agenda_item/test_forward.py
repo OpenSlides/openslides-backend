@@ -3879,22 +3879,84 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         }.items():
             self.assert_model_not_exists(f"{collection}/{id_}")
 
-    def test_forward_no_speakers_target_sllos_speaking_time_turned_off(self) -> None:
-        # TODO: write test
-        pass
-
     def test_forward_only_target_meeting_users(self) -> None:
-        # TODO: write test
-        pass
+        """
+        Checks if not needing to create any users breaks something.
+        Also checks if
+            - no groups needing to be created breaks somethingif
+            - no structure_levels needing to be created breaks something
+        """
+        self.create_full_dataset(with_mediafiles=False)
+        self.set_models(
+            {
+                "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
+                "group/6": {"name": "Delegate"},
+                "structure_level/15": {"name": "grey", "color": None},
+            }
+        )
 
-    def test_forward_no_creatable_groups(self) -> None:
-        # TODO: write test
-        pass
-
-    def test_forward_no_creatable_structure_levels(self) -> None:
-        # TODO: write test
-        pass
-
-    def test_forward_complete_structure_level_match(self) -> None:
-        # TODO: write test
-        pass
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [4],
+                "with_speakers": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_full_dataset([4], [4], with_speakers=True)
+        self.assert_group_data({4: {4: "Default", 5: "Admin", 6: "Delegate"}})
+        self.assert_meeting_user_data(
+            {
+                4: {
+                    12: (8, [5], [16, 17, 18, 19, 20], {}, False),
+                    14: (9, [6], [], {}, False),
+                    17: (10, [4, 5], [14, 16, 18, 20], {}, False),
+                }
+            }
+        )
+        self.assert_structure_level_data(
+            {
+                4: {
+                    13: ("red", None),
+                    14: ("orange", "#ff8000"),
+                    15: ("grey", None),
+                    16: ("ocean", "#0000ff"),
+                    17: ("whitecat", "#ffffff"),
+                    18: ("greycat", "#808080"),
+                    19: ("blackcat", "#000000"),
+                    20: ("void", None),
+                }
+            }
+        )
+        self.assert_sllos_data(
+            {4: {771: list(enumerate(EXAMPLE_SLLOS_DATA[1], 15))}},
+            {4: {1: 13, 10: 15}},
+            {4: {20: 29, 21: 30, 22: 31}},
+        )
+        self.assert_speaker_data(
+            {4: {771: list(enumerate(EXAMPLE_LOS_DATA[3], 29))}},
+            {4: {11: 12, 13: 14, 16: 17}},
+        )
+        self.assert_pooc_data(
+            {
+                4: {
+                    4: ("You have", 1, []),
+                    5: ("A point", 2, []),
+                    6: ("A", 3, []),
+                    7: ("Small point", 4, [31]),
+                    8: ("Big point", 1, [29, 30]),
+                }
+            }
+        )
+        for collection, id_ in {
+            "mediafile": 1,
+            "meeting_mediafile": 1,
+            "speaker": 32,
+            "structure_level_list_of_speakers": 17,
+            "point_of_order_category": 9,
+            "structure_level": 21,
+            "meeting_user": 18,
+            "group": 10,
+        }.items():
+            self.assert_model_not_exists(f"{collection}/{id_}")

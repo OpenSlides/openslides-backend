@@ -880,53 +880,64 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                     **structure_level,
                     **payload,
                 }
-        if unmatched_muser_ids:
-            muser_payloads = [
-                {
-                    "meeting_id": target_meeting_id,
-                    "user_id": origin_musers[id_]["user_id"],
-                    "group_ids": [
-                        *target_meeting_models.get("meeting_user", {})
-                        .get(muser_matches.get(id_, 0), {})
-                        .get("group_ids", []),
-                        *[
-                            group_matches[group_id]
-                            for group_id in origin_musers[id_].get("group_ids", [])
-                            if group_matches[group_id]
-                            not in target_meeting_models.get("meeting_user", {})
-                            .get(muser_matches.get(id_, 0), {})
-                            .get("group_ids", [])
-                        ],
-                    ],
-                    **(
-                        {}
-                        if target
-                        else {
-                            "structure_level_ids": [
-                                structure_level_matches[structure_level_id]
-                                for structure_level_id in origin_musers[id_].get(
-                                    "structure_level_ids", []
-                                )
-                            ],
-                            **{
-                                field: val
-                                for field in TRANSFERRABLE_MEETING_USER_FIELDS
-                                if (val := origin_musers.get(id_, {}).get(field))
-                            },
-                        }
-                    ),
-                }
-                for id_, target in [
-                    *muser_matches.items(),
-                    *[(mu_id, None) for mu_id in unmatched_muser_ids],
+        muser_payloads: list[dict[str, Any]] = []
+        changed_or_new_muser_ids: list[int] = []
+        for id_, target in [
+            *muser_matches.items(),
+            *[(mu_id, None) for mu_id in unmatched_muser_ids],
+        ]:
+            origin_model = origin_musers[id_]
+            if target:
+                target_model = target_meeting_models.get("meeting_user", {}).get(
+                    muser_matches.get(id_, 0), {}
+                )
+                new_group_ids = [
+                    new_group_id
+                    for group_id in origin_model.get("group_ids", [])
+                    if (new_group_id := group_matches[group_id])
+                    not in target_model.get("group_ids", [])
                 ]
-            ]
+                if new_group_ids:
+                    changed_or_new_muser_ids.append(id_)
+                    muser_payloads.append(
+                        {
+                            "id": target,
+                            "group_ids": [
+                                *target_model.get("group_ids", []),
+                                *new_group_ids,
+                            ],
+                        }
+                    )
+            else:
+                changed_or_new_muser_ids.append(id_)
+                muser_payloads.append(
+                    {
+                        "meeting_id": target_meeting_id,
+                        "user_id": origin_model["user_id"],
+                        "group_ids": [
+                            group_matches[group_id]
+                            for group_id in origin_model.get("group_ids", [])
+                        ],
+                        "structure_level_ids": [
+                            structure_level_matches[structure_level_id]
+                            for structure_level_id in origin_model.get(
+                                "structure_level_ids", []
+                            )
+                        ],
+                        **{
+                            field: val
+                            for field in TRANSFERRABLE_MEETING_USER_FIELDS
+                            if (val := origin_model.get(field)) is not None
+                        },
+                    }
+                )
+        if muser_payloads:
             new_musers = self.execute_other_action(MeetingUserSetData, muser_payloads)
             assert new_musers is not None
             for muser, payload, origin_id in zip(
                 new_musers,
                 muser_payloads,
-                [*muser_matches.keys(), *unmatched_muser_ids],
+                changed_or_new_muser_ids,
             ):
                 assert muser is not None
                 muser_matches[origin_id] = muser["id"]
