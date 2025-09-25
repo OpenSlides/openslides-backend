@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -647,6 +648,61 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             "You are not allowed to perform action committee.create. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
             response.json["message"],
         )
+
+    def test_create_set_agenda_forwarding_as_committee_admin_when_restricted_error(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "forbid_committee_admins_to_set_agenda_forwarding_relations": True
+                }
+            }
+        )
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.create",
+            {
+                "name": "Calmittee",
+                "organization_id": 1,
+                "parent_id": 1,
+                "forward_agenda_to_committee_ids": [2],
+                "receive_agenda_forwardings_from_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.create. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_create_set_agenda_forwarding_as_orga_admin_when_restricted(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "forbid_committee_admins_to_set_agenda_forwarding_relations": True
+                }
+            }
+        )
+        self.create_committee()
+        self.create_committee(2, parent_id=1)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "committee.create",
+            {
+                "name": "Calmittee",
+                "organization_id": 1,
+                "parent_id": 1,
+                "forward_agenda_to_committee_ids": [2],
+                "receive_agenda_forwardings_from_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_add_forwarding_relations(
         self,

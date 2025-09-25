@@ -1349,6 +1349,57 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("committee/4", {"parent_id": 2, "all_parent_ids": [2]})
 
+    def test_update_set_agenda_forwarding_as_committee_admin_when_restricted_error(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "forbid_committee_admins_to_set_agenda_forwarding_relations": True
+                }
+            }
+        )
+        self.create_committee()
+        self.create_committee(2)
+        self.set_committee_management_level([1, 2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_agenda_to_committee_ids": [2],
+                "receive_agenda_forwardings_from_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_update_set_agenda_forwarding_as_orga_admin_when_restricted(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "forbid_committee_admins_to_set_agenda_forwarding_relations": True
+                }
+            }
+        )
+        self.create_committee()
+        self.create_committee(2)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_agenda_to_committee_ids": [2],
+                "receive_agenda_forwardings_from_committee_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_update_add_forwarding_relations(
         self,
         fail_forward_from: bool = False,
