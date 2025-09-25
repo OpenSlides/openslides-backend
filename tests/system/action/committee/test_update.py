@@ -20,28 +20,11 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
 
     def create_meetings_with_users(self) -> None:
-        self.create_meeting(200)
-        self.create_meeting(203)
-        self.set_models(
-            {
-                "meeting/200": {"committee_id": self.COMMITTEE_ID},
-                "meeting/203": {"committee_id": self.COMMITTEE_ID},
-                "group/2001": {
-                    "name": "knitting grandpas",
-                    "meeting_user_ids": [20, 21],
-                    "meeting_id": 200,
-                },
-                "group/2031": {"name": "cycling thursdays", "meeting_id": 203},
-                "meeting_user/20": {
-                    "meeting_id": 200,
-                    "user_id": 20,
-                },
-                "meeting_user/21": {
-                    "meeting_id": 200,
-                    "user_id": 21,
-                },
-            }
-        )
+        self.create_data()
+        self.create_meeting(200, meeting_data={"committee_id": self.COMMITTEE_ID})
+        self.create_meeting(203, meeting_data={"committee_id": self.COMMITTEE_ID})
+        self.set_user_groups(20, [200])
+        self.set_user_groups(21, [200])
 
     def test_update_correct(self) -> None:
         self.create_data()
@@ -50,17 +33,15 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.update", {"id": self.COMMITTEE_ID, "name": new_name}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertEqual(model.get("name"), new_name)
+        self.assert_model_exists(self.COMMITTEE_FQID, {"name": new_name})
 
     def test_update_everything_correct(self) -> None:
         new_name = "committee_testname_updated"
         new_description = "<p>New Test description</p>"
         external_id = "external"
 
-        self.create_data()
-        self.update_model(self.COMMITTEE_FQID, {"external_id": external_id})
         self.create_meetings_with_users()
+        self.update_model(self.COMMITTEE_FQID, {"external_id": external_id})
 
         response = self.request(
             "committee.update",
@@ -360,66 +341,43 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "manager_ids": [30],
-            },
+            {"id": self.COMMITTEE_ID, "manager_ids": [30]},
         )
         self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertEqual(model.get("user_ids"), None)
-        self.assertIn(
-            "Model 'user/30' does not exist.",
-            response.json["message"],
-        )
+        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": None})
+        self.assertIn("Model 'user/30' does not exist.", response.json["message"])
 
     def test_update_wrong_forward_committee(self) -> None:
         self.create_data()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "forward_to_committee_ids": [101],
-            },
+            {"id": self.COMMITTEE_ID, "forward_to_committee_ids": [101]},
         )
         self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertIsNone(model.get("forward_to_committee_ids"))
-        self.assertIn(
-            "Model 'committee/101' does not exist.",
-            response.json["message"],
+        self.assert_model_exists(
+            self.COMMITTEE_FQID, {"forward_to_committee_ids": None}
         )
+        self.assertIn("Model 'committee/101' does not exist.", response.json["message"])
 
     def test_update_wrong_default_meeting(self) -> None:
         self.create_data()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "default_meeting_id": 299,
-            },
+            {"id": self.COMMITTEE_ID, "default_meeting_id": 299},
         )
         self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertIsNone(model.get("default_meeting_id"))
-        self.assertIn(
-            "Model 'meeting/299' does not exist.",
-            response.json["message"],
-        )
+        self.assert_model_exists(self.COMMITTEE_FQID, {"default_meeting_id": None})
+        self.assertIn("Model 'meeting/299' does not exist.", response.json["message"])
 
     def test_update_default_meeting_wrong_committee(self) -> None:
         self.create_data()
         self.create_meeting(299)
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "default_meeting_id": 299,
-            },
+            {"id": self.COMMITTEE_ID, "default_meeting_id": 299},
         )
         self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertIsNone(model.get("default_meeting_id"))
+        self.assert_model_exists(self.COMMITTEE_FQID, {"default_meeting_id": None})
         self.assertIn(
             f"Meeting 299 does not belong to committee {self.COMMITTEE_ID}",
             response.json["message"],
@@ -429,18 +387,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         response = self.request("committee.update", {"id": 200, "name": "xxxxx"})
         self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertEqual(model.get("name"), self.COMMITTEE_NAME)
+        self.assert_model_exists(self.COMMITTEE_FQID, {"name": self.COMMITTEE_NAME})
 
     def test_update_correct_user_management_level(self) -> None:
         self.create_data()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "name": "test",
-                "manager_ids": [20],
-            },
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -449,14 +402,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_user_management_level_in_committee(self) -> None:
-        self.create_data()
         self.create_meetings_with_users()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "manager_ids": [1],
-            },
+            {"id": self.COMMITTEE_ID, "manager_ids": [1]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -466,24 +415,20 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "committee_ids": [self.COMMITTEE_ID],
             },
         )
-        committee = self.get_model("committee/1")
-        self.assertCountEqual(committee["user_ids"], [1, 20, 21])
-        self.assertCountEqual(committee["manager_ids"], [1])
+        self.assert_model_exists(
+            self.COMMITTEE_FQID,
+            {"user_ids": [1, 20, 21], "manager_ids": [1]},
+        )
 
     def test_update_user_management_level_rm_manager(self) -> None:
         # prepare data
         self.create_data()
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "name": "test",
-                "manager_ids": [20, 21],
-            },
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20, 21]},
         )
         self.assert_status_code(response, 200)
-        committee = self.get_model(self.COMMITTEE_FQID)
-        self.assertCountEqual((20, 21), committee["user_ids"])
+        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": [20, 21]})
         # important request.
         response = self.request(
             "committee.update",
@@ -494,7 +439,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        committee = self.assert_model_exists(
+        self.assert_model_exists(
             self.COMMITTEE_FQID,
             {"user_ids": [21], "manager_ids": [21]},
         )
@@ -506,12 +451,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
-        self.set_models(
-            {
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-                }
-            }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         response = self.request(
             "committee.update",
@@ -596,18 +537,11 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_organization_management_level(None)
         self.set_committee_management_level([1])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 1,
-                "manager_ids": [1, 20],
-            },
-        )
+        response = self.request("committee.update", {"id": 1, "manager_ids": [1, 20]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/1", {"manager_ids": [1, 20]})
 
     def test_update_group_b_no_permission(self) -> None:
-        self.create_data()
         self.create_meetings_with_users()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -615,10 +549,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_committee_management_level([1])
         response = self.request(
             "committee.update",
-            {
-                "id": 1,
-                "forward_to_committee_ids": [2],
-            },
+            {"id": 1, "forward_to_committee_ids": [2]},
         )
         self.assert_status_code(response, 403)
         assert (
@@ -631,13 +562,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
-        response = self.request(
-            "committee.update",
-            {
-                "id": 1,
-                "manager_ids": [1, 20],
-            },
-        )
+        response = self.request("committee.update", {"id": 1, "manager_ids": [1, 20]})
         self.assert_status_code(response, 200)
 
     def test_add_user_management_level_to_user_ids(self) -> None:
@@ -654,43 +579,26 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
         self.set_user_groups(20, [1])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 1,
-                "manager_ids": [1, 21],
-            },
-        )
+        response = self.request("committee.update", {"id": 1, "manager_ids": [1, 21]})
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/1", {"user_ids": [1, 20, 21]})
 
     def test_remove_cml_manager_from_user21(self) -> None:
-        self.create_data()
         self.create_meetings_with_users()
         self.set_models({"committee/1": {"manager_ids": [20, 21]}})
         response = self.request(
             "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "manager_ids": [20],
-            },
+            {"id": self.COMMITTEE_ID, "manager_ids": [20]},
         )
         self.assert_status_code(response, 200)
-        committee = self.get_model("committee/1")
-        self.assertCountEqual([20, 21], committee["user_ids"])
+        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": [20, 21]})
         self.assert_model_exists(
             "user/20",
-            {
-                "committee_management_ids": [1],
-                "committee_ids": [1],
-            },
+            {"committee_management_ids": [1], "committee_ids": [1]},
         )
         self.assert_model_exists(
             "user/21",
-            {
-                "committee_management_ids": None,
-                "committee_ids": [1],
-            },
+            {"committee_management_ids": None, "committee_ids": [1]},
         )
 
     def test_update_after_deleting_default_committee(self) -> None:
@@ -713,27 +621,14 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
         response = self.request(
             "committee.update",
-            {
-                "id": 2,
-                "name": "committee2",
-                "manager_ids": [1],
-            },
+            {"id": 2, "name": "committee2", "manager_ids": [1]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/2",
-            {
-                "name": "committee2",
-                "user_ids": [1],
-                "manager_ids": [1],
-            },
+            {"name": "committee2", "user_ids": [1], "manager_ids": [1]},
         )
-        self.assert_model_exists(
-            "user/1",
-            {
-                "committee_management_ids": [2],
-            },
-        )
+        self.assert_model_exists("user/1", {"committee_management_ids": [2]})
 
     def test_update_external_id_not_unique(self) -> None:
         external_id = "external"
@@ -746,10 +641,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
         response = self.request(
             "committee.update",
-            {
-                "id": 2,
-                "external_id": external_id,
-            },
+            {"id": 2, "external_id": external_id},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -759,13 +651,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_parent_id(self) -> None:
         self.create_committee(100)
         self.create_committee(200)
-        response = self.request(
-            "committee.update",
-            {
-                "id": 200,
-                "parent_id": 100,
-            },
-        )
+        response = self.request("committee.update", {"id": 200, "parent_id": 100})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/100", {"child_ids": [200], "all_child_ids": [200]}
@@ -874,13 +760,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee()
         self.create_committee(2, parent_id=1)
         self.create_committee(3, parent_id=2)
-        response = self.request(
-            "committee.update",
-            {
-                "id": 1,
-                "parent_id": 3,
-            },
-        )
+        response = self.request("committee.update", {"id": 1, "parent_id": 3})
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot perform parent updates, as it would create circles for the following committees: {1, 2, 3}",
@@ -893,13 +773,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(3, parent_id=1)
         self.set_organization_management_level(None)
         self.set_committee_management_level([3])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 3,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 3, "parent_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee {1}",
@@ -913,13 +787,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(3, parent_id=4)
         self.set_organization_management_level(None)
         self.set_committee_management_level([3])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 3,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 3, "parent_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committees {1, 4}",
@@ -932,13 +800,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(3, parent_id=1)
         self.set_organization_management_level(None)
         self.set_committee_management_level([1, 2])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 3,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 3, "parent_id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/3", {"parent_id": 2, "all_parent_ids": [1, 2]}
@@ -954,13 +816,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(7, parent_id=6)
         self.set_organization_management_level(None)
         self.set_committee_management_level([2, 7])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 7,
-                "parent_id": 5,
-            },
-        )
+        response = self.request("committee.update", {"id": 7, "parent_id": 5})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/7", {"parent_id": 5, "all_parent_ids": [1, 2, 3, 4, 5]}
@@ -973,13 +829,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(4, parent_id=3)
         self.set_organization_management_level(None)
         self.set_committee_management_level([1, 3])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 4,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 4, "parent_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
@@ -994,13 +844,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
-        response = self.request(
-            "committee.update",
-            {
-                "id": 4,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 4, "parent_id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/4", {"parent_id": 2})
 
@@ -1009,13 +853,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(4, parent_id=3)
         self.set_organization_management_level(None)
         self.set_committee_management_level([3])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 4,
-                "parent_id": None,
-            },
-        )
+        response = self.request("committee.update", {"id": 4, "parent_id": None})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
@@ -1028,13 +866,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
-        response = self.request(
-            "committee.update",
-            {
-                "id": 4,
-                "parent_id": None,
-            },
-        )
+        response = self.request("committee.update", {"id": 4, "parent_id": None})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/4", {"parent_id": None, "all_parent_ids": None}
@@ -1046,13 +878,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(4, parent_id=3)
         self.set_organization_management_level(None)
         self.set_committee_management_level([2])
-        response = self.request(
-            "committee.update",
-            {
-                "id": 4,
-                "parent_id": 2,
-            },
-        )
+        response = self.request("committee.update", {"id": 4, "parent_id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "committee/2", {"child_ids": [3, 4], "all_child_ids": [3, 4]}
@@ -1073,12 +899,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_committee(6, parent_id=5)
         self.set_models(
             {
-                "committee/1": {
-                    "forward_to_committee_ids": [2],
-                },
-                "committee/2": {
-                    "forward_to_committee_ids": [1],
-                },
+                "committee/1": {"forward_to_committee_ids": [2]},
+                "committee/2": {"forward_to_committee_ids": [1]},
             }
         )
         cmls = [1]

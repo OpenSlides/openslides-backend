@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -16,7 +17,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create(self) -> None:
         self.set_models(self.test_models)
-        self.set_models({"committee/1": {"organization_id": 1, "name": "c1"}})
+        self.set_models({"committee/1": {"name": "c1"}})
         committee_name = "test_committee2"
         description = "<p>Test Committee</p>"
         external_id = "external"
@@ -34,14 +35,18 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/2")
-        assert model.get("name") == committee_name
-        assert model.get("description") == description
-        assert model.get("meeting_ids") is None
-        assert model.get("external_id") == external_id
-        assert model.get("organization_tag_ids") == [12]
-        assert model.get("forward_to_committee_ids") == [1]
-        assert model.get("receive_forwardings_from_committee_ids") == [1]
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": committee_name,
+                "description": description,
+                "meeting_ids": None,
+                "external_id": external_id,
+                "organization_tag_ids": [12],
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [1],
+            },
+        )
         self.assert_model_exists(
             "committee/1",
             {
@@ -57,8 +62,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             "committee.create", {"name": committee_name, "organization_id": 1}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/1")
-        assert model.get("name") == committee_name
+        self.assert_model_exists("committee/1", {"name": committee_name})
 
     def test_create_user_management_level(self) -> None:
         self.create_model("user/13", {"username": "test"})
@@ -90,14 +94,11 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_user_management_level_ids_with_existing_committee(self) -> None:
-        self.create_model(
-            "user/13",
+        self.set_models(
             {
-                "username": "test",
-            },
-        )
-        self.create_model(
-            "committee/3", {"name": "test_committee2", "manager_ids": [13]}
+                "user/13": {"username": "test"},
+                "committee/3": {"name": "test_committee2", "manager_ids": [13]},
+            }
         )
         committee_name = "test_committee4"
 
@@ -167,13 +168,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("committee/1")
 
     def test_create_self_forwarded_and_received_ok_self_self(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "test_organization1",
-                },
-            }
-        )
         response = self.request(
             "committee.create",
             {
@@ -243,9 +237,9 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_no_permission(self) -> None:
-        self.test_models["user/1"] = {
-            "organization_management_level": "can_manage_users"
-        }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
+        )
         self.set_models(self.test_models)
 
         response = self.request(
@@ -263,9 +257,9 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_permission(self) -> None:
-        self.test_models["user/1"] = {
-            "organization_management_level": "can_manage_organization"
-        }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
         self.set_models(self.test_models)
 
         response = self.request(
@@ -312,14 +306,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create_external_id_not_unique(self) -> None:
         external_id = "external"
-        self.set_models(
-            {
-                "committee/1": {
-                    "name": "c1",
-                    "external_id": external_id,
-                },
-            }
-        )
+        self.set_models({"committee/1": {"name": "c1", "external_id": external_id}})
 
         response = self.request(
             "committee.create",
@@ -336,14 +323,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create_external_id_empty_special_case(self) -> None:
         external_id = ""
-        self.set_models(
-            {
-                "committee/1": {
-                    "name": "c1",
-                    "external_id": external_id,
-                },
-            }
-        )
+        self.set_models({"committee/1": {"name": "c1", "external_id": external_id}})
 
         response = self.request(
             "committee.create",
@@ -366,9 +346,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_with_parent(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "name": "Committee 1",
-                },
+                "committee/1": {"name": "Committee 1"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "enable_electronic_voting": True,
@@ -397,9 +375,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_with_parent_as_committee_admin(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "name": "Committee 1",
-                },
+                "committee/1": {"name": "Committee 1"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "enable_electronic_voting": True,
@@ -434,7 +410,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "committee/2": {
                     "name": "Committee 2",
                     "parent_id": 1,
-                    "all_parent_ids": [1],
                 },
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
@@ -515,9 +490,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_with_parent_not_committee_admin(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "name": "Committee 1",
-                },
+                "committee/1": {"name": "Committee 1"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "enable_electronic_voting": True,
@@ -549,12 +522,8 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.create_committee(6, parent_id=5)
         self.set_models(
             {
-                "committee/1": {
-                    "forward_to_committee_ids": [2],
-                },
-                "committee/2": {
-                    "forward_to_committee_ids": [1],
-                },
+                "committee/1": {"forward_to_committee_ids": [2]},
+                "committee/2": {"forward_to_committee_ids": [1]},
             }
         )
         cmls = [1, 2]

@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
-from pytest import mark
 
 from openslides_backend.action.mixins.import_mixins import ImportState
-from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.base import ADMIN_USERNAME
 from tests.util import Response
@@ -49,8 +48,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "committee_id": 2,
                 "name": "meeting",
-                "start_time": 1691539200,
-                "end_time": 1691625600,
+                "start_time": datetime.fromtimestamp(1691539200, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1691625600, ZoneInfo("UTC")),
             },
         )
         self.assert_model_exists(
@@ -86,11 +85,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee.json_upload",
             {"data": [{"name": "test"}]},
         )
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
 
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -101,11 +96,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         ]
 
     def test_import_update_correct(self) -> None:
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test", "description": "test"}]},
@@ -192,20 +183,12 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         ]
 
     def test_import_update_name_mismatch(self) -> None:
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test"}]},
         )
-        self.set_models(
-            {
-                "committee/12": {"name": "other"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "other"}})
 
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -396,9 +379,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/1", {"name": "this", "organization_tag_ids": [12, 14]}
         )
 
-    # TODO openslides_backend.shared.exceptions.ModelDoesNotExist: organization_tag/1
-    # if run with other tests
-    @mark.skip()
     def test_import_with_duplicated_organization_tags(self) -> None:
         self.json_upload_with_duplicated_organization_tags()
         response = self.request("committee.import", {"id": 1, "import": True})
@@ -471,28 +451,31 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         self.assert_model_exists("committee/1", {"name": "this", "manager_ids": [12]})
 
     def test_import_meeting_template(self) -> None:
-        self.create_meeting()
-        self.create_meeting(4)
         self.set_models(
             {
                 "committee/12": {"name": "test1"},
                 "committee/13": {"name": "test2"},
                 "committee/14": {"name": "test3"},
                 "committee/15": {"name": "test4"},
-                "meeting/1": {
-                    "name": "test",
-                    "committee_id": 12,
-                    "description": "test",
-                },
-                "projector/1": {
-                    "name": "Default projector",
-                    **{field: 1 for field in Meeting.reverse_default_projectors()},
-                },
-                "meeting/4": {
-                    "name": "renamed_new",
-                    "committee_id": 14,
-                    "description": "test",
-                },
+            }
+        )
+        self.create_meeting(
+            meeting_data={
+                "name": "test",
+                "committee_id": 12,
+                "description": "test",
+            }
+        )
+        self.create_meeting(
+            4,
+            meeting_data={
+                "name": "renamed_new",
+                "committee_id": 14,
+                "description": "test",
+            },
+        )
+        self.set_models(
+            {
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
@@ -616,9 +599,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": [],
             "state": "done",
         }
-        self.assert_model_exists("committee/12", {"meeting_ids": [1, 6]})
+        self.assert_model_exists("committee/12", {"meeting_ids": [1, 8]})
         self.assert_model_exists(
-            "meeting/6", {"name": "meeting", "committee_id": 12, "description": "test"}
+            "meeting/8", {"name": "meeting", "committee_id": 12, "description": "test"}
         )
         assert self.get_row(response, 1) == {
             "data": {
@@ -633,9 +616,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": [],
             "state": "done",
         }
-        self.assert_model_exists("committee/13", {"meeting_ids": [3]})
+        self.assert_model_exists("committee/13", {"meeting_ids": [5]})
         self.assert_model_exists(
-            "meeting/3",
+            "meeting/5",
             {
                 "name": "meeting",
                 "committee_id": 13,
@@ -648,7 +631,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": {"info": "done", "value": "test3"},
                 "meeting_name": "meeting",
                 "meeting_template": {
-                    "id": 2,
+                    "id": 4,
                     "info": "warning",
                     "value": "renamed_old",
                 },
@@ -661,9 +644,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ],
             "state": "done",
         }
-        self.assert_model_exists("committee/14", {"meeting_ids": [4, 4]})
+        self.assert_model_exists("committee/14", {"meeting_ids": [4, 6]})
         self.assert_model_exists(
-            "meeting/4",
+            "meeting/6",
             {
                 "name": "meeting",
                 "committee_id": 14,
@@ -683,9 +666,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": ["Model '17 deleted' doesn't exist anymore"],
             "state": "done",
         }
-        self.assert_model_exists("committee/15", {"meeting_ids": [5]})
+        self.assert_model_exists("committee/15", {"meeting_ids": [7]})
         self.assert_model_exists(
-            "meeting/5",
+            "meeting/7",
             {
                 "name": "meeting",
                 "committee_id": 15,
@@ -737,7 +720,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "meeting/1", {"name": "test meeting", "committee_id": 1}
         )
 
-    @mark.skip("#TODO reenable after meeting clone fix.")
     def test_json_upload_admin_defined_meeting_template_found(self) -> None:
         self.json_upload_admin_defined_meeting_template_found()
         response = self.request("committee.import", {"id": 1, "import": True})
@@ -758,7 +740,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         self.assert_model_exists("committee/61", {"meeting_ids": [2, 3]})
         self.assert_model_exists("meeting/3", {"name": "test", "committee_id": 61})
 
-    @mark.skip("#TODO reenable after meeting clone fix.")
     def test_json_upload_meeting_template_with_admins_found(self) -> None:
         self.json_upload_meeting_template_with_admins_found()
         response = self.request("committee.import", {"id": 1, "import": True})
@@ -776,7 +757,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         self.assert_model_exists("committee/61", {"meeting_ids": [2, 3]})
         self.assert_model_exists("meeting/3", {"name": "test", "committee_id": 61})
 
-    @mark.skip("#TODO reenable after meeting delete fix.")
     def test_json_upload_meeting_template_with_admins_no_longer_found(self) -> None:
         self.json_upload_meeting_template_with_admins_found()
         response = self.request("meeting.delete", {"id": 2})
@@ -789,12 +769,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "name": {"info": "done", "value": "committee", "id": 61},
             "meeting_name": "test",
             "meeting_template": {"id": 2, "info": "warning", "value": "template"},
-            "meeting_admins": [
-                {
-                    "info": "error",
-                    "value": "",
-                },
-            ],
+            "meeting_admins": [{"info": "error", "value": ""}],
         }
         assert sorted(preview_row["messages"]) == sorted(
             [
@@ -803,7 +778,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ]
         )
         assert preview_row["state"] == "error"
-        self.assert_model_exists("committee/61", {"meeting_ids": []})
+        self.assert_model_exists("committee/61", {"meeting_ids": None})
         self.assert_model_not_exists("meeting/3")
 
     def test_json_upload_meeting_template_admin_not_found_anymore(self) -> None:
@@ -818,10 +793,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "meeting_template": {"info": "warning", "value": "test"},
             "meeting_admins": [
                 {"info": ImportState.WARNING, "value": "bob", "id": 2},
-                {
-                    "info": "error",
-                    "value": "",
-                },
+                {"info": "error", "value": ""},
             ],
         }
         assert sorted(preview_row["messages"]) == sorted(
@@ -923,10 +895,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert response.json["results"][0][0]["state"] == ImportState.DONE
         assert self.get_row(response) == {
             "data": {
-                "name": {
-                    "info": ImportState.NEW,
-                    "value": "two",
-                },
+                "name": {"info": ImportState.NEW, "value": "two"},
                 "parent": {"info": ImportState.WARNING, "value": "one", "id": 1},
             },
             "messages": ["Expected model '1 one' changed its name to 'Committee one'."],

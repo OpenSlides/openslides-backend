@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -40,8 +41,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
             "user/21",
             {"committee_ids": None, "committee_management_ids": None},
         )
-        organization1 = self.get_model(ONE_ORGANIZATION_FQID)
-        self.assertCountEqual(organization1["committee_ids"], [2, 3])
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"committee_ids": [2, 3]})
         self.assert_model_exists("organization_tag/12", {"tagged_ids": None})
         self.assert_model_exists(
             "committee/2", {"receive_forwardings_from_committee_ids": None}
@@ -57,8 +57,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
     def test_delete_protected_by_meeting(self) -> None:
         self.create_data()
-        self.create_meeting(22)
-        self.set_models({"meeting/22": {"committee_id": self.COMMITTEE_ID}})
+        self.create_meeting(22, meeting_data={"committee_id": self.COMMITTEE_ID})
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
 
@@ -71,8 +70,8 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permission(self) -> None:
         self.create_data()
-        self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_users"}}
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
@@ -84,8 +83,8 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
     def test_delete_permission(self) -> None:
         self.create_data()
-        self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_organization"}}
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
