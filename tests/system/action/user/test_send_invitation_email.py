@@ -46,7 +46,7 @@ class SendInvitationMail(BaseActionTestCase):
         set_test_email_settings()
 
     def test_send_correct(self) -> None:
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -130,7 +130,7 @@ class SendInvitationMail(BaseActionTestCase):
             },
         )
 
-        start_time = datetime.now(ZoneInfo(key="Etc/UTC"))
+        start_time = datetime.now(ZoneInfo("UTC"))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request_json(

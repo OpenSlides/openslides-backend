@@ -5,6 +5,23 @@ from tests.system.util import CountDatastoreCalls
 
 
 class AgendaItemAssignActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
+        "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
+        "list_of_speakers/23": {
+            "content_object_id": "topic/1",
+            "sequential_number": 11,
+            "meeting_id": 1,
+        },
+        "list_of_speakers/42": {
+            "content_object_id": "topic/2",
+            "sequential_number": 12,
+            "meeting_id": 1,
+        },
+        "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+        "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+    }
+
     def test_assign_parent_none(self) -> None:
         self.create_meeting(222)
         self.set_models(
@@ -31,6 +48,21 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "parent_id": 7,
                     "child_ids": [],
                     "content_object_id": "topic/3",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 222,
                 },
                 "topic/1": {
                     "meeting_id": 222,
@@ -94,6 +126,21 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "child_ids": [],
                     "content_object_id": "topic/3",
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 222,
+                },
                 "topic/1": {
                     "meeting_id": 222,
                     "title": "tropic",
@@ -137,6 +184,16 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             {
                 "agenda_item/7": {"meeting_id": 222, "content_object_id": "topic/1"},
                 "agenda_item/8": {"meeting_id": 222, "content_object_id": "topic/2"},
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
                 "topic/1": {
                     "meeting_id": 222,
                     "title": "tropic",
@@ -164,24 +221,14 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
-                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
         )
 
     def test_assign_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
-                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -189,12 +236,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_permissions_with_locked_meeting(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
-                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.SUPERADMIN,
@@ -204,12 +246,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_permissions_with_locked_meeting_orgaadmin(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
-                "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,

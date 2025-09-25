@@ -182,19 +182,14 @@ class BaseActionTestCase(BaseSystemTestCase):
             parent_fqid = f"committee/{parent_id}"
             parent = self.datastore.get(
                 parent_fqid,
-                ["all_parent_ids", "all_child_ids", "child_ids"],
+                ["all_parent_ids", "all_child_ids"],
                 lock_result=False,
                 use_changed_models=False,
             )
             data[parent_fqid] = {
-                "child_ids": [*parent.get("child_ids", []), committee_id],
                 "all_child_ids": [*parent.get("all_child_ids", []), committee_id],
             }
             data[committee_fqid]["parent_id"] = parent_id
-            data[committee_fqid]["all_parent_ids"] = [
-                *parent.get("all_parent_ids", []),
-                parent_id,
-            ]
             if grandparent_ids := parent.get("all_parent_ids", []):
                 grandparents = self.datastore.get_many(
                     [GetManyRequest("committee", grandparent_ids, ["all_child_ids"])],
@@ -214,34 +209,31 @@ class BaseActionTestCase(BaseSystemTestCase):
                 )
         self.set_models(data)
 
-    def create_motion(self, meeting_id: int, base: int = 1) -> None:
+    def create_motion(
+        self,
+        meeting_id: int,
+        base: int = 1,
+        state_id: int = 0,
+        motion_data: PartialModel = {},
+    ) -> None:
         """
-        The meeting must already exist.
-        Creates a motion and all other models required for this with id 1.
+        The meeting and motion_state must already exist.
+        Creates a motion with id 1 by default.
         You can specify another id by setting base.
+        If no state_id is passed, meeting must have `state_id` equal to `id`.
         """
         self.set_models(
             {
-                f"motion_workflow/{base}": {
-                    "name": f"motion_workflow{base}",
-                    "sequential_number": base,
-                    "default_workflow_meeting_id": base,
-                    "default_amendment_workflow_meeting_id": base,
-                    "state_ids": [base],
-                    "first_state_id": base,
-                    "meeting_id": meeting_id,
-                },
-                f"motion_state/{base}": {
-                    "name": f"motion_state{base}",
-                    "weight": 36,
-                    "workflow_id": base,
-                    "first_state_of_workflow_id": base,
-                    "meeting_id": meeting_id,
-                },
                 f"motion/{base}": {
                     "title": f"motion{base}",
                     "sequential_number": base,
-                    "state_id": base,
+                    "state_id": state_id or meeting_id,
+                    "meeting_id": meeting_id,
+                    **motion_data,
+                },
+                f"list_of_speakers/{base}": {
+                    "content_object_id": f"motion/{base}",
+                    "sequential_number": base,
                     "meeting_id": meeting_id,
                 },
             }
@@ -257,7 +249,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_models(
             {
                 f"meeting/{base}": {
-                    "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "motions_default_workflow_id": base,
@@ -266,32 +257,16 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
                     "language": "en",
-                    "motion_state_ids": [base],
-                    "motion_workflow_ids": [base],
                     **meeting_data,
                 },
                 f"projector/{base}": {"sequential_number": base, "meeting_id": base},
-                f"group/{base}": {
-                    "meeting_id": base,
-                    "default_group_for_meeting_id": base,
-                    "name": f"group{base}",
-                },
-                f"group/{base+1}": {
-                    "meeting_id": base,
-                    "admin_group_for_meeting_id": base,
-                    "name": f"group{base+1}",
-                },
-                f"group/{base+2}": {
-                    "meeting_id": base,
-                    "name": f"group{base+2}",
-                },
+                f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
+                f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
+                f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
                 f"motion_workflow/{base}": {
                     "name": "flo",
                     "sequential_number": base,
                     "meeting_id": base,
-                    "default_workflow_meeting_id": base,
-                    "default_amendment_workflow_meeting_id": base,
-                    "state_ids": [base],
                     "first_state_id": base,
                 },
                 f"motion_state/{base}": {
@@ -301,13 +276,9 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "workflow_id": base,
                     "first_state_of_workflow_id": base,
                 },
-                f"committee/{committee_id}": {
-                    "name": f"Commitee{committee_id}",
-                    "meeting_ids": [base],
-                },
+                f"committee/{committee_id}": {"name": f"Commitee{committee_id}"},
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
-                    "active_meeting_ids": [base],
                     "enable_electronic_voting": True,
                 },
             }
@@ -321,18 +292,15 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> int:
         """Also creates an anonymous group at the next-highest free group_id"""
         next_group_id = self.datastore.reserve_id("group")
-        group_ids = self.get_model(f"meeting/{meeting_id}").get("group_ids", [])
         self.set_models(
             {
                 f"meeting/{meeting_id}": {
                     "enable_anonymous": enable,
-                    "group_ids": [*group_ids, next_group_id],
                     "anonymous_group_id": next_group_id,
                 },
                 f"group/{next_group_id}": {
                     "name": "Anonymous",
                     "meeting_id": meeting_id,
-                    "anonymous_group_for_meeting_id": meeting_id,
                     "permissions": permissions,
                 },
             }
@@ -423,27 +391,12 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"user/{id}": self._get_user_data(
                     username, organization_management_level
-                ),
+                )
+                | {"home_committee_id": home_committee_id},
             }
         )
-        if home_committee_id:
-            self.set_home_committee(id, home_committee_id)
         meeting_user_ids.extend(self.set_user_groups(id, group_ids))
         return id
-
-    def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
-        home_fqid = f"committee/{home_committee_id}"
-        committee = self.datastore.get(
-            home_fqid, ["native_user_ids"], lock_result=False
-        )
-        self.set_models(
-            {
-                f"user/{user_id}": {"home_committee_id": home_committee_id},
-                home_fqid: {
-                    "native_user_ids": [*committee.get("native_user_ids", []), user_id]
-                },
-            }
-        )
 
     def _get_user_data(
         self,
@@ -459,22 +412,8 @@ class BaseActionTestCase(BaseSystemTestCase):
         }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
+        """adds created user to default group, returns user_id"""
         meeting = self.get_model(f"meeting/{meeting_id}")
-        if not meeting.get("default_group_id"):
-            id = self.datastore.reserve_id("group")
-            self.set_models(
-                {
-                    f"meeting/{meeting_id}": {
-                        "group_ids": meeting.get("group_ids", []) + [id],
-                        "default_group_id": id,
-                    },
-                    f"group/{id}": {
-                        "meeting_id": meeting_id,
-                        "default_group_for_meeting_id": meeting_id,
-                    },
-                }
-            )
-            meeting["default_group_id"] = id
         user_id = self.create_user("user_" + get_random_string(6))
         self.set_user_groups(user_id, [meeting["default_group_id"]])
         return user_id
@@ -482,32 +421,46 @@ class BaseActionTestCase(BaseSystemTestCase):
     # @with_database_context
     def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
         """
-        Sets the users groups and corresponding meeting_users and meeting_ids.
+        Sets the groups in corresponding meeting_users and creates new ones if not existent.
         Returns the meeting_user_ids.
         """
         assert isinstance(group_ids, list)
-        groups = self.datastore.get_many(
+        current_meeting_users = self.datastore.filter(
+            "meeting_user",
+            FilterOperator("user_id", "=", user_id),
+            ["id", "user_id", "meeting_id", "group_ids"],
+            lock_result=False,
+        )
+        request_group_ids = set(group_ids)
+        for mu in current_meeting_users.values():
+            if mu_group_ids := mu.get("group_ids"):
+                request_group_ids.update(mu_group_ids)
+        all_users_groups = self.datastore.get_many(
             [
                 GetManyRequest(
                     "group",
-                    group_ids,
+                    list(request_group_ids),
                     ["id", "meeting_id", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
         )["group"]
-        meeting_ids: list[int] = list({v["meeting_id"] for v in groups.values()})
-        filtered_result = self.datastore.filter(
-            "meeting_user",
-            FilterOperator("user_id", "=", user_id),
-            ["id", "user_id", "meeting_id"],
-            lock_result=False,
+        meeting_ids: list[int] = list(
+            {v["meeting_id"] for v in all_users_groups.values() if v["id"] in group_ids}
         )
         meeting_users: dict[int, dict[str, Any]] = {
-            data["meeting_id"]: dict(data)
-            for data in filtered_result.values()
+            data["meeting_id"]: data
+            for data in current_meeting_users.values()
             if data["meeting_id"] in meeting_ids
         }
+        # remove from all_users_groups in difference with requested group_ids
+        groups_remove_from = set(all_users_groups) - set(group_ids)
+        for group_id in groups_remove_from:
+            if meeting_user_ids := all_users_groups[group_id].get("meeting_user_ids"):
+                # remove intersection with user
+                for meeting_user_id in meeting_user_ids:
+                    if meeting_user_id in current_meeting_users:
+                        meeting_user_ids.remove(meeting_user_id)
         last_meeting_user_id = max(
             [
                 int(k[1])
@@ -516,7 +469,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             ]
             or [0]
         )
-        meeting_users_new = {
+        if meeting_users_new := {
             meeting_id: {
                 "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
                 "user_id": user_id,
@@ -524,47 +477,32 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
             for meeting_id in meeting_ids
             if meeting_id not in meeting_users
-        }
-        meeting_users.update(meeting_users_new)
-        meetings = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting",
-                    meeting_ids,
-                    ["id", "meeting_user_ids"],
-                )
-            ],
-            lock_result=False,
-        )["meeting"]
-        user = self.datastore.get(
-            f"user/{user_id}",
-            # TODO here was a wrong field 'user_meeting_ids' check if there can be performance improvements by now using 'meeting_user_ids'
-            ["meeting_user_ids"],
-            lock_result=False,
-            use_changed_models=False,
-        )
+        }:
+            meeting_users.update(meeting_users_new)
 
-        def add_to_list(where: dict[str, Any], key: str, what: int) -> None:
-            if key in where and where[key]:
-                if what not in where[key]:
-                    where[key].append(what)
-            else:
-                where[key] = [what]
-
-        for group in groups.values():
+        # fill relevant meeting_user relations
+        for group_id in group_ids:
+            group = all_users_groups[group_id]
             meeting_id = group["meeting_id"]
             meeting_user_id = meeting_users[meeting_id]["id"]
-            add_to_list(group, "meeting_user_ids", meeting_user_id)
-        self.set_models(
-            {
-                f"user/{user_id}": user,
-                **{f"meeting_user/{mu['id']}": mu for mu in meeting_users_new.values()},
-                **{f"group/{group['id']}": group for group in groups.values()},
-                **{
-                    f"meeting/{meeting['id']}": meeting for meeting in meetings.values()
-                },
-            }
-        )
+            if meeting_user_ids := group.get("meeting_user_ids"):
+                if meeting_user_id not in meeting_user_ids:
+                    meeting_user_ids.append(meeting_user_id)
+            else:
+                group["meeting_user_ids"] = [meeting_user_id]
+        if meeting_users_new or all_users_groups:
+            self.set_models(
+                {
+                    **{
+                        f"meeting_user/{mu['id']}": mu
+                        for mu in meeting_users_new.values()
+                    },
+                    **{
+                        f"group/{group['id']}": group
+                        for group in all_users_groups.values()
+                    },
+                }
+            )
         return [mu["id"] for mu in meeting_users.values()]
 
     def create_mediafile(

@@ -1,5 +1,3 @@
-from typing import Any
-
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -11,72 +9,44 @@ def build_motion_meeting_user_delete_test(collection: str) -> type[BaseActionTes
 
         def setUp(self) -> None:
             super().setUp()
-            self.permission_test_models: dict[str, dict[str, Any]] = {
-                "meeting/1": {
-                    f"{collection}_ids": [111],
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/12": {
-                    "meeting_id": 1,
-                    "title": "test2",
-                    "submitter_ids": [111],
-                },
-                f"{collection}/111": {
-                    "weight": 10,
-                    "motion_id": 12,
-                    "meeting_id": 1,
-                },
-            }
-
-        def test_delete_correct(self) -> None:
-            self.create_meeting(98)
+            self.create_meeting()
+            self.create_motion(1, 12)
+            self.create_user_for_meeting(1)
             self.set_models(
                 {
-                    "meeting/98": {
-                        f"{collection}_ids": [111],
-                    },
-                    "motion/12": {
-                        "meeting_id": 98,
-                        "title": "test2",
-                        "submitter_ids": [111],
-                    },
                     f"{collection}/111": {
                         "weight": 10,
                         "motion_id": 12,
-                        "meeting_id": 98,
+                        "meeting_id": 1,
+                        "meeting_user_id": 1,
                     },
                 }
             )
+
+        def test_delete_correct(self) -> None:
             response = self.request(self.action, {"id": 111})
             self.assert_status_code(response, 200)
             self.assert_model_not_exists(f"{collection}/111")
 
         def test_delete_wrong_id(self) -> None:
-            self.create_model(f"{collection}/112", {"weight": 10})
-            response = self.request(self.action, {"id": 111})
+            response = self.request(self.action, {"id": 112})
             self.assert_status_code(response, 400)
-            self.assert_model_exists(f"{collection}/112")
+            self.assert_model_exists(f"{collection}/111")
+            self.assertEqual(
+                f"Model '{collection}/112' does not exist.", response.json["message"]
+            )
 
         def test_delete_no_permissions(self) -> None:
-            self.base_permission_test(
-                self.permission_test_models,
-                self.action,
-                {"id": 111},
-            )
+            self.base_permission_test({}, self.action, {"id": 111})
 
         def test_delete_permissions(self) -> None:
             self.base_permission_test(
-                self.permission_test_models,
-                self.action,
-                {"id": 111},
-                Permissions.Motion.CAN_MANAGE_METADATA,
+                {}, self.action, {"id": 111}, Permissions.Motion.CAN_MANAGE_METADATA
             )
 
         def test_delete_permissions_locked_meeting(self) -> None:
             self.base_locked_out_superadmin_permission_test(
-                self.permission_test_models,
-                self.action,
-                {"id": 111},
+                {}, self.action, {"id": 111}
             )
 
     return BaseMotionMeetingUserDeleteTest

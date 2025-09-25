@@ -466,7 +466,7 @@ class MeetingImport(
         entry: dict[str, Any],
         field: str,
     ) -> None:
-        model_field = model_registry[collection]().try_get_field(field)
+        model_field = model_registry[collection].try_get_field(field)
         if model_field is None:
             raise ActionException(f"{collection}/{field} is not allowed.")
         if isinstance(model_field, BaseRelationField):

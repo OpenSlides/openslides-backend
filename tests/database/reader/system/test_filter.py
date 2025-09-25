@@ -122,7 +122,7 @@ def test_types(db_connection: Connection, filter_: Filter, to_be_found_id: int) 
 def test_types_int_list(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     insert_into_intermediate_table(
-        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 2), (1, 2)]
+        "nm_committee_manager_ids_user_t", ["committee_id", "user_id"], [(2, 2), (1, 2)]
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
@@ -214,7 +214,7 @@ def test_sql_view_field(db_connection: Connection) -> None:
     """
     setup_data(db_connection, standard_data)
     insert_into_intermediate_table(
-        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 1), (1, 1)]
+        "nm_committee_manager_ids_user_t", ["committee_id", "user_id"], [(2, 1), (1, 1)]
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
@@ -389,7 +389,7 @@ def test_changed_models(
     """
     setup_data(db_connection, standard_data)
     insert_into_intermediate_table(
-        "nm_committee_manager_ids_user",
+        "nm_committee_manager_ids_user_t",
         ["committee_id", "user_id"],
         [(2, 1), (1, 1), (1, 2), (2, 3), (1, 3)],
     )
@@ -426,7 +426,7 @@ def test_like_performance(db_connection: Connection) -> None:
     setup_data(db_connection, data)
     for i in range(1, MODEL_COUNT + 1):
         insert_into_intermediate_table(
-            "nm_committee_manager_ids_user",
+            "nm_committee_manager_ids_user_t",
             ["committee_id", "user_id"],
             [(2, i), (1, i)],
         )

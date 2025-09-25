@@ -1,0 +1,106 @@
+{
+    "_migration_index": 68,
+    "gender":{
+        "1":{
+            "id": 1,
+            "name": "male",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "2":{
+            "id": 2,
+            "name": "female",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "3":{
+            "id": 3,
+            "name": "diverse",
+            "organization_id": 1,
+            "user_ids":[]
+        },
+        "4":{
+            "id": 4,
+            "name": "non-binary",
+            "organization_id": 1,
+            "user_ids":[]
+        }
+    },
+    "organization": {
+        "1": {
+            "id": 1,
+            "name": "[Your organization]",
+            "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.",
+            "login_text": "Welcome to OpenSlides. Please login.",
+            "gender_ids": [1, 2, 3, 4],
+            "default_language": "en",
+            "enable_electronic_voting": true,
+            "limit_of_meetings": 0,
+            "limit_of_users": 0,
+            "theme_id": 1,
+            "theme_ids": [1, 2, 3],
+            "users_email_sender": "OpenSlides",
+            "users_email_subject": "OpenSlides access data",
+            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+            "url": "https://example.com",
+            "template_meeting_ids": [],
+            "mediafile_ids": [],
+            "user_ids": [1],
+            "require_duplicate_from": false,
+            "saml_enabled": false,
+            "saml_login_button_text": "SAML Login",
+            "saml_attr_mapping": {
+                "saml_id": "username",
+                "title": "title",
+                "first_name": "firstName",
+                "last_name": "lastName",
+                "email": "email",
+                "gender": "gender",
+                "pronoun": "pronoun",
+                "is_active": "is_active",
+                "is_physical_person": "is_person",
+                "member_number": "member_number"
+              }
+        }
+    },
+    "user": {
+        "1": {
+            "id": 1,
+            "username": "superadmin",
+            "last_name": "Administrator",
+            "is_active": true,
+            "is_physical_person": true,
+            "can_change_own_password": true,
+            "default_vote_weight": "1.000000",
+            "organization_management_level": "superadmin",
+            "organization_id": 1
+        }
+    },
+    "theme": {
+        "1": {
+            "id": 1,
+            "name": "OpenSlides Blue",
+            "accent_500": "#2196f3",
+            "primary_500": "#317796",
+            "warn_500": "#f06400",
+            "organization_id": 1,
+            "theme_for_organization_id": 1
+        },
+        "2": {
+            "id": 2,
+            "name": "OpenSlides Red",
+            "accent_500": "#03a9f4",
+            "primary_500": "#c31c23",
+            "warn_500": "#11c2a2",
+            "organization_id": 1
+        },
+        "3": {
+            "id": 3,
+            "name": "OpenSlides Green",
+            "accent_500": "#55c3b6",
+            "primary_500": "#46962c",
+            "warn_500": "#e359ce",
+            "organization_id": 1
+        }
+    }
+}

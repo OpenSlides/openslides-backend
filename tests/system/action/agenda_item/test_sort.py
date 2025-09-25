@@ -3,6 +3,20 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemSortActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+        "list_of_speakers/42": {
+            "content_object_id": "topic/1",
+            "sequential_number": 11,
+            "meeting_id": 1,
+        },
+        "agenda_item/22": {
+            "meeting_id": 1,
+            "comment": "test1",
+            "content_object_id": "topic/1",
+        },
+    }
+
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(222)
@@ -14,6 +28,11 @@ class AgendaItemSortActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "title": "jungle",
                     "sequential_number": 2,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
                 },
                 "agenda_item/22": {
                     "meeting_id": 222,
@@ -46,6 +65,16 @@ class AgendaItemSortActionTest(BaseActionTestCase):
                     "title": "jungle",
                     "sequential_number": 2,
                 },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
                 "agenda_item/22": {
                     "meeting_id": 222,
                     "content_object_id": "topic/1",
@@ -67,35 +96,21 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_complex_correct(self) -> None:
         self.set_models(
             {
-                "topic/1": {
-                    "meeting_id": 222,
-                    "title": "tropic",
-                    "sequential_number": 1,
+                **{
+                    f"topic/{id_}": {
+                        "meeting_id": 222,
+                        "title": "tropic jungle",
+                        "sequential_number": id_,
+                    }
+                    for id_ in range(1, 7)
                 },
-                "topic/2": {
-                    "meeting_id": 222,
-                    "title": "jungle",
-                    "sequential_number": 2,
-                },
-                "topic/3": {
-                    "meeting_id": 222,
-                    "title": "tropic",
-                    "sequential_number": 3,
-                },
-                "topic/4": {
-                    "meeting_id": 222,
-                    "title": "jungle",
-                    "sequential_number": 4,
-                },
-                "topic/5": {
-                    "meeting_id": 222,
-                    "title": "tropic",
-                    "sequential_number": 5,
-                },
-                "topic/6": {
-                    "meeting_id": 222,
-                    "title": "jungle",
-                    "sequential_number": 6,
+                **{
+                    f"list_of_speakers/{10 + id_}": {
+                        "content_object_id": f"topic/{id_}",
+                        "sequential_number": 10 + id_,
+                        "meeting_id": 222,
+                    }
+                    for id_ in range(1, 7)
                 },
                 "agenda_item/1": {
                     "meeting_id": 222,
@@ -170,6 +185,21 @@ class AgendaItemSortActionTest(BaseActionTestCase):
                     "title": "tropic",
                     "sequential_number": 3,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 222,
+                },
                 "agenda_item/1": {
                     "meeting_id": 222,
                     "comment": "test_root",
@@ -218,6 +248,21 @@ class AgendaItemSortActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "title": "tropic",
                     "sequential_number": 3,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 222,
                 },
                 "agenda_item/1": {
                     "meeting_id": 222,
@@ -270,6 +315,21 @@ class AgendaItemSortActionTest(BaseActionTestCase):
                     "title": "tropic",
                     "sequential_number": 3,
                 },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "sequential_number": 11,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "sequential_number": 12,
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "sequential_number": 13,
+                    "meeting_id": 222,
+                },
                 "agenda_item/1": {
                     "meeting_id": 222,
                     "comment": "test_root",
@@ -312,28 +372,14 @@ class AgendaItemSortActionTest(BaseActionTestCase):
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "agenda_item/22": {
-                    "meeting_id": 1,
-                    "comment": "test1",
-                    "content_object_id": "topic/1",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )
 
     def test_sort_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "agenda_item/22": {
-                    "meeting_id": 1,
-                    "comment": "test1",
-                    "content_object_id": "topic/1",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -341,14 +387,7 @@ class AgendaItemSortActionTest(BaseActionTestCase):
 
     def test_sort_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "agenda_item/22": {
-                    "meeting_id": 1,
-                    "comment": "test1",
-                    "content_object_id": "topic/1",
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )
