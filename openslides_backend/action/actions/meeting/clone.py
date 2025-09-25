@@ -272,6 +272,17 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             )
         return instance
 
+    def _create_or_get_meeting_user(self, meeting_id, user_id):
+        meeting_user = self.get_meeting_user(meeting_id, user_id, ["id"])
+        if meeting_user:
+            return meeting_user["id"]
+        else:
+            meeting_user_id = self.create_meeting_user(meeting_id, user_id)
+            self.datastore.get_changed_model("meeting_user", meeting_user_id).pop(
+                "meta_new", None
+            )
+            return meeting_user_id
+
     def _update_default_and_admin_group(
         self,
         group_in_instance: dict[str, Any],
@@ -280,7 +291,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         meeting_id: int,
     ) -> None:
         additional_meeting_user_ids = [
-            self.create_or_get_meeting_user(meeting_id, user_id)
+            self._create_or_get_meeting_user(meeting_id, user_id)
             for user_id in additional_user_ids
         ]
         meeting_user_ids = set(
