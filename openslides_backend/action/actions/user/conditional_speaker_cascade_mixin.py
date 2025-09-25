@@ -14,7 +14,7 @@ class ConditionalSpeakerCascadeMixinHelper(Action):
         speaker_to_read_ids = [
             speaker_id
             for speaker_id in speaker_ids
-            if not self.datastore.is_deleted(
+            if not self.datastore.is_to_be_deleted(
                 fqid_from_collection_and_id("speaker", speaker_id)
             )
         ]

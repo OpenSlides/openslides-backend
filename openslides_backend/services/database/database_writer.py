@@ -6,6 +6,7 @@ from psycopg.errors import (
     CheckViolation,
     DatatypeMismatch,
     GeneratedAlways,
+    InFailedSqlTransaction,
     NotNullViolation,
     ProgrammingError,
     SyntaxError,
@@ -530,6 +531,10 @@ class DatabaseWriter(SqlQueryHelper):
                         raise ModelDoesNotExist(error_fqid)
                     id_ = result.get("id", 0)
                     return id_
+        except InFailedSqlTransaction as e:
+            raise BadCodingException(
+                f"Tried to set {error_fqid} in an already broken transaction: {e}"
+            )
         except UniqueViolation as e:
             if "duplicate key value violates unique constraint" in e.args[0]:
                 if "Key (id)" in e.args[0]:

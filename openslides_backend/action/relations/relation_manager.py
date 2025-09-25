@@ -40,6 +40,7 @@ class RelationManager:
             # only relations are handled here
             if not isinstance(field, BaseRelationField):
                 continue
+
             handler = SingleRelationHandler(
                 self.datastore,
                 field,

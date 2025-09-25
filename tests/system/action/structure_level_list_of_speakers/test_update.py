@@ -26,6 +26,8 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                     "sequential_number": 42,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/2": {"content_object_id": "topic/42", "meeting_id": 1},
                 "structure_level/1": {
                     "name": "cake party",
                     "meeting_id": 1,

@@ -10,7 +10,11 @@ from fastjsonschema.exceptions import JsonSchemaException
 from psycopg import sql
 
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
-from openslides_backend.models.base import Model, model_registry
+from openslides_backend.models.base import (
+    Model,
+    json_dict_to_non_json_data_types,
+    model_registry,
+)
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -120,6 +124,7 @@ class BaseSystemTestCase(TestCase):
         """
         Overrides the TestCases run method.
         Provides an ExtendedDatabase in self.datastore with an open psycopg connection.
+        Also stores its connection in self.connection.
         """
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, MagicMock(), MagicMock())
@@ -149,7 +154,7 @@ class BaseSystemTestCase(TestCase):
         Do NOT use in final tests since it takes a long time.
         """
         example_data = get_initial_data_file(EXAMPLE_DATA_FILE)
-        # TODO: apply `convert_to_non_json_data_types` from PR#3119 to example_data before processing
+        json_dict_to_non_json_data_types(example_data)
         self._load_data(example_data)
 
     def load_json_data(self, filename: str) -> None:

@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
+from psycopg.types.json import Jsonb
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -210,7 +211,7 @@ class ActionWorkerWriting:
                         fields={
                             "state": state,
                             "timestamp": current_time,
-                            "result": response,
+                            "result": Jsonb(response),
                         },
                     )
                 ],

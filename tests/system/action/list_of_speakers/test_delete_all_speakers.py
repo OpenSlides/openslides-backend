@@ -13,6 +13,7 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
                 "sequential_number": 2,
                 "meeting_id": 1,
             },
+            "agenda_item/42": {"content_object_id": "topic/32", "meeting_id": 1},
             "list_of_speakers/111": {
                 "content_object_id": "topic/32",
                 "sequential_number": 11,
@@ -34,6 +35,7 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
                     "sequential_number": 2,
                     "meeting_id": 222,
                 },
+                "agenda_item/42": {"content_object_id": "topic/32", "meeting_id": 222},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/32",
                     "sequential_number": 11,
