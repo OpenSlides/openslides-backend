@@ -1653,6 +1653,48 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_forward_origin_is_archived_error(self) -> None:
+        self.create_full_dataset()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"active_meeting_ids": [4, 7]},
+                "meeting/1": {"is_active_in_organization_id": None},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4, 7],
+                "agenda_item_ids": [1, 2, 3, 4, 5],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward if origin meeting is archived.",
+            response.json["message"],
+        )
+
+    def test_forward_target_is_archived_error(self) -> None:
+        self.create_full_dataset()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"active_meeting_ids": [1, 7]},
+                "meeting/4": {"is_active_in_organization_id": None},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {
+                "meeting_ids": [4, 7],
+                "agenda_item_ids": [1, 2, 3, 4, 5],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Meeting /4 cannot be changed, because it is archived.",
+            response.json["message"],
+        )
+
     def test_forward_simple(self) -> None:
         """
         Also test with permissions

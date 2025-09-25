@@ -319,16 +319,28 @@ class Committee(Model):
     all_child_ids = fields.RelationListField(to={"committee": "all_parent_ids"})
     native_user_ids = fields.RelationListField(to={"user": "home_committee_id"})
     forward_to_committee_ids = fields.RelationListField(
-        to={"committee": "receive_forwardings_from_committee_ids"}
+        to={"committee": "receive_forwardings_from_committee_ids"},
+        constraints={
+            "description": "List of committees to which motions can be forwarded from this one."
+        },
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
-        to={"committee": "forward_to_committee_ids"}
+        to={"committee": "forward_to_committee_ids"},
+        constraints={
+            "description": "List of committees from which motions can be forwarded to this one."
+        },
     )
     forward_agenda_to_committee_ids = fields.RelationListField(
-        to={"committee": "receive_agenda_forwardings_from_committee_ids"}
+        to={"committee": "receive_agenda_forwardings_from_committee_ids"},
+        constraints={
+            "description": "List of committees to which agenda items can be forwarded from this one."
+        },
     )
     receive_agenda_forwardings_from_committee_ids = fields.RelationListField(
-        to={"committee": "forward_agenda_to_committee_ids"}
+        to={"committee": "forward_agenda_to_committee_ids"},
+        constraints={
+            "description": "List of committees from which agenda items can be forwarded to this one."
+        },
     )
     organization_tag_ids = fields.RelationListField(
         to={"organization_tag": "tagged_ids"}
