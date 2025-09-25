@@ -272,7 +272,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             )
         return instance
 
-    def _create_or_get_meeting_user(self, meeting_id, user_id):
+    def _create_or_get_meeting_user(self, meeting_id: int, user_id: int) -> int:
         meeting_user = self.get_meeting_user(meeting_id, user_id, ["id"])
         if meeting_user:
             return meeting_user["id"]
