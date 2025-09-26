@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, cast
 
@@ -126,6 +126,11 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        # Set proper types for TimestampFields
+        for field_name in ["start_time", "end_time"]:
+            if (value := instance.get(field_name)) and isinstance(value, int):
+                instance[field_name] = datetime.fromtimestamp(value)
+
         meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
@@ -208,7 +213,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             text2="",
         )
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
         mediafiles = {
             int(id_): data for id_, data in meeting_json.pop("mediafile", {}).items()
@@ -267,6 +272,17 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
             )
         return instance
 
+    def _create_or_get_meeting_user(self, meeting_id: int, user_id: int) -> int:
+        meeting_user = self.get_meeting_user(meeting_id, user_id, ["id"])
+        if meeting_user:
+            return meeting_user["id"]
+        else:
+            meeting_user_id = self.create_meeting_user(meeting_id, user_id)
+            self.datastore.get_changed_model("meeting_user", meeting_user_id).pop(
+                "meta_new", None
+            )
+            return meeting_user_id
+
     def _update_default_and_admin_group(
         self,
         group_in_instance: dict[str, Any],
@@ -275,7 +291,7 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         meeting_id: int,
     ) -> None:
         additional_meeting_user_ids = [
-            self.create_or_get_meeting_user(meeting_id, user_id)
+            self._create_or_get_meeting_user(meeting_id, user_id)
             for user_id in additional_user_ids
         ]
         meeting_user_ids = set(
