@@ -427,7 +427,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             {
                 "data": [
                     {
-                        "name": "Commitee61",
+                        "name": "Committee61",
                         "meeting_name": "meeting",
                         "meeting_start_time": "2023-08-09",
                         "meeting_end_time": "2023-08-10",
@@ -442,7 +442,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "messages": ["Error: A meeting with this name and dates already exists."],
             "data": {
                 "id": 61,
-                "name": {"value": "Commitee61", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
@@ -588,7 +588,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             {
                 "data": [
                     {
-                        "name": "Commitee61",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                     }
@@ -601,7 +601,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "messages": ["Error: Meeting cannot be created without admins"],
             "data": {
                 "id": 61,
-                "name": {"value": "Commitee61", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",
@@ -1078,7 +1078,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             {
                 "data": [
                     {
-                        "name": "Commitee61",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                         "meeting_admins": [ADMIN_USERNAME],
@@ -1092,7 +1092,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "messages": [],
             "data": {
                 "id": 61,
-                "name": {"value": "Commitee61", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",
@@ -1114,7 +1114,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             {
                 "data": [
                     {
-                        "name": "Commitee61",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                     }
@@ -1127,7 +1127,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "messages": [],
             "data": {
                 "id": 61,
-                "name": {"value": "Commitee61", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",

@@ -727,7 +727,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert self.get_row(response, 0) == {
             "data": {
                 "id": 61,
-                "name": {"info": "done", "value": "Commitee61", "id": 61},
+                "name": {"info": "done", "value": "Committee61", "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {"id": 2, "info": "done", "value": "template"},
                 "meeting_admins": [
@@ -747,7 +747,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert self.get_row(response, 0) == {
             "data": {
                 "id": 61,
-                "name": {"info": "done", "value": "Commitee61", "id": 61},
+                "name": {"info": "done", "value": "Committee61", "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {"id": 2, "info": "done", "value": "template"},
             },
@@ -766,7 +766,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         preview_row = self.get_row(response, 0)
         assert preview_row["data"] == {
             "id": 61,
-            "name": {"info": "done", "value": "Commitee61", "id": 61},
+            "name": {"info": "done", "value": "Committee61", "id": 61},
             "meeting_name": "test",
             "meeting_template": {"id": 2, "info": "warning", "value": "template"},
             "meeting_admins": [{"info": "error", "value": ""}],
