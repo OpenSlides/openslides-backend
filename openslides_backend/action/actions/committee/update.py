@@ -34,6 +34,8 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "default_meeting_id",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
+            "forward_agenda_to_committee_ids",
+            "receive_agenda_forwardings_from_committee_ids",
             "organization_tag_ids",
             "manager_ids",
             "external_id",

@@ -16,6 +16,7 @@ class Organization(Model):
     privacy_policy = fields.TextField()
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
+    forbid_committee_admins_to_set_agenda_forwarding_relations = fields.BooleanField()
     gender_ids = fields.RelationListField(to={"gender": "organization_id"})
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
@@ -318,10 +319,28 @@ class Committee(Model):
     all_child_ids = fields.RelationListField(to={"committee": "all_parent_ids"})
     native_user_ids = fields.RelationListField(to={"user": "home_committee_id"})
     forward_to_committee_ids = fields.RelationListField(
-        to={"committee": "receive_forwardings_from_committee_ids"}
+        to={"committee": "receive_forwardings_from_committee_ids"},
+        constraints={
+            "description": "List of committees to which motions can be forwarded from this one."
+        },
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
-        to={"committee": "forward_to_committee_ids"}
+        to={"committee": "forward_to_committee_ids"},
+        constraints={
+            "description": "List of committees from which motions can be forwarded to this one."
+        },
+    )
+    forward_agenda_to_committee_ids = fields.RelationListField(
+        to={"committee": "receive_agenda_forwardings_from_committee_ids"},
+        constraints={
+            "description": "List of committees to which agenda items can be forwarded from this one."
+        },
+    )
+    receive_agenda_forwardings_from_committee_ids = fields.RelationListField(
+        to={"committee": "forward_agenda_to_committee_ids"},
+        constraints={
+            "description": "List of committees from which agenda items can be forwarded to this one."
+        },
     )
     organization_tag_ids = fields.RelationListField(
         to={"organization_tag": "tagged_ids"}
@@ -976,6 +995,7 @@ class Group(Model):
         in_array_constraints={
             "enum": [
                 "agenda_item.can_manage",
+                "agenda_item.can_forward",
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
                 "assignment.can_manage",
