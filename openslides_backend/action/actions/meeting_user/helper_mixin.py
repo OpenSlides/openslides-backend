@@ -23,8 +23,7 @@ class MeetingUserHelperMixin(Action):
             MeetingUserCreate,
             [{"meeting_id": meeting_id, "user_id": user_id}],
         )
-        id_ = action_results[0]["id"]  # type: ignore
-        return id_
+        return action_results[0]["id"]  # type: ignore
 
     def get_groups_from_meeting_user(self, meeting_id: int, user_id: int) -> list[int]:
         return get_groups_from_meeting_user(self.datastore, meeting_id, user_id)
