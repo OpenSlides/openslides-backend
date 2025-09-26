@@ -13,6 +13,7 @@ from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.database.commands import GetManyRequest
@@ -159,8 +160,10 @@ class BaseActionTestCase(BaseSystemTestCase):
             action_data = [action_data]
         write_request, result = action.perform(action_data, user_id, internal=True)
         if write_request:
+            action.validate_write_request(write_request)
             self.datastore.write(write_request)
         self.datastore.reset()
+        self.connection.commit()
         return result
 
     def create_committee(
@@ -259,7 +262,11 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "language": "en",
                     **meeting_data,
                 },
-                f"projector/{base}": {"sequential_number": base, "meeting_id": base},
+                f"projector/{base}": {
+                    "sequential_number": base,
+                    "meeting_id": base,
+                    **{field: base for field in Meeting.reverse_default_projectors()},
+                },
                 f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
                 f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
                 f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
@@ -277,10 +284,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "first_state_of_workflow_id": base,
                 },
                 f"committee/{committee_id}": {"name": f"Commitee{committee_id}"},
-                ONE_ORGANIZATION_FQID: {
-                    "limit_of_meetings": 0,
-                    "enable_electronic_voting": True,
-                },
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
             }
         )
 
@@ -565,13 +569,12 @@ class BaseActionTestCase(BaseSystemTestCase):
         lock_meeting: bool = False,
         lock_out_calling_user: bool = False,
     ) -> None:
-        self.create_meeting()
+        meeting_data = {"locked_from_inside": True} if lock_meeting else {}
+        self.create_meeting(meeting_data=meeting_data)
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         if models:
             self.set_models(models)
-        if lock_meeting:
-            self.set_models({"meeting/1": {"locked_from_inside": True}})
         meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
         if lock_out_calling_user:
             self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
