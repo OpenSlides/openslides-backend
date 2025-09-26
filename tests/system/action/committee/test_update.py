@@ -91,9 +91,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_both_forwarded_and_received(self) -> None:
         self.set_models(
             {
-                "committee/1": {"name": "committee_1", "organization_id": 1},
-                "committee/2": {"name": "committee_2", "organization_id": 1},
-                "committee/3": {"name": "committee_3", "organization_id": 1},
+                "committee/1": {"name": "committee_1"},
+                "committee/2": {"name": "committee_2"},
+                "committee/3": {"name": "committee_3"},
             }
         )
         response = self.request(
@@ -120,16 +120,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_both_forwarded_and_received_async(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "name": "committee_1",
-                    "organization_id": 1,
-                    "forward_to_committee_ids": [2],
-                },
-                "committee/2": {
-                    "name": "committee_2",
-                    "organization_id": 1,
-                    "forward_to_committee_ids": [1],
-                },
+                "committee/1": {"name": "committee_1", "forward_to_committee_ids": [2]},
+                "committee/2": {"name": "committee_2", "forward_to_committee_ids": [1]},
             }
         )
         response = self.request(
@@ -150,21 +142,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->C and B->C exist, test that the request for C with {B, D}->C works and sets the reverse relations on A and D correctly."""
         self.set_models(
             {
-                "committee/1": {
-                    "name": "committee_A",
-                    "organization_id": 1,
-                    "forward_to_committee_ids": [3],
-                },
-                "committee/2": {
-                    "name": "committee_B",
-                    "organization_id": 1,
-                    "forward_to_committee_ids": [3],
-                },
-                "committee/3": {
-                    "name": "committee_C",
-                    "organization_id": 1,
-                },
-                "committee/4": {"name": "committee_D", "organization_id": 1},
+                "committee/1": {"name": "committee_A", "forward_to_committee_ids": [3]},
+                "committee/2": {"name": "committee_B", "forward_to_committee_ids": [3]},
+                "committee/3": {"name": "committee_C"},
+                "committee/4": {"name": "committee_D"},
             }
         )
         response = self.request(
@@ -186,20 +167,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{B,D} works and sets the reverse relations on A and D correctly"""
         self.set_models(
             {
-                "committee/1": {
-                    "name": "committee_A",
-                    "organization_id": 1,
-                },
-                "committee/2": {
-                    "name": "committee_B",
-                    "organization_id": 1,
-                },
+                "committee/1": {"name": "committee_A"},
+                "committee/2": {"name": "committee_B"},
                 "committee/3": {
                     "name": "committee_C",
-                    "organization_id": 1,
                     "forward_to_committee_ids": [1, 2],
                 },
-                "committee/4": {"name": "committee_D", "organization_id": 1},
+                "committee/4": {"name": "committee_D"},
             }
         )
         response = self.request(
@@ -226,27 +200,17 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{} works and sets the reverse relations on A and B correctly"""
         self.set_models(
             {
-                "committee/1": {
-                    "name": "committee_A",
-                    "organization_id": 1,
-                },
-                "committee/2": {
-                    "name": "committee_B",
-                    "organization_id": 1,
-                },
+                "committee/1": {"name": "committee_A"},
+                "committee/2": {"name": "committee_B"},
                 "committee/3": {
                     "name": "committee_C",
-                    "organization_id": 1,
                     "forward_to_committee_ids": [1, 2],
                 },
             }
         )
         response = self.request(
             "committee.update",
-            {
-                "id": 3,
-                "forward_to_committee_ids": [],
-            },
+            {"id": 3, "forward_to_committee_ids": []},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -263,7 +227,6 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "committee/1": {
                     "name": "committee_A",
-                    "organization_id": 1,
                     "forward_to_committee_ids": [1],
                 },
             }
@@ -291,22 +254,14 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "committee/1": {
                     "name": "committee_A",
-                    "organization_id": 1,
                     "forward_to_committee_ids": [2],
                 },
                 "committee/2": {
                     "name": "committee_B",
-                    "organization_id": 1,
                     "forward_to_committee_ids": [3, 4],
                 },
-                "committee/3": {
-                    "name": "committee_C",
-                    "organization_id": 1,
-                },
-                "committee/4": {
-                    "name": "committee_D",
-                    "organization_id": 1,
-                },
+                "committee/3": {"name": "committee_C"},
+                "committee/4": {"name": "committee_D"},
             }
         )
         response = self.request(
@@ -421,7 +376,6 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_user_management_level_rm_manager(self) -> None:
-        # prepare data
         self.create_data()
         response = self.request(
             "committee.update",
@@ -429,7 +383,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": [20, 21]})
-        # important request.
+
         response = self.request(
             "committee.update",
             {
@@ -566,14 +520,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_add_user_management_level_to_user_ids(self) -> None:
-        self.create_meeting()
+        self.create_committee()
+        self.create_meeting(meeting_data={"committee_id": self.COMMITTEE_ID})
         self.set_models(
             {
-                self.COMMITTEE_FQID: {
-                    "name": self.COMMITTEE_NAME,
-                    "description": "<p>Test description</p>",
-                },
-                "meeting/1": {"committee_id": self.COMMITTEE_ID},
                 "user/20": {"username": "test_user20"},
                 "user/21": {"username": "test_user21"},
             }
@@ -591,7 +541,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {"id": self.COMMITTEE_ID, "manager_ids": [20]},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(self.COMMITTEE_FQID, {"user_ids": [20, 21]})
+        self.assert_model_exists(
+            self.COMMITTEE_FQID, {"user_ids": [20, 21], "manager_ids": [20]}
+        )
         self.assert_model_exists(
             "user/20",
             {"committee_management_ids": [1], "committee_ids": [1]},
@@ -612,7 +564,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.set_models({"committee/2": {"organization_id": 1, "name": "c2"}})
+        self.set_models({"committee/2": {"name": "c2"}})
 
         response = self.request("committee.delete", {"id": 1})
         self.assert_status_code(response, 200)

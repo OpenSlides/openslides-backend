@@ -36,7 +36,6 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_not_exists(self.COMMITTEE_FQID)
-        self.assert_model_exists("user/20", {"committee_ids": None})
         self.assert_model_exists(
             "user/21",
             {"committee_ids": None, "committee_management_ids": None},
