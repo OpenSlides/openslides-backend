@@ -283,7 +283,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "workflow_id": base,
                     "first_state_of_workflow_id": base,
                 },
-                f"committee/{committee_id}": {"name": f"Commitee{committee_id}"},
+                f"committee/{committee_id}": {"name": f"Committee{committee_id}"},
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
             }
         )
