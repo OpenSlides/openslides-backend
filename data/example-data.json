@@ -260,7 +260,7 @@
             "is_active_in_organization_id": 1,
             "language": "en",
             "name": "OpenSlides Demo",
-            "description": "Presentation and assembly system",
+            "description": "",
             "welcome_title": "Welcome to OpenSlides",
             "welcome_text": "[Space for your welcome text.]",
             "conference_open_microphone": false,

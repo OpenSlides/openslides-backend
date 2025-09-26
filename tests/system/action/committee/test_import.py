@@ -653,7 +653,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "name": "meeting",
                 "committee_id": 13,
-                "description": "Presentation and assembly system",
+                "description": "",
             },
         )
         assert self.get_row(response, 2) == {
@@ -681,7 +681,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "name": "meeting",
                 "committee_id": 14,
-                "description": "Presentation and assembly system",
+                "description": "",
             },
         )
         assert self.get_row(response, 3) == {
@@ -703,7 +703,6 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "name": "meeting",
                 "committee_id": 15,
-                "description": "Presentation and assembly system",
             },
         )
 

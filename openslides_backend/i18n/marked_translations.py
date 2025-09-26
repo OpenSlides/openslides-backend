@@ -1,7 +1,6 @@
 from .translator import translate as _
 
 # Settings
-_("Presentation and assembly system")
 _("Welcome to OpenSlides")
 _("Space for your welcome text.")
 _("The assembly may decide:")
