@@ -541,6 +541,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting/2": {"present_user_ids": [4], "locked_from_inside": True},
                 "meeting/3": {"present_user_ids": [3, 4]},
                 "meeting/4": {"present_user_ids": [5]},
+                "user/1": {"history_position_ids": [1]},
                 "user/2": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "pronoun": "he",
@@ -552,6 +553,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "last_email_sent": 123456789,
                     "committee_management_ids": [1],
                     "home_committee_id": 1,
+                    "history_entry_ids": [1, 4],
                 },
                 "user/3": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -564,6 +566,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "last_login": 987654321,
                     "is_present_in_meeting_ids": [3],
                     "external": True,
+                    "history_entry_ids": [2, 5],
                 },
                 "user/4": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
@@ -574,6 +577,8 @@ class UserMergeTogether(BaseVoteTestCase):
                     "is_present_in_meeting_ids": [2, 3],
                     "member_number": "souperadmin",
                     "external": False,
+                    "history_position_ids": [2],
+                    "history_entry_ids": [3],
                 },
                 "user/5": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -583,10 +588,9 @@ class UserMergeTogether(BaseVoteTestCase):
                     "can_change_own_password": False,
                     "is_present_in_meeting_ids": [4],
                     "committee_management_ids": [1, 3],
+                    "history_entry_ids": [6],
                 },
-                "user/6": {
-                    "email": "rob.banks@allof.them",
-                },
+                "user/6": {"email": "rob.banks@allof.them", "history_entry_ids": [7]},
                 "meeting_user/12": {
                     "about_me": "I am an enthusiastic explorer",
                     "comment": "Nicks everything",
@@ -619,10 +623,65 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/45": {
                     "comment": "This is a comment",
                 },
+                "history_position/1": {
+                    "timestamp": 100000,
+                    "original_user_id": 1,
+                    "user_id": 1,
+                    "entry_ids": [1, 2, 3],
+                },
+                "history_entry/1": {
+                    "original_model_id": "user/2",
+                    "model_id": "user/2",
+                    "position_id": 1,
+                    "entries": ["User created", "User added to meetings"],
+                },
+                "history_entry/2": {
+                    "original_model_id": "user/3",
+                    "model_id": "user/3",
+                    "position_id": 1,
+                    "entries": ["User created"],
+                },
+                "history_entry/3": {
+                    "original_model_id": "user/4",
+                    "model_id": "user/4",
+                    "position_id": 1,
+                    "entries": ["User created", "User added to meetings"],
+                },
+                "history_position/2": {
+                    "timestamp": 200000,
+                    "original_user_id": 4,
+                    "user_id": 4,
+                    "entry_ids": [4, 5, 6, 7],
+                },
+                "history_entry/4": {
+                    "original_model_id": "user/2",
+                    "model_id": "user/2",
+                    "position_id": 2,
+                    "entries": ["User added to meetings"],
+                },
+                "history_entry/5": {
+                    "original_model_id": "user/3",
+                    "model_id": "user/3",
+                    "position_id": 2,
+                    "entries": ["User added to meetings"],
+                },
+                "history_entry/6": {
+                    "original_model_id": "user/5",
+                    "model_id": "user/5",
+                    "position_id": 2,
+                    "entries": ["User created", "User added to meetings"],
+                },
+                "history_entry/7": {
+                    "original_model_id": "user/6",
+                    "model_id": "user/6",
+                    "position_id": 2,
+                    "entries": ["User created"],
+                },
             }
         )
 
     def test_merge_with_user_fields(self) -> None:
+        """Also checks if the history is merged"""
         password = self.assert_model_exists("user/2")["password"]
         self.setup_complex_user_fields()
         response = self.request(
@@ -729,6 +788,63 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         for id_ in range(3, 7):
             self.assert_history_information(f"user/{id_}", ["Merged into {}", "user/2"])
+        for fqid, model in {
+            "history_position/1": {
+                "timestamp": 100000,
+                "original_user_id": 1,
+                "user_id": 1,
+                "entry_ids": [1, 2, 3],
+            },
+            "history_entry/1": {
+                "original_model_id": "user/2",
+                "model_id": "user/2",
+                "position_id": 1,
+                "entries": ["User created", "User added to meetings"],
+            },
+            "history_entry/2": {
+                "original_model_id": "user/3",
+                "model_id": "user/2",
+                "position_id": 1,
+                "entries": ["User created"],
+            },
+            "history_entry/3": {
+                "original_model_id": "user/4",
+                "model_id": "user/2",
+                "position_id": 1,
+                "entries": ["User created", "User added to meetings"],
+            },
+            "history_position/2": {
+                "timestamp": 200000,
+                "original_user_id": 4,
+                "user_id": 2,
+                "entry_ids": [4, 5, 6, 7],
+            },
+            "history_entry/4": {
+                "original_model_id": "user/2",
+                "model_id": "user/2",
+                "position_id": 2,
+                "entries": ["User added to meetings"],
+            },
+            "history_entry/5": {
+                "original_model_id": "user/3",
+                "model_id": "user/2",
+                "position_id": 2,
+                "entries": ["User added to meetings"],
+            },
+            "history_entry/6": {
+                "original_model_id": "user/5",
+                "model_id": "user/2",
+                "position_id": 2,
+                "entries": ["User created", "User added to meetings"],
+            },
+            "history_entry/7": {
+                "original_model_id": "user/6",
+                "model_id": "user/2",
+                "position_id": 2,
+                "entries": ["User created"],
+            },
+        }.items():
+            self.assert_model_exists(fqid, model)
 
     def test_merge_forbid_merging_of_higher_level_users(self) -> None:
         self.setup_complex_user_fields()
@@ -2271,6 +2387,19 @@ class UserMergeTogether(BaseVoteTestCase):
             ],
             next_id,
         )
+        next_id = add_list_of_speakers(
+            9,
+            1,
+            [  # 24 - 29
+                (12, 1, None, True, None, None, {}),
+                (14, 2, SpeechState.INTERVENTION, None, None, None, {"answer": False}),
+                (12, 3, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+                (15, 4, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+                (15, 5, SpeechState.INTERVENTION, None, None, None, {}),
+                (12, 6, SpeechState.INTERVENTION, None, None, None, {"answer": True}),
+            ],
+            next_id,
+        )
         # 23 speakers on 8 lists
         self.set_models(data)
         return data
@@ -2285,7 +2414,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
 
         merged_away = [2, 3, 6, 8, 14, 16, 19, 21]
-        replaced = [10, 12, 15, 23]
+        replaced = [10, 12, 15, 23, 25]
         deleted_ids = replaced + merged_away
         for id_ in deleted_ids:
             self.assert_model_deleted(f"speaker/{id_}")
@@ -2299,8 +2428,8 @@ class UserMergeTogether(BaseVoteTestCase):
             self.assert_model_exists(
                 f"speaker/{id_}", {**data[f"speaker/{id_}"], "weight": 2}
             )
-        next_id = 24
-        for m_user_id, speaker_ids in {12: [10, 12, 23], 46: [15]}.items():
+        next_id = 30
+        for m_user_id, speaker_ids in {12: [10, 12, 23, 25], 46: [15]}.items():
             for speaker_id in speaker_ids:
                 self.assert_model_exists(
                     f"speaker/{next_id}",
@@ -2310,9 +2439,29 @@ class UserMergeTogether(BaseVoteTestCase):
 
         self.assert_model_exists(
             "meeting_user/12",
-            {"speaker_ids": [1, 5, 7, 9, 11, 13, 17, 18, 20, 22, 24, 25, 26]},
+            {
+                "speaker_ids": [
+                    1,
+                    5,
+                    7,
+                    9,
+                    11,
+                    13,
+                    17,
+                    18,
+                    20,
+                    22,
+                    24,
+                    26,
+                    29,
+                    30,
+                    31,
+                    32,
+                    33,
+                ]
+            },
         )
-        self.assert_model_exists("meeting_user/46", {"speaker_ids": [27]})
+        self.assert_model_exists("meeting_user/46", {"speaker_ids": [34]})
 
     def test_with_speakers_multiple_speakers_allowed(self) -> None:
         data = self.create_speakers_for_test(allow_multiple_speakers=True)
@@ -2323,7 +2472,7 @@ class UserMergeTogether(BaseVoteTestCase):
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
 
-        replaced_meeting_1 = [2, 3, 6, 8, 10, 12, 16, 19, 21, 23]
+        replaced_meeting_1 = [2, 3, 6, 8, 10, 12, 16, 19, 21, 23, 25]
         replaced_meeting_3 = [14, 15]
         deleted_ids = replaced_meeting_1 + replaced_meeting_3
         for id_ in range(1, 24):
@@ -2331,7 +2480,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 self.assert_model_deleted(f"speaker/{id_}")
             else:
                 self.assert_model_exists(f"speaker/{id_}", data[f"speaker/{id_}"])
-        next_id = 24
+        next_id = 30
         for m_user_id, speaker_ids in {
             12: replaced_meeting_1,
             46: replaced_meeting_3,
@@ -2357,7 +2506,10 @@ class UserMergeTogether(BaseVoteTestCase):
                     18,
                     20,
                     22,
-                    *range(24, 24 + len(replaced_meeting_1)),
+                    24,
+                    26,
+                    29,
+                    *range(30, 30 + len(replaced_meeting_1)),
                 ]
             },
         )
@@ -2365,7 +2517,7 @@ class UserMergeTogether(BaseVoteTestCase):
             "meeting_user/46",
             {
                 "speaker_ids": list(
-                    range(24 + len(replaced_meeting_1), 26 + len(replaced_meeting_1))
+                    range(30 + len(replaced_meeting_1), 32 + len(replaced_meeting_1))
                 )
             },
         )

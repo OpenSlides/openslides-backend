@@ -14,7 +14,7 @@ def check_poll_or_option_perms(
     if content_object_id.startswith("motion" + KEYSEPARATOR):
         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
-        perm = Permissions.Assignment.CAN_MANAGE
+        perm = Permissions.Assignment.CAN_MANAGE_POLLS
     elif content_object_id.startswith("topic" + KEYSEPARATOR):
         perm = Permissions.Poll.CAN_MANAGE
     else:
