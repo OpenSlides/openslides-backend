@@ -3,14 +3,14 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollCandidateTest(BaseActionTestCase):
     def test_create(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {
-                    "name": "meeting_1",
-                    "is_active_in_organization_id": 1,
-                    "poll_candidate_list_ids": [2],
-                },
                 "poll_candidate_list/2": {"meeting_id": 1},
+                "option/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "poll_candidate_list/2",
+                },
             }
         )
         response = self.request(
