@@ -369,9 +369,7 @@ class Meeting(Model, MeetingModelMixin):
         to={"organization": "archived_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
-    description = fields.CharField(
-        default="Presentation and assembly system", constraints={"maxLength": 100}
-    )
+    description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
