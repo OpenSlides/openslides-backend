@@ -29,13 +29,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "aBuwxoYU",
-                    "description": "XrHbAWiF",
-                    "theme_id": 1,
-                },
-                "theme/1": {"name": "default", "organization_id": 1},
-                "theme/2": {"name": "default2", "organization_id": 1},
+                "theme/1": {"name": "default"},
+                "theme/2": {"name": "default2"},
             }
         )
 
@@ -361,7 +356,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
             {
-                "name": "aBuwxoYU",
+                "name": "OpenSlides Organization",
                 "saml_enabled": False,
                 "saml_attr_mapping": None,
                 "saml_metadata_idp": "",
@@ -380,7 +375,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
         self.assert_model_exists(
-            ONE_ORGANIZATION_FQID, {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+            ONE_ORGANIZATION_FQID,
+            {"name": "OpenSlides Organization", "description": None},
         )
 
     def test_update_broken_email(self) -> None:
@@ -472,13 +468,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "url": "test",
         }
         for field, value in fields.items():
-            response = self.request(
-                "organization.update",
-                {
-                    "id": 1,
-                    field: value,
-                },
-            )
+            response = self.request("organization.update", {"id": 1, field: value})
             self.assert_status_code(response, 403)
 
     def test_update_group_b_permissions(self) -> None:
@@ -504,10 +494,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             self.create_meeting(id_)
         response = self.request(
             "organization.update",
-            {
-                "id": 1,
-                "limit_of_meetings": 2,
-            },
+            {"id": 1, "limit_of_meetings": 2},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -520,10 +507,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.create_user("banafshe")
         response = self.request(
             "organization.update",
-            {
-                "id": 1,
-                "limit_of_users": 2,
-            },
+            {"id": 1, "limit_of_users": 2},
         )
         self.assert_status_code(response, 400)
         assert (
