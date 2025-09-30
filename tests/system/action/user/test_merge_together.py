@@ -230,6 +230,25 @@ class UserMergeTogether(BaseActionTestCase):
         }
         self.set_models(models)
 
+    def create_assignment(
+        self, base: int, meeting_id: int, assignment_data: dict[str, Any] = {}
+    ) -> None:
+        self.set_models(
+            {
+                f"assignment/{base}": {
+                    "title": "just do it",
+                    "sequential_number": base,
+                    "meeting_id": meeting_id,
+                    **assignment_data,
+                },
+                f"list_of_speakers/{base + 100}": {
+                    "content_object_id": f"assignment/{base}",
+                    "sequential_number": base + 100,
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
     def test_merge_configuration_up_to_date(self) -> None:
         """
         This test checks, if the merge_together function has been properly
@@ -1160,7 +1179,6 @@ class UserMergeTogether(BaseActionTestCase):
         data: dict[str, Any],
         collection: Literal["assignment", "motion"],
         sub_collection: str,
-        back_relation: str,
         meeting_user_id_lists_per_meeting_id: dict[int, list[list[int]]],
     ) -> None:
         next_model_id = 1
@@ -1169,42 +1187,11 @@ class UserMergeTogether(BaseActionTestCase):
             meeting_id,
             meeting_user_id_lists,
         ) in meeting_user_id_lists_per_meeting_id.items():
-            sub_models_per_meeting_user_id: dict[int, list[int]] = {
-                meeting_user_id: []
-                for li in meeting_user_id_lists
-                for meeting_user_id in li
-            }
-            if (
-                meeting_fqid := fqid_from_collection_and_id("meeting", meeting_id)
-            ) not in data:
-                data[meeting_fqid] = {}
-            data[meeting_fqid][collection + "_ids"] = list(
-                range(
-                    next_model_id,
-                    next_model_id + len(meeting_user_id_lists),
-                )
-            )
-            data[meeting_fqid][sub_collection + "_ids"] = list(
-                range(
-                    next_sub_model_id,
-                    next_sub_model_id + sum([len(li) for li in meeting_user_id_lists]),
-                )
-            )
             for meeting_user_id_list in meeting_user_id_lists:
-                a_or_m_fqid = fqid_from_collection_and_id(collection, next_model_id)
-                data[a_or_m_fqid] = {
-                    "title": f"{collection} {next_model_id}",
-                    "meeting_id": meeting_id,
-                    back_relation: list(
-                        range(
-                            next_sub_model_id,
-                            next_sub_model_id + len(meeting_user_id_list),
-                        )
-                    ),
-                    "sequential_number": next_model_id,
-                }
                 if collection == "motion":
-                    data[a_or_m_fqid].update({"state_id": meeting_id})
+                    self.create_motion(meeting_id, next_model_id)
+                else:
+                    self.create_assignment(next_model_id, meeting_id)
                 weight = 1
                 for meeting_user_id in meeting_user_id_list:
                     data[
@@ -1215,23 +1202,9 @@ class UserMergeTogether(BaseActionTestCase):
                         "meeting_user_id": meeting_user_id,
                         "meeting_id": meeting_id,
                     }
-                    sub_models_per_meeting_user_id[meeting_user_id].append(
-                        next_sub_model_id
-                    )
                     next_sub_model_id += 1
                     weight += 1
                 next_model_id += 1
-            for (
-                meeting_user_id,
-                sub_model_ids,
-            ) in sub_models_per_meeting_user_id.items():
-                if (
-                    meeting_user_fqid := fqid_from_collection_and_id(
-                        "meeting_user", meeting_user_id
-                    )
-                ) not in data:
-                    data[meeting_user_fqid] = {}
-                data[meeting_user_fqid][sub_collection + "_ids"] = sub_model_ids
 
     def assert_assignment_or_motion_model_test_was_correct(
         self,
@@ -1313,7 +1286,6 @@ class UserMergeTogether(BaseActionTestCase):
             data,
             collection,
             sub_collection,
-            back_relation,
             {
                 1: [
                     [12, 15],
@@ -1383,7 +1355,6 @@ class UserMergeTogether(BaseActionTestCase):
             data,
             "motion",
             sub_collection,
-            back_relation,
             {
                 1: [
                     [12, 15],
@@ -1455,19 +1426,9 @@ class UserMergeTogether(BaseActionTestCase):
             self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
 
     def test_merge_with_assignment_candidates_in_finished_assignment(self) -> None:
+        self.create_assignment(11, 1, {"phase": "finished"})
         self.set_models(
             {
-                "meeting/1": {
-                    "assignment_ids": [11],
-                    "assignment_candidate_ids": [112, 114],
-                },
-                "assignment/11": {
-                    "meeting_id": 1,
-                    "sequential_number": 11,
-                    "title": "a signment",
-                    "phase": "finished",
-                    "candidate_ids": [112, 114],
-                },
                 "assignment_candidate/112": {
                     "meeting_id": 1,
                     "assignment_id": 11,
@@ -1478,8 +1439,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "assignment_id": 11,
                     "meeting_user_id": 14,
                 },
-                "meeting_user/12": {"assignment_candidate_ids": [112]},
-                "meeting_user/14": {"assignment_candidate_ids": [114]},
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
@@ -1582,39 +1541,17 @@ class UserMergeTogether(BaseActionTestCase):
         for meeting_id in meeting_ids:
             self.create_meeting(meeting_id)
 
-        motion_ids_per_meeting_id = {
-            meeting_id: list(
+        map_motion_id_to_meeting_id = {
+            motion_id: meeting_id
+            for meeting_id in meeting_ids
+            for motion_id in list(
                 range(
                     int((meeting_id - 1) / 3) * 2 + 1, int((meeting_id - 1) / 3) * 2 + 3
                 )
             )
-            for meeting_id in meeting_ids
         }
-        data: dict[str, dict[str, Any]] = {
-            **{
-                f"meeting/{id_}": {
-                    "motion_ids": motion_ids,
-                    "personal_note_ids": [],
-                }
-                for id_, motion_ids in motion_ids_per_meeting_id.items()
-            },
-            **{
-                f"motion/{id_}": {
-                    "meeting_id": meeting_id,
-                    "sequential_number": id_,
-                    "state_id": meeting_id,
-                    "title": f"Motion {id_}",
-                    "text": "XD",
-                    "personal_note_ids": [],
-                }
-                for meeting_id, motion_ids in motion_ids_per_meeting_id.items()
-                for id_ in motion_ids
-            },
-            **{
-                f"meeting_user/{id_}": {"personal_note_ids": []}
-                for id_ in [12, 14, 15, 42, 43, 44, 73, 74]
-            },
-        }
+        for motion_id, meeting_id in map_motion_id_to_meeting_id.items():
+            self.create_motion(meeting_id, motion_id)
 
         def add_personal_note(
             id_: int,
@@ -1624,7 +1561,7 @@ class UserMergeTogether(BaseActionTestCase):
             star: bool | None = None,
         ) -> None:
             motion_fqid = f"motion/{motion_id}"
-            meeting_id = data[motion_fqid]["meeting_id"]
+            meeting_id = map_motion_id_to_meeting_id[motion_id]
             date = {
                 "meeting_id": meeting_id,
                 "content_object_id": motion_fqid,
@@ -1635,12 +1572,8 @@ class UserMergeTogether(BaseActionTestCase):
             if star is not None:
                 date["star"] = star
             data[fqid_from_collection_and_id("personal_note", id_)] = date
-            for fqid in [
-                motion_fqid,
-                f"meeting/{meeting_id}",
-                f"meeting_user/{meeting_user_id}",
-            ]:
-                data[fqid]["personal_note_ids"].append(id_)
+
+        data: dict[str, dict[str, Any]] = {}
 
         add_personal_note(1, 1, 12, "User 2's note")
         add_personal_note(2, 1, 14, "User 4's note", True)
@@ -1672,13 +1605,12 @@ class UserMergeTogether(BaseActionTestCase):
 
         meeting_user_by_meeting_id = {1: 12, 4: 42, 7: 106}
         note_base_data_by_motion_id = {
-            id_: {
+            motion_id: {
                 "meeting_id": meeting_id,
                 "meeting_user_id": meeting_user_by_meeting_id[meeting_id],
-                "content_object_id": f"motion/{id_}",
+                "content_object_id": f"motion/{motion_id}",
             }
-            for meeting_id, motion_ids in motion_ids_per_meeting_id.items()
-            for id_ in motion_ids
+            for motion_id, meeting_id in map_motion_id_to_meeting_id.items()
         }
         self.assert_model_exists(
             "personal_note/1",
@@ -2512,7 +2444,6 @@ class UserMergeTogether(BaseActionTestCase):
             data,
             "motion",
             "motion_submitter",
-            "submitter_ids",
             {7: [[73]]},
         )
         self.set_models(data)
