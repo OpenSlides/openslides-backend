@@ -18,7 +18,7 @@ get_forwarding_meetings_schema = fastjsonschema.compile(
         "description": "get forwarding meetings",
         "properties": {
             "meeting_id": required_id_schema,
-            "for_agenda": {"type": "boolean"}
+            "for_agenda": {"type": "boolean"},
         },
         "required": ["meeting_id"],
     }
@@ -36,9 +36,17 @@ class GetForwardingMeetings(BasePresenter):
     def get_result(self) -> Any:
         # check permission
         for_agenda = self.data.pop("for_agenda", False)
-        perm = Permissions.AgendaItem.CAN_FORWARD if for_agenda else Permissions.Motion.CAN_FORWARD
+        perm = (
+            Permissions.AgendaItem.CAN_FORWARD
+            if for_agenda
+            else Permissions.Motion.CAN_FORWARD
+        )
         collection = "agenda_item" if for_agenda else "motion"
-        field = "forward_agenda_to_committee_ids" if for_agenda else "forward_to_committee_ids"
+        field = (
+            "forward_agenda_to_committee_ids"
+            if for_agenda
+            else "forward_to_committee_ids"
+        )
         if not has_perm(
             self.datastore,
             self.user_id,

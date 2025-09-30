@@ -301,4 +301,78 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
         assert status_code == 403
         assert "Missing permission: motion.can_forward" in data["message"]
 
-    # TODO: Test new agenda_item functionality
+    def test_correct_agenda(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "meeting2",
+                    "committee_id": 3,
+                    "is_active_in_organization_id": 1,
+                    "start_time": 111111,
+                    "end_time": 222222,
+                },
+                "committee/2": {
+                    "name": "com2",
+                    "forward_agenda_to_committee_ids": [3],
+                    "meeting_ids": [1],
+                },
+                "committee/3": {
+                    "name": "com3",
+                    "meeting_ids": [2],
+                },
+            }
+        )
+        status_code, data = self.request(
+            "get_forwarding_meetings", {"meeting_id": 1, "for_agenda": True}
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            [
+                {
+                    "id": 3,
+                    "name": "com3",
+                    "meetings": [
+                        {
+                            "id": 2,
+                            "name": "meeting2",
+                            "start_time": 111111,
+                            "end_time": 222222,
+                        }
+                    ],
+                    "default_meeting_id": None,
+                }
+            ],
+        )
+
+    def test_archived_sender_meeting_agenda(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "is_active_in_organization_id": None,
+                },
+                "committee/2": {
+                    "name": "com2",
+                    "forward_agenda_to_committee_ids": [3],
+                    "meeting_ids": [1],
+                },
+            }
+        )
+        status_code, data = self.request(
+            "get_forwarding_meetings", {"meeting_id": 1, "for_agenda": True}
+        )
+        self.assertEqual(status_code, 400)
+        self.assertEqual(
+            data,
+            {
+                "success": False,
+                "message": "Your sender meeting is an archived meeting, which can not forward agenda_items.",
+            },
+        )
