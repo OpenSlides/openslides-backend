@@ -1777,6 +1777,7 @@ class MotionState(Model):
     allow_motion_forwarding = fields.BooleanField(default=False)
     allow_amendment_forwarding = fields.BooleanField()
     set_workflow_timestamp = fields.BooleanField(default=False)
+    state_button_label = fields.CharField()
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
