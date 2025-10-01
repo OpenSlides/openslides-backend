@@ -1,6 +1,8 @@
 from decimal import Decimal
 from typing import Any
 
+import pytest
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -212,6 +214,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
         )
 
+    @pytest.mark.skip("poll.update is moved to vote service")
     def test_update_together_with_poll(self) -> None:
         self.set_models(
             {
@@ -252,6 +255,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
+    @pytest.mark.skip("poll.update is moved to vote service")
     def test_update_together_with_poll_2(self) -> None:
         response = self.request_json(
             [

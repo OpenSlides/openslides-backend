@@ -1,7 +1,5 @@
 from typing import Any, cast
 
-from psycopg.types.json import Jsonb
-
 from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
@@ -29,7 +27,6 @@ from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreat
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
-from ..poll.update import PollUpdateAction
 from ..speaker.create_for_merge import SpeakerCreateForMerge
 from ..speaker.delete import SpeakerDeleteAction
 from ..speaker.update import SpeakerUpdate
@@ -168,43 +165,6 @@ class UserMergeTogether(
             raise ActionException(
                 "Users cannot be part of different merges at the same time"
             )
-        secondary_id_to_main_ids = {
-            user_id: instance["id"]
-            for instance in action_data
-            for user_id in instance.get("user_ids", [])
-        }
-        polls = self.datastore.filter(
-            "poll",
-            And(
-                FilterOperator("entitled_users_at_stop", "!=", None),
-                FilterOperator("entitled_users_at_stop", "!=", Jsonb([])),
-            ),
-            ["entitled_users_at_stop"],
-        )
-        poll_payloads: list[dict[str, Any]] = []
-        for id_, poll in polls.items():
-            entitled: list[dict[str, Any]] = poll["entitled_users_at_stop"]
-            changed = False
-            for vote in entitled:
-                if (
-                    user_id := (vote.get("user_merged_into_id") or vote.get("user_id"))
-                ) in secondary_id_to_main_ids:
-                    vote["user_merged_into_id"] = secondary_id_to_main_ids[user_id]
-                    changed = True
-                if (
-                    user_id := (
-                        vote.get("delegation_user_merged_into_id")
-                        or vote.get("vote_delegated_to_user_id")
-                    )
-                ) in secondary_id_to_main_ids:
-                    vote["delegation_user_merged_into_id"] = secondary_id_to_main_ids[
-                        user_id
-                    ]
-                    changed = True
-            if changed:
-                poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
-        if len(poll_payloads):
-            self.execute_other_action(PollUpdateAction, poll_payloads)
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
