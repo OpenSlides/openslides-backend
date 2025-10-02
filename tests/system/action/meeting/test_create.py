@@ -546,7 +546,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1",
             {
-                "description": "Präsentations- und Versammlungssystem",
+                "description": None,
                 "welcome_title": "Willkommen bei OpenSlides",
                 "welcome_text": "Platz für Ihren Begrüßungstext.",
                 "motions_preamble": "Die Versammlung möge beschließen:",
