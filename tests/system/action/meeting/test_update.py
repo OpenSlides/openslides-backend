@@ -335,6 +335,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "agenda_show_topic_navigation_on_detail_view": True,
             "motions_hide_metadata_background": True,
             "motions_create_enable_additional_submitter_text": True,
+            "motions_enable_restricted_editor_for_manager": True,
+            "motions_enable_restricted_editor_for_non_manager": True,
         }
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
