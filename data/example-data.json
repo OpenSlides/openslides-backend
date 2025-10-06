@@ -144,7 +144,7 @@
             "meeting_ids": [
                 1
             ],
-            "organization_id": 1, 
+            "organization_id": 1,
             "committee_ids": [
                 1
             ]
@@ -1106,7 +1106,7 @@
     "speaker": {
         "11": {
             "id": 11,
-            "weight": 11, 
+            "weight": 11,
             "begin_time": 1584512636,
             "end_time": 1584512638,
             "list_of_speakers_id": 1,
@@ -1300,7 +1300,8 @@
             ],
             "agenda_item_id": 1,
             "list_of_speakers_id": 1,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "diff_version": "0.1.2"
         },
         "2": {
             "id": 2,
@@ -1331,7 +1332,8 @@
             "personal_note_ids": [
                 1
             ],
-            "meeting_id": 1
+            "meeting_id": 1,
+            "diff_version": "0.1.2"
         },
         "3": {
             "id": 3,
@@ -1363,7 +1365,8 @@
             "tag_ids": [
                 3
             ],
-            "meeting_id": 1
+            "meeting_id": 1,
+            "diff_version": "0.1.2"
         },
         "4": {
             "id": 4,
@@ -1391,7 +1394,8 @@
             "projection_ids": [
                 2
             ],
-            "meeting_id": 1
+            "meeting_id": 1,
+            "diff_version": "0.1.2"
         }
     },
     "motion_submitter": {
@@ -1648,7 +1652,7 @@
             "allow_support": false,
             "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true, 
+            "allow_amendment_forwarding": true,
             "meeting_id": 1
         },
         "6": {
