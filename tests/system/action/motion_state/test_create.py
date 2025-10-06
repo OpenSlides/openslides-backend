@@ -16,6 +16,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "allow_motion_forwarding": True,
                 "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
+                "state_button_label": "State button label",
             },
         )
         self.assert_status_code(response, 200)
@@ -29,6 +30,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "allow_motion_forwarding": True,
                 "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
+                "state_button_label": "State button label",
             },
         )
 
