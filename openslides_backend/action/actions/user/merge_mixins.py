@@ -7,6 +7,7 @@ from ....models.models import (
     MeetingUser,
     MotionEditor,
     MotionSubmitter,
+    MotionSupporter,
     MotionWorkingGroupSpeaker,
     PersonalNote,
     Speaker,
@@ -132,6 +133,31 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
         return information
 
 
+class MotionSupporterMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            MotionSupporter,
+            {
+                "ignore": ["meeting_user_id", "meeting_id", "motion_id"],
+            },
+            "meeting_user_id",
+        )
+
+    def get_full_history_information(self) -> HistoryInformation | None:
+        information = super().get_full_history_information() or {}
+        motion_ids: set[int] = set()
+        for data, ids, is_transfer in self._history_replacement_groups[
+            "motion_supporter"
+        ]:
+            motion_ids.add(data["motion_id"])
+        for motion_id in motion_ids:
+            information[fqid_from_collection_and_id("motion", motion_id)] = [
+                "Supporters merged"
+            ]
+        return information
+
+
 class MotionEditorMergeMixin(BaseMergeMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -169,6 +195,7 @@ class MeetingUserMergeMixin(
     MotionWorkingGroupSpeakerMergeMixin,
     MotionEditorMergeMixin,
     MotionSubmitterMergeMixin,
+    MotionSupporterMergeMixin,
     AssignmentCandidateMergeMixin,
     SpeakerMergeMixin,
 ):
@@ -190,7 +217,6 @@ class MeetingUserMergeMixin(
                     "meeting_id",
                 ],
                 "merge": [
-                    "supported_motion_ids",
                     "vote_delegations_from_ids",
                     "chat_message_ids",
                     "group_ids",
@@ -198,6 +224,7 @@ class MeetingUserMergeMixin(
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
+                    "motion_supporter_ids": "motion_supporter",
                 },
                 "deep_create_merge": {
                     "motion_editor_ids": "motion_editor",
@@ -221,6 +248,8 @@ class MeetingUserMergeMixin(
             case "personal_note":
                 return model["content_object_id"]
             case "motion_editor":
+                return model["motion_id"]
+            case "motion_supporter":
                 return model["motion_id"]
             case "motion_working_group_speaker":
                 return model["motion_id"]

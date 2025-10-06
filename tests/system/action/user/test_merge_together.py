@@ -1684,81 +1684,105 @@ class UserMergeTogether(BaseVoteTestCase):
         self.set_models(
             self.get_deep_create_base_data("motion_submitter", "submitter_ids")
         )
-        supporter_ids_per_motion: dict[int, list[int]] = {
-            # meeting/1
-            1: [14],
-            2: [12],
-            3: [15],
-            4: [12, 14],
-            5: [14, 15],
-            # meeting/2
-            7: [23, 24],
-            # meeting/3
-            8: [33],
-            9: [34],
-            # meeting/4
-            10: [45],
-        }
-        motion_ids_per_supporter: dict[int, list[int]] = {
-            id_: [
-                motion_id
-                for motion_id, ids in supporter_ids_per_motion.items()
-                if id_ in ids
-            ]
-            for id_ in {
-                muser_id
-                for muser_ids in supporter_ids_per_motion.values()
-                for muser_id in muser_ids
+        meeting_to_motion_to_supporter_to_muser_id: dict[
+            int, dict[int, dict[int,int]]
+        ] = {
+            1:{
+                1:{114:14},
+                2:{212:12},
+                3:{315:15},
+                4:{412:12,414:14},
+                5:{514:14,515:15}
+            },
+            2:{
+                7:{723:23,724:24}
+            },
+            3:{
+                8:{833:33},
+                9:{934:34}
+            },
+            4:{
+                10:{1045:45}
             }
         }
-        self.set_models(
-            {
-                **{
-                    f"meeting_user/{id_}": {"supported_motion_ids": ids}
-                    for id_, ids in motion_ids_per_supporter.items()
-                },
-                **{
-                    f"motion/{id_}": {"supporter_meeting_user_ids": ids}
-                    for id_, ids in supporter_ids_per_motion.items()
-                },
+        muser_to_supporter_ids: dict[int,list[int]] ={}
+        for motion_to_supporter_to_muser_id in meeting_to_motion_to_supporter_to_muser_id.values():
+            for supporter_to_muser_id in motion_to_supporter_to_muser_id.values():
+                for supporter_id, meeting_user_id in supporter_to_muser_id.items():
+                    if meeting_user_id in muser_to_supporter_ids:
+                        muser_to_supporter_ids[meeting_user_id].append(supporter_id)
+                    else:
+                        muser_to_supporter_ids[meeting_user_id]=[supporter_id]
+        self.set_models({
+            **{
+                f"meeting/{meeting_id}":{
+                    "motion_supporter_ids": [
+                        supporter_id
+                        for supporter_to_muser_id in motion_to_supporter_to_muser_id.values()
+                        for supporter_id in supporter_to_muser_id
+                    ]
+                } for meeting_id, motion_to_supporter_to_muser_id in meeting_to_motion_to_supporter_to_muser_id.items()
+            },
+            **{
+                f"motion/{motion_id}": {
+                    "supporter_ids": [supporter_id for supporter_id in supporter_to_muser_id]
+                } for motion_to_supporter_to_muser_id in meeting_to_motion_to_supporter_to_muser_id.values() for motion_id, supporter_to_muser_id in motion_to_supporter_to_muser_id.items()
+            },
+            **{
+                f"motion_supporter/{supporter_id}": {
+                    "meeting_id": meeting_id,
+                    "motion_id": motion_id,
+                    "meeting_user_id": meeting_user_id
+                }
+                for meeting_id, motion_to_supporter_to_muser_id in meeting_to_motion_to_supporter_to_muser_id.items()
+                for motion_id, supporter_to_muser_id in motion_to_supporter_to_muser_id.items()
+                for supporter_id, meeting_user_id in supporter_to_muser_id.items()
+            },
+            **{
+                f"meeting_user/{meeting_user_id}": {
+                    "motion_supporter_ids": supporter_ids
+                }
+                for meeting_user_id, supporter_ids in muser_to_supporter_ids.items()
             }
-        )
+        })
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_deep_create_base_test(response, "motion_submitter", "submitter_ids")
 
-        def get_motions(*m_user_ids: int) -> list[int]:
-            return list(
-                {
-                    motion_id
-                    for muser_id in m_user_ids
-                    for motion_id in motion_ids_per_supporter.get(muser_id, [])
-                }
-            )
-
-        new_motion_ids_per_supporter: dict[int, list[int]] = {
-            12: get_motions(12, 14),
-            15: motion_ids_per_supporter[15],
-            22: get_motions(22, 23, 24),
-            46: get_motions(33, 34),
-            45: motion_ids_per_supporter[45],
+        new_meeting_user_to_supporter_ids: dict[int, list[int]] = {
+            12: [212,412,114,514],
+            15: [315,515],
+            22: [723],
+            46: [833,934],
+            45: [1045],
         }
-        for meeting_user_id, motion_ids in new_motion_ids_per_supporter.items():
+        for meeting_user_id, supporter_ids in new_meeting_user_to_supporter_ids.items():
             self.assert_model_exists(
-                f"meeting_user/{meeting_user_id}", {"supported_motion_ids": motion_ids}
+                f"meeting_user/{meeting_user_id}", {"motion_supporter_ids": supporter_ids}
             )
-        for motion_id in [1, 2, 4]:
+        motion_to_supporter_ids: list[tuple[int,list[int]]] = [
+            (1,[114]),
+            (2,[212]),
+            (3,[315]),
+            (4,[412]),
+            (5,[514,515]),
+            (7,[723]),
+            (8,[833]),
+            (9,[934]),
+            (10,[1045])
+        ]
+        for motion_id, supporter_ids in motion_to_supporter_ids:
             self.assert_model_exists(
-                f"motion/{motion_id}", {"supporter_meeting_user_ids": [12]}
+                f"motion/{motion_id}", {"supporter_ids": supporter_ids}
             )
-        self.assert_model_exists("motion/3", {"supporter_meeting_user_ids": [15]})
-        self.assert_model_exists("motion/5", {"supporter_meeting_user_ids": [15, 12]})
-        self.assert_model_exists("motion/7", {"supporter_meeting_user_ids": [22]})
-        for motion_id in [8, 9]:
-            self.assert_model_exists(
-                f"motion/{motion_id}", {"supporter_meeting_user_ids": [46]}
-            )
-        self.assert_model_exists("motion/10", {"supporter_meeting_user_ids": [45]})
-        for id_ in range(2, 10):
+            # self.assert_history_information(f"motion/{motion_id}", ["Supporters merged"])
+        for meeting_id, supporter_ids in [
+            (1,[114,212,315,412,514,515]),
+            (2,[723]),
+            (3,[833,934]),
+            (4,[1045])
+        ]:
+            self.assert_model_exists(f"meeting/{meeting_id}", {"motion_supporter_ids": supporter_ids})
+        for id_ in range(2,10):
             self.assert_history_information(f"motion/{id_}", ["Submitters merged"])
 
     def test_merge_with_personal_notes(self) -> None:
