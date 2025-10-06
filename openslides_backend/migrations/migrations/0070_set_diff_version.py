@@ -11,15 +11,12 @@ class Migration(BaseModelMigration):
     target_migration_index = 71
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
-        events: list[BaseRequestEvent] = []
-        db_models = self.reader.get_all("motion", ["id"])
-        for id_ in db_models.keys():
-            events.append(
-                RequestUpdateEvent(
-                    fqid_from_collection_and_id("motion", id_),
-                    {
-                        "diff_version": "0.1.2",
-                    },
-                )
+        db_models = self.reader.get_all("motion", ["id", "lead_motion_id"])
+        return [
+            RequestUpdateEvent(
+                fqid_from_collection_and_id("motion", id_),
+                {"diff_version": "0.1.2"},
             )
-        return events
+            for id_, motion in db_models.items()
+            if not motion.get("lead_motion_id")
+        ]
