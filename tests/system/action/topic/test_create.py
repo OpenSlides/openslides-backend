@@ -24,9 +24,6 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
         self.assertTrue(response.json["success"])
         self.assertEqual(response.json["message"], "Actions handled successfully")
-        self.assertEqual(
-            response.json["results"], [[{"id": 42, "sequential_number": 2}]]
-        )
 
     def test_create_multiple_requests(self) -> None:
         self.create_meeting()
@@ -195,10 +192,8 @@ class TopicCreateSystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        topic = self.get_model("topic/2")
-        self.assertEqual(topic.get("sequential_number"), 43)
-        topic = self.get_model("topic/3")
-        self.assertEqual(topic.get("sequential_number"), 44)
+        self.assert_model_exists("topic/2", {"sequential_number": 2})
+        self.assert_model_exists("topic/3", {"sequential_number": 3})
 
     def test_create_meeting_id_agenda_tag_ids_mismatch(self) -> None:
         """Tag 8 is from meeting 8 and a topic for meeting 1 should be created.

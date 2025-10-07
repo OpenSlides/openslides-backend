@@ -197,8 +197,6 @@ class BaseMotionCreateForwarded(
         else:
             name = committee.get("name", f"Committee {committee['id']}")
             instance["additional_submitter"] = name
-
-        self.set_sequential_number(instance)
         self.handle_number(instance)
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
