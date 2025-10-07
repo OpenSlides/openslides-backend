@@ -1148,13 +1148,18 @@ class UserMergeTogether(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def add_assignment_or_motion_models_for_meetings(
+    def create_assignment_or_motion_models_for_meetings(
         self,
         data: dict[str, Any],
         collection: Literal["assignment", "motion"],
         sub_collection: str,
         meeting_user_id_lists_per_meeting_id: dict[int, list[list[int]]],
     ) -> None:
+        """
+        For each meeting_user_ids list creates an instance of the given `collection`
+        and a list_of_speakers for it.
+        Then for each meeting_user updates `data` with an instance of `sub_collection`.
+        """
         next_model_id = 1
         next_sub_model_id = 1
         for (
@@ -1256,7 +1261,7 @@ class UserMergeTogether(BaseActionTestCase):
     ) -> None:
         back_relation = "_".join(sub_collection.split("_")[1:]) + "_ids"
         data: dict[str, Any] = {}
-        self.add_assignment_or_motion_models_for_meetings(
+        self.create_assignment_or_motion_models_for_meetings(
             data,
             collection,
             sub_collection,
@@ -1323,7 +1328,7 @@ class UserMergeTogether(BaseActionTestCase):
 
     def get_deep_create_base_data(self, sub_collection: str) -> dict[str, Any]:
         data: dict[str, Any] = {}
-        self.add_assignment_or_motion_models_for_meetings(
+        self.create_assignment_or_motion_models_for_meetings(
             data,
             "motion",
             sub_collection,
@@ -2323,7 +2328,7 @@ class UserMergeTogether(BaseActionTestCase):
         self,
     ) -> None:
         data: dict[str, Any] = {}
-        self.add_assignment_or_motion_models_for_meetings(
+        self.create_assignment_or_motion_models_for_meetings(
             data,
             "motion",
             "motion_submitter",
