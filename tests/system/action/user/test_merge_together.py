@@ -803,6 +803,7 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 "meeting/1": {"present_user_ids": [2, 4]},
                 "meeting/4": {"present_user_ids": [3, 4]},
+                "meeting/7": {"present_user_ids": [2, 3, 4]},
                 "meeting/10": {"present_user_ids": [5]},
                 "meeting_user/15": {"vote_delegated_to_id": 14},
                 "meeting_user/43": {"motion_submitter_ids": [1]},
