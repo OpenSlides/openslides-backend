@@ -1523,7 +1523,8 @@ class ListOfSpeakers(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     moderator_notes = fields.HTMLStrictField()
@@ -1685,7 +1686,8 @@ class Topic(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     attachment_meeting_mediafile_ids = fields.RelationListField(
@@ -1749,7 +1751,8 @@ class Motion(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     title = fields.CharField(required=True)
@@ -2082,7 +2085,8 @@ class MotionCommentSection(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     submitter_can_write = fields.BooleanField()
@@ -2135,7 +2139,8 @@ class MotionCategory(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     parent_id = fields.RelationField(
@@ -2166,7 +2171,8 @@ class MotionBlock(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     motion_ids = fields.RelationListField(
@@ -2329,7 +2335,8 @@ class MotionWorkflow(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     state_ids = fields.RelationListField(
@@ -2419,7 +2426,8 @@ class Poll(Model, PollModelMixin):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     crypt_key = fields.CharField(
@@ -2556,7 +2564,8 @@ class Assignment(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     candidate_ids = fields.RelationListField(
@@ -2876,7 +2885,8 @@ class Projector(Model):
         read_only=True,
         constant=True,
         constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
     current_projection_ids = fields.RelationListField(
