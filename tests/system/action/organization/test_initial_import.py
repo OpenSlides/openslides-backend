@@ -63,7 +63,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         match type(field):
             case fields.DecimalField:
                 return Decimal(value)
-            # TODO: add timestamp field to EXAMPLE_DATA_FILE
             case fields.TimestampField:
                 return datetime.fromtimestamp(value, ZoneInfo("UTC"))
             case _:
