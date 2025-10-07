@@ -204,10 +204,9 @@ def add_users(
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),
             ("poll", "poll_voted_ids"),
-            ("option", "option_ids"),
-            ("vote", "vote_ids"),
+            ("vote", "acting_vote_ids"),
             ("poll_candidate", "poll_candidate_ids"),
-            ("vote", "delegated_vote_ids"),
+            ("vote", "represented_vote_ids"),
         ]
         for collection, fname in collection_field_tupels:
             user[fname] = [

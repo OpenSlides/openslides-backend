@@ -32,8 +32,6 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
             {
                 "title": "test",
                 "type": "analog",
-                "pollmethod": "Y",
-                "options": [{"text": "test2", "Y": "10.000000"}],
                 "meeting_id": 1,
                 "content_object_id": "assignment/1",
             },

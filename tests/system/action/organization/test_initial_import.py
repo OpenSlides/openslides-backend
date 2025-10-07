@@ -8,7 +8,7 @@ from openslides_backend.migrations import (
 from openslides_backend.migrations.migrate import MigrationWrapper
 from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
-from tests.system.util import Profiler
+from tests.system.util import Profiler, performance
 
 
 class OrganizationInitialImport(BaseActionTestCase):
@@ -43,6 +43,7 @@ class OrganizationInitialImport(BaseActionTestCase):
                     f"{collection}/{id_}", request_data["data"][collection][id_]
                 )
 
+    @performance
     def test_initial_import_with_example_data_file(self) -> None:
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file("data/example-data.json")}
