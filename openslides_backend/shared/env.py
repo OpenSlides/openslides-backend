@@ -45,7 +45,7 @@ class Environment(Env):
         "OPENTELEMETRY_ENABLED": "false",
         "PRESENTER_PORT": "9003",
         "VOTE_HOST": "vote",
-        "VOTE_PATH": "/internal/vote",
+        "VOTE_PATH": "/system/vote",
         "VOTE_PORT": "9013",
         "VOTE_PROTOCOL": "http",
         "DATABASE_HOST": "",

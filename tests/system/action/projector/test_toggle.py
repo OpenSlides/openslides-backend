@@ -16,10 +16,10 @@ class ProjectorToggle(BaseActionTestCase):
                 f"poll/{base}": {
                     "meeting_id": 1,
                     "title": "A very important change",
-                    "type": Poll.TYPE_PSEUDOANONYMOUS,
-                    "backend": "fast",
-                    "pollmethod": "YN",
-                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
+                    # "type": Poll.TYPE_PSEUDOANONYMOUS,
+                    # "backend": "fast",
+                    # "pollmethod": "YN",
+                    # "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
                     "sequential_number": base,
                     "content_object_id": "motion/1",
                 }

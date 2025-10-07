@@ -194,10 +194,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "poll_candidate_ids": [34],
-                },
+                "user/111": {"username": "username_srtgb123"},
                 "poll_candidate/34": {
                     "user_id": 111,
                     "poll_candidate_list_id": 1,
@@ -205,10 +202,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "poll_candidate_list/1": {"meeting_id": 1},
-                "option/1": {
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
-                },
             }
         )
         response = self.request("user.delete", {"id": 111})

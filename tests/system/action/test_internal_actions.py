@@ -210,12 +210,12 @@ class TestInternalActionsProdWithPasswordFile(
 
     def test_internal_execute_backend_internal_action(self) -> None:
         response = self.internal_request(
-            "option.create",
-            {"meeting_id": 1, "text": "test"},
+            "meeting_user.create",
+            {"meeting_id": 1, "user_id": 1},
             self.internal_auth_password,
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            response.json.get("message"), "Action option.create does not exist."
+            response.json.get("message"), "Action meeting_user.create does not exist."
         )
-        self.assert_model_not_exists("option/1")
+        self.assert_model_not_exists("meeting_user/1")

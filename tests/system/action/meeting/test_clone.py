@@ -657,16 +657,6 @@ class MeetingClone(BaseActionTestCase):
             "personal_note/2", {"meeting_user_id": 2, "meeting_id": 2}
         )
 
-    def test_clone_with_option(self) -> None:
-        self.set_test_data_with_admin()
-        self.set_models({"option/1": {"content_object_id": "user/1", "meeting_id": 1}})
-        response = self.request("meeting.clone", {"meeting_id": 1})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"option_ids": [1, 2]})
-        self.assert_model_exists(
-            "option/2", {"content_object_id": "user/1", "meeting_id": 2}
-        )
-
     def test_clone_with_mediafile(self) -> None:
         self.set_test_data_with_admin()
         self.set_models(
@@ -1333,39 +1323,45 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_vote_delegated_vote(self) -> None:
         self.set_test_data_with_admin()
         self.create_meeting(4)
+        self.create_motion(1, 1)
         self.set_user_groups(1, [2, 5])
         self.set_models(
             {
-                "vote/1": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
+                "poll/1": {
+                    "title": "Poll 1",
+                    # "type": "named",
                     "meeting_id": 1,
-                    "option_id": 1,
+                    "sequential_number": 1,
+                    "content_object_id": "motion/1",
+                },
+                "vote/1": {
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    "meeting_id": 1,
+                    "poll_id": 1,
                     "user_token": "asdfgh",
                 },
                 "vote/2": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
                     "meeting_id": 4,
-                    "option_id": 2,
+                    "poll_id": 2,
                     "user_token": "hjkl",
                 },
-                "option/1": {"meeting_id": 1},
-                "option/2": {"meeting_id": 4},
             },
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "vote/3",
-            {"user_id": 1, "delegated_user_id": 1, "option_id": 3, "meeting_id": 5},
+            {"user_id": 1, "represented_user_id": 1, "poll_id": 1, "meeting_id": 5},
         )
         self.assert_model_exists(
             "user/1",
             {
                 "meeting_user_ids": [1, 2, 3],
-                "vote_ids": [1, 2, 3],
-                "delegated_vote_ids": [1, 2, 3],
+                "acting_vote_ids": [1, 2, 3],
+                "represented_vote_ids": [1, 2, 3],
                 "meeting_ids": [1, 4, 5],
             },
         )
@@ -1594,47 +1590,18 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "poll_candidate_list/1": {
                     "id": 1,
-                    "option_id": 1,
+                    # "option_id": 1,
                     "meeting_id": 1,
-                    "poll_candidate_ids": [1, 2, 3],
-                },
-                "option/1": {
-                    "id": 1,
-                    "weight": 1,
-                    "poll_id": 1,
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
-                },
-                "option/2": {
-                    "id": 2,
-                    "text": "global option",
-                    "weight": 1,
-                    "meeting_id": 1,
-                    "used_as_global_option_in_poll_id": 1,
                 },
                 "poll/1": {
                     "id": 1,
                     "type": "pseudoanonymous",
                     "state": "created",
                     "title": "First election",
-                    "backend": "fast",
-                    "global_no": False,
                     "votescast": "0.000000",
-                    "global_yes": False,
                     "meeting_id": 1,
-                    "option_ids": [1],
-                    "pollmethod": "YNA",
-                    "votesvalid": "0.000000",
-                    "votesinvalid": "0.000000",
-                    "global_abstain": False,
-                    "global_option_id": 2,
-                    "max_votes_amount": 1,
-                    "min_votes_amount": 1,
                     "content_object_id": "assignment/1",
                     "sequential_number": 1,
-                    "is_pseudoanonymized": True,
-                    "max_votes_per_option": 1,
-                    "onehundred_percent_base": "disabled",
                 },
             }
         )
@@ -1648,7 +1615,6 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_ids": [2],
                 "poll_candidate_list_ids": [2],
                 "poll_candidate_ids": [4, 5, 6],
-                "option_ids": [3, 4],
                 "poll_ids": [2],
                 "projector_ids": [2],
                 "reference_projector_id": 2,
