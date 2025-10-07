@@ -116,12 +116,11 @@ class OrganizationInitialImport(BaseActionTestCase):
 
     def test_initial_import_empty_data(self) -> None:
         """when there is no data given, use initial_data.json for initial import"""
-        initial_data = get_initial_data_file(INITIAL_DATA_FILE)
         response = self.request(
             "organization.initial_import", {"data": {}}, anonymous=True, internal=True
         )
         self.assert_status_code(response, 200)
-        self.validate_imported_data(initial_data)
+        self.validate_imported_data(get_initial_data_file(INITIAL_DATA_FILE))
 
     @performance
     def test_initial_import_with_example_data_file(self) -> None:
