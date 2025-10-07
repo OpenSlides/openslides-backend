@@ -20,7 +20,6 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                     "sequential_number": 1,
                     "open_posts": 1,
                     "meeting_id": 1,
-                    "sequential_number": 1,
                 },
                 "list_of_speakers/1": {
                     "sequential_number": 1,
