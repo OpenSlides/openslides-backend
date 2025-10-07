@@ -1,5 +1,4 @@
 import json
-from collections import defaultdict
 from typing import Any, cast
 
 from datastore.migrations import BaseModelMigration
@@ -56,8 +55,6 @@ class Migration(BaseModelMigration):
         cur_max_pos = 0
         next_entry_id = 1
         events: list[BaseRequestEvent] = []
-        user_fqid_to_position_ids: dict[str, list[int]] = defaultdict(list)
-        model_fqid_to_entry_ids: dict[str, list[int]] = defaultdict(list)
         while cur_max_pos <= max_position:
             cur_min_pos = cur_max_pos
             cur_max_pos += self.chunk_length
@@ -76,7 +73,7 @@ class Migration(BaseModelMigration):
                     for e_id, m_fqid in enumerate(
                         sorted(
                             fqid
-                            for fqid in (
+                            for fqid in set(
                                 info
                                 if isinstance(info, dict)
                                 else position_to_fqids[position_nr]
@@ -116,15 +113,4 @@ class Migration(BaseModelMigration):
                     )
                     for fqid, fields in update_events
                 )
-        all_update_fqids: set[str] = {
-            *model_fqid_to_entry_ids,
-            *user_fqid_to_position_ids,
-        }
-        for fqid in all_update_fqids:
-            payload: dict[str, Any] = {}
-            if posit_ids := user_fqid_to_position_ids.get(fqid):
-                payload["history_position_ids"] = posit_ids
-            if entry_ids := model_fqid_to_entry_ids.get(fqid):
-                payload["history_entry_ids"] = entry_ids
-            events.append(RequestUpdateEvent(fqid, payload))
         return events
