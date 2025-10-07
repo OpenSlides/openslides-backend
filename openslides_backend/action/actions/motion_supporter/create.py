@@ -3,6 +3,7 @@ from typing import Any
 from ....models.models import MotionSupporter
 from ...mixins.motion_meeting_user_create import build_motion_meeting_user_create_action
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .mixins import SupporterActionMixin
 
 BaseClass: type = build_motion_meeting_user_create_action(
@@ -20,3 +21,6 @@ class MotionSupporterCreateAction(BaseClass, SupporterActionMixin):
 
     def get_meeting_user_id(self, instance: dict[str, Any]) -> int | None:
         return instance["meeting_user_id"]
+
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        return self.check_action_data(action_data)

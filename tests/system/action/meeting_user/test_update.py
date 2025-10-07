@@ -55,7 +55,11 @@ class MeetingUserUpdate(BaseActionTestCase):
                     "meeting_user_id": 2,
                 },
                 "motion_editor/1": {"meeting_id": 1, "meeting_user_id": 2},
-                "motion_supporter/1": {"motion_id": 1, "meeting_id":1, "meeting_user_id":2},
+                "motion_supporter/1": {
+                    "motion_id": 1,
+                    "meeting_id": 1,
+                    "meeting_user_id": 2,
+                },
                 "motion/1": {"meeting_id": 1},
                 "chat_message/1": {"meeting_id": 1, "meeting_user_id": 2},
             }

@@ -11,23 +11,24 @@ from ...util.typing import ActionData
 
 class SupporterActionMixin(DelegationBasedRestrictionMixin):
     permission = Permissions.Motion.CAN_MANAGE_METADATA
+
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        if not self.is_self_instance(instance) or not len(
-            self.check_perm_and_delegator_restriction(
-                Permissions.Motion.CAN_MANAGE_METADATA,
-                "users_forbid_delegator_as_supporter",
-                [self.get_meeting_id(instance)],
-            )
-        ):
-            meeting_id = self.get_meeting_id(instance)
-            if has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.Motion.CAN_SUPPORT,
-                meeting_id,
+        if self.is_self_instance(instance):
+            if not len(
+                self.check_perm_and_delegator_restriction(
+                    Permissions.Motion.CAN_MANAGE_METADATA,
+                    "users_forbid_delegator_as_supporter",
+                    [self.get_meeting_id(instance)],
+                )
             ):
-                return
-            raise MissingPermission(Permissions.Motion.CAN_SUPPORT)
+                meeting_id = self.get_meeting_id(instance)
+                if not has_perm(
+                    self.datastore,
+                    self.user_id,
+                    Permissions.Motion.CAN_SUPPORT,
+                    meeting_id,
+                ):
+                    raise MissingPermission(Permissions.Motion.CAN_SUPPORT)
         else:
             super().check_permissions(instance)
 
@@ -49,7 +50,7 @@ class SupporterActionMixin(DelegationBasedRestrictionMixin):
             )
         return False
 
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+    def check_action_data(self, action_data: ActionData) -> ActionData:
         motion_get_many_request = GetManyRequest(
             "motion",
             [self.get_motion_id(instance) for instance in action_data],
@@ -75,13 +76,15 @@ class SupporterActionMixin(DelegationBasedRestrictionMixin):
             meeting_id = motion.get("meeting_id")
             if meeting_id is None:
                 raise ActionException("Motion is missing meeting_id.")
+            meeting = gm_result.get("meeting", {}).get(meeting_id, {})
+            if meeting.get("motions_supporters_min_amount") == 0:
+                raise ActionException("Motion supporters system deactivated.")
             if not has_perm(
-                self.datastore, self.user_id, Permissions.Motion.CAN_MANAGE, meeting_id
+                self.datastore,
+                self.user_id,
+                Permissions.Motion.CAN_MANAGE_METADATA,
+                meeting_id,
             ):
-                meeting = gm_result.get("meeting", {}).get(meeting_id, {})
-                if meeting.get("motions_supporters_min_amount") == 0:
-                    # TODO: Perhaps this should be moved out of the if clause
-                    raise ActionException("Motion supporters system deactivated.")
                 state_id = motion.get("state_id")
                 if state_id is None:
                     raise ActionException("Motion is missing state_id.")

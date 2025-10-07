@@ -18,15 +18,16 @@ class MotionSupporterDeleteAction(BaseClass, SupporterActionMixin):
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
-        self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "motion_supporter",
-                    [payload["id"] for payload in action_data],
-                    ["motion_id", "meeting_user_id", "meeting_id"],
-                )
-            ]
-        )
+        if not self.internal:
+            self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "motion_supporter",
+                        [payload["id"] for payload in action_data],
+                        ["motion_id", "meeting_user_id", "meeting_id"],
+                    )
+                ]
+            )
 
     def get_motion_id(self, instance: dict[str, Any]) -> int:
         return self.datastore.get(
@@ -39,3 +40,8 @@ class MotionSupporterDeleteAction(BaseClass, SupporterActionMixin):
             fqid_from_collection_and_id("motion_supporter", instance["id"]),
             ["meeting_user_id"],
         ).get("meeting_user_id")
+
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        if self.internal:
+            return action_data
+        return self.check_action_data(action_data)

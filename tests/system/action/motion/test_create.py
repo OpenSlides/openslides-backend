@@ -124,11 +124,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("submitter_ids") is None
         assert motion.get("supporter_meeting_user_ids") is None
         self.assert_model_exists(
-            "motion_supporter/1", {
-                "motion_id": 2,
-                "meeting_id": 1,
-                "meeting_user_id": 1
-            }
+            "motion_supporter/1",
+            {"motion_id": 2, "meeting_id": 1, "meeting_user_id": 1},
         )
 
     def test_create_normal_and_additional_submitter(self) -> None:
