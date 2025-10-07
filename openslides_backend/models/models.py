@@ -350,7 +350,9 @@ class Meeting(Model, MeetingModelMixin):
         to={"organization": "archived_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
-    description = fields.CharField(constraints={"maxLength": 100})
+    description = fields.CharField(
+        default="Presentation and assembly system", constraints={"maxLength": 100}
+    )
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
@@ -527,8 +529,6 @@ class Meeting(Model, MeetingModelMixin):
     motions_export_preamble = fields.TextField()
     motions_export_submitter_recommendation = fields.BooleanField(default=True)
     motions_export_follow_recommendation = fields.BooleanField(default=False)
-    motions_enable_restricted_editor_for_manager = fields.BooleanField()
-    motions_enable_restricted_editor_for_non_manager = fields.BooleanField()
     motion_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",
         constraints={
@@ -1780,7 +1780,6 @@ class MotionState(Model):
     allow_motion_forwarding = fields.BooleanField(default=False)
     allow_amendment_forwarding = fields.BooleanField()
     set_workflow_timestamp = fields.BooleanField(default=False)
-    state_button_label = fields.CharField()
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
