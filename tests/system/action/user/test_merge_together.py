@@ -1463,10 +1463,8 @@ class UserMergeTogether(BaseActionTestCase):
         }
         self.set_models(
             {
-                **{
-                    f"meeting_user/{id_}": {"supported_motion_ids": ids}
-                    for id_, ids in motion_ids_per_supporter.items()
-                },
+                f"meeting_user/{id_}": {"supported_motion_ids": ids}
+                for id_, ids in motion_ids_per_supporter.items()
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
