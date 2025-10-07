@@ -88,7 +88,6 @@ class OrganizationInitialImport(BaseActionTestCase):
                 self.assert_model_exists(f"{collection}/{id_}", expected_data)
 
     def test_initial_import_filled_datastore(self) -> None:
-        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -99,6 +98,7 @@ class OrganizationInitialImport(BaseActionTestCase):
                 "theme/1": {"name": "Intevation theme"},
             }
         )
+        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
         )
