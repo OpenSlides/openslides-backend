@@ -15,7 +15,6 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion/357": {
-                    "sequential_number": 357,
                     "state_id": 1,
                     "title": "title_YIDYXmKj",
                     "meeting_id": 1,
@@ -27,7 +26,6 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
                 },
                 "meeting_user/78": {"meeting_id": 1, "user_id": 78},
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "motion/357",
                     "meeting_id": 1,
                 },

@@ -8,7 +8,7 @@ class ProjectorProjectPreview(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "projector/2": {"meeting_id": 1, "sequential_number": 2},
+                "projector/2": {"meeting_id": 1},
                 "projection/1": {
                     "current_projector_id": 1,
                     "meeting_id": 1,

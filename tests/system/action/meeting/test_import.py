@@ -37,7 +37,6 @@ class MeetingImport(BaseActionTestCase):
                 "projector/1": {"meeting_id": 1},
                 "motion/1": {
                     "meeting_id": 1,
-                    "sequential_number": 26,
                     "number_value": 31,
                 },
                 "gender/1": {"name": "male", "organization_id": 1},

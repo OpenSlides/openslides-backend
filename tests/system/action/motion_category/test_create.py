@@ -13,7 +13,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 "motion_category/123": {
                     "name": "name_bWdKLQxL",
                     "meeting_id": 222,
-                    "sequential_number": 1,
                     "weight": 1,
                 },
             }
@@ -59,7 +58,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "name": "name_bWdKLQxL",
                     "meeting_id": 222,
                     "weight": 1,
-                    "sequential_number": 1,
                 },
             }
         )
@@ -167,7 +165,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "name": "name_bWdKLQxL",
                     "meeting_id": 222,
                     "prefix": "test",
-                    "sequential_number": 1,
                 }
             }
         )

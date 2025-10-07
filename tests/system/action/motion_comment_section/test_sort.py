@@ -12,12 +12,10 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
             "motion_comment_section/31": {
                 "meeting_id": 1,
                 "name": "name_loisueb",
-                "sequential_number": 31,
             },
             "motion_comment_section/32": {
                 "meeting_id": 1,
                 "name": "name_blanumop",
-                "sequential_number": 32,
             },
         }
 
@@ -37,7 +35,6 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
                 "motion_comment_section/31": {
                     "meeting_id": 1,
                     "name": "name_loisueb",
-                    "sequential_number": 31,
                 },
             }
         )
@@ -57,17 +54,14 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
                 "motion_comment_section/31": {
                     "meeting_id": 1,
                     "name": "name_loisueb",
-                    "sequential_number": 31,
                 },
                 "motion_comment_section/32": {
                     "meeting_id": 1,
                     "name": "name_blanumop",
-                    "sequential_number": 32,
                 },
                 "motion_comment_section/33": {
                     "meeting_id": 1,
                     "name": "name_polusiem",
-                    "sequential_number": 33,
                 },
             }
         )

@@ -23,7 +23,6 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             {
                 f"motion_workflow/{workflow_id}": {
                     "name": f"motion_workflow{workflow_id}",
-                    "sequential_number": workflow_id,
                     "first_state_id": state_id,
                     "meeting_id": meeting_id,
                 },

@@ -20,7 +20,6 @@ class ProjectorToggle(BaseActionTestCase):
                     "backend": "fast",
                     "pollmethod": "YN",
                     "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
-                    "sequential_number": base,
                     "content_object_id": "motion/1",
                 }
             }

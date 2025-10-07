@@ -10,13 +10,11 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/102": {
-                    "sequential_number": 1,
                     "title": "tropic",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/102",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/111": {
@@ -60,10 +58,9 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/111": {"child_ids": [222]},
@@ -109,16 +106,14 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_multiple_with_tag(self) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "jungle"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/64": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "tag/1": {
@@ -153,22 +148,19 @@ class AgendaItemActionTest(BaseActionTestCase):
     ) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "jungle", "sequential_number": 2},
-                "topic/3": {"meeting_id": 1, "title": "jungle", "sequential_number": 3},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "jungle"},
+                "topic/3": {"meeting_id": 1, "title": "jungle"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/64": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/128": {
                     "content_object_id": "topic/3",
-                    "sequential_number": 13,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {

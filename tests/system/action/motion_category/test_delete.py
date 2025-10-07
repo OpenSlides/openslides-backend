@@ -11,7 +11,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,
-                    "sequential_number": 111,
                 },
             }
         )

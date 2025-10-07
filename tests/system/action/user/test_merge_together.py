@@ -1463,7 +1463,6 @@ class UserMergeTogether(BaseActionTestCase):
                 },
                 "assignment/11": {
                     "meeting_id": 1,
-                    "sequential_number": 11,
                     "title": "a signment",
                     "phase": "finished",
                     "candidate_ids": [112, 114],

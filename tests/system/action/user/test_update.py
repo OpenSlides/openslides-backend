@@ -3004,10 +3004,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "committee_id": 63,
                     "present_user_ids": [1234],
                 },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
+                "topic/1": {"title": "tropic", "meeting_id": 4},
                 "list_of_speakers/1": {
                     "meeting_id": 4,
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "speaker/14": {
@@ -3083,10 +3082,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "user_id": 1234,
                     "speaker_ids": [14, 24],
                 },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
+                "topic/1": {"title": "tropic", "meeting_id": 4},
                 "list_of_speakers/1": {
                     "meeting_id": 4,
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "speaker/14": {
@@ -3147,14 +3145,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "poll_candidate_ids": [1],
                     "vote_ids": [1, 2],
                 },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 1},
+                "topic/1": {"title": "tropic", "meeting_id": 1},
                 "poll/1": {
                     "title": "pull",
                     "type": "analog",
                     "pollmethod": "YNA",
                     "meeting_id": 1,
                     "option_ids": [1, 2],
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "option/1": {

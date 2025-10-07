@@ -11,7 +11,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
                 "motion_workflow/2": {
                     "name": "workflow 2",
                     "meeting_id": 1,
-                    "sequential_number": 2,
                     "first_state_id": 2,
                 },
                 "motion_state/2": {

@@ -7,11 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class TopicCreateSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_meeting()
-        self.set_models(
-            {
-                "topic/41": {"title": "0", "sequential_number": 1, "meeting_id": 1},
-            }
-        )
+        self.set_models({"topic/41": {"title": "0", "meeting_id": 1}})
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -190,11 +186,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
 
     def test_create_multiple_with_existing_sequential_number(self) -> None:
         self.create_meeting()
-        self.set_models(
-            {
-                "topic/1": {"title": "0", "meeting_id": 1, "sequential_number": 42},
-            }
-        )
+        self.set_models({"topic/1": {"title": "0", "meeting_id": 1}})
         response = self.request_multi(
             "topic.create",
             [

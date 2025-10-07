@@ -86,7 +86,6 @@ class MotionStateActionTest(BaseActionTestCase):
                     "name": "name_Ycefgee",
                     "meeting_id": 1,
                     "first_state_id": 113,
-                    "sequential_number": 90,
                 },
                 "motion_state/113": {
                     "name": "name_srtfg113",
