@@ -560,7 +560,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"topic/{base}": {
                     "title": "test",
-                    "sequential_number": base,
                     "meeting_id": meeting_id,
                     **topic_data,
                 },
@@ -570,7 +569,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
                 f"list_of_speakers/{base}": {
                     "content_object_id": f"topic/{base}",
-                    "sequential_number": 1,
                     "meeting_id": meeting_id,
                 },
             }
