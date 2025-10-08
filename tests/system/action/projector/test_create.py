@@ -81,7 +81,9 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             "projector/223",
             {"used_as_default_projector_for_topic_in_meeting_id": 222},
         )
-        self.assert_model_exists("meeting/222", {"default_projector_topic_ids": [223]})
+        self.assert_model_exists(
+            "meeting/222", {"default_projector_topic_ids": [222, 223]}
+        )
 
     def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:
         response = self.request(

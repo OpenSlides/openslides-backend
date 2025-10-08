@@ -85,6 +85,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "default_amendment_workflow_meeting_id": 1,
                 "state_ids": [1, 2, 3, 4],
                 "first_state_id": 1,
+                "sequential_number": 1,
             },
         )
         self.assert_model_exists(
@@ -112,6 +113,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "first_state_id": 5,
+                "sequential_number": 2,
             },
         )
         self.assert_model_exists(
@@ -152,6 +154,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "Default projector",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
+                "sequential_number": 1,
                 **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         )
