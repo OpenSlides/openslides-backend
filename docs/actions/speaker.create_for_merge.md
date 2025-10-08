@@ -12,6 +12,7 @@
     unpause_time: int;
     total_pause: int;
     speech_state: string;
+    answer: boolean;
     point_of_order: boolean;
     note: string;
     point_of_order_category_id: Id;

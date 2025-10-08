@@ -18,6 +18,7 @@
     users_email_subject: string;
     users_email_body: text;
     require_duplicate_from: boolean;
+    forbid_committee_admins_to_set_agenda_forwarding_relations: boolean;
     
 // Group B
     enable_electronic_voting: boolean;
