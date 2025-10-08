@@ -553,6 +553,29 @@ class BaseActionTestCase(BaseSystemTestCase):
 
         self.set_models({f"mediafile/{base}": model_data})
 
+    def create_topic(
+        self, base: int, meeting_id: int, topic_data: PartialModel = {}
+    ) -> None:
+        self.set_models(
+            {
+                f"topic/{base}": {
+                    "title": "test",
+                    "sequential_number": base,
+                    "meeting_id": meeting_id,
+                    **topic_data,
+                },
+                f"agenda_item/{base}": {
+                    "meeting_id": meeting_id,
+                    "content_object_id": f"topic/{base}",
+                },
+                f"list_of_speakers/{base}": {
+                    "content_object_id": f"topic/{base}",
+                    "sequential_number": 1,
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
     def base_permission_test(
         self,
         models: dict[str, dict[str, Any]],

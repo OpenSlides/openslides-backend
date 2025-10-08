@@ -7,20 +7,23 @@ from tests.system.action.base import BaseActionTestCase
 class TopicCreateSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_meeting()
-        self.set_models({"topic/41": {"title": "0", "meeting_id": 1}})
+        self.create_topic(41, 1)
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "topic/42", {"meeting_id": 1, "agenda_item_id": 1, "sequential_number": 2}
+            "topic/42",
+            {
+                "meeting_id": 1,
+                "agenda_item_id": 42,
+                "sequential_number": 2,
+                "list_of_speakers_id": 42,
+            },
         )
         self.assert_model_exists(
-            "agenda_item/1", {"meeting_id": 1, "content_object_id": "topic/42"}
+            "agenda_item/42", {"meeting_id": 1, "content_object_id": "topic/42"}
         )
         self.assert_model_exists(
-            "list_of_speakers/1", {"content_object_id": "topic/42"}
-        )
-        self.assert_model_exists(
-            "list_of_speakers/1", {"content_object_id": "topic/42"}
+            "list_of_speakers/42", {"content_object_id": "topic/42"}
         )
         self.assertTrue(response.json["success"])
         self.assertEqual(response.json["message"], "Actions handled successfully")
@@ -183,7 +186,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
 
     def test_create_multiple_with_existing_sequential_number(self) -> None:
         self.create_meeting()
-        self.set_models({"topic/1": {"title": "0", "meeting_id": 1}})
+        self.create_topic(1, 1)
         response = self.request_multi(
             "topic.create",
             [
