@@ -121,7 +121,6 @@ def test_create_11_field_as_1n() -> None:
                         "fields": {
                             "title": "2",
                             "meeting_id": 1,
-                            "sequential_number": 1,
                             "state_id": 1,
                         },
                     },
@@ -131,7 +130,6 @@ def test_create_11_field_as_1n() -> None:
                         "fields": {
                             "title": "2",
                             "meeting_id": 1,
-                            "sequential_number": 2,
                             "state_id": 1,
                         },
                     },
@@ -141,7 +139,6 @@ def test_create_11_field_as_1n() -> None:
                         "fields": {
                             "content_object_id": "motion/1",
                             "meeting_id": 1,
-                            "sequential_number": 1,
                         },
                     },
                     {
@@ -150,7 +147,6 @@ def test_create_11_field_as_1n() -> None:
                         "fields": {
                             "content_object_id": "motion/2",
                             "meeting_id": 1,
-                            "sequential_number": 2,
                         },
                     },
                 ]
