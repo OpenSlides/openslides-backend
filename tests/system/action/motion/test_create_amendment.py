@@ -335,3 +335,17 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             )
             self.assert_status_code(response, 403)
             assert f"Forbidden fields: {field}" in response.json["message"]
+
+    def test_create_amendment_with_diff_version_not_allowed(self) -> None:
+        response = self.request(
+            "motion.create",
+            {
+                **self.default_action_data,
+                "diff_version": "0.1.2",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "You can define a diff_version only for the lead motion",
+            response.json["message"],
+        )
