@@ -469,3 +469,79 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
             "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 1}
         )
         self.assert_status_code(response, 200)
+
+    def test_create_duplicate_supporter(self) -> None:
+        self.create_meeting(1)
+        self.create_user("bob", [1])
+        self.set_models(
+            {
+                "meeting_user/1": {
+                    "motion_supporter_ids": [1],
+                },
+                "motion_supporter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 1,
+                },
+                "motion/1": {
+                    "title": "motion_1",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "supporter_ids": [1],
+                },
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_ids": [1],
+                    "motions_supporters_min_amount": 1,
+                    "motion_supporter_ids": [1],
+                },
+                "motion_state/1": {
+                    "name": "state_1",
+                    "allow_support": True,
+                    "motion_ids": [1],
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 1}
+        )
+        self.assert_status_code(response, 400)
+        assert "(meeting_user_id, motion_id) must be unique." in response.json.get(
+            "message", ""
+        )
+
+    def test_create_duplicate_supporters(self) -> None:
+        self.create_meeting(1)
+        self.create_user("bob", [1])
+        self.set_models(
+            {
+                "motion/1": {
+                    "title": "motion_1",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                },
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_ids": [1],
+                    "motions_supporters_min_amount": 1,
+                },
+                "motion_state/1": {
+                    "name": "state_1",
+                    "allow_support": True,
+                    "motion_ids": [1],
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request_multi(
+            "motion_supporter.create",
+            [
+                {"motion_id": 1, "meeting_user_id": 1},
+                {"motion_id": 1, "meeting_user_id": 1},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "(meeting_user_id, motion_id) must be unique." in response.json.get(
+            "message", ""
+        )
