@@ -915,12 +915,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_add_diff_version_to_lead_motion(self) -> None:
+    def test_add_diff_version_to_normal_motion(self) -> None:
         self.create_meeting()
         self.set_models(
             {
                 "motion/111": {
-                    "title": "amendment",
+                    "title": "Motion 111",
                     "sequential_number": 111,
                     "state_id": 1,
                     "meeting_id": 1,
@@ -957,3 +957,20 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "You can define a diff_version only for the lead motion",
             response.json["message"],
         )
+
+    def test_remove_diff_version_from_normal_motion(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "motion/111": {
+                    "title": "Motion 111",
+                    "sequential_number": 111,
+                    "state_id": 1,
+                    "meeting_id": 1,
+                    "diff_version": "0.1.2",
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 111, "diff_version": None})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111", {"diff_version": None})
