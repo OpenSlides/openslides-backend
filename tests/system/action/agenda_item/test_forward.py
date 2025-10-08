@@ -818,7 +818,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         Tests if the content of agenda_items, topics and attachments is correct.
         Returns the old_id to new_id matches per meeting for agenda_item, topic and los
         """
-        # agenda_item_id = agenda_item data, topic data, los data
+        # agenda_item_id, agenda_item data, los data
         expected_agenda_creation_order: list[
             tuple[int, tuple[dict[str, Any], dict[str, Any]]]
         ] = [
@@ -3924,9 +3924,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
     def test_forward_only_target_meeting_users(self) -> None:
         """
         Checks if not needing to create any users breaks something.
-        Also checks if
-            - no groups needing to be created breaks somethingif
-            - no structure_levels needing to be created breaks something
+        Also checks if no groups or structure_levels needing to be created breaks something.
         """
         self.create_full_dataset(with_mediafiles=False)
         self.set_models(

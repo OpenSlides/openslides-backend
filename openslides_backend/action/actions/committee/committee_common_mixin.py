@@ -37,7 +37,6 @@ class CommitteeCommonCreateUpdateMixin(
         ).get("forbid_committee_admins_to_set_agenda_forwarding_relations") and any(
             field in instance for field in agenda_forwarding_fields
         ):
-            # TODO write test for this
             if not has_organization_management_level(
                 self.datastore,
                 self.user_id,

@@ -793,9 +793,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_forwarding_relations_no_parent(self) -> None:
-        self.test_create_add_forwarding_relations(
-            fail_forward_to=True, has_parent_id=False
-        )
+        self.test_create_add_forwarding_relations(has_parent_id=False)
 
     def test_create_add_forwarding_relations_no_parent_fail_forward_to(self) -> None:
         self.test_create_add_forwarding_relations(
@@ -905,9 +903,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_agenda_forwarding_relations_no_parent(self) -> None:
-        self.test_create_add_agenda_forwarding_relations(
-            fail_forward_to=True, has_parent_id=False
-        )
+        self.test_create_add_agenda_forwarding_relations(has_parent_id=False)
 
     def test_create_add_agenda_forwarding_relations_no_parent_fail_forward_to(
         self,

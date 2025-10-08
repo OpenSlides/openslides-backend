@@ -114,8 +114,8 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             raise ActionException(
                 "Cannot forward an agenda without the agenda_item_ids."
             )
-        if "id" in instance or "meeting_id" in instance:
-            super().get_meeting_id(instance)
+        elif "id" in instance or "meeting_id" in instance:
+            return super().get_meeting_id(instance)
         return self.meeting_id
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
@@ -236,11 +236,7 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             data.get("mediafile", {}), data.get("speaker", {})
         )
 
-        new_mediafiles = new_data.get("mediafile", {})
-        if new_mediafiles:
-            data["mediafile"].update(new_mediafiles)
-            del new_data["mediafile"]
-        data.update(new_data)
+        new_mediafiles = self.process_mediafiles(new_data, data)
 
         new_data = self.get_mediafile_grandchildren_and_all_groups_and_structure_levels(
             new_mediafiles,
@@ -249,14 +245,22 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             data.get("structure_level_list_of_speakers", {}),
         )
 
+        new_mediafiles = self.process_mediafiles(new_data, data)
+
+        self.load_remaining_mediafile_descendants(data, new_mediafiles)
+        return data
+
+    def process_mediafiles(
+        self,
+        new_data: dict[str, dict[int, dict[str, Any]]],
+        data: dict[str, dict[int, dict[str, Any]]],
+    ) -> dict[int, dict[str, Any]]:
         new_mediafiles = new_data.get("mediafile", {})
         if new_mediafiles:
             data["mediafile"].update(new_mediafiles)
             del new_data["mediafile"]
         data.update(new_data)
-
-        self.load_remaining_mediafile_descendants(data, new_mediafiles)
-        return data
+        return new_mediafiles
 
     def get_updated_instances_for_meeting(
         self,
