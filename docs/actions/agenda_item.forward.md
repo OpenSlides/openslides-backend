@@ -46,7 +46,7 @@ If `with_attachments` is true:
 - If any of the attached files is a directory, the children are also copied over.
 - Access groups are always the new meetings admin group.
 - `create_timestamp` should be the creation of the copy.
-- Published orga files will be used as-is
+- Published orga files will be used as-is.
 
 ## Permissions
 The request user needs `agenda_item.can_forward` in the source meeting. There are no rights needed in the receiving meeting, unless `with_speakers` is set, in which case `user.can_manage` is required in all target meetings.
