@@ -23,6 +23,8 @@ from ..motion_editor.create import MotionEditorCreateAction
 from ..motion_editor.update import MotionEditorUpdateAction
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
+from ..motion_supporter.delete import MotionSupporterDeleteAction
+from ..motion_supporter.update import MotionSupporterUpdateAction
 from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreateAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
@@ -352,6 +354,10 @@ class UserMergeTogether(
                 "assignment_candidate": {
                     "update": AssignmentCandidateUpdate,
                     "delete": AssignmentCandidateDelete,
+                },
+                "motion_supporter": {
+                    "update": MotionSupporterUpdateAction,
+                    "delete": MotionSupporterDeleteAction,
                 },
                 "motion_editor": {
                     "update": MotionEditorUpdateAction,
