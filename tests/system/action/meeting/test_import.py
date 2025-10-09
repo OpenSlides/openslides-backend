@@ -254,7 +254,6 @@ class MeetingImport(BaseActionTestCase):
                         "default_amendment_workflow_meeting_id": 1,
                         "default_workflow_meeting_id": 1,
                         "state_ids": [1],
-                        "sequential_number": 42,
                     }
                 },
                 "motion_state": {
@@ -308,7 +307,6 @@ class MeetingImport(BaseActionTestCase):
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
                         **{field: 1 for field in Meeting.reverse_default_projectors()},
-                        "sequential_number": 63,
                     }
                 },
             },
@@ -609,6 +607,8 @@ class MeetingImport(BaseActionTestCase):
 
     def test_check_calc_fields(self) -> None:
         request_data = self.create_request_data({})
+        request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
+        request_data["meeting"]["projector"]["1"]["sequential_number"] = 63
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
