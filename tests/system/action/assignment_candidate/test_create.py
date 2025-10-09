@@ -23,14 +23,12 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 "user_id": 110,
             },
             "assignment/111": {
-                "sequential_number": 1,
                 "title": "title_xTcEkItp",
                 "meeting_id": 1,
                 "phase": "voting",
             },
             "list_of_speakers/23": {
                 "content_object_id": "assignment/111",
-                "sequential_number": 11,
                 "meeting_id": 1,
             },
         }
@@ -42,13 +40,11 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 "user/110": {"username": "test_Xcdfgee"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
             }
@@ -80,13 +76,11 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             {
                 "user/110": {"username": "test_Xcdfgee"},
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1133,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1133,
                 },
                 "meeting_user/110": {"meeting_id": 1133, "user_id": 110},
@@ -116,14 +110,12 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                     "user_id": 110,
                 },
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                     "phase": "finished",
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
             }

@@ -1181,7 +1181,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/1": {
                     "meeting_id": 1,
                     "all_derived_motion_ids": [2],
-                    "sequential_number": 1,
                     "list_of_speakers_id": 1,
                     "title": "motion1",
                     "state_id": 1,
@@ -1190,7 +1189,6 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 4,
                     "origin_id": 1,
                     "origin_meeting_id": 1,
-                    "sequential_number": 2,
                     "list_of_speakers_id": 2,
                     "title": "motion1 forwarded",
                     "state_id": 4,
@@ -1198,7 +1196,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/3": {
                     "meeting_id": 4,
                     "all_derived_motion_ids": [4],
-                    "sequential_number": 3,
                     "list_of_speakers_id": 3,
                     "title": "motion3",
                     "state_id": 4,
@@ -1207,28 +1204,23 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "origin_id": 3,
                     "origin_meeting_id": 4,
-                    "sequential_number": 4,
                     "list_of_speakers_id": 4,
                     "title": "motion3 forwarded",
                     "state_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/2": {
-                    "sequential_number": 2,
                     "content_object_id": "motion/2",
                     "meeting_id": 4,
                 },
                 "list_of_speakers/3": {
-                    "sequential_number": 3,
                     "content_object_id": "motion/3",
                     "meeting_id": 4,
                 },
                 "list_of_speakers/4": {
-                    "sequential_number": 4,
                     "content_object_id": "motion/4",
                     "meeting_id": 1,
                 },
@@ -1483,7 +1475,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "state_id": 1,
                     "title": "dummy",
                     "amendment_paragraphs": Jsonb(
@@ -1496,7 +1487,6 @@ class MeetingClone(BaseActionTestCase):
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
-                    "sequential_number": 1,
                 },
             }
         )
@@ -1560,7 +1550,6 @@ class MeetingClone(BaseActionTestCase):
                     "closed": False,
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",
-                    "sequential_number": 1,
                 },
                 "assignment/1": {
                     "id": 1,
@@ -1568,7 +1557,6 @@ class MeetingClone(BaseActionTestCase):
                     "title": "Duckburg town council",
                     "meeting_id": 1,
                     "open_posts": 0,
-                    "sequential_number": 1,
                     "list_of_speakers_id": 1,
                 },
                 "poll_candidate/1": {
@@ -1631,7 +1619,6 @@ class MeetingClone(BaseActionTestCase):
                     "max_votes_amount": 1,
                     "min_votes_amount": 1,
                     "content_object_id": "assignment/1",
-                    "sequential_number": 1,
                     "is_pseudoanonymized": True,
                     "max_votes_per_option": 1,
                     "onehundred_percent_base": "disabled",

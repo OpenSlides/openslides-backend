@@ -60,7 +60,6 @@ class MotionStateActionTest(BaseActionTestCase):
                     "name": "test_name_43",
                     "meeting_id": 1,
                     "first_state_id": 2,
-                    "sequential_number": 43,
                 },
                 "motion_state/2": {
                     "meeting_id": 1,

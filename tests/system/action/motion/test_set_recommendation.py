@@ -53,7 +53,6 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             {
                 "motion_workflow/2": {
                     "name": "motion_workflow 2",
-                    "sequential_number": 2,
                     "first_state_id": 77,
                     "meeting_id": 1,
                 },

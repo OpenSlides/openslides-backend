@@ -8,7 +8,6 @@ from ....shared.schema import id_list_schema
 from ...action_set import ActionSet
 from ...generics.update import UpdateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
-from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 from ..agenda_item.agenda_creation import (
@@ -26,7 +25,6 @@ from ..speaker.create import SpeakerCreateAction
 
 class AssignmentCreate(
     AttachmentMixin,
-    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,
