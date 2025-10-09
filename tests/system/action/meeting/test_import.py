@@ -32,7 +32,7 @@ class MeetingImport(BaseActionTestCase):
         self, datapart: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         data: dict[str, Any] = {
-            "committee_id": 1,
+            "committee_id": 60,
             "meeting": {
                 "meeting": {
                     "1": {
