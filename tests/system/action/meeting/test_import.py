@@ -19,23 +19,10 @@ from tests.system.util import Profiler, performance
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(1, {"external_id": "ext_id"})
+        self.create_motion(1, 1, motion_data={"number_value": 31})
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {
-                    "active_meeting_ids": [1],
-                    "committee_ids": [1],
-                    "gender_ids": [1, 4],
-                },
-                "committee/1": {"organization_id": 1, "meeting_ids": [1]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "group_ids": [1],
-                    "external_id": "ext_id",
-                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-                "group/1": {"meeting_id": 1, "name": "group1_m1"},
-                "projector/1": {"meeting_id": 1},
-                "motion/1": {"meeting_id": 1, "number_value": 31},
                 "gender/1": {"name": "male", "organization_id": 1},
                 "gender/4": {"name": "diverse", "organization_id": 1},
             }
@@ -267,6 +254,7 @@ class MeetingImport(BaseActionTestCase):
                         "default_amendment_workflow_meeting_id": 1,
                         "default_workflow_meeting_id": 1,
                         "state_ids": [1],
+                        "sequential_number": 42,
                     }
                 },
                 "motion_state": {
@@ -320,6 +308,7 @@ class MeetingImport(BaseActionTestCase):
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
                         **{field: 1 for field in Meeting.reverse_default_projectors()},
+                        "sequential_number": 63,
                     }
                 },
             },
@@ -623,8 +612,13 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
-        meeting2 = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting2["user_ids"], [1, 2])
+        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
+        self.assert_model_exists(
+            "projector/2", {"meeting_id": 2, "sequential_number": 1}
+        )
+        self.assert_model_exists(
+            "motion_workflow/2", {"meeting_id": 2, "sequential_number": 1}
+        )
 
     def test_check_usernames_1(self) -> None:
         request_data = self.create_request_data(
