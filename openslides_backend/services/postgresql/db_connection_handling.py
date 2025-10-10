@@ -24,6 +24,12 @@ class DatabaseError(Exception):
 
 
 class ConnectionContext:
+    """
+    Custom connection context.
+    Generates a connection object upon entering in a with statement.
+    Sets autocommit to False and transaction isolation to REPEATABLE_READ.
+    """
+
     def __init__(self, context_manager: _GeneratorContextManager) -> None:
         self.connection_context = context_manager
 

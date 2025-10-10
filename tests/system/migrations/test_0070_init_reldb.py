@@ -1,5 +1,6 @@
 # BUILTIN IMPORTS
 import json
+import os
 
 import pytest
 from psycopg.errors import UndefinedTable
@@ -9,8 +10,14 @@ from openslides_backend.migrations.migration_helper import (
     LAST_NON_REL_MIGRATION,
     MigrationHelper,
 )
-from openslides_backend.services.postgresql.create_schema import create_schema
+from openslides_backend.services.postgresql.create_schema import (
+    create_db,
+    create_schema,
+    drop_db,
+)
 from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
+from tests.conftest import OLD_TABLES, get_rel_db_table_names
+from tests.conftest_helper import generate_sql_for_test_initiation
 
 # ENV Variables
 EXAMPLE_DATA_PATH = "data/example-data.json"
@@ -37,13 +44,25 @@ def test_migration() -> None:
 
         What is tested is the correct creation of intermediate tables and simple relations exemplary as we
         can trust that it works for other tables if it worked for one.
-
-        TODO: Implementing further test cases if needed.
+        Also it is tested that the new tables are created on top of an old basis and the old tables are deleted.
     """
     raw_data: dict[str, any]
     json_blob: str
-    # 0) Create schema
-    create_schema()
+    # 0) Create old idempotent key-value-store schema
+    drop_db()
+    create_db()
+    with os_conn_pool.connection() as conn:
+        with conn.cursor() as curs:
+            path = os.path.realpath(
+                os.path.join(
+                    os.getcwd(),
+                    "openslides_backend",
+                    "services",
+                    "postgresql",
+                    "schema.sql",
+                )
+            )
+            curs.execute(open(path).read())
 
     # 1) reading json data from file
     with open(EXAMPLE_DATA_PATH) as file:
@@ -133,30 +152,25 @@ def test_migration() -> None:
             )
             assert cur.fetchone() is not None
 
-            old_tables = (
-                "models",
-                "events",
-                "positions",
-                "id_sequences",
-                "collectionfields",
-                "events_to_collectionfields",
-                "migration_keyframes",
-                "migration_keyframe_models",
-                "migration_events",
-                "migration_positions",
-            )
-
             # 6.4) Inserted new migration_index
             cur.execute("SELECT migration_index FROM version;")
             assert cur.fetchone() == {"migration_index": LAST_NON_REL_MIGRATION + 1}
 
     # 6.5) Deleted old table schema
-    for table_name in old_tables:
+    for table_name in OLD_TABLES:
         with os_conn_pool.connection() as conn:
             with conn.cursor() as cur:
                 with pytest.raises(UndefinedTable):
                     cur.execute(f"SELECT * FROM {table_name};")
     # END TEST CASES
+
+    # 7) Cleanup
+    drop_db()
+    create_schema()
+    table_names = get_rel_db_table_names()
+    with os_conn_pool.connection() as conn:
+        with conn.cursor() as curs:
+            curs.execute(generate_sql_for_test_initiation(table_names))
 
 
 # END TEST

@@ -4,6 +4,7 @@ from unittest.mock import _patch
 
 import pytest
 from psycopg import Connection, rows
+from psycopg.errors import AdminShutdown
 
 from openslides_backend.services.postgresql.db_connection_handling import (  # get_current_os_conn_pool,
     env,
@@ -17,39 +18,49 @@ from tests.mock_auth_login import auth_http_adapter_patch, login_patch
 
 openslides_db = env.DATABASE_NAME
 database_user = env.DATABASE_USER
+OLD_TABLES = (
+    "models",
+    "events",
+    "positions",
+    "id_sequences",
+    "collectionfields",
+    "events_to_collectionfields",
+    "migration_keyframes",
+    "migration_keyframe_models",
+    "migration_events",
+    "migration_positions",
+)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
-    """applies the login and auth-service mocker
-    truncates all database tables for initialization of tests
+def get_rel_db_table_names() -> list[str]:
     """
-    login_patch.start()
-    auth_http_adapter_patch.start()
-    OLD_TABLES = (
-        "models",
-        "events",
-        "positions",
-        "id_sequences",
-        "collectionfields",
-        "events_to_collectionfields",
-        "migration_keyframes",
-        "migration_keyframe_models",
-        "migration_events",
-        "migration_positions",
-    )
+    gets the table names of the relational schema currently applied to the database
+    """
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
             rows = curs.execute(
                 "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
             ).fetchall()
-            tablenames = tuple(
+            return [
                 f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows if row not in OLD_TABLES  # type: ignore
-            )
+            ]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
+    """
+    applies the login and auth-service mocker
+    truncates all database tables for initialization of tests
+    """
+    login_patch.start()
+    auth_http_adapter_patch.start()
+    with get_new_os_conn() as conn:
+        with conn.cursor() as curs:
+            tablenames = get_rel_db_table_names()
             curs.execute(
                 f"TRUNCATE TABLE {','.join(tablenames)} RESTART IDENTITY CASCADE"
             )
-            curs.execute(generate_sql_for_test_initiation(tablenames))
+            curs.execute(generate_sql_for_test_initiation(tuple(tablenames)))
 
     yield {
         "login_patch": login_patch,
@@ -78,12 +89,9 @@ def db_connection() -> Generator[Connection[rows.DictRow], None, None]:
     with get_new_os_conn() as conn:
         yield conn
         with conn.cursor() as curs:
-            curs.execute("SELECT truncate_testdata_tables()")
-
-
-# @pytest.fixture(autouse=True)
-# def db_cur() -> Generator[Cursor, None, None]:
-#     with get_new_os_conn() as conn:
-#         with conn.cursor() as curs:
-#             yield curs
-#             curs.execute("SELECT truncate_testdata_tables()")
+            try:
+                curs.execute("SELECT truncate_testdata_tables();")
+            except AdminShutdown as e:
+                # This will happen when the database is dropped during first rel-db migration tests
+                # TODO do something usefull here?
+                print(e)

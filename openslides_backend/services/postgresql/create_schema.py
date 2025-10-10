@@ -1,11 +1,31 @@
 import os
 
 from psycopg import Connection, rows, sql
-from psycopg.errors import InternalError_
 
 from openslides_backend.shared.exceptions import DatabaseException
 
 from .db_connection_handling import env, get_unpooled_db_connection
+
+
+def create_db() -> None:
+    conn_postgres = get_unpooled_db_connection("postgres", autocommit=True)
+    with conn_postgres:
+        with conn_postgres.cursor() as curs:
+            curs.execute(
+                sql.SQL("CREATE DATABASE {db};").format(
+                    db=sql.Identifier(env.DATABASE_NAME),
+                )
+            )
+
+
+def drop_db() -> None:
+    with get_unpooled_db_connection("postgres", autocommit=True) as conn:
+        with conn.cursor() as curs:
+            curs.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {db} (FORCE);").format(
+                    db=sql.Identifier(env.DATABASE_NAME)
+                )
+            )
 
 
 def create_schema() -> None:
@@ -17,31 +37,11 @@ def create_schema() -> None:
     try:
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     except DatabaseException:
-        conn_postgres = get_unpooled_db_connection("postgres", True)
-        with conn_postgres:
-            with conn_postgres.cursor() as curs:
-                curs.execute(
-                    sql.SQL("CREATE DATABASE {db};").format(
-                        db=sql.Identifier(env.DATABASE_NAME),
-                    )
-                )
+        create_db()
         print("Database openslides created\n")
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     with connection:
         with connection.cursor() as cursor:
-            # idempotent key-value-store schema
-            path = os.path.realpath(
-                os.path.join(os.getcwd(), os.path.dirname(__file__), "schema.sql")
-            )
-            try:
-                cursor.execute(open(path).read())
-                print("Idempotent key-value-schema applied by backend\n")
-            except InternalError_ as e:
-                if str(e) == "tuple concurrently updated":
-                    connection.rollback()
-                    print("Idempotent key-value-schema applied by datastore\n")
-                else:
-                    raise e
             # programmatic migrations of schema necessary, only apply if not exists
             result = cursor.execute(
                 sql.SQL(
