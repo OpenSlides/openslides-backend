@@ -24,7 +24,6 @@ class PollTestMixin(BaseActionTestCase):
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
-                    "sequential_number": 1,
                     "onehundred_percent_base": "YNA",
                     "title": "Poll 1",
                 },

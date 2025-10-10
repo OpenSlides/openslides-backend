@@ -24,7 +24,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "content_object_id": "topic/1",
                 "state": Poll.STATE_STARTED,
                 "meeting_id": 1,
-                "sequential_number": 1,
                 "title": "Poll 1",
                 "onehundred_percent_base": "Y",
             },
@@ -57,7 +56,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
@@ -170,7 +168,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
             }
@@ -196,7 +193,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [3, 4],
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
                 "user/2": {
@@ -245,7 +241,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
                 "user/2": {
@@ -296,7 +291,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
                 "user/2": {
@@ -358,7 +352,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
                     "onehundred_percent_base": "Y",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                 },
                 "user/2": {

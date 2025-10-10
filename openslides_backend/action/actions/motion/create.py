@@ -131,7 +131,6 @@ class MotionCreate(
 
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
-        self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
         instance = super().update_instance(instance)

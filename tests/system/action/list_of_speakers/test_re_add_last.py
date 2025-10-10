@@ -17,13 +17,11 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 "user/44": {"username": "zoro"},
                 "topic/32": {
                     "title": "to pick",
-                    "sequential_number": 42,
                     "meeting_id": 1,
                 },
                 "agenda_item/32": {"content_object_id": "topic/32", "meeting_id": 1},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/32",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "speaker/222": {
@@ -86,12 +84,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             {
                 "topic/42": {
                     "title": "to pick",
-                    "sequential_number": 43,
                     "meeting_id": 1,
                 },
                 "agenda_item/64": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/112": {
-                    "sequential_number": 12,
                     "content_object_id": "topic/42",
                     "closed": True,
                     "meeting_id": 1,
@@ -120,12 +116,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             {
                 "topic/42": {
                     "title": "to pick",
-                    "sequential_number": 43,
                     "meeting_id": 1,
                 },
                 "agenda_item/64": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/112": {
-                    "sequential_number": 12,
                     "content_object_id": "topic/42",
                     "meeting_id": 1,
                 },
@@ -217,13 +211,11 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 },
                 "topic/42": {
                     "title": "to pick",
-                    "sequential_number": 43,
                     "meeting_id": 1,
                 },
                 "agenda_item/64": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/222": {
                     "meeting_id": 1,
-                    "sequential_number": 12,
                     "content_object_id": "topic/42",
                 },
                 "speaker/333": {
@@ -265,13 +257,11 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 },
                 "topic/42": {
                     "title": "to pick",
-                    "sequential_number": 43,
                     "meeting_id": 1,
                 },
                 "agenda_item/64": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/222": {
                     "meeting_id": 1,
-                    "sequential_number": 12,
                     "content_object_id": "topic/42",
                 },
                 "speaker/333": {
@@ -309,12 +299,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 },
                 "topic/42": {
                     "title": "to pick",
-                    "sequential_number": 43,
                     "meeting_id": 1,
                 },
                 "agenda_item/64": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/222": {
-                    "sequential_number": 12,
                     "content_object_id": "topic/42",
                     "meeting_id": 1,
                 },

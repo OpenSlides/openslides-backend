@@ -237,13 +237,11 @@ class UserMergeTogether(BaseActionTestCase):
             {
                 f"assignment/{base}": {
                     "title": "just do it",
-                    "sequential_number": base,
                     "meeting_id": meeting_id,
                     **assignment_data,
                 },
                 f"list_of_speakers/{base + 100}": {
                     "content_object_id": f"assignment/{base}",
-                    "sequential_number": base + 100,
                     "meeting_id": meeting_id,
                 },
             }
@@ -1886,12 +1884,10 @@ class UserMergeTogether(BaseActionTestCase):
                         "title": f"MB{base_id}",
                         "meeting_id": meeting_id,
                         "list_of_speakers_id": base_id,
-                        "sequential_number": base_id,
                     },
                     f"list_of_speakers/{base_id}": {
                         "content_object_id": block_fqid,
                         "meeting_id": meeting_id,
-                        "sequential_number": base_id,
                     },
                     f"structure_level_list_of_speakers/{base_id * 2 - 1}": {
                         "structure_level_id": meeting_id,
@@ -2198,14 +2194,12 @@ class UserMergeTogether(BaseActionTestCase):
     def archive_all_meetings(self) -> None:
         self.set_models(
             {
-                **{
-                    f"meeting/{id_}": {
-                        "is_archived_in_organization_id": ONE_ORGANIZATION_ID,
-                        "is_active_in_organization_id": None,
-                    }
-                    for id_ in range(1, 11, 3)
-                },
-            }
+                f"meeting/{id_}": {
+                    "is_archived_in_organization_id": ONE_ORGANIZATION_ID,
+                    "is_active_in_organization_id": None,
+                }
+                for id_ in range(1, 11, 3)
+            },
         )
 
     def test_merge_archived_with_user_fields(self) -> None:

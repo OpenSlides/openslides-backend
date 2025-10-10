@@ -1,5 +1,5 @@
 from typing import Any
-
+from datetime import datetime
 import fastjsonschema
 
 from ..permissions.permission_helper import has_perm
@@ -76,8 +76,12 @@ class GetForwardingMeetings(BasePresenter):
                         {
                             "id": meeting_id2,
                             "name": meeting2.get("name", ""),
-                            "start_time": meeting2.get("start_time"),
-                            "end_time": meeting2.get("end_time"),
+                            "start_time": self._get_formatted_datetime_value(
+                                meeting2, "start_time"
+                            ),
+                            "end_time": self._get_formatted_datetime_value(
+                                meeting2, "end_time"
+                            ),
                         }
                     )
             if meeting_result:
@@ -92,3 +96,9 @@ class GetForwardingMeetings(BasePresenter):
                     }
                 )
         return result
+
+    @staticmethod
+    def _get_formatted_datetime_value(meeting: dict[str, Any], field: str):
+        if (raw_value := meeting.get(field)) and isinstance(raw_value, datetime):
+            return raw_value.isoformat()
+        return raw_value
