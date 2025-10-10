@@ -6,16 +6,12 @@ import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
-from openslides_backend.shared.util import (
-    ONE_ORGANIZATION_FQID,
-    ONE_ORGANIZATION_ID,
-    get_initial_data_file,
-)
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler, performance
 
 
-@pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
+# @pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -34,6 +30,7 @@ class MeetingImport(BaseActionTestCase):
         data: dict[str, Any] = {
             "committee_id": 60,
             "meeting": {
+                "_migration_index": 1,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -53,8 +50,8 @@ class MeetingImport(BaseActionTestCase):
                         "template_for_organization_id": None,
                         "enable_anonymous": False,
                         "location": "",
-                        "start_time": 10,
-                        "end_time": 10,
+                        # "start_time": datetime.fromtimestamp(10),
+                        # "end_time": datetime.fromtimestamp(10),
                         "welcome_title": "Welcome to OpenSlides",
                         "welcome_text": "[Space for your welcome text.]",
                         "conference_show": False,

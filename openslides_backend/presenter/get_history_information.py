@@ -48,7 +48,7 @@ class GetHistoryInformation(BasePresenter):
         #     position["user"] = usernames[position["user_id"]]
         #     del position["user_id"]
         # return information
-        # TODO write history model and its actions
+        # TODO write history model and its actions. The time has come.
         return fqid
 
     def get_usernames(self, user_ids: set[int]) -> dict[int, str]:
