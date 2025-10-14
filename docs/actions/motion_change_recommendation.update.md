@@ -10,6 +10,8 @@
     internal: boolean;
     type: number;
     other_description: string;
+    line_from: number;
+    line_to: number;
 }
 ```
 
