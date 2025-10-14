@@ -13,6 +13,7 @@ class _AgendaItem(Permission, StrEnum):
 
 class _Assignment(Permission, StrEnum):
     CAN_MANAGE = "assignment.can_manage"
+    CAN_MANAGE_POLLS = "assignment.can_manage_polls"
     CAN_NOMINATE_OTHER = "assignment.can_nominate_other"
     CAN_NOMINATE_SELF = "assignment.can_nominate_self"
     CAN_SEE = "assignment.can_see"
@@ -101,10 +102,12 @@ permission_parents: dict[Permission, list[Permission]] = {
     _AgendaItem.CAN_MANAGE: [],
     _Assignment.CAN_SEE: [
         _Assignment.CAN_NOMINATE_OTHER,
+        _Assignment.CAN_MANAGE_POLLS,
         _Assignment.CAN_NOMINATE_SELF,
     ],
     _Assignment.CAN_NOMINATE_OTHER: [_Assignment.CAN_MANAGE],
     _Assignment.CAN_MANAGE: [],
+    _Assignment.CAN_MANAGE_POLLS: [],
     _Assignment.CAN_NOMINATE_SELF: [],
     _Chat.CAN_MANAGE: [],
     _ListOfSpeakers.CAN_SEE: [_ListOfSpeakers.CAN_MANAGE],
@@ -124,21 +127,21 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Meeting.CAN_SEE_HISTORY: [],
     _Motion.CAN_SEE: [
         _Motion.CAN_MANAGE_METADATA,
-        _Motion.CAN_MANAGE_POLLS,
         _Motion.CAN_SEE_INTERNAL,
         _Motion.CAN_CREATE,
         _Motion.CAN_CREATE_AMENDMENTS,
         _Motion.CAN_FORWARD,
+        _Motion.CAN_MANAGE_POLLS,
         _Motion.CAN_SUPPORT,
         _Motion.CAN_SEE_ORIGIN,
     ],
     _Motion.CAN_MANAGE_METADATA: [_Motion.CAN_MANAGE],
-    _Motion.CAN_MANAGE_POLLS: [_Motion.CAN_MANAGE],
     _Motion.CAN_SEE_INTERNAL: [_Motion.CAN_MANAGE],
     _Motion.CAN_CREATE: [_Motion.CAN_MANAGE],
     _Motion.CAN_CREATE_AMENDMENTS: [_Motion.CAN_MANAGE],
     _Motion.CAN_FORWARD: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE: [],
+    _Motion.CAN_MANAGE_POLLS: [],
     _Motion.CAN_SUPPORT: [],
     _Motion.CAN_SEE_ORIGIN: [],
     _Poll.CAN_SEE_PROGRESS: [_Poll.CAN_MANAGE],

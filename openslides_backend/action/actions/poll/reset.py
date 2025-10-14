@@ -10,7 +10,6 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
@@ -92,7 +91,6 @@ class PollResetAction(
             option = options[option_id]
             if option.get("vote_ids"):
                 self._delete_votes(option["vote_ids"])
-                self._clear_option_auto_fields(option_id)
 
     def _get_option_ids(self, poll_id: int) -> list[int]:
         poll = self.datastore.get(
@@ -118,17 +116,6 @@ class PollResetAction(
         for id_ in vote_ids:
             action_data.append({"id": id_})
         self.execute_other_action(VoteDelete, action_data)
-
-    def _clear_option_auto_fields(self, option_id: int) -> None:
-        action_data = [
-            {
-                "id": option_id,
-                "yes": "0.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
-            }
-        ]
-        self.execute_other_action(OptionSetAutoFields, action_data)
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
