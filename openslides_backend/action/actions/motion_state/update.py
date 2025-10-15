@@ -34,6 +34,7 @@ class MotionStateUpdateAction(UpdateAction):
             "show_state_extension_field",
             "show_recommendation_extension_field",
             "merge_amendment_into_final",
+            "state_button_label",
             "next_state_ids",
             "previous_state_ids",
             "submitter_withdraw_state_id",

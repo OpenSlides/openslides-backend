@@ -38,6 +38,7 @@ class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
             "allow_motion_forwarding",
             "allow_amendment_forwarding",
             "set_workflow_timestamp",
+            "state_button_label",
         ],
     )
     permission = Permissions.Motion.CAN_MANAGE
