@@ -22,11 +22,8 @@ class VoteCreate(CreateActionWithInferredMeeting):
     schema = DefaultSchema(Vote()).get_create_schema(
         required_properties=[
             "weight",
-            "value",
-            "option_id",
-            "user_token",
+            "value"
         ],
-        optional_properties=["delegated_user_id", "user_id"],
     )
 
     relation_field_for_meeting = "option_id"

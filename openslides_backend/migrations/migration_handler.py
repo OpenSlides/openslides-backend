@@ -17,25 +17,22 @@ from . import MigrationWrapper
 THREAD_WAIT_TIME = 0.2
 
 
-# class MigrationState(StrEnum):
-#     """
-#     All possible migration states, ordered by priority. E.g. a running migration implicates that
-#     migrations are required and required migration implicates that finalization is also required.
-#     """
-
-#     MIGRATION_RUNNING = "migration_running"
-#     MIGRATION_REQUIRED = DatastoreMigrationState.MIGRATION_REQUIRED.value
-#     FINALIZATION_REQUIRED = DatastoreMigrationState.FINALIZATION_REQUIRED.value
-#     NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
+class MigrationState(StrEnum):
+    """
+    All possible migration states, ordered by priority. E.g. a running migration implicates that
+    migrations are required and required migration implicates that finalization is also required.
+    """
+    MIGRATION_RUNNING = "migration_running"
+    MIGRATION_REQUIRED = "migration_required"
+    FINALIZATION_REQUIRED = "finalization_required"
+    NO_MIGRATION_REQUIRED = "no_migration_required"
 
 
 class MigrationCommand(StrEnum):
     MIGRATE = "migrate"
     FINALIZE = "finalize"
     RESET = "reset"
-    CLEAR_COLLECTIONFIELD_TABLES = "clear-collectionfield-tables"
     STATS = "stats"
-    PROGRESS = "progress"
 
 
 class MigrationHandler(BaseHandler):
@@ -55,9 +52,6 @@ class MigrationHandler(BaseHandler):
         self.logger.info(f"Migration command: {command}")
 
         with MigrationHandler.lock:
-            if command == MigrationCommand.PROGRESS:
-                return self.handle_progress_command()
-
             if MigrationHandler.migration_running:
                 raise View400Exception(
                     "Migration is running, only 'progress' command is allowed"
@@ -73,9 +67,9 @@ class MigrationHandler(BaseHandler):
 
             verbose = payload.get("verbose", False)
             if command == "stats":
-                # stats = self.migration_wrapper.handler.get_stats()
+                stats = self.migration_wrapper.handler.get_stats()
                 return {
-                    # "stats": stats,
+                    "stats": stats,
                 }
             elif command in iter(MigrationCommand):
                 MigrationHandler.migrate_thread_stream = StringIO()

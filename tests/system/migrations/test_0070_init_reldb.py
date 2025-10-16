@@ -45,6 +45,8 @@ def test_migration() -> None:
         What is tested is the correct creation of intermediate tables and simple relations exemplary as we
         can trust that it works for other tables if it worked for one.
         Also it is tested that the new tables are created on top of an old basis and the old tables are deleted.
+        It should be only used like this in this migration test since it leads to a performance problem
+        once the actual connection context is entered the first time after the database was dropped and recreated.
     """
     raw_data: dict[str, any]
     json_blob: str

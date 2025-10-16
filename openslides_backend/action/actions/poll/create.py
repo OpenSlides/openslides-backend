@@ -44,36 +44,12 @@ class PollCreateAction(
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_create_schema(
-        required_properties=["title", "type", "pollmethod", "meeting_id"],
+        required_properties=["title", "method", "meeting_id"],
         additional_required_fields={
             "options": {
-                "type": "array",
                 "items": options_schema,
                 "minItems": 1,
             }
-        },
-        optional_properties=[
-            "content_object_id",
-            "description",
-            "min_votes_amount",
-            "max_votes_amount",
-            "max_votes_per_option",
-            "global_yes",
-            "global_no",
-            "global_abstain",
-            "onehundred_percent_base",
-            "votesvalid",
-            "votesinvalid",
-            "votescast",
-            "entitled_group_ids",
-            "backend",
-            "live_voting_enabled",
-        ],
-        additional_optional_fields={
-            "publish_immediately": {"type": "boolean"},
-            "amount_global_yes": decimal_schema,
-            "amount_global_no": decimal_schema,
-            "amount_global_abstain": decimal_schema,
         },
     )
     poll_history_information = "created"

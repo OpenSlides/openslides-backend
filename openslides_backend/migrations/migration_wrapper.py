@@ -18,16 +18,15 @@ class InvalidMigrationCommand(MigrationException):
 
 
 class MigrationWrapper:
+    # handler: MigrationHandler
 
     def __init__(
         self,
         verbose: bool = False,
         print_fn: PrintFunction = print,
     ) -> None:
-        MigrationWrapper.load_migrations()
-        # TODO: There used to be code here that setup some dependency injections
-        # The former initialization of the migration handler did as well.
-
+        """init"""
+        # migrations = MigrationWrapper.load_migrations()
     @staticmethod
     def load_migrations(
         base_migration_module_pypath: str | None = None,

@@ -18,13 +18,13 @@ from .migrate import MigrationWrapper
 
 
 def get_backend_migration_index() -> int:
-    migration_classes = MigrationWrapper.load_migrations()
+    # migration_classes = MigrationWrapper.load_migrations()
 
     backend_migration_index = 1
-    for migration_class in migration_classes:
-        backend_migration_index = max(
-            backend_migration_index, migration_class().target_migration_index
-        )
+    # for migration_class in migration_classes:
+    #     backend_migration_index = max(
+    #         backend_migration_index, migration_class().target_migration_index
+    #     )
     return backend_migration_index
 
 
@@ -35,7 +35,7 @@ def get_datastore_migration_index() -> int:
     #     datastore_migration_index = read_db.get_current_migration_index()
     # return datastore_migration_index
 
-    return 0
+    return 1
 
 
 def assert_migration_index() -> None:
