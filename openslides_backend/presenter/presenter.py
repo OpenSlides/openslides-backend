@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 import fastjsonschema
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
+from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from fastjsonschema import JsonSchemaException
 
 from ..http.request import Request
