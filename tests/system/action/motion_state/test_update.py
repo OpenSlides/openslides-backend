@@ -51,17 +51,22 @@ class MotionStateActionTest(BaseActionTestCase):
                 "allow_amendment_forwarding": True,
                 "set_workflow_timestamp": True,
                 "submitter_withdraw_state_id": 112,
+                "state_button_label": "State button label",
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_state/111")
-        model = self.get_model("motion_state/111")
-        assert model.get("name") == "name_Xcdfgee"
-        assert model.get("is_internal") is True
-        assert model.get("allow_motion_forwarding") is True
-        assert model.get("allow_amendment_forwarding") is True
-        assert model.get("set_workflow_timestamp") is True
-        assert model.get("submitter_withdraw_state_id") == 112
+        self.assert_model_exists(
+            "motion_state/111",
+            {
+                "name": "name_Xcdfgee",
+                "is_internal": True,
+                "allow_motion_forwarding": True,
+                "allow_amendment_forwarding": True,
+                "set_workflow_timestamp": True,
+                "submitter_withdraw_state_id": 112,
+                "state_button_label": "State button label",
+            },
+        )
 
     def test_update_correct_plus_next_previous(self) -> None:
         self.set_models(
