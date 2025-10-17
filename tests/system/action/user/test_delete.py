@@ -175,10 +175,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             "meeting_user/1111",
             {"meeting_id": 1, "user_id": 111, "motion_submitter_ids": [34]},
         )
-        self.assert_model_deleted(
-            "motion_submitter/34", {"meeting_user_id": 1111, "motion_id": 50}
+        self.assert_model_exists(
+            "motion_submitter/34", {"meeting_user_id": None, "motion_id": 50}
         )
-        self.assert_model_exists("motion/50", {"submitter_ids": []})
+        self.assert_model_exists("motion/50", {"submitter_ids": [34]})
 
     def test_delete_with_poll_candidate(self) -> None:
         self.set_models(
@@ -277,8 +277,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_deleted("user/2")
         self.assert_model_deleted("meeting_user/12")
         self.assert_model_exists("group/1", {"meeting_user_ids": []})
-        self.assert_model_deleted("motion_submitter/1")
-        self.assert_model_exists("motion/1", {"submitter_ids": []})
+        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": None})
+        self.assert_model_exists("motion/1", {"submitter_ids": [1]})
 
     def test_delete_with_delegation_to(self) -> None:
         self.set_models(
