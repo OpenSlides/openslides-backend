@@ -1,6 +1,6 @@
 from urllib import parse
 
-from authlib import (
+from osauthlib import (
     ANONYMOUS_USER,
     AUTHORIZATION_HEADER,
     AuthenticateException,
