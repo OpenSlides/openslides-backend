@@ -16,20 +16,29 @@ class TestGetUSerEditable(BasePresenterTestCase):
             },
         )
         self.login(111)
+        self.create_meeting(1)
+        self.create_meeting(
+            4,
+            {
+                "committee_id": 60,
+                "is_active_in_organization_id": None,
+                "is_archived_in_organization_id": 1,
+            },
+        )
         self.set_models(
             {
-                "meeting/1": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                # archived meeting
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": None,
-                    "is_archived_in_organization_id": 1,
-                },
-                "committee/1": {},
-                "committee/2": {"meeting_ids": [1, 2]},
+                # "meeting/1": {
+                #     "committee_id": 2,
+                #     "is_active_in_organization_id": 1,
+                # },
+                # # archived meeting
+                # "meeting/2": {
+                #     "committee_id": 2,
+                #     "is_active_in_organization_id": None,
+                #     "is_archived_in_organization_id": 1,
+                # },
+                # "committee/1": {},
+                # "committee/2": {"meeting_ids": [1, 2]},
                 "user/2": {
                     "username": "only_oml_level",
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,

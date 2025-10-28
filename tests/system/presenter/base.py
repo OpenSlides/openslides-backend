@@ -41,34 +41,38 @@ class BasePresenterTestCase(BaseSystemTestCase):
         self.set_models(
             {
                 f"meeting/{base}": {
-                    "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
+                    "motions_default_workflow_id": base,
+                    "motions_default_amendment_workflow_id": base,
+                    "reference_projector_id": base,
                 },
-                f"group/{base}": {
+                f"projector/{base}": {
                     "meeting_id": base,
-                    "default_group_for_meeting_id": base,
-                    "name": f"group{base}",
+                    # **{field: base for field in Meeting.reverse_default_projectors()},
                 },
-                f"group/{base+1}": {
+                f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
+                f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
+                f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
+                f"motion_workflow/{base}": {
+                    "name": "flo",
                     "meeting_id": base,
-                    "admin_group_for_meeting_id": base,
-                    "name": f"group{base+1}",
+                    "first_state_id": base,
                 },
-                f"group/{base+2}": {
+                f"motion_state/{base}": {
+                    "name": "stasis",
+                    "weight": 36,
                     "meeting_id": base,
-                    "name": f"group{base+2}",
+                    "workflow_id": base,
                 },
                 f"committee/{committee_id}": {
-                    "organization_id": 1,
+                    # "organization_id": 1,
                     "name": f"Commitee{committee_id}",
-                    "meeting_ids": [base],
                 },
                 "organization/1": {
                     "limit_of_meetings": 0,
-                    "active_meeting_ids": [base],
                     "enable_electronic_voting": True,
                 },
                 f"meeting_user/{base}{user1}": {"user_id": user1, "meeting_id": base},

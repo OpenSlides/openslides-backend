@@ -1,6 +1,6 @@
 from openslides_backend.models.models import Poll
-from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
-from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
+from tests.system.action.base import BaseActionTestCase
+from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME, DEFAULT_PASSWORD
 
 
 class PollTestMixin(BaseActionTestCase):
