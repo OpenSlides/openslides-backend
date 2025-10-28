@@ -27,9 +27,6 @@ run-tests:
 lint:
 	bash dev/run-lint.sh -l
 
-test-file:
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
-
 test:
 	pytest
 
