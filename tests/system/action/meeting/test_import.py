@@ -622,7 +622,7 @@ class MeetingImport(BaseActionTestCase):
         # sequential_number is given
         request_data["meeting"]["projector"]["1"]["sequential_number"] = 63
         request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
-        # sequential_number is not given
+        # sequential_number is smaller than max_sequential_number
         request_data["meeting"]["motion_workflow"]["2"] = {
             "id": 2,
             "meeting_id": 1,
@@ -631,7 +631,7 @@ class MeetingImport(BaseActionTestCase):
             "state_ids": [2],
             "sequential_number": 41,
         }
-        # sequential_number is smaller than max_sequential_number
+        # sequential_number is not given
         request_data["meeting"]["motion_workflow"]["3"] = {
             "id": 3,
             "meeting_id": 1,
