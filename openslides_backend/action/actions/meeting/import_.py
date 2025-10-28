@@ -728,7 +728,7 @@ class MeetingImport(
         """
         Check for valid migration index.
         """
-        start_migration_index = instance["meeting"].pop("_migration_index")
+        start_migration_index = instance["meeting"].get("_migration_index")
         backend_migration_index = get_backend_migration_index()
         if backend_migration_index < start_migration_index:
             raise ActionException(

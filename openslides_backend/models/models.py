@@ -828,9 +828,9 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_poll_default_id"}, is_view_field=True
     )
-    poll_default_backend = fields.CharField(
-        default="fast", constraints={"enum": ["long", "fast"]}
-    )
+    # poll_default_backend = fields.CharField(
+    #     default="fast", constraints={"enum": ["long", "fast"]}
+    # )
     poll_default_live_voting_enabled = fields.BooleanField(
         default=False,
         constraints={

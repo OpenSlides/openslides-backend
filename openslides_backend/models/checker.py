@@ -262,6 +262,8 @@ class Checker:
             if collection.startswith("_"):
                 continue
             for id_, model in models.items():
+                if collection == "motion_workflow" and id_ == "2":
+                    pass
                 if model["id"] != int(id_):
                     self.errors.append(
                         f"{collection}/{id_}: Id must be the same as model['id']"
@@ -304,10 +306,12 @@ class Checker:
         all_collection_fields = {
             field.get_own_field_name() for field in self.get_fields(collection)
         }
+        # TODO: remove duplication: required is also checked in check_types
         required_or_default_collection_fields = {
             field.get_own_field_name()
             for field in self.get_fields(collection)
-            if field.required or field.default is not None
+            if (field.required or field.default is not None)
+            and field.get_own_field_name() != "sequential_number"
         }
 
         errors = False

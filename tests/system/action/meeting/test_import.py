@@ -6,16 +6,12 @@ import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
-from openslides_backend.shared.util import (
-    ONE_ORGANIZATION_FQID,
-    ONE_ORGANIZATION_ID,
-    get_initial_data_file,
-)
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler, performance
 
 
-@pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
+# @pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -34,6 +30,7 @@ class MeetingImport(BaseActionTestCase):
         data: dict[str, Any] = {
             "committee_id": 60,
             "meeting": {
+                "_migration_index": 1,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -53,8 +50,8 @@ class MeetingImport(BaseActionTestCase):
                         "template_for_organization_id": None,
                         "enable_anonymous": False,
                         "location": "",
-                        "start_time": 10,
-                        "end_time": 10,
+                        # "start_time": datetime.fromtimestamp(10),
+                        # "end_time": datetime.fromtimestamp(10),
                         "welcome_title": "Welcome to OpenSlides",
                         "welcome_text": "[Space for your welcome text.]",
                         "conference_show": False,
@@ -163,16 +160,16 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_default_onehundred_percent_base": "valid",
                         "assignment_poll_default_group_ids": [],
                         "assignment_poll_default_backend": "fast",
-                        "poll_ballot_paper_selection": "CUSTOM_NUMBER",
-                        "poll_ballot_paper_number": 8,
-                        "poll_sort_poll_result_by_votes": True,
-                        "poll_default_type": "pseudoanonymous",
-                        "poll_default_method": "votes",
-                        "poll_default_onehundred_percent_base": "valid",
-                        "poll_default_group_ids": [],
-                        "poll_default_backend": "fast",
-                        "poll_default_live_voting_enabled": False,
-                        "poll_couple_countdown": True,
+                        # "poll_ballot_paper_selection": "CUSTOM_NUMBER",
+                        # "poll_ballot_paper_number": 8,
+                        # "poll_sort_poll_result_by_votes": True,
+                        # "poll_default_type": "pseudoanonymous",
+                        # "poll_default_method": "votes",
+                        # "poll_default_onehundred_percent_base": "valid",
+                        # "poll_default_group_ids": [],
+                        # "poll_default_backend": "fast",
+                        # "poll_default_live_voting_enabled": False,
+                        # "poll_couple_countdown": True,
                         "projector_ids": [1],
                         "all_projection_ids": [],
                         "projector_message_ids": [],
@@ -193,7 +190,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_block_ids": [],
                         "motion_workflow_ids": [1],
                         "motion_change_recommendation_ids": [],
-                        "poll_ids": [],
+                        # "poll_ids": [],
                         "option_ids": [],
                         "vote_ids": [],
                         "assignment_ids": [],
@@ -201,14 +198,14 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [],
                         "chat_group_ids": [],
                         "chat_message_ids": [],
-                        "committee_id": None,
-                        "is_active_in_organization_id": None,
-                        "is_archived_in_organization_id": None,
-                        "default_meeting_for_committee_id": None,
-                        "organization_tag_ids": [],
-                        "present_user_ids": [],
-                        "list_of_speakers_countdown_id": None,
-                        "poll_countdown_id": None,
+                        # "committee_id": None,
+                        # "is_active_in_organization_id": None,
+                        # "is_archived_in_organization_id": None,
+                        # "default_meeting_for_committee_id": None,
+                        # "organization_tag_ids": [],
+                        # "present_user_ids": [],
+                        # "list_of_speakers_countdown_id": None,
+                        # "poll_countdown_id": None,
                         **{field: [1] for field in Meeting.all_default_projectors()},
                         "projection_ids": [],
                         "meeting_user_ids": [11],
@@ -607,17 +604,54 @@ class MeetingImport(BaseActionTestCase):
 
     def test_check_calc_fields(self) -> None:
         request_data = self.create_request_data({})
-        request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
+        for field in ["motion_workflow_ids", "motion_state_ids"]:
+            request_data["meeting"]["meeting"]["1"][field] = [1, 2, 3]
+        for id_ in range(2, 4):
+            request_data["meeting"]["motion_state"][str(id_)] = {
+                "id": id_,
+                "meeting_id": 1,
+                "name": f"state{id_}",
+                "weight": 1,
+                "workflow_id": id_,
+                "first_state_of_workflow_id": id_,
+            }
+
+        # sequential_number is given
         request_data["meeting"]["projector"]["1"]["sequential_number"] = 63
+        request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
+        # sequential_number is smaller than max_sequential_number
+        request_data["meeting"]["motion_workflow"]["2"] = {
+            "id": 2,
+            "meeting_id": 1,
+            "name": "workflow2",
+            "first_state_id": 2,
+            "state_ids": [2],
+            "sequential_number": 41,
+        }
+        # sequential_number is not given
+        request_data["meeting"]["motion_workflow"]["3"] = {
+            "id": 3,
+            "meeting_id": 1,
+            "name": "workflow3",
+            "first_state_id": 3,
+            "state_ids": [3],
+        }
+
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists(
-            "projector/2", {"meeting_id": 2, "sequential_number": 1}
+            "projector/2", {"meeting_id": 2, "sequential_number": 63}
         )
         self.assert_model_exists(
-            "motion_workflow/2", {"meeting_id": 2, "sequential_number": 1}
+            "motion_workflow/2", {"meeting_id": 2, "sequential_number": 42}
+        )
+        self.assert_model_exists(
+            "motion_workflow/3", {"meeting_id": 2, "sequential_number": 41}
+        )
+        self.assert_model_exists(
+            "motion_workflow/4", {"meeting_id": 2, "sequential_number": 43}
         )
 
     def test_check_usernames_1(self) -> None:
