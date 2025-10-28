@@ -607,17 +607,54 @@ class MeetingImport(BaseActionTestCase):
 
     def test_check_calc_fields(self) -> None:
         request_data = self.create_request_data({})
-        request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
+        for field in ["motion_workflow_ids", "motion_state_ids"]:
+            request_data["meeting"]["meeting"]["1"][field] = [1, 2, 3]
+        for id_ in range(2, 4):
+            request_data["meeting"]["motion_state"][str(id_)] = {
+                "id": id_,
+                "meeting_id": 1,
+                "name": f"state{id_}",
+                "weight": 1,
+                "workflow_id": id_,
+                "first_state_of_workflow_id": id_,
+            }
+
+        # sequential_number is given
         request_data["meeting"]["projector"]["1"]["sequential_number"] = 63
+        request_data["meeting"]["motion_workflow"]["1"]["sequential_number"] = 42
+        # sequential_number is not given
+        request_data["meeting"]["motion_workflow"]["2"] = {
+            "id": 2,
+            "meeting_id": 1,
+            "name": "workflow2",
+            "first_state_id": 2,
+            "state_ids": [2],
+            "sequential_number": 41,
+        }
+        # sequential_number is smaller than max_sequential_number
+        request_data["meeting"]["motion_workflow"]["3"] = {
+            "id": 3,
+            "meeting_id": 1,
+            "name": "workflow3",
+            "first_state_id": 3,
+            "state_ids": [3],
+        }
+
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists(
-            "projector/2", {"meeting_id": 2, "sequential_number": 1}
+            "projector/2", {"meeting_id": 2, "sequential_number": 63}
         )
         self.assert_model_exists(
-            "motion_workflow/2", {"meeting_id": 2, "sequential_number": 1}
+            "motion_workflow/2", {"meeting_id": 2, "sequential_number": 42}
+        )
+        self.assert_model_exists(
+            "motion_workflow/3", {"meeting_id": 2, "sequential_number": 41}
+        )
+        self.assert_model_exists(
+            "motion_workflow/4", {"meeting_id": 2, "sequential_number": 43}
         )
 
     def test_check_usernames_1(self) -> None:
