@@ -13,7 +13,7 @@ from ....shared.patterns import (
     fqid_from_collection_and_id,
 )
 from ...action import Action
-from ..option.set_auto_fields import OptionSetAutoFields
+# from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
@@ -180,18 +180,18 @@ class StopControl(CountdownControl, Action):
                 raise VoteServiceException("Invalid response from vote service")
         self.execute_other_action(VoteCreate, action_data)
         # update results into option
-        self.execute_other_action(
-            OptionSetAutoFields,
-            [
-                {
-                    "id": _id,
-                    "yes": str(option["Y"]),
-                    "no": str(option["N"]),
-                    "abstain": str(option["A"]),
-                }
-                for _id, option in option_results.items()
-            ],
-        )
+        # self.execute_other_action(
+        #     OptionSetAutoFields,
+        #     [
+        #         {
+        #             "id": _id,
+        #             "yes": str(option["Y"]),
+        #             "no": str(option["N"]),
+        #             "abstain": str(option["A"]),
+        #         }
+        #         for _id, option in option_results.items()
+        #     ],
+        # )
         # set voted ids
         voted_ids = results["user_ids"]
         instance["voted_ids"] = voted_ids
