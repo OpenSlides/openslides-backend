@@ -19,13 +19,11 @@ class AgendaItemActionTest(BaseActionTestCase):
                 "agenda_item/111": {"meeting_id": 20, "content_object_id": "topic/1"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 20,
                 },
                 "topic/1": {
                     "meeting_id": 20,
                     "title": "tropic",
-                    "sequential_number": 1,
                 },
             }
         )
@@ -40,13 +38,11 @@ class AgendaItemActionTest(BaseActionTestCase):
                 "agenda_item/112": {"meeting_id": 20, "content_object_id": "topic/1"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 20,
                 },
                 "topic/1": {
                     "meeting_id": 20,
                     "title": "tropic",
-                    "sequential_number": 1,
                 },
             }
         )
@@ -60,13 +56,11 @@ class AgendaItemActionTest(BaseActionTestCase):
             {
                 "topic/34": {
                     "title": "tropic",
-                    "sequential_number": 1,
                     "agenda_item_id": 111,
                     "meeting_id": 20,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/34",
-                    "sequential_number": 11,
                     "meeting_id": 20,
                 },
                 "agenda_item/111": {"content_object_id": "topic/34", "meeting_id": 20},
@@ -108,7 +102,6 @@ class AgendaItemActionTest(BaseActionTestCase):
                 },
                 "projector/1": {
                     "current_projection_ids": [1],
-                    "sequential_number": 1,
                     "meeting_id": 20,
                 },
             }

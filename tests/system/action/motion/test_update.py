@@ -39,7 +39,6 @@ class BaseMotionUpdateActionTest(BaseActionTestCase):
             {
                 f"motion_workflow/{base}": {
                     "name": f"motion_workflow{base}",
-                    "sequential_number": base,
                     "first_state_id": base,
                     "meeting_id": meeting_id,
                 },
@@ -179,16 +178,13 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "motion_category/4": {
                     "meeting_id": 1,
                     "name": "name_GdPzDztT",
-                    "sequential_number": 4,
                 },
                 "motion_block/51": {
                     "meeting_id": 1,
                     "title": "title_ddyvpXch",
-                    "sequential_number": 51,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion_block/51",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -324,16 +320,13 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "motion_category/4": {
                     "name": "name_GdPzDztT",
                     "meeting_id": 1,
-                    "sequential_number": 4,
                 },
                 "motion_block/51": {
                     "title": "title_ddyvpXch",
                     "meeting_id": 1,
-                    "sequential_number": 51,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion_block/51",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -631,16 +624,13 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "motion_category/2": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 2,
                 },
                 "motion_block/4": {
                     "meeting_id": 1,
                     "title": "blocky",
-                    "sequential_number": 4,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion_block/4",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "tag/3": {"meeting_id": 1, "name": "bla"},
@@ -701,7 +691,6 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "motion_category/2": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 2,
                 }
             }
         )

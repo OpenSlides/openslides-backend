@@ -10,13 +10,11 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
             {
                 "topic/42": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 42,
                     "meeting_id": 1,
                 },
                 "agenda_item/32": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/42",
-                    "sequential_number": 10,
                     "closed": False,
                     "meeting_id": 1,
                 },
