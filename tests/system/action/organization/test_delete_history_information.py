@@ -17,12 +17,10 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                 "organization/1": {"name": "Orga", "enable_electronic_voting": True},
                 "assignment/1": {
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                    "sequential_number": 1,
                     "open_posts": 1,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },

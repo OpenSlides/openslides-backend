@@ -10,13 +10,11 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "topic/32": {
                 "title": "leet improvement discussion",
-                "sequential_number": 2,
                 "meeting_id": 1,
             },
             "agenda_item/42": {"content_object_id": "topic/32", "meeting_id": 1},
             "list_of_speakers/111": {
                 "content_object_id": "topic/32",
-                "sequential_number": 11,
                 "closed": False,
                 "meeting_id": 1,
             },
@@ -32,13 +30,11 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
                 },
                 "topic/32": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 2,
                     "meeting_id": 222,
                 },
                 "agenda_item/42": {"content_object_id": "topic/32", "meeting_id": 222},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/32",
-                    "sequential_number": 11,
                     "closed": False,
                     "meeting_id": 222,
                     "speaker_ids": list(range(1, 11)),
