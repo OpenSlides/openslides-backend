@@ -8,7 +8,7 @@ Flask==3.0.3
 gunicorn==23.0.0
 pypdf[crypto]==5.7.0
 lxml==5.1.0
-psycopg[c]==3.2.6
+psycopg[c]==3.2.10
 psycopg-pool==3.2.6
 requests==2.32.4
 roman==5.0

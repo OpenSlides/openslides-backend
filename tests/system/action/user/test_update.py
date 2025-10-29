@@ -2979,6 +2979,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_group_removal_with_speaker(self) -> None:
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_topic(1, 4)
         self.set_models(
             {
                 "user/1234": {
@@ -3003,12 +3004,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/7": {
                     "committee_id": 63,
                     "present_user_ids": [1234],
-                },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
-                "list_of_speakers/1": {
-                    "meeting_id": 4,
-                    "sequential_number": 1,
-                    "content_object_id": "topic/1",
                 },
                 "speaker/14": {
                     "list_of_speakers_id": 1,
@@ -3073,6 +3068,7 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_partial_group_removal_with_speaker(self) -> None:
         self.create_meeting(4)
+        self.create_topic(1, 4)
         self.set_models(
             {
                 "user/1234": {
@@ -3082,12 +3078,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 4,
                     "user_id": 1234,
                     "speaker_ids": [14, 24],
-                },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
-                "list_of_speakers/1": {
-                    "meeting_id": 4,
-                    "sequential_number": 1,
-                    "content_object_id": "topic/1",
                 },
                 "speaker/14": {
                     "list_of_speakers_id": 1,
@@ -3131,6 +3121,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_user("dummy2", [1])
         self.create_user("dummy3", [1])
+        self.create_topic(1, 1)
         self.set_models(
             {
                 "user/1": {
@@ -3147,7 +3138,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "poll_candidate_ids": [1],
                     "vote_ids": [1, 2],
                 },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 1},
                 "poll/1": {
                     "title": "pull",
                     "type": "analog",
