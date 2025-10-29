@@ -13,8 +13,6 @@ from ....shared.patterns import (
     fqid_from_collection_and_id,
 )
 from ...action import Action
-
-# from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token

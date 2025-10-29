@@ -10,8 +10,6 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-
-# from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
