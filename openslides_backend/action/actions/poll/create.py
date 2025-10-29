@@ -10,6 +10,7 @@ from ...generics.create import CreateAction
 from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+
 # from ..option.create import OptionCreateAction
 from .base import base_check_onehundred_percent_base
 from .mixins import PollHistoryMixin, PollPermissionMixin, PollValidationMixin
