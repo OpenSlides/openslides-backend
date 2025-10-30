@@ -8,7 +8,7 @@ class ProjectorUpdate(BaseActionTestCase):
         self.create_meeting()
 
     def test_update_correct(self) -> None:
-        self.set_models({"projector/2": {"meeting_id": 1, "sequential_number": 2}})
+        self.set_models({"projector/2": {"meeting_id": 1}})
         response = self.request(
             "projector.update",
             {
@@ -97,7 +97,7 @@ class ProjectorUpdate(BaseActionTestCase):
                 "projector/1": {
                     "used_as_default_projector_for_topic_in_meeting_id": 1,
                 },
-                "projector/2": {"sequential_number": 2, "meeting_id": 1},
+                "projector/2": {"meeting_id": 1},
             }
         )
         response = self.request(

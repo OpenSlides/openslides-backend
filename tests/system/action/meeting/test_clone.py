@@ -9,7 +9,7 @@ from psycopg.types.json import Jsonb
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.mixins import MeetingModelMixin
-from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.models.models import AgendaItem, Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -657,16 +657,6 @@ class MeetingClone(BaseActionTestCase):
             "personal_note/2", {"meeting_user_id": 2, "meeting_id": 2}
         )
 
-    def test_clone_with_option(self) -> None:
-        self.set_test_data_with_admin()
-        self.set_models({"option/1": {"content_object_id": "user/1", "meeting_id": 1}})
-        response = self.request("meeting.clone", {"meeting_id": 1})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"option_ids": [1, 2]})
-        self.assert_model_exists(
-            "option/2", {"content_object_id": "user/1", "meeting_id": 2}
-        )
-
     def test_clone_with_mediafile(self) -> None:
         self.set_test_data_with_admin()
         self.set_models(
@@ -1181,7 +1171,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/1": {
                     "meeting_id": 1,
                     "all_derived_motion_ids": [2],
-                    "sequential_number": 1,
                     "list_of_speakers_id": 1,
                     "title": "motion1",
                     "state_id": 1,
@@ -1190,7 +1179,6 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 4,
                     "origin_id": 1,
                     "origin_meeting_id": 1,
-                    "sequential_number": 2,
                     "list_of_speakers_id": 2,
                     "title": "motion1 forwarded",
                     "state_id": 4,
@@ -1198,7 +1186,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/3": {
                     "meeting_id": 4,
                     "all_derived_motion_ids": [4],
-                    "sequential_number": 3,
                     "list_of_speakers_id": 3,
                     "title": "motion3",
                     "state_id": 4,
@@ -1207,28 +1194,23 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "origin_id": 3,
                     "origin_meeting_id": 4,
-                    "sequential_number": 4,
                     "list_of_speakers_id": 4,
                     "title": "motion3 forwarded",
                     "state_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/2": {
-                    "sequential_number": 2,
                     "content_object_id": "motion/2",
                     "meeting_id": 4,
                 },
                 "list_of_speakers/3": {
-                    "sequential_number": 3,
                     "content_object_id": "motion/3",
                     "meeting_id": 4,
                 },
                 "list_of_speakers/4": {
-                    "sequential_number": 4,
                     "content_object_id": "motion/4",
                     "meeting_id": 1,
                 },
@@ -1333,39 +1315,42 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_vote_delegated_vote(self) -> None:
         self.set_test_data_with_admin()
         self.create_meeting(4)
+        self.create_motion(1, 1)
         self.set_user_groups(1, [2, 5])
         self.set_models(
             {
-                "vote/1": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
+                "poll/1": {
+                    "title": "Poll 1",
                     "meeting_id": 1,
-                    "option_id": 1,
-                    "user_token": "asdfgh",
+                    "content_object_id": "motion/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "method": Poll.METHOD_RATING_APPROVAL,
+                    "state": Poll.STATE_STARTED,
+                },
+                "vote/1": {
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    "poll_id": 1,
                 },
                 "vote/2": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
-                    "meeting_id": 4,
-                    "option_id": 2,
-                    "user_token": "hjkl",
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    "poll_id": 1,
                 },
-                "option/1": {"meeting_id": 1},
-                "option/2": {"meeting_id": 4},
             },
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "vote/3",
-            {"user_id": 1, "delegated_user_id": 1, "option_id": 3, "meeting_id": 5},
+            {"acting_user_id": 1, "represented_user_id": 1, "poll_id": 2},
         )
         self.assert_model_exists(
             "user/1",
             {
                 "meeting_user_ids": [1, 2, 3],
-                "vote_ids": [1, 2, 3],
-                "delegated_vote_ids": [1, 2, 3],
+                "acting_vote_ids": [1, 2, 3, 4],
+                "represented_vote_ids": [1, 2, 3, 4],
                 "meeting_ids": [1, 4, 5],
             },
         )
@@ -1483,7 +1468,6 @@ class MeetingClone(BaseActionTestCase):
                 "motion/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "state_id": 1,
                     "title": "dummy",
                     "amendment_paragraphs": Jsonb(
@@ -1496,7 +1480,6 @@ class MeetingClone(BaseActionTestCase):
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
-                    "sequential_number": 1,
                 },
             }
         )
@@ -1560,7 +1543,6 @@ class MeetingClone(BaseActionTestCase):
                     "closed": False,
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",
-                    "sequential_number": 1,
                 },
                 "assignment/1": {
                     "id": 1,
@@ -1568,7 +1550,6 @@ class MeetingClone(BaseActionTestCase):
                     "title": "Duckburg town council",
                     "meeting_id": 1,
                     "open_posts": 0,
-                    "sequential_number": 1,
                     "list_of_speakers_id": 1,
                 },
                 "poll_candidate/1": {
@@ -1594,47 +1575,20 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "poll_candidate_list/1": {
                     "id": 1,
-                    "option_id": 1,
+                    # "option_id": 1,
                     "meeting_id": 1,
-                    "poll_candidate_ids": [1, 2, 3],
-                },
-                "option/1": {
-                    "id": 1,
-                    "weight": 1,
-                    "poll_id": 1,
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
-                },
-                "option/2": {
-                    "id": 2,
-                    "text": "global option",
-                    "weight": 1,
-                    "meeting_id": 1,
-                    "used_as_global_option_in_poll_id": 1,
                 },
                 "poll/1": {
                     "id": 1,
-                    "type": "pseudoanonymous",
-                    "state": "created",
+                    # "type": "pseudoanonymous",
+                    # "state": "created",
                     "title": "First election",
-                    "backend": "fast",
-                    "global_no": False,
-                    "votescast": "0.000000",
-                    "global_yes": False,
+                    # "votescast": "0.000000",
                     "meeting_id": 1,
-                    "option_ids": [1],
-                    "pollmethod": "YNA",
-                    "votesvalid": "0.000000",
-                    "votesinvalid": "0.000000",
-                    "global_abstain": False,
-                    "global_option_id": 2,
-                    "max_votes_amount": 1,
-                    "min_votes_amount": 1,
                     "content_object_id": "assignment/1",
-                    "sequential_number": 1,
-                    "is_pseudoanonymized": True,
-                    "max_votes_per_option": 1,
-                    "onehundred_percent_base": "disabled",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "method": Poll.METHOD_RATING_SCORE,
+                    "state": Poll.STATE_STARTED,
                 },
             }
         )
@@ -1648,7 +1602,6 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_ids": [2],
                 "poll_candidate_list_ids": [2],
                 "poll_candidate_ids": [4, 5, 6],
-                "option_ids": [3, 4],
                 "poll_ids": [2],
                 "projector_ids": [2],
                 "reference_projector_id": 2,

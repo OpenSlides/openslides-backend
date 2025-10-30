@@ -138,8 +138,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             "assignment_poll_default_backend": "fast",
             "poll_default_type": "analog",
             "poll_default_onehundred_percent_base": "YNA",
-            "poll_default_backend": "fast",
             "poll_default_live_voting_enabled": False,
+            "poll_default_allow_invalid": False,
             "poll_couple_countdown": True,
         }
 
@@ -195,7 +195,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -215,7 +214,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_recommendation_extension_field": False,
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -313,7 +311,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
                     "vote_ids": [7],
-                    "option_ids": [8],
                     "assignment_candidate_ids": [9],
                     "assignment_ids": [10],
                     # relation fields.
@@ -370,14 +367,14 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "vote_user",
                     {
                         "meeting_user_ids": [14],
-                        "vote_ids": [7],
+                        "acting_vote_ids": [7],
                     },
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
                     {
                         "meeting_user_ids": [15],
-                        "delegated_vote_ids": [7],
+                        "represented_vote_ids": [7],
                     },
                 ),
                 "user/6": self.get_new_user(
@@ -425,7 +422,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -446,7 +442,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -485,7 +480,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "motion/1": {
                     "submitter_ids": [5],
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -500,21 +494,14 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "list_of_speakers/6": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
                 "vote/7": {
                     "user_token": "test",
-                    "option_id": 8,
-                    "user_id": 4,
-                    "delegated_user_id": 5,
+                    "acting_user_id": 4,
+                    "represented_user_id": 5,
                     "meeting_id": 1,
-                },
-                "option/8": {
-                    "vote_ids": [7],
-                    "meeting_id": 1,
-                    "weight": 10000,
                 },
                 "assignment_candidate/9": {
                     "weight": 10000,
@@ -526,14 +513,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "title": "test",
                     "open_posts": 0,
                     "phase": "search",
-                    "sequential_number": 1,
                     "candidate_ids": [9],
                     "meeting_id": 1,
                     "list_of_speakers_id": 11,
                 },
                 "list_of_speakers/11": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "assignment/10",
                     "meeting_id": 1,
                 },
@@ -600,7 +585,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -621,7 +605,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -684,7 +667,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 2,
                     "default_workflow_meeting_id": 2,
                     "state_ids": [2],
-                    "sequential_number": 2,
                 },
                 "motion_state/2": {
                     "css_class": "lightblue",
@@ -704,7 +686,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [2],
                 },
                 "projector/2": {
-                    "sequential_number": 1,
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",
@@ -728,7 +709,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "motion/1": {
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -739,7 +719,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "motion/2": {
                     "meeting_id": 2,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -750,13 +729,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "list_of_speakers/3": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/4": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/2",
                     "meeting_id": 2,
                 },

@@ -56,7 +56,6 @@ The result object for each instance has the format
 ```
 {
   id: Id,
-  sequential_number: int,
   non_forwarded_amendment_amount: int, // Number of amendments that couldn't be returned because of forwarding being not allowed in the state
   amendment_result_data: [...], // List of result data objects in the same format, for all newly created amendments for the newly created motion
 }

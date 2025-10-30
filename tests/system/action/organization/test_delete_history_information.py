@@ -17,29 +17,24 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                 "organization/1": {"name": "Orga", "enable_electronic_voting": True},
                 "assignment/1": {
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                    "sequential_number": 1,
                     "open_posts": 1,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },
             }
         )
-        response = self.request(
-            "poll.create",
+        vote_service_response = self.vote_service.create(
             {
                 "title": "test",
                 "type": "analog",
-                "pollmethod": "Y",
-                "options": [{"text": "test2", "Y": "10.000000"}],
                 "meeting_id": 1,
                 "content_object_id": "assignment/1",
             },
         )
-        self.assert_status_code(response, 200)
+        self.assertIsNotNone(vote_service_response)
         self.assert_history_information("assignment/1", ["Ballot created"])
 
         response = self.request("organization.delete_history_information", {"id": 1})

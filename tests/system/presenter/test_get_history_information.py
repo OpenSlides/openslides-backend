@@ -40,7 +40,6 @@ class TestCheckMediafileId(BasePresenterTestCase):
             {
                 "motion_workflow/1": {
                     "name": "work",
-                    "sequential_number": 1,
                     "first_state_id": 1,
                     "meeting_id": 1,
                 },

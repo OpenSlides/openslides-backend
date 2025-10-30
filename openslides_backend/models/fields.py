@@ -121,6 +121,8 @@ class IntegerField(Field):
     def check_required_not_fulfilled(
         self, instance: dict[str, Any], is_create: bool
     ) -> bool:
+        if self.constraints.get("sequence_scope"):
+            return False
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None

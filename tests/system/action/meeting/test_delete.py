@@ -95,8 +95,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_not_exists(f"motion_workflow/{i+1}")
         for i in range(5):
             self.assert_model_not_exists(f"poll/{i+1}")
-        for i in range(13):
-            self.assert_model_not_exists(f"option/{i+1}")
         for i in range(9):
             self.assert_model_not_exists(f"vote/{i+1}")
         for i in range(2):
@@ -203,25 +201,16 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "assignment/140": {
                     "meeting_id": 1,
                     "title": "test_title",
-                    "sequential_number": 140,
                 },
                 "poll/150": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/140",
                     "title": "Analog poll 150",
                     "type": "analog",
-                    "pollmethod": "YNA",
                     "meeting_id": 1,
-                    "sequential_number": 150,
-                },
-                "option/160": {
-                    "meeting_id": 1,
-                    "poll_id": 150,
-                    "content_object_id": "poll_candidate_list/170",
                 },
                 "poll_candidate_list/170": {
                     "meeting_id": 1,
-                    "option_id": 160,
                 },
                 "poll_candidate/180": {
                     "meeting_id": 1,
@@ -238,7 +227,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "list_of_speakers/190": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/140",
-                    "sequential_number": 190,
                 },
                 "speaker/210": {
                     "meeting_id": 1,
@@ -272,7 +260,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "group/3",
             "assignment/140",
             "poll/150",
-            "option/160",
             "poll_candidate_list/170",
             "poll_candidate/180",
             "poll_candidate/181",
