@@ -138,8 +138,8 @@ class TestCheckDatabase(BasePresenterTestCase):
             "assignment_poll_default_backend": "fast",
             "poll_default_type": "analog",
             "poll_default_onehundred_percent_base": "YNA",
-            "poll_default_backend": "fast",
             "poll_default_live_voting_enabled": False,
+            "poll_default_allow_invalid": False,
             "poll_couple_countdown": True,
         }
 
@@ -311,7 +311,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
                     "vote_ids": [7],
-                    "option_ids": [8],
                     "assignment_candidate_ids": [9],
                     "assignment_ids": [10],
                     # relation fields.
@@ -368,14 +367,14 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "vote_user",
                     {
                         "meeting_user_ids": [14],
-                        "vote_ids": [7],
+                        "acting_vote_ids": [7],
                     },
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
                     {
                         "meeting_user_ids": [15],
-                        "delegated_vote_ids": [7],
+                        "represented_vote_ids": [7],
                     },
                 ),
                 "user/6": self.get_new_user(
@@ -500,15 +499,9 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "vote/7": {
                     "user_token": "test",
-                    "option_id": 8,
-                    "user_id": 4,
-                    "delegated_user_id": 5,
+                    "acting_user_id": 4,
+                    "represented_user_id": 5,
                     "meeting_id": 1,
-                },
-                "option/8": {
-                    "vote_ids": [7],
-                    "meeting_id": 1,
-                    "weight": 10000,
                 },
                 "assignment_candidate/9": {
                     "weight": 10000,

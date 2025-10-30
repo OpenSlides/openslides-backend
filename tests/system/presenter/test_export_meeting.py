@@ -30,7 +30,6 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_state",
             "motion_workflow",
             "poll",
-            "option",
             "vote",
             "assignment",
             "assignment_candidate",
@@ -300,7 +299,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 "user/14": {
                     "username": "exuser14",
                     "meeting_user_ids": [114],
-                    "delegated_vote_ids": [120],
+                    "represented_vote_ids": [120],
                 },
                 "motion/30": {
                     "meeting_id": 1,
@@ -312,8 +311,8 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "vote/120": {
                     "meeting_id": 1,
-                    "delegated_user_id": 14,
-                    "user_id": 14,
+                    "represented_user_id": 14,
+                    "acting_user_id": 14,
                 },
                 "meeting_user/112": {
                     "meeting_id": 1,

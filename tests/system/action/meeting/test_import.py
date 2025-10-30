@@ -6,11 +6,7 @@ import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
-from openslides_backend.shared.util import (
-    ONE_ORGANIZATION_FQID,
-    ONE_ORGANIZATION_ID,
-    get_initial_data_file,
-)
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler, performance
 
@@ -170,8 +166,8 @@ class MeetingImport(BaseActionTestCase):
                         "poll_default_method": "votes",
                         "poll_default_onehundred_percent_base": "valid",
                         "poll_default_group_ids": [],
-                        "poll_default_backend": "fast",
                         "poll_default_live_voting_enabled": False,
+                        "poll_default_allow_invalid": False,
                         "poll_couple_countdown": True,
                         "projector_ids": [1],
                         "all_projection_ids": [],
@@ -195,7 +191,6 @@ class MeetingImport(BaseActionTestCase):
                         "motion_change_recommendation_ids": [],
                         "poll_ids": [],
                         "option_ids": [],
-                        "vote_ids": [],
                         "assignment_ids": [],
                         "assignment_candidate_ids": [],
                         "personal_note_ids": [],
@@ -2262,19 +2257,19 @@ class MeetingImport(BaseActionTestCase):
         self.set_models(
             {
                 "vote/1": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
-                    "meeting_id": 1,
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    # "meeting_id": 1,
                     "option_id": 10,
                     "user_token": "asdfgh",
                 },
-                "option/10": {
-                    "vote_ids": [1],
-                    "meeting_id": 1,
-                },
+                # "option/10": {
+                #     "vote_ids": [1],
+                #     "meeting_id": 1,
+                # },
                 "user/1": {
-                    "vote_ids": [1],
-                    "delegated_vote_ids": [1],
+                    "acting_vote_ids": [1],
+                    "represented_vote_ids": [1],
                 },
             }
         )
@@ -2283,26 +2278,26 @@ class MeetingImport(BaseActionTestCase):
                 "vote": {
                     "1": {
                         "id": 1,
-                        "user_id": 1,
-                        "delegated_user_id": 1,
-                        "meeting_id": 1,
-                        "option_id": 1,
+                        "acting_user_id": 1,
+                        "represented_user_id": 1,
+                        # "meeting_id": 1,
+                        # "option_id": 1,
                         "user_token": "asdfgh",
                     },
                 },
-                "option": {
-                    "1": {
-                        "id": 1,
-                        "vote_ids": [1],
-                        "meeting_id": 1,
-                    },
-                },
+                # "option": {
+                #     "1": {
+                #         "id": 1,
+                #         "vote_ids": [1],
+                #         "meeting_id": 1,
+                #     },
+                # },
             }
         )
-        data["meeting"]["meeting"]["1"]["vote_ids"] = [1]
+        # data["meeting"]["meeting"]["1"]["vote_ids"] = [1]
         data["meeting"]["meeting"]["1"]["option_ids"] = [1]
-        data["meeting"]["user"]["1"]["vote_ids"] = [1]
-        data["meeting"]["user"]["1"]["delegated_vote_ids"] = [1]
+        data["meeting"]["user"]["1"]["acting_vote_ids"] = [1]
+        data["meeting"]["user"]["1"]["represented_vote_ids"] = [1]
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -2310,16 +2305,16 @@ class MeetingImport(BaseActionTestCase):
             {
                 "username": "admin",
                 "meeting_user_ids": [2],
-                "vote_ids": [1],
-                "delegated_vote_ids": [1],
+                "acting_vote_ids": [1],
+                "represented_vote_ids": [1],
             },
         )
         self.assert_model_exists(
             "user/2",
             {
                 "username": "test",
-                "vote_ids": [2],
-                "delegated_vote_ids": [2],
+                "acting_vote_ids": [2],
+                "represented_vote_ids": [2],
                 "meeting_user_ids": [1],
             },
         )
@@ -2465,19 +2460,19 @@ class MeetingImport(BaseActionTestCase):
         self.set_models(
             {
                 "vote/1": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
-                    "meeting_id": 1,
-                    "option_id": 10,
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    # "meeting_id": 1,
+                    # "option_id": 10,
                     "user_token": "asdfgh",
                 },
-                "option/10": {
-                    "vote_ids": [1],
-                    "meeting_id": 1,
-                },
+                # "option/10": {
+                #     "vote_ids": [1],
+                #     "meeting_id": 1,
+                # },
                 "user/1": {
-                    "vote_ids": [1],
-                    "delegated_vote_ids": [1],
+                    "acting_vote_ids": [1],
+                    "represented_vote_ids": [1],
                 },
             }
         )
@@ -2486,28 +2481,28 @@ class MeetingImport(BaseActionTestCase):
                 "vote": {
                     "1": {
                         "id": 1,
-                        "user_id": 1,
-                        "delegated_user_id": 1,
-                        "meeting_id": 1,
+                        "acting_user_id": 1,
+                        "represented_user_id": 1,
+                        # "meeting_id": 1,
                         "option_id": 1,
                         "user_token": "asdfgh",
                     },
                 },
-                "option": {
-                    "1": {
-                        "id": 1,
-                        "vote_ids": [1],
-                        "meeting_id": 1,
-                    },
-                },
+                # "option": {
+                #     "1": {
+                #         "id": 1,
+                #         "vote_ids": [1],
+                #         "meeting_id": 1,
+                #     },
+                # },
             }
         )
-        data["meeting"]["meeting"]["1"]["vote_ids"] = [1]
-        data["meeting"]["meeting"]["1"]["option_ids"] = [1]
+        # data["meeting"]["meeting"]["1"]["vote_ids"] = [1]
+        # data["meeting"]["meeting"]["1"]["option_ids"] = [1]
         data["meeting"]["user"]["1"]["username"] = "admin"
         data["meeting"]["user"]["1"]["last_name"] = ""
-        data["meeting"]["user"]["1"]["vote_ids"] = [1]
-        data["meeting"]["user"]["1"]["delegated_vote_ids"] = [1]
+        data["meeting"]["user"]["1"]["acting_vote_ids"] = [1]
+        data["meeting"]["user"]["1"]["represented_vote_ids"] = [1]
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -2515,8 +2510,8 @@ class MeetingImport(BaseActionTestCase):
             {
                 "username": "admin",
                 "meeting_user_ids": [1],
-                "vote_ids": [1, 2],
-                "delegated_vote_ids": [1, 2],
+                "acting_vote_ids": [1, 2],
+                "represented_vote_ids": [1, 2],
             },
         )
         self.assert_model_not_exists("user/2")

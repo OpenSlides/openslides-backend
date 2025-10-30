@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, cast
 from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
+from openslides_backend.models.models import Poll
 
 import pytest
 from psycopg.types.json import Jsonb
@@ -655,16 +656,6 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists(
             "personal_note/2", {"meeting_user_id": 2, "meeting_id": 2}
-        )
-
-    def test_clone_with_option(self) -> None:
-        self.set_test_data_with_admin()
-        self.set_models({"option/1": {"content_object_id": "user/1", "meeting_id": 1}})
-        response = self.request("meeting.clone", {"meeting_id": 1})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"option_ids": [1, 2]})
-        self.assert_model_exists(
-            "option/2", {"content_object_id": "user/1", "meeting_id": 2}
         )
 
     def test_clone_with_mediafile(self) -> None:
@@ -1582,46 +1573,20 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "poll_candidate_list/1": {
                     "id": 1,
-                    "option_id": 1,
+                    # "option_id": 1,
                     "meeting_id": 1,
-                    "poll_candidate_ids": [1, 2, 3],
-                },
-                "option/1": {
-                    "id": 1,
-                    "weight": 1,
-                    "poll_id": 1,
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
-                },
-                "option/2": {
-                    "id": 2,
-                    "text": "global option",
-                    "weight": 1,
-                    "meeting_id": 1,
-                    "used_as_global_option_in_poll_id": 1,
                 },
                 "poll/1": {
                     "id": 1,
-                    "type": "pseudoanonymous",
-                    "state": "created",
+                    # "type": "pseudoanonymous",
+                    # "state": "created",
                     "title": "First election",
-                    "backend": "fast",
-                    "global_no": False,
-                    "votescast": "0.000000",
-                    "global_yes": False,
+                    # "votescast": "0.000000",
                     "meeting_id": 1,
-                    "option_ids": [1],
-                    "pollmethod": "YNA",
-                    "votesvalid": "0.000000",
-                    "votesinvalid": "0.000000",
-                    "global_abstain": False,
-                    "global_option_id": 2,
-                    "max_votes_amount": 1,
-                    "min_votes_amount": 1,
                     "content_object_id": "assignment/1",
-                    "is_pseudoanonymized": True,
-                    "max_votes_per_option": 1,
-                    "onehundred_percent_base": "disabled",
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "method": Poll.METHOD_RATING_SCORE,
+                    "state": Poll.STATE_STARTED,
                 },
             }
         )
@@ -1635,7 +1600,6 @@ class MeetingClone(BaseActionTestCase):
                 "assignment_ids": [2],
                 "poll_candidate_list_ids": [2],
                 "poll_candidate_ids": [4, 5, 6],
-                "option_ids": [3, 4],
                 "poll_ids": [2],
                 "projector_ids": [2],
                 "reference_projector_id": 2,
