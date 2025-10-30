@@ -3,14 +3,13 @@ from decimal import Decimal
 from typing import Any, cast
 from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
-from openslides_backend.models.models import Poll
 
 import pytest
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.mixins import MeetingModelMixin
-from openslides_backend.models.models import AgendaItem, Meeting
+from openslides_backend.models.models import AgendaItem, Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -1316,39 +1315,42 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_vote_delegated_vote(self) -> None:
         self.set_test_data_with_admin()
         self.create_meeting(4)
+        self.create_motion(1, 1)
         self.set_user_groups(1, [2, 5])
         self.set_models(
             {
-                "vote/1": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
+                "poll/1": {
+                    "title": "Poll 1",
                     "meeting_id": 1,
-                    "option_id": 1,
-                    "user_token": "asdfgh",
+                    "content_object_id": "motion/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "method": Poll.METHOD_RATING_APPROVAL,
+                    "state": Poll.STATE_STARTED,
+                },
+                "vote/1": {
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    "poll_id": 1,
                 },
                 "vote/2": {
-                    "user_id": 1,
-                    "delegated_user_id": 1,
-                    "meeting_id": 4,
-                    "option_id": 2,
-                    "user_token": "hjkl",
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
+                    "poll_id": 1,
                 },
-                "option/1": {"meeting_id": 1},
-                "option/2": {"meeting_id": 4},
             },
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "vote/3",
-            {"user_id": 1, "delegated_user_id": 1, "option_id": 3, "meeting_id": 5},
+            {"acting_user_id": 1, "represented_user_id": 1, "poll_id": 2},
         )
         self.assert_model_exists(
             "user/1",
             {
                 "meeting_user_ids": [1, 2, 3],
-                "vote_ids": [1, 2, 3],
-                "delegated_vote_ids": [1, 2, 3],
+                "acting_vote_ids": [1, 2, 3, 4],
+                "represented_vote_ids": [1, 2, 3, 4],
                 "meeting_ids": [1, 4, 5],
             },
         )
