@@ -159,8 +159,8 @@
 
     topic_poll_default_group_ids: Id[];
 
-    poll_default_backend: string;
     poll_default_live_voting_enabled: boolean;
+    poll_default_allow_invalid: boolean;
 
 // Group B
     present_user_ids: user/is_present_in_meeting_ids;

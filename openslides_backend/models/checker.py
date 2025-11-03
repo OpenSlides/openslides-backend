@@ -173,7 +173,7 @@ MEETING_COLLECTIONS = {
     collection
     for collection, model in model_registry.items()
     if model().has_field("meeting_id")
-} | {"meeting", "user", "mediafile"}
+} | {"meeting", "user", "mediafile", "vote"}
 
 
 class Checker:
@@ -452,6 +452,13 @@ class Checker:
         basemsg = f"{collection}/{model['id']}/{field}: Relation Error: "
 
         if collection == "user" and field == "organization_id":
+            return
+
+        if (
+            collection == "vote"
+            and field == "poll_id"
+            and str(model["poll_id"]) in self.data.get("poll", {})
+        ):
             return
 
         if isinstance(field_type, RelationField):

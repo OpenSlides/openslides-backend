@@ -102,18 +102,17 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
 
-    def create_poll(self, base: int, state: str) -> None:
+    def create_poll(self, base: int, state: str, published: bool = False) -> None:
         self.set_models(
             {
                 f"poll/{base}": {
                     "title": f"Poll {base}",
-                    "type": Poll.TYPE_NAMED,
-                    "backend": "fast",
-                    "pollmethod": "YNA",
-                    "onehundred_percent_base": "YNA",
+                    "method": Poll.METHOD_APPROVAL,
+                    "visibility": Poll.VISIBILITY_NAMED,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                     "state": state,
+                    "published": published,
                 }
             }
         )
@@ -122,7 +121,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.create_motion(1)
         self.create_poll(1, Poll.STATE_CREATED)
         self.create_poll(2, Poll.STATE_FINISHED)
-        self.create_poll(3, Poll.STATE_PUBLISHED)
+        self.create_poll(3, Poll.STATE_FINISHED, True)
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
 
