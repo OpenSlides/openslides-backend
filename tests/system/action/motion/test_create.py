@@ -119,10 +119,10 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "attachment_meeting_mediafile_ids": [80],
                 "additional_submitter": "test",
                 "supporter_ids": [1],
+                "submitter_ids": None,
+                "supporter_meeting_user_ids": None,
             },
         )
-        assert motion.get("submitter_ids") is None
-        assert motion.get("supporter_meeting_user_ids") is None
         self.assert_model_exists(
             "motion_supporter/1",
             {"motion_id": 2, "meeting_id": 1, "meeting_user_id": 1},

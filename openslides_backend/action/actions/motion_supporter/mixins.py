@@ -58,24 +58,16 @@ class SupporterActionMixin(DelegationBasedRestrictionMixin):
         )
         gm_motion_result = self.datastore.get_many([motion_get_many_request])
         motions = gm_motion_result.get("motion", {})
-        meeting_ids = []
-        for key in motions:
-            if not motions[key]["meeting_id"] in meeting_ids:
-                meeting_ids.append(motions[key]["meeting_id"])
+        meeting_ids = list({motions[key]["meeting_id"] for key in motions})
         gm_request_meeting = GetManyRequest(
             "meeting", meeting_ids, ["motions_supporters_min_amount"]
         )
-        state_ids = []
-        for key in motions:
-            if not motions[key]["state_id"] in state_ids:
-                state_ids.append(motions[key]["state_id"])
+        state_ids = list({motions[key]["state_id"] for key in motions})
         gm_request_state = GetManyRequest("motion_state", state_ids, ["allow_support"])
         gm_result = self.datastore.get_many([gm_request_meeting, gm_request_state])
         for instance in action_data:
             motion = motions.get(self.get_motion_id(instance), {})
-            meeting_id = motion.get("meeting_id")
-            if meeting_id is None:
-                raise ActionException("Motion is missing meeting_id.")
+            meeting_id = motion["meeting_id"]
             meeting = gm_result.get("meeting", {}).get(meeting_id, {})
             if meeting.get("motions_supporters_min_amount") == 0:
                 raise ActionException("Motion supporters system deactivated.")
@@ -85,10 +77,7 @@ class SupporterActionMixin(DelegationBasedRestrictionMixin):
                 Permissions.Motion.CAN_MANAGE_METADATA,
                 meeting_id,
             ):
-                state_id = motion.get("state_id")
-                if state_id is None:
-                    raise ActionException("Motion is missing state_id.")
-                state = gm_result.get("motion_state", {}).get(state_id, {})
+                state = gm_result.get("motion_state", {}).get(motion["state_id"], {})
 
                 if state.get("allow_support") is False:
                     raise ActionException("The state does not allow support.")

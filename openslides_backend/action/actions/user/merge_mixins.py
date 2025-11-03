@@ -127,9 +127,11 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
         ]:
             motion_ids.add(data["motion_id"])
         for motion_id in motion_ids:
-            information[fqid_from_collection_and_id("motion", motion_id)] = [
-                "Submitters merged"
-            ]
+            fqid = fqid_from_collection_and_id("motion", motion_id)
+            if fqid not in information:
+                information[fqid] = ["Submitters merged"]
+            else:
+                information[fqid].append("Submitters merged")
         return information
 
 
@@ -152,9 +154,11 @@ class MotionSupporterMergeMixin(BaseMergeMixin):
         ]:
             motion_ids.add(data["motion_id"])
         for motion_id in motion_ids:
-            information[fqid_from_collection_and_id("motion", motion_id)] = [
-                "Supporters merged"
-            ]
+            fqid = fqid_from_collection_and_id("motion", motion_id)
+            if fqid not in information:
+                information[fqid] = ["Supporters merged"]
+            else:
+                information[fqid].append("Supporters merged")
         return information
 
 

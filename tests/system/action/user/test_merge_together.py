@@ -1785,7 +1785,6 @@ class UserMergeTogether(BaseVoteTestCase):
             self.assert_model_exists(
                 f"motion/{motion_id}", {"supporter_ids": supporter_ids}
             )
-            # self.assert_history_information(f"motion/{motion_id}", ["Supporters merged"])
         for meeting_id, supporter_ids in [
             (1, [114, 212, 315, 412, 514, 515]),
             (2, [723]),
@@ -1795,7 +1794,13 @@ class UserMergeTogether(BaseVoteTestCase):
             self.assert_model_exists(
                 f"meeting/{meeting_id}", {"motion_supporter_ids": supporter_ids}
             )
-        for id_ in range(2, 10):
+        for id_ in [1]:
+            self.assert_history_information(f"motion/{id_}", ["Supporters merged"])
+        for id_ in [4, 5, 7, 8, 9]:
+            self.assert_history_information(
+                f"motion/{id_}", ["Supporters merged", "Submitters merged"]
+            )
+        for id_ in [2, 3, 6]:
             self.assert_history_information(f"motion/{id_}", ["Submitters merged"])
 
     def test_merge_with_personal_notes(self) -> None:
