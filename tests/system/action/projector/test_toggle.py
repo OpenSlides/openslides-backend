@@ -1,3 +1,5 @@
+from psycopg.types.json import Jsonb
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -16,11 +18,10 @@ class ProjectorToggle(BaseActionTestCase):
                 f"poll/{base}": {
                     "meeting_id": 1,
                     "title": "A very important change",
-                    "type": Poll.TYPE_PSEUDOANONYMOUS,
-                    "backend": "fast",
-                    "pollmethod": "YN",
-                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
-                    "sequential_number": base,
+                    "visibility": Poll.VISIBILITY_SECRET,
+                    "method": Poll.METHOD_RATING_APPROVAL,
+                    "state": Poll.STATE_STARTED,
+                    "config": Jsonb({"allow_abstain": False}),
                     "content_object_id": "motion/1",
                 }
             }

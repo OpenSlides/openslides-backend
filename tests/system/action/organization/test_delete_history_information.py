@@ -1,3 +1,4 @@
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -27,18 +28,17 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                 },
             }
         )
-        response = self.request(
-            "poll.create",
+        vote_service_response = self.vote_service.create(
             {
                 "title": "test",
-                "type": "analog",
-                "pollmethod": "Y",
-                "options": [{"text": "test2", "Y": "10.000000"}],
+                "visibility": Poll.VISIBILITY_MANUALLY,
+                "method": Poll.METHOD_RATING_APPROVAL,
+                "state": Poll.STATE_CREATED,
                 "meeting_id": 1,
                 "content_object_id": "assignment/1",
             },
         )
-        self.assert_status_code(response, 200)
+        self.assertIsNotNone(vote_service_response)
         self.assert_history_information("assignment/1", ["Ballot created"])
 
         response = self.request("organization.delete_history_information", {"id": 1})

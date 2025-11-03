@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 import requests
 import simplejson as json
@@ -54,21 +54,35 @@ class VoteAdapter(VoteService, AuthenticatedService):
             )
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
-    def start(self, id: int) -> None:
-        endpoint = self.get_endpoint("start", id)
-        self.retrieve(endpoint)
+    def create(self, payload: dict[str, Any]) -> dict[str, Any]:
+        endpoint = self.get_endpoint("create")
+        return self.retrieve(endpoint, payload)
 
-    def stop(self, id: int) -> dict[str, Any]:
-        endpoint = self.get_endpoint("stop", id)
+    def update(self, id: int, payload: dict[str, Any]) -> dict[str, Any]:
+        endpoint = self.get_endpoint("update", id)
+        return self.retrieve(endpoint, payload)
+
+    def delete(self, id: int) -> dict[str, Any]:
+        endpoint = self.get_endpoint("delete", id)
         return self.retrieve(endpoint)
 
-    def clear(self, id: int) -> None:
-        endpoint = self.get_endpoint("clear", id)
-        self.retrieve(endpoint)
+    def start(self, id: int) -> dict[str, Any]:
+        endpoint = self.get_endpoint("start", id)
+        return self.retrieve(endpoint)
 
-    def clear_all(self) -> None:
-        endpoint = self.get_endpoint("clear_all")
-        self.retrieve(endpoint)
+    def finalize(
+        self,
+        id: int,
+        optional_attributes: list[Literal["publish", "anonymize"]] = [],
+    ) -> dict[str, Any]:
+        endpoint = self.get_endpoint("finalize", id)
+        if optional_attributes:
+            endpoint += f"&{'&'.join(optional_attributes)}"
+        return self.retrieve(endpoint)
+
+    def reset(self, id: int) -> dict[str, Any]:
+        endpoint = self.get_endpoint("reset", id)
+        return self.retrieve(endpoint)
 
     def get_endpoint(self, route: str, id: int | None = None) -> str:
         return f"{self.url}/{route}" + (f"?id={id}" if id else "")

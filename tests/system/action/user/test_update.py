@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -3136,13 +3137,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/1": {
                     "username": "boady",
                     "poll_candidate_ids": [1],
-                    "option_ids": [1],
-                    "vote_ids": [1, 2],
+                    "acting_vote_ids": [1, 2],
                 },
-                "user/2": {"username": "john", "delegated_vote_ids": [2]},
+                "user/2": {"username": "john", "represented_vote_ids": [2]},
                 "meeting/1": {
                     "poll_ids": [1],
-                    "option_ids": [1, 2],
                     "poll_candidate_list_ids": [1],
                     "poll_candidate_ids": [1],
                     "vote_ids": [1, 2],
@@ -3150,26 +3149,15 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 1},
                 "poll/1": {
                     "title": "pull",
-                    "type": "analog",
-                    "pollmethod": "YNA",
+                    "method": Poll.METHOD_APPROVAL,
+                    "visibility": Poll.VISIBILITY_MANUALLY,
+                    "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
-                    "option_ids": [1, 2],
-                    "sequential_number": 1,
+                    "vote_ids": [1, 2],
                     "content_object_id": "topic/1",
-                },
-                "option/1": {
-                    "meeting_id": 1,
-                    "vote_ids": [1],
-                    "content_object_id": "user/1",
-                },
-                "option/2": {
-                    "meeting_id": 1,
-                    "vote_ids": [2],
-                    "content_object_id": "poll_candidate_list/1",
                 },
                 "poll_candidate_list/1": {
                     "meeting_id": 1,
-                    "option_id": 2,
                     "poll_candidate_ids": [1],
                 },
                 "poll_candidate/1": {
@@ -3180,16 +3168,15 @@ class UserUpdateActionTest(BaseActionTestCase):
                 },
                 "vote/1": {
                     "meeting_id": 1,
-                    "option_id": 1,
-                    "user_id": 1,
-                    "user_token": "dfjdskjfksdjf",
+                    "poll_id": 1,
+                    "acting_user_id": 1,
+                    "represented_user_id": 1,
                 },
                 "vote/2": {
                     "meeting_id": 1,
-                    "option_id": 2,
-                    "user_id": 1,
-                    "delegated_user_id": 2,
-                    "user_token": "dfjdskjfksdjf",
+                    "poll_id": 2,
+                    "acting_user_id": 1,
+                    "represented_user_id": 2,
                 },
             }
         )
@@ -3198,11 +3185,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 3,
                 "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
                 "poll_candidate_ids": [1],
                 "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
+                "acting_vote_ids": [1],
+                "represented_vote_ids": [2],
             },
             internal=True,
         )
@@ -3210,22 +3196,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         expected: dict[str, dict[str, Any]] = {
             "user/3": {
                 "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
                 "poll_candidate_ids": [1],
                 "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
+                "acting_vote_ids": [1],
+                "represented_vote_ids": [2],
             },
             "meeting/1": {
                 "present_user_ids": [3],
             },
             "poll/1": {"voted_ids": [3]},
-            "option/1": {"content_object_id": "user/3"},
             "poll_candidate/1": {
                 "user_id": 3,
             },
-            "vote/1": {"user_id": 3},
-            "vote/2": {"delegated_user_id": 3},
+            "vote/1": {"acting_user_id": 3},
+            "vote/2": {"represented_user_id": 3},
         }
         for fqid, model in expected.items():
             self.assert_model_exists(fqid, model)
@@ -3239,11 +3223,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 3,
                 "is_present_in_meeting_ids": [1],
-                "option_ids": [1],
                 "poll_candidate_ids": [1],
                 "poll_voted_ids": [1],
-                "vote_ids": [1],
-                "delegated_vote_ids": [2],
+                "acting_vote_ids": [1],
+                "represented_vote_ids": [2],
             },
             internal=False,
         )
@@ -3253,11 +3236,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert message.endswith("} properties")
         for field in [
             "'is_present_in_meeting_ids'",
-            "'option_ids'",
             "'poll_candidate_ids'",
             "'poll_voted_ids'",
-            "'vote_ids'",
-            "'delegated_vote_ids'",
+            "'acting_vote_ids'",
+            "'represented_vote_ids'",
         ]:
             self.assertIn(field, message)
 

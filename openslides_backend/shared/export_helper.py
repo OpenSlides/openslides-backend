@@ -12,7 +12,7 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Meeting
+from ..models.models import Meeting, Vote
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
@@ -136,6 +136,31 @@ def export_meeting(
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
 
+    # Get related votes
+    if polls := export.get("poll"):
+        vote_ids = [
+            vote_id for poll in polls.values() for vote_id in poll.get("vote_ids", [])
+        ]
+        if vote_ids:
+            votes = datastore.get_many(
+                [GetManyRequest("vote", vote_ids, get_fields_for_export("vote"))],
+                lock_result=False,
+                use_changed_models=False,
+            )["vote"]
+            for vote_id, instance in votes.items():
+                export.setdefault("vote", {})[str(vote_id)] = instance
+                for field_name, value in instance.items():
+                    model_field = Vote().get_field(field_name)
+                    if (
+                        not isinstance(model_field, RelationField)
+                        or model_field.get_own_field_name() == "poll_id"
+                    ):
+                        continue
+                    collection, relation_field = next(iter(model_field.to.items()))
+                    export[collection][str(value)].setdefault(
+                        relation_field, []
+                    ).append(vote_id)
+
     # Sort instances by id within each collection
     for collection, instances in export.items():
         if collection == "_migration_index":
@@ -204,10 +229,9 @@ def add_users(
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),
             ("poll", "poll_voted_ids"),
-            ("option", "option_ids"),
-            ("vote", "vote_ids"),
+            ("vote", "acting_vote_ids"),
             ("poll_candidate", "poll_candidate_ids"),
-            ("vote", "delegated_vote_ids"),
+            ("vote", "represented_vote_ids"),
         ]
         for collection, fname in collection_field_tupels:
             user[fname] = [

@@ -61,8 +61,8 @@
     option_ids: Id[];
     poll_candidate_ids: Id[];
     poll_voted_ids: Id[];
-    vote_ids: Id[];
-    delegated_vote_ids: Id[];
+    acting_vote_ids: Id[];
+    represented_vote_ids: Id[];
 }
 ```
 

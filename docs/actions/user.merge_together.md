@@ -70,8 +70,6 @@ Any date in the custom payload data from the request overwrites anything that wo
 Data validity of the results is checked according to user.update rules.
 
 The secondary users are deleted.
-
-Any poll that contains the id of any secondary user in its `entitled_users_at_stop` list will have it re-written to _additionally_ contain the new user id.
 This means that a line
 `{"voted": false, "present": true, "user_id": 4, "vote_delegated_to_user_id": 7}`
 becomes
@@ -80,7 +78,7 @@ after two merges where for the first `user/4` was merged into `user/2` and for t
 This is to ensure that the client can recognize where users were merged, as simply replacing the ids may cause situations where a user is present on a list twice and not replacing them would mean that the user that voted would not be recognizable anymore.
 
 #### Merging of sub-collections
-Relation lists where simple unification does not suffice (usually because the target collections function mostly as a type of m:n connection between two other collections) are merged. 
+Relation lists where simple unification does not suffice (usually because the target collections function mostly as a type of m:n connection between two other collections) are merged.
 
 For that purpose, target models for these relations are compared and those that are judged to fulfill equivalent roles are grouped together.
 
@@ -141,7 +139,7 @@ He also needs a organization management level that is equal or higher than that 
 
 The client could/should fill the optional fields from a chosen "main" user to not force the editor to rewrite all the data.
 
-Warnings should be shown alerting the user that 
+Warnings should be shown alerting the user that
 - this action is not reversable,
 - will potentially change/overwrite data in archived meetings and
 - will neither port the history information of the secondary users to the new ones nor rewrite the user id in the "Changed by" column
