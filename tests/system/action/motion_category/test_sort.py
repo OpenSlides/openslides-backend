@@ -12,7 +12,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             "motion_category/22": {
                 "name": "category 22",
                 "meeting_id": 1,
-                "sequential_number": 22,
             },
         }
 
@@ -22,7 +21,6 @@ class MotionCategorySortActionTest(BaseActionTestCase):
                 f"motion_category/{base}": {
                     "name": f"category {base}",
                     "meeting_id": 222,
-                    "sequential_number": base,
                 }
             }
         )

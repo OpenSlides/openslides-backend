@@ -10,8 +10,8 @@ class ProjectorProject(BaseActionTestCase):
         self.set_models(
             {
                 "projector/1": {"scroll": 80},
-                "projector/65": {"meeting_id": 1, "sequential_number": 65},
-                "projector/75": {"meeting_id": 1, "sequential_number": 75},
+                "projector/65": {"meeting_id": 1},
+                "projector/75": {"meeting_id": 1},
                 "projection/105": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/452",
@@ -40,21 +40,17 @@ class ProjectorProject(BaseActionTestCase):
                 "assignment/452": {
                     "meeting_id": 1,
                     "title": "assignment 452",
-                    "sequential_number": 452,
                 },
                 "assignment/453": {
                     "meeting_id": 1,
                     "title": "assignment 453",
-                    "sequential_number": 453,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/452",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "assignment/453",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
             }

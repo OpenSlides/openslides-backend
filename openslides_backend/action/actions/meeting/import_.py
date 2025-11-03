@@ -1,7 +1,7 @@
 import re
-import time
 from collections import defaultdict
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
@@ -407,7 +407,7 @@ class MeetingImport(
         meeting["enable_anonymous"] = False
 
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
     def get_meeting_from_json(self, json_data: Any) -> Any:
         """

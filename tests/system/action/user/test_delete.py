@@ -90,13 +90,11 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "topic/1",
                 },
                 "topic/1": {
                     "title": "tropic",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                 },
                 "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/1"},
@@ -140,12 +138,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "assignment/123": {
                     "title": "test_assignment",
                     "candidate_ids": [34],
-                    "sequential_number": 123,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/123",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -194,10 +190,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "poll_candidate_ids": [34],
-                },
+                "user/111": {"username": "username_srtgb123"},
                 "poll_candidate/34": {
                     "user_id": 111,
                     "poll_candidate_list_id": 1,
@@ -205,10 +198,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "poll_candidate_list/1": {"meeting_id": 1},
-                "option/1": {
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
-                },
+                # "option/1": {
+                #     "meeting_id": 1,
+                #     "content_object_id": "poll_candidate_list/1",
+                # },
             }
         )
         response = self.request("user.delete", {"id": 111})
