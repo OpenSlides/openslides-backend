@@ -64,6 +64,7 @@ class MeetingUserDelete(BaseActionTestCase):
                     "meeting_user_ids": [5],
                     "motion_editor_ids": [1],
                     "motion_working_group_speaker_ids": [2],
+                    "motion_submitter_ids": [3],
                 },
                 "user/1": {
                     "meeting_user_ids": [5],
@@ -72,6 +73,7 @@ class MeetingUserDelete(BaseActionTestCase):
                     "user_id": 1,
                     "motion_editor_ids": [1],
                     "motion_working_group_speaker_ids": [2],
+                    "motion_submitter_ids": [3],
                     "meeting_id": 10,
                 },
                 "motion_editor/1": {
@@ -82,16 +84,27 @@ class MeetingUserDelete(BaseActionTestCase):
                     "meeting_user_id": 5,
                     "meeting_id": 10,
                 },
+                "motion_submitter/3": {
+                    "meeting_user_id": 5,
+                    "meeting_id": 10,
+                },
             }
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting_user/5")
-        self.assert_model_deleted("motion_editor/1")
-        self.assert_model_deleted("motion_working_group_speaker/2")
+        self.assert_model_exists("motion_editor/1", {"meeting_user_id": None})
+        self.assert_model_exists(
+            "motion_working_group_speaker/2", {"meeting_user_id": None}
+        )
+        self.assert_model_exists("motion_submitter/3", {"meeting_user_id": None})
         self.assert_model_exists(
             "meeting/10",
-            {"motion_editor_ids": [], "motion_working_group_speaker_ids": []},
+            {
+                "motion_editor_ids": [1],
+                "motion_working_group_speaker_ids": [2],
+                "motion_submitter_ids": [3],
+            },
         )
 
     def test_delete_with_chat_message(self) -> None:
