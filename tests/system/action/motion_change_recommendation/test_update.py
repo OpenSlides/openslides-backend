@@ -118,7 +118,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             },
         )
 
-    def create_motions_with_line_changes(self) -> None:
+    def create_motions_with_line_changes(self, amount: int = 1) -> None:
         self.create_meeting()
         self.set_models(
             {
@@ -130,7 +130,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                             range((id_ - 1) * 3 + 1, (id_ - 1) * 3 + 4)
                         ),
                     }
-                    for id_ in [1, 2]
+                    for id_ in range(1, 1 + amount)
                 },
                 **{
                     f"motion_change_recommendation/{id_ + (motion_id-1)*3}": {
@@ -140,7 +140,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                         "line_to": linespan[1],
                         "text": f"Reco {id_}",
                     }
-                    for motion_id in [1, 2]
+                    for motion_id in range(1, 1 + amount)
                     for id_, linespan in {1: (1, 2), 2: (4, 6), 3: (8, 10)}.items()
                 },
             }
@@ -181,7 +181,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_update_with_line_changes_multi_motion(self) -> None:
-        self.create_motions_with_line_changes()
+        self.create_motions_with_line_changes(amount=2)
 
         response = self.request_multi(
             "motion_change_recommendation.update",

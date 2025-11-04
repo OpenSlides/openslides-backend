@@ -88,10 +88,8 @@ class MotionChangeRecommendationUpdateAction(ExtendHistoryMixin, UpdateAction):
         self, motion_reco_data: dict[int, dict[str, Any]]
     ) -> None:
         sorted_reco_data: list[tuple[int, int, int]] = sorted(
-            [
-                (reco["line_from"], reco["line_to"], id_)
-                for id_, reco in motion_reco_data.items()
-            ]
+            (reco["line_from"], reco["line_to"], id_)
+            for id_, reco in motion_reco_data.items()
         )
         intersections: set[int] = set()
         for i in range(len(sorted_reco_data)):
