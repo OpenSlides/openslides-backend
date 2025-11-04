@@ -2474,3 +2474,227 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
                 "attachment_ids": ["motion/20", "motion/21"],
             },
         )
+
+    def test_forward_with_deleted_submitters(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_meeting(7)
+        self.create_meeting(10)
+        self.create_user("alice", [1])
+        self.create_user("bob", [1])
+        self.create_user("colin", [1])
+        self.create_motion(1, 1, motion_data={"title": "A lead motion with submitters"})
+        self.create_motion(
+            1,
+            2,
+            state_id=1,
+            motion_data={
+                "title": "An amendment with submitters",
+                "lead_motion_id": 1,
+                "text": "Amendment text",
+            },
+        )
+        self.create_motion(
+            1,
+            3,
+            state_id=1,
+            motion_data={
+                "title": "Another amendment with submitters",
+                "lead_motion_id": 1,
+                "text": "Another amendment text",
+            },
+        )
+        self.set_models(
+            {
+                "organization/1": {"default_language": "fr"},
+                "committee/60": {"forward_to_committee_ids": [63, 66, 69]},
+                "meeting/1": {"language": "it"},  # shouldn't matter
+                "meeting/7": {"language": "de"},
+                "meeting/10": {"language": None},  # Should use orga default lang
+                "motion_state/1": {
+                    "allow_motion_forwarding": True,
+                    "allow_amendment_forwarding": True,
+                },
+                "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 1,
+                    "weight": 1,
+                },
+                "motion_submitter/2": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 2,
+                    "weight": 2,
+                },
+                "motion_submitter/3": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 3,
+                    "weight": 3,
+                },
+                "motion_submitter/4": {"meeting_id": 1, "motion_id": 2, "weight": 1},
+                "motion_submitter/5": {"meeting_id": 1, "motion_id": 2, "weight": 2},
+                "motion_submitter/6": {
+                    "meeting_id": 1,
+                    "motion_id": 3,
+                    "meeting_user_id": 1,
+                    "weight": 3,
+                },
+                "motion_submitter/7": {
+                    "meeting_id": 1,
+                    "motion_id": 3,
+                    "meeting_user_id": 3,
+                    "weight": 1,
+                },
+                "motion_submitter/8": {"meeting_id": 1, "motion_id": 3, "weight": 2},
+                "meeting_user/2": {"structure_level_ids": [1]},
+                "structure_level/1": {
+                    "name": "Construction commission",
+                    "meeting_id": 1,
+                },
+                "user/2": {"first_name": "Alice", "last_name": "in Wonderland"},
+                "user/3": {"first_name": "Bob"},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "First forward",
+                    "meeting_id": 4,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+                {
+                    "title": "Second forward",
+                    "meeting_id": 7,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+                {
+                    "title": "Third forward",
+                    "meeting_id": 10,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        # meeting 4 -> english translation
+        self.assert_model_exists(
+            "motion/4",
+            {
+                "title": "First forward",
+                "meeting_id": 4,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [7, 8],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/7",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 4,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 4,
+                "additional_submitter": "Deleted user, Deleted user",
+            },
+        )
+        self.assert_model_exists(
+            "motion/8",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 4,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 4,
+                "additional_submitter": "User 4, Deleted user, Alice in Wonderland",
+            },
+        )
+        # meeting 7 -> german translation
+        self.assert_model_exists(
+            "motion/5",
+            {
+                "title": "Second forward",
+                "meeting_id": 7,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [9, 10],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/9",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 7,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 5,
+                "additional_submitter": "Gelöschter Nutzer, Gelöschter Nutzer",
+            },
+        )
+        self.assert_model_exists(
+            "motion/10",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 7,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 5,
+                "additional_submitter": "User 4, Gelöschter Nutzer, Alice in Wonderland",
+            },
+        )
+        # meeting 10 -> default french translation
+        self.assert_model_exists(
+            "motion/6",
+            {
+                "title": "Third forward",
+                "meeting_id": 10,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [11, 12],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/11",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 10,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 6,
+                "additional_submitter": "Utilisateur supprimé, Utilisateur supprimé",
+            },
+        )
+        self.assert_model_exists(
+            "motion/12",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 10,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 6,
+                "additional_submitter": "User 4, Utilisateur supprimé, Alice in Wonderland",
+            },
+        )
