@@ -14,4 +14,4 @@ With the exception of internal calls (for the sake of merge), this action fails 
 ## Permissions
 The request user generally needs `motion.can_manage_metadata`.
 
-If he is removing his own support and either `users_forbid_delegator_as_supporter` is turned off for the meeting or he does not have his vote delegated, he is also permitted if he has `motion.can_support`.
+If he is removing his own support and either `users_forbid_delegator_as_supporter` is turned off for the meeting or he does not have his vote delegated, `motion.can_support` will also suffice.

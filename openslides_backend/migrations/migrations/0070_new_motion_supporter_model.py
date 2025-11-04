@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import (
     BaseRequestEvent,
@@ -30,6 +32,7 @@ class Migration(BaseModelMigration):
             ["meeting_id", "supporter_meeting_user_ids"],
         )
         next_supporter_id = 1
+        muser_id_to_supporter_ids: dict[int, list[int]] = defaultdict(list)
         for motion_id, motion in motions.items():
             motion_id = int(motion_id)
             meeting_id = motion["meeting_id"]
@@ -68,23 +71,28 @@ class Migration(BaseModelMigration):
                                 "motion_id": motion_id,
                                 "meeting_user_id": meeting_user_id,
                             },
-                        ),
-                        RequestUpdateEvent(
-                            fqid_from_collection_and_id(
-                                "meeting_user", meeting_user_id
-                            ),
-                            {},
-                            {"add": {"motion_supporter_ids": [next_supporter_id]}},
-                        ),
+                        )
                     ]
                 )
+                muser_id_to_supporter_ids[meeting_user_id].append(next_supporter_id)
                 next_supporter_id += 1
         meeting_users = self.reader.get_all("meeting_user", ["id"])
         events.extend(
             [
                 RequestUpdateEvent(
                     fqid_from_collection_and_id("meeting_user", meeting_user["id"]),
-                    {"supported_motion_ids": None},
+                    {
+                        "supported_motion_ids": None,
+                        **(
+                            {"motion_supporter_ids": supp_ids}
+                            if (
+                                supp_ids := muser_id_to_supporter_ids.get(
+                                    meeting_user["id"], None
+                                )
+                            )
+                            else {}
+                        ),
+                    },
                 )
                 for meeting_user in meeting_users.values()
             ]

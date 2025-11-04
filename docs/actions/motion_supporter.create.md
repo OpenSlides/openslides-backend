@@ -15,4 +15,4 @@ This action fails in two cases:
 ## Permissions
 The request user generally needs `motion.can_manage_metadata`.
 
-If he is creating a supporter for himself and either `users_forbid_delegator_as_supporter` is turned off for the meeting or he does not have his vote delegated, he `motion.can_support` will also suffice.
+If he is creating a supporter for himself and either `users_forbid_delegator_as_supporter` is turned off for the meeting or he does not have his vote delegated, `motion.can_support` will also suffice.

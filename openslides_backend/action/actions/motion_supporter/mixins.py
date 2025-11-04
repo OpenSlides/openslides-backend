@@ -58,11 +58,11 @@ class SupporterActionMixin(DelegationBasedRestrictionMixin):
         )
         gm_motion_result = self.datastore.get_many([motion_get_many_request])
         motions = gm_motion_result.get("motion", {})
-        meeting_ids = list({motions[key]["meeting_id"] for key in motions})
+        meeting_ids = list({mot["meeting_id"] for mot in motions.values()})
         gm_request_meeting = GetManyRequest(
             "meeting", meeting_ids, ["motions_supporters_min_amount"]
         )
-        state_ids = list({motions[key]["state_id"] for key in motions})
+        state_ids = list({mot["state_id"] for mot in motions.values()})
         gm_request_state = GetManyRequest("motion_state", state_ids, ["allow_support"])
         gm_result = self.datastore.get_many([gm_request_meeting, gm_request_state])
         for instance in action_data:
