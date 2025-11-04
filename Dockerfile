@@ -69,6 +69,7 @@ FROM base AS dev
 
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .
+COPY dev/run-lint.sh ./dev/
 
 # Copy files which are mounted to make the full stack work
 COPY scripts scripts
