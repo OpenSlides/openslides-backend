@@ -80,21 +80,17 @@ class Migration(BaseModelMigration):
         events.extend(
             [
                 RequestUpdateEvent(
-                    fqid_from_collection_and_id("meeting_user", meeting_user["id"]),
+                    fqid_from_collection_and_id("meeting_user", id_),
                     {
                         "supported_motion_ids": None,
                         **(
                             {"motion_supporter_ids": supp_ids}
-                            if (
-                                supp_ids := muser_id_to_supporter_ids.get(
-                                    meeting_user["id"], None
-                                )
-                            )
+                            if (supp_ids := muser_id_to_supporter_ids.get(id_, None))
                             else {}
                         ),
                     },
                 )
-                for meeting_user in meeting_users.values()
+                for id_ in meeting_users
             ]
         )
         return events
