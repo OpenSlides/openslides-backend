@@ -19,8 +19,12 @@ class Migration(BaseModelMigration):
     chunk_length = 1000
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
+        if self.reader.is_in_memory_migration:
+            return None
         collections = ["motion", "assignment", "user"]
         events: list[BaseRequestEvent] = []
+        # TODO: Somehow stop all this from happening with memory migrations
+        # bc they're not used on history data anyway.
         filter_ = And(
             Not(
                 Or(
