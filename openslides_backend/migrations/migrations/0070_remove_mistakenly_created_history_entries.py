@@ -23,8 +23,6 @@ class Migration(BaseModelMigration):
             return None
         collections = ["motion", "assignment", "user"]
         events: list[BaseRequestEvent] = []
-        # TODO: Somehow stop all this from happening with memory migrations
-        # bc they're not used on history data anyway.
         filter_ = And(
             Not(
                 Or(
