@@ -7,7 +7,7 @@ from datastore.writer.core.write_request import (
     RequestUpdateEvent,
 )
 
-from ...shared.filters import FilterOperator, Not, Or
+from ...shared.filters import And, FilterOperator, Not, Or
 
 
 class Migration(BaseModelMigration):
@@ -15,18 +15,20 @@ class Migration(BaseModelMigration):
     This migration removes mistakenly created history collection entries
     """
 
-    target_migration_index = 72
+    target_migration_index = 71
     chunk_length = 1000
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         collections = ["motion", "assignment", "user"]
         events: list[BaseRequestEvent] = []
-        # TODO: Filter out deleted entries
-        filter_ = Not(
-            Or(
-                FilterOperator("original_model_id", "%=", f"{collection}/%")
-                for collection in collections
-            )
+        filter_ = And(
+            Not(
+                Or(
+                    FilterOperator("original_model_id", "%=", f"{collection}/%")
+                    for collection in collections
+                )
+            ),
+            FilterOperator("meta_deleted", "!=", True),
         )
         broken_entries = self.reader.filter(
             "history_entry", filter_, ["position_id", "model_id", "meeting_id"]
@@ -54,7 +56,9 @@ class Migration(BaseModelMigration):
                 )
             }
             meeting_to_broken_entry_ids: dict[int, list[str | int]] = {
-                entry["meeting_id"]: [] for entry in broken_entries.values()
+                meeting_id: []
+                for entry in broken_entries.values()
+                if (meeting_id := entry.get("meeting_id"))
             }
             broken_position_to_broken_entry_ids: dict[int, list[str | int]] = {
                 pos_id: []
@@ -62,11 +66,12 @@ class Migration(BaseModelMigration):
                 if pos_id not in deletable_position_ids
             }
             for id_, entry in broken_entries.items():
-                meeting_to_broken_entry_ids[entry["meeting_id"]].append(id_)
-                if (
-                    pos_id := entry["position_id"]
-                ) in broken_position_to_broken_entry_ids:
-                    broken_position_to_broken_entry_ids[pos_id].append(id_)
+                if meeting_id := entry.get("meeting_id"):
+                    meeting_to_broken_entry_ids[meeting_id].append(id_)
+                    if (
+                        pos_id := entry["position_id"]
+                    ) in broken_position_to_broken_entry_ids:
+                        broken_position_to_broken_entry_ids[pos_id].append(id_)
             entry_model_fqids: set[str] = {
                 model_id
                 for entry in broken_entries.values()
@@ -77,6 +82,9 @@ class Migration(BaseModelMigration):
                 for pos_id in deletable_position_ids
                 if (user_id := all_broken_positions[pos_id].get("user_id"))
             }
+            for pos_id in deletable_position_ids:
+                if user_id := all_broken_positions[pos_id].get("user_id"):
+                    user_to_deletable_position_ids[user_id].append(pos_id)
             events = [
                 *[
                     RequestUpdateEvent(fqid, fields={"history_entry_ids": None})
