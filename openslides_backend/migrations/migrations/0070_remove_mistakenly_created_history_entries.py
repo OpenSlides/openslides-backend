@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core import GetManyRequestPart
 from datastore.shared.util import fqid_from_collection_and_id
@@ -8,6 +10,7 @@ from datastore.writer.core.write_request import (
 )
 
 from ...shared.filters import And, FilterOperator, Not, Or
+from ...shared.patterns import collection_and_id_from_fqid
 
 
 class Migration(BaseModelMigration):
@@ -36,13 +39,37 @@ class Migration(BaseModelMigration):
             "history_entry", filter_, ["position_id", "model_id", "meeting_id"]
         )
         if broken_entries:
+            collection_to_broken_ids: dict[str, list[int]] = defaultdict(list)
+            broken_position_ids: set[int] = set()
+            meeting_to_broken_entry_ids: dict[int, list[str | int]] = {}
+            entry_model_fqids: set[str] = set()
+            for entry in broken_entries.values():
+                broken_position_ids.add(entry["position_id"])
+                if meeting_id := entry.get("meeting_id"):
+                    meeting_to_broken_entry_ids[meeting_id] = []
+                if model_id := entry.get("model_id"):
+                    collection, id_ = collection_and_id_from_fqid(model_id)
+                    collection_to_broken_ids[collection].append(id_)
+                    entry_model_fqids.add(model_id)
+            all_broken_models = self.reader.get_many(
+                [
+                    GetManyRequestPart(collection, ids, ["id"])
+                    for collection, ids in collection_to_broken_ids.items()
+                ]
+            )
+            for collection, ids in collection_to_broken_ids.items():
+                entry_model_fqids.difference_update(
+                    {
+                        f"{collection}/{id_}"
+                        for id_ in ids
+                        if id_ not in all_broken_models.get(collection, {})
+                    }
+                )
             all_broken_positions = self.reader.get_many(
                 [
                     GetManyRequestPart(
                         "history_position",
-                        list(
-                            {entry["position_id"] for entry in broken_entries.values()}
-                        ),
+                        list(broken_position_ids),
                         ["user_id", "entry_ids"],
                     )
                 ]
@@ -57,11 +84,6 @@ class Migration(BaseModelMigration):
                     ]
                 )
             }
-            meeting_to_broken_entry_ids: dict[int, list[str | int]] = {
-                meeting_id: []
-                for entry in broken_entries.values()
-                if (meeting_id := entry.get("meeting_id"))
-            }
             broken_position_to_broken_entry_ids: dict[int, list[str | int]] = {
                 pos_id: []
                 for pos_id in all_broken_positions
@@ -74,11 +96,6 @@ class Migration(BaseModelMigration):
                         pos_id := entry["position_id"]
                     ) in broken_position_to_broken_entry_ids:
                         broken_position_to_broken_entry_ids[pos_id].append(id_)
-            entry_model_fqids: set[str] = {
-                model_id
-                for entry in broken_entries.values()
-                if (model_id := entry.get("model_id"))
-            }
             user_to_deletable_position_ids: dict[int, list[str | int]] = {
                 user_id: []
                 for pos_id in deletable_position_ids

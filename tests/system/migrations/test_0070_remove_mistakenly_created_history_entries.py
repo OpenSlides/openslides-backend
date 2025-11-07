@@ -218,7 +218,9 @@ class TContext:
         self.context[meeting_fqid] = None
         return events
 
-    def get_delete_target_model_events(self, fqid: str) -> list[dict[str, Any]]:
+    def get_delete_target_model_events(
+        self, fqid: str, make_history_changes: bool = True
+    ) -> list[dict[str, Any]]:
         """
         Deletes the model,
         removes reference from the meeting back relation,
@@ -246,14 +248,17 @@ class TContext:
                     meeting_fqid, list_fields={"remove": {back_relation: [id_]}}
                 )
             )
-        entry_fqids = [
-            f"history_entry/{event_id}"
-            for event_id in context.get("history_entry_ids", [])
-        ]
-        for entry_fqid in entry_fqids:
-            if entry_fields := self.context[entry_fqid]:
-                entry_fields["model_id"] = None
-            events.append(self.get_update_event(entry_fqid, fields={"model_id": None}))
+        if make_history_changes:
+            entry_fqids = [
+                f"history_entry/{event_id}"
+                for event_id in context.get("history_entry_ids", [])
+            ]
+            for entry_fqid in entry_fqids:
+                if entry_fields := self.context[entry_fqid]:
+                    entry_fields["model_id"] = None
+                events.append(
+                    self.get_update_event(entry_fqid, fields={"model_id": None})
+                )
         return events
 
     def get_delete_user_events(self, id_: int) -> list[dict[str, Any]]:
@@ -559,7 +564,7 @@ def test_migration_multiple_deletable_entries(write, finalize, assert_model):
     - Multiple positions
     - Topic with history entry
     - History entry with original_model_id from topic but topic itself was deleted
-    - Deleted topic with non-deleted history entry
+    - Deleted topic with non-deleted history entry (which still has a reference bc bug)
     - Position with multiple entries that should be deleted
     - Position with no user and exactly one entry that should be deleted
     - Position with no entries that should be deleted
@@ -582,7 +587,7 @@ def test_migration_multiple_deletable_entries(write, finalize, assert_model):
     write(
         *ctx.get_write_position_events(3, user_id=2, timestamp=300),
         *ctx.get_write_entry_events(4, 3, "topic/2", ["Topic deleted"]),
-        *ctx.get_delete_target_model_events("topic/2"),
+        *ctx.get_delete_target_model_events("topic/2", make_history_changes=False),
     )
     write(
         *ctx.get_write_position_events(4, user_id=2, timestamp=400),
@@ -653,6 +658,7 @@ def test_migration_multiple_deletable_entries(write, finalize, assert_model):
             "meta_deleted": True,
             "entries": ["Topic created"],
             "original_model_id": "topic/2",
+            "model_id": "topic/2",
             "position_id": 1,
             "meeting_id": 1,
         },
@@ -694,6 +700,7 @@ def test_migration_multiple_deletable_entries(write, finalize, assert_model):
             "meta_deleted": True,
             "entries": ["Topic deleted"],
             "original_model_id": "topic/2",
+            "model_id": "topic/2",
             "position_id": 3,
             "meeting_id": 1,
         },
