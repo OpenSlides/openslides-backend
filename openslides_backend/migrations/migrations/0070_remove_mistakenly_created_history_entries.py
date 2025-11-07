@@ -73,9 +73,9 @@ class Migration(BaseModelMigration):
             deletable_position_ids = {
                 pos_id
                 for pos_id, position in all_broken_positions.items()
-                if not any(
+                if all(
                     [
-                        entry_id not in broken_entries
+                        entry_id in broken_entries
                         for entry_id in position["entry_ids"]
                     ]
                 )
