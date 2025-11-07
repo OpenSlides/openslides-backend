@@ -173,19 +173,14 @@ class MeetingUser(Model):
         to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
     )
     motion_editor_ids = fields.RelationListField(
-        to={"motion_editor": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
+        to={"motion_editor": "meeting_user_id"}, equal_fields="meeting_id"
     )
     motion_working_group_speaker_ids = fields.RelationListField(
         to={"motion_working_group_speaker": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     motion_submitter_ids = fields.RelationListField(
-        to={"motion_submitter": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
+        to={"motion_submitter": "meeting_user_id"}, equal_fields="meeting_id"
     )
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}, equal_fields="meeting_id"
@@ -1533,9 +1528,7 @@ class MotionSubmitter(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_submitter_ids"}, required=True
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_submitter_ids"})
     motion_id = fields.RelationField(
         to={"motion": "submitter_ids"},
         required=True,
@@ -1553,9 +1546,7 @@ class MotionEditor(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_editor_ids"}, required=True
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_editor_ids"})
     motion_id = fields.RelationField(
         to={"motion": "editor_ids"},
         required=True,
@@ -1574,7 +1565,7 @@ class MotionWorkingGroupSpeaker(Model):
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_working_group_speaker_ids"}, required=True
+        to={"meeting_user": "motion_working_group_speaker_ids"}
     )
     motion_id = fields.RelationField(
         to={"motion": "working_group_speaker_ids"},

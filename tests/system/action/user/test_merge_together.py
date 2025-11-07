@@ -1194,11 +1194,11 @@ class UserMergeTogether(BaseVoteTestCase):
             )
         self.assert_model_exists(
             "meeting_user/22",
-            {"user_id": 2, "meeting_id": 2, "motion_submitter_ids": [2]},
+            {"user_id": 2, "meeting_id": 2, "motion_submitter_ids": [1]},
         )
-        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
-            "motion_submitter/2",
+            "motion_submitter/1",
             {"motion_id": 1, "meeting_user_id": 22, "meeting_id": 2, "weight": 1},
         )
         self.assert_model_exists("poll_candidate/2", {"user_id": 2})
@@ -1555,12 +1555,12 @@ class UserMergeTogether(BaseVoteTestCase):
             collection, sub_collection, back_relation, expected
         )
 
-    def base_deep_copy_create_motion_test(
+    def base_deep_copy_motion_test(
         self, sub_collection: str, back_relation: CollectionField
     ) -> None:
         self.set_models(self.get_deep_create_base_data(sub_collection, back_relation))
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_deep_create_base_test(response, sub_collection, back_relation)
+        self.assert_deep_merge_base_test(response, sub_collection, back_relation)
 
     def get_deep_create_base_data(
         self, sub_collection: str, back_relation: CollectionField
@@ -1633,6 +1633,49 @@ class UserMergeTogether(BaseVoteTestCase):
             "motion", sub_collection, back_relation, expected
         )
 
+    def assert_deep_merge_base_test(
+        self,
+        response: Response,
+        sub_collection: str,
+        back_relation: CollectionField,
+    ) -> None:
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
+            1: {
+                1: (1, 12, 1),
+                2: (1, 15, 2),
+                3: (2, 15, 1),
+                4: (2, 12, 2),
+                5: None,
+                6: (3, 12, 1),
+                7: (4, 12, 1),
+                8: None,
+                9: (4, 15, 3),
+                10: None,
+                11: (5, 12, 1),
+                12: (5, 15, 3),
+                13: (6, 15, 1),
+                14: None,
+                15: (6, 12, 2),
+            },
+            2: {
+                16: None,
+                17: (7, 22, 1),
+                18: None,
+            },
+            3: {
+                19: (8, 46, 1),
+                20: (9, 46, 1),
+            },
+            4: {
+                21: (10, 45, 1),
+            },
+        }
+        self.assert_assignment_or_motion_model_test_was_correct(
+            "motion", sub_collection, back_relation, expected
+        )
+
     def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
         self.assert_history_information(
@@ -1671,12 +1714,12 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
 
     def test_merge_with_motion_working_group_speakers(self) -> None:
-        self.base_deep_copy_create_motion_test(
+        self.base_deep_copy_motion_test(
             "motion_working_group_speaker", "working_group_speaker_ids"
         )
 
     def test_merge_with_motion_editor(self) -> None:
-        self.base_deep_copy_create_motion_test("motion_editor", "editor_ids")
+        self.base_deep_copy_motion_test("motion_editor", "editor_ids")
 
     def test_merge_with_motion_submitters_and_supporters(
         self,
@@ -1724,7 +1767,7 @@ class UserMergeTogether(BaseVoteTestCase):
             }
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_deep_create_base_test(response, "motion_submitter", "submitter_ids")
+        self.assert_deep_merge_base_test(response, "motion_submitter", "submitter_ids")
 
         def get_motions(*m_user_ids: int) -> list[int]:
             return list(
@@ -2724,8 +2767,7 @@ class UserMergeTogether(BaseVoteTestCase):
         expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
             # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
             3: {
-                1: None,
-                2: (1, 46, 1),
+                1: (1, 46, 1),
             },
         }
         self.assert_assignment_or_motion_model_test_was_correct(
