@@ -17,74 +17,30 @@ class TContext:
         self.context[fqid] = fields = {"id": id_, "username": username or f"user{id_}"}
         return self.get_create_event(fqid, fields)
 
-    def get_write_topic_events(self, id_: int, meeting_id: int) -> list[dict[str, Any]]:
-        fqid = f"topic/{id_}"
-        meeting_fqid = f"meeting/{meeting_id}"
-        self.context[fqid] = fields = {
-            "id": id_,
-            "title": f"Topic {id_}",
-            "meeting_id": meeting_id,
-        }
-        if meeting_fields := self.context.get(meeting_fqid):
-            meeting_fields["topic_ids"] = [*meeting_fields.get("topic_ids", []), id_]
-            return [
-                self.get_create_event(fqid, fields),
-                self.get_update_event(
-                    meeting_fqid, list_fields={"add": {"topic_ids": [id_]}}
-                ),
-            ]
-        else:
-            raise Exception(
-                f"Bad setup creating topic {id_}: Meeting {meeting_id} does not exist"
-            )
-
-    def get_write_motion_events(
-        self, id_: int, meeting_id: int
+    def get_write_model_events(
+        self, id_: int, meeting_id: int, collection: str
     ) -> list[dict[str, Any]]:
-        fqid = f"motion/{id_}"
+        fqid = f"{collection}/{id_}"
         meeting_fqid = f"meeting/{meeting_id}"
         self.context[fqid] = fields = {
             "id": id_,
-            "title": f"Motion {id_}",
+            "title": f"{collection.capitalize()} {id_}",
             "meeting_id": meeting_id,
         }
         if meeting_fields := self.context.get(meeting_fqid):
-            meeting_fields["motion_ids"] = [*meeting_fields.get("motion_ids", []), id_]
-            return [
-                self.get_create_event(fqid, fields),
-                self.get_update_event(
-                    meeting_fqid, list_fields={"add": {"motion_ids": [id_]}}
-                ),
-            ]
-        else:
-            raise Exception(
-                f"Bad setup creating motion {id_}: Meeting {meeting_id} does not exist"
-            )
-
-    def get_write_assignment_events(
-        self, id_: int, meeting_id: int
-    ) -> list[dict[str, Any]]:
-        fqid = f"assignment/{id_}"
-        meeting_fqid = f"meeting/{meeting_id}"
-        self.context[fqid] = fields = {
-            "id": id_,
-            "title": f"Assignment {id_}",
-            "meeting_id": meeting_id,
-        }
-        if meeting_fields := self.context.get(meeting_fqid):
-            meeting_fields["assignment_ids"] = [
-                *meeting_fields.get("assignment_ids", []),
+            meeting_fields[f"{collection}_ids"] = [
+                *meeting_fields.get(f"{collection}_ids", []),
                 id_,
             ]
             return [
                 self.get_create_event(fqid, fields),
                 self.get_update_event(
-                    meeting_fqid, list_fields={"add": {"assignment_ids": [id_]}}
+                    meeting_fqid, list_fields={"add": {f"{collection}_ids": [id_]}}
                 ),
             ]
         else:
             raise Exception(
-                f"Bad setup creating assignment {id_}: Meeting {meeting_id} does not exist"
+                f"Bad setup creating {collection} {id_}: Meeting {meeting_id} does not exist"
             )
 
     def get_write_position_events(
@@ -411,7 +367,7 @@ def test_migration_simple(write, finalize, assert_model):
     write(ctx.get_write_user_event(1, "admin"))
     write(
         ctx.get_write_meeting_event(1),
-        *ctx.get_write_topic_events(1, meeting_id=1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
         *ctx.get_write_position_events(1, user_id=1, timestamp=100),
         *ctx.get_write_entry_events(1, 1, "topic/1", ["Topic created"]),
     )
@@ -467,9 +423,9 @@ def test_migration_with_many_different_models(write, finalize, assert_model):
     write(
         ctx.get_write_meeting_event(1),
         ctx.get_write_user_event(2, "bob"),
-        *ctx.get_write_motion_events(1, meeting_id=1),
-        *ctx.get_write_assignment_events(1, meeting_id=1),
-        *ctx.get_write_topic_events(1, meeting_id=1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="motion"),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="assignment"),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
         *ctx.get_write_position_events(1, user_id=1, timestamp=100),
         *ctx.get_write_entry_events(1, 1, "user/2", ["User created"], meeting_id=1),
         *ctx.get_write_entry_events(2, 1, "motion/1", ["Motion created"]),
@@ -573,8 +529,8 @@ def test_migration_multiple_deletable_entries(write, finalize, assert_model):
     write(ctx.get_write_user_event(1, "admin"))
     write(
         ctx.get_write_meeting_event(1),
-        *ctx.get_write_topic_events(1, meeting_id=1),
-        *ctx.get_write_topic_events(2, meeting_id=1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
+        *ctx.get_write_model_events(2, meeting_id=1, collection="topic"),
         *ctx.get_write_position_events(1, user_id=1, timestamp=100),
         *ctx.get_write_entry_events(1, 1, "topic/1", ["Topic created"]),
         *ctx.get_write_entry_events(2, 1, "topic/2", ["Topic created"]),
@@ -731,9 +687,9 @@ def test_migration_with_deleted_history_entries(write, finalize, assert_model):
     write(
         ctx.get_write_meeting_event(1),
         ctx.get_write_user_event(2, "bob"),
-        *ctx.get_write_motion_events(1, meeting_id=1),
-        *ctx.get_write_assignment_events(1, meeting_id=1),
-        *ctx.get_write_topic_events(1, meeting_id=1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="motion"),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="assignment"),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
         *ctx.get_write_position_events(1, user_id=1, timestamp=100),
         *ctx.get_write_entry_events(1, 1, "user/2", ["User created"], meeting_id=1),
         *ctx.get_write_entry_events(2, 1, "motion/1", ["Motion created"]),
@@ -840,21 +796,29 @@ def test_migration_multi_meeting(write, finalize, assert_model):
     write(ctx.get_write_user_event(1, "admin"))
     write(
         ctx.get_write_meeting_event(1),
-        *ctx.get_write_topic_events(1, meeting_id=1),
-        *ctx.get_write_topic_events(2, meeting_id=1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
+        *ctx.get_write_model_events(2, meeting_id=1, collection="topic"),
         *ctx.get_write_position_events(1, user_id=1, timestamp=100),
         *ctx.get_write_entry_events(1, 1, "topic/1", ["Topic created"]),
         *ctx.get_write_entry_events(2, 1, "topic/2", ["Topic created"]),
     )
     write(
         ctx.get_write_meeting_event(2),
-        *ctx.get_write_topic_events(3, meeting_id=2),
-        *ctx.get_write_topic_events(4, meeting_id=2),
+        *ctx.get_write_model_events(3, meeting_id=2, collection="topic"),
+        *ctx.get_write_model_events(4, meeting_id=2, collection="topic"),
         *ctx.get_write_position_events(2, user_id=1, timestamp=200),
         *ctx.get_write_entry_events(3, 2, "topic/3", ["Topic created"]),
         *ctx.get_write_entry_events(4, 2, "topic/4", ["Topic created"]),
     )
-    write(*ctx.get_delete_meeting_events(2))  # Delete meeting 2
+    write(
+        ctx.get_write_meeting_event(3),
+        *ctx.get_write_model_events(5, meeting_id=3, collection="topic"),
+        *ctx.get_write_model_events(6, meeting_id=3, collection="topic"),
+        *ctx.get_write_position_events(3, user_id=1, timestamp=300),
+        *ctx.get_write_entry_events(5, 3, "topic/5", ["Topic created"]),
+        *ctx.get_write_entry_events(6, 3, "topic/6", ["Topic created"]),
+    )
+    write(*ctx.get_delete_meeting_events(3))  # Delete meeting 3
 
     finalize("0070_remove_mistakenly_created_history_entries")
 
@@ -872,32 +836,43 @@ def test_migration_multi_meeting(write, finalize, assert_model):
         "meeting/2",
         {
             "id": 2,
-            "meta_deleted": True,
             "name": "Meeting 2",
+            "topic_ids": [3, 4],
+            "relevant_history_entry_ids": [],
+        },
+    )
+    assert_model(
+        "meeting/3",
+        {
+            "id": 3,
+            "meta_deleted": True,
+            "name": "Meeting 3",
             "topic_ids": [],
-            "relevant_history_entry_ids": [3, 4],
+            "relevant_history_entry_ids": [5, 6],
         },
     )
     assert_model("topic/1", {"id": 1, "title": "Topic 1", "meeting_id": 1})
     assert_model("topic/2", {"id": 2, "title": "Topic 2", "meeting_id": 1})
+    assert_model("topic/3", {"id": 3, "title": "Topic 3", "meeting_id": 2})
+    assert_model("topic/4", {"id": 4, "title": "Topic 4", "meeting_id": 2})
     assert_model(
-        "topic/3",
+        "topic/5",
         {
-            "id": 3,
+            "id": 5,
             "meta_deleted": True,
-            "title": "Topic 3",
-            "meeting_id": 2,
-            "history_entry_ids": [3],
+            "title": "Topic 5",
+            "meeting_id": 3,
+            "history_entry_ids": [5],
         },
     )
     assert_model(
-        "topic/4",
+        "topic/6",
         {
-            "id": 4,
+            "id": 6,
             "meta_deleted": True,
-            "title": "Topic 4",
-            "meeting_id": 2,
-            "history_entry_ids": [4],
+            "title": "Topic 6",
+            "meeting_id": 3,
+            "history_entry_ids": [6],
         },
     )
     assert_model(
@@ -920,6 +895,17 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "original_user_id": 1,
             "user_id": 1,
             "entry_ids": [3, 4],
+        },
+    )
+    assert_model(
+        "history_position/3",
+        {
+            "id": 3,
+            "meta_deleted": True,
+            "timestamp": 300,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [5, 6],
         },
     )
     assert_model(
@@ -953,7 +939,9 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "meta_deleted": True,
             "entries": ["Topic created"],
             "original_model_id": "topic/3",
+            "model_id": "topic/3",
             "position_id": 2,
+            "meeting_id": 2,
         },
     )
     assert_model(
@@ -963,13 +951,33 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "meta_deleted": True,
             "entries": ["Topic created"],
             "original_model_id": "topic/4",
+            "model_id": "topic/4",
             "position_id": 2,
+            "meeting_id": 2,
+        },
+    )
+    assert_model(
+        "history_entry/5",
+        {
+            "id": 5,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/5",
+            "position_id": 3,
+        },
+    )
+    assert_model(
+        "history_entry/6",
+        {
+            "id": 6,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/6",
+            "position_id": 3,
         },
     )
 
 
-# TODO: Write tests at least checking these cases:
-# - Test for other not-allowed models
 def test_migration_other_models(write, finalize, assert_model):
     """
     Tests the other models

@@ -74,10 +74,7 @@ class Migration(BaseModelMigration):
                 pos_id
                 for pos_id, position in all_broken_positions.items()
                 if all(
-                    [
-                        entry_id in broken_entries
-                        for entry_id in position["entry_ids"]
-                    ]
+                    [entry_id in broken_entries for entry_id in position["entry_ids"]]
                 )
             }
             broken_position_to_broken_entry_ids: dict[int, list[str | int]] = {
