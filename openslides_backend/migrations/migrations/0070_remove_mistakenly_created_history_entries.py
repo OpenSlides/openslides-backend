@@ -42,7 +42,6 @@ class Migration(BaseModelMigration):
             collection_to_broken_ids: dict[str, list[int]] = defaultdict(list)
             broken_position_ids: set[int] = set()
             meeting_to_broken_entry_ids: dict[int, list[str | int]] = {}
-            entry_model_fqids: set[str] = set()
             for entry in broken_entries.values():
                 broken_position_ids.add(entry["position_id"])
                 if meeting_id := entry.get("meeting_id"):
@@ -50,21 +49,18 @@ class Migration(BaseModelMigration):
                 if model_id := entry.get("model_id"):
                     collection, id_ = collection_and_id_from_fqid(model_id)
                     collection_to_broken_ids[collection].append(id_)
-                    entry_model_fqids.add(model_id)
+            # This'll only contain non-deleted models
             all_broken_models = self.reader.get_many(
                 [
                     GetManyRequestPart(collection, ids, ["id"])
                     for collection, ids in collection_to_broken_ids.items()
                 ]
             )
-            for collection, ids in collection_to_broken_ids.items():
-                entry_model_fqids.difference_update(
-                    {
-                        f"{collection}/{id_}"
-                        for id_ in ids
-                        if id_ not in all_broken_models.get(collection, {})
-                    }
-                )
+            entry_model_fqids = {
+                f"{collection}/{id_}"
+                for collection, ids in all_broken_models.items()
+                for id_ in ids
+            }
             all_broken_positions = self.reader.get_many(
                 [
                     GetManyRequestPart(
