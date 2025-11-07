@@ -19,11 +19,11 @@ from ...util.typing import ActionData
 from ..assignment_candidate.delete import AssignmentCandidateDelete
 from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
-from ..motion_editor.create import MotionEditorCreateAction
+from ..motion_editor.delete import MotionEditorDeleteAction
 from ..motion_editor.update import MotionEditorUpdateAction
-from ..motion_submitter.create import MotionSubmitterCreateAction
+from ..motion_submitter.delete import MotionSubmitterDeleteAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
-from ..motion_working_group_speaker.create import MotionWorkingGroupSpeakerCreateAction
+from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
@@ -336,10 +336,6 @@ class UserMergeTogether(
             }
 
             create_deep_merge_actions_per_collection: dict[str, dict[str, Any]] = {
-                "motion_submitter": {
-                    "update": MotionSubmitterUpdateAction,
-                    "create": MotionSubmitterCreateAction,
-                },
                 "personal_note": {
                     "update": PersonalNoteUpdateAction,
                     "create": PersonalNoteCreateAction,
@@ -353,13 +349,17 @@ class UserMergeTogether(
                     "update": AssignmentCandidateUpdate,
                     "delete": AssignmentCandidateDelete,
                 },
+                "motion_submitter": {
+                    "update": MotionSubmitterUpdateAction,
+                    "delete": MotionSubmitterDeleteAction,
+                },
                 "motion_editor": {
                     "update": MotionEditorUpdateAction,
-                    "create": MotionEditorCreateAction,
+                    "delete": MotionEditorDeleteAction,
                 },
                 "motion_working_group_speaker": {
                     "update": MotionWorkingGroupSpeakerUpdateAction,
-                    "create": MotionWorkingGroupSpeakerCreateAction,
+                    "delete": MotionWorkingGroupSpeakerDeleteAction,
                 },
             }
 
