@@ -18,7 +18,7 @@ class Migration(BaseModelMigration):
     between meeting_user and motion with a new connective collection motion_supporter
     """
 
-    target_migration_index = 71
+    target_migration_index = 72
 
     def migrate_models(self) -> list[BaseRequestEvent]:
         events: list[BaseRequestEvent] = []

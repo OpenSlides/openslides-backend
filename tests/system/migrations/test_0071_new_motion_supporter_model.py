@@ -163,7 +163,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0070_new_motion_supporter_model")
+    finalize("0071_new_motion_supporter_model")
 
     assert_model(
         "meeting/1",

@@ -229,11 +229,11 @@ class MeetingUserMergeMixin(
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
                     "motion_supporter_ids": "motion_supporter",
-                },
-                "deep_create_merge": {
                     "motion_editor_ids": "motion_editor",
                     "motion_submitter_ids": "motion_submitter",
                     "motion_working_group_speaker_ids": "motion_working_group_speaker",
+                },
+                "deep_create_merge": {
                     "personal_note_ids": "personal_note",
                     "speaker_ids": "speaker",
                 },

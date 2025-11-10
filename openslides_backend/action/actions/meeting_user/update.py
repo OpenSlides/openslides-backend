@@ -31,6 +31,7 @@ class MeetingUserUpdate(
         "motion_working_group_speaker_ids",
         "motion_editor_ids",
         "motion_supporter_ids",
+        "motion_submitter_ids",
         "chat_message_ids",
     ]
 
