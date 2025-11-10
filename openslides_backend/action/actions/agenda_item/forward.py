@@ -1,10 +1,10 @@
 from typing import Any, cast
 
 from ....models.models import AgendaItem
-from ....permissions.permission_helper import has_perm
+from ....permissions.permission_helper import has_perm, is_admin
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
@@ -99,7 +99,6 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
             "with_attachments": {"type": "boolean"},
         },
     )
-    permission = Permissions.AgendaItem.CAN_FORWARD
 
     meeting_id: int
     use_meeting_ids_for_archived_meeting_check = True
@@ -119,20 +118,12 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
         return self.meeting_id
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        super().check_permissions(instance)
-        if instance.get("with_speakers"):
-            banned_meetings = {
-                meeting_id
-                for meeting_id in instance.get("meeting_ids", [])
-                if not has_perm(
-                    self.datastore,
-                    self.user_id,
-                    Permissions.User.CAN_MANAGE,
-                    meeting_id,
-                )
-            }
-            if banned_meetings:
-                raise MissingPermission({Permissions.User.CAN_MANAGE: banned_meetings})
+        meeting_ids = set(instance.get("meeting_ids", []))
+        agenda_items = self.datastore.get_many([GetManyRequest("agenda_item", instance.get("agenda_item_ids", []), ["meeting_id"])])["agenda_item"]
+        meeting_ids.update({item["meeting_id"] for item in agenda_items.values()})
+        forbidden_meeting_ids = {is_admin(self.datastore, self.user_id, meeting_id) for meeting_id in meeting_ids}
+        if forbidden_meeting_ids:
+            raise PermissionDenied(f"Missing admin permission in meeting(s) {forbidden_meeting_ids}.")
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)
@@ -212,8 +203,6 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
 
         if not data["meeting"][self.meeting_id].get("is_active_in_organization_id"):
             raise ActionException("Cannot forward if origin meeting is archived.")
-
-        self.check_committee_forwarding_settings(data["meeting"])
 
         data.update(
             self.get_all_meeting_mediafile_and_los_data(
@@ -726,31 +715,6 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
 
         if self.meeting_id in target_meeting_ids:
             raise ActionException("Cannot forward agenda to the same meeting")
-
-    def check_committee_forwarding_settings(
-        self, meetings: dict[int, dict[str, Any]]
-    ) -> None:
-        """
-        Checks whether the origin meeting can even forward into all the
-        target committees.
-        """
-        origin_committee = self.datastore.get(
-            fqid_from_collection_and_id(
-                "committee", meetings[self.meeting_id]["committee_id"]
-            ),
-            ["forward_agenda_to_committee_ids"],
-        )
-        forbidden_committees = {
-            committee_id
-            for meeting_id in meetings
-            if meeting_id != self.meeting_id
-            and (committee_id := meetings[meeting_id]["committee_id"])
-            not in origin_committee.get("forward_agenda_to_committee_ids", [])
-        }
-        if forbidden_committees:
-            raise ActionException(
-                f"Cannot forward to the following committee(s): {forbidden_committees}"
-            )
 
     def check_speaker_data(self, speakers: dict[int, dict[str, Any]]) -> None:
         for speaker in speakers.values():

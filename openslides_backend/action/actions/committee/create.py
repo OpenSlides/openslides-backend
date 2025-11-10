@@ -29,8 +29,6 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             "organization_tag_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
-            "forward_agenda_to_committee_ids",
-            "receive_agenda_forwardings_from_committee_ids",
             "manager_ids",
             "external_id",
             "parent_id",

@@ -49,4 +49,4 @@ If `with_attachments` is true:
 - Published orga files will be used as-is.
 
 ## Permissions
-The request user needs `agenda_item.can_forward` in the source meeting. There are no rights needed in the receiving meeting, unless `with_speakers` is set, in which case `user.can_manage` is required in all target meetings.
+The request user needs to have admin rights in all involved meetings, origin and all targets.

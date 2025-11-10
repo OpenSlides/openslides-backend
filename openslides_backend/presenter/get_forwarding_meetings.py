@@ -18,7 +18,6 @@ get_forwarding_meetings_schema = fastjsonschema.compile(
         "description": "get forwarding meetings",
         "properties": {
             "meeting_id": required_id_schema,
-            "for_agenda": {"type": "boolean"},
         },
         "required": ["meeting_id"],
     }
@@ -35,26 +34,14 @@ class GetForwardingMeetings(BasePresenter):
 
     def get_result(self) -> Any:
         # check permission
-        for_agenda = self.data.pop("for_agenda", False)
-        perm = (
-            Permissions.AgendaItem.CAN_FORWARD
-            if for_agenda
-            else Permissions.Motion.CAN_FORWARD
-        )
-        collection = "agenda_item" if for_agenda else "motion"
-        field = (
-            "forward_agenda_to_committee_ids"
-            if for_agenda
-            else "forward_to_committee_ids"
-        )
         if not has_perm(
             self.datastore,
             self.user_id,
-            perm,
+            Permissions.Motion.CAN_FORWARD,
             self.data["meeting_id"],
         ):
-            msg = f"You are not allowed to perform presenter get_forwarding_meetings for {collection}"
-            msg += f" Missing permission: {perm}"
+            msg = f"You are not allowed to perform presenter get_forwarding_meetings"
+            msg += f" Missing permission: {Permissions.Motion.CAN_FORWARD}"
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(
@@ -63,16 +50,16 @@ class GetForwardingMeetings(BasePresenter):
         )
         if not meeting.get("is_active_in_organization_id"):
             raise PresenterException(
-                f"Your sender meeting is an archived meeting, which can not forward {collection}s."
+                "Your sender meeting is an archived meeting, which can not forward motions."
             )
 
         committee = self.datastore.get(
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
-            [field],
+            ["forward_to_committee_ids"],
         )
 
         result = []
-        for forward_to_committee_id in committee.get(field, []):
+        for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", forward_to_committee_id),
                 ["meeting_ids", "name", "default_meeting_id"],
