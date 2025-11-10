@@ -160,6 +160,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "global_no": True,
                     "global_abstain": True,
                 },
+                "option/57": {"used_as_global_option_in_poll_id": 65},
             }
         )
         response = self.request(
@@ -177,7 +178,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_global_option_invalid(self) -> None:
-        self.set_models({"poll/65": {"global_option_id": 57}})
+        self.set_models({"option/57": {"used_as_global_option_in_poll_id": 65}})
         response = self.request(
             "option.update",
             {"id": 57, "Y": "1.000000"},

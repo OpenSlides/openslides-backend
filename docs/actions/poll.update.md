@@ -19,7 +19,6 @@
 
 // Optional, every state
     title: string,
-    description: string,
     onehundred_percent_base: string,
 
 // Optional, type==analog, every state

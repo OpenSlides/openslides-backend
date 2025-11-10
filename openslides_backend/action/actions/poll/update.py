@@ -43,7 +43,6 @@ class PollUpdateAction(
             "global_abstain",
             "entitled_group_ids",
             "title",
-            "description",
             "onehundred_percent_base",
             "votesvalid",
             "votesinvalid",

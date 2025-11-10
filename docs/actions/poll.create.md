@@ -28,7 +28,6 @@ Payload:
 
 // Optional
     content_object_id: Fqid,
-    description: string,
     min_votes_amount: number,
     max_votes_amount: number,
     max_votes_per_option: number,

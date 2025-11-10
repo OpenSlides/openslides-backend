@@ -52,7 +52,6 @@ class PollCreateAction(
         },
         optional_properties=[
             "content_object_id",
-            "description",
             "min_votes_amount",
             "max_votes_amount",
             "max_votes_per_option",
