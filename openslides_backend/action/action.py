@@ -8,7 +8,8 @@ import fastjsonschema
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
-from ..models.fields import BaseRelationField
+from ..models.fields import BaseRelationField, GenericRelationField
+from ..models.models import HistoryEntry
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -46,6 +47,10 @@ from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
+
+HISTORY_MODELS = list(
+    cast(GenericRelationField, HistoryEntry().get_field("model_id")).to.keys()
+)
 
 
 class SchemaProvider(type):
@@ -421,67 +426,75 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             if self.is_sub_call:
                 write_request.information = information
             elif information:
-                position_id = self.datastore.reserve_id("history_position")
-                entry_ids = self.datastore.reserve_ids(
-                    "history_entry", len(information)
-                )
-                deleted_fqids: set[str] = {
-                    event["fqid"] for event in events_by_type[EventType.Delete]
+                information = {
+                    fqid: info
+                    for fqid, info in information.items()
+                    if fqid.split("/")[0] in HISTORY_MODELS
                 }
-                touched_fqids: set[str] = {
-                    event["fqid"]
-                    for event in [
-                        *events_by_type[EventType.Create],
-                        *events_by_type[EventType.Update],
-                    ]
-                }
-                if self.user_id and self.user_id > 0:
-                    touched_fqids.add(fqid_from_collection_and_id("user", self.user_id))
-                collection_to_ids: dict[str, list[int]] = defaultdict(list)
-                for fqid in information:
-                    collection_to_ids[collection_from_fqid(fqid)].append(
-                        id_from_fqid(fqid)
+                if len(information):
+                    position_id = self.datastore.reserve_id("history_position")
+                    entry_ids = self.datastore.reserve_ids(
+                        "history_entry", len(information)
                     )
-                data = self.datastore.get_many(
-                    [
-                        GetManyRequest(collection, ids, ["meeting_id"])
-                        for collection, ids in collection_to_ids.items()
-                        if model_registry[collection]().try_get_field("meeting_id")
-                    ]
-                )
-                create_events, update_events = calculate_history_event_payloads(
-                    self.user_id,
-                    information,
-                    position_id,
-                    {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
-                    {
-                        fqid_from_collection_and_id(collection, id_): meeting_id
-                        for collection, models in data.items()
-                        for id_, date in models.items()
-                        if (meeting_id := date.get("meeting_id"))
-                    },
-                    touched_fqids - deleted_fqids,
-                )
-                events_by_type[EventType.Create].extend(
-                    [
-                        Event(
-                            type=EventType.Create,
-                            fqid=fqid,
-                            fields=cast(dict[str, Any], fields),
+                    deleted_fqids: set[str] = {
+                        event["fqid"] for event in events_by_type[EventType.Delete]
+                    }
+                    touched_fqids: set[str] = {
+                        event["fqid"]
+                        for event in [
+                            *events_by_type[EventType.Create],
+                            *events_by_type[EventType.Update],
+                        ]
+                    }
+                    if self.user_id and self.user_id > 0:
+                        touched_fqids.add(
+                            fqid_from_collection_and_id("user", self.user_id)
                         )
-                        for fqid, fields in create_events
-                    ]
-                )
-                events_by_type[EventType.Update].extend(
-                    [
-                        Event(
-                            type=EventType.Update,
-                            fqid=fqid,
-                            list_fields=cast(ListFields, fields),
+                    collection_to_ids: dict[str, list[int]] = defaultdict(list)
+                    for fqid in information:
+                        collection_to_ids[collection_from_fqid(fqid)].append(
+                            id_from_fqid(fqid)
                         )
-                        for fqid, fields in update_events
-                    ]
-                )
+                    data = self.datastore.get_many(
+                        [
+                            GetManyRequest(collection, ids, ["meeting_id"])
+                            for collection, ids in collection_to_ids.items()
+                            if model_registry[collection]().try_get_field("meeting_id")
+                        ]
+                    )
+                    create_events, update_events = calculate_history_event_payloads(
+                        self.user_id,
+                        information,
+                        position_id,
+                        {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
+                        {
+                            fqid_from_collection_and_id(collection, id_): meeting_id
+                            for collection, models in data.items()
+                            for id_, date in models.items()
+                            if (meeting_id := date.get("meeting_id"))
+                        },
+                        touched_fqids - deleted_fqids,
+                    )
+                    events_by_type[EventType.Create].extend(
+                        [
+                            Event(
+                                type=EventType.Create,
+                                fqid=fqid,
+                                fields=cast(dict[str, Any], fields),
+                            )
+                            for fqid, fields in create_events
+                        ]
+                    )
+                    events_by_type[EventType.Update].extend(
+                        [
+                            Event(
+                                type=EventType.Update,
+                                fqid=fqid,
+                                list_fields=cast(ListFields, fields),
+                            )
+                            for fqid, fields in update_events
+                        ]
+                    )
             write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
