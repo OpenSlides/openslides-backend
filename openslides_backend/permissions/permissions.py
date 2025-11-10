@@ -6,7 +6,6 @@ from .base_classes import Permission
 
 
 class _AgendaItem(str, Permission, Enum):
-    CAN_FORWARD = "agenda_item.can_forward"
     CAN_MANAGE = "agenda_item.can_manage"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
@@ -99,8 +98,7 @@ class Permissions:
 # Holds the corresponding parent for each permission.
 permission_parents: dict[Permission, list[Permission]] = {
     _AgendaItem.CAN_SEE: [_AgendaItem.CAN_SEE_INTERNAL],
-    _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_FORWARD],
-    _AgendaItem.CAN_FORWARD: [_AgendaItem.CAN_MANAGE],
+    _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_MANAGE],
     _AgendaItem.CAN_MANAGE: [],
     _Assignment.CAN_SEE: [
         _Assignment.CAN_NOMINATE_OTHER,
