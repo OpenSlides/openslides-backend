@@ -1332,7 +1332,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                     "visibility": Poll.VISIBILITY_NAMED,
-                    "method": Poll.METHOD_RATING_APPROVAL,
+                    "method": Poll_config_rating_approval/1",
                     "state": Poll.STATE_STARTED,
                 },
                 "vote/1": {

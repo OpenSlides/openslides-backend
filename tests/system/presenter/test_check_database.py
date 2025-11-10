@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -312,7 +312,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
-                    "vote_ids": [7],
                     "assignment_candidate_ids": [9],
                     "assignment_ids": [10],
                     # relation fields.
@@ -367,17 +366,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                 ),
                 "user/4": self.get_new_user(
                     "vote_user",
-                    {
-                        "meeting_user_ids": [14],
-                        "acting_vote_ids": [7],
-                    },
+                    {"meeting_user_ids": [14]},
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
-                    {
-                        "meeting_user_ids": [15],
-                        "represented_vote_ids": [7],
-                    },
+                    {"meeting_user_ids": [15]},
                 ),
                 "user/6": self.get_new_user(
                     "candidate_user",
@@ -405,11 +398,13 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_id": 4,
                     "meeting_id": 1,
                     "group_ids": [1],
+                    "acting_ballot_ids": [7],
                 },
                 "meeting_user/15": {
                     "user_id": 5,
                     "meeting_id": 1,
                     "group_ids": [1],
+                    "represented_ballot_ids": [7],
                 },
                 "meeting_user/16": {
                     "user_id": 6,
@@ -503,10 +498,19 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
-                "vote/7": {
-                    "acting_user_id": 4,
-                    "represented_user_id": 5,
+                "poll/7": {
+                    "title": "Poll 7",
                     "meeting_id": 1,
+                    "content_object_id": "motion/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_rating_approval/1",
+                    "state": Poll.STATE_STARTED,
+                },
+                "poll_config_rating_approval/7": {"poll_id": 7},
+                "ballot/8": {
+                    "poll_id": 7,
+                    "acting_meeting_user_id": 14,
+                    "represented_meeting_user_id": 15,
                 },
                 "assignment_candidate/9": {
                     "weight": 10000,

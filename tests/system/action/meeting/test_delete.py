@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import pytest
 from psycopg.types.json import Jsonb
 
 from openslides_backend.models.models import Poll
@@ -43,7 +42,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
 
-    @pytest.mark.skip(reason="Requires poll.")
     def test_delete_full_meeting(self) -> None:
         self.load_example_data()
         self.set_models(
@@ -96,8 +94,15 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_not_exists(f"motion_workflow/{i+1}")
         for i in range(5):
             self.assert_model_not_exists(f"poll/{i+1}")
+        for i in range(2):
+            self.assert_model_not_exists(f"poll_config_approval/{i+1}")
+        self.assert_model_not_exists("poll_config_approval/1")
+        self.assert_model_not_exists("poll_config_selection/1")
+        self.assert_model_not_exists("poll_config_rating_score/1")
+        for i in range(10):
+            self.assert_model_not_exists(f"poll_config_option/{i+1}")
         for i in range(9):
-            self.assert_model_not_exists(f"vote/{i+1}")
+            self.assert_model_not_exists(f"ballot/{i+1}")
         for i in range(2):
             self.assert_model_not_exists(f"assignment/{i+1}")
         for i in range(5):
@@ -191,7 +196,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
 
-    @pytest.mark.skip(reason="Requires poll.")
     def test_delete_with_poll_candidates_and_speakers(self) -> None:
         self.set_committee_management_level([60])
         self.create_user("user/2", [3])
@@ -209,25 +213,19 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "content_object_id": "assignment/140",
                     "title": "Analog poll 150",
                     "state": Poll.STATE_CREATED,
-                    "method": Poll.METHOD_APPROVAL,
+                    "config_id": "poll_config_approval/160",
                     "visibility": Poll.VISIBILITY_MANUALLY,
                     "meeting_id": 1,
                     "sequential_number": 150,
                 },
-                "poll_candidate_list/170": {
-                    "meeting_id": 1,
+                "poll_config_approval/160": {"poll_id": 150},
+                "poll_config_option/180": {
+                    "poll_config_id": "poll_config_approval/160",
+                    "meeting_user_id": 1,
                 },
-                "poll_candidate/180": {
-                    "meeting_id": 1,
-                    "weight": 1,
-                    "poll_candidate_list_id": 170,
-                    "user_id": 2,
-                },
-                "poll_candidate/181": {
-                    "meeting_id": 1,
-                    "weight": 1,
-                    "poll_candidate_list_id": 170,
-                    "user_id": 3,
+                "poll_config_option/181": {
+                    "poll_config_id": "poll_config_approval/160",
+                    "meeting_user_id": 2,
                 },
                 "list_of_speakers/190": {
                     "meeting_id": 1,
@@ -266,9 +264,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "group/3",
             "assignment/140",
             "poll/150",
-            "poll_candidate_list/170",
-            "poll_candidate/180",
-            "poll_candidate/181",
+            "poll_config_approval/160",
+            "poll_config_option/180",
+            "poll_config_option/181",
             "list_of_speakers/190",
             "speaker/210",
             "speaker/211",

@@ -108,7 +108,7 @@ class MeetingArchiveTest(BaseActionTestCase):
             {
                 f"poll/{base}": {
                     "title": f"Poll {base}",
-                    "method": Poll.METHOD_APPROVAL,
+                    "config_id": f"poll_config_approval/{base}",
                     "visibility": Poll.VISIBILITY_NAMED,
                     "meeting_id": 1,
                     "sequential_number": base,

@@ -36,6 +36,8 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                 "state": Poll.STATE_CREATED,
                 "meeting_id": 1,
                 "content_object_id": "assignment/1",
+                "config": {"allow_abstain": True},
+                "result": {"yes": "3", "no": "2", "abstain": "1"},
             },
         )
         self.assertIsNotNone(vote_service_response)

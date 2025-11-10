@@ -58,11 +58,6 @@
 
 // only internal
     is_present_in_meeting_ids: Id[];
-    option_ids: Id[];
-    poll_candidate_ids: Id[];
-    poll_voted_ids: Id[];
-    acting_vote_ids: Id[];
-    represented_vote_ids: Id[];
 }
 ```
 

@@ -152,20 +152,6 @@ class User(Model):
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
     )
-    poll_voted_ids = fields.RelationListField(
-        to={"poll": "voted_ids"},
-        is_view_field=True,
-        write_fields=("nm_poll_voted_ids_user_t", "user_id", "poll_id", []),
-    )
-    acting_vote_ids = fields.RelationListField(
-        to={"vote": "acting_user_id"}, is_view_field=True
-    )
-    represented_vote_ids = fields.RelationListField(
-        to={"vote": "represented_user_id"}, is_view_field=True
-    )
-    poll_candidate_ids = fields.RelationListField(
-        to={"poll_candidate": "user_id"}, is_view_field=True
-    )
     home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
     history_position_ids = fields.RelationListField(
         to={"history_position": "user_id"}, is_view_field=True
@@ -253,6 +239,28 @@ class MeetingUser(Model):
         to={"meeting_user": "vote_delegated_to_id"},
         is_view_field=True,
         equal_fields="meeting_id",
+    )
+    poll_voted_ids = fields.RelationListField(
+        to={"poll": "voted_ids"},
+        is_view_field=True,
+        is_primary=True,
+        write_fields=(
+            "nm_meeting_user_poll_voted_ids_poll_t",
+            "meeting_user_id",
+            "poll_id",
+            [],
+        ),
+    )
+    poll_option_ids = fields.RelationListField(
+        to={"poll_config_option": "meeting_user_id"},
+        is_view_field=True,
+        is_primary=True,
+    )
+    acting_ballot_ids = fields.RelationListField(
+        to={"ballot": "acting_meeting_user_id"}, is_view_field=True
+    )
+    represented_ballot_ids = fields.RelationListField(
+        to={"ballot": "represented_meeting_user_id"}, is_view_field=True
     )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_user_id"},
@@ -714,12 +722,6 @@ class Meeting(Model, MeetingModelMixin):
         constraints={"enum": ["first_name", "last_name"]},
     )
     motion_poll_projection_max_columns = fields.IntegerField(required=True, default=6)
-    poll_candidate_list_ids = fields.RelationListField(
-        to={"poll_candidate_list": "meeting_id"}, is_view_field=True
-    )
-    poll_candidate_ids = fields.RelationListField(
-        to={"poll_candidate": "meeting_id"}, is_view_field=True
-    )
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2356,16 +2358,14 @@ class Poll(Model, PollModelMixin):
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
-    method = fields.CharField(
-        required=True,
-        constraints={
-            "enum": ["approval", "selection", "rating-score", "rating-approval"]
+    config_id = fields.GenericRelationField(
+        to={
+            "poll_config_rating_approval": "poll_id",
+            "poll_config_rating_score": "poll_id",
+            "poll_config_selection": "poll_id",
+            "poll_config_approval": "poll_id",
         },
-    )
-    config = fields.TextField(
-        constraints={
-            "description": "Values to configure the poll. Depends on the value in poll/method."
-        }
+        required=True,
     )
     visibility = fields.CharField(
         required=True, constraints={"enum": ["manually", "named", "open", "secret"]}
@@ -2406,17 +2406,22 @@ class Poll(Model, PollModelMixin):
         constant=True,
         equal_fields="meeting_id",
     )
-    vote_ids = fields.RelationListField(
-        to={"vote": "poll_id"},
+    ballot_ids = fields.RelationListField(
+        to={"ballot": "poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
+        is_primary=True,
         equal_fields="meeting_id",
     )
     voted_ids = fields.RelationListField(
-        to={"user": "poll_voted_ids"},
+        to={"meeting_user": "poll_voted_ids"},
         is_view_field=True,
-        is_primary=True,
-        write_fields=("nm_poll_voted_ids_user_t", "poll_id", "user_id", []),
+        write_fields=(
+            "nm_meeting_user_poll_voted_ids_poll_t",
+            "poll_id",
+            "meeting_user_id",
+            [],
+        ),
     )
     entitled_group_ids = fields.RelationListField(
         to={"group": "poll_ids"},
@@ -2435,19 +2440,109 @@ class Poll(Model, PollModelMixin):
     )
 
 
-class Vote(Model):
-    collection = "vote"
-    verbose_name = "vote"
+class PollConfigApproval(Model):
+    collection = "poll_config_approval"
+    verbose_name = "poll config approval"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    option_ids = fields.RelationListField(
+        to={"poll_config_option": "poll_config_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+    allow_abstain = fields.BooleanField(default=True)
+
+
+class PollConfigSelection(Model):
+    collection = "poll_config_selection"
+    verbose_name = "poll config selection"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    option_ids = fields.RelationListField(
+        to={"poll_config_option": "poll_config_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+    max_options_amount = fields.IntegerField(default=0)
+    min_options_amount = fields.IntegerField(default=0)
+    allow_nota = fields.BooleanField(default=False)
+
+
+class PollConfigRatingScore(Model):
+    collection = "poll_config_rating_score"
+    verbose_name = "poll config rating score"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    option_ids = fields.RelationListField(
+        to={"poll_config_option": "poll_config_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+    max_options_amount = fields.IntegerField(default=0)
+    min_options_amount = fields.IntegerField(default=0)
+    max_votes_per_option = fields.IntegerField(default=0)
+    max_vote_sum = fields.IntegerField(default=0)
+    min_vote_sum = fields.IntegerField(default=0)
+
+
+class PollConfigRatingApproval(Model):
+    collection = "poll_config_rating_approval"
+    verbose_name = "poll config rating approval"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    option_ids = fields.RelationListField(
+        to={"poll_config_option": "poll_config_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+    max_options_amount = fields.IntegerField(default=0)
+    min_options_amount = fields.IntegerField(default=0)
+    allow_abstain = fields.BooleanField(default=True)
+
+
+class PollConfigOption(Model):
+    collection = "poll_config_option"
+    verbose_name = "poll config option"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_config_id = fields.GenericRelationField(
+        to={
+            "poll_config_rating_approval": "option_ids",
+            "poll_config_rating_score": "option_ids",
+            "poll_config_selection": "option_ids",
+            "poll_config_approval": "option_ids",
+        },
+        required=True,
+    )
+    weight = fields.IntegerField()
+    text = fields.CharField()
+    meeting_user_id = fields.RelationField(to={"meeting_user": "poll_option_ids"})
+
+
+class Ballot(Model):
+    collection = "ballot"
+    verbose_name = "ballot"
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.DecimalField(constant=True, default="1.000000")
     split = fields.BooleanField(default=False)
     value = fields.TextField(constant=True)
     poll_id = fields.RelationField(
-        to={"poll": "vote_ids"}, required=True, constant=True, equal_fields="meeting_id"
+        to={"poll": "ballot_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
-    acting_user_id = fields.RelationField(to={"user": "acting_vote_ids"})
-    represented_user_id = fields.RelationField(to={"user": "represented_vote_ids"})
+    acting_meeting_user_id = fields.RelationField(
+        to={"meeting_user": "acting_ballot_ids"}
+    )
+    represented_meeting_user_id = fields.RelationField(
+        to={"meeting_user": "represented_ballot_ids"}
+    )
 
 
 class Assignment(Model):
@@ -2551,40 +2646,6 @@ class AssignmentCandidate(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_candidate_ids"}, required=True, constant=True
-    )
-
-
-class PollCandidateList(Model):
-    collection = "poll_candidate_list"
-    verbose_name = "poll candidate list"
-
-    id = fields.IntegerField(required=True, constant=True)
-    poll_candidate_ids = fields.RelationListField(
-        to={"poll_candidate": "poll_candidate_list_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
-        equal_fields="meeting_id",
-    )
-    meeting_id = fields.RelationField(
-        to={"meeting": "poll_candidate_list_ids"}, required=True, constant=True
-    )
-
-
-class PollCandidate(Model):
-    collection = "poll_candidate"
-    verbose_name = "poll candidate"
-
-    id = fields.IntegerField(required=True, constant=True)
-    poll_candidate_list_id = fields.RelationField(
-        to={"poll_candidate_list": "poll_candidate_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
-    )
-    user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, constant=True)
-    weight = fields.IntegerField(required=True)
-    meeting_id = fields.RelationField(
-        to={"meeting": "poll_candidate_ids"}, required=True, constant=True
     )
 
 

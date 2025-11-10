@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -3130,118 +3129,35 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_with_internal_fields(self) -> None:
         self.create_meeting()
-        self.create_user("dummy2", [1])
-        self.create_user("dummy3", [1])
-        self.set_models(
-            {
-                "user/1": {
-                    "username": "boady",
-                    "poll_candidate_ids": [1],
-                    "acting_vote_ids": [1, 2],
-                },
-                "user/2": {"username": "john", "represented_vote_ids": [2]},
-                "meeting/1": {
-                    "poll_ids": [1],
-                    "poll_candidate_list_ids": [1],
-                    "poll_candidate_ids": [1],
-                    "vote_ids": [1, 2],
-                },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 1},
-                "poll/1": {
-                    "title": "pull",
-                    "method": Poll.METHOD_APPROVAL,
-                    "visibility": Poll.VISIBILITY_MANUALLY,
-                    "state": Poll.STATE_STARTED,
-                    "meeting_id": 1,
-                    "vote_ids": [1, 2],
-                    "content_object_id": "topic/1",
-                },
-                "poll_candidate_list/1": {
-                    "meeting_id": 1,
-                    "poll_candidate_ids": [1],
-                },
-                "poll_candidate/1": {
-                    "poll_candidate_list_id": 1,
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "weight": 3,
-                },
-                "vote/1": {
-                    "meeting_id": 1,
-                    "poll_id": 1,
-                    "acting_user_id": 1,
-                    "represented_user_id": 1,
-                },
-                "vote/2": {
-                    "meeting_id": 1,
-                    "poll_id": 2,
-                    "acting_user_id": 1,
-                    "represented_user_id": 2,
-                },
-            }
-        )
+        self.create_user_for_meeting(1)
         response = self.request(
             "user.update",
             {
-                "id": 3,
+                "id": 2,
                 "is_present_in_meeting_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "acting_vote_ids": [1],
-                "represented_vote_ids": [2],
             },
             internal=True,
         )
         self.assert_status_code(response, 200)
-        expected: dict[str, dict[str, Any]] = {
-            "user/3": {
-                "is_present_in_meeting_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "acting_vote_ids": [1],
-                "represented_vote_ids": [2],
-            },
-            "meeting/1": {
-                "present_user_ids": [3],
-            },
-            "poll/1": {"voted_ids": [3]},
-            "poll_candidate/1": {
-                "user_id": 3,
-            },
-            "vote/1": {"acting_user_id": 3},
-            "vote/2": {"represented_user_id": 3},
-        }
-        for fqid, model in expected.items():
-            self.assert_model_exists(fqid, model)
+        self.assert_model_exists("user/2", {"is_present_in_meeting_ids": [1]})
+        self.assert_model_exists("meeting/1", {"present_user_ids": [2]})
 
     def test_update_with_internal_fields_error(self) -> None:
         self.create_meeting()
-        self.create_user("dummy2", [1])
-        self.create_user("dummy3", [1])
+        self.create_user_for_meeting(1)
         response = self.request(
             "user.update",
             {
-                "id": 3,
+                "id": 2,
                 "is_present_in_meeting_ids": [1],
-                "poll_candidate_ids": [1],
-                "poll_voted_ids": [1],
-                "acting_vote_ids": [1],
-                "represented_vote_ids": [2],
             },
             internal=False,
         )
         self.assert_status_code(response, 400)
-        message: str = response.json["message"]
-        assert message.startswith("data must not contain {")
-        assert message.endswith("} properties")
-        for field in [
-            "'is_present_in_meeting_ids'",
-            "'poll_candidate_ids'",
-            "'poll_voted_ids'",
-            "'acting_vote_ids'",
-            "'represented_vote_ids'",
-        ]:
-            self.assertIn(field, message)
+        self.assertEqual(
+            "data must not contain {'is_present_in_meeting_ids'} properties",
+            response.json["message"],
+        )
 
     def test_update_groups_on_last_meeting_admin(self) -> None:
         self.create_meeting()

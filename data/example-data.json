@@ -97,9 +97,6 @@
                 1
             ],
             "committee_management_ids": [1],
-            "poll_voted_ids": [5],
-            "acting_vote_ids": [9],
-            "represented_vote_ids": [9],
             "meeting_user_ids": [1],
             "meeting_ids": [
                 1
@@ -161,7 +158,11 @@
             "motion_submitter_ids": [1, 2, 3, 4],
             "assignment_candidate_ids": [1],
             "structure_level_ids": [1],
-            "group_ids": [2]
+            "group_ids": [2],
+            "poll_voted_ids": [3],
+            "poll_option_ids": [1, 8],
+            "acting_ballot_ids": [9],
+            "represented_ballot_ids": [9]
         },
         "2": {
             "id": 2,
@@ -173,6 +174,7 @@
             "vote_weight": "1.000000",
             "speaker_ids": [2, 3, 7, 10, 11, 13],
             "assignment_candidate_ids": [3, 5],
+            "poll_option_ids": [9],
             "structure_level_ids": [2],
             "group_ids": [5]
         },
@@ -187,6 +189,7 @@
             "speaker_ids": [4, 8, 9],
             "supported_motion_ids": [3],
             "assignment_candidate_ids": [2, 4],
+            "poll_option_ids": [2, 10],
             "structure_level_ids": [3],
             "group_ids": [5]
         }
@@ -1174,7 +1177,11 @@
             "sequential_number": 1,
             "agenda_item_id": 3,
             "list_of_speakers_id": 3,
-            "meeting_id": 1
+            "meeting_id": 1,
+            "poll_ids": [
+                4
+            ]
+
         },
         "2": {
             "id": 2,
@@ -1258,7 +1265,7 @@
             ],
             "poll_ids": [
                 1,
-                2
+                3
             ],
             "comment_ids": [
                 1
@@ -1904,47 +1911,58 @@
         "1": {
             "id": 1,
             "title": "1",
-            "method": "approval",
-            "visibility": "manual",
+            "config_id": "poll_config_approval/1",
+            "visibility": "manually",
             "state": "finished",
             "published": true,
             "content_object_id": "motion/1",
-            "vote_ids": [
-              1,
-              2,
-              3
+            "ballot_ids": [
+                1,
+                2,
+                3
             ],
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "title": "2",
-            "method": "approval",
-            "visibility": "manual",
+            "config_id": "poll_config_approval/2",
+            "visibility": "manually",
             "state": "finished",
-            "published": false,
-            "content_object_id": "motion/1",
-            "meeting_id": 1,
-            "vote_ids": []
+            "published": true,
+            "content_object_id": "assignment/1",
+            "ballot_ids": [],
+            "meeting_id": 1
         },
         "3": {
             "id": 3,
-            "title": "1",
-            "method": "approval",
-            "visibility": "manual",
-            "state": "created",
-            "content_object_id": "assignment/1",
-            "vote_ids": [],
+            "title": "3",
+            "config_id": "poll_config_selection/1",
+            "visibility": "open",
+            "state": "started",
+            "published": false,
+            "content_object_id": "motion/1",
+            "ballot_ids": [9],
             "meeting_id": 1
         },
         "4": {
             "id": 4,
-            "title": "2",
-            "method": "approval",
-            "visibility": "manual",
+            "title": "4",
+            "config_id": "poll_config_rating_score/1",
+            "visibility": "secret",
+            "state": "created",
+            "content_object_id": "topic/1",
+            "ballot_ids": [],
+            "meeting_id": 1
+        },
+        "5": {
+            "id": 5,
+            "title": "5",
+            "config_id": "poll_config_rating_approval/1",
+            "visibility": "manually",
             "state": "finished",
             "content_object_id": "assignment/1",
-            "vote_ids": [
+            "ballot_ids": [
                 4,
                 5,
                 6,
@@ -1952,82 +1970,154 @@
                 8
             ],
             "meeting_id": 1
+        }
+    },
+    "poll_config_approval": {
+        "1": {
+            "poll_id": 1,
+            "allow_abstain": false
+        },
+        "2": {
+            "poll_id": 2,
+            "option_ids": [1, 2]
+        }
+    },
+    "poll_config_selection": {
+        "1": {
+            "poll_id": 3,
+            "option_ids": [3, 4, 5],
+            "max_options_amount": 2,
+            "min_options_amount": 1,
+            "allow_nota": true
+        }
+    },
+    "poll_config_rating_score": {
+        "1": {
+            "poll_id": 4,
+            "option_ids": [6, 7],
+            "max_options_amount": 2,
+            "min_options_amount": 2,
+            "max_vote_sum": 5,
+            "min_vote_sum": 1
+        }
+    },
+    "poll_config_rating_approval": {
+        "1": {
+            "poll_id": 5,
+            "allow_abstain": true,
+            "option_ids": [8, 9, 10]
+        }
+    },
+    "poll_config_option": {
+        "1": {
+            "id": 1,
+            "weight": 1,
+            "poll_config_id": "poll_config_approval/2",
+            "meeting_user_id": 1
+        },
+        "2": {
+            "id": 2,
+            "weight": 2,
+            "poll_config_id": "poll_config_approval/2",
+            "meeting_user_id": 3
+        },
+        "3": {
+            "id": 3,
+            "poll_config_id": "poll_config_selection/1",
+            "text": "Option 3"
+        },
+        "4": {
+            "id": 4,
+            "poll_config_id": "poll_config_selection/1",
+            "text": "Option 4"
         },
         "5": {
             "id": 5,
-            "title": "Wahlgang",
-            "method": "approval",
-            "visibility": "manual",
-            "state": "finished",
-            "content_object_id": "assignment/2",
-            "voted_ids": [
-                1
-            ],
-            "entitled_group_ids": [
-                2
-            ],
-            "vote_ids": [
-                9
-            ],
-            "meeting_id": 1
+            "poll_config_id": "poll_config_selection/1",
+            "text": "Option 5"
+        },
+        "6": {
+            "id": 6,
+            "poll_config_id": "poll_config_rating_score/1",
+            "text": "option 6"
+        },
+        "7": {
+            "id": 7,
+            "poll_config_id": "poll_config_rating_score/1",
+            "text": "option 7"
+        },
+        "8": {
+            "id": 8,
+            "poll_config_id": "poll_config_rating_approval/1",
+            "meeting_user_id": 1
+        },
+        "9": {
+            "id": 9,
+            "poll_config_id": "poll_config_rating_approval/1",
+            "meeting_user_id": 2
+        },
+        "10": {
+            "id": 10,
+            "poll_config_id": "poll_config_rating_approval/1",
+            "meeting_user_id": 3
         }
     },
-    "vote": {
+    "ballot": {
         "1": {
             "id": 1,
             "weight": "2.000000",
-            "value": "Y",
+            "value": "yes",
             "poll_id": 1
         },
         "2": {
             "id": 2,
             "weight": "4.000000",
-            "value": "N",
+            "value": "no",
             "poll_id": 1
         },
         "3": {
             "id": 3,
             "weight": "1.000000",
-            "value": "A",
+            "value": "abstain",
             "poll_id": 1
         },
         "4": {
             "id": 4,
-            "value": "Y",
+            "value": {"1":"yes","2":"abstain","3":"yes"},
             "weight": "3.000000",
-            "poll_id": 4
+            "poll_id": 5
         },
         "5": {
             "id": 5,
-            "value": "Y",
+            "value": {"1":"no","2":"yes","3":"yes"},
             "weight": "7.000000",
-            "poll_id": 4
+            "poll_id": 5
         },
         "6": {
             "id": 6,
-            "value": "Y",
+            "value": {"1":"yes","2":"no","3":"no"},
             "weight": "2.000000",
-            "poll_id": 4
+            "poll_id": 5
         },
         "7": {
             "id": 7,
-            "value": "N",
+            "value": {"1":"no","2":"no","3":"yes"},
             "weight": "2.000000",
-            "poll_id": 4
+            "poll_id": 5
         },
         "8": {
             "id": 8,
-            "value": "A",
+            "value": {"1":"abstain","2":"yes","3":"abstain"},
             "weight": "1.000000",
-            "poll_id": 4
+            "poll_id": 5
         },
         "9": {
             "id": 9,
-            "value": "Y",
+            "value": "1",
             "weight": "1.000000",
-            "acting_user_id": 1,
-            "represented_user_id": 1,
-            "poll_id": 5
+            "acting_meeting_user_id": 1,
+            "represented_meeting_user_id": 1,
+            "poll_id": 3
         }
     },
     "assignment": {
@@ -2043,8 +2133,8 @@
                 3
             ],
             "poll_ids": [
-                3,
-                4
+                2,
+                5
             ],
             "agenda_item_id": 11,
             "list_of_speakers_id": 11,
