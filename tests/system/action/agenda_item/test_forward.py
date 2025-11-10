@@ -1,7 +1,6 @@
 from typing import Any, Literal
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
-from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
@@ -488,9 +487,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "agenda_item/1": {"tag_ids": [1, 2]},
-                "committee/60": {"forward_agenda_to_committee_ids": [63, 66]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-                "committee/67": {"receive_agenda_forwardings_from_committee_ids": [60]},
                 "group/1": {"name": "Default"},
                 "group/2": {"name": "Admin"},
                 "group/3": {"name": "Delegate", "permissions": ["user.can_see"]},
@@ -1195,65 +1191,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         },
                     )
 
-    def test_forward_not_in_permitted_committee_error(self) -> None:
-        self.create_meeting(1)
-        self.create_meeting(4)
-        self.create_meeting(7)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
-        self.create_topic_agenda_item()
-        response = self.request(
-            "agenda_item.forward",
-            {
-                "meeting_ids": [4, 7],
-                "agenda_item_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Cannot forward to the following committee(s): {66}",
-            response.json["message"],
-        )
-
-    def test_forward_only_in_permitted_committee_back_relation_still_error(
-        self,
-    ) -> None:
-        self.create_meeting(1)
-        self.create_meeting(4)
-        self.set_models(
-            {
-                "committee/60": {"receive_agenda_forwardings_from_committee_ids": [63]},
-                "committee/63": {"forward_agenda_to_committee_ids": [60]},
-            }
-        )
-        self.create_topic_agenda_item()
-        response = self.request(
-            "agenda_item.forward",
-            {
-                "meeting_ids": [4],
-                "agenda_item_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Cannot forward to the following committee(s): {63}",
-            response.json["message"],
-        )
-
     def test_forward_running_speaker_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         self.set_models(
             {
@@ -1283,12 +1224,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         self.set_models(
             {
@@ -1319,12 +1254,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         self.set_models(
             {
@@ -1355,12 +1284,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         self.set_models(
             {
@@ -1390,12 +1313,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         self.set_models(
             {
@@ -1445,12 +1362,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
     def test_forward_without_target_meetings_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         response = self.request(
             "agenda_item.forward",
@@ -1467,12 +1378,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
     def test_forward_without_agenda_items_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         response = self.request(
             "agenda_item.forward",
             {
@@ -1490,15 +1395,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(1)
         self.create_meeting(4)
         self.create_meeting(7)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [66]},
-                "committee/63": {"forward_agenda_to_committee_ids": [66]},
-                "committee/67": {
-                    "receive_agenda_forwardings_from_committee_ids": [60, 63]
-                },
-            }
-        )
         self.create_topic_agenda_item()
         self.create_topic_agenda_item(4, 40, 4)
         response = self.request(
@@ -1517,12 +1413,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
     def test_forward_non_topic_agenda_item_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.set_models(
             {
                 "meeting/1": {
@@ -1562,14 +1452,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
 
     def test_forward_to_same_meeting_error(self) -> None:
         self.create_meeting(1)
-        self.set_models(
-            {
-                "committee/60": {
-                    "forward_agenda_to_committee_ids": [60],
-                    "receive_agenda_forwardings_from_committee_ids": [60],
-                },
-            }
-        )
         self.create_topic_agenda_item()
         response = self.request(
             "agenda_item.forward",
@@ -1588,12 +1470,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting(4)
         self.set_user_groups(1, [3])
         self.set_organization_management_level(None, 1)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         response = self.request(
             "agenda_item.forward",
@@ -1604,52 +1480,45 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action agenda_item.forward. Missing Permission: agenda_item.can_forward",
+            "Missing admin permission in meeting(s) {1, 4}",
             response.json["message"],
         )
 
-    def test_forward_with_speaker_permission_error(self) -> None:
+    def test_forward_permission_simple_origin_perm_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_FORWARD])
+        self.set_user_groups(1, [5])
         self.set_organization_management_level(None, 1)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         response = self.request(
             "agenda_item.forward",
-            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [1],
+            },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action agenda_item.forward. Missing permission: Permission user.can_manage in meeting {4}",
+            "Missing admin permission in meeting(s) {1}",
             response.json["message"],
         )
 
-    def test_forward_with_speaker_no_permission_error(self) -> None:
+    def test_forward_permission_simple_target_perm_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
-        self.set_user_groups(1, [3])
+        self.set_user_groups(1, [2])
         self.set_organization_management_level(None, 1)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item()
         response = self.request(
             "agenda_item.forward",
-            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+            {
+                "meeting_ids": [4],
+                "agenda_item_ids": [1],
+            },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action agenda_item.forward. Missing Permission: agenda_item.can_forward",
+            "Missing admin permission in meeting(s) {4}",
             response.json["message"],
         )
 
@@ -1702,16 +1571,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(4)
         self.create_meeting(7)
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_MANAGE])
+        self.set_user_groups(1, [2, 5, 8])
         self.set_organization_management_level(None, 1)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63, 66]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-                "committee/67": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item(
             extra_los_fields={
                 "closed": True,
@@ -1920,7 +1781,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             "structure_level",
         ]:
             self.assert_model_not_exists(f"{collection}/1")
-        self.assert_model_not_exists("meeting_user/2")
+        self.assert_model_not_exists("meeting_user/4")
         self.assert_model_not_exists("group/10")
 
     def test_forward_simple_with_all_flags(self) -> None:
@@ -1929,16 +1790,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         """
         self.create_meeting()
         self.create_meeting(4)
-        self.set_user_groups(1, [3, 6])
-        self.set_group_permissions(3, [Permissions.AgendaItem.CAN_MANAGE])
-        self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
+        self.set_user_groups(1, [2, 5])
         self.set_organization_management_level(None, 1)
-        self.set_models(
-            {
-                "committee/60": {"forward_agenda_to_committee_ids": [63]},
-                "committee/63": {"receive_agenda_forwardings_from_committee_ids": [60]},
-            }
-        )
         self.create_topic_agenda_item(
             extra_los_fields={
                 "closed": True,
@@ -3681,8 +3534,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 },
                 "committee/60": {
                     "meeting_ids": [1, 4],
-                    "forward_agenda_to_committee_ids": [60],
-                    "receive_agenda_forwardings_from_committee_ids": [60],
                 },
                 "committee/63": {"meeting_ids": []},
                 "group/1": {"name": "Default"},

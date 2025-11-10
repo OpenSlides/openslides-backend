@@ -9,10 +9,7 @@ from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import (
-    get_failing_committee_management_levels,
-    has_organization_management_level,
-)
+from ....permissions.permission_helper import get_failing_committee_management_levels
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID

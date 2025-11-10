@@ -1,10 +1,9 @@
 from typing import Any, cast
 
 from ....models.models import AgendaItem
-from ....permissions.permission_helper import has_perm, is_admin
-from ....permissions.permissions import Permissions
+from ....permissions.permission_helper import is_admin
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
@@ -119,11 +118,23 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         meeting_ids = set(instance.get("meeting_ids", []))
-        agenda_items = self.datastore.get_many([GetManyRequest("agenda_item", instance.get("agenda_item_ids", []), ["meeting_id"])])["agenda_item"]
+        agenda_items = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "agenda_item", instance.get("agenda_item_ids", []), ["meeting_id"]
+                )
+            ]
+        )["agenda_item"]
         meeting_ids.update({item["meeting_id"] for item in agenda_items.values()})
-        forbidden_meeting_ids = {is_admin(self.datastore, self.user_id, meeting_id) for meeting_id in meeting_ids}
+        forbidden_meeting_ids = {
+            meeting_id
+            for meeting_id in meeting_ids
+            if not is_admin(self.datastore, self.user_id, meeting_id)
+        }
         if forbidden_meeting_ids:
-            raise PermissionDenied(f"Missing admin permission in meeting(s) {forbidden_meeting_ids}.")
+            raise PermissionDenied(
+                f"Missing admin permission in meeting(s) {forbidden_meeting_ids}."
+            )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)
