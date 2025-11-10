@@ -115,7 +115,10 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "content_object_id": "motion/1",
                     "state": state,
                     "published": published,
-                }
+                },
+                f"poll_config_approval/{base}": {
+                    "poll_id": base,
+                },
             }
         )
 

@@ -1321,44 +1321,46 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_vote_delegated_vote(self) -> None:
-        self.set_test_data_with_admin()
+        self.set_test_data()
         self.create_meeting(4)
         self.create_motion(1, 1)
+        self.create_motion(4, 4)
         self.set_user_groups(1, [2, 5])
-        self.set_models(
-            {
-                "poll/1": {
-                    "title": "Poll 1",
-                    "meeting_id": 1,
-                    "content_object_id": "motion/1",
-                    "visibility": Poll.VISIBILITY_NAMED,
-                    "method": Poll_config_rating_approval/1",
-                    "state": Poll.STATE_STARTED,
+        for poll_id in range(1, 3):
+            self.set_models(
+                {
+                    f"poll/{poll_id}": {
+                        "title": f"Poll {poll_id}",
+                        "meeting_id": 1 if poll_id == 1 else 4,
+                        "content_object_id": f"motion/{poll_id}",
+                        "visibility": Poll.VISIBILITY_NAMED,
+                        "config_id": f"poll_config_rating_approval/{poll_id}",
+                        "state": Poll.STATE_STARTED,
+                    },
+                    f"poll_config_rating_approval/{poll_id}": {"poll_id": poll_id},
+                    f"ballot/{poll_id}": {
+                        "acting_meeting_user_id": poll_id,
+                        "represented_meeting_user_id": poll_id,
+                        "poll_id": poll_id,
+                    },
                 },
-                "vote/1": {
-                    "acting_user_id": 1,
-                    "represented_user_id": 1,
-                    "poll_id": 1,
-                },
-                "vote/2": {
-                    "acting_user_id": 1,
-                    "represented_user_id": 1,
-                    "poll_id": 1,
-                },
-            },
-        )
+            )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "vote/3",
-            {"acting_user_id": 1, "represented_user_id": 1, "poll_id": 2},
+            "ballot/3",
+            {
+                "acting_meeting_user_id": 1,
+                "represented_meeting_user_id": 1,
+                "poll_id": 3,
+            },
         )
         self.assert_model_exists(
             "user/1",
             {
                 "meeting_user_ids": [1, 2, 3],
-                "acting_vote_ids": [1, 2, 3, 4],
-                "represented_vote_ids": [1, 2, 3, 4],
+                # "acting_vote_ids": [1, 2, 3, 4],
+                # "represented_vote_ids": [1, 2, 3, 4],
                 "meeting_ids": [1, 4, 5],
             },
         )
@@ -1564,31 +1566,6 @@ class MeetingClone(BaseActionTestCase):
                     "sequential_number": 1,
                     "list_of_speakers_id": 1,
                 },
-                "poll_candidate/1": {
-                    "id": 1,
-                    "weight": 1,
-                    "user_id": 2,
-                    "meeting_id": 1,
-                    "poll_candidate_list_id": 1,
-                },
-                "poll_candidate/2": {
-                    "id": 2,
-                    "weight": 2,
-                    "user_id": 3,
-                    "meeting_id": 1,
-                    "poll_candidate_list_id": 1,
-                },
-                "poll_candidate/3": {
-                    "id": 3,
-                    "weight": 3,
-                    "user_id": 4,
-                    "meeting_id": 1,
-                    "poll_candidate_list_id": 1,
-                },
-                "poll_candidate_list/1": {
-                    "id": 1,
-                    "meeting_id": 1,
-                },
                 "poll/1": {
                     "id": 1,
                     "title": "First election",
@@ -1596,11 +1573,24 @@ class MeetingClone(BaseActionTestCase):
                     "content_object_id": "assignment/1",
                     "sequential_number": 1,
                     "visibility": Poll.VISIBILITY_SECRET,
-                    "method": Poll.METHOD_RATING_SCORE,
+                    "config_id": "poll_config_approval/1",
                     "state": Poll.STATE_CREATED,
                 },
+                "poll_config_approval/1": {"id": 1, "poll_id": 1},
             }
         )
+        for id_ in range(1, 4):
+            self.set_models(
+                {
+                    f"poll_config_option/{id_}": {
+                        "id": id_,
+                        "weight": id_,
+                        "poll_config_id": "poll_config_approval/1",
+                        "meeting_user_id": id_ + 1,
+                    }
+                }
+            )
+
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -1609,8 +1599,6 @@ class MeetingClone(BaseActionTestCase):
                 "committee_id": 60,
                 "list_of_speakers_ids": [2],
                 "assignment_ids": [2],
-                "poll_candidate_list_ids": [2],
-                "poll_candidate_ids": [4, 5, 6],
                 "poll_ids": [2],
                 "projector_ids": [2],
                 "reference_projector_id": 2,
@@ -1618,3 +1606,28 @@ class MeetingClone(BaseActionTestCase):
                 "motions_default_amendment_workflow_id": 2,
             },
         )
+        self.assert_model_exists(
+            "poll/2",
+            {
+                "title": "First election",
+                "meeting_id": 2,
+                "content_object_id": "assignment/2",
+                "sequential_number": 1,
+                "visibility": Poll.VISIBILITY_SECRET,
+                "config_id": "poll_config_approval/2",
+                "state": Poll.STATE_CREATED,
+            },
+        )
+        self.assert_model_exists(
+            "poll_config_approval/2",
+            {"poll_id": 2, "option_ids": [4, 5, 6]},
+        )
+        for id_ in range(4, 7):
+            self.assert_model_exists(
+                f"poll_config_option/{id_}",
+                {
+                    "weight": id_ - 3,
+                    "poll_config_id": "poll_config_approval/2",
+                    "meeting_user_id": id_ + 2,
+                },
+            )

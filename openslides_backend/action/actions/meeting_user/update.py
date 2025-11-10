@@ -39,6 +39,10 @@ class MeetingUserUpdate(
         optional_properties=[
             "about_me",
             "group_ids",
+            "poll_option_ids",
+            "poll_voted_ids",
+            "acting_ballot_ids",
+            "represented_ballot_ids",
             *meeting_user_standard_fields,
             *merge_fields,
         ],

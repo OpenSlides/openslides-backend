@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
-
+from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
+from typing import Any
 
 
 class MeetingUserUpdate(BaseActionTestCase):
@@ -103,6 +104,84 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "chat_message_ids": None,
             },
         )
+
+    def test_update_with_vote_related_fields(self) -> None:
+        self.create_meeting()
+        self.set_user_groups(1, [1])
+        self.create_user("dummy2", [1])
+        self.create_user("dummy3", [1])
+        self.set_models(
+            {
+                "meeting_user/1": {
+                    "acting_ballot_ids": [1, 2],
+                    "represented_ballot_ids": [1],
+                },
+                "poll/1": {
+                    "title": "Poll 1",
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/1",
+                    "state": Poll.STATE_FINISHED,
+                },
+                "list_of_speakers/1": {
+                    "id": 1,
+                    "closed": False,
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "sequential_number": 1,
+                },
+                "assignment/1": {
+                    "id": 1,
+                    "phase": "search",
+                    "title": "Duckburg town council",
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 1,
+                },
+                "poll_config_option/1": {
+                    "poll_config_id": "poll_config_approval/1",
+                    "meeting_user_id": 2,
+                },
+                "poll_config_approval/1": {"poll_id": 1},
+                "ballot/1": {
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 1,
+                    "represented_meeting_user_id": 1,
+                },
+                "ballot/2": {
+                    "poll_id": 1,
+                    "acting_meeting_user_id": 1,
+                    "represented_meeting_user_id": 2,
+                },
+            }
+        )
+        response = self.request(
+            "meeting_user.update",
+            {
+                "id": 3,
+                "poll_option_ids": [1],
+                "poll_voted_ids": [1],
+                "acting_ballot_ids": [1],
+                "represented_ballot_ids": [2],
+            },
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        expected: dict[str, dict[str, Any]] = {
+            "meeting_user/3": {
+                "poll_option_ids": [1],
+                "poll_voted_ids": [1],
+                "acting_ballot_ids": [1],
+                "represented_ballot_ids": [2],
+            },
+            "poll/1": {"voted_ids": [3]},
+            "poll_config_option/1": {"meeting_user_id": 3},
+            "ballot/1": {"acting_meeting_user_id": 3},
+            "ballot/2": {"represented_meeting_user_id": 3},
+        }
+        for fqid, model in expected.items():
+            self.assert_model_exists(fqid, model)
 
     def test_update_anonymous_group_id(self) -> None:
         self.create_meeting()

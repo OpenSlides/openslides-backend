@@ -173,7 +173,17 @@ MEETING_COLLECTIONS = {
     collection
     for collection, model in model_registry.items()
     if model().has_field("meeting_id")
-} | {"meeting", "user", "mediafile", "vote"}
+} | {
+    "meeting",
+    "user",
+    "mediafile",
+    "vote",
+    "poll_config_approval",
+    "poll_config_selection",
+    "poll_config_rating_score",
+    "poll_config_rating_approval",
+    "poll_config_option",
+}
 
 
 class Checker:
