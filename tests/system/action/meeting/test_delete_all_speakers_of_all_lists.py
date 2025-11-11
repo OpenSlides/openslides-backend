@@ -11,13 +11,11 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.test_models: dict[str, dict[str, Any]] = {
             "motion/1": {
                 "title": "motion1",
-                "sequential_number": 1,
                 "state_id": 1,
                 "meeting_id": 1,
             },
             "list_of_speakers/11": {
                 "meeting_id": 1,
-                "sequential_number": 11,
                 "content_object_id": "motion/1",
             },
             "speaker/1": {"list_of_speakers_id": 11, "meeting_id": 1},

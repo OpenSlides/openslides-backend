@@ -5,13 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentDeleteActionTest(BaseActionTestCase):
     PERMISSION_TEST_MODELS = {
         "assignment/111": {
-            "sequential_number": 1,
             "meeting_id": 1,
             "title": "title_srtgb123",
         },
         "list_of_speakers/23": {
             "content_object_id": "assignment/111",
-            "sequential_number": 11,
             "meeting_id": 1,
         },
     }
@@ -24,13 +22,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/111": {
-                    "sequential_number": 1,
                     "meeting_id": 110,
                     "title": "title_srtgb123",
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 110,
                 },
             }
@@ -43,7 +39,6 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "Dr. Assignment",
                     "list_of_speakers_id": 222,
                     "agenda_item_id": 333,
@@ -51,7 +46,6 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "phase": "finished",
                 },
                 "list_of_speakers/222": {
-                    "sequential_number": 1,
                     "closed": False,
                     "content_object_id": "assignment/111",
                     "meeting_id": 110,
@@ -67,7 +61,6 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 110,
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 110,
                 },
                 "assignment_candidate/1111": {"assignment_id": 111, "meeting_id": 110},
@@ -86,11 +79,9 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
             {
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 110,
                 },
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 110,
                 },

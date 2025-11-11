@@ -1,6 +1,6 @@
 from openslides_backend.models.models import Poll
-from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
-from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
+from tests.system.action.base import BaseActionTestCase
+from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME, DEFAULT_PASSWORD
 
 
 class PollTestMixin(BaseActionTestCase):
@@ -24,7 +24,6 @@ class PollTestMixin(BaseActionTestCase):
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
-                    "sequential_number": 1,
                     "onehundred_percent_base": "YNA",
                     "title": "Poll 1",
                 },
