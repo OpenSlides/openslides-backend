@@ -1,14 +1,19 @@
-import os
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
 
-from psycopg.rows import dict_row
+from psycopg import Cursor
+from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
+from openslides_backend.migrations.migration_helper import (
+    LAST_NON_REL_MIGRATION,
+    MigrationHelper,
+    MigrationState,
+)
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
     DecimalField,
@@ -19,7 +24,6 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
-from openslides_backend.services.postgresql.db_connection_handling import os_conn_pool
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     Id,
@@ -31,6 +35,8 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.typing import Collection, PartialModel
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
+READ_MODELS = ["models"]
+WRITE_MODELS = ["all"]
 
 
 class Sql_helper:
@@ -40,7 +46,8 @@ class Sql_helper:
     """
 
     offset: int = 0
-    limit: int = 100
+    LIMIT: int = 100
+    cursor: Cursor[DictRow]
 
     @staticmethod
     def get_row_count() -> int:
@@ -52,14 +59,12 @@ class Sql_helper:
         Returns:
         - integer : number of fqid in sql models table
         """
-        with os_conn_pool.connection() as conn:
-            with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute("SELECT COUNT(fqid) FROM models;")
-                result = cur.fetchone()
-                if result is not None:
-                    if len(result) > 0:
-                        return int(result.get("count", "0"))
-                return 0
+        Sql_helper.cursor.execute("SELECT COUNT(fqid) FROM models;")
+        result = Sql_helper.cursor.fetchone()
+        if result is not None:
+            if len(result) > 0:
+                return int(result.get("count", "0"))
+        return 0
 
     # END OF FUNCTION
 
@@ -89,12 +94,10 @@ class Sql_helper:
             - data_rows: fetched sql table data rows as tuple
         """
 
-        with os_conn_pool.connection() as conn:
-            with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute(
-                    f"SELECT fqid, data FROM models WHERE deleted='f' ORDER BY fqid LIMIT {str(Sql_helper.limit)} OFFSET {str(Sql_helper.offset)};"
-                )
-                data_rows = cur.fetchall()
+        Sql_helper.cursor.execute(
+            f"SELECT fqid, data FROM models WHERE deleted='f' ORDER BY fqid LIMIT {str(Sql_helper.LIMIT)} OFFSET {str(Sql_helper.offset)};"
+        )
+        data_rows = Sql_helper.cursor.fetchall()
         assert data_rows is not None, "No data was found in sql table models"
         Sql_helper.raise_offset()
         return data_rows
@@ -251,25 +254,23 @@ class Sql_helper:
 # END HELPER CLASS
 
 
-def data_definition() -> None:
-    """
-    Purpose:
-        Applies the relational schema to the database
-    Input:
-        n/a
-    Returns:
-        n/a
-    """
-    with os_conn_pool.connection() as conn:
-        with conn.cursor() as cur:
-            path = os.path.realpath(
-                os.path.join("meta", "dev", "sql", "schema_relational.sql")
-            )
-            try:
-                cur.execute(open(path).read())
-            except Exception as e:
-                print(f"On applying relational schema there was an error: {str(e)}\n")
-                return
+# def data_definition(curs: Cursor[DictRow]) -> None:
+#     """
+#     Purpose:
+#         Applies the relational schema to the database
+#     Input:
+#         n/a
+#     Returns:
+#         n/a
+#     """
+#     path = os.path.realpath(
+#         os.path.join("meta", "dev", "sql", "schema_relational.sql")
+#     )
+#     try:
+#         curs.execute(open(path).read())
+#     except Exception as e:
+#         print(f"On applying relational schema there was an error: {str(e)}\n")
+#         return
 
 
 # END OF FUNCTION
@@ -400,7 +401,7 @@ def vote_routine(votes: list[dict[str, Any]], options: dict[Id, PartialModel]) -
             data["poll_id"] = option["poll_id"]
 
 
-def pre_migration() -> None:
+def pre_migration(curs: Cursor[DictRow]) -> None:
     """
     Purpose:
         Migrates all vote_service related models so that the data will fit the table scheme.
@@ -451,45 +452,93 @@ def pre_migration() -> None:
         "organization": {"del": ["vote_decrypt_public_main_key"]},
     }
 
-    # 1) Prepare connection & cursor
-    with os_conn_pool.connection() as conn:
-        with conn.cursor() as cur:
+    # 1.1) Get options out of the way
+    # needed to generate poll/result and vote
+    curs.execute(Sql_helper.get_select_collection_command("option", ["*"]))
+    options = {id_from_fqid(elem["fqid"]): elem["data"] for elem in curs.fetchall()}
+    curs.execute("DELETE FROM models WHERE fqid LIKE 'option/%';")
 
-            # 2) BEGIN TRANSACTION
-            with conn.transaction():
-                # 2.1) Get options out of the way
-                # needed to generate poll/result and vote
-                cur.execute(Sql_helper.get_select_collection_command("option", ["*"]))
-                options = {
-                    id_from_fqid(elem["fqid"]): elem["data"] for elem in cur.fetchall()
-                }
-                cur.execute("DELETE FROM models WHERE fqid LIKE 'option/%';")
+    for collection, definition in definitions.items():
+        curs.execute(Sql_helper.get_select_collection_command(collection, ["*"]))
+        result = curs.fetchall()
+        # 1.2) Do generic changes: Delete, rename, set
+        for elem in result:
+            collection, id_ = collection_and_id_from_fqid(elem["fqid"])
+            data = elem["data"]
+            for field_name in definition.get("del", []):
+                data.pop(field_name, None)
+            for old_field, new_field in definition.get("renames", {}).items():
+                data[new_field] = data.pop(old_field, None)
+            if "set" in definition:
+                data.update(definition["set"])
+        # 1.3) Run routine
+        if "routine" in definition:
+            definition["routine"](result, options)
+        # 2) Apply changes for collection
+        curs.executemany(*Sql_helper.get_update_models_command(result))
+        # delete option
+        # needed to generate poll/result
 
-                for collection, definition in definitions.items():
-                    cur.execute(
-                        Sql_helper.get_select_collection_command(collection, ["*"])
-                    )
-                    result = cur.fetchall()
-                    # 2.2) Do generic changes: Delete, rename, set
-                    for elem in result:
-                        collection, id_ = collection_and_id_from_fqid(elem["fqid"])
-                        data = elem["data"]
-                        for field_name in definition.get("del", []):
-                            data.pop(field_name, None)
-                        for old_field, new_field in definition.get(
-                            "renames", {}
-                        ).items():
-                            data[new_field] = data.pop(old_field, None)
-                        if "set" in definition:
-                            data.update(definition["set"])
-                    # 2.3) Run routine
-                    if "routine" in definition:
-                        definition["routine"](result, options)
-                    # 3) Apply changes for collection
-                    cur.executemany(*Sql_helper.get_update_models_command(result))
+        # changes to meeting
+        # del poll_default_backend
+        # del option_ids
+        # del vote_ids
+        # poll_default_allow_invalid False
+        # poll_default_allow_vote_split False
+
+        # changes motion
+        # del option_ids
+
+        # changes to poll
+        # type'analog', 'named', 'pseudoanonymous', 'cryptographic' -> visibility'manually', 'named', 'secret'
+        # pollmethod -> method 'approval', 'selection', 'rating-score', 'rating-approval'
+        # del description
+        # del backend
+        # del is_pseudoanonymized
+        # del live_voting_enabled
+        # del live_votes
+        # del crypt_key
+        # del crypt_signature
+        # del votes_raw
+        # del votes_signature
+        # state `published` -> `finished` + published boolean
+        # x -> config?
+        #     min_votes_amount
+        #     max_votes_amount
+        #     max_votes_per_option
+        #     global_yes
+        #     global_no
+        #     global_abstain
+        #     onehundred_percent_base TODO after the client is done
+        #     entitled_users_at_stop TODO after the client is done
+        # x -> result?
+        #     option_ids
+        #     global_option_id
+        #     votesvalid
+        #     votesinvalid
+        #     votescast
+
+        # changes to vote
+        # del user_token
+        # pop option_id
+        # poll_id = option/poll_id
+        # user_id -> acting_user_id
+        # delegated_user_id -> represented_user_id
+        # del meeting_id
+
+        # changes to assignment
+        # del option_id
+
+        # changes to organization
+        # vote_decrypt_public_main_key del
+
+        # changes to user
+        # del option_ids
+        # vote_ids -> acting_vote_ids
+        # delegated_vote_ids -> represented_vote_ids
 
 
-def data_manipulation() -> None:
+def data_manipulation(curs: Cursor[DictRow]) -> None:
     """
     Purpose:
         Iterates over chunks of the DB table models and writes the data into the respective DB tables
@@ -503,7 +552,8 @@ def data_manipulation() -> None:
         Thus it is worth the idea to set the intermediate tables to INITIALLY DEFERRED as well
         so they can be run immediately. This is a measure we already took for default tables.
     """
-    pre_migration()
+    Sql_helper.cursor = curs
+    pre_migration(curs)
 
     data_chunk: list[dict[str, Any]]
     collection: str
@@ -514,95 +564,91 @@ def data_manipulation() -> None:
     sql_fields: str
     sql_values: list
 
-    # 1) Prepare connection & cursor
-    with os_conn_pool.connection() as conn:
-        with conn.cursor() as cur:
+    insert_intermediate_t_commands = []
 
-            # 2) BEGIN TRANSACTION
-            with conn.transaction():
-                insert_intermediate_t_commands = []
+    # 1) Chunkwise loop trough all data_rows for the models table
+    for i in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
+        data_chunk = Sql_helper.get_next_data_row_chunk()
 
-                # 3) Chunkwise loop trough all data_rows for the models table
-                for i in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.limit)):
-                    data_chunk = Sql_helper.get_next_data_row_chunk()
+        for data_row in data_chunk:
+            collection = data_row["fqid"].split("/")[0]
+            table_name = HelperGetNames.get_table_name(collection)
+            data = data_row["data"]
+            model = model_registry[collection]()
+            sql_fields = ""
+            sql_placeholder = ""
+            sql_values = []
 
-                    for data_row in data_chunk:
-                        collection = data_row["fqid"].split("/")[0]
-                        table_name = HelperGetNames.get_table_name(collection)
-                        data = data_row["data"]
-                        model = model_registry[collection]()
-                        sql_fields = ""
-                        sql_placeholder = ""
-                        sql_values = []
+            # 2) Iterate over any field found in the data_row
+            for field in data.keys():
+                # 3) Check wether field exists in models.py too
+                if model.has_field(field):
 
-                        # 4) Iterate over any field found in the data_row
-                        for field in data.keys():
-                            # 5) Check wether field exists in models.py too
-                            if model.has_field(field):
-
-                                # 5.1) If field is RelationListField write the other tables
-                                if isinstance(
-                                    model.get_field(field),
-                                    tuple(RELATION_LIST_FIELD_CLASSES),
-                                ):
-                                    model_field = model.get_field(field)
-                                    if (
-                                        model_field.is_primary
-                                        and model_field.write_fields is not None
-                                    ):
-                                        insert_intermediate_t_commands.extend(
-                                            Sql_helper.get_insert_intermediate_t_commands(
-                                                model.get_field(field), data
-                                            )
-                                        )
-
-                                # 5.2) If field is non writable skip
-                                if Sql_helper.is_non_writable_sql_field(
-                                    collection, field
-                                ):
-                                    continue
-
-                                # 5.3) If field is non relational simply write
-                                value = Sql_helper.transform_data(
-                                    data[field], model.get_field(field)
+                    # 3.1) If field is RelationListField write the other tables
+                    if isinstance(
+                        model.get_field(field),
+                        tuple(RELATION_LIST_FIELD_CLASSES),
+                    ):
+                        model_field = model.get_field(field)
+                        if (
+                            model_field.is_primary
+                            and model_field.write_fields is not None
+                        ):
+                            insert_intermediate_t_commands.extend(
+                                Sql_helper.get_insert_intermediate_t_commands(
+                                    model.get_field(field), data
                                 )
-                                if len(sql_fields) == 0:
-                                    sql_fields = field
-                                    sql_placeholder = "%s"
-                                    sql_values = [value]
-                                else:
-                                    sql_fields += f", {field}"
-                                    sql_placeholder += ", %s"
-                                    sql_values.append(value)
-                        # END LOOP data.keys()
-                        cur.execute(
-                            f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
-                            sql_values,
-                        )
-                    # END LOOP data_rows
-                # END LOOP data chunks
+                            )
 
-                # 6) INSERT intermediate tables
-                for command, values in insert_intermediate_t_commands:
-                    cur.execute(command, values)
-            # 7) END TRANSACTION
-            # Delete old tables
-            OLD_TABLES = (
-                "models",
-                "events",
-                "positions",
-                "id_sequences",
-                "collectionfields",
-                "events_to_collectionfields",
-                "migration_keyframes",
-                "migration_keyframe_models",
-                "migration_events",
-                "migration_positions",
+                    # 3.2) If field is non writable skip
+                    if Sql_helper.is_non_writable_sql_field(collection, field):
+                        continue
+
+                    # 3.3) If field is non relational simply write
+                    value = Sql_helper.transform_data(
+                        data[field], model.get_field(field)
+                    )
+                    if len(sql_fields) == 0:
+                        sql_fields = field
+                        sql_placeholder = "%s"
+                        sql_values = [value]
+                    else:
+                        sql_fields += f", {field}"
+                        sql_placeholder += ", %s"
+                        sql_values.append(value)
+            # END LOOP data.keys()
+            curs.execute(
+                f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
+                sql_values,
             )
-            for table_name in OLD_TABLES:
-                cur.execute(f"DROP TABLE {table_name} CASCADE;")
-        # 8) Exit cursor
-    # 9) Exit connection
+        # END LOOP data_rows
+    # END LOOP data chunks
 
+    # 4) INSERT intermediate tables
+    for command, values in insert_intermediate_t_commands:
+        curs.execute(command, values)
 
-# END OF FUNCTION
+    # 5) Delete old tables
+    OLD_TABLES = (
+        "models",
+        "events",
+        "positions",
+        "id_sequences",
+        "collectionfields",
+        "events_to_collectionfields",
+        "migration_keyframes",
+        "migration_keyframe_models",
+        "migration_events",
+        "migration_positions",
+    )
+    for table_name in OLD_TABLES:
+        curs.execute(f"DROP TABLE {table_name} CASCADE;")
+
+    # clear replace tables as this migration writes the tables directly
+    MigrationHelper.set_database_migration_info(
+        curs,
+        LAST_NON_REL_MIGRATION + 1,
+        MigrationState.NO_MIGRATION_REQUIRED,
+        replace_tables={},
+        writable=True,
+    )

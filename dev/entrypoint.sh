@@ -3,12 +3,12 @@
 printf "enter entrypoint.sh"
 set -e
 
-printf "\nOpenslides Database:\n"
+printf "\nOpenslides DBMS:\n"
 printf "Export env variables for database.\n"
 source scripts/export_database_variables.sh
 
 meta/dev/scripts/wait-for-database.sh
-printf "Database is started.\n"
+printf "DBMS is started.\n"
 
 printf "Create schema.\n"
 python cli/create_schema.py

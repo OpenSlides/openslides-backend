@@ -1,12 +1,14 @@
 from collections.abc import Generator
 from typing import Any
+from unittest import TestCase
 from unittest.mock import _patch
 
 import pytest
-from psycopg import Connection, rows
+from psycopg import Connection, Cursor
 from psycopg.errors import AdminShutdown
+from psycopg.rows import DictRow
 
-from openslides_backend.services.postgresql.db_connection_handling import (  # get_current_os_conn_pool,
+from openslides_backend.services.postgresql.db_connection_handling import (
     env,
     get_new_os_conn,
 )
@@ -32,18 +34,16 @@ OLD_TABLES = (
 )
 
 
-def get_rel_db_table_names() -> list[str]:
+def get_rel_db_table_names(curs: Cursor[DictRow]) -> list[str]:
     """
     gets the table names of the relational schema currently applied to the database
     """
-    with get_new_os_conn() as conn:
-        with conn.cursor() as curs:
-            rows = curs.execute(
-                "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
-            ).fetchall()
-            return [
-                f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows if row not in OLD_TABLES  # type: ignore
-            ]
+    rows = curs.execute(
+        "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
+    ).fetchall()
+    return [
+        f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows if row not in OLD_TABLES  # type: ignore
+    ]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -56,10 +56,11 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     auth_http_adapter_patch.start()
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
-            tablenames = get_rel_db_table_names()
+            tablenames = get_rel_db_table_names(curs)
             curs.execute(
                 f"TRUNCATE TABLE {','.join(tablenames)} RESTART IDENTITY CASCADE"
             )
+            conn.commit()
             curs.execute(generate_sql_for_test_initiation(tuple(tablenames)))
 
     yield {
@@ -84,9 +85,16 @@ def auth_mockers(request: Any, setup_pytest_session: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def db_connection() -> Generator[Connection[rows.DictRow], None, None]:
-    """Generates a Connection object for setting up initial test data and truncating changes afterwards."""
+def db_connection() -> Generator[Connection[DictRow], None, None]:
+    """Generates and yields a Connection object for setting up initial test data and truncating changes afterwards."""
     with get_new_os_conn() as conn:
+        with conn.cursor() as curs:
+            # if MigrationHelper.table_exists(curs,"version"):
+            curs.execute("SELECT init_table_contents();")
+        conn.commit()
+        # TODO this is a hacky workaround to get this connection in system testcases
+        # BaseSystemTestCase.connection = conn
+        TestCase.connection = conn  # type: ignore
         yield conn
         with conn.cursor() as curs:
             try:

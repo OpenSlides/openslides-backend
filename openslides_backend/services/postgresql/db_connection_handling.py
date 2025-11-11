@@ -84,6 +84,7 @@ def get_current_os_conn_pool() -> ConnectionPool[Connection[rows.DictRow]]:
 
 def get_new_os_conn() -> ConnectionContext:
     os_conn_pool = get_current_os_conn_pool()
+    os_conn_pool.check()
     return ConnectionContext(os_conn_pool.connection())
 
 

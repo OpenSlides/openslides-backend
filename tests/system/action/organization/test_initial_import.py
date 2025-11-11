@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from openslides_backend.i18n.translator import Translator
@@ -5,7 +6,7 @@ from openslides_backend.migrations import (
     assert_migration_index,
     get_backend_migration_index,
 )
-from openslides_backend.migrations.migrate import MigrationWrapper
+from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler
@@ -242,6 +243,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assertFalse(response.json["results"][0][0]["migration_needed"])
         assert_migration_index()
 
-        handler = MigrationWrapper(verbose=True)
-        handler.execute_command("finalize")
+        manager = MigrationManager(self.env, self.services, logging)
+        manager.execute_migrate_command("finalize", verbose=True)
         assert_migration_index()

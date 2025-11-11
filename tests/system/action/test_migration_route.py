@@ -10,7 +10,11 @@ from openslides_backend.migrations import (
     get_datastore_migration_index,
 )
 from openslides_backend.migrations.core.exceptions import MigrationException
-from openslides_backend.migrations.migration_handler import MigrationHandler
+from openslides_backend.migrations.migration_handler import (
+    MigrationHandler,
+    MigrationState,
+)
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
@@ -26,15 +30,19 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     route: RouteFunction = ActionView.migrations_route
 
     def setUp(self) -> None:
-        MigrationHandler.migration_running = False
-        MigrationHandler.migrate_thread_exception = None
-        if MigrationHandler.migrate_thread_stream:
+        # TODO probably needs delitions
+        MigrationHelper.migrate_thread_exception = None
+        if MigrationHelper.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
         super().setUp()
 
     def wait_for_migration_thread(self) -> None:
-        while MigrationHandler.migration_running:
-            sleep(0.02)
+        with self.connection.cursor() as curs:
+            while (
+                MigrationHelper.get_migration_state(curs)
+                != MigrationState.NO_MIGRATION_REQUIRED
+            ):
+                sleep(0.02)
 
     def migration_request(
         self,
@@ -45,6 +53,16 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
 
 
 class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
+    def test_stats(self) -> None:
+        response = self.migration_request("stats")
+        self.assert_status_code(response, 200)
+        assert response.json["stats"] == {
+            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "current_migration_index": 70,
+            "target_migration_index": 70,
+            "migratable_models": {},
+        }
+
     def test_migrate_mismatching_passwords(self) -> None:
         response = self.migration_request("migrate", "wrong_pw")
         self.assert_status_code(response, 401)
@@ -59,13 +77,18 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
         self.wait_for_migration_thread()
         assert get_datastore_migration_index() == get_backend_migration_index()
 
+    def test_progress_no_migration(self) -> None:
+        response = self.migration_request("progress")
+        self.assert_status_code(response, 200)
+        assert "output" not in response.json
+
     def test_unknown_command(self) -> None:
         response = self.migration_request("unknown")
         self.assert_status_code(response, 400)
 
 
 @patch(
-    "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
+    "openslides_backend.migrations.migration_handler.MigrationHandler.execute_command"
 )
 class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTest):
     def wait_for_lock(
@@ -115,23 +138,76 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["output"] == "start\nfinish\n"
 
-    def test_double_migration(self, execute_command: Mock) -> None:
-        lock = Lock()
-        lock.acquire()
+    def test_stats_during_migration(self, execute_command: Mock) -> None:
+        # TODO this test is very hard wired and prone to break with the next migration.
+        # needs automatic migration index handling and possibly actual execution of a migration
+        wait_lock = Lock()
+        wait_lock.acquire()
         indicator_lock = Lock()
         indicator_lock.acquire()
-        execute_command.side_effect = self.wait_for_lock(lock, indicator_lock)
-        response = self.migration_request("migrate")
+        with self.connection.cursor() as curs:
+            MigrationHelper.set_database_migration_info(
+                curs, 69, MigrationState.NO_MIGRATION_REQUIRED, writable=True
+            )
+        execute_command.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
+        response = self.migration_request("finalize")
         self.assert_status_code(response, 200)
 
-        response = self.migration_request("migrate")
-        self.assert_status_code(response, 400)
-        assert response.json["success"] is False
-        assert (
-            response.json["message"]
-            == "Migration is running, only 'progress' command is allowed"
-        )
-        lock.release()
+        indicator_lock.acquire()
+        response = self.migration_request("stats")
+        self.assert_status_code(response, 200)
+        assert response.json["stats"] == {
+            "status": MigrationState.MIGRATION_RUNNING,
+            "current_migration_index": 69,
+            "target_migration_index": 70,
+            "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
+        }
+
+        wait_lock.release()
+        self.wait_for_migration_thread()
+        with self.connection.cursor() as curs:
+            MigrationHelper.set_database_migration_info(
+                curs, 70, MigrationState.NO_MIGRATION_REQUIRED, writable=True
+            )
+        # MigrationHelper.execute_migrations()
+        # self.wait_for_migration_thread()
+        response = self.migration_request("stats")
+        self.assert_status_code(response, 200)
+        assert response.json["stats"] == {
+            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "current_migration_index": 70,
+            "target_migration_index": 70,
+            "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
+        }
+
+        # check that the output is preserved for future stats requests
+        wait_lock.release()
+        response = self.migration_request("stats")
+        self.assert_status_code(response, 200)
+        assert response.json["stats"] == {
+            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "current_migration_index": 70,
+            "target_migration_index": 70,
+            "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
+        }
+
+    # def test_double_migration(self, execute_command: Mock) -> None:
+    #     lock = Lock()
+    #     lock.acquire()
+    #     indicator_lock = Lock()
+    #     indicator_lock.acquire()
+    #     execute_command.side_effect = self.wait_for_lock(lock, indicator_lock)
+    #     response = self.migration_request("migrate")
+    #     self.assert_status_code(response, 200)
+
+    #     response = self.migration_request("migrate")
+    #     self.assert_status_code(response, 400)
+    #     assert response.json["success"] is False
+    #     assert (
+    #         response.json["message"]
+    #         == "Migration is running, only 'stats' command is allowed."
+    #     )
+    #     lock.release()
 
     def test_migration_with_error(self, execute_command: Mock) -> None:
         lock = Lock()

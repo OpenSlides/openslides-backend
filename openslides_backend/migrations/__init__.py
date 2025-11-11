@@ -14,7 +14,7 @@ from .core.exceptions import (
     MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
-from .migrate import MigrationWrapper
+from .migration_manager import MigrationManager
 
 
 def get_backend_migration_index() -> int:

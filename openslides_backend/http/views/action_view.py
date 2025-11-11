@@ -6,7 +6,7 @@ from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
 from ...migrations import assert_migration_index
-from ...migrations.migration_handler import MigrationHandler
+from ...migrations.migration_manager import MigrationManager
 from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
@@ -71,8 +71,8 @@ class ActionView(BaseView):
     def migrations_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start executing migrations request.")
         self.check_internal_auth_password(request)
-        handler = MigrationHandler(self.env, self.services, self.logging)
-        response = handler.handle_request(request.json)
+        manager = MigrationManager(self.env, self.services, self.logging)
+        response = manager.handle_request(request.json)
         self.logger.debug("Migrations request finished successfully.")
         return {"success": True, **response}, None
 

@@ -2594,7 +2594,7 @@ class Mediafile(Model):
     )
     filename = fields.CharField(
         constraints={
-            "description": "The uploaded filename. Will be used for downloading. Only writeable on create."
+            "description": "The uploaded filename. Will be used for downloading. Only writable on create."
         }
     )
     mimetype = fields.CharField()
