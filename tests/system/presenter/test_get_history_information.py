@@ -1,6 +1,8 @@
 from typing import Any
 from unittest.mock import MagicMock
 
+import pytest
+
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
@@ -12,6 +14,7 @@ from openslides_backend.shared.patterns import id_from_fqid
 from .base import BasePresenterTestCase
 
 
+@pytest.mark.skip(reason="Deleted on main")
 class TestCheckMediafileId(BasePresenterTestCase):
     def create_model_with_information(
         self,
