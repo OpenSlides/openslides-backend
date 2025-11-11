@@ -41,9 +41,9 @@ then
 else
     # Local Mode
     pyupgrade --py310-plus --exit-zero-even-if-changed $(find . -name '*.py')
-    flake8 "$PATHS"
-    mypy "$PATHS"
-    black "$PATHS"
-    autoflake "$PATHS"
-    isort "$PATHS"
+    eval "flake8 $PATHS"
+    eval "mypy $PATHS"
+    eval "black $PATHS"
+    eval "autoflake $PATHS"
+    eval "isort $PATHS"
 fi
