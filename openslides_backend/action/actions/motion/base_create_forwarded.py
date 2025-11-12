@@ -336,6 +336,7 @@ class BaseMotionCreateForwarded(
                 "amendment_result_data": [],
             }
         if self.with_attachments:
+            self.check_can_forward_with_attachments()
             self.forward_mediafiles(
                 instance, getattr(self, "meeting_mediafile_replace_map", {})
             )
@@ -634,3 +635,10 @@ class BaseMotionCreateForwarded(
             ]
             for instance in self.instances
         }
+
+    def check_can_forward_with_attachments(self) -> None:
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["disable_forward_with_attachments"]
+        )
+        if organization.get("disable_forward_with_attachments"):
+            raise ActionException("Forward with attachments is disabled")

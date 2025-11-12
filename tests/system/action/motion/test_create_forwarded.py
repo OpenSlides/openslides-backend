@@ -1648,6 +1648,44 @@ class CreateForwardedTestWithAttachmentsSimple(
             },
         )
 
+    def test_forward_with_attachment_true_and_forward_with_attachments_disabled(
+        self,
+    ) -> None:
+        self.test_models["organization/1"] = {"disable_forward_with_attachments": True}
+        self.set_test_models()
+        origin_mediafiles_data = [
+            {"base": 1, "owner_meeting_id": 1, "is_directory": True},
+            {"base": 2, "is_directory": True},
+            {"base": 3, "owner_meeting_id": 1, "parent_id": 1},
+            {"base": 4, "owner_meeting_id": 1, "parent_id": 1},
+            {"base": 5, "is_directory": True, "parent_id": 2},
+            {"base": 6, "parent_id": 5},
+        ]
+        for mediafile in origin_mediafiles_data:
+            self.create_mediafile(**mediafile)
+            mediafile_id = mediafile["base"]
+            self.create_meeting_mediafile(
+                base=mediafile_id + 10,
+                mediafile_id=mediafile_id,
+                meeting_id=1,
+                motion_ids=[12],
+            )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 4,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Forward with attachments is disabled"
+        self.assert_model_not_exists("mediafile/7")
+        self.assert_model_not_exists("meeting_mediafile/17")
+
     def test_forward_to_the_same_meeting_with_orga_wide_mediafile(self) -> None:
         """
         Verify orga-wide mediafile is reused correctly when motion is forwarded
@@ -1714,8 +1752,11 @@ class CreateForwardedTestWithAttachmentsSimple(
         expected_mediafile_ids = [2]
         expected_meeting_mediafile_ids = [12]
         if with_attachments:
+            self.media.duplicate_mediafile.assert_called_once_with(1, 3)
             expected_mediafile_ids.append(3)
             expected_meeting_mediafile_ids.append(13)
+        else:
+            self.media.duplicate_mediafile.assert_not_called()
 
         self.assert_status_code(response, 200)
         self.assert_model_exists(

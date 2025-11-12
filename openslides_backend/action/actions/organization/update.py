@@ -39,6 +39,7 @@ class OrganizationUpdate(
         "users_email_subject",
         "users_email_body",
         "require_duplicate_from",
+        "disable_forward_with_attachments",
     )
 
     group_B_fields = (

@@ -19,6 +19,7 @@ class Organization(Model):
     gender_ids = fields.RelationListField(
         to={"gender": "organization_id"}, is_view_field=True, is_primary=True
     )
+    disable_forward_with_attachments = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
