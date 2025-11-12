@@ -139,7 +139,9 @@ class TContext:
             )
         return events
 
-    def get_delete_meeting_events(self, id_: int) -> list[dict[str, Any]]:
+    def get_delete_meeting_events(
+        self, id_: int, make_history_changes: bool = True
+    ) -> list[dict[str, Any]]:
         """
         Deletes meeting and submodels,
         removes meeting reference from history entries
@@ -160,16 +162,17 @@ class TContext:
             ]
             for event in self.get_delete_target_model_events(fqid)
         ]
-        entry_fqids = [
-            f"history_entry/{entry_id}"
-            for entry_id in meeting_context.get("relevant_history_entry_ids", [])
-        ]
-        for entry_fqid in entry_fqids:
-            if entry_fields := self.context[entry_fqid]:
-                entry_fields["meeting_id"] = None
-            events.append(
-                self.get_update_event(entry_fqid, fields={"meeting_id": None})
-            )
+        if make_history_changes:
+            entry_fqids = [
+                f"history_entry/{entry_id}"
+                for entry_id in meeting_context.get("relevant_history_entry_ids", [])
+            ]
+            for entry_fqid in entry_fqids:
+                if entry_fields := self.context[entry_fqid]:
+                    entry_fields["meeting_id"] = None
+                events.append(
+                    self.get_update_event(entry_fqid, fields={"meeting_id": None})
+                )
         events.append(self.get_delete_event(meeting_fqid))
         self.context[meeting_fqid] = None
         return events
@@ -791,6 +794,7 @@ def test_migration_multi_meeting(write, finalize, assert_model):
     Tests the following cases:
     - With multiple meeting
     - With deleted meetings
+    - With deleted meetings that have broken history_entry back relations
     """
     ctx = TContext()
     write(ctx.get_write_user_event(1, "admin"))
@@ -818,7 +822,18 @@ def test_migration_multi_meeting(write, finalize, assert_model):
         *ctx.get_write_entry_events(5, 3, "topic/5", ["Topic created"]),
         *ctx.get_write_entry_events(6, 3, "topic/6", ["Topic created"]),
     )
+    write(
+        ctx.get_write_meeting_event(4),
+        *ctx.get_write_model_events(7, meeting_id=4, collection="topic"),
+        *ctx.get_write_model_events(8, meeting_id=4, collection="topic"),
+        *ctx.get_write_position_events(4, user_id=1, timestamp=400),
+        *ctx.get_write_entry_events(7, 4, "topic/7", ["Topic created"]),
+        *ctx.get_write_entry_events(8, 4, "topic/8", ["Topic created"]),
+    )
     write(*ctx.get_delete_meeting_events(3))  # Delete meeting 3
+    write(
+        *ctx.get_delete_meeting_events(4, make_history_changes=False)
+    )  # Delete meeting 3
 
     finalize("0070_remove_mistakenly_created_history_entries")
 
@@ -851,6 +866,16 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "relevant_history_entry_ids": [5, 6],
         },
     )
+    assert_model(
+        "meeting/4",
+        {
+            "id": 4,
+            "meta_deleted": True,
+            "name": "Meeting 4",
+            "topic_ids": [],
+            "relevant_history_entry_ids": [7, 8],
+        },
+    )
     assert_model("topic/1", {"id": 1, "title": "Topic 1", "meeting_id": 1})
     assert_model("topic/2", {"id": 2, "title": "Topic 2", "meeting_id": 1})
     assert_model("topic/3", {"id": 3, "title": "Topic 3", "meeting_id": 2})
@@ -873,6 +898,26 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "title": "Topic 6",
             "meeting_id": 3,
             "history_entry_ids": [6],
+        },
+    )
+    assert_model(
+        "topic/7",
+        {
+            "id": 7,
+            "meta_deleted": True,
+            "title": "Topic 7",
+            "meeting_id": 4,
+            "history_entry_ids": [7],
+        },
+    )
+    assert_model(
+        "topic/8",
+        {
+            "id": 8,
+            "meta_deleted": True,
+            "title": "Topic 8",
+            "meeting_id": 4,
+            "history_entry_ids": [8],
         },
     )
     assert_model(
@@ -906,6 +951,17 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "original_user_id": 1,
             "user_id": 1,
             "entry_ids": [5, 6],
+        },
+    )
+    assert_model(
+        "history_position/4",
+        {
+            "id": 4,
+            "meta_deleted": True,
+            "timestamp": 400,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [7, 8],
         },
     )
     assert_model(
@@ -974,6 +1030,28 @@ def test_migration_multi_meeting(write, finalize, assert_model):
             "entries": ["Topic created"],
             "original_model_id": "topic/6",
             "position_id": 3,
+        },
+    )
+    assert_model(
+        "history_entry/7",
+        {
+            "id": 7,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/7",
+            "meeting_id": 4,
+            "position_id": 4,
+        },
+    )
+    assert_model(
+        "history_entry/8",
+        {
+            "id": 8,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/8",
+            "meeting_id": 4,
+            "position_id": 4,
         },
     )
 
@@ -1182,6 +1260,135 @@ def test_migration_other_models(write, finalize, assert_model):
             "model_id": "meeting/1",
             "original_model_id": "meeting/1",
             "entries": ["Meeting updated"],
+            "meeting_id": 1,
+        },
+    )
+
+
+def test_migration_all_broken_models_deleted(write, finalize, assert_model):
+    """
+    Tests the following cases:
+    - Topic with history entry already deleted
+    """
+    ctx = TContext()
+    write(ctx.get_write_user_event(1, "admin"))
+    write(
+        ctx.get_write_meeting_event(1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
+        *ctx.get_write_position_events(1, user_id=1, timestamp=100),
+        *ctx.get_write_entry_events(1, 1, "topic/1", ["Topic created"]),
+    )
+    write(
+        *ctx.get_delete_target_model_events("topic/1"),
+    )
+
+    finalize("0070_remove_mistakenly_created_history_entries")
+
+    assert_model("user/1", {"id": 1, "username": "admin", "history_position_ids": []})
+    assert_model(
+        "meeting/1",
+        {
+            "id": 1,
+            "name": "Meeting 1",
+            "topic_ids": [],
+            "relevant_history_entry_ids": [],
+        },
+    )
+    assert_model(
+        "topic/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "title": "Topic 1",
+            "meeting_id": 1,
+            "history_entry_ids": [1],
+        },
+    )
+    assert_model(
+        "history_position/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "timestamp": 100,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [1],
+        },
+    )
+    assert_model(
+        "history_entry/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/1",
+            "position_id": 1,
+            "meeting_id": 1,
+        },
+    )
+
+
+def test_migration_all_broken_models_deleted_history_not_changed(
+    write, finalize, assert_model
+):
+    """
+    Tests the following cases:
+    - Topic with history entry already deleted with model_id still in the entry
+    """
+    ctx = TContext()
+    write(ctx.get_write_user_event(1, "admin"))
+    write(
+        ctx.get_write_meeting_event(1),
+        *ctx.get_write_model_events(1, meeting_id=1, collection="topic"),
+        *ctx.get_write_position_events(1, user_id=1, timestamp=100),
+        *ctx.get_write_entry_events(1, 1, "topic/1", ["Topic created"]),
+    )
+    write(
+        *ctx.get_delete_target_model_events("topic/1", make_history_changes=False),
+    )
+
+    finalize("0070_remove_mistakenly_created_history_entries")
+
+    assert_model("user/1", {"id": 1, "username": "admin", "history_position_ids": []})
+    assert_model(
+        "meeting/1",
+        {
+            "id": 1,
+            "name": "Meeting 1",
+            "topic_ids": [],
+            "relevant_history_entry_ids": [],
+        },
+    )
+    assert_model(
+        "topic/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "title": "Topic 1",
+            "meeting_id": 1,
+            "history_entry_ids": [1],
+        },
+    )
+    assert_model(
+        "history_position/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "timestamp": 100,
+            "original_user_id": 1,
+            "user_id": 1,
+            "entry_ids": [1],
+        },
+    )
+    assert_model(
+        "history_entry/1",
+        {
+            "id": 1,
+            "meta_deleted": True,
+            "entries": ["Topic created"],
+            "original_model_id": "topic/1",
+            "model_id": "topic/1",
+            "position_id": 1,
             "meeting_id": 1,
         },
     )
