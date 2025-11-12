@@ -32,18 +32,30 @@ then
     eval "$DC up --build --detach"
 
     # Container Mode
+    echo "Running pyupgrade"
     eval "$DC exec -T backend pyupgrade --py310-plus --exit-zero-even-if-changed $(find . -name '*.py')"
-    eval "$DC exec -T backend flake8 $PATHS"
-    eval "$DC exec -T backend mypy $PATHS"
+    echo "Running black"
     eval "$DC exec -T backend black --check $PATHS"
+    echo "Running autoflake"
     eval "$DC exec -T backend autoflake --check $PATHS"
+    echo "Running isort"
     eval "$DC exec -T backend isort --check-only $PATHS"
+    echo "Running flake8"
+    eval "$DC exec -T backend flake8 $PATHS"
+    echo "Running mypy"
+    eval "$DC exec -T backend mypy $PATHS"
 else
     # Local Mode
+    echo "Running pyupgrade"
     pyupgrade --py310-plus --exit-zero-even-if-changed $(find . -name '*.py')
-    eval "flake8 $PATHS"
-    eval "mypy $PATHS"
+    echo "Running black"
     eval "black $PATHS"
+    echo "Running autoflake"
     eval "autoflake $PATHS"
+    echo "Running isort"
     eval "isort $PATHS"
+    echo "Running flake8"
+    eval "flake8 $PATHS"
+    echo "Running mypy"
+    eval "mypy $PATHS"
 fi
