@@ -310,6 +310,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "user_ids": [2],
                     "is_active_in_organization_id": None,
+                    "meeting_user_ids": [2],
                 },
             }
         )
