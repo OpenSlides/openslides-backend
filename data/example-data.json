@@ -1,5 +1,5 @@
 {
-    "_migration_index": 71,
+    "_migration_index": 72,
     "gender":{
         "1":{
             "id": 1,
@@ -188,10 +188,18 @@
             "about_me": "What I want to say about me. B",
             "vote_weight": "1.000000",
             "speaker_ids": [4, 8, 9],
-            "supported_motion_ids": [3],
+            "motion_supporter_ids": [1],
             "assignment_candidate_ids": [2, 4],
             "structure_level_ids": [3],
             "group_ids": [5]
+        }
+    },
+    "motion_supporter": {
+        "1": {
+            "id": 1,
+            "meeting_user_id": 3,
+            "motion_id": 3,
+            "meeting_id": 1
         }
     },
     "theme": {
@@ -498,6 +506,7 @@
                 3,
                 4
             ],
+            "motion_supporter_ids": [1],
             "motion_comment_section_ids": [
                 1
             ],
@@ -1352,8 +1361,8 @@
             "submitter_ids": [
                 3
             ],
-            "supporter_meeting_user_ids": [
-                3
+            "supporter_ids": [
+                1
             ],
             "change_recommendation_ids": [
                 5
