@@ -833,7 +833,7 @@ def test_migration_multi_meeting(write, finalize, assert_model):
     write(*ctx.get_delete_meeting_events(3))  # Delete meeting 3
     write(
         *ctx.get_delete_meeting_events(4, make_history_changes=False)
-    )  # Delete meeting 3
+    )  # Delete meeting 4
 
     finalize("0070_remove_mistakenly_created_history_entries")
 
