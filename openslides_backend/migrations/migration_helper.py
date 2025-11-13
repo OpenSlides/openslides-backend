@@ -1,5 +1,5 @@
-from enum import StrEnum
 import logging
+from enum import StrEnum
 from importlib import import_module
 from io import StringIO
 from os import listdir
@@ -88,7 +88,9 @@ class MigrationHelper:
                 database_indices = MigrationHelper.get_indices_from_database(curs)
                 for migration_index in MigrationHelper.migrations:
                     if migration_index not in database_indices:
-                        replace_tables = MigrationHelper.get_replace_tables(70)
+                        replace_tables = MigrationHelper.get_replace_tables(
+                            migration_index
+                        )
                         MigrationHelper.set_database_migration_info(
                             curs,
                             migration_index,

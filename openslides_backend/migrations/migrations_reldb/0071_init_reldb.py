@@ -623,7 +623,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                     sql_values,
                 )
             except Exception as e:
-                MigrationHelper.logger.debug("Migration error: " + e)
+                MigrationHelper.logger.debug(f"Migration error: {e}")
                 raise e
         # END LOOP data_rows
     # END LOOP data chunks

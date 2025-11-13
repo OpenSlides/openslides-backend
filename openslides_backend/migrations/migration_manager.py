@@ -84,19 +84,19 @@ class MigrationManager:
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if current_migration_index == LAST_NON_REL_MIGRATION:
-                tmp = self.cursor.execute(
+                response = self.cursor.execute(
                     sql.SQL(
                         "SELECT COUNT(*) FROM models WHERE fqid LIKE '{table}/%'"
                     ).format(table=sql.SQL(table[:-2]))
                 ).fetchone()
             else:
-                tmp = self.cursor.execute(
+                response = self.cursor.execute(
                     sql.SQL("SELECT COUNT(*) FROM {table}").format(
                         table=sql.Identifier(table)
                     )
                 ).fetchone()
-            if tmp:
-                return tmp.get("count", 0)
+            if response:
+                return response.get("count", 0)
             else:
                 return 0
 

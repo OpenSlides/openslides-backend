@@ -41,7 +41,7 @@ from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
 
 migration_module = import_module(
-    "openslides_backend.migrations.migrations_reldb.0070_init_reldb"
+    "openslides_backend.migrations.migrations_reldb.0071_init_reldb"
 )
 # ENV Variables
 EXAMPLE_DATA_PATH = "data/example-data.json"
