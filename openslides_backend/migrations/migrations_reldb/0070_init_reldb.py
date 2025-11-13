@@ -617,10 +617,14 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                         sql_placeholder += ", %s"
                         sql_values.append(value)
             # END LOOP data.keys()
-            curs.execute(
-                f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
-                sql_values,
-            )
+            try:
+                curs.execute(
+                    f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
+                    sql_values,
+                )
+            except Exception as e:
+                MigrationHelper.logger.debug("Migration error: " + e)
+                raise e
         # END LOOP data_rows
     # END LOOP data chunks
 
