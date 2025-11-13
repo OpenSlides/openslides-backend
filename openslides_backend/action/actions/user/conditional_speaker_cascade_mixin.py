@@ -6,7 +6,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
-from .set_present import UserSetPresentAction
+from ..user.set_present import UserSetPresentAction
 
 
 class ConditionalSpeakerCascadeMixinHelper(Action):
@@ -78,7 +78,7 @@ class ConditionalSpeakerCascadeMixin(ConditionalSpeakerCascadeMixinHelper):
                 for speaker_id in val.get("speaker_ids", [])
             ]
             self.conditionally_delete_speakers(speaker_ids)
-            self.remove_presence(instance["id"], removed_meeting_id)
+            # self.remove_presence(instance["id"], removed_meeting_id)
 
         return super().update_instance(instance)
 
