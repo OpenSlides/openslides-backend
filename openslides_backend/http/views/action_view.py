@@ -109,4 +109,6 @@ class ActionView(BaseView):
                 )
             if decoded_password == secret_password:
                 return
+            else:
+                raise Unauthorized("worn password")
         raise Unauthorized()
