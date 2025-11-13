@@ -94,9 +94,12 @@ class ActionView(BaseView):
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
         if self.env.is_dev_mode():
             secret_password = DEV_PASSWORD
+            self.logger.debug("dev password")
         else:
+            self.logger.debug("internal password")
             filename = self.env.INTERNAL_AUTH_PASSWORD_FILE
             if not filename:
+                self.logger.debug("no file")
                 raise ServerError("Missing INTERNAL_AUTH_PASSWORD_FILE.")
             with open(filename) as file_:
                 secret_password = file_.read()
@@ -108,7 +111,11 @@ class ActionView(BaseView):
                     "The internal auth password must be correctly base64-encoded."
                 )
             if decoded_password == secret_password:
+                self.logger.debug("good password")
                 return
             else:
                 self.logger.debug("worn password")
+        else:
+            self.logger.debug("none password")
+        self.logger.debug("unaothorized")
         raise Unauthorized()
