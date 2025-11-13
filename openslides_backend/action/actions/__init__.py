@@ -5,7 +5,7 @@ def prepare_actions_map() -> None:
 
     New modules have to be added here.
     """
-    from . import (  # noqa; option,
+    from . import (  # noqa
         agenda_item,
         assignment,
         assignment_candidate,
@@ -30,6 +30,7 @@ def prepare_actions_map() -> None:
         motion_submitter,
         motion_workflow,
         motion_working_group_speaker,
+        option,
         organization,
         organization_tag,
         personal_note,

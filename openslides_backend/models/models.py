@@ -2366,6 +2366,7 @@ class Poll(Model, PollModelMixin):
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(required=True)
+    description = fields.CharField()
     type = fields.CharField(
         required=True,
         constraints={"enum": ["analog", "named", "pseudoanonymous", "cryptographic"]},
@@ -2944,7 +2945,6 @@ class Projection(Model):
     stable = fields.BooleanField(default=False)
     weight = fields.IntegerField()
     type = fields.CharField()
-    content = fields.JSONField()
     current_projector_id = fields.RelationField(
         to={"projector": "current_projection_ids"}, equal_fields="meeting_id"
     )

@@ -10,6 +10,7 @@ from ...generics.create import CreateAction
 from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..option.create import OptionCreateAction
 from .base import base_check_onehundred_percent_base
 from .mixins import PollHistoryMixin, PollPermissionMixin, PollValidationMixin
 
@@ -52,6 +53,7 @@ class PollCreateAction(
         },
         optional_properties=[
             "content_object_id",
+            "description",
             "min_votes_amount",
             "max_votes_amount",
             "max_votes_per_option",
@@ -130,38 +132,38 @@ class PollCreateAction(
             if not state.get("allow_create_poll"):
                 raise ActionException("Motion state doesn't allow to create poll.")
 
-        # # handle non-global options
-        # unique_set = set()
+        # handle non-global options
+        unique_set = set()
 
-        # for weight, option in enumerate(instance.get("options", []), start=1):
-        #     # check the keys with staticmethod from option.create, where they belong
-        #     key = OptionCreateAction.check_one_of_three_keywords(option)
-        #     data: dict[str, Any] = {
-        #         "poll_id": instance["id"],
-        #         "meeting_id": instance["meeting_id"],
-        #         "weight": weight,
-        #         key: option[key],
-        #     }
+        for weight, option in enumerate(instance.get("options", []), start=1):
+            # check the keys with staticmethod from option.create, where they belong
+            key = OptionCreateAction.check_one_of_three_keywords(option)
+            data: dict[str, Any] = {
+                "poll_id": instance["id"],
+                "meeting_id": instance["meeting_id"],
+                "weight": weight,
+                key: option[key],
+            }
 
-        #     o_obj = f"{key},{option[key]}"
-        #     if o_obj in unique_set:
-        #         raise ActionException(
-        #             f"Duplicated option in poll.options: {option[key]}"
-        #         )
-        #     else:
-        #         unique_set.add(o_obj)
+            o_obj = f"{key},{option[key]}"
+            if o_obj in unique_set:
+                raise ActionException(
+                    f"Duplicated option in poll.options: {option[key]}"
+                )
+            else:
+                unique_set.add(o_obj)
 
-        #     if instance["type"] == "analog":
-        #         if instance["pollmethod"] == "N":
-        #             data["no"] = self.parse_vote_value(option, "N")
-        #         else:
-        #             data["yes"] = self.parse_vote_value(option, "Y")
-        #             if instance["pollmethod"] in ("YN", "YNA"):
-        #                 data["no"] = self.parse_vote_value(option, "N")
-        #             if instance["pollmethod"] == "YNA":
-        #                 data["abstain"] = self.parse_vote_value(option, "A")
+            if instance["type"] == "analog":
+                if instance["pollmethod"] == "N":
+                    data["no"] = self.parse_vote_value(option, "N")
+                else:
+                    data["yes"] = self.parse_vote_value(option, "Y")
+                    if instance["pollmethod"] in ("YN", "YNA"):
+                        data["no"] = self.parse_vote_value(option, "N")
+                    if instance["pollmethod"] == "YNA":
+                        data["abstain"] = self.parse_vote_value(option, "A")
 
-        #     action_data.append(data)
+            action_data.append(data)
 
         # handle global option
         global_data = {
@@ -181,10 +183,10 @@ class PollCreateAction(
 
         # Execute the create option actions
         self.apply_instance(instance)
-        # self.execute_other_action(
-        #     OptionCreateAction,
-        #     action_data,
-        # )
+        self.execute_other_action(
+            OptionCreateAction,
+            action_data,
+        )
 
         # set state
         instance["state"] = Poll.STATE_CREATED
