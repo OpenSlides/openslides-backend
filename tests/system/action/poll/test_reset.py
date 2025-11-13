@@ -129,7 +129,6 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
                     "max_votes_per_option": 1,
                     "type": "named",
                     "backend": "long",
-                    "sequential_number": 1,
                     "title": "Poll 1",
                     "onehundred_percent_base": "Y",
                     "content_object_id": "topic/1",

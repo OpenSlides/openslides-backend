@@ -16,7 +16,6 @@ class PollPublishActionTest(BasePollTestCase):
                 "state": "finished",
                 "meeting_id": 1,
                 "content_object_id": "topic/1",
-                "sequential_number": 1,
                 "title": "Poll 1",
                 "onehundred_percent_base": "YNA",
             },

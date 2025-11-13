@@ -8,12 +8,10 @@ class ProjectionCreateActionTest(BaseActionTestCase):
             {
                 "assignment/1": {
                     "title": "title_srtgb123",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }

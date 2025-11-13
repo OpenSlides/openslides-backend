@@ -54,6 +54,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             final_info_code,
             missing_handled_attributes,
             im_table_code,
+            create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
             create_trigger_relationlistnotnull_code,
             create_trigger_unique_ids_pair_code,

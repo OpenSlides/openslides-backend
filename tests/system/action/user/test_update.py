@@ -3144,7 +3144,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "pollmethod": "YNA",
                     "meeting_id": 1,
                     "option_ids": [1, 2],
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "option/1": {

@@ -17,14 +17,12 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "username": "user",
             },
             "assignment/111": {
-                "sequential_number": 1,
                 "title": "title_xTcEkItp",
                 "meeting_id": 1,
                 "phase": "voting",
             },
             "list_of_speakers/23": {
                 "content_object_id": "assignment/111",
-                "sequential_number": 11,
                 "meeting_id": 1,
             },
             "assignment_candidate/111": {
@@ -42,13 +40,11 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
                 "assignment_candidate/111": {
@@ -69,13 +65,11 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
                 "assignment_candidate/111": {
@@ -101,13 +95,11 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
                 "assignment_candidate/112": {
@@ -134,14 +126,12 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
                     "phase": "finished",
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1333,
                 },
                 "assignment_candidate/111": {

@@ -229,7 +229,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "motion/1": {
                     "list_of_speakers_id": 1,
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "state_id": 1,
                     "submitter_ids": [1],
                     "title": "dummy",
@@ -242,7 +241,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "motion_ids": [1],

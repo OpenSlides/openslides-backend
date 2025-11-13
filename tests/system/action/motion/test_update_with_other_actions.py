@@ -19,7 +19,6 @@ class MotionUpdateWithOtherActionsTest(BaseActionTestCase):
                 "motion_category/3": {
                     "meeting_id": 222,
                     "name": "category",
-                    "sequential_number": 3,
                 },
             }
         )

@@ -11,7 +11,6 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
                 "motion_comment_section/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,
-                    "sequential_number": 111,
                 },
             }
         )

@@ -25,12 +25,10 @@ class MeetingUserDelete(BaseActionTestCase):
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "topic/11": {
                     "title": "tipic",
-                    "sequential_number": 11,
                     "meeting_id": 10,
                 },
                 "agenda_item/6": {"content_object_id": "topic/11", "meeting_id": 101},
                 "list_of_speakers/11": {
-                    "sequential_number": 11,
                     "content_object_id": "topic/11",
                     "meeting_id": 10,
                 },
@@ -69,13 +67,11 @@ class MeetingUserDelete(BaseActionTestCase):
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "list_of_speakers/12": {
-                    "sequential_number": 12,
                     "content_object_id": "motion/11",
                     "meeting_id": 10,
                 },
                 "motion/11": {
                     "title": "morse",
-                    "sequential_number": 11,
                     "state_id": 10,
                     "meeting_id": 10,
                 },

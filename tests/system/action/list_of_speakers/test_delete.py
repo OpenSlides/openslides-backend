@@ -16,13 +16,11 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
             {
                 "topic/42": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 42,
                     "meeting_id": 78,
                 },
                 "agenda_item/23": {"content_object_id": "topic/42", "meeting_id": 78},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/42",
-                    "sequential_number": 10,
                     "closed": True,
                     "meeting_id": 78,
                 },
@@ -32,7 +30,6 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 78,
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 78,
                 },
             }

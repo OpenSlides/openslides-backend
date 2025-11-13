@@ -9,16 +9,14 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     """
 
     PERMISSION_TEST_MODELS = {
-        "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-        "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+        "topic/1": {"meeting_id": 1, "title": "tropic"},
+        "topic/2": {"meeting_id": 1, "title": "tropic"},
         "list_of_speakers/23": {
             "content_object_id": "topic/1",
-            "sequential_number": 11,
             "meeting_id": 1,
         },
         "list_of_speakers/42": {
             "content_object_id": "topic/2",
-            "sequential_number": 12,
             "meeting_id": 1,
         },
         "agenda_item/1": {
@@ -42,22 +40,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering(self) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "tropic"},
+                "topic/3": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/64": {
                     "content_object_id": "topic/3",
-                    "sequential_number": 13,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {
@@ -97,22 +92,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 "meeting/1": {
                     "agenda_number_prefix": "P-",
                 },
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "tropic"},
+                "topic/3": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/64": {
                     "content_object_id": "topic/3",
-                    "sequential_number": 13,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {
@@ -152,22 +144,19 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 "meeting/1": {
                     "agenda_numeral_system": "roman",
                 },
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
-                "topic/3": {"meeting_id": 1, "title": "tropic", "sequential_number": 3},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "tropic"},
+                "topic/3": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/64": {
                     "content_object_id": "topic/3",
-                    "sequential_number": 13,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {
@@ -204,16 +193,14 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_without_parents(self) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
-                "topic/2": {"meeting_id": 1, "title": "tropic", "sequential_number": 2},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {
@@ -240,20 +227,17 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_with_non_public_items(self) -> None:
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
                 "topic/2": {
                     "meeting_id": 1,
                     "title": "tropic Al",
-                    "sequential_number": 2,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {

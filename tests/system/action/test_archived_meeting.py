@@ -98,13 +98,11 @@ class MeetingActions(BaseActionTestCase):
                 },
                 "topic/23": {
                     "title": "to pic",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                 },
                 "agenda_item/8": {"content_object_id": "topic/23", "meeting_id": 1},
                 "list_of_speakers/11": {
                     "content_object_id": "topic/23",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "speaker/1": {
@@ -119,13 +117,11 @@ class MeetingActions(BaseActionTestCase):
                 },
                 "topic/42": {
                     "title": "to pic",
-                    "sequential_number": 2,
                     "meeting_id": 1,
                 },
                 "agenda_item/9": {"content_object_id": "topic/42", "meeting_id": 1},
                 "list_of_speakers/12": {
                     "content_object_id": "topic/42",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "speaker/3": {

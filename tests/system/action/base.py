@@ -229,14 +229,12 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"motion/{base}": {
                     "title": f"motion{base}",
-                    "sequential_number": base,
                     "state_id": state_id or meeting_id,
                     "meeting_id": meeting_id,
                     **motion_data,
                 },
                 f"list_of_speakers/{base}": {
                     "content_object_id": f"motion/{base}",
-                    "sequential_number": base,
                     "meeting_id": meeting_id,
                 },
             }
@@ -263,7 +261,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                     **meeting_data,
                 },
                 f"projector/{base}": {
-                    "sequential_number": base,
                     "meeting_id": base,
                     **{field: base for field in Meeting.reverse_default_projectors()},
                 },
@@ -272,7 +269,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
                 f"motion_workflow/{base}": {
                     "name": "flo",
-                    "sequential_number": base,
                     "meeting_id": base,
                     "first_state_id": base,
                 },
@@ -564,7 +560,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"topic/{base}": {
                     "title": "test",
-                    "sequential_number": base,
                     "meeting_id": meeting_id,
                     **topic_data,
                 },
@@ -574,7 +569,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
                 f"list_of_speakers/{base}": {
                     "content_object_id": f"topic/{base}",
-                    "sequential_number": 1,
                     "meeting_id": meeting_id,
                 },
             }

@@ -30,14 +30,12 @@ class OptionCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion/112": {
-                    "sequential_number": 11,
                     "title": "mosh pit",
                     "state_id": 111,
                     "meeting_id": 111,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion/112",
-                    "sequential_number": 11,
                     "meeting_id": 111,
                 },
             }
