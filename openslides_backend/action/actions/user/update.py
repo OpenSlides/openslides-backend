@@ -8,17 +8,19 @@ from openslides_backend.shared.mixins.user_create_update_permissions_mixin impor
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
-from ....models.models import User
+from ....models.models import User, MeetingUser
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...generics.delete import DeleteAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
+from ..meeting_user.base_delete import MeetingUserBaseDelete
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
@@ -28,6 +30,11 @@ from .user_mixins import (
     check_gender_exists,
 )
 
+class MeetingUserDeleteInternal(MeetingUserBaseDelete):
+    """
+    Action to delete a meeting user.
+    """
+    name= "meeting_user.delete_internal_helper"
 
 @register_action("user.update")
 class UserUpdate(
@@ -116,7 +123,20 @@ class UserUpdate(
         self.check_locking_status(
             instance.get("meeting_id"), instance, instance["id"], None
         )
+        removed_meeting_id = self.get_removed_meeting_id(instance)
         instance = super().update_instance(instance)
+        if removed_meeting_id:
+            meeting_users = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("user_id", "=", instance["id"]),
+                    FilterOperator("meeting_id", "=", removed_meeting_id),
+                ),
+                [],
+            )
+            self.execute_other_action(
+                MeetingUserDeleteInternal, [{"id": id_} for id_ in meeting_users]
+            )
         home_committee_id = instance.get("home_committee_id")
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
