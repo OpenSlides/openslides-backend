@@ -78,7 +78,7 @@ class ConditionalSpeakerCascadeMixin(ConditionalSpeakerCascadeMixinHelper):
                 for speaker_id in val.get("speaker_ids", [])
             ]
             self.conditionally_delete_speakers(speaker_ids)
-            # self.remove_presence(instance["id"], removed_meeting_id)
+            self.remove_presence(instance["id"], removed_meeting_id)
 
         return super().update_instance(instance)
 

@@ -8,19 +8,18 @@ from openslides_backend.shared.mixins.user_create_update_permissions_mixin impor
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
-from ....models.models import User, MeetingUser
+from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
-from ...generics.delete import DeleteAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from ..meeting_user.base_delete import MeetingUserBaseDelete
+from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
@@ -30,11 +29,14 @@ from .user_mixins import (
     check_gender_exists,
 )
 
+
 class MeetingUserDeleteInternal(MeetingUserBaseDelete):
     """
     Action to delete a meeting user.
     """
-    name= "meeting_user.delete_internal_helper"
+
+    name = "meeting_user.delete_internal_helper"
+
 
 @register_action("user.update")
 class UserUpdate(

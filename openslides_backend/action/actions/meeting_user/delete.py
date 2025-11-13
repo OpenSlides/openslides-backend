@@ -2,10 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-from ....models.models import MeetingUser
-from ...generics.delete import DeleteAction
 from ...util.action_type import ActionType
-from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..user.conditional_speaker_cascade_mixin import (
     ConditionalSpeakerCascadeMixinHelper,

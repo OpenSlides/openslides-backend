@@ -499,19 +499,19 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "meeting_ids": [],
-                "meeting_user_ids": [1111],
+                "meeting_user_ids": [],
                 "committee_management_ids": [60, 61],
                 "committee_ids": [60, 61],
             },
         )
-        self.assert_model_exists(
-            "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
-        )
+        self.assert_model_deleted("meeting_user/1111", {"group_ids": []})
         self.assert_history_information(
             "user/111",
             [
                 "Participant removed from group {} in meeting {}",
                 "group/600",
+                "meeting/60",
+                "Participant removed from meeting {}",
                 "meeting/60",
                 "Personal data changed",
                 "Committee management changed",
@@ -632,9 +632,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_management_ids": [4],
                 "meeting_ids": [22, 33],
                 "committee_ids": [2, 3, 4],
-                "meeting_user_ids": [111, 112, 113],
+                "meeting_user_ids": [112, 113],
             },
         )
+        self.assert_model_deleted("meeting_user/111")
         self.assert_model_exists("committee/1", {"user_ids": []})
         self.assert_model_exists("committee/2", {"user_ids": [123]})
         self.assert_model_exists("committee/3", {"user_ids": [123]})
@@ -3110,7 +3111,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/1234",
             {
                 "username": "username_abcdefgh123",
-                "meeting_user_ids": [4444, 5555],
+                "meeting_user_ids": [5555],
                 "is_present_in_meeting_ids": [5],
             },
         )
@@ -3126,16 +3127,16 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "present_user_ids": [1234],
             },
         )
-        self.assert_model_exists(
+        self.assert_model_deleted(
             "meeting_user/4444",
-            {"group_ids": [], "speaker_ids": [24], "meta_deleted": False},
+            {"group_ids": [], "speaker_ids": [24]},
         )
         self.assert_model_exists(
             "meeting_user/5555",
             {"group_ids": [53], "speaker_ids": [25], "meta_deleted": False},
         )
         self.assert_model_exists(
-            "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
+            "speaker/24", {"meeting_user_id": None, "meeting_id": 4}
         )
         self.assert_model_exists(
             "speaker/25", {"meeting_user_id": 5555, "meeting_id": 5}
