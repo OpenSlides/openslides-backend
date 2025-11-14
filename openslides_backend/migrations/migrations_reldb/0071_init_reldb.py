@@ -156,12 +156,8 @@ class Sql_helper:
         if isinstance(field_class, OrganizationField):
             return True
 
-        # 1.2) ViewFields are solely for the DB table view
-        elif field_class.is_view_field:
-            return True
-
-        # 1.3) Ids are generated as well
-        elif field == "id":
+        # 1.2) ViewFields are solely for the DB table view but if it has write_fields it will be used as a nm_relation
+        elif field_class.is_view_field and not field_class.write_fields:
             return True
 
         return False
@@ -576,19 +572,12 @@ def data_manipulation(curs: Cursor[DictRow], ex_db: ExtendedDatabase) -> None:
             data = data_row["data"]
             model = model_registry[collection]()
 
-            # 2) Iterate over any field found in the data_row
-            for field in data.keys():
-                # 3) Check wether field exists in models.py too
-                if model.has_field(field):
-                    # 3.1) If field is non writable skip
-                    if Sql_helper.is_non_writable_sql_field(collection, field):
-                        continue
-
-                    # 3.2) Transform non-relational if necessary
-                    data[field] = Sql_helper.transform_data(
-                        data[field], model.get_field(field)
-                    )
-            # END LOOP data.keys()
+            model_data = {
+                field: Sql_helper.transform_data(data[field], model.get_field(field))
+                for field, value in data.items()
+                if model.has_field(field)
+                if not Sql_helper.is_non_writable_sql_field(collection, field)
+            }
             try:
                 ex_db.write(
                     WriteRequest(
@@ -596,7 +585,7 @@ def data_manipulation(curs: Cursor[DictRow], ex_db: ExtendedDatabase) -> None:
                             Event(
                                 type=EventType.Create,
                                 fqid=f"{collection}/{data['id']}",
-                                fields=data,
+                                fields=model_data,
                             )
                         ]
                     )
