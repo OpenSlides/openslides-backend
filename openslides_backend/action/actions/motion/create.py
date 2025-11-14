@@ -147,21 +147,28 @@ class MotionCreate(
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
-        if submitter_mu_ids := instance.get("submitter_meeting_user_ids"):
-            if len(submitter_mu_ids) > 1 or (
-                submitter_mu_ids[0]
-                != (
-                    self.get_meeting_user(instance["meeting_id"], self.user_id, ["id"])
-                    or {}
-                ).get("id")
-            ):
-                if not has_perm(
-                    self.datastore,
-                    self.user_id,
-                    Permissions.User.CAN_SEE,
-                    instance["meeting_id"],
-                ):
-                    raise MissingPermission(Permissions.User.CAN_SEE)
+        if (
+            (submitter_mu_ids := instance.get("submitter_meeting_user_ids"))
+            and (
+                len(submitter_mu_ids) > 1
+                or (
+                    submitter_mu_ids[0]
+                    != (
+                        self.get_meeting_user(
+                            instance["meeting_id"], self.user_id, ["id"]
+                        )
+                        or {}
+                    ).get("id")
+                )
+            )
+            and not has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.User.CAN_SEE,
+                instance["meeting_id"],
+            )
+        ):
+            raise MissingPermission(Permissions.User.CAN_SEE)
 
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
         can_manage_whitelist = set()
