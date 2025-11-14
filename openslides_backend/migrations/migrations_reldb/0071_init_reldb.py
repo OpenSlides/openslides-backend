@@ -24,6 +24,9 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
+from openslides_backend.services.database.extended_database import ExtendedDatabase
+from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     Id,
@@ -538,7 +541,7 @@ def pre_migration(curs: Cursor[DictRow]) -> None:
         # delegated_vote_ids -> represented_vote_ids
 
 
-def data_manipulation(curs: Cursor[DictRow]) -> None:
+def data_manipulation(curs: Cursor[DictRow], ex_db: ExtendedDatabase) -> None:
     """
     Purpose:
         Iterates over chunks of the DB table models and writes the data into the respective DB tables
@@ -553,7 +556,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         so they can be run immediately. This is a measure we already took for default tables.
     """
     Sql_helper.cursor = curs
-    pre_migration(curs)
 
     data_chunk: list[dict[str, Any]]
     collection: str
@@ -561,8 +563,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     data: dict[str, Any]
     model: Model
     insert_intermediate_t_commands: list
-    sql_fields: str
-    sql_values: list
 
     insert_intermediate_t_commands = []
 
@@ -575,52 +575,31 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             table_name = HelperGetNames.get_table_name(collection)
             data = data_row["data"]
             model = model_registry[collection]()
-            sql_fields = ""
-            sql_placeholder = ""
-            sql_values = []
 
             # 2) Iterate over any field found in the data_row
             for field in data.keys():
                 # 3) Check wether field exists in models.py too
                 if model.has_field(field):
-
-                    # 3.1) If field is RelationListField write the other tables
-                    if isinstance(
-                        model.get_field(field),
-                        tuple(RELATION_LIST_FIELD_CLASSES),
-                    ):
-                        model_field = model.get_field(field)
-                        if (
-                            model_field.is_primary
-                            and model_field.write_fields is not None
-                        ):
-                            insert_intermediate_t_commands.extend(
-                                Sql_helper.get_insert_intermediate_t_commands(
-                                    model.get_field(field), data
-                                )
-                            )
-
-                    # 3.2) If field is non writable skip
+                    # 3.1) If field is non writable skip
                     if Sql_helper.is_non_writable_sql_field(collection, field):
                         continue
 
-                    # 3.3) If field is non relational simply write
-                    value = Sql_helper.transform_data(
+                    # 3.2) Transform non-relational if necessary
+                    data[field] = Sql_helper.transform_data(
                         data[field], model.get_field(field)
                     )
-                    if len(sql_fields) == 0:
-                        sql_fields = field
-                        sql_placeholder = "%s"
-                        sql_values = [value]
-                    else:
-                        sql_fields += f", {field}"
-                        sql_placeholder += ", %s"
-                        sql_values.append(value)
             # END LOOP data.keys()
             try:
-                curs.execute(
-                    f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
-                    sql_values,
+                ex_db.write(
+                    WriteRequest(
+                        [
+                            Event(
+                                type=EventType.Create,
+                                fqid=f"{collection}/{data['id']}",
+                                fields=data,
+                            )
+                        ]
+                    )
                 )
             except Exception as e:
                 MigrationHelper.logger.debug(f"Migration error: {e}")

@@ -17,6 +17,7 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
@@ -238,7 +239,11 @@ class MigrationManager:
                         )
 
                     self.handler = MigrationHandler(
-                        curs, self.env, self.services, self.logging
+                        curs,
+                        ExtendedDatabase(conn, self.logging, self.env),
+                        self.env,
+                        self.services,
+                        self.logging,
                     )
                     return self.handler.execute_command(command)
         except Exception as e:

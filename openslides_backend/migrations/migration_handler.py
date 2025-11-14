@@ -6,6 +6,7 @@ from psycopg.rows import DictRow
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import MODULE_PATH, MigrationHelper, MigrationState
+from ..services.database.extended_database import ExtendedDatabase
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
@@ -17,12 +18,14 @@ class MigrationHandler(BaseHandler):
     def __init__(
         self,
         curs: Cursor[DictRow],
+        ex_db: ExtendedDatabase,
         env: Env,
         services: Services,
         logging: LoggingModule,
     ) -> None:
         super().__init__(env, services, logging)
         self.cursor = curs
+        self.database = ex_db
         self.replace_tables: dict[str, Any]
 
     def execute_migrations(self) -> None:
@@ -51,7 +54,7 @@ class MigrationHandler(BaseHandler):
                 if callable(getattr(migration_module, "data_definition", None)):
                     migration_module.data_definition(self.cursor)
                 if callable(getattr(migration_module, "data_manipulation", None)):
-                    migration_module.data_manipulation(self.cursor)
+                    migration_module.data_manipulation(self.cursor, self.database)
                 if callable(getattr(migration_module, "cleanup", None)):
                     migration_module.cleanup(self.cursor)
 
