@@ -30,7 +30,7 @@ class PollUpdateAction(
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema(
         optional_properties=[
-            "method",
+            "pollmethod",
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
