@@ -2064,6 +2064,39 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             origin_mediafiles=[{"mediafile_id": 1}]
         )
 
+    def test_forward_with_attachment_true_and_forward_with_attachments_disabled(
+        self,
+    ) -> None:
+        self.update_model("organization/1", {"disable_forward_with_attachments": True})
+        (
+            response,
+            origin_mediafile_ids,
+            origin_meeting_mediafile_ids,
+            target_mediafile_ids,
+            target_meeting_mediafile_ids,
+            ORGA_WIDE_MEDIAFILES,
+        ) = self.prepare_test_data_for_forwarding_with_attachments(
+            True,
+            origin_mediafiles=[
+                {"mediafile_id": 1, "owner_meeting_id": 1, "is_directory": True},
+                {"mediafile_id": 2, "is_directory": True},
+                {"mediafile_id": 3, "owner_meeting_id": 1},
+                {"mediafile_id": 4, "owner_meeting_id": 1},
+                {"mediafile_id": 5, "is_directory": True},
+                {"mediafile_id": 6},
+            ],
+            custom_models_data={
+                "mediafile/1": {"child_ids": [3, 4]},
+                "mediafile/3": {"parent_id": 1},
+                "mediafile/4": {"parent_id": 1},
+                "mediafile/2": {"child_ids": [5]},
+                "mediafile/5": {"parent_id": 2, "child_ids": [6]},
+                "mediafile/6": {"parent_id": 5},
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Forward with attachments is disabled"
+
     def test_forward_with_nested_mediafiles_with_attachments_true(self) -> None:
         self.base_test_forward_with_attachments_true(
             origin_mediafiles=[

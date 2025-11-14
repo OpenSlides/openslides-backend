@@ -50,12 +50,12 @@ class Migration(BaseModelMigration):
                     collection, id_ = collection_and_id_from_fqid(model_id)
                     collection_to_broken_ids[collection].append(id_)
             # This'll only contain non-deleted models
-            all_broken_models = self.reader.get_many(
-                [
-                    GetManyRequestPart(collection, ids, ["id"])
-                    for collection, ids in collection_to_broken_ids.items()
-                ]
-            )
+            gmrs = [
+                GetManyRequestPart(collection, ids, ["id"])
+                for collection, ids in collection_to_broken_ids.items()
+                if len(ids)
+            ]
+            all_broken_models = self.reader.get_many(gmrs) if gmrs else {}
             entry_model_fqids = {
                 f"{collection}/{id_}"
                 for collection, ids in all_broken_models.items()
@@ -89,6 +89,18 @@ class Migration(BaseModelMigration):
                         pos_id := entry["position_id"]
                     ) in broken_position_to_broken_entry_ids:
                         broken_position_to_broken_entry_ids[pos_id].append(id_)
+            if len(meeting_to_broken_entry_ids):
+                all_broken_meetings = self.reader.get_many(
+                    [
+                        GetManyRequestPart(
+                            "meeting", list(meeting_to_broken_entry_ids), ["id"]
+                        )
+                    ]
+                ).get("meeting", {})
+                for meeting_id in set(meeting_to_broken_entry_ids).difference(
+                    all_broken_meetings
+                ):
+                    del meeting_to_broken_entry_ids[meeting_id]
             user_to_deletable_position_ids: dict[int, list[str | int]] = {
                 user_id: []
                 for pos_id in deletable_position_ids
