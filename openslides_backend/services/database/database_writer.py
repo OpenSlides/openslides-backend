@@ -599,7 +599,9 @@ class DatabaseWriter(SqlQueryHelper):
         except ProgrammingError as e:
             raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
         except StringDataRightTruncation as e:
-            raise InvalidData(f"Invalid data passed in '{error_fqid}': {arguments} {e}")
+            raise InvalidData(
+                f"Invalid data passed in '{error_fqid}':\n\n{statement} \n\n{arguments} \n\n{e.args}"
+            )
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
                 raise ModelDoesNotExist(

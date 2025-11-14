@@ -95,6 +95,7 @@ class DatabaseException(ServiceException):
 class InvalidFormat(DatabaseException):
     pass
 
+
 class InvalidData(DatabaseException):
     pass
 
