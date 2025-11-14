@@ -12,19 +12,7 @@ from tests.util import Response
 from .base_poll_test import BasePollTestCase
 
 
-# @pytest.mark.usefixtures("auth_mockers")
 class BaseVoteTestCase(BasePollTestCase):
-    # def setUp(self) -> None:
-    #     assert hasattr(self, "auth_mockers")
-    #     self.auth_mockers["login_patch"].stop()
-    #     self.auth_mockers["auth_http_adapter_patch"].stop()
-    #     super().setUp()
-
-    # def tearDown(self) -> None:
-    #     super().tearDown()
-    #     self.auth_mockers["login_patch"].start()
-    #     self.auth_mockers["auth_http_adapter_patch"].start()
-
     def request(
         self,
         action: str,
