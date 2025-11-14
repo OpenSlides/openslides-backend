@@ -1,5 +1,7 @@
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.services.database.interface import PartialModel
 
@@ -155,6 +157,11 @@ class PollUpdateAction(
 
         instance.pop("publish_immediately", None)
         self.check_anonymous_not_in_list_fields(instance, ["entitled_group_ids"])
+
+        if raw_entitled_users_at_stop := instance.get("entitled_users_at_stop"):
+            if isinstance(raw_entitled_users_at_stop, list):
+                instance["entitled_users_at_stop"] = Jsonb(raw_entitled_users_at_stop)
+
         return instance
 
     def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:

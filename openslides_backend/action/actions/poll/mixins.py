@@ -85,7 +85,7 @@ class StopControl(CountdownControl, Action):
         """
         self.datastore.locked_fields = {
             k: v
-            for k, v in self.datastore.locked_fields.items()
+            for k, v in getattr(self.datastore, "locked_fields", {}).items()
             if collectionfield_and_fqid_from_fqfield(k)[0]
             not in (
                 "meeting_user/user_id",
