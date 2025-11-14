@@ -121,7 +121,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             self.COMMITTEE_FQID,
-            {"forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD]},
+            {
+                "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
+            },
         )
         self.assert_model_exists(
             self.COMMITTEE_FQID_FORWARD,
@@ -157,9 +159,17 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "committee/2", {"receive_forwardings_from_committee_ids": [1]}
+            "committee/2",
+            {
+                "receive_forwardings_from_committee_ids": [1],
+            },
         )
-        self.assert_model_exists("committee/3", {"forward_to_committee_ids": [1]})
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "forward_to_committee_ids": [1],
+            },
+        )
 
     def test_update_both_forwarded_and_received_async(self) -> None:
         self.set_models(
@@ -238,11 +248,20 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "forward_to_committee_ids": [],
             },
         )
-        self.assert_model_exists("committee/2", {"forward_to_committee_ids": [3]})
         self.assert_model_exists(
-            "committee/3", {"receive_forwardings_from_committee_ids": [2, 4]}
+            "committee/2",
+            {"forward_to_committee_ids": [3]},
         )
-        self.assert_model_exists("committee/4", {"forward_to_committee_ids": [3]})
+        self.assert_model_exists(
+            "committee/3",
+            {
+                "receive_forwardings_from_committee_ids": [2, 4],
+            },
+        )
+        self.assert_model_exists(
+            "committee/4",
+            {"forward_to_committee_ids": [3]},
+        )
 
     def test_update_complex_2(self) -> None:
         """C->A and C->B exists, test that the request for C with C->{B,D} works and sets the reverse relations on A and D correctly"""

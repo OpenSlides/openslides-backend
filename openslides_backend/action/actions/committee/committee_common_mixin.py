@@ -58,17 +58,18 @@ class CommitteeCommonCreateUpdateMixin(
         """
         instance = super().update_instance(instance)
         id_ = instance.get("id")
-        if (
-            instance.get("forward_to_committee_ids") is None
-            or instance.get("receive_forwardings_from_committee_ids") is None
-        ):
-            return instance
-        if (id_ in instance.get("forward_to_committee_ids", [])) != (
-            id_ in instance.get("receive_forwardings_from_committee_ids", [])
-        ):
-            raise ActionException(
-                "Forwarding or receiving to/from own must be configured in both directions!"
-            )
+        motion_forwarding_fields = [
+            "forward_to_committee_ids",
+            "receive_forwardings_from_committee_ids",
+        ]
+        for message, fields in {
+            "Forwarding or receiving to/from own must be configured in both directions!": motion_forwarding_fields,
+        }.items():
+            if (
+                not any(instance.get(field) is None for field in fields)
+                and len({id_ in instance.get(field, []) for field in fields}) == 2
+            ):
+                raise ActionException(message)
         return instance
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
