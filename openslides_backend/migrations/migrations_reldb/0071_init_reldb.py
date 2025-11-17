@@ -570,6 +570,13 @@ def data_manipulation(curs: Cursor[DictRow], ex_db: ExtendedDatabase) -> None:
             collection = data_row["fqid"].split("/")[0]
             table_name = HelperGetNames.get_table_name(collection)
             data = data_row["data"]
+
+            if collection == "action_worker":
+                # shorten name to fit into 256 bytes.
+                action_names = data["name"].split(",")
+                if len(action_names) > 1:
+                    data["name"] = f"{action_names[0]}_({len(action_names)})"
+
             model = model_registry[collection]()
 
             model_data = {
