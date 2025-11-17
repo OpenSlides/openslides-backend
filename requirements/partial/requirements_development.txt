@@ -1,15 +1,15 @@
 aiosmtpd==1.4.6
 autoflake==2.3.1
-black==25.9.0
+black==25.11.0
 debugpy==1.8.17
 flake8==7.3.0
 isort==7.0.0
 mypy==1.18.2
 pip-check==3.2.1
-pytest==8.4.2
+pytest==9.0.1
 pytest-cov==7.0.0
 pytest-profiling==1.8.1
-pyupgrade==3.21.0
+pyupgrade==3.21.1
 pyyaml==6.0.3
 
 # typing
