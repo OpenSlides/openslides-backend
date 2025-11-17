@@ -68,7 +68,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "meeting_user/1": {"vote_weight": Decimal("2.600000")},
                 "meeting_user/2": {"vote_weight": Decimal("3.600000")},
                 "meeting_user/3": {
-                    "vote_weight": "4.600000",
+                    "vote_weight": Decimal("4.600000"),
                     "vote_delegated_to_id": 1,
                 },
             }
@@ -165,16 +165,20 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.start_poll(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("entitled_users_at_stop") == Jsonb(
-            [
-                {
-                    "voted": False,
-                    "present": True,
-                    "user_id": 2,
-                    "vote_delegated_to_user_id": None,
-                },
-            ]
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "entitled_users_at_stop": Jsonb(
+                    [
+                        {
+                            "voted": False,
+                            "present": True,
+                            "user_id": 2,
+                            "vote_delegated_to_user_id": None,
+                        },
+                    ]
+                )
+            },
         )
 
     def test_stop_entitled_users_not_present(self) -> None:
@@ -193,20 +197,24 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.start_poll(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("entitled_users_at_stop") == Jsonb(
-            [
-                {
-                    "voted": False,
-                    "present": False,
-                    "user_id": 2,
-                    "vote_delegated_to_user_id": None,
-                },
-            ]
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "entitled_users_at_stop": Jsonb(
+                    [
+                        {
+                            "voted": False,
+                            "present": False,
+                            "user_id": 2,
+                            "vote_delegated_to_user_id": None,
+                        },
+                    ]
+                )
+            },
         )
 
     def test_stop_entitled_users_with_delegations(self) -> None:
-        self.create_meeting()
+        self.create_meeting(meeting_data={"users_enable_vote_delegations": True})
         self.create_motion(1, 1)
         user2 = self.create_user_for_meeting(1)
         user3 = self.create_user_for_meeting(1)
@@ -222,20 +230,24 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.start_poll(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("entitled_users_at_stop") == Jsonb(
-            [
-                {
-                    "voted": False,
-                    "present": False,
-                    "user_id": 2,
-                    "vote_delegated_to_user_id": 3,
-                },
-            ]
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "entitled_users_at_stop": Jsonb(
+                    [
+                        {
+                            "voted": False,
+                            "present": False,
+                            "user_id": 2,
+                            "vote_delegated_to_user_id": 3,
+                        },
+                    ]
+                )
+            },
         )
 
     def test_stop_entitled_users_with_delegations_turned_off(self) -> None:
-        self.create_meeting()
+        self.create_meeting(meeting_data={"users_enable_vote_delegations": False})
         self.create_motion(1, 1)
         user2 = self.create_user_for_meeting(1)
         user3 = self.create_user_for_meeting(1)
@@ -246,22 +258,25 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "poll/1": {**self.poll_data, "content_object_id": "motion/1"},
                 "group/1": {"poll_ids": [1]},
                 "meeting_user/1": {"vote_delegated_to_id": 2},
-                "meeting/1": {"users_enable_vote_delegations": False},
             }
         )
         self.start_poll(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("entitled_users_at_stop") == Jsonb(
-            [
-                {
-                    "voted": False,
-                    "present": False,
-                    "user_id": 2,
-                    "vote_delegated_to_user_id": None,
-                },
-            ]
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "entitled_users_at_stop": Jsonb(
+                    [
+                        {
+                            "voted": False,
+                            "present": False,
+                            "user_id": 2,
+                            "vote_delegated_to_user_id": None,
+                        },
+                    ]
+                )
+            },
         )
 
     def test_stop_published(self) -> None:

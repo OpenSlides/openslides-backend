@@ -618,7 +618,6 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
-        self.create_meeting()
         self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
@@ -833,9 +832,8 @@ class CreatePoll(BasePollTestCase):
 
     def test_create_no_permissions_motion(self) -> None:
         self.create_motion(1, 23)
-        self.set_models({"motion_state/1": {"allow_create_poll": False}})
         self.base_permission_test(
-            {},
+            {"motion_state/1": {"allow_create_poll": False}},
             "poll.create",
             {
                 "title": "test",
@@ -1069,7 +1067,6 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_with_anonymous_in_entitled_group_ids(self) -> None:
-        self.create_meeting()
         self.set_anonymous()
         response = self.request(
             "poll.create",
