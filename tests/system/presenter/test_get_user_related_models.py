@@ -118,12 +118,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
 
     def test_get_user_related_models_meeting(self) -> None:
         self.create_meeting()
-        self.set_user_groups(1, [1])
         self.create_motion(1, 1)
         self.create_assignment(1, 1)
         self.set_models(
             {
                 "meeting_user/1": {"meeting_id": 1, "user_id": 1, "locked_out": True},
+                "group/1": {"meeting_user_ids": [1]},
                 **self.get_models_for_meeting_users({1: 1}),
             }
         )
@@ -155,10 +155,10 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         }
 
     def test_two_meetings(self) -> None:
-        user_id = 2
+        logged_in_user_id = 2
         self.set_models(
             {
-                f"user/{user_id}": {
+                f"user/{logged_in_user_id}": {
                     "username": "executor",
                     "default_password": "DEFAULT_PASSWORD",
                     "password": self.auth.hash("DEFAULT_PASSWORD"),
@@ -167,15 +167,15 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 f"user/{111}": {"username": "untouchable"},
             }
         )
-        self.create_meeting_for_two_users(1, user_id, 111)
-        self.create_meeting_for_two_users(4, user_id, 111)
+        self.create_meeting_for_two_users(1, logged_in_user_id, 111)
+        self.create_meeting_for_two_users(4, logged_in_user_id, 111)
         self.set_models(
             {
                 "user/777": {"username": "additional_admin"},
                 "meeting_user/666": {"meeting_id": 1, "user_id": 777},
             }
         )
-        self.login(user_id)
+        self.login(logged_in_user_id)
         # Admin groups of meeting/1 for requesting user meeting/2 as normal user
         # 111 into both meetings
         # 777 additional admin for meeting/2 doesn't affect outcome

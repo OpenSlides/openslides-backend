@@ -78,10 +78,10 @@ class GetForwardingMeetings(BasePresenter):
                             "id": meeting_id2,
                             "name": meeting2.get("name", ""),
                             "start_time": self._get_formatted_datetime_value(
-                                meeting2, "start_time"
+                                meeting2.get("start_time")
                             ),
                             "end_time": self._get_formatted_datetime_value(
-                                meeting2, "end_time"
+                                meeting2.get("end_time")
                             ),
                         }
                     )
@@ -99,12 +99,9 @@ class GetForwardingMeetings(BasePresenter):
         return result
 
     @staticmethod
-    def _get_formatted_datetime_value(
-        meeting: dict[str, Any], field: str
-    ) -> str | None:
-        raw_value = meeting.get(field)
-        if not raw_value:
+    def _get_formatted_datetime_value(value: Any) -> str | None:
+        if not value:
             return None
-        if isinstance(raw_value, datetime):
-            return raw_value.isoformat()
-        return str(raw_value)
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)

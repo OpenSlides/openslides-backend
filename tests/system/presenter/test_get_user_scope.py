@@ -14,40 +14,37 @@ class TestGetUSerScope(BasePresenterTestCase):
                 "is_archived_in_organization_id": 1,
             },
         )
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "only_oml_level",
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                },
-                "user/3": {"username": "only_cml_level"},
-                "user/4": {"username": "cml_and_meeting"},
-                "user/5": {"username": "no_organization"},
-                "user/6": {
-                    "username": "oml_and_meeting",
-                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                },
-                "user/7": {"username": "meeting_and_archived_meeting"},
-                "user/8": {
-                    "username": "with_home_committee",
-                    "home_committee_id": 60,
-                },
-                "user/9": {
-                    "username": "with_home_committee_and_meeting",
-                    "home_committee_id": 63,
-                },
-                "committee/60": {"manager_ids": [4]},
-                "committee/63": {"manager_ids": [3]},
-                "meeting_user/14": {"meeting_id": 1, "user_id": 4},
-                "meeting_user/16": {"meeting_id": 1, "user_id": 6},
-                "meeting_user/17": {"meeting_id": 1, "user_id": 7},
-                "meeting_user/47": {"meeting_id": 4, "user_id": 7},
-                "meeting_user/19": {"meeting_id": 1, "user_id": 9},
-                "meeting_user/49": {"meeting_id": 4, "user_id": 9},
-                "group/1": {"meeting_user_ids": [14, 16, 17, 19]},
-                "group/4": {"meeting_user_ids": [47, 49]},
-            }
+        self.create_user(
+            "only_oml_level",
+            organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
+        only_cml_level = self.create_user("only_cml_level")
+        self.set_committee_management_level([63], only_cml_level)
+        cml_and_meeting = self.create_user(
+            "cml_and_meeting",
+            group_ids=[1],
+        )
+        self.set_committee_management_level([60], cml_and_meeting)
+        self.create_user("no_organization")
+        self.create_user(
+            "oml_and_meeting",
+            organization_management_level=OrganizationManagementLevel.SUPERADMIN,
+            group_ids=[1],
+        )
+        self.create_user(
+            "meeting_and_archived_meeting",
+            group_ids=[1, 4],
+        )
+        self.create_user(
+            "with_home_committee",
+            home_committee_id=60,
+        )
+        self.create_user(
+            "with_home_committee_and_meetings",
+            group_ids=[1, 4],
+            home_committee_id=63,
+        )
+
         status_code, data = self.request(
             "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7, 8, 9]}
         )

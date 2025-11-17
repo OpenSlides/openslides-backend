@@ -31,6 +31,13 @@ class BasePresenterTestCase(BaseSystemTestCase):
     def create_meeting_for_two_users(
         self, base: int, user1: int, user2: int, meeting_data: PartialModel = {}
     ) -> None:
+        """
+        Creates meeting with the given base id together with the required related models
+        including 3 groups.
+        By setting different base you can create multiple meetings,
+        but be cautious because of group-ids.
+        Uses usernumber to create meeting users with the concatenation of base and usernumber.
+        """
         self.create_meeting(base, meeting_data=meeting_data)
         self.set_models(
             {
@@ -39,11 +46,13 @@ class BasePresenterTestCase(BaseSystemTestCase):
             }
         )
 
-    def move_users_to_groups(self, user_to_groups: dict[int, list[int]]) -> None:
+    def move_users_to_groups(
+        self, user_to_groups: dict[int, list[int]]
+    ) -> dict[int, list[int]]:
         """
-        Sets the users groups, returns the meeting_user_ids
-        Be careful as it does not reset previously set groups if the related meeting
-        users are not in meeting_user_to_groups.
+        Sets the users groups, returns the meeting_user_ids for each given user.
         """
-        for user_id, group_ids in user_to_groups.items():
-            self.set_user_groups(user_id, group_ids)
+        return {
+            user_id: self.set_user_groups(user_id, group_ids)
+            for user_id, group_ids in user_to_groups.items()
+        }

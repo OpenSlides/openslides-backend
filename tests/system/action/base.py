@@ -281,7 +281,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             True,
         )
 
-    # @with_database_context
     def assert_history_information(
         self, fqid: FullQualifiedId, information: list[str] | None
     ) -> None:
@@ -301,7 +300,6 @@ class BaseActionTestCase(BaseSystemTestCase):
         #     assert informations
         #     self.assertEqual(last_information[fqid], information)
 
-    # @with_database_context
     def assert_history_information_contains(
         self, fqid: FullQualifiedId, information: str
     ) -> None:

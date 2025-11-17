@@ -601,7 +601,6 @@ class BaseSystemTestCase(TestCase):
             }
         )
 
-    # @with_database_context
     def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
         """
         Sets the groups in corresponding meeting_users and creates new ones if not existent.

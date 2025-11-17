@@ -182,6 +182,7 @@ class TestExportMeeting(BasePresenterTestCase):
 
         user12 = data["user"]["12"]
         assert user12.get("username") == "exuser12"
+        assert user12.get("meeting_user_ids") == [2]
 
         meeting_user_2 = data["meeting_user"]["2"]
         assert meeting_user_2.get("meeting_id") == 1
