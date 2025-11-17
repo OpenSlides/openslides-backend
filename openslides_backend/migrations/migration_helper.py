@@ -230,10 +230,9 @@ class MigrationHelper:
                 ),
                 (MigrationState.NO_MIGRATION_REQUIRED,),
             ).fetchall()
-        except InvalidSqlStatementName as e:
-            logging.getLogger(__name__).exception(f"args: {e.args}\n {e}")
-        except InvalidPreparedStatementDefinition as e:
-            logging.getLogger(__name__).exception(f"args: {e.args}\n {e}")
+        except Exception as e:
+            logging.getLogger(__name__).info(f"args: {e.args}\n {e}")
+            raise e
         if not states_and_indices:
             return MigrationState.NO_MIGRATION_REQUIRED
         states = {elem.get("migration_state") for elem in states_and_indices}
