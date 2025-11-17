@@ -24,7 +24,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         }
 
     def set_up_poll(self, poll_data: PartialModel = {}) -> None:
-        self.set_models({"poll/111": {**self.poll_base_data, **poll_data}})
+        self.set_models({"poll/111": self.poll_base_data | poll_data})
 
     @patch("openslides_backend.services.vote.adapter.VoteAdapter.clear")
     def test_delete_correct(self, clear: Mock) -> None:
