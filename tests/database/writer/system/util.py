@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from psycopg import Cursor, rows
 
+from openslides_backend.models.models import Meeting
 from openslides_backend.services.database.database_reader import (
     DatabaseReader,
     GetManyRequest,
@@ -136,8 +137,8 @@ def get_group_base_data() -> list[dict[str, Any]]:
                     "fqid": "projector/1",
                     "fields": {
                         "name": "1",
-                        "sequential_number": 1,
                         "meeting_id": 1,
+                        **{field: 1 for field in Meeting.reverse_default_projectors()},
                     },
                 },
                 {
@@ -156,7 +157,6 @@ def get_group_base_data() -> list[dict[str, Any]]:
                     "fields": {
                         "name": "1",
                         "meeting_id": 1,
-                        "sequential_number": 1,
                         "first_state_id": 1,
                     },
                 },

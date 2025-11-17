@@ -144,9 +144,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_duplicate_in_existing_topic(self) -> None:
-        self.set_models(
-            {"topic/10": {"sequential_number": 5, "title": "test", "meeting_id": 22}}
-        )
+        self.create_topic(10, 22)
         response = self.request(
             "topic.json_upload",
             {
@@ -226,16 +224,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
         assert start_time <= worker.get("created", -1) <= end_time
 
     def json_upload_duplicate_in_db(self) -> None:
-        self.set_models(
-            {
-                "topic/3": {
-                    "sequential_number": 2,
-                    "title": "test",
-                    "text": "old one",
-                    "meeting_id": 22,
-                },
-            }
-        )
+        self.create_topic(3, 22, {"text": "old one"})
         response = self.request(
             "topic.json_upload",
             {"meeting_id": 22, "data": [{"title": "test", "text": "new one"}]},

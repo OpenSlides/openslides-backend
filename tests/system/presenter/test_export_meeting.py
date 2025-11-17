@@ -159,7 +159,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
-                    "sequential_number": 1,
                 },
                 "personal_note/34": {
                     "meeting_user_id": 2,

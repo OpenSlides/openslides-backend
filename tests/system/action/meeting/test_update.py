@@ -103,7 +103,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "projector/2": {
                     "name": "Projector 2",
                     "meeting_id": 1,
-                    "sequential_number": 2,
                 }
             }
         )
@@ -201,7 +200,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "name": "Projector 2",
                     "is_internal": True,
                     "meeting_id": 1,
-                    "sequential_number": 2,
                 },
             },
         )

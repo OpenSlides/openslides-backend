@@ -11,7 +11,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion_workflow/43",
-            {"name": "test_Xcdfgee", "first_state_id": 43, "sequential_number": 43},
+            {"name": "test_Xcdfgee", "first_state_id": 43, "sequential_number": 2},
         )
         self.assert_model_exists(
             "motion_state/43", {"workflow_id": 43, "first_state_of_workflow_id": 43}
@@ -43,7 +43,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion_workflow/43", {"name": "test_Xcdfgee", "first_state_id": 43}
+            "motion_workflow/43",
+            {"name": "test_Xcdfgee", "first_state_id": 43, "sequential_number": 2},
         )
         self.assert_model_exists(
             "motion_state/43",

@@ -203,7 +203,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "assignment/140": {
                     "meeting_id": 1,
                     "title": "test_title",
-                    "sequential_number": 140,
                 },
                 "poll/150": {
                     "meeting_id": 1,
@@ -212,7 +211,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "type": "analog",
                     "pollmethod": "YNA",
                     "meeting_id": 1,
-                    "sequential_number": 150,
                 },
                 "option/160": {
                     "meeting_id": 1,
@@ -238,7 +236,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "list_of_speakers/190": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/140",
-                    "sequential_number": 190,
                 },
                 "speaker/210": {
                     "meeting_id": 1,

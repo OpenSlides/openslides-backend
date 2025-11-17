@@ -26,10 +26,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "password": self.auth.hash(DEFAULT_PASSWORD),
             },
             "meeting_user/17": {"meeting_id": 1, "user_id": 7},
-            "topic/1337": {"title": "leet", "sequential_number": 1337, "meeting_id": 1},
+            "topic/1337": {"title": "leet", "meeting_id": 1},
             "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
             "list_of_speakers/23": {
-                "sequential_number": 23,
                 "content_object_id": "topic/1337",
                 "speaker_ids": [],
                 "meeting_id": 1,
@@ -241,12 +240,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "meeting_id": 1,
                 },
@@ -290,12 +287,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/9": {"username": "Wulf-Siegmar"},
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [1],
                     "meeting_id": 7844,
@@ -347,12 +342,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [],
                     "meeting_id": 7844,
@@ -388,12 +381,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [],
                     "meeting_id": 7844,
@@ -436,12 +427,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [1],
                     "meeting_id": 7844,
@@ -516,12 +505,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [1, 2, 3],
                     "meeting_id": 7844,
@@ -554,12 +541,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/7": {"username": "Helgard"},
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 4,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [],
                     "meeting_id": 4,
@@ -835,12 +820,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [1, 2, 3, 4, 5],
                     "meeting_id": 1,
@@ -913,12 +896,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "speaker_ids": [1],
                     "meeting_id": 1,

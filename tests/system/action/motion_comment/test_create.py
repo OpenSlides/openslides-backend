@@ -12,7 +12,6 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                 "motion_comment_section/78": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 78,
                 },
                 "group/3": {"write_comment_section_ids": [78]},
             }

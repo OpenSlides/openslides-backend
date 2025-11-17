@@ -19,7 +19,6 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                 f"motion_category/{base}": {
                     "name": f"category {base}",
                     "meeting_id": meeting_id,
-                    "sequential_number": base,
                     **category_data,
                 }
             }

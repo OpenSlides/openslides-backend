@@ -144,7 +144,7 @@
             "meeting_ids": [
                 1
             ],
-            "organization_id": 1, 
+            "organization_id": 1,
             "committee_ids": [
                 1
             ]
@@ -263,6 +263,8 @@
             "description": "Presentation and assembly system",
             "welcome_title": "Welcome to OpenSlides",
             "welcome_text": "[Space for your welcome text.]",
+            "start_time": 12345670,
+            "end_time": 12345678,
             "conference_open_microphone": false,
             "conference_open_video": false,
             "conference_auto_connect": false,
@@ -965,7 +967,6 @@
     "list_of_speakers": {
         "1": {
             "id": 1,
-            "sequential_number": 1,
             "content_object_id": "motion/1",
             "closed": false,
             "speaker_ids": [
@@ -977,14 +978,12 @@
         },
         "2": {
             "id": 2,
-            "sequential_number": 2,
             "content_object_id": "motion/2",
             "closed": false,
             "meeting_id": 1
         },
         "3": {
             "id": 3,
-            "sequential_number": 3,
             "content_object_id": "topic/1",
             "closed": false,
             "speaker_ids": [
@@ -995,28 +994,24 @@
         },
         "4": {
             "id": 4,
-            "sequential_number": 4,
             "content_object_id": "topic/2",
             "closed": false,
             "meeting_id": 1
         },
         "5": {
             "id": 5,
-            "sequential_number": 5,
             "content_object_id": "topic/3",
             "closed": false,
             "meeting_id": 1
         },
         "6": {
             "id": 6,
-            "sequential_number": 6,
             "content_object_id": "topic/4",
             "closed": false,
             "meeting_id": 1
         },
         "7": {
             "id": 7,
-            "sequential_number": 7,
             "content_object_id": "topic/5",
             "closed": false,
             "speaker_ids": [
@@ -1027,7 +1022,6 @@
         },
         "8": {
             "id": 8,
-            "sequential_number": 8,
             "content_object_id": "topic/6",
             "closed": false,
             "speaker_ids": [
@@ -1037,21 +1031,18 @@
         },
         "9": {
             "id": 9,
-            "sequential_number": 9,
             "content_object_id": "topic/7",
             "closed": false,
             "meeting_id": 1
         },
         "10": {
             "id": 10,
-            "sequential_number": 10,
             "content_object_id": "topic/8",
             "closed": false,
             "meeting_id": 1
         },
         "11": {
             "id": 11,
-            "sequential_number": 11,
             "content_object_id": "assignment/1",
             "closed": false,
             "speaker_ids": [
@@ -1063,21 +1054,18 @@
         },
         "12": {
             "id": 12,
-            "sequential_number": 12,
             "content_object_id": "motion/3",
             "closed": false,
             "meeting_id": 1
         },
         "13": {
             "id": 13,
-            "sequential_number": 13,
             "content_object_id": "motion/4",
             "closed": false,
             "meeting_id": 1
         },
         "14": {
             "id": 14,
-            "sequential_number": 14,
             "content_object_id": "assignment/2",
             "closed": false,
             "speaker_ids": [
@@ -1088,14 +1076,12 @@
         },
         "15": {
             "id": 15,
-            "sequential_number": 15,
             "content_object_id": "motion_block/1",
             "closed": false,
             "meeting_id": 1
         },
         "16": {
             "id": 16,
-            "sequential_number": 16,
             "content_object_id": "meeting_mediafile/1",
             "closed": false,
             "meeting_id": 1
@@ -1104,7 +1090,7 @@
     "speaker": {
         "11": {
             "id": 11,
-            "weight": 11, 
+            "weight": 11,
             "begin_time": 1584512636,
             "end_time": 1584512638,
             "list_of_speakers_id": 1,
@@ -1200,7 +1186,6 @@
         "1": {
             "id": 1,
             "title": "A",
-            "sequential_number": 1,
             "agenda_item_id": 3,
             "list_of_speakers_id": 3,
             "meeting_id": 1
@@ -1208,7 +1193,6 @@
         "2": {
             "id": 2,
             "title": "B",
-            "sequential_number": 2,
             "agenda_item_id": 4,
             "list_of_speakers_id": 4,
             "meeting_id": 1
@@ -1216,7 +1200,6 @@
         "3": {
             "id": 3,
             "title": "C",
-            "sequential_number": 3,
             "agenda_item_id": 5,
             "list_of_speakers_id": 5,
             "meeting_id": 1
@@ -1224,7 +1207,6 @@
         "4": {
             "id": 4,
             "title": "D",
-            "sequential_number": 4,
             "agenda_item_id": 6,
             "list_of_speakers_id": 6,
             "meeting_id": 1
@@ -1232,7 +1214,6 @@
         "5": {
             "id": 5,
             "title": "E",
-            "sequential_number": 5,
             "agenda_item_id": 7,
             "list_of_speakers_id": 7,
             "meeting_id": 1
@@ -1240,7 +1221,6 @@
         "6": {
             "id": 6,
             "title": "F",
-            "sequential_number": 6,
             "agenda_item_id": 8,
             "list_of_speakers_id": 8,
             "meeting_id": 1
@@ -1248,7 +1228,6 @@
         "7": {
             "id": 7,
             "title": "G",
-            "sequential_number": 7,
             "agenda_item_id": 9,
             "list_of_speakers_id": 9,
             "meeting_id": 1
@@ -1256,7 +1235,6 @@
         "8": {
             "id": 8,
             "title": "H",
-            "sequential_number": 8,
             "agenda_item_id": 10,
             "list_of_speakers_id": 10,
             "meeting_id": 1
@@ -1267,7 +1245,6 @@
             "id": 1,
             "number": "A1",
             "number_value": 1,
-            "sequential_number": 1,
             "title": "test",
             "text": "<ul>\n<li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque</li>\n<li>penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat ma</li>\n<li>ssa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, vene<br>\n<br>\nnatis vitae, justo. Null<br>\nam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi.Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibu</li>\n<li>s in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem.Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et arcu. Duis arcu tortor, suscipit eget, imperdiet nec, imperdiet iaculis, ipsum. Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc. Nunc nonummy metus. Vestibulum volutpat pretium libero. Cras id dui. Aenean ut</li>\n</ul>",
             "modified_final_version": "<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi.Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem.Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et arcu. Duis arcu tortor, suscipit eget, imperdiet nec, imperdiet iaculis, ipsum. Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc. Nunc nonummy metus. Vestibulum volutpat pretium libero. Cras id dui. Aenean ut</p>",
@@ -1304,7 +1281,6 @@
             "id": 2,
             "number": "1 - 1",
             "number_value": 1,
-            "sequential_number": 2,
             "title": "\u00c4nderungsantrag zu 1",
             "text": "<p>l&ouml;mk</p>",
             "text_hash": "0339e76557663e3a6f03b9e347409f97",
@@ -1335,7 +1311,6 @@
             "id": 3,
             "number": "2",
             "number_value": 2,
-            "sequential_number": 3,
             "title": "ohne",
             "text": "<p>sf</p>",
             "text_hash": "60d31eb37595dd44584be5ef363283e3",
@@ -1367,7 +1342,6 @@
             "id": 4,
             "number": "3",
             "number_value": 3,
-            "sequential_number": 4,
             "title": "komplex",
             "text": "<p>sdf sdfpdfkw wef</p>\n\n<p>wepkf&nbsp;</p>\n\n<p>we&uuml;pfk&nbsp;</p>\n\n<p>we&uuml;pfdfg</p>",
             "text_hash": "af905e34b34d2b08b60c6af41153f078",
@@ -1436,7 +1410,6 @@
             "id": 1,
             "name": "Neu",
             "weight": 10000,
-            "sequential_number": 1,
             "comment_ids": [
                 1
             ],
@@ -1458,7 +1431,6 @@
             "prefix": "C",
             "weight": 2,
             "level": 0,
-            "sequential_number": 1,
             "child_ids": [
                 2
             ],
@@ -1473,7 +1445,6 @@
             "prefix": "B",
             "weight": 4,
             "level": 1,
-            "sequential_number": 2,
             "parent_id": 1,
             "motion_ids": [
                 1,
@@ -1486,7 +1457,6 @@
         "1": {
             "id": 1,
             "title": "BLOCK A",
-            "sequential_number": 1,
             "motion_ids": [
                 3,
                 4
@@ -1646,7 +1616,7 @@
             "allow_support": false,
             "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
-            "allow_amendment_forwarding": true, 
+            "allow_amendment_forwarding": true,
             "meeting_id": 1
         },
         "6": {
@@ -1900,7 +1870,6 @@
         "1": {
             "id": 1,
             "name": "Simple Workflow",
-            "sequential_number": 1,
             "state_ids": [
                 1,
                 2,
@@ -1915,7 +1884,6 @@
         "2": {
             "id": 2,
             "name": "Complex Workflow",
-            "sequential_number": 2,
             "state_ids": [
                 5,
                 6,
@@ -1948,7 +1916,6 @@
             "votesvalid": "2.000000",
             "votesinvalid": "9.000000",
             "votescast": "2.000000",
-            "sequential_number": 1,
             "content_object_id": "motion/1",
             "option_ids": [
                 1
@@ -1971,7 +1938,6 @@
             "max_votes_amount": 1,
             "max_votes_per_option": 1,
             "onehundred_percent_base": "YNA",
-            "sequential_number": 2,
             "content_object_id": "motion/1",
             "option_ids": [
                 3
@@ -1997,7 +1963,6 @@
             "global_no": true,
             "global_abstain": true,
             "onehundred_percent_base": "YNA",
-            "sequential_number": 3,
             "content_object_id": "assignment/1",
             "option_ids": [
                 5
@@ -2023,7 +1988,6 @@
             "votesvalid": "9.000000",
             "votesinvalid": "2.000000",
             "votescast": "16.000000",
-            "sequential_number": 4,
             "content_object_id": "assignment/1",
             "option_ids": [
                 7,
@@ -2051,7 +2015,6 @@
             "votesvalid": "1.000000",
             "votesinvalid": "0.000000",
             "votescast": "1.000000",
-            "sequential_number": 5,
             "content_object_id": "assignment/2",
             "voted_ids": [
                 1
@@ -2298,7 +2261,6 @@
             "title": "Wahl",
             "open_posts": 1,
             "phase": "voting",
-            "sequential_number": 1,
             "candidate_ids": [
                 1,
                 2,
@@ -2322,7 +2284,6 @@
             "open_posts": 1,
             "phase": "search",
             "number_poll_candidates": true,
-            "sequential_number": 2,
             "candidate_ids": [
                 4,
                 5
@@ -2426,7 +2387,6 @@
             "show_title": true,
             "show_logo": true,
             "show_clock": true,
-            "sequential_number": 1,
             "current_projection_ids": [
                 3,
                 4
@@ -2472,7 +2432,6 @@
             "show_title": true,
             "show_logo": true,
             "show_clock": true,
-            "sequential_number": 2,
             "used_as_default_projector_for_list_of_speakers_in_meeting_id": 1,
             "used_as_default_projector_for_current_los_in_meeting_id": 1,
             "meeting_id": 1

@@ -5,13 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentUpdateActionTest(BaseActionTestCase):
     PERMISSION_TEST_MODELS = {
         "assignment/111": {
-            "sequential_number": 1,
             "title": "title_srtgb123",
             "meeting_id": 1,
         },
         "list_of_speakers/23": {
             "content_object_id": "assignment/111",
-            "sequential_number": 11,
             "meeting_id": 1,
         },
     }
@@ -24,13 +22,11 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -49,13 +45,11 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     "assignment_poll_add_candidates_to_list_of_speakers": True
                 },
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "meeting_mediafile/11": {
@@ -97,12 +91,10 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             {
                 "assignment/111": {
                     "title": "title_srtgb123",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/111",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             },
@@ -127,12 +119,10 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 },
                 "assignment/1": {
                     "title": "assignment_with_candidates",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "phase": phase,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },
