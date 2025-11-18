@@ -1,7 +1,7 @@
 from collections import defaultdict
 from enum import Enum, auto
 from time import time
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core import GetManyRequestPart
@@ -11,8 +11,7 @@ from datastore.writer.core.write_request import (
     RequestUpdateEvent,
 )
 
-from ...shared.filters import And, FilterOperator, Or
-from ...shared.patterns import collection_and_id_from_fqid, fqid_from_collection_and_id
+from ...shared.patterns import collection_and_id_from_fqid
 
 
 class CountdownCommand(Enum):
@@ -169,18 +168,19 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         self.end_time = round(time())
-        filter_ = And(
-            Or(
-                FilterOperator("group_ids", "=", None),
-                FilterOperator("group_ids", "=", []),
-            ),
-            FilterOperator("meta_deleted", "!=", True),
-        )
-        musers_to_delete = self.reader.filter(
+        musers = self.reader.get_all(
             "meeting_user",
-            filter_,
-            list(COLLECTION_TO_MIGRATION_FIELDS["meeting_user"]),
+            list(COLLECTION_TO_MIGRATION_FIELDS["meeting_user"]) + ["group_ids"],
         )
+        musers_to_delete = {
+            id_: {
+                field: val
+                for field, val in model.items()
+                if val and field in list(COLLECTION_TO_MIGRATION_FIELDS["meeting_user"])
+            }
+            for id_, model in musers.items()
+            if not model.get("group_ids")
+        }
         speaker_ids_to_delete, events = self.calculate_speakers_to_delete(
             musers_to_delete
         )
