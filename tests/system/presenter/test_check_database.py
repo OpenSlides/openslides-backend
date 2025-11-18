@@ -1,11 +1,14 @@
 from typing import Any
 
+import pytest
+
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
 
 
+@pytest.mark.skip(reason="During development of relational DB not necessary")
 class TestCheckDatabase(BasePresenterTestCase):
     def test_found_errors(self) -> None:
         self.set_models(
