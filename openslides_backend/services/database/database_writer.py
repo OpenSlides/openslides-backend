@@ -596,9 +596,7 @@ class DatabaseWriter(SqlQueryHelper):
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}"""
             )
-        except ProgrammingError as e:
-            raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
-        except StringDataRightTruncation as e:
+        except (StringDataRightTruncation, ProgrammingError) as e:
             raise InvalidData(
                 f"Invalid data passed in '{error_fqid}':\n\n{statement} \n\n{arguments} \n\n{e.args}"
             )
