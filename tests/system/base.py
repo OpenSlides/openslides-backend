@@ -37,6 +37,7 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
+    fqid_from_collection_and_id,
     id_from_fqid,
     is_reserved_field,
 )
@@ -222,23 +223,13 @@ class BaseSystemTestCase(TestCase):
     def create_model(
         self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
     ) -> None:
-        write_request = self.get_write_request(
-            self.get_create_events(fqid, data, deleted)
-        )
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+        create_events = self.get_create_events(fqid, data, deleted)
+        self.perform_write_request(create_events)
         self.adjust_id_sequences()
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
-        write_request = self.get_write_request(self.get_update_events(fqid, data))
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+        update_events = self.get_update_events(fqid, data)
+        self.perform_write_request(update_events)
 
     def get_create_events(
         self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
@@ -255,8 +246,27 @@ class BaseSystemTestCase(TestCase):
         # self.validate_fields(fqid, data) #TODO reactivate
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
-    def get_write_request(self, events: list[Event]) -> WriteRequest:
-        return WriteRequest(events, user_id=0)
+    def get_update_list_events(
+        self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
+    ) -> list[Event]:
+        # self.validate_fields(fqid, data) #TODO reactivate
+        if not (add or remove):
+            return []
+        return [
+            Event(
+                type=EventType.Update,
+                fqid=fqid,
+                list_fields={"add": add, "remove": remove},
+            )
+        ]
+
+    def perform_write_request(self, events: list[Event]) -> None:
+        write_request = WriteRequest(events, user_id=0)
+        if self.check_auth_mockers_started():
+            for event in write_request.events:
+                self.auth.create_update_user_session(event)  # type: ignore
+        self.datastore.write(write_request)
+        self.connection.commit()
 
     def set_models(self, models: dict[FullQualifiedId, dict[str, Any]]) -> None:
         """
@@ -271,12 +281,7 @@ class BaseSystemTestCase(TestCase):
                 events.extend(self.get_update_events(fqid, model))
             else:
                 events.extend(self.get_create_events(fqid, model))
-        write_request = self.get_write_request(events)
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+        self.perform_write_request(events)
         self.adjust_id_sequences()
 
     def adjust_id_sequences(self) -> None:
@@ -698,12 +703,17 @@ class BaseSystemTestCase(TestCase):
     def add_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        group = self.get_model(f"group/{group_id}")
-        self.set_group_permissions(group_id, group.get("permissions", []) + permissions)
+        events = self.get_update_list_events(
+            fqid_from_collection_and_id("group", group_id),
+            add={"permissions": [str(p) for p in permissions]},
+        )
+        self.perform_write_request(events)
 
     def remove_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        group = self.get_model(f"group/{group_id}")
-        new_perms = [p for p in group.get("permissions", []) if p not in permissions]
-        self.set_group_permissions(group_id, new_perms)
+        events = self.get_update_list_events(
+            fqid_from_collection_and_id("group", group_id),
+            remove={"permissions": [str(p) for p in permissions]},
+        )
+        self.perform_write_request(events)
