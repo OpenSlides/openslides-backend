@@ -19,9 +19,9 @@ from openslides_backend.models.fields import (
     DecimalField,
     Field,
     GenericRelationListField,
+    JSONField,
     OrganizationField,
     RelationListField,
-    TimestampField,
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
