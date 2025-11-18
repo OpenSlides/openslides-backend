@@ -156,6 +156,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
 
     def test_two_meetings(self) -> None:
         logged_in_user_id = 2
+        regular_user_id = 111
+        additional_admin_id = 777
         self.set_models(
             {
                 f"user/{logged_in_user_id}": {
@@ -164,15 +166,15 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "password": self.auth.hash("DEFAULT_PASSWORD"),
                     "is_active": True,
                 },
-                f"user/{111}": {"username": "untouchable"},
+                f"user/{regular_user_id}": {"username": "untouchable"},
             }
         )
-        self.create_meeting_for_two_users(1, logged_in_user_id, 111)
-        self.create_meeting_for_two_users(4, logged_in_user_id, 111)
+        self.create_meeting_for_two_users(1, logged_in_user_id, regular_user_id)
+        self.create_meeting_for_two_users(4, logged_in_user_id, regular_user_id)
         self.set_models(
             {
-                "user/777": {"username": "additional_admin"},
-                "meeting_user/666": {"meeting_id": 1, "user_id": 777},
+                f"user/{additional_admin_id}": {"username": "additional_admin"},
+                "meeting_user/666": {"meeting_id": 1, "user_id": additional_admin_id},
             }
         )
         self.login(logged_in_user_id)
@@ -181,13 +183,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         # 777 additional admin for meeting/2 doesn't affect outcome
         self.move_users_to_groups(
             {
-                2: [2, 4],
-                111: [1, 4],
-                777: [5],
+                logged_in_user_id: [2, 4],
+                regular_user_id: [1, 4],
+                additional_admin_id: [5],
             }
         )
         status_code, data = self.request(
-            "get_user_related_models", {"user_ids": [111, 777]}
+            "get_user_related_models",
+            {"user_ids": [regular_user_id, additional_admin_id]},
         )
         self.assertEqual(status_code, 403)
         self.assertEqual(
@@ -196,8 +199,10 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         # Admin groups of meeting/1 for requesting user
         # 111 into both meetings
-        self.move_users_to_groups({2: [2]})
-        status_code, data = self.request("get_user_related_models", {"user_ids": [111]})
+        self.move_users_to_groups({logged_in_user_id: [2]})
+        status_code, data = self.request(
+            "get_user_related_models", {"user_ids": [regular_user_id]}
+        )
         self.assertEqual(status_code, 403)
         self.assertEqual(
             "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or Permission user.can_update in meeting 4",
@@ -205,9 +210,41 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         # Admin groups of meeting/1 and meeting/4 for requesting user
         # 111 into both meetings
-        self.move_users_to_groups({2: [2, 5]})
-        status_code, data = self.request("get_user_related_models", {"user_ids": [111]})
+        self.move_users_to_groups({logged_in_user_id: [2, 5]})
+        status_code, data = self.request(
+            "get_user_related_models", {"user_ids": [regular_user_id]}
+        )
         self.assertEqual(status_code, 200)
+        assert data == {
+            "111": {
+                "committees": [
+                    {
+                        "cml": "",
+                        "id": 60,
+                        "name": "Committee60",
+                    },
+                    {
+                        "cml": "",
+                        "id": 63,
+                        "name": "Committee63",
+                    },
+                ],
+                "meetings": [
+                    {
+                        "id": 1,
+                        "name": "OpenSlides",
+                        "is_active_in_organization_id": 1,
+                        "is_locked": False,
+                    },
+                    {
+                        "id": 4,
+                        "name": "OpenSlides",
+                        "is_active_in_organization_id": 1,
+                        "is_locked": False,
+                    },
+                ],
+            },
+        }
 
     def test_get_user_related_models_meetings_more_users(self) -> None:
         self.create_meeting()
