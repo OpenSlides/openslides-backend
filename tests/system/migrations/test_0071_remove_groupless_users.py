@@ -68,6 +68,7 @@ def test_migration_simple(write, finalize, assert_model):
         "chat_message/8",
         "structure_level/4",
         "point_of_order_category/3",
+        "speaker/1111",
         *[f"{collection}/4" for collection in MOTION_MEETING_USER_MODELS],
     ]
     collection_to_id_to_data: dict[str, dict[int, dict[str, Any]]] = {
@@ -77,9 +78,10 @@ def test_migration_simple(write, finalize, assert_model):
                 "list_of_speakers_countdown_id": 1,
                 "projector_countdown_ids": [1],
                 "group_ids": [1],
+                "meeting_user_ids": [11, 12, 13, 14, 15, 16],
                 "motion_ids": [11, 12, 13, 15],
                 "list_of_speakers_ids": [11, 21, 31, 51],
-                "personal_note_ids": [1, 2, 3],
+                "personal_note_ids": [3],
                 "chat_message_ids": [1, 2, 3, 4, 5, 6, 7, 9, 10],
                 "structure_level_ids": [1, 2, 3],
                 "point_of_order_category_ids": [1, 2],
@@ -106,14 +108,12 @@ def test_migration_simple(write, finalize, assert_model):
                 "list_of_speakers_countdown_id": 2,
                 "projector_countdown_ids": [2],
                 "group_ids": [2],
+                "meeting_user_ids": [21, 23],
+                "personal_note_ids": [1],
                 "motion_ids": [21, 22],
                 "list_of_speakers_ids": [12, 22],
-                "structure_level_ids": [4, 5, 6],
+                "structure_level_ids": [5, 6],
                 "speaker_ids": [1221, 1223, 2221],
-                **{
-                    f"{collection}_ids": [3]
-                    for collection in MOTION_MEETING_USER_MODELS
-                },
             },
             3: {
                 "name": "National congress",
@@ -121,11 +121,16 @@ def test_migration_simple(write, finalize, assert_model):
                 "list_of_speakers_countdown_id": 3,
                 "projector_countdown_ids": [3],
                 "group_ids": [3],
+                "meeting_user_ids": [31, 32, 33],
                 "motion_ids": [31],
                 "list_of_speakers_ids": [13],
                 "structure_level_ids": [7, 8, 9],
-                "assignment_candidate_ids": [31, 32, 33],
+                "assignment_candidate_ids": [1, 2, 3],
                 "speaker_ids": [1331, 1332, 1333],
+                **{
+                    f"{collection}_ids": [3]
+                    for collection in MOTION_MEETING_USER_MODELS
+                },
             },
             4: {
                 "name": "Deleted congress",
@@ -133,9 +138,9 @@ def test_migration_simple(write, finalize, assert_model):
             },  # delete
         },
         "group": {
-            1: {"name": "Group A", "meeting_user_ids": [13]},
-            2: {"name": "Group B", "meeting_user_ids": []},
-            3: {"name": "Group C", "meeting_user_ids": []},
+            1: {"name": "Group A", "meeting_user_ids": [13], "meeting_id": 1},
+            2: {"name": "Group B", "meeting_user_ids": [], "meeting_id": 2},
+            3: {"name": "Group C", "meeting_user_ids": [], "meeting_id": 3},
         },
         "projector_countdown": {
             1: {
@@ -165,7 +170,7 @@ def test_migration_simple(write, finalize, assert_model):
         },
         "user": {
             1: {"username": "admin", "meeting_user_ids": [11, 21, 31, 41]},
-            2: {"username": "bob", "meeting_user_ids": [12, 22, 32]},
+            2: {"username": "bob", "meeting_user_ids": [12, 32]},
             3: {"username": "charlotte", "meeting_user_ids": [13, 23, 33]},
             4: {"username": "DELETED"},  # delete
             5: {"username": "elizabeth", "meeting_user_ids": [15, 25]},
@@ -177,7 +182,7 @@ def test_migration_simple(write, finalize, assert_model):
                 11,
                 {
                     "speaker_ids": [1111, 2111, 3111, 4111],
-                    "structure_level_ids": [11],
+                    "structure_level_ids": [1],
                     "chat_message_ids": [9],
                 },
             ),
@@ -190,7 +195,7 @@ def test_migration_simple(write, finalize, assert_model):
                 {
                     "speaker_ids": [1113],
                     "structure_level_ids": [1, 2],
-                    "chat_message_ids": [8],
+                    "chat_message_ids": [],
                     "group_ids": [1],
                 },
             ),
@@ -514,39 +519,43 @@ def test_migration_simple(write, finalize, assert_model):
             **get_speaker(
                 1113, {"point_of_order": True, "point_of_order_category_id": 1}
             ),
-            **get_speaker(1114, {}),
+            **get_speaker(1114, {"speech_state": "intervention"}),
             **get_speaker(
                 2111, {"point_of_order": True, "point_of_order_category_id": 2}
             ),
             **get_speaker(2115, {}),
-            **get_speaker(2116, {}),
+            **get_speaker(2116, {"speech_state": "interposed_question"}),
             **get_speaker(
                 3111, {"point_of_order": True, "point_of_order_category_id": 3}
             ),
-            **get_speaker(3116, {}),
+            **get_speaker(3116, {"speech_state": "pro"}),
             **get_speaker(4111),
-            **get_speaker(5115, {}),
+            **get_speaker(5115, {"begin_time": 100, "pause_time": 200}),
             **get_speaker(1221, {}),
             **get_speaker(1223, {}),
             **get_speaker(2221, {}),
-            **get_speaker(1331, {}),
-            **get_speaker(1332, {}),
-            **get_speaker(1333, {}),
+            **get_speaker(1331, {"begin_time": 100, "end_time": 200}),
+            **get_speaker(1332, {"begin_time": 300}),
+            **get_speaker(1333, {"speech_state": "contra"}),
         },
         # TODO: SLLOS
         "structure_level_list_of_speakers": {},
     }
     write(
-        {"type": "create", "fqid": f"{collection}/{id_}", "fields": data}
-        for collection, id_to_data in collection_to_id_to_data.items()
-        for id_, data in id_to_data.items()
+        *[
+            {"type": "create", "fqid": f"{collection}/{id_}", "fields": data}
+            for collection, id_to_data in collection_to_id_to_data.items()
+            for id_, data in id_to_data.items()
+        ]
     )
     write(
-        {
-            "type": "delete",
-            "fqid": fqid,
-        }
-        for fqid in to_delete
+        *[
+            {
+                "type": "delete",
+                "fqid": fqid,
+            }
+            for fqid in to_delete
+        ]
     )
 
     finalize("0071_remove_groupless_users")

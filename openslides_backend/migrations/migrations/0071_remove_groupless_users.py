@@ -12,7 +12,7 @@ from datastore.writer.core.write_request import (
 )
 
 from ...shared.filters import And, FilterOperator, Or
-from ...shared.patterns import fqid_from_collection_and_id
+from ...shared.patterns import collection_and_id_from_fqid, fqid_from_collection_and_id
 
 
 class CountdownCommand(Enum):
@@ -154,6 +154,12 @@ def is_list_field(field: str) -> bool:
     return field.endswith("_ids")
 
 
+# TODO: MEETING PRESENCE
+# should be empty for all deleted musers bc it should've been
+# automatically unset when the groups were removed.
+# Check if it's possible that may not be the case.
+
+
 class Migration(BaseModelMigration):
     """
     This migration removes meeting_users without groups
@@ -205,7 +211,7 @@ class Migration(BaseModelMigration):
                             list(COLLECTION_TO_MIGRATION_FIELDS[delete_collection]),
                         )
                     ]
-                ).get("delete_collection", {})
+                ).get(delete_collection, {})
                 self.migrate_collection(delete_collection, data_to_delete)
         events.extend(
             [
@@ -240,16 +246,45 @@ class Migration(BaseModelMigration):
     def migrate_collection(
         self, collection: str, models_to_delete: dict[int, dict[str, Any]]
     ) -> None:
+        self.load_data(collection, models_to_delete)
         for id_, meeting_user in models_to_delete.items():
             for field, value in meeting_user.items():
-                if field_data := COLLECTION_TO_MIGRATION_FIELDS["collection"].get(
-                    field
-                ):
+                if field_data := COLLECTION_TO_MIGRATION_FIELDS[collection].get(field):
                     if is_list_field(field) and value:
                         for val_id in value:
                             self.handle_id(collection, id_, val_id, field, field_data)
                     elif value:
                         self.handle_id(collection, id_, value, field, field_data)
+
+    def load_data(
+        self, collection: str, models_to_delete: dict[int, dict[str, Any]]
+    ) -> None:
+        fields = COLLECTION_TO_MIGRATION_FIELDS[collection]
+        collection_to_target_model_ids: dict[str, set[int]] = defaultdict(set)
+        for field, field_data in fields.items():
+            collection_to_target_model_ids[field_data["to_collection"]].update(
+                [
+                    id_ if isinstance(id_, int) else id_.split("/")[1]
+                    for mod in models_to_delete.values()
+                    for id_ in (mod.get(field) or [])
+                ]
+                if is_list_field(field)
+                else [
+                    id_ if isinstance(id_, int) else id_.split("/")[1]
+                    for mod in models_to_delete.values()
+                    if (id_ := mod.get(field))
+                ]
+            )
+        self.existing_target_models = self.reader.get_many(
+            [
+                GetManyRequestPart(coll, list(ids), ["id"])
+                for coll, ids in collection_to_target_model_ids.items()
+            ]
+        )
+
+    def exists(self, fqid: str) -> bool:
+        collection, id_ = collection_and_id_from_fqid(fqid)
+        return id_ in self.existing_target_models.get(collection, {})
 
     def handle_id(
         self,
@@ -268,7 +303,9 @@ class Migration(BaseModelMigration):
                     # back relation is always list-field personal_note_ids
                     assert isinstance(value_id, str)
                     target_fqid = value_id
-                    if target_fqid in self.fqids_to_delete:
+                    if target_fqid in self.fqids_to_delete or not self.exists(
+                        target_fqid
+                    ):
                         return
                     self.fqid_to_list_removal[target_fqid]["personal_note_ids"].append(
                         base_id
@@ -278,12 +315,16 @@ class Migration(BaseModelMigration):
                         f"Bad migration: Handling of {base_collection}/{field} not defined."
                     )
             case "cascade":
+                if not self.exists(target_fqid):
+                    return
                 assert isinstance(value_id, int)
                 self.collection_to_model_ids_to_delete[field_data["to_collection"]].add(
                     value_id
                 )
                 self.fqids_to_delete.add(f"{field_data['to_collection']}/{value_id}")
             case _:
+                if not self.exists(target_fqid):
+                    return
                 if is_list_field(field_data["to_field"]):
                     self.fqid_to_list_removal[target_fqid][
                         field_data["to_field"]
@@ -303,7 +344,7 @@ class Migration(BaseModelMigration):
         speaker_ids = [
             speaker_id
             for muser in musers_to_delete.values()
-            for speaker_id in muser.get("speaker_ids", [])
+            for speaker_id in (muser.get("speaker_ids") or [])
         ]
         speakers = self.reader.get_many(
             [
@@ -331,82 +372,82 @@ class Migration(BaseModelMigration):
             if speaker.get("begin_time") is None
         ]
         self.countdown_change_events: list[BaseRequestEvent] = []
-        for speaker_id in delete_speaker_ids:
-            speaker = speakers[speaker_id]
-            if (
-                speaker.get("begin_time")
-                and not speaker.get("end_time")
-                and not speaker.get("pause_time")
-            ):
-                self.decrease_structure_level_countdown(self.end_time, speaker)
-            if speaker.get("begin_time") and not speaker.get("end_time"):
-                self.reset_los_countdown(speaker["meeting_id"])
+        # for speaker_id in delete_speaker_ids:
+        #     speaker = speakers[speaker_id]
+        #     if (
+        #         speaker.get("begin_time")
+        #         and not speaker.get("end_time")
+        #         and not speaker.get("pause_time")
+        #     ):
+        #         self.decrease_structure_level_countdown(self.end_time, speaker)
+        #     if speaker.get("begin_time") and not speaker.get("end_time"):
+        #         self.reset_los_countdown(speaker["meeting_id"])
         return delete_speaker_ids, self.countdown_change_events
 
-    def decrease_structure_level_countdown(
-        self, now: int, speaker: dict[str, Any]
-    ) -> None:
-        if (
-            (level_id := speaker.get("structure_level_list_of_speakers_id"))
-            and (
-                speaker.get("speech_state")
-                not in (
-                    "interposed_question",
-                    "intervention",
-                )
-            )
-            and not speaker.get("point_of_order")
-        ):
-            # only update the level if the speaker was not paused and the speech state demands it
-            start_time = cast(int, speaker.get("unpause_time", speaker["begin_time"]))
-            fqid = fqid_from_collection_and_id(
-                "structure_level_list_of_speakers", level_id
-            )
-            db_instance = self.reader.get(
-                fqid,
-                ["remaining_time"],
-            )
-            self.countdown_change_events.append(
-                RequestUpdateEvent(
-                    fqid,
-                    fields={
-                        "current_start_time": None,
-                        "remaining_time": db_instance["remaining_time"]
-                        - (now - start_time),
-                    },
-                )
-            )
+    # def decrease_structure_level_countdown(
+    #     self, now: int, speaker: dict[str, Any]
+    # ) -> None:
+    #     if (
+    #         (level_id := speaker.get("structure_level_list_of_speakers_id"))
+    #         and (
+    #             speaker.get("speech_state")
+    #             not in (
+    #                 "interposed_question",
+    #                 "intervention",
+    #             )
+    #         )
+    #         and not speaker.get("point_of_order")
+    #     ):
+    #         # only update the level if the speaker was not paused and the speech state demands it
+    #         start_time = cast(int, speaker.get("unpause_time", speaker["begin_time"]))
+    #         fqid = fqid_from_collection_and_id(
+    #             "structure_level_list_of_speakers", level_id
+    #         )
+    #         db_instance = self.reader.get(
+    #             fqid,
+    #             ["remaining_time"],
+    #         )
+    #         self.countdown_change_events.append(
+    #             RequestUpdateEvent(
+    #                 fqid,
+    #                 fields={
+    #                     "current_start_time": None,
+    #                     "remaining_time": db_instance["remaining_time"]
+    #                     - (now - start_time),
+    #                 },
+    #             )
+    #         )
 
-    def reset_los_countdown(
-        self,
-        meeting_id: int,
-    ) -> None:
-        meeting = self.reader.get(
-            fqid_from_collection_and_id("meeting", meeting_id),
-            ["list_of_speakers_couple_countdown", "list_of_speakers_countdown_id"],
-        )
-        if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
-            "list_of_speakers_countdown_id"
-        ):
-            self.reset_countdown(meeting["list_of_speakers_countdown_id"])
+    # def reset_los_countdown(
+    #     self,
+    #     meeting_id: int,
+    # ) -> None:
+    #     meeting = self.reader.get(
+    #         fqid_from_collection_and_id("meeting", meeting_id),
+    #         ["list_of_speakers_couple_countdown", "list_of_speakers_countdown_id"],
+    #     )
+    #     if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
+    #         "list_of_speakers_countdown_id"
+    #     ):
+    #         self.reset_countdown(meeting["list_of_speakers_countdown_id"])
 
-    def reset_countdown(
-        self,
-        countdown_id: int,
-    ) -> None:
-        countdown = self.reader.get(
-            fqid_from_collection_and_id("projector_countdown", countdown_id),
-            ["countdown_time", "default_time"],
-        )
-        running = False
-        countdown_time = countdown["default_time"]
+    # def reset_countdown(
+    #     self,
+    #     countdown_id: int,
+    # ) -> None:
+    #     countdown = self.reader.get(
+    #         fqid_from_collection_and_id("projector_countdown", countdown_id),
+    #         ["countdown_time", "default_time"],
+    #     )
+    #     running = False
+    #     countdown_time = countdown["default_time"]
 
-        self.countdown_change_events.append(
-            RequestUpdateEvent(
-                fqid_from_collection_and_id("projector_countdown", countdown_id),
-                fields={
-                    "running": running,
-                    "countdown_time": countdown_time,
-                },
-            )
-        )
+    #     self.countdown_change_events.append(
+    #         RequestUpdateEvent(
+    #             fqid_from_collection_and_id("projector_countdown", countdown_id),
+    #             fields={
+    #                 "running": running,
+    #                 "countdown_time": countdown_time,
+    #             },
+    #         )
+    #     )
