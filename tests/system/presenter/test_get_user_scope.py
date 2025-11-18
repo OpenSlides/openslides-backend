@@ -18,13 +18,15 @@ class TestGetUSerScope(BasePresenterTestCase):
             "only_oml_level",
             organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
-        only_cml_level = self.create_user("only_cml_level")
-        self.set_committee_management_level([63], only_cml_level)
-        cml_and_meeting = self.create_user(
+        self.create_user(
+            "only_cml_level",
+            committee_management_ids=[63],
+        )
+        self.create_user(
             "cml_and_meeting",
             group_ids=[1],
+            committee_management_ids=[60],
         )
-        self.set_committee_management_level([60], cml_and_meeting)
         self.create_user("no_organization")
         self.create_user(
             "oml_and_meeting",

@@ -527,6 +527,7 @@ class BaseSystemTestCase(TestCase):
         group_ids: list[int] = [],
         organization_management_level: OrganizationManagementLevel | None = None,
         home_committee_id: int | None = None,
+        committee_management_ids: list[int] = [],
         meeting_user_ids: list[int] = [],
     ) -> int:
         """
@@ -544,6 +545,8 @@ class BaseSystemTestCase(TestCase):
                 | {"home_committee_id": home_committee_id},
             }
         )
+        if committee_management_ids:
+            self.set_committee_management_level(committee_management_ids, id)
         meeting_user_ids.extend(self.set_user_groups(id, group_ids))
         return id
 
