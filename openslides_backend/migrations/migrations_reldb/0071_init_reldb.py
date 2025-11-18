@@ -22,6 +22,7 @@ from openslides_backend.models.fields import (
     OrganizationField,
     RelationListField,
     TimestampField,
+    TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.services.database.extended_database import ExtendedDatabase
@@ -128,7 +129,7 @@ class Sql_helper:
             data = Decimal(data)
         elif isinstance(field, TimestampField):
             data = datetime.fromtimestamp(data)
-        elif isinstance(data, dict):
+        elif isinstance(field, JSONField):
             data = json_dumps(data)
 
         return data
