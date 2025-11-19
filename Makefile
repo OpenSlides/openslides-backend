@@ -52,12 +52,22 @@ test-unit-integration:
 	pytest tests/unit tests/integration
 
 test-file:
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
+# f= to pass the filename
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+# cov=1 to run coverage report
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
 
 check-all: validate-models-yml check-models check-permissions
 
 validate-models-yml:
 	make -C meta/dev validate-models
+
+generate-schema:
+	make -C meta/dev generate-relational-schema
+
+generate-db: | generate-schema create-database-with-schema
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
