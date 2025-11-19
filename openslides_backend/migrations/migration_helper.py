@@ -223,17 +223,12 @@ class MigrationHelper:
         Returns the highest MigrationState among all migrations in the ascending order of
         NO_MIGRATION_REQUIRED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING
         """
-        try:
-            states_and_indices = curs.execute(
-                sql.SQL(
-                    "SELECT migration_index, migration_state FROM version WHERE migration_state != %s"
-                ),
-                (MigrationState.NO_MIGRATION_REQUIRED,),
-            ).fetchall()
-        except InvalidSqlStatementName as e:
-            logging.getLogger(__name__).exception(f"args: {e.args}\n {e}")
-        except InvalidPreparedStatementDefinition as e:
-            logging.getLogger(__name__).exception(f"args: {e.args}\n {e}")
+        states_and_indices = curs.execute(
+            sql.SQL(
+                "SELECT migration_index, migration_state FROM version WHERE migration_state != %s"
+            ),
+            (MigrationState.NO_MIGRATION_REQUIRED,),
+        ).fetchall()
         if not states_and_indices:
             return MigrationState.NO_MIGRATION_REQUIRED
         states = {elem.get("migration_state") for elem in states_and_indices}
