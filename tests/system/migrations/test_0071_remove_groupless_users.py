@@ -72,8 +72,7 @@ MOTION_MEETING_USER_MODELS = [
 # TODO: Write test with no intact target models found.
 
 
-def test_migration_simple(write, finalize, assert_model):
-    # TODO: Add supporter connections
+def test_migration_complex(write, finalize, assert_model):
     to_delete = [
         "user/4",
         "meeting/4",
@@ -198,13 +197,13 @@ def test_migration_simple(write, finalize, assert_model):
             6: {"username": "george", "meeting_user_ids": [16]},
         },
         "meeting_user": {
-            # TODO: Add delegations
             **get_muser(
                 11,
                 {
                     "speaker_ids": [1111, 2111, 3111, 4111],
                     "structure_level_ids": [1],
                     "chat_message_ids": [9],
+                    "supported_motion_ids": [11, 12, 13],
                 },
             ),
             **get_muser(
@@ -214,6 +213,7 @@ def test_migration_simple(write, finalize, assert_model):
                     "speaker_ids": [1112],
                     "structure_level_ids": [1, 2],
                     "group_ids": [],
+                    "supported_motion_ids": [11],
                 },
             ),
             **get_muser(
@@ -225,6 +225,7 @@ def test_migration_simple(write, finalize, assert_model):
                     "group_ids": [1],
                     "vote_delegated_to_id": 12,
                     "vote_delegations_from_ids": [14, 15, 16],
+                    "supported_motion_ids": [11],
                 },
             ),
             **get_muser(
@@ -368,15 +369,14 @@ def test_migration_simple(write, finalize, assert_model):
                     **{
                         f"{collection[7:]}_ids": [1, 2]
                         for collection in MOTION_MEETING_USER_MODELS
-                    }
+                    },
+                    "supporter_meeting_user_ids": [11, 12, 13],
                 },
             ),
-            **get_motion(12),
+            **get_motion(12, {"supporter_meeting_user_ids": [11]}),
             **get_motion(
                 13,
-                {
-                    "personal_note_ids": [3],
-                },
+                {"personal_note_ids": [3], "supporter_meeting_user_ids": [11]},
             ),
             **get_motion(14),  # delete
             **get_motion(15),
@@ -660,7 +660,6 @@ def test_migration_simple(write, finalize, assert_model):
                 {"structure_level_list_of_speakers_id": 139, "speech_state": "contra"},
             ),
         },
-        # TODO: SLLOS
         "structure_level_list_of_speakers": {
             # id_ = los_id * 10 + sl_id
             **get_sllos(111, {}),
@@ -774,6 +773,7 @@ def test_migration_simple(write, finalize, assert_model):
             "chat_message_ids": [],
             "structure_level_ids": [1, 2],
             "vote_delegations_from_ids": [],
+            "supported_motion_ids": [11],
         },
     )
     assert_model(
@@ -910,21 +910,18 @@ def test_migration_simple(write, finalize, assert_model):
 
     assert_model(
         "motion/11",
-        {
-            **collection_to_id_to_data["motion"][11],
-        },
+        {**collection_to_id_to_data["motion"][11], "supporter_meeting_user_ids": [13]},
     )
     assert_model(
         "motion/12",
-        {
-            **collection_to_id_to_data["motion"][12],
-        },
+        {**collection_to_id_to_data["motion"][12], "supporter_meeting_user_ids": []},
     )
     assert_model(
         "motion/13",
         {
             **collection_to_id_to_data["motion"][13],
             "personal_note_ids": [],
+            "supporter_meeting_user_ids": [],
         },
     )
     assert_model(
