@@ -53,6 +53,11 @@ class MigrationHelper:
     migrate_thread_exception: Exception | None = None
 
     @staticmethod
+    def write_line(message: str) -> None:
+        assert MigrationHelper.migrate_thread_stream
+        MigrationHelper.migrate_thread_stream.write(message + "\n")
+
+    @staticmethod
     def load_migrations() -> None:
         """
         Checks wether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and

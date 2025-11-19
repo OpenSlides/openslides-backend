@@ -4,6 +4,7 @@ import os
 from copy import deepcopy
 from datetime import datetime, timedelta
 from importlib import import_module
+from io import StringIO
 from time import sleep
 from typing import cast
 from unittest import TestCase
@@ -15,7 +16,6 @@ from psycopg.errors import UndefinedTable
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
-# OPENSLIDES IMPORTS
 from openslides_backend.migrations.migration_helper import (
     LAST_NON_REL_MIGRATION,
     MigrationHelper,
@@ -43,10 +43,9 @@ from tests.util import AuthData, Client, Response
 migration_module = import_module(
     "openslides_backend.migrations.migrations_reldb.0071_init_reldb"
 )
-# ENV Variables
-EXAMPLE_DATA_PATH = "data/example-data.json"
 
 # VARIABLE DECLARATION
+EXAMPLE_DATA_PATH = "data/example-data.json"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
@@ -79,6 +78,7 @@ class BaseMigrationTestCase(TestCase):
     def tearDown(self) -> None:
         migration_module.Sql_helper.offset = 0
         MigrationHelper.table_translations = dict()
+        MigrationHelper.migrate_thread_stream = None
 
     def setUp(self):
         # 1) Create old idempotent key-value-store schema and relational schema on top
@@ -272,9 +272,10 @@ class BaseMigrationTestCase(TestCase):
         # 5) Call data_manipulation of module
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                # Prepare what manager does.
+                # Prepare what manager would.
                 MigrationHelper.load_migrations()
                 MigrationHelper.add_new_migrations_to_version()
+                MigrationHelper.migrate_thread_stream = StringIO()
                 handler = MigrationHandler(
                     curs, self.env, self.services, self.app.logging
                 )
@@ -417,7 +418,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "",
+            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
         }
 
         response = self.request("stats")
@@ -437,7 +438,7 @@ class BaseMigrationTestCase(TestCase):
         while (response := self.request("progress").json) != {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "",
+            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
         }:
             sleep(1)
             print(response)
@@ -510,7 +511,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "",
+            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
         }
 
         # Wait for migrate with a sec delay per iteration.

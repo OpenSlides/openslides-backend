@@ -27,13 +27,9 @@ from openslides_backend.models.fields import (
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
-    Id,
-    collection_and_id_from_fqid,
-    collection_from_fqid,
     fqid_from_collection_and_id,
-    id_from_fqid,
 )
-from openslides_backend.shared.typing import Collection, PartialModel
+from openslides_backend.shared.typing import Collection
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 READ_MODELS = ["models"]
@@ -73,13 +69,13 @@ class Sql_helper:
     def raise_offset() -> None:
         """
         Purpose:
-            Raises Sql_helper.offset by 100
+            Raises Sql_helper.offset by LIMIT
         Input:
             n/a
         Returns:
             n/a
         """
-        Sql_helper.offset += 100
+        Sql_helper.offset += Sql_helper.LIMIT
 
     # END OF FUNCTION
 
@@ -156,10 +152,6 @@ class Sql_helper:
 
         # 1.2) ViewFields are solely for the DB table view
         elif field_class.is_view_field:
-            return True
-
-        # 1.3) Ids are generated as well
-        elif field == "id":
             return True
 
         return False
@@ -276,6 +268,7 @@ class Sql_helper:
 
 # END OF FUNCTION
 
+
 def data_manipulation(curs: Cursor[DictRow]) -> None:
     """
     Purpose:
@@ -304,7 +297,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     insert_intermediate_t_commands = []
 
     # 1) Chunkwise loop trough all data_rows for the models table
-    for i in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
+    for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
         data_chunk = Sql_helper.get_next_data_row_chunk()
 
         for data_row in data_chunk:
@@ -366,7 +359,9 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                 sql_values,
             )
         # END LOOP data_rows
+        MigrationHelper.write_line(f"{Sql_helper.offset} models written to tables.")
     # END LOOP data chunks
+    MigrationHelper.write_line("finished")
 
     # 4) INSERT intermediate tables
     for command, values in insert_intermediate_t_commands:

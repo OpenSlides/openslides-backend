@@ -92,11 +92,6 @@ class MigrationHandler(BaseHandler):
         else:
             raise InvalidMigrationCommand(command)
 
-    def write_line(self, message: str) -> None:
-        # TODO evalute the use of the thread stream
-        assert (stream := MigrationHelper.migrate_thread_stream)
-        stream.write(message + "\n")
-
     # TODO affected tables to read only plus this information to version table -> needs to store collections and trigger names in migration manager
     # CREATE OR REPLACE FUNCTION prevent_writes() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'Table % is currently read-only', TG_TABLE_NAME; END; $$ LANGUAGE plpgsql;
     # CREATE TRIGGER block_writes BEFORE INSERT OR UPDATE OR DELETE ON your_schema.your_table FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();

@@ -2,7 +2,7 @@ from collections.abc import Callable
 from threading import Lock
 from time import sleep
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations import (
@@ -30,10 +30,9 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     route: RouteFunction = ActionView.migrations_route
 
     def setUp(self) -> None:
-        # TODO probably needs delitions
-        MigrationHelper.migrate_thread_exception = None
         if MigrationHelper.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
+        MigrationHelper.migrate_thread_exception = None
         super().setUp()
 
     def wait_for_migration_thread(self) -> None:
@@ -53,13 +52,13 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
 
 
 class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
-    def test_stats(self) -> None:
+    def test_stats_0(self) -> None:
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "current_migration_index": 70,
-            "target_migration_index": 70,
+            "current_migration_index": 71,
+            "target_migration_index": 71,
             "migratable_models": {},
         }
 
@@ -104,12 +103,12 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         """
 
         def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
-            MigrationHandler.write_line(MagicMock(), "start")
+            MigrationHelper.write_line("start")
             indicator_lock.release()
             wait_lock.acquire()
             if error:
                 raise MigrationException("test")
-            MigrationHandler.write_line(MagicMock(), "finish")
+            MigrationHelper.write_line("finish")
 
         return _wait_for_lock
 
@@ -158,8 +157,8 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_RUNNING,
-            "current_migration_index": 69,
-            "target_migration_index": 70,
+            "current_migration_index": 70,
+            "target_migration_index": 71,
             "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
         }
 
@@ -175,8 +174,8 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "current_migration_index": 70,
-            "target_migration_index": 70,
+            "current_migration_index": 71,
+            "target_migration_index": 71,
             "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
         }
 
@@ -186,8 +185,8 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "current_migration_index": 70,
-            "target_migration_index": 70,
+            "current_migration_index": 71,
+            "target_migration_index": 71,
             "migratable_models": {"poll": {"count": 0}, "user": {"count": 1}},
         }
 
