@@ -68,7 +68,8 @@ class MigrationManager:
                     "status": MigrationState.MIGRATION_RUNNING,
                     "output": MigrationHelper.migrate_thread_stream.getvalue().split(
                         "\n"
-                    )[-1:],
+                    )[-2],
+                    # The last will always be an empty string.
                 }
             else:
                 raise RuntimeError("Invalid migration state")
