@@ -27,7 +27,7 @@ class PollCandidateListCreate(CreateAction):
 
     model = PollCandidateList()
     schema = DefaultSchema(PollCandidateList()).get_create_schema(
-        required_properties=["meeting_id"],
+        required_properties=["option_id", "meeting_id"],
         additional_required_fields={
             "entries": {"type": "array", "items": entry_schema, "minItems": 1}
         },

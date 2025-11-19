@@ -27,10 +27,30 @@ class PollUpdateAction(
     Action to update a poll.
     """
 
+    internal_fields = [
+        "entitled_users_at_stop",
+    ]
+
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema(
         optional_properties=[
-            "method",
+            "pollmethod",
+            "min_votes_amount",
+            "max_votes_amount",
+            "max_votes_per_option",
+            "global_yes",
+            "global_no",
+            "global_abstain",
+            "entitled_group_ids",
+            "title",
+            "description",
+            "onehundred_percent_base",
+            "votesvalid",
+            "votesinvalid",
+            "votescast",
+            "backend",
+            "live_voting_enabled",
+            *internal_fields,
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},

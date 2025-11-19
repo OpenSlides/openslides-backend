@@ -394,6 +394,7 @@ class BaseMigrationTestCase(TestCase):
                     "motion_state": {"count": 15},
                     "motion_submitter": {"count": 4},
                     "motion_workflow": {"count": 2},
+                    "option": {"count": 13},
                     "organization": {"count": 1},
                     "organization_tag": {"count": 1},
                     "personal_note": {"count": 1},
