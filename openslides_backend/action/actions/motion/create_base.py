@@ -50,15 +50,10 @@ class MotionCreateBase(
             )
 
     def create_submitters(self, instance: dict[str, Any]) -> None:
-        submitter_ids = instance.pop("submitter_ids", [])
-        if not submitter_ids and not instance.get("additional_submitter"):
-            submitter_ids = [self.user_id]
+        submitter_ids = instance.pop("submitter_meeting_user_ids", [])
         self.apply_instance(instance)
         weight = 1
-        for user_id in submitter_ids:
-            meeting_user_id = self.create_or_get_meeting_user(
-                instance["meeting_id"], user_id
-            )
+        for meeting_user_id in submitter_ids:
             data = {
                 "motion_id": instance["id"],
                 "meeting_user_id": meeting_user_id,

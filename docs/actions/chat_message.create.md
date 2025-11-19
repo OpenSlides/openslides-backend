@@ -15,3 +15,4 @@ Creates a new `chat_message` for the `chat_group` given by the key `chat_group_i
 ## Permission
 
 Every user, who is in one of the write groups of a chat group, or has the permission `chat.can_manage` can create a `chat_message`.
+User also needs to be part of the meeting.

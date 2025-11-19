@@ -4,7 +4,7 @@ from typing import Any
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
@@ -28,9 +28,13 @@ class ChatMessageCreate(MeetingUserHelperMixin, CreateActionWithInferredMeeting)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        instance["meeting_user_id"] = self.create_or_get_meeting_user(
-            instance["meeting_id"], self.user_id
-        )
+        instance["meeting_user_id"] = (
+            self.get_meeting_user(instance["meeting_id"], self.user_id, ["id"]) or {}
+        ).get("id")
+        if not instance.get("meeting_user_id"):
+            raise ActionException(
+                "Cannot create chat message: You are not a participant of the meeting."
+            )
         instance["created"] = round(time())
         return instance
 
