@@ -1,4 +1,3 @@
-import logging
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
@@ -48,7 +47,6 @@ class MigrationHelper:
     Helper class containing static methods for handling the migrations. Reads and executes them.
     """
 
-    logger = logging.getLogger(__name__)
     migrations: dict = {}
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_can_be_closed = False

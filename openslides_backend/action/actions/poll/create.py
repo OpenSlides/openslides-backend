@@ -44,7 +44,7 @@ class PollCreateAction(
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_create_schema(
-        required_properties=["title", "pollmethod", "meeting_id"],
+        required_properties=["title", "method", "meeting_id"],
         additional_required_fields={
             "options": {
                 "items": options_schema,

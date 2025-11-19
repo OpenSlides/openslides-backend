@@ -23,7 +23,6 @@ from openslides_backend.migrations.migration_helper import (
 )
 from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.create_schema import (
     create_db,
     create_schema,
@@ -277,11 +276,7 @@ class BaseMigrationTestCase(TestCase):
                 MigrationHelper.load_migrations()
                 MigrationHelper.add_new_migrations_to_version()
                 handler = MigrationHandler(
-                    curs,
-                    ExtendedDatabase(conn, self.app.logging, self.env),
-                    self.env,
-                    self.services,
-                    self.app.logging,
+                    curs, self.env, self.services, self.app.logging
                 )
                 handler.execute_command("migrate")
 
@@ -399,7 +394,6 @@ class BaseMigrationTestCase(TestCase):
                     "motion_state": {"count": 15},
                     "motion_submitter": {"count": 4},
                     "motion_workflow": {"count": 2},
-                    "option": {"count": 13},
                     "organization": {"count": 1},
                     "organization_tag": {"count": 1},
                     "personal_note": {"count": 1},
