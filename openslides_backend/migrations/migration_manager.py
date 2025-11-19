@@ -131,6 +131,11 @@ class MigrationManager:
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             "migratable_models": stats,
+            **(
+                {"exception": MigrationHelper.migrate_thread_exception}
+                if MigrationHelper.migrate_thread_exception
+                else {}
+            ),
         }
 
     def print_stats(self) -> None:  # pragma: no cover
