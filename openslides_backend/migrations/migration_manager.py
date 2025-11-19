@@ -66,7 +66,9 @@ class MigrationManager:
                 # Migration still running
                 return {
                     "status": MigrationState.MIGRATION_RUNNING,
-                    "output": MigrationHelper.migrate_thread_stream.getvalue().split("\n")[-1:],
+                    "output": MigrationHelper.migrate_thread_stream.getvalue().split(
+                        "\n"
+                    )[-1:],
                 }
             else:
                 raise RuntimeError("Invalid migration state")
@@ -123,6 +125,7 @@ class MigrationManager:
 
         state = MigrationHelper.get_migration_state(self.cursor)
 
+        # TODO enhance migratable models with numbers
         return {
             "status": state,
             "current_migration_index": current_migration_index,

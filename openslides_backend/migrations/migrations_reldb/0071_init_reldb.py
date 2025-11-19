@@ -296,6 +296,9 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
 
     insert_intermediate_t_commands = []
 
+    result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
+    assert result
+    models_count = result["count"]
     # 1) Chunkwise loop trough all data_rows for the models table
     for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
         data_chunk = Sql_helper.get_next_data_row_chunk()
@@ -359,7 +362,9 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                 sql_values,
             )
         # END LOOP data_rows
-        MigrationHelper.write_line(f"{Sql_helper.offset} models written to tables.")
+        MigrationHelper.write_line(
+            f"{min(Sql_helper.offset, models_count)} of {models_count} models written to tables."
+        )
     # END LOOP data chunks
     MigrationHelper.write_line("finished")
 

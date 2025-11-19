@@ -418,7 +418,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
+            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
         }
 
         response = self.request("stats")
@@ -438,7 +438,7 @@ class BaseMigrationTestCase(TestCase):
         while (response := self.request("progress").json) != {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
+            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
         }:
             sleep(1)
             print(response)
@@ -511,7 +511,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 models written to tables.\n200 models written to tables.\nfinished\n",
+            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
         }
 
         # Wait for migrate with a sec delay per iteration.
