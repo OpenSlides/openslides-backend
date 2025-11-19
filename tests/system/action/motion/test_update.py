@@ -244,7 +244,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "recommendation_extension": "ext [motion/112] [motion/113]",
                     "category_id": 4,
                     "block_id": 51,
-                    "supporter_meeting_user_ids": [],
                     "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_mediafile_ids": [],
@@ -257,7 +256,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("recommendation_extension") == "ext [motion/112] [motion/113]"
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
-        assert model.get("supporter_meeting_user_ids") == []
         assert model.get("additional_submitter") == "additional"
         assert model.get("tag_ids") == []
         assert model.get("attachment_meeting_mediafile_ids") == []
@@ -268,7 +266,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "motion/111",
             [
-                "Supporters changed",
                 "Workflow_timestamp set to {}",
                 "9876543210",
                 "Category set to {}",
@@ -436,7 +433,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "recommendation_extension": "ext_sldennt [motion/112]",
                 "category_id": 4,
                 "block_id": 51,
-                "supporter_meeting_user_ids": [],
                 "tag_ids": [],
                 "attachment_mediafile_ids": [],
             },
@@ -556,23 +552,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
-        )
-
-    def test_set_supporter_other_meeting(self) -> None:
-        self.create_meeting(2)
-        self.permission_test_models["meeting_user/1"]["meeting_id"] = 2
-        self.set_models(self.permission_test_models)
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "supporter_meeting_user_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The following models do not belong to meeting 1: ['meeting_user/1']",
-            response.json["message"],
         )
 
     def test_update_identical_motions(self) -> None:
@@ -748,7 +727,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
-                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
