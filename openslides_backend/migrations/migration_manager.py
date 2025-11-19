@@ -66,7 +66,7 @@ class MigrationManager:
                 # Migration still running
                 return {
                     "status": MigrationState.MIGRATION_RUNNING,
-                    "output": MigrationHelper.migrate_thread_stream.getvalue(),
+                    "output": MigrationHelper.migrate_thread_stream.getvalue().split("\n")[-1:],
                 }
             else:
                 raise RuntimeError("Invalid migration state")
