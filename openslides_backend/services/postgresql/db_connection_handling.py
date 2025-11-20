@@ -52,7 +52,11 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.Dic
         # provides type hinting
         connection_class=Connection[rows.DictRow],  # type:ignore
         # works at runtime
-        kwargs={"autocommit": True, "row_factory": rows.dict_row},
+        kwargs={
+            "autocommit": True,
+            "row_factory": rows.dict_row,
+            "prepare_threshold": None,
+        },
         min_size=int(env.DB_POOL_MIN_SIZE),
         max_size=int(env.DB_POOL_MAX_SIZE),
         open=open,
