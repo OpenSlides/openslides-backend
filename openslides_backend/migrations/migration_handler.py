@@ -37,10 +37,11 @@ class MigrationHandler(BaseHandler):
         module_name: str
 
         for index, migration in MigrationHelper.migrations.items():
-            module_name = migration[:-3]  # remove .py of filename
+            module_name = migration
             migration_module = import_module(f"{MODULE_PATH}{module_name}")
             print("Executing migration: " + module_name)
             if getattr(migration_module, "IN_MEMORY", False):
+                # TODO In-Memory migration
                 migration_module.in_memory_method()
             else:
                 MigrationHelper.set_database_migration_info(
@@ -52,29 +53,26 @@ class MigrationHandler(BaseHandler):
                     migration_module.data_definition(self.cursor)
                 if callable(getattr(migration_module, "data_manipulation", None)):
                     migration_module.data_manipulation(self.cursor)
-                if callable(getattr(migration_module, "cleanup", None)):
-                    migration_module.cleanup(self.cursor)
 
                 MigrationHelper.set_database_migration_info(
                     self.cursor, index, MigrationState.FINALIZATION_REQUIRED
                 )
-            # TODO In-Memory migration
 
     def migrate(self) -> None:
         self.logger.info("Running migrations.")
-        # if self.run_checks():
-        #     return
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.MIGRATION_REQUIRED:
                 self.execute_migrations()
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
+                MigrationHelper.write_line("finished")
             case MigrationState.FINALIZATION_REQUIRED:
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.NO_MIGRATION_REQUIRED:
                 self.logger.info("No migration needed.")
+            case MigrationState.MIGRATION_RUNNING:
+                self.logger.info("There is already a migration running.")
             case _:
-                # TODO wo wird das running und wo darf es?
                 raise MigrationException(
                     f"{state} not allowed when executing migrate command."
                 )
@@ -113,7 +111,10 @@ class MigrationHandler(BaseHandler):
         return output
 
     def finalize(self) -> None:
-        """sets the migration index correctly and copies tables into place"""
+        """
+        Executes the cleanup method and copies tables into place.
+        Also sets the migration index correctly.
+        """
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.NO_MIGRATION_REQUIRED:
@@ -128,6 +129,12 @@ class MigrationHandler(BaseHandler):
                 raise MigrationException(
                     "Finalization not possible if it's not required."
                 )
+
+        for index, migration in MigrationHelper.migrations.items():
+            module_name = migration
+            migration_module = import_module(f"{MODULE_PATH}{module_name}")
+            if callable(getattr(migration_module, "cleanup", None)):
+                migration_module.cleanup(self.cursor)
 
         current_mi = MigrationHelper.get_database_migration_index(self.cursor)
         relevant_mis = [

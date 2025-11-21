@@ -2,7 +2,7 @@ from typing import Any
 
 import fastjsonschema
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.shared.patterns import is_reserved_field
 
 from ..models.checker import Checker, CheckException
@@ -39,7 +39,7 @@ def check_everything(datastore: Database) -> None:
         for collection, models in result.items()
         if collection not in ["action_worker", "import_preview"]
     }
-    data["_migration_index"] = get_backend_migration_index()
+    data["_migration_index"] = MigrationHelper.get_backend_migration_index()
     Checker(
         data=data,
         mode="all",

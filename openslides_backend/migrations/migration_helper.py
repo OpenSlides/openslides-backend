@@ -15,6 +15,8 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 
+from ..shared.exceptions import ActionException
+
 
 class MigrationState(StrEnum):
     """
@@ -81,7 +83,7 @@ class MigrationHelper:
                 migration_file = reMatch.groupdict()["migration"]
                 migration_number = int(migration_file[:4])
                 if migration_number > LAST_NON_REL_MIGRATION:
-                    MigrationHelper.migrations[migration_number] = migration
+                    MigrationHelper.migrations[migration_number] = migration[:-3]
         MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
     @staticmethod
@@ -150,6 +152,21 @@ class MigrationHelper:
         return max(MigrationHelper.migrations)
 
     @staticmethod
+    def assert_migration_index(curs: Cursor[DictRow]) -> None:
+        database_migration_index = MigrationHelper.get_database_migration_index(curs)
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
+
+        if backend_migration_index > database_migration_index:
+            raise ActionException(
+                f"Missing {backend_migration_index-database_migration_index} migrations to apply."
+            )
+
+        if backend_migration_index < database_migration_index:
+            raise ActionException(
+                f"Migration indices do not match: Database has {database_migration_index} and the backend has {backend_migration_index}"
+            )
+
+    @staticmethod
     def set_database_migration_info(
         curs: Cursor[DictRow],
         migration_index: int,
@@ -198,8 +215,8 @@ class MigrationHelper:
     def pull_migration_index_from_db(curs: Cursor[DictRow]) -> int:
         """
         Reads the current migration_index from the psql database.
-        1. MAX(migration_index) of positions while position is used for the index
-        2. migration_index from version after the initial migration to eliminate the table position
+        1. MAX(migration_index) of positions while position is still used for the index
+        2. MAX(migration_index) from version after the 'relational schema' is applied
 
         Returns:
         - migration_index : integer the migration index or 0 if this must be a fresh install.
@@ -245,40 +262,8 @@ class MigrationHelper:
         raise MigrationException("No such State implemented.")
 
     @staticmethod
-    def get_migration_result(curs: Cursor[DictRow]) -> dict[str, Any]:
-        """
-        Gets the overall migration results.
-        Input:
-            curs: The Cursor that shall be used for database queries. Needs to be given
-                  as self.cursor will be closed after the migration.
-        """
-        state = MigrationHelper.get_migration_state(curs=curs)
-        if MigrationHelper.migrate_thread_stream:
-            # Migration finished and the full output can be returned. Do not remove the
-            # output in case the response is lost and must be delivered again, but set
-            # flag that it can be removed.
-            MigrationHelper.migrate_thread_stream_can_be_closed = True
-            # handle possible exception
-            if MigrationHelper.migrate_thread_exception:
-                exception_data = {
-                    "exception": str(MigrationHelper.migrate_thread_exception)
-                }
-            else:
-                exception_data = {}
-            return {
-                "status": state,
-                "output": MigrationHelper.migrate_thread_stream.getvalue(),
-                **exception_data,
-            }
-        else:
-            # Nothing to report
-            return {"status": state}
-
-    @staticmethod
-    def get_replace_tables(migration_number: int) -> dict[str, Any]:
-        module_name = MigrationHelper.migrations[migration_number][
-            :-3
-        ]  # remove .py of filename
+    def get_replace_tables(migration_number: int) -> dict[str, str]:
+        module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
         if migration_module.WRITE_MODELS == ["all"]:
             collections = model_registry

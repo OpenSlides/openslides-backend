@@ -2,11 +2,11 @@ import logging
 from typing import Any
 
 from openslides_backend.i18n.translator import Translator
-from openslides_backend.migrations import (
-    assert_migration_index,
-    get_backend_migration_index,
-)
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.migration_manager import MigrationManager
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import Profiler
@@ -196,7 +196,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_MI_greater_backend_MI(self) -> None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["_migration_index"] = backend_migration_index - 1
         response = self.request(
@@ -210,7 +210,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
     def test_initial_import_MI_lower_backend_MI(self) -> None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": {"_migration_index": backend_migration_index + 1}}
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
@@ -241,8 +241,13 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["results"][0][0]["message"],
         )
         self.assertFalse(response.json["results"][0][0]["migration_needed"])
-        assert_migration_index()
 
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
         manager = MigrationManager(self.env, self.services, logging)
         manager.execute_migrate_command("finalize", verbose=True)
-        assert_migration_index()
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)

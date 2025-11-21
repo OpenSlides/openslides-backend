@@ -58,22 +58,21 @@ class MigrationManager:
         self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
-        if (
-            MigrationHelper.get_migration_state(self.cursor)
-            == MigrationState.MIGRATION_RUNNING
+        return self.get_migration_result()
+
+    def get_migration_result(self) -> dict[str, Any]:
+        state = MigrationHelper.get_migration_state(self.cursor)
+        result = {"status": str(state)}
+        if MigrationHelper.migrate_thread_stream and (
+            output := MigrationHelper.migrate_thread_stream.getvalue()
         ):
-            if MigrationHelper.migrate_thread_stream:
-                # Migration still running
-                output = MigrationHelper.migrate_thread_stream.getvalue().split("\n")
-                return {
-                    "status": MigrationState.MIGRATION_RUNNING,
-                    "output": f"{output[-2]}\n",
-                    # The last line will always be an empty string.
-                }
-            else:
-                raise RuntimeError("Invalid migration state")
-        else:
-            return MigrationHelper.get_migration_result(self.cursor)
+            # The last line (index -1) will always be an empty string.
+            last_line = output.split("\n")[-2]
+            MigrationHelper.write_line(last_line)
+            result["output"] = f"{last_line}\n"
+        if MigrationHelper.migrate_thread_exception:
+            result["exception"] = str(MigrationHelper.migrate_thread_exception)
+        return result
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -86,17 +85,19 @@ class MigrationManager:
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if current_migration_index == LAST_NON_REL_MIGRATION:
-                response = self.cursor.execute(
-                    sql.SQL(
-                        "SELECT COUNT(*) FROM models WHERE fqid LIKE '{table}/%'"
-                    ).format(table=sql.SQL(table[:-2]))
-                ).fetchone()
-            else:
-                response = self.cursor.execute(
-                    sql.SQL("SELECT COUNT(*) FROM {table}").format(
-                        table=sql.Identifier(table)
+                if table.endswith("_mig"):
+                    statement_part = sql.SQL("{table}").format(
+                        table=sql.Identifier(table[:-4])
                     )
-                ).fetchone()
+                else:
+                    statement_part = sql.SQL(
+                        "models WHERE fqid LIKE '{table}/%' and deleted = false"
+                    ).format(table=sql.SQL(table[:-2]))
+            else:
+                statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
+            response = self.cursor.execute(
+                sql.SQL("SELECT COUNT(*) FROM ") + statement_part
+            ).fetchone()
             if response:
                 return response.get("count", 0)
             else:
@@ -111,23 +112,26 @@ class MigrationManager:
             self.cursor, migration_indices
         )
         unmigrated_collections = {
-            collection_table
+            collection_table: migration_table
             for mi in migration_indices
             if mi > current_migration_index
-            if state_per_mi[mi] == MigrationState.MIGRATION_REQUIRED
-            for collection_table in MigrationHelper.get_replace_tables(mi)
+            if state_per_mi[mi]
+            in (MigrationState.MIGRATION_REQUIRED, MigrationState.MIGRATION_RUNNING)
+            for collection_table, migration_table in MigrationHelper.get_replace_tables(
+                mi
+            ).items()
         }
         stats = {
-            collection[:-2]: {"count": amount}
-            for collection in unmigrated_collections
-            if (amount := count(collection, self.cursor))
+            table[:-2]: {
+                "count": amount,
+                "migrated": count(migration_table, self.cursor),
+            }
+            for table, migration_table in unmigrated_collections.items()
+            if (amount := count(table, self.cursor))
         }
 
-        state = MigrationHelper.get_migration_state(self.cursor)
-
-        # TODO enhance migratable models with numbers
         return {
-            "status": state,
+            **self.get_migration_result(),
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             "migratable_models": stats,
@@ -192,16 +196,17 @@ class MigrationManager:
                     return {"stats": self.get_stats()}
                 self.assert_valid_migration_index(curs)
 
-                if (
-                    MigrationHelper.get_migration_state(curs)
-                    == MigrationState.MIGRATION_RUNNING
-                ):
+                state = MigrationHelper.get_migration_state(curs)
+                if state == MigrationState.MIGRATION_RUNNING:
                     raise View400Exception(
                         "Migration is running, only 'stats' command is allowed."
                     )
 
                 if MigrationHelper.migrate_thread_stream:
-                    if MigrationHelper.migrate_thread_stream_can_be_closed:
+                    if state in {
+                        MigrationState.NO_MIGRATION_REQUIRED,
+                        MigrationState.FINALIZATION_REQUIRED,
+                    }:
                         MigrationHandler.close_migrate_thread_stream()
                     else:
                         raise View400Exception(
@@ -224,7 +229,7 @@ class MigrationManager:
                         }
                     else:
                         # Migration already finished/had nothing to do
-                        return MigrationHelper.get_migration_result(curs)
+                        return self.get_migration_result()
                 else:
                     raise View400Exception("Unknown command: " + command)
 

@@ -58,7 +58,7 @@ def create_schema() -> None:
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than LAST_NON_REL_MIGRATION is not possible
-            # because a version table would exist.
+            # for an unmigrated instance because a version table would exist.
             try:
                 db_migration_index = MigrationHelper.pull_migration_index_from_db(
                     cursor
@@ -73,15 +73,12 @@ def create_schema() -> None:
                 print("Relational schema applied.\n", flush=True)
                 cursor.execute(open(path).read())
                 if db_migration_index == LAST_NON_REL_MIGRATION:
-                    # migration state for index 70 will be set by the migration manager.
+                    # migration states for indices higher than last non-relational migration will be set by the migration manager.
                     type_ = "legacy"
-                    # db_migration_index += 1
-                    # state = MigrationState.MIGRATION_REQUIRED
                     writable = False
                 else:
                     type_ = "fresh"
                     db_migration_index = MigrationHelper.get_backend_migration_index()
-                    # state = MigrationState.NO_MIGRATION_REQUIRED
                     writable = True
                 print(f"Assuming {type_} database for migration_state.")
                 MigrationHelper.set_database_migration_info(
@@ -90,9 +87,8 @@ def create_schema() -> None:
                     MigrationState.NO_MIGRATION_REQUIRED,
                     writable=writable,
                 )
-                # MigrationHelper.set_database_migration_index(cursor, db_migration_index, state, writable)
                 print(
-                    f"Migration status written: {db_migration_index} - {MigrationState.NO_MIGRATION_REQUIRED}"
+                    f"Migration info written: {db_migration_index} - {MigrationState.NO_MIGRATION_REQUIRED}"
                 )
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")

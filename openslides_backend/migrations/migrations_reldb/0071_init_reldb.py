@@ -366,13 +366,28 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             f"{min(Sql_helper.offset, models_count)} of {models_count} models written to tables."
         )
     # END LOOP data chunks
-    MigrationHelper.write_line("finished")
 
     # 4) INSERT intermediate tables
     for command, values in insert_intermediate_t_commands:
         curs.execute(command, values)
 
-    # 5) Delete old tables
+    # clear replace tables as this migration writes the tables directly
+    MigrationHelper.set_database_migration_info(
+        curs,
+        LAST_NON_REL_MIGRATION + 1,
+        MigrationState.FINALIZATION_REQUIRED,
+        replace_tables={},
+        writable=True,
+    )
+
+
+def cleanup(curs: Cursor[DictRow]) -> None:
+    """
+    Purpose:
+        Deletes the old tables
+    Input:
+        cursor
+    """
     OLD_TABLES = (
         "models",
         "events",
@@ -388,11 +403,5 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     for table_name in OLD_TABLES:
         curs.execute(f"DROP TABLE {table_name} CASCADE;")
 
-    # clear replace tables as this migration writes the tables directly
-    MigrationHelper.set_database_migration_info(
-        curs,
-        LAST_NON_REL_MIGRATION + 1,
-        MigrationState.NO_MIGRATION_REQUIRED,
-        replace_tables={},
-        writable=True,
-    )
+
+# END OF FUNCTION

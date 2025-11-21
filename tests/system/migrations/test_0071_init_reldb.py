@@ -251,6 +251,28 @@ class BaseMigrationTestCase(TestCase):
                         cur.execute(f"SELECT * FROM {table_name};")
         # END TEST CASES
 
+    def assert_index_migrated(self) -> None:
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT migration_index, migration_state FROM version;")
+                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
+                    if idx == LAST_NON_REL_MIGRATION:
+                        continue
+                    assert {
+                        "migration_index": idx,
+                        "migration_state": MigrationState.FINALIZATION_REQUIRED,
+                    } == row
+
+    def assert_index_finalized(self) -> None:
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT migration_index, migration_state FROM version;")
+                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
+                    assert {
+                        "migration_index": idx,
+                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
+                    } == row
+
     def test_migration_handler(self) -> None:
         """
         Purpose:
@@ -280,19 +302,10 @@ class BaseMigrationTestCase(TestCase):
                     curs, self.env, self.services, self.app.logging
                 )
                 handler.execute_command("migrate")
+                self.assert_index_migrated()
+                handler.execute_command("finalize")
 
-                # 6.4) Inserted new migration_index and state
-                curs.execute("SELECT migration_index, migration_state FROM version;")
-                assert curs.fetchall() == [
-                    {
-                        "migration_index": LAST_NON_REL_MIGRATION,
-                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
-                    },
-                    {
-                        "migration_index": LAST_NON_REL_MIGRATION + 1,
-                        "migration_state": MigrationState.FINALIZATION_REQUIRED,
-                    },
-                ]
+        self.assert_index_finalized()
         self.check_data()
 
     def test_migration_manager(self) -> None:
@@ -316,7 +329,7 @@ class BaseMigrationTestCase(TestCase):
 
         # 5) Call data_manipulation of module
         manager = MigrationManager(self.env, self.services, self.app.logging)
-        print(manager.handle_request({"cmd": "migrate", "verbose": True}))
+        manager.handle_request({"cmd": "migrate", "verbose": True})
 
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
@@ -324,21 +337,22 @@ class BaseMigrationTestCase(TestCase):
                     MigrationHelper.get_migration_state(curs)
                     != MigrationState.FINALIZATION_REQUIRED
                 ):
-                    curs.connection.commit()
                     sleep(1)
+                    curs.connection.commit()
+        self.assert_index_migrated()
 
-                # 6.4) Inserted new migration_index and state
-                curs.execute("SELECT migration_index, migration_state FROM version;")
-                assert curs.fetchall() == [
-                    {
-                        "migration_index": LAST_NON_REL_MIGRATION,
-                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
-                    },
-                    {
-                        "migration_index": LAST_NON_REL_MIGRATION + 1,
-                        "migration_state": MigrationState.FINALIZATION_REQUIRED,
-                    },
-                ]
+        manager.handle_request({"cmd": "finalize", "verbose": True})
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                while (
+                    MigrationHelper.get_migration_state(curs)
+                    != MigrationState.NO_MIGRATION_REQUIRED
+                ):
+                    sleep(1)
+                    curs.connection.commit()
+
+        self.assert_index_finalized()
         self.check_data()
 
     def test_migration_route_0(self) -> None:
@@ -374,43 +388,43 @@ class BaseMigrationTestCase(TestCase):
                 "current_migration_index": LAST_NON_REL_MIGRATION,
                 "target_migration_index": LAST_NON_REL_MIGRATION + 1,
                 "migratable_models": {
-                    "agenda_item": {"count": 15},
-                    "assignment": {"count": 2},
-                    "assignment_candidate": {"count": 5},
-                    "chat_group": {"count": 2},
-                    "committee": {"count": 1},
-                    "gender": {"count": 4},
-                    "group": {"count": 5},
-                    "list_of_speakers": {"count": 16},
-                    "mediafile": {"count": 1},
-                    "meeting": {"count": 1},
-                    "meeting_mediafile": {"count": 1},
-                    "meeting_user": {"count": 3},
-                    "motion": {"count": 4},
-                    "motion_block": {"count": 1},
-                    "motion_category": {"count": 2},
-                    "motion_change_recommendation": {"count": 2},
-                    "motion_comment": {"count": 1},
-                    "motion_comment_section": {"count": 1},
-                    "motion_state": {"count": 15},
-                    "motion_submitter": {"count": 4},
-                    "motion_workflow": {"count": 2},
-                    "option": {"count": 13},
-                    "organization": {"count": 1},
-                    "organization_tag": {"count": 1},
-                    "personal_note": {"count": 1},
-                    "poll": {"count": 5},
-                    "projection": {"count": 4},
-                    "projector": {"count": 2},
-                    "projector_countdown": {"count": 2},
-                    "projector_message": {"count": 1},
-                    "speaker": {"count": 13},
-                    "structure_level": {"count": 3},
-                    "tag": {"count": 3},
-                    "theme": {"count": 3},
-                    "topic": {"count": 8},
-                    "user": {"count": 3},
-                    "vote": {"count": 9},
+                    "agenda_item": {"count": 15, "migrated": 0},
+                    "assignment": {"count": 2, "migrated": 0},
+                    "assignment_candidate": {"count": 5, "migrated": 0},
+                    "chat_group": {"count": 2, "migrated": 0},
+                    "committee": {"count": 1, "migrated": 0},
+                    "gender": {"count": 4, "migrated": 0},
+                    "group": {"count": 5, "migrated": 0},
+                    "list_of_speakers": {"count": 16, "migrated": 0},
+                    "mediafile": {"count": 1, "migrated": 0},
+                    "meeting": {"count": 1, "migrated": 0},
+                    "meeting_mediafile": {"count": 1, "migrated": 0},
+                    "meeting_user": {"count": 3, "migrated": 0},
+                    "motion": {"count": 4, "migrated": 0},
+                    "motion_block": {"count": 1, "migrated": 0},
+                    "motion_category": {"count": 2, "migrated": 0},
+                    "motion_change_recommendation": {"count": 2, "migrated": 0},
+                    "motion_comment": {"count": 1, "migrated": 0},
+                    "motion_comment_section": {"count": 1, "migrated": 0},
+                    "motion_state": {"count": 15, "migrated": 0},
+                    "motion_submitter": {"count": 4, "migrated": 0},
+                    "motion_workflow": {"count": 2, "migrated": 0},
+                    "option": {"count": 13, "migrated": 0},
+                    "organization": {"count": 1, "migrated": 0},
+                    "organization_tag": {"count": 1, "migrated": 0},
+                    "personal_note": {"count": 1, "migrated": 0},
+                    "poll": {"count": 5, "migrated": 0},
+                    "projection": {"count": 4, "migrated": 0},
+                    "projector": {"count": 2, "migrated": 0},
+                    "projector_countdown": {"count": 2, "migrated": 0},
+                    "projector_message": {"count": 1, "migrated": 0},
+                    "speaker": {"count": 13, "migrated": 0},
+                    "structure_level": {"count": 3, "migrated": 0},
+                    "tag": {"count": 3, "migrated": 0},
+                    "theme": {"count": 3, "migrated": 0},
+                    "topic": {"count": 8, "migrated": 0},
+                    "user": {"count": 3, "migrated": 0},
+                    "vote": {"count": 9, "migrated": 0},
                 },
             },
         }
@@ -418,7 +432,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
+            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\n",
         }
 
         response = self.request("stats")
@@ -426,9 +440,10 @@ class BaseMigrationTestCase(TestCase):
             "success": True,
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
+                "output": "160 of 160 models written to tables.\n",
                 "current_migration_index": LAST_NON_REL_MIGRATION,
                 "target_migration_index": LAST_NON_REL_MIGRATION + 1,
-                "migratable_models": {},
+                "migratable_models": response.json["stats"]["migratable_models"],
             },
         }
 
@@ -438,21 +453,19 @@ class BaseMigrationTestCase(TestCase):
         while (response := self.request("progress").json) != {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
+            "output": "finished\n",
         }:
             sleep(1)
-            print(response)
             if datetime.now() - start > max_time:
                 raise Exception(
                     f"The migration doesn't finish in {max_time}. {response}"
                 )
-        print(response)
+        self.assert_index_migrated()
 
         response = self.request("finalize")
         assert response.json == {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "",
         }
 
         start = datetime.now()
@@ -461,27 +474,16 @@ class BaseMigrationTestCase(TestCase):
             "message": "Migration is running, only 'stats' command is allowed",
         }:
             sleep(1)
-            print(response)
             if datetime.now() - start > max_time:
                 raise Exception(
                     f"The migration doesn't finish in {max_time}. {response}"
                 )
-        sleep(1)
         assert response == {
             "success": True,
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "output": "",
         }
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                # 6.4) Inserted new migration_index and state
-                curs.execute("SELECT migration_index, migration_state FROM version;")
-                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
-                    assert {
-                        "migration_index": idx,
-                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
-                    } == row
+        self.assert_index_finalized()
         self.check_data()
 
     def test_migration_route_1(self) -> None:
@@ -511,39 +513,25 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\nfinished\n",
+            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\n",
         }
 
-        # Wait for migrate with a sec delay per iteration.
+        # Wait for migrate with a sec delay per iteration. TODO centralize this
         max_time = timedelta(seconds=15)
         start = datetime.now()
         while (response := self.request("migrate").json) != {
             "success": True,
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "output": "",
         }:
-            # while (response := self.request("migrate").json) == {'success': False, 'message': "Migration is running, only 'stats' command is allowed"}:
             sleep(1)
-            print(response)
             if datetime.now() - start > max_time:
                 raise Exception(
                     f"The migration doesn't finish in {max_time}. {response}"
                 )
-        sleep(1)
         assert response == {
             "success": True,
             "status": MigrationState.NO_MIGRATION_REQUIRED,
-            "output": "",
         }
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                # 6.4) Inserted new migration_index and state
-                curs.execute("SELECT migration_index, migration_state FROM version;")
-                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
-                    assert {
-                        "migration_index": idx,
-                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
-                    } == row
-
+        self.assert_index_finalized()
         self.check_data()

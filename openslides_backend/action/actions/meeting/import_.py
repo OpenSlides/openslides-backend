@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -729,7 +729,7 @@ class MeetingImport(
         Check for valid migration index.
         """
         start_migration_index = instance["meeting"].pop("_migration_index")
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         if backend_migration_index < start_migration_index:
             raise ActionException(
                 f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"

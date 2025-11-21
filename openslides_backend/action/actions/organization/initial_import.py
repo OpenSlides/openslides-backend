@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import Any
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
@@ -133,7 +133,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
             "backend_migration_index": backend_migration_index,
