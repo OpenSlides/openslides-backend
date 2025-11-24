@@ -3,6 +3,7 @@ from typing import Any
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.shared.patterns import is_reserved_field
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ..models.base import model_registry
 from ..models.fields import (
@@ -23,7 +24,10 @@ NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candida
 
 
 def export_meeting(
-    datastore: Database, meeting_id: int, internal_target: bool = False
+    datastore: Database,
+    meeting_id: int,
+    internal_target: bool = False,
+    update_mediafiles: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -56,6 +60,63 @@ def export_meeting(
         results = datastore.get_many(
             get_many_requests, lock_result=False, use_changed_models=False
         )
+        # update_mediafiles_for_internal_calls
+        if update_mediafiles and len(
+            mediafile_ids := results.get("mediafile", {}).keys()
+        ) != len(meeting_mediafiles := results.get("meeting_mediafile", {})):
+            mm_with_unknown_mediafiles = {
+                mm_id: mm_data
+                for mm_id, mm_data in meeting_mediafiles.items()
+                if mm_data["mediafile_id"] not in mediafile_ids
+            }
+            unknown_mediafiles: dict[int, dict[str, Any]] = {}
+            next_file_ids = [
+                mm["mediafile_id"] for mm in mm_with_unknown_mediafiles.values()
+            ]
+            while next_file_ids:
+                unknown_mediafiles.update(
+                    datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "mediafile",
+                                next_file_ids,
+                                [
+                                    "id",
+                                    "owner_id",
+                                    "published_to_meetings_in_organization_id",
+                                    "parent_id",
+                                    "child_ids",
+                                ],
+                            ),
+                        ],
+                        use_changed_models=False,
+                    )["mediafile"]
+                )
+                next_file_ids = list(
+                    {
+                        parent_id
+                        for m in unknown_mediafiles.values()
+                        if (parent_id := m.get("parent_id"))
+                    }
+                    - set(unknown_mediafiles)
+                )
+            for mm_id, mm_data in mm_with_unknown_mediafiles.items():
+                mediafile_id = mm_data["mediafile_id"]
+                mediafile = unknown_mediafiles.get(mediafile_id)
+                if (
+                    mediafile
+                    and mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+                    and mediafile["published_to_meetings_in_organization_id"]
+                    == ONE_ORGANIZATION_ID
+                ):
+                    mediafile["meeting_mediafile_ids"] = [mm_id]
+                    results.setdefault("mediafile", {})[mediafile_id] = mediafile
+                    while (
+                        parent_id := mediafile.get("parent_id")
+                    ) and parent_id not in results["mediafile"]:
+                        mediafile = unknown_mediafiles[parent_id]
+                        results["mediafile"][parent_id] = mediafile
+
     else:
         results = {}
 
