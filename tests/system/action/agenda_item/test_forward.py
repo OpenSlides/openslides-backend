@@ -37,8 +37,8 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
             True,
             5,
         ),
-        (300, 400, None, SpeechState.INTERVENTION, None, None, None, 6),
-        (None, None, None, SpeechState.INTERVENTION, True, None, None, 4),
+        (300, 400, None, SpeechState.CONTRIBUTION, None, None, None, 6),
+        (None, None, None, SpeechState.CONTRIBUTION, True, None, None, 4),
     ],
     [
         (400, 600, 100, None, None, None, None, 7),
@@ -1306,6 +1306,35 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot forward when there are waiting points of order.",
+            response.json["message"],
+        )
+
+    def test_forward_waiting_intervention_error(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_user("bob", [3])
+        self.create_topic_agenda_item()
+        self.set_models(
+            {
+                "meeting/1": {"speaker_ids": [1000]},
+                "list_of_speakers/100": {"speaker_ids": [1000]},
+                "speaker/1000": {
+                    "list_of_speakers_id": 100,
+                    "meeting_id": 1,
+                    "meeting_user_id": 1,
+                    "speech_state": SpeechState.INTERVENTION,
+                    "weight": 1,
+                },
+                "meeting_user/1": {"speaker_ids": [1000]},
+            }
+        )
+        response = self.request(
+            "agenda_item.forward",
+            {"meeting_ids": [4], "agenda_item_ids": [1], "with_speakers": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot forward when there are waiting interventions.",
             response.json["message"],
         )
 

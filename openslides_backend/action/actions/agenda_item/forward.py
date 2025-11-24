@@ -21,6 +21,7 @@ from ..meeting_mediafile.create import MeetingMediafileCreate
 from ..meeting_user.set_data import MeetingUserSetData
 from ..point_of_order_category.create import PointOfOrderCategoryCreate
 from ..speaker.create_for_merge import SpeakerCreateForMerge
+from ..speaker.speech_state import SpeechState
 from ..structure_level.create import StructureLevelCreateAction
 from ..structure_level_list_of_speakers.create import (
     StructureLevelListOfSpeakersCreateAction,
@@ -737,6 +738,10 @@ class AgendaItemForward(SingularActionMixin, UpdateAction):
                 if speaker.get("point_of_order"):
                     raise ActionException(
                         "Cannot forward when there are waiting points of order."
+                    )
+                if speaker.get("speech_state") == SpeechState.INTERVENTION:
+                    raise ActionException(
+                        "Cannot forward when there are waiting interventions."
                     )
 
     def get_all_topic_and_meeting_data(
