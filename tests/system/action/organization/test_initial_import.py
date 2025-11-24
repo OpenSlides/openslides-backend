@@ -174,7 +174,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
         self.assertIn(
-            "organization/1/theme_id: Relation Error:  points to theme/test/theme_for_organization_id, but the reverse relation for it is corrupt",
+            "organization/1/theme_id: Relation Error: points to theme/test/theme_for_organization_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
 
@@ -186,11 +186,11 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation Error:  points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt",
+            "Relation Error: points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
         self.assertIn(
-            "Relation Error:  points to organization/1/theme_id, but the reverse relation for it is corrupt",
+            "Relation Error: points to organization/1/theme_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
 
