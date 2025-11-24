@@ -1,7 +1,5 @@
-from time import time
+from datetime import datetime, timedelta
 from typing import Any
-
-import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
@@ -11,21 +9,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from .base import BasePresenterTestCase
 
 
-@pytest.mark.skip(reason="During development of relational DB not necessary")
 class TestCheckDatabaseAll(BasePresenterTestCase):
-    def test_found_errors(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"name": "test_foo"},
-                "meeting/2": {"name": "test_bar"},
-            }
-        )
-        status_code, data = self.request("check_database_all", {})
-        assert status_code == 200
-        assert data["ok"] is False
-        assert "meeting/1: Missing fields" in data["errors"]
-        assert "meeting/2: Missing fields" in data["errors"]
-
     def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
@@ -277,13 +261,14 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 "action_worker/1": {
                     "name": "testcase",
                     "state": ActionWorkerState.END,
-                    "created": round(time() - 3),
-                    "timestamp": round(time()),
+                    "created": datetime.now() - timedelta(minutes=30),
+                    "timestamp": datetime.now(),
+                    "user_id": 1,
                 },
                 "import_preview/1": {
                     "name": "topic",
                     "state": "done",
-                    "created": round(time() - 3),
+                    "created": datetime.now() - timedelta(minutes=30),
                 },
             }
         )
@@ -511,7 +496,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "weight": 1,
                     "workflow_id": 1,
                     "first_state_of_workflow_id": 1,
-                    "restrictions": [],
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
@@ -885,13 +869,9 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert "errors" not in data
 
     def test_no_permissions(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"name": "test_foo"},
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
-                },
-            }
+        self.create_meeting()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
         status_code, data = self.request("check_database_all", {})
         assert status_code == 403

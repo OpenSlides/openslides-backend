@@ -570,8 +570,8 @@ class Checker:
             source_parent = self.find_model("mediafile", source_model["parent_id"])
             # relations are checked beforehand, so parent always exists
             assert source_parent
-            parent_ids = set(meeting.get("meeting_mediafile_ids", [])).intersection(
-                source_parent.get("meeting_mediafile_ids", [])
+            parent_ids = set(meeting.get("meeting_mediafile_ids") or []).intersection(
+                set(source_parent.get("meeting_mediafile_ids") or [])
             )
             assert len(parent_ids) <= 1
             if len(parent_ids):
