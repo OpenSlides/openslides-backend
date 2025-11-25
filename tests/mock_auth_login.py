@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from typing import Any
 from unittest.mock import _patch, patch
 
-from authlib import ANONYMOUS_USER, AuthHandler
+from osauthlib import ANONYMOUS_USER, AuthHandler
 
 from openslides_backend.services.auth.adapter import AuthenticationHTTPAdapter
 from openslides_backend.shared.exceptions import AuthenticationException
