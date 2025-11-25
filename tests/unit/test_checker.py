@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal
+from unittest import TestCase
 
 from psycopg.types.json import Jsonb
 
@@ -25,12 +26,11 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
 
 BACKEND_MIGRATION_INDEX = get_backend_migration_index()
 
 
-class TestChecker(BaseActionTestCase):
+class TestChecker(TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None
