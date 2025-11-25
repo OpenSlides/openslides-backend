@@ -659,7 +659,6 @@ class Checker:
     def split_fqid(self, fqid: str) -> tuple[str, int]:
         try:
             collection, _id = collection_and_id_from_fqid(fqid)
-            id = int(_id)
             assert collection
             if self.mode == "external" and collection not in self.allowed_collections:
                 raise CheckException(f"Fqid {fqid} has an invalid collection")
