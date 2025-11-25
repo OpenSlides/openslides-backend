@@ -37,6 +37,7 @@ from openslides_backend.shared.patterns import (
     DECIMAL_PATTERN,
     EXTENSION_REFERENCE_IDS_PATTERN,
     collection_and_id_from_fqid,
+    is_fqid,
 )
 from openslides_backend.shared.schema import (
     models_map_object,
@@ -85,10 +86,10 @@ def check_string(value: Any) -> bool:
 def check_fqid(value: Any) -> bool:
     if value is None:
         return True
-    if not isinstance(value, str) or "/" not in value:
+    if not is_fqid(value):
         return False
-    collection, _id = value.split("/")
-    return collection in set(model_registry.keys()) and _id.isdigit()
+    collection, _id = collection_and_id_from_fqid(value)
+    return collection in set(model_registry.keys())
 
 
 def check_color(value: Any) -> bool:
@@ -657,17 +658,17 @@ class Checker:
 
     def split_fqid(self, fqid: str) -> tuple[str, int]:
         try:
-            collection, _id = fqid.split("/")
+            collection, _id = collection_and_id_from_fqid(fqid)
             id = int(_id)
             assert collection
             if self.mode == "external" and collection not in self.allowed_collections:
                 raise CheckException(f"Fqid {fqid} has an invalid collection")
             return collection, id
-        except (ValueError, AttributeError, AssertionError):
+        except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")
 
     def split_collectionfield(self, collectionfield: str) -> tuple[str, str]:
-        collection, field = collectionfield.split("/")
+        collection, field = collection_and_id_from_fqid(collectionfield)
         if collection not in self.allowed_collections:
             raise CheckException(
                 f"Collectionfield {collectionfield} has an invalid collection"
