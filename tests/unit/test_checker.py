@@ -33,7 +33,6 @@ BACKEND_MIGRATION_INDEX = get_backend_migration_index()
 class TestChecker(TestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.maxDiff = None
         self.theme_data: dict[str, Any] = {
             "organization": {"1": {"id": 1, "theme_id": 1, "theme_ids": [1]}},
             "theme": {

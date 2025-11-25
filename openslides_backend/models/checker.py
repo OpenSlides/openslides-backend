@@ -667,7 +667,7 @@ class Checker:
         except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")
 
-    def split_collectionfield(self, collectionfield: str) -> tuple[str, str]:
+    def split_collectionfield(self, collectionfield: str) -> tuple[str, int]:
         collection, field = collection_and_id_from_fqid(collectionfield)
         if collection not in self.allowed_collections:
             raise CheckException(
