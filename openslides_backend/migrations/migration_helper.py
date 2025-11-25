@@ -56,6 +56,9 @@ class MigrationHelper:
 
     @staticmethod
     def write_line(message: str) -> None:
+        """
+        Writes a single line with \n to the migration threads io stream.
+        """
         assert MigrationHelper.migrate_thread_stream
         MigrationHelper.migrate_thread_stream.write(message + "\n")
 
@@ -88,6 +91,9 @@ class MigrationHelper:
 
     @staticmethod
     def add_new_migrations_to_version() -> None:
+        """
+        Adds new migrations to the version table with state MIGRATION_REQUIRED if the index didn't exist yet.
+        """
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 database_indices = MigrationHelper.get_indices_from_database(curs)
@@ -105,6 +111,9 @@ class MigrationHelper:
 
     @staticmethod
     def get_indices_from_database(curs: Cursor[DictRow]) -> list[int]:
+        """
+        Gets all indices stored in the version table.
+        """
         if tmp := curs.execute("SELECT migration_index FROM version;").fetchall():
             return [elem.get("migration_index", 0) for elem in tmp]
         raise MigrationException(
@@ -137,6 +146,9 @@ class MigrationHelper:
 
     @staticmethod
     def get_database_migration_index(curs: Cursor[DictRow]) -> int:
+        """
+        Returns the maximum migration index which is in state NO_MIGRATION_REQUIRED.
+        """
         if tmp := curs.execute(
             "SELECT MAX(migration_index) FROM version WHERE migration_state = %s;",
             (MigrationState.NO_MIGRATION_REQUIRED,),
@@ -153,6 +165,9 @@ class MigrationHelper:
 
     @staticmethod
     def assert_migration_index(curs: Cursor[DictRow]) -> None:
+        """
+        Asserts that backend and database migration indices are identical.
+        """
         database_migration_index = MigrationHelper.get_database_migration_index(curs)
         backend_migration_index = MigrationHelper.get_backend_migration_index()
 
@@ -202,6 +217,9 @@ class MigrationHelper:
 
     @staticmethod
     def table_exists(curs: Cursor[DictRow], table_name: str) -> bool:
+        """
+        Returns True if the passed table exists in the database.
+        """
         version_table_exists = curs.execute(
             "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = %s);",
             (table_name,),
@@ -241,7 +259,7 @@ class MigrationHelper:
     def get_migration_state(curs: Cursor[DictRow]) -> MigrationState:
         """
         Returns the highest MigrationState among all migrations in the ascending order of
-        NO_MIGRATION_REQUIRED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING
+        NO_MIGRATION_REQUIRED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
         """
         states_and_indices = curs.execute(
             sql.SQL(
@@ -263,6 +281,9 @@ class MigrationHelper:
 
     @staticmethod
     def get_replace_tables(migration_number: int) -> dict[str, str]:
+        """
+        Returns the replace tables mapping origin table to its shadow copy.
+        """
         module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
         if migration_module.WRITE_MODELS == ["all"]:
@@ -275,6 +296,9 @@ class MigrationHelper:
     def get_replace_tables_from_database(
         curs: Cursor[DictRow], migration_number: int
     ) -> dict[str, Any]:
+        """
+        Returns the replace tables mapping origin table to its shadow copy stored in the database.
+        """
         if replace_tables := curs.execute(
             f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
         ).fetchone():

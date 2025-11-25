@@ -14,4 +14,3 @@ from .core.exceptions import (
     MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
-from .migration_manager import MigrationManager

@@ -1,6 +1,6 @@
 from collections.abc import Generator
+from contextlib import suppress
 from typing import Any
-from unittest import TestCase
 from unittest.mock import _patch
 
 import pytest
@@ -17,6 +17,7 @@ from tests.conftest_helper import (
     generate_sql_for_test_initiation,
 )
 from tests.mock_auth_login import auth_http_adapter_patch, login_patch
+from tests.system.base import BaseSystemTestCase
 
 openslides_db = env.DATABASE_NAME
 database_user = env.DATABASE_USER
@@ -89,17 +90,11 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
     """Generates and yields a Connection object for setting up initial test data and truncating changes afterwards."""
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
-            # if MigrationHelper.table_exists(curs,"version"):
             curs.execute("SELECT init_table_contents();")
         conn.commit()
         # TODO this is a hacky workaround to get this connection in system testcases
-        # BaseSystemTestCase.connection = conn
-        TestCase.connection = conn  # type: ignore
+        BaseSystemTestCase.connection = conn
         yield conn
-        with conn.cursor() as curs:
-            try:
-                curs.execute("SELECT truncate_testdata_tables();")
-            except AdminShutdown as e:
-                # This will happen when the database is dropped during first rel-db migration tests
-                # TODO do something usefull here?
-                print(e)
+        with conn.cursor() as curs, suppress(AdminShutdown):
+            # AdminShutdown will happen when the database is dropped during first rel-db migration tests
+            curs.execute("SELECT truncate_testdata_tables();")

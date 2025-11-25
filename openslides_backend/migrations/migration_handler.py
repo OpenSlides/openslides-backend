@@ -27,9 +27,8 @@ class MigrationHandler(BaseHandler):
 
     def execute_migrations(self) -> None:
         """
-        Executes the migrations stored in MigrationHelper.migrations.
-        Every migration could provide all of the three methods data_definition,
-        data_manipulation and cleanup.
+        Executes the data_definition and data_manipulation methods of the migrations
+        stored in MigrationHelper.migrations.
 
         Returns:
         - None
@@ -59,6 +58,9 @@ class MigrationHandler(BaseHandler):
                 )
 
     def migrate(self) -> None:
+        """
+        Starts the migration process.
+        """
         self.logger.info("Running migrations.")
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
@@ -78,6 +80,9 @@ class MigrationHandler(BaseHandler):
                 )
 
     def execute_command(self, command: str) -> None:
+        """
+        Low level entry point.
+        """
         assert (
             self.cursor and not self.cursor.closed
         ), "Handlers cursor must be initialized."
@@ -102,6 +107,9 @@ class MigrationHandler(BaseHandler):
 
     @classmethod
     def close_migrate_thread_stream(cls) -> str:
+        """
+        Closes the migration threads io stream.
+        """
         assert (stream := MigrationHelper.migrate_thread_stream)
         output = stream.getvalue()
         stream.close()
@@ -160,15 +168,19 @@ class MigrationHandler(BaseHandler):
         self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
 
     def reset(self) -> None:
-        # TODO implement
+        """
+        Resets the migrations currently in progress and restores the state before the migration.
+        """
         self.logger.info("Reset migrations.")
+        self.close_migrate_thread_stream()
+        self._clean_migration_data()
+        # TODO reset version for non finalized indices
 
-        # self._delete_migration_keyframes()
-        # self._clean_migration_data()
+    def _clean_migration_data(self) -> None:
+        self.logger.info("Clean up migration data...")
+        assert self.cursor, "Handlers cursor must be initialized."
 
-    # def _clean_migration_data(self) -> None:
-    #     self.logger.info("Clean up migration data...")
-    #     assert self.cursor, "Handlers cursor must be initialized."
+    # TODO delete shadow copies and as other possibly necessary alterations
     #     self.cursor.execute("delete from migration_positions", [])
     #     self.cursor.execute("delete from migration_events", [])
     #     sequence = self.cursor.execute(

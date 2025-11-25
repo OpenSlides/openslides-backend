@@ -127,21 +127,11 @@ class BaseMigrationTestCase(TestCase):
         self.setup_data()
         self.apply_test_relational_schema()
 
-    # def check_auth_mockers_started(self) -> bool:
-    #     if (
-    #         hasattr(self, "auth_mockers")
-    #         and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
-    #     ):
-    #         return False
-    #     return True
-
     def request(
         self,
         command: str,
         lang: str | None = None,
     ) -> Response:
-        # if not self.check_auth_mockers_started():
-        #     raise Exception("Argh")
         headers = get_internal_auth_header(DEV_PASSWORD)
         if lang:
             headers["Accept-Language"] = lang

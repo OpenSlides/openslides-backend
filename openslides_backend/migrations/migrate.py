@@ -55,7 +55,10 @@ def main() -> int:
     args = parser.parse_args()
 
     manager = MigrationManager(
-        Environment(os.environ), providers.DependenciesContainer(), logging
+        Environment(os.environ),
+        providers.DependenciesContainer(),
+        logging,
+        args.verbose,
     )
 
     if not args.command:
@@ -64,7 +67,7 @@ def main() -> int:
         return 1
     else:
         try:
-            manager.handle_request(args.command)
+            manager.handle_request({"cmd": args.command})
         except InvalidMigrationCommand:
             print(f"Unknown command {args.command}\n")
             parser.print_help()

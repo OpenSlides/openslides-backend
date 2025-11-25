@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from io import StringIO
-from textwrap import dedent
 from threading import Thread
 from typing import Any
 
@@ -58,9 +57,15 @@ class MigrationManager:
         self.target_migration_index = MigrationHelper.get_backend_migration_index()
 
     def handle_progress_command(self) -> dict[str, Any]:
+        """
+        # TODO delete once tooling will handle the stats route instead.
+        """
         return self.get_migration_result()
 
     def get_migration_result(self) -> dict[str, Any]:
+        """
+        Closes the migration threads io stream.
+        """
         state = MigrationHelper.get_migration_state(self.cursor)
         result = {"status": str(state)}
         if MigrationHelper.migrate_thread_stream and (
@@ -76,11 +81,12 @@ class MigrationManager:
 
     def get_stats(self) -> dict[str, Any]:
         """
-        gets the stats:
+        Gets the following stats:
         status: The current overall state.
         current_migration_index: The current migration index.
         target_migration_index: The current backend index that is targeted by the migrations.
-        migratable_models: Rough amounts per collection to be migrated. Doesn't respect initial migration if on a higher target migration index.
+        migratable_models: Rough amounts per collection to be migrated.
+            Doesn't respect initial migration if executed on a higher target migration index.
         """
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
@@ -142,34 +148,6 @@ class MigrationManager:
             ),
         }
 
-    def print_stats(self) -> None:  # pragma: no cover
-        stats = self.get_stats()
-        if stats["current_migration_index"] == stats["target_migration_index"]:
-            action = "The datastore is up-to-date"
-        else:
-            action = "Migration/Finalization is needed"
-        if stats["status"] == MigrationState.NO_MIGRATION_REQUIRED:
-            migration_action = "No action needed"
-        elif stats["status"] == MigrationState.MIGRATION_REQUIRED:
-            migration_action = "Migration and finalization needed"
-        elif stats["status"] == MigrationState.FINALIZATION_REQUIRED:
-            migration_action = "Finalization needed"
-        self.logger.info(
-            dedent(
-                f"""\
-            - Registered migrations for migration index {self.target_migration_index}
-            - Datastore has {stats['positions']} positions with {stats['events']} events
-            - The positions have a migration index of {stats['current_migration_index']}
-            -> {action}
-            - There are {stats['fully_migrated_positions']} fully migrated positions and
-            {stats['partially_migrated_positions']} partially migrated ones
-            -> {migration_action}
-            - {stats['positions'] - stats['fully_migrated_positions']} positions have to be migrated (including
-            partially migrated ones)\
-            """
-            )
-        )
-
     def assert_valid_migration_index(self, curs: Cursor[DictRow]) -> None:
         """assert consistent migration index"""
         database_m_idx = MigrationHelper.get_database_migration_index(self.cursor)
@@ -183,6 +161,10 @@ class MigrationManager:
             self.logger.info(f"Current migration index: {database_m_idx}")
 
     def handle_request(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """
+        Entry point for the migrate route.
+        Will start a new migration thread if it is required and requested.
+        """
         if not (command := payload.get("cmd")):
             raise View400Exception("No command provided")
         self.logger.info(f"Migration command: {command}")
@@ -201,17 +183,6 @@ class MigrationManager:
                     raise View400Exception(
                         "Migration is running, only 'stats' command is allowed."
                     )
-
-                if MigrationHelper.migrate_thread_stream:
-                    if state in {
-                        MigrationState.NO_MIGRATION_REQUIRED,
-                        MigrationState.FINALIZATION_REQUIRED,
-                    }:
-                        MigrationHandler.close_migrate_thread_stream()
-                    else:
-                        raise View400Exception(
-                            "Last migration output not read yet. Please call 'progress' first."
-                        )
 
                 verbose = payload.get("verbose", False)
                 if command in iter(MigrationCommand):

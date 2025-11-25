@@ -13,7 +13,3 @@ class MismatchingMigrationIndicesException(MigrationException):
 class InvalidMigrationCommand(MigrationException):
     def __init__(self, command: str) -> None:
         super().__init__(f"Invalid migration command: {command}")
-
-
-class BadMigrationModule(MigrationException):
-    pass

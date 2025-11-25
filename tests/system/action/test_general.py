@@ -1,12 +1,6 @@
-from typing import Any
-from unittest.mock import patch
 
-import pytest
 
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.shared.interfaces.write_request import (
-    WriteRequestWithMigrationIndex,
-)
 from tests.system.util import get_route_path
 
 from .base import ACTION_URL, BaseActionTestCase
@@ -92,44 +86,3 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
         for action in some_example_actions:
             self.assertIn(action, actions.keys())
-
-
-@pytest.mark.skip(
-    reason="Test not relevant anymore after migration to relational database"
-)
-class TestWSGIWithMigrations(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-    @patch("openslides_backend.migrations.get_backend_migration_index")
-    def test_request_missing_migrations(self, gbmi: Any) -> None:
-        write_request = WriteRequestWithMigrationIndex(
-            events=self.get_create_events("topic/1", {"title": "dummy"}),
-            user_id=0,
-            migration_index=5,
-        )
-        self.datastore.write(write_request)
-        gbmi.return_value = 6
-        response = self.request("dummy", {})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Missing 1 migrations to apply.",
-            response.json["message"],
-        )
-
-    @patch("openslides_backend.migrations.get_backend_migration_index")
-    def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
-        write_request = WriteRequestWithMigrationIndex(
-            events=self.get_create_events("topic/1", {"title": "dummy"}),
-            user_id=0,
-            migration_index=6,
-        )
-        write_request.migration_index = 6
-        self.datastore.write(write_request)
-        gbmi.return_value = 5
-        response = self.request("dummy", {})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Migration indices do not match: Datastore has 6 and the backend has 5",
-            response.json["message"],
-        )

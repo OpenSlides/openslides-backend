@@ -247,28 +247,6 @@ class Sql_helper:
 # END HELPER CLASS
 
 
-# def data_definition(curs: Cursor[DictRow]) -> None:
-#     """
-#     Purpose:
-#         Applies the relational schema to the database
-#     Input:
-#         n/a
-#     Returns:
-#         n/a
-#     """
-#     path = os.path.realpath(
-#         os.path.join("meta", "dev", "sql", "schema_relational.sql")
-#     )
-#     try:
-#         curs.execute(open(path).read())
-#     except Exception as e:
-#         print(f"On applying relational schema there was an error: {str(e)}\n")
-#         return
-
-
-# END OF FUNCTION
-
-
 def data_manipulation(curs: Cursor[DictRow]) -> None:
     """
     Purpose:

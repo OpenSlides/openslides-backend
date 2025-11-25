@@ -30,9 +30,9 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     route: RouteFunction = ActionView.migrations_route
 
     def setUp(self) -> None:
+        MigrationHelper.migrate_thread_exception = None
         if MigrationHelper.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
-        MigrationHelper.migrate_thread_exception = None
         super().setUp()
 
     def wait_for_migration_thread(self, error: bool = False) -> None:

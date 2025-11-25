@@ -52,6 +52,7 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.Dic
         # provides type hinting
         connection_class=Connection[rows.DictRow],  # type:ignore
         # works at runtime
+        # TODO allow prepared statements again. Currently disabled since those would randomly be reused when not avaiable.
         kwargs={
             "autocommit": True,
             "row_factory": rows.dict_row,
