@@ -30,9 +30,88 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 BACKEND_MIGRATION_INDEX = get_backend_migration_index()
 
 
-class TestChecker(TestCase):
+class BaseTestChecker(TestCase):
     def setUp(self) -> None:
         super().setUp()
+
+
+class TestCheckerCheckMigrationIndex(BaseTestChecker):
+    def check_migration_index(
+        self,
+        data: dict[str, Any],
+        expected_error: str | None = None,
+        migration_mode: Literal["strict", "permissive"] = "strict",
+    ) -> None:
+        try:
+            Checker(
+                data=data,
+                mode="internal",
+                migration_mode=migration_mode,
+            ).run_check()
+            self.assertIsNone(expected_error)
+        except CheckException as ce:
+            self.assertEqual(ce.args[0], expected_error)
+
+    def test_migration_index_correct(self) -> None:
+        self.check_migration_index({"_migration_index": BACKEND_MIGRATION_INDEX})
+        self.check_migration_index(
+            {"_migration_index": BACKEND_MIGRATION_INDEX - 1},
+            migration_mode="permissive",
+        )
+
+    def test_migration_index_is_none_error(self) -> None:
+        self.check_migration_index(
+            data={"_migration_index": None},
+            expected_error="JSON does not match schema: data._migration_index must be integer",
+        )
+
+    def test_no_migration_index_error(self) -> None:
+        self.check_migration_index(
+            data={},
+            expected_error="JSON does not match schema: data must contain ['_migration_index'] properties",
+        )
+
+    def test_migration_index_too_small_error(self) -> None:
+        self.check_migration_index(
+            data={"_migration_index": 0},
+            expected_error="JSON does not match schema: data._migration_index must be bigger than or equal to 1",
+        )
+
+    def test_migration_index_lower_than_backend_MI_permissive_mode(self) -> None:
+        migration_index = BACKEND_MIGRATION_INDEX - 1
+        self.check_migration_index(
+            data={"_migration_index": migration_index},
+            migration_mode="permissive",
+        )
+
+    def test_migration_index_higher_than_backend_MI_error(self) -> None:
+        migration_index = BACKEND_MIGRATION_INDEX + 1
+        msg = f"\tThe given migration index ({migration_index}) is higher than the backend ({BACKEND_MIGRATION_INDEX})."
+
+        self.check_migration_index(
+            data={"_migration_index": migration_index},
+            expected_error=msg,
+        )
+        self.check_migration_index(
+            data={"_migration_index": migration_index},
+            expected_error=msg,
+            migration_mode="permissive",
+        )
+
+    def test_migration_index_lower_than_backend_MI_error(self) -> None:
+        migration_index = BACKEND_MIGRATION_INDEX - 1
+        self.check_migration_index(
+            data={"_migration_index": migration_index},
+            expected_error=f"\tThe given migration index ({migration_index}) is lower than the backend ({BACKEND_MIGRATION_INDEX}).",
+        )
+
+
+class TestCheckerCheckData(BaseTestChecker):
+    def setUp(self) -> None:
+        super().setUp()
+        self.migration_index: dict[str, Any] = {
+            "_migration_index": BACKEND_MIGRATION_INDEX
+        }
         self.theme_data: dict[str, Any] = {
             "organization": {"1": {"id": 1, "theme_id": 1, "theme_ids": [1]}},
             "theme": {
@@ -175,22 +254,6 @@ class TestChecker(TestCase):
             }
         }
 
-    def check_migration_index(
-        self,
-        data: dict[str, Any],
-        expected_error: str | None = None,
-        migration_mode: Literal["strict", "permissive"] = "strict",
-    ) -> None:
-        try:
-            Checker(
-                data=data,
-                mode="internal",
-                migration_mode=migration_mode,
-            ).run_check()
-            self.assertIsNone(expected_error)
-        except CheckException as ce:
-            self.assertEqual(ce.args[0], expected_error)
-
     def check_data(
         self,
         data: dict[str, Any],
@@ -199,10 +262,9 @@ class TestChecker(TestCase):
         repair: bool = True,
         fields_to_remove: dict[str, list[str]] = {},
     ) -> None:
-        migration_index: dict[str, Any] = {"_migration_index": BACKEND_MIGRATION_INDEX}
         try:
             Checker(
-                data=migration_index | data,
+                data=self.migration_index | data,
                 mode=mode,
                 repair=repair,
                 fields_to_remove=fields_to_remove,
@@ -215,60 +277,6 @@ class TestChecker(TestCase):
                     self.assertIn(message_part, error_message)
             else:
                 self.assertEqual(error_message, expected_error)
-
-    # check_migration_index()
-    def test_migration_index_correct(self) -> None:
-        self.check_migration_index({"_migration_index": BACKEND_MIGRATION_INDEX})
-        self.check_migration_index(
-            {"_migration_index": BACKEND_MIGRATION_INDEX - 1},
-            migration_mode="permissive",
-        )
-
-    def test_migration_index_is_none_error(self) -> None:
-        self.check_migration_index(
-            data={"_migration_index": None},
-            expected_error="JSON does not match schema: data._migration_index must be integer",
-        )
-
-    def test_no_migration_index_error(self) -> None:
-        self.check_migration_index(
-            data={},
-            expected_error="JSON does not match schema: data must contain ['_migration_index'] properties",
-        )
-
-    def test_migration_index_too_small_error(self) -> None:
-        self.check_migration_index(
-            data={"_migration_index": 0},
-            expected_error="JSON does not match schema: data._migration_index must be bigger than or equal to 1",
-        )
-
-    def test_migration_index_lower_than_backend_MI_permissive_mode(self) -> None:
-        migration_index = BACKEND_MIGRATION_INDEX - 1
-        self.check_migration_index(
-            data={"_migration_index": migration_index},
-            migration_mode="permissive",
-        )
-
-    def test_migration_index_higher_than_backend_MI_error(self) -> None:
-        migration_index = BACKEND_MIGRATION_INDEX + 1
-        msg = f"\tThe given migration index ({migration_index}) is higher than the backend ({BACKEND_MIGRATION_INDEX})."
-
-        self.check_migration_index(
-            data={"_migration_index": migration_index},
-            expected_error=msg,
-        )
-        self.check_migration_index(
-            data={"_migration_index": migration_index},
-            expected_error=msg,
-            migration_mode="permissive",
-        )
-
-    def test_migration_index_lower_than_backend_MI_error(self) -> None:
-        migration_index = BACKEND_MIGRATION_INDEX - 1
-        self.check_migration_index(
-            data={"_migration_index": migration_index},
-            expected_error=f"\tThe given migration index ({migration_index}) is lower than the backend ({BACKEND_MIGRATION_INDEX}).",
-        )
 
     # check_collections()
     def test_collections_do_not_match_models_error(self) -> None:
