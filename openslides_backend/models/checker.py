@@ -426,7 +426,7 @@ class Checker:
 
         for field_name in ["state_extension", "recommendation_extension"]:
             basemsg = f"{collection}/{model['id']}/{field_name}: Relation Error:"
-            if (value := model.get(field_name)) is not None:
+            if value := model.get(field_name):
                 matches = EXTENSION_REFERENCE_IDS_PATTERN.findall(value)
                 for fqid in matches:
                     re_collection, re_id = collection_and_id_from_fqid(fqid)
