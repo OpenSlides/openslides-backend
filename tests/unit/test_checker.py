@@ -30,12 +30,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 BACKEND_MIGRATION_INDEX = get_backend_migration_index()
 
 
-class BaseTestChecker(TestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-
-class TestCheckerCheckMigrationIndex(BaseTestChecker):
+class TestCheckerCheckMigrationIndex(TestCase):
     def check_migration_index(
         self,
         data: dict[str, Any],
@@ -106,7 +101,7 @@ class TestCheckerCheckMigrationIndex(BaseTestChecker):
         )
 
 
-class TestCheckerCheckData(BaseTestChecker):
+class TestCheckerCheckData(TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.migration_index: dict[str, Any] = {
