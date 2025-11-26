@@ -1,6 +1,6 @@
 from collections.abc import Callable, Iterable
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from math import floor
 from typing import Any, cast
 
@@ -268,8 +268,7 @@ class Checker:
 
     def run_check(self) -> None:
         self.check_json()
-        # TODO reenable when import migration works
-        # self.check_migration_index()
+        self.check_migration_index()
         self.check_collections()
         for collection, models in self.data.items():
             if collection.startswith("_"):
@@ -345,9 +344,6 @@ class Checker:
                     error = f"{collection}/{model['id']}/{fieldname}: {str(e)}"
                     self.errors.append(error)
                     errors = True
-                except InvalidOperation:
-                    # invalide decimal json, will be checked at check_types
-                    pass
         return errors
 
     def fix_missing_default_values(
@@ -377,6 +373,7 @@ class Checker:
                     f"TODO implement check for field type {field_type}"
                 )
 
+            # TODO: move the validation logic to `field.validate` methods. Merge with the check from check_normal_fields().
             if not checker(model[field]):
                 error = f"{collection}/{model['id']}/{field}: Type error: Type is not {field_type}"
                 self.errors.append(error)
@@ -481,7 +478,7 @@ class Checker:
                 )
         elif isinstance(field_type, RelationListField):
             foreign_ids = model[field]
-            if not foreign_ids:
+            if not foreign_ids or not isinstance(foreign_ids, list):
                 return
 
             foreign_collection, foreign_field = self.get_to(field, collection)
@@ -516,6 +513,7 @@ class Checker:
                     foreign_field,
                     basemsg,
                 )
+            # TODO: cleanup. Unreachable code (mode and collection are checked in split_fqid), but error message there is not too useful
             elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
@@ -661,7 +659,7 @@ class Checker:
             collection, _id = collection_and_id_from_fqid(fqid)
             assert collection
             if self.mode == "external" and collection not in self.allowed_collections:
-                raise CheckException(f"Fqid {fqid} has an invalid collection")
+                raise CheckException(f"Fqid {fqid} has an invalid collection.")
             return collection, id
         except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")

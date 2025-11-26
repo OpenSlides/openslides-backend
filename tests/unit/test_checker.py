@@ -7,6 +7,7 @@ from unittest import TestCase
 from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
     BooleanField,
@@ -528,13 +529,26 @@ class TestCheckerCheckData(TestCase):
         raw_values = [
             None,
             [1, "2"],
-            {"first": 1, "second": "2"},
+            {"first": 1, "second": "2", "third": False},
         ]
         json_values = raw_values + [Jsonb(v) for v in raw_values]
         for value in json_values:
             self.theme_data["organization"]["1"]["saml_attr_mapping"] = value
+            self.check_data(data=self.theme_data)
+
+    def test_incorrect_types_json(self) -> None:
+        raw_values = [1, "2", 3.0, {1, 2}, {"second": 2.0}, Decimal("4.567")]
+        json_values = raw_values + [Jsonb(v) for v in raw_values]
+        field_type = model_registry["organization"]().get_field("saml_attr_mapping")
+        error = [
+            f"organization/1/saml_attr_mapping: Type error: Type is not {field_type}"
+        ]
+
+        for value in json_values:
+            self.theme_data["organization"]["1"]["saml_attr_mapping"] = value
             self.check_data(
                 data=self.theme_data,
+                expected_error=error,
             )
 
     def test_incorrect_fqid_error(self) -> None:
@@ -583,6 +597,26 @@ class TestCheckerCheckData(TestCase):
             self.check_data(
                 data=self.meeting_data,
                 expected_error=[base_error, value_error],
+            )
+
+    def test_incorrect_value_type_list_field_error(self) -> None:
+        list_fields: dict[str, Any] = {
+            "group": "permissions",
+            "organization_tag": "tagged_ids",
+            "organization": "gender_ids",
+        }
+        invalid_values = [set(), dict(), 1, "2", True, 4.0, Decimal("5.600")]
+        self.meeting_data.update(self.organization_tag_data)
+        for value in invalid_values:
+            for collection, field_name in list_fields.items():
+                self.meeting_data[collection]["1"][field_name] = value
+            # TODO: after unifying type checking logic also check field type in the message
+            self.check_data(
+                data=self.meeting_data,
+                expected_error=[
+                    f"{collection}/1/{field_name}: Type error: Type is not"
+                    for field in list_fields
+                ],
             )
 
     # check_special_fields()
@@ -635,10 +669,13 @@ class TestCheckerCheckData(TestCase):
     def test_external_mode_forbidden_field_error(self) -> None:
         for collection in ["theme", "committee", "organization"]:
             del self.meeting_data[collection]
+        self.meeting_data.update(
+            {"mediafile": {"1": {"id": 1, "owner_id": ONE_ORGANIZATION_FQID}}}
+        )
         self.check_data(
             data=self.meeting_data,
             mode="external",
-            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.",
+            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.\n\tmediafile/1/owner_id error: Fqid organization/1 has an invalid collection.",
         )
 
     def test_external_mode_forbidden_field_repair_false_error(self) -> None:
@@ -679,10 +716,13 @@ class TestCheckerCheckData(TestCase):
                 "1": {
                     "id": 1,
                     "owner_id": "meeting/1",
+                    "child_ids": [2],
+                    "meeting_mediafile_ids": [11],
                 },
                 "2": {
                     "id": 2,
                     "owner_id": "meeting/1",
+                    "parent_id": 1,
                     "meeting_mediafile_ids": [12],
                 },
                 "3": {
@@ -706,11 +746,20 @@ class TestCheckerCheckData(TestCase):
                 },
             },
             "meeting_mediafile": {
+                "11": {
+                    "id": 11,
+                    "mediafile_id": 1,
+                    "meeting_id": 1,
+                    "is_public": False,
+                    "access_group_ids": [1],
+                    "inherited_access_group_ids": [1],
+                },
                 "12": {
                     "id": 12,
                     "mediafile_id": 2,
                     "meeting_id": 1,
-                    "is_public": True,
+                    "is_public": False,
+                    "inherited_access_group_ids": [1],
                 },
                 "15": {
                     "id": 15,
@@ -728,8 +777,14 @@ class TestCheckerCheckData(TestCase):
                 "admin_group_id": 2,
                 "group_ids": [1, 2],
                 "mediafile_ids": [1, 2],
-                "meeting_mediafile_ids": [12, 15],
+                "meeting_mediafile_ids": [11, 12, 15],
                 "font_regular_id": 15,
+            }
+        )
+        self.meeting_data["group"]["1"].update(
+            {
+                "meeting_mediafile_access_group_ids": [11],
+                "meeting_mediafile_inherited_access_group_ids": [11, 12],
             }
         )
         self.meeting_data["group"]["2"] = {
