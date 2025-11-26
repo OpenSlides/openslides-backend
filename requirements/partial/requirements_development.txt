@@ -20,7 +20,7 @@ types-bleach==6.3.0.20251115
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 types-simplejson==3.20.0.20250822
-types-Pygments==2.19.0.20250809
+types-Pygments==2.19.0.20251121
 
 # analyze pstats from Profiler
 snakeviz==2.2.0
