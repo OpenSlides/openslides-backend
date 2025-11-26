@@ -41,11 +41,18 @@ from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
 
 migration_module = import_module(
-    "openslides_backend.migrations.migrations_reldb.0071_init_reldb"
+    "openslides_backend.migrations.migrations.0100_init_reldb"
 )
 
 # VARIABLE DECLARATION
-EXAMPLE_DATA_PATH = "data/example-data.json"
+EXAMPLE_DATA_PATH = os.path.realpath(
+    os.path.join(
+        os.getcwd(), "tests", "system", "migrations", "legacy-example-data.json"
+    )
+)
+DEPR_SQL_PATH = os.path.realpath(
+    os.path.join(os.getcwd(), "tests", "system", "migrations", "deprecated_schema.sql")
+)
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
@@ -87,16 +94,7 @@ class BaseMigrationTestCase(TestCase):
         create_db()
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                path = os.path.realpath(
-                    os.path.join(
-                        os.getcwd(),
-                        "openslides_backend",
-                        "services",
-                        "postgresql",
-                        "schema.sql",
-                    )
-                )
-                curs.execute(open(path).read())
+                curs.execute(open(DEPR_SQL_PATH).read())
 
         # 1.1) Create services and login.
         self.app = create_action_test_application()
@@ -179,7 +177,7 @@ class BaseMigrationTestCase(TestCase):
 
                 # 4.2) Write Migration Index like Docker setup would expect
                 curs.execute(
-                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2020-05-20', 1, {LAST_NON_REL_MIGRATION})"
+                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2020-05-20', 1, {LAST_NON_REL_MIGRATION + 1})"
                 )
 
     def check_data(self) -> None:
@@ -245,8 +243,8 @@ class BaseMigrationTestCase(TestCase):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT migration_index, migration_state FROM version;")
-                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
-                    if idx == LAST_NON_REL_MIGRATION:
+                for idx, row in enumerate(curs.fetchall(), 99):
+                    if row["migration_index"] == LAST_NON_REL_MIGRATION:
                         continue
                     assert {
                         "migration_index": idx,
@@ -257,7 +255,9 @@ class BaseMigrationTestCase(TestCase):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT migration_index, migration_state FROM version;")
-                for idx, row in enumerate(curs.fetchall(), LAST_NON_REL_MIGRATION):
+                for idx, row in enumerate(curs.fetchall(), 99):
+                    if row["migration_index"] == LAST_NON_REL_MIGRATION:
+                        continue
                     assert {
                         "migration_index": idx,
                         "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
@@ -362,7 +362,7 @@ class BaseMigrationTestCase(TestCase):
             Also it is tested that the new tables are created on top of an old basis and the old tables are deleted.
             It should be only used like this in this migration test since it leads to a performance problem
             once the actual connection context is entered the first time after the database was dropped and recreated.
-            # TODO store a copy of example_json before this gets merged.
+            # TODO store a recent copy of example_json before this gets merged.
         """
 
         # 5) Call data_manipulation of module
@@ -376,7 +376,7 @@ class BaseMigrationTestCase(TestCase):
                 # TODO only migrate one index? Would require altering the test-visible migration files.
                 "status": MigrationState.MIGRATION_REQUIRED,
                 "current_migration_index": LAST_NON_REL_MIGRATION,
-                "target_migration_index": LAST_NON_REL_MIGRATION + 1,
+                "target_migration_index": 100,
                 "migratable_models": {
                     "agenda_item": {"count": 15, "migrated": 0},
                     "assignment": {"count": 2, "migrated": 0},
@@ -432,7 +432,7 @@ class BaseMigrationTestCase(TestCase):
                 "status": MigrationState.MIGRATION_RUNNING,
                 "output": "160 of 160 models written to tables.\n",
                 "current_migration_index": LAST_NON_REL_MIGRATION,
-                "target_migration_index": LAST_NON_REL_MIGRATION + 1,
+                "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
             },
         }
@@ -493,7 +493,6 @@ class BaseMigrationTestCase(TestCase):
             Also it is tested that the new tables are created on top of an old basis and the old tables are deleted.
             It should be only used like this in this migration test since it leads to a performance problem
             once the actual connection context is entered the first time after the database was dropped and recreated.
-            # TODO store a copy of example_json before this gets merged.
         """
 
         # 5) Call data_manipulation of module

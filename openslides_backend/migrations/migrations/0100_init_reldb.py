@@ -10,7 +10,6 @@ from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
     MigrationHelper,
     MigrationState,
 )
@@ -352,7 +351,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     # clear replace tables as this migration writes the tables directly
     MigrationHelper.set_database_migration_info(
         curs,
-        LAST_NON_REL_MIGRATION + 1,
+        100,
         MigrationState.FINALIZATION_REQUIRED,
         replace_tables={},
         writable=True,

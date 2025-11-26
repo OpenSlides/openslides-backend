@@ -70,11 +70,12 @@ def create_schema() -> None:
                 path = os.path.realpath(
                     os.path.join("meta", "dev", "sql", "schema_relational.sql")
                 )
-                print("Relational schema applied.\n", flush=True)
                 cursor.execute(open(path).read())
-                if db_migration_index == LAST_NON_REL_MIGRATION:
+                print("Relational schema applied.\n", flush=True)
+                if db_migration_index == LAST_NON_REL_MIGRATION + 1:
                     # migration states for indices higher than last non-relational migration will be set by the migration manager.
                     type_ = "legacy"
+                    db_migration_index -= 1
                     writable = False
                 else:
                     type_ = "fresh"

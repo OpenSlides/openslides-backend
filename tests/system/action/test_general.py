@@ -1,5 +1,3 @@
-
-
 from openslides_backend.http.views.action_view import ActionView
 from tests.system.util import get_route_path
 
