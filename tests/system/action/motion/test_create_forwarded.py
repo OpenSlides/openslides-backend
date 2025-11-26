@@ -323,13 +323,11 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 14,
                 "non_forwarded_amendment_amount": 0,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "amendment_result_data": [],
                         "id": 15,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                     }
                 ],
             }
@@ -344,6 +342,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_ids": [15],
                 "state_id": 4,
                 "additional_submitter": "committee_forwarder",
+                "sequential_number": 2,
             },
         )
         self.assert_model_exists(
@@ -357,6 +356,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "committee_forwarder",
                 "marked_forwarded": False,
+                "sequential_number": 1,
             },
         )
 
@@ -472,23 +472,19 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 18,
                 "non_forwarded_amendment_amount": 1,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "id": 19,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                         "amendment_result_data": [],
                     },
                     {
                         "id": 20,
                         "non_forwarded_amendment_amount": 1,
-                        "sequential_number": 3,
                         "amendment_result_data": [
                             {
                                 "id": 21,
                                 "non_forwarded_amendment_amount": 0,
-                                "sequential_number": 4,
                                 "amendment_result_data": [],
                             },
                         ],
@@ -506,7 +502,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "text": "test",
                 "amendment_ids": [19, 20],
                 "additional_submitter": "A man, A hairy woman",
-                "sequential_number": 1,
+                "sequential_number": 4,
                 "state_id": 4,
             },
         )
@@ -520,7 +516,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "meeting_id": 4,
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "A man",
-                "sequential_number": 2,
+                "sequential_number": 1,
                 "state_id": 4,
                 "marked_forwarded": True,
             },
@@ -552,7 +548,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "state_id": 4,
                 "amendment_paragraphs": {"0": "testssss"},
                 "additional_submitter": None,
-                "sequential_number": 4,
+                "sequential_number": 2,
                 "marked_forwarded": True,
             },
         )
@@ -1277,12 +1273,10 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 4,
                 "non_forwarded_amendment_amount": 1,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "id": 5,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                         "amendment_result_data": [],
                     },
                 ],
@@ -1300,7 +1294,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_ids": [5],
                 "all_origin_ids": [1],
                 "origin_meeting_id": 1,
-                "sequential_number": 1,
+                "sequential_number": 2,
                 "additional_submitter": "committee_forwarder",
                 "identical_motion_ids": None,
             },
@@ -1317,6 +1311,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_paragraphs": {"0": "paragraph"},
                 "all_origin_ids": [3],
                 "additional_submitter": "committee_forwarder",
+                "sequential_number": 1,
             },
         )
         self.assert_model_not_exists("motion/6")

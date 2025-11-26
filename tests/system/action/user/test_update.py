@@ -3144,7 +3144,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "pollmethod": "YNA",
                     "meeting_id": 1,
                     "option_ids": [1, 2],
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "option/1": {
@@ -3379,17 +3378,15 @@ class UserUpdateActionTest(BaseActionTestCase):
             ),
             None,
         )
-        users["committeead60"] = self.create_user("committeead60"), None
+        users["committeead60"] = (
+            self.create_user("committeead60", committee_management_ids=[60]),
+            None,
+        )
         users["meetingad1"] = self.create_user("meetingad1", [2]), 1
         users["can_manage1"] = self.create_user("can_manage1", [3]), 2
         users["can_update4"] = self.create_user("can_update1", [6]), 3
         users["participant1"] = self.create_user("participant1", [1]), 4
         users["account"] = self.create_user("account"), None
-        self.set_models(
-            {
-                "committee/60": {"manager_ids": [users["committeead60"][0]]},
-            }
-        )
         self.create_user("dummy_meeting_ad", [2])
         return users
 

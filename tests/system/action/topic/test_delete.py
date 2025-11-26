@@ -10,13 +10,11 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.create_meeting()
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "topic/111": {
-                "sequential_number": 1,
                 "title": "title_srtgb123",
                 "meeting_id": 1,
             },
             "list_of_speakers/23": {
                 "content_object_id": "topic/111",
-                "sequential_number": 11,
                 "meeting_id": 1,
             },
             "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/111"},
@@ -26,13 +24,11 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/111",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/111"},
@@ -47,12 +43,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
             {
                 "topic/112": {
                     "meeting_id": 1,
-                    "sequential_number": 12,
                     "title": "title_srtgb123",
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/112",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/9": {"meeting_id": 1, "content_object_id": "topic/112"},
@@ -66,12 +60,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/222": {
-                    "sequential_number": 22,
                     "closed": False,
                     "content_object_id": "topic/111",
                     "meeting_id": 1,
@@ -114,14 +106,12 @@ class TopicDeleteActionTest(BaseActionTestCase):
             {
                 "topic/1": {
                     "title": "tipuc",
-                    "sequential_number": 1,
                     "agenda_item_id": 3,
                     "list_of_speakers_id": 3,
                     "meeting_id": 1,
                 },
                 "agenda_item/3": {"content_object_id": "topic/1", "meeting_id": 1},
                 "list_of_speakers/3": {
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                     "meeting_id": 1,
                 },

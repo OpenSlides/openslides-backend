@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -9,17 +11,7 @@ class CreatePoll(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.set_models(
-            {
-                "assignment/1": {
-                    "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                    "open_posts": 1,
-                    "meeting_id": 1,
-                },
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "user/3": {"username": "User3"},
-            },
-        )
+        self.create_assignment(1, 1, {"open_posts": 1})
 
     def test_create_correct(self) -> None:
         response = self.request(
@@ -66,7 +58,12 @@ class CreatePoll(BasePollTestCase):
         assert "options" not in poll
         self.assert_model_exists(
             "option/1",
-            {"text": "test2", "poll_id": 1, "meeting_id": 1, "yes": "10.000000"},
+            {
+                "text": "test2",
+                "poll_id": 1,
+                "meeting_id": 1,
+                "yes": Decimal("10.000000"),
+            },
         )
         self.assert_model_exists(
             "option/2",
@@ -74,8 +71,8 @@ class CreatePoll(BasePollTestCase):
                 "text": "global option",
                 "used_as_global_option_in_poll_id": 1,
                 "meeting_id": 1,
-                "yes": "2.000000",
-                "no": "-2.000000",
+                "yes": Decimal("2.000000"),
+                "no": Decimal("-2.000000"),
             },
         )
         self.assert_history_information("assignment/1", ["Ballot created"])
@@ -120,22 +117,18 @@ class CreatePoll(BasePollTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "poll/1", {"votesvalid": "3.000000", "votesinvalid": "-2.000000"}
+            "poll/1",
+            {"votesvalid": Decimal("3.000000"), "votesinvalid": Decimal("-2.000000")},
         )
-        self.assert_model_exists("vote/1", {"value": "Y", "weight": "10.000000"})
-        self.assert_model_exists("vote/2", {"value": "N", "weight": "-2.000000"})
+        self.assert_model_exists(
+            "vote/1", {"value": "Y", "weight": Decimal("10.000000")}
+        )
+        self.assert_model_exists(
+            "vote/2", {"value": "N", "weight": Decimal("-2.000000")}
+        )
 
     def test_create_correct_with_topic(self) -> None:
-        self.set_models(
-            {
-                "topic/12": {
-                    "title": "Wichtiges Topic",
-                    "text": "blablabla",
-                    "meeting_id": 1,
-                }
-            }
-        )
-
+        self.create_topic(12, 1, {"title": "Wichtiges Topic", "text": "blablabla"})
         response = self.request(
             "poll.create",
             {
@@ -204,7 +197,7 @@ class CreatePoll(BasePollTestCase):
                 "text": "test2",
                 "poll_id": 1,
                 "meeting_id": 1,
-                "yes": "10.000000",
+                "yes": Decimal("10.000000"),
                 "weight": 1,
             },
         )
@@ -214,7 +207,7 @@ class CreatePoll(BasePollTestCase):
                 "text": "test3",
                 "poll_id": 1,
                 "meeting_id": 1,
-                "no": "0.999900",
+                "no": Decimal("0.999900"),
                 "weight": 2,
             },
         )
@@ -224,20 +217,20 @@ class CreatePoll(BasePollTestCase):
                 "text": "test4",
                 "poll_id": 1,
                 "meeting_id": 1,
-                "no": "11.000000",
+                "no": Decimal("11.000000"),
                 "weight": 3,
             },
         )
-        option_4 = self.assert_model_exists(
+        self.assert_model_exists(
             "option/4",
             {
                 "text": "global option",
                 "used_as_global_option_in_poll_id": 1,
                 "meeting_id": 1,
                 "weight": 1,
+                "yes": None,
             },
         )
-        assert option_4.get("yes") is None
 
     def test_all_fields(self) -> None:
         response = self.request(
@@ -261,14 +254,24 @@ class CreatePoll(BasePollTestCase):
             "poll/1",
             {
                 "title": "test_title_ahThai4pae1pi4xoogoo",
+                "description": "test_description_ieM8ThuasoSh8aecai8p",
+                "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "pollmethod": "YN",
-                "type": "pseudoanonymous",
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
                 "is_pseudoanonymized": True,
+                "option_ids": [1],
                 "global_yes": False,
                 "global_no": False,
                 "global_abstain": False,
-                "description": "test_description_ieM8ThuasoSh8aecai8p",
-                "onehundred_percent_base": "YN",
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "text": "test",
+                "poll_id": 1,
+                "meeting_id": 1,
+                "weight": 1,
             },
         )
 
@@ -280,16 +283,18 @@ class CreatePoll(BasePollTestCase):
                 "title": "test_title_ahThai4pae1pi4xoogoo",
                 "pollmethod": "YN",
                 "type": "pseudoanonymous",
+                "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_YN,
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
                 "publish_immediately": True,
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "publish_immediately only allowed for analog polls."
-            in response.json["message"]
+        self.assertEqual(
+            "publish_immediately only allowed for analog polls.",
+            response.json["message"],
         )
+        self.assert_model_not_exists("poll/1")
 
     def test_no_options(self) -> None:
         response = self.request(
@@ -305,8 +310,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data.options must contain at least 1 items", response.json["message"]
+        self.assertEqual(
+            "Action poll.create: data.options must contain at least 1 items",
+            response.json["message"],
         )
         self.assert_model_not_exists("poll/1")
 
@@ -349,7 +355,6 @@ class CreatePoll(BasePollTestCase):
             self.assert_model_not_exists("poll/1")
 
     def test_with_groups(self) -> None:
-        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
         response = self.request(
             "poll.create",
             {
@@ -381,10 +386,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("poll/1", {"entitled_group_ids": []})
+        self.assert_model_exists("poll/1", {"entitled_group_ids": None})
 
     def test_with_groups_and_analog(self) -> None:
-        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
         response = self.request(
             "poll.create",
             {
@@ -399,12 +403,11 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "entitled_group_ids is not allowed for analog." in response.json["message"]
+        self.assertEqual(
+            "entitled_group_ids is not allowed for analog.", response.json["message"]
         )
 
     def test_with_100_percent_base_entitled_and_analog(self) -> None:
-        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
         response = self.request(
             "poll.create",
             {
@@ -418,9 +421,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "onehundred_percent_base: value entitled is not allowed for analog."
-            in response.json["message"]
+        self.assertEqual(
+            "onehundred_percent_base: value entitled is not allowed for analog.",
+            response.json["message"],
         )
 
     def test_not_supported_type(self) -> None:
@@ -506,9 +509,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "This onehundred_percent_base not allowed in this pollmethod"
-            in response.json["message"]
+        self.assertEqual(
+            "This onehundred_percent_base not allowed in this pollmethod.",
+            response.json["message"],
         )
         self.assert_model_not_exists("poll/1")
 
@@ -526,9 +529,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "This onehundred_percent_base not allowed in this pollmethod"
-            in response.json["message"]
+        self.assertEqual(
+            "This onehundred_percent_base not allowed in this pollmethod.",
+            response.json["message"],
         )
         self.assert_model_not_exists("poll/1")
 
@@ -546,9 +549,9 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "This onehundred_percent_base not allowed in this pollmethod"
-            in response.json["message"]
+        self.assertEqual(
+            "This onehundred_percent_base not allowed in this pollmethod.",
+            response.json["message"],
         )
         self.assert_model_not_exists("poll/1")
 
@@ -566,7 +569,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The collection 'assignment' is not available for field 'content_object_id' in collection 'option'.",
             response.json["message"],
         )
@@ -615,13 +618,6 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
-                "user/1": {"meeting_ids": [1]},
-            }
-        )
         self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
@@ -645,12 +641,8 @@ class CreatePoll(BasePollTestCase):
         self.assert_status_code(response, 200)
 
     def test_analog_poll_without_YNA_values(self) -> None:
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "state_id": 444},
-                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-            }
-        )
+        self.create_motion(1, 3)
+        self.set_models({"motion_state/1": {"allow_create_poll": True}})
         response = self.request(
             "poll.create",
             {
@@ -669,9 +661,9 @@ class CreatePoll(BasePollTestCase):
             {
                 "content_object_id": "motion/3",
                 "vote_ids": [1, 2, 3],
-                "yes": "-2.000000",
-                "no": "-2.000000",
-                "abstain": "-2.000000",
+                "yes": Decimal("-2.000000"),
+                "no": Decimal("-2.000000"),
+                "abstain": Decimal("-2.000000"),
                 "weight": 1,
             },
         )
@@ -702,90 +694,50 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists("poll/1", {"state": "created"})
 
     def test_create_user_option_valid(self) -> None:
-        self.create_meeting(42)
-        self.set_models(
-            {
-                "meeting/42": {
-                    "meeting_user_ids": [1],
-                },
-                "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
-                "user/1": {
-                    "meeting_user_ids": [1],
-                    "meeting_ids": [42],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 42,
-                    "user_id": 1,
-                    "group_ids": [5],
-                },
-                "assignment/2": {
-                    "meeting_id": 42,
-                },
-            }
-        )
+        self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
             {
                 "title": "test",
                 "type": "analog",
                 "pollmethod": "YNA",
-                "options": [
-                    {"content_object_id": "user/1"},
-                ],
-                "meeting_id": 42,
+                "options": [{"content_object_id": "user/1"}],
+                "meeting_id": 1,
                 "onehundred_percent_base": "YN",
-                "content_object_id": "assignment/2",
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "poll/1",
-            {
-                "option_ids": [1],
-                "meeting_id": 42,
-            },
+            {"option_ids": [1], "meeting_id": 1},
         )
         self.assert_model_exists(
             "option/1",
-            {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 42},
+            {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 1},
         )
 
     def test_create_user_option_invalid(self) -> None:
         self.create_meeting(7)
         self.create_meeting(42)
-        self.set_models(
-            {
-                "meeting/42": {"meeting_user_ids": [1]},
-                "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
-                "user/1": {
-                    "meeting_user_ids": [1],
-                    "meeting_ids": [42],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 42,
-                    "user_id": 1,
-                    "group_ids": [5],
-                },
-            }
-        )
+        self.set_user_groups(1, [42])
+
         response = self.request(
             "poll.create",
             {
                 "title": "test",
                 "type": "analog",
                 "pollmethod": "YNA",
-                "options": [
-                    {"content_object_id": "user/1"},
-                ],
+                "options": [{"content_object_id": "user/1"}],
                 "meeting_id": 7,
                 "onehundred_percent_base": "YN",
                 "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"]
-            == "The following models do not belong to meeting 7: ['user/1']"
+        self.assertEqual(
+            "The following models do not belong to meeting 7: ['user/1']",
+            response.json["message"],
         )
 
     def test_create_without_content_object(self) -> None:
@@ -801,7 +753,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert response.json["message"] == "No 'content_object_id' was given"
+        self.assertEqual("No 'content_object_id' was given", response.json["message"])
 
     def test_create_no_permissions_assignment(self) -> None:
         self.base_permission_test(
@@ -859,12 +811,8 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_forbidden_to_create_poll(self) -> None:
-        self.set_models(
-            {
-                "motion/23": {"meeting_id": 1, "state_id": 444},
-                "motion_state/444": {"meeting_id": 1, "allow_create_poll": False},
-            }
-        )
+        self.create_motion(1, 23)
+        self.set_models({"motion_state/1": {"allow_create_poll": False}})
         response = self.request(
             "poll.create",
             {
@@ -878,11 +826,14 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Motion state doesn't allow to create poll." in response.json["message"]
+        self.assertEqual(
+            "Motion state doesn't allow to create poll.", response.json["message"]
+        )
 
     def test_create_no_permissions_motion(self) -> None:
+        self.create_motion(1, 23)
         self.base_permission_test(
-            {"motion/23": {"meeting_id": 1}},
+            {"motion_state/1": {"allow_create_poll": False}},
             "poll.create",
             {
                 "title": "test",
@@ -899,11 +850,9 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_permissions_motion(self) -> None:
+        self.create_motion(1, 23)
         self.base_permission_test(
-            {
-                "motion/23": {"meeting_id": 1, "state_id": 444},
-                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-            },
+            {"motion_state/1": {"allow_create_poll": True}},
             "poll.create",
             {
                 "title": "test",
@@ -921,9 +870,7 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_no_permissions_topic(self) -> None:
-        self.set_models(
-            {"meeting/1": {"topic_ids": [13]}, "topic/13": {"meeting_id": 1}}
-        )
+        self.create_topic(13, 1)
         self.base_permission_test(
             {},
             "poll.create",
@@ -942,9 +889,7 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_permissions_topic(self) -> None:
-        self.set_models(
-            {"meeting/1": {"topic_ids": [13]}, "topic/13": {"meeting_id": 1}}
-        )
+        self.create_topic(13, 1)
         self.base_permission_test(
             {},
             "poll.create",
@@ -1027,6 +972,7 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_not_exists("poll/1")
 
     def test_create_poll_candidate_list(self) -> None:
+        self.set_models({"user/3": {"username": "User3"}})
         response = self.request(
             "poll.create",
             {
@@ -1077,6 +1023,7 @@ class CreatePoll(BasePollTestCase):
         self.set_models(
             {
                 "user/2": {"username": "User2"},
+                "user/3": {"username": "User3"},
                 "user/4": {"username": "User4"},
             }
         )
@@ -1120,7 +1067,6 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_with_anonymous_in_entitled_group_ids(self) -> None:
-        self.create_meeting()
         self.set_anonymous()
         response = self.request(
             "poll.create",
@@ -1141,12 +1087,8 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_live_voting_named_motion_poll(self) -> None:
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "state_id": 444},
-                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-            }
-        )
+        self.create_motion(1, 3)
+        self.set_models({"motion_state/1": {"allow_create_poll": True}})
         response = self.request(
             "poll.create",
             {
@@ -1188,17 +1130,14 @@ class CreatePoll(BasePollTestCase):
             "live_voting_enabled": True,
         }
         if is_motion_poll:
-            self.set_models(
-                {
-                    "motion/3": {"meeting_id": 1, "state_id": 444},
-                    "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-                }
-            )
+            self.create_motion(1, 3)
+            self.set_models({"motion_state/1": {"allow_create_poll": True}})
             request_data["content_object_id"] = "motion/3"
 
         response = self.request("poll.create", request_data)
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
-        assert (
-            "live_voting_enabled only allowed for named motion polls."
-        ) in response.json["message"]
+        self.assertEqual(
+            "live_voting_enabled only allowed for named motion polls.",
+            response.json["message"],
+        )

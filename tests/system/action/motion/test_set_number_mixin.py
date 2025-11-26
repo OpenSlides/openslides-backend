@@ -189,7 +189,6 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "motion_category/176": {
                     "name": "name_category_176",
                     "meeting_id": 222,
-                    "sequential_number": 176,
                 },
             }
         )
@@ -230,7 +229,6 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "motion_category/176": {
                     "name": "name_category_176",
                     "meeting_id": 222,
-                    "sequential_number": 176,
                 },
             }
         )
@@ -388,18 +386,15 @@ class SetNumberMixinSerialTest(BaseActionTestCase):
                     "name": "A",
                     "prefix": "A",
                     "meeting_id": 222,
-                    "sequential_number": 7,
                 },
                 "motion_category/8": {
                     "name": "B",
                     "prefix": "B",
                     "meeting_id": 222,
-                    "sequential_number": 8,
                 },
                 "motion_category/9": {
                     "name": "no prefix",
                     "meeting_id": 222,
-                    "sequential_number": 9,
                 },
             }
         )
@@ -533,7 +528,6 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                     "name": "A",
                     "prefix": "A",
                     "meeting_id": 222,
-                    "sequential_number": 7,
                 },
             }
         )
@@ -546,12 +540,10 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                     "name": "B",
                     "prefix": "B",
                     "meeting_id": 222,
-                    "sequential_number": 8,
                 },
                 "motion_category/9": {
                     "name": "no prefix",
                     "meeting_id": 222,
-                    "sequential_number": 9,
                 },
             }
         )
@@ -904,7 +896,6 @@ class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
                     "name": "A",
                     "prefix": "A",
                     "meeting_id": 222,
-                    "sequential_number": 7,
                 },
                 "motion_state/76": {
                     "name": "test0",

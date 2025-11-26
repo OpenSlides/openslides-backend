@@ -84,7 +84,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },
@@ -113,7 +112,6 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "pollmethod": "YNA",
                     "onehundred_percent_base": "YNA",
                     "meeting_id": 1,
-                    "sequential_number": base,
                     "content_object_id": "motion/1",
                     "state": state,
                 }
@@ -133,7 +131,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },
@@ -164,7 +161,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },

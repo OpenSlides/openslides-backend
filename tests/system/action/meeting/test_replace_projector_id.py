@@ -11,7 +11,7 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
                 "projector/1": {
                     "used_as_default_projector_for_motion_in_meeting_id": 1
                 },
-                "projector/20": {"meeting_id": 1, "sequential_number": 20},
+                "projector/20": {"meeting_id": 1},
             }
         )
 
