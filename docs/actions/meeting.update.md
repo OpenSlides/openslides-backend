@@ -122,6 +122,7 @@
     motion_poll_default_type: string;
     motion_poll_default_method: string;
     motion_poll_default_onehundred_percent_base: string;
+    motion_poll_default_required_majority: string;
     motion_poll_default_group_ids: Id[];
     motion_poll_default_backend: string;
     motion_poll_projection_name_order_first: string;
@@ -156,6 +157,7 @@
     assignment_poll_default_type: string;
     assignment_poll_default_method: string;
     assignment_poll_default_onehundred_percent_base: string;
+    assignment_poll_default_required_majority: string;
     assignment_poll_default_group_ids: Id[];
     assignment_poll_default_backend: string;
 
