@@ -22,7 +22,7 @@ jobs:
         working-directory: .github/docker-compose
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -50,9 +50,7 @@ jobs:
     name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-        with:
-          submodules: true
+      - uses: actions/checkout@v6
 
       - name: Run tests
         run: dev/run-tests.sh
@@ -61,7 +59,7 @@ jobs:
     name: Build and test local dev setup
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         path: openslides-backend
 
@@ -72,14 +70,14 @@ jobs:
         echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
 
     - name: Clone auth service
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-auth-service
         ref: ${{ env.AUTH_COMMIT_HASH }}
         path: openslides-auth-service
 
     - name: Clone vote service
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-vote-service
         ref: main
@@ -93,7 +91,7 @@ jobs:
     name: Check coding style
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
@@ -132,7 +130,7 @@ jobs:
       PYTHONPATH: .
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
