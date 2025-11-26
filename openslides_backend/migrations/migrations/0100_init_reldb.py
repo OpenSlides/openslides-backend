@@ -107,7 +107,7 @@ class Sql_helper:
             Casts data so it is psycopg friendly in case it is not parsable by psycopg.
             Known and implemented cases:
                 - Decimals
-                - Dictionaries
+                - json (mostly Dictionaries)
                 - Timestamps
         Input:
             - data: python formatted data
@@ -118,7 +118,10 @@ class Sql_helper:
         if field is None:
             return data
         elif isinstance(field, DecimalField):
-            data = Decimal(data)
+            if field.constraints.get("minimum") == "0.000001" and data == "0.000000":
+                data = None
+            else:
+                data = Decimal(data)
         elif isinstance(field, TimestampField):
             data = datetime.fromtimestamp(data)
         elif isinstance(field, JSONField):
