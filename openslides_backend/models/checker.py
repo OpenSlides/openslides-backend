@@ -660,7 +660,7 @@ class Checker:
             assert collection
             if self.mode == "external" and collection not in self.allowed_collections:
                 raise CheckException(f"Fqid {fqid} has an invalid collection.")
-            return collection, id
+            return collection, _id
         except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")
 
