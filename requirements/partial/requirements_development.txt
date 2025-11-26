@@ -16,7 +16,7 @@ pyyaml==6.0.3
 # typing
 types-babel==2.11.0.15
 types-beautifulsoup4==4.12.0.20250516
-types-bleach==6.3.0.20251029
+types-bleach==6.3.0.20251115
 types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 types-simplejson==3.20.0.20250822
