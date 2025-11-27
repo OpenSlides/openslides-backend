@@ -36,7 +36,7 @@ def check_meetings(datastore: Database, meeting_id: int | None) -> dict[int, str
 
     errors: dict[int, str] = {}
     for meeting_id in meeting_ids:
-        export = export_meeting(datastore, meeting_id, True)
+        export = export_meeting(datastore, meeting_id, True, True)
         try:
             Checker(
                 data=export,

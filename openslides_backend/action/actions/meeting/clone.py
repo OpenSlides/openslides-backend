@@ -94,7 +94,9 @@ class MeetingClone(ForwardMediafilesMixin, MeetingImport):
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        meeting_json = export_meeting(self.datastore, instance["meeting_id"], True)
+        meeting_json = export_meeting(
+            self.datastore, instance["meeting_id"], True, True
+        )
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
         additional_admin_ids = instance.pop("admin_ids", None) or []

@@ -3,6 +3,7 @@ from typing import Any
 import fastjsonschema
 
 from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.shared.export_helper import get_fields_for_export
 from openslides_backend.shared.patterns import is_reserved_field
 
 from ..models.checker import Checker, CheckException
@@ -32,7 +33,11 @@ def check_everything(datastore: Database) -> None:
             str(id): {
                 field: value
                 for field, value in model.items()
-                if not is_reserved_field(field)
+                if (
+                    field in get_fields_for_export(collection)
+                    and not is_reserved_field(field)
+                    and value is not None
+                )
             }
             for id, model in models.items()
         }
