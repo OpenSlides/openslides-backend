@@ -51,9 +51,9 @@ COLLECTION_TO_MIGRATION_FIELDS: dict[str, dict[str, MigrationDataField]] = {
             "to_field": "meeting_user_id",
             "on_delete": None,
         },
-        "supported_motion_ids": {
-            "to_collection": "motion",
-            "to_field": "supporter_meeting_user_ids",
+        "motion_supporter_ids": {
+            "to_collection": "motion_supporter",
+            "to_field": "meeting_user_id",
             "on_delete": None,
         },
         "motion_editor_ids": {
@@ -164,7 +164,7 @@ class Migration(BaseModelMigration):
     This migration removes meeting_users without groups
     """
 
-    target_migration_index = 72
+    target_migration_index = 73
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         self.end_time = round(time())
