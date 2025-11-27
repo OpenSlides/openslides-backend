@@ -45,6 +45,7 @@ class PollUpdateAction(
             "title",
             "description",
             "onehundred_percent_base",
+            "required_majority",
             "votesvalid",
             "votesinvalid",
             "votescast",
