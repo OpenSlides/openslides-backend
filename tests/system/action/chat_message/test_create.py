@@ -51,6 +51,23 @@ class ChatMessageCreate(BaseActionTestCase):
         assert model.get("chat_group_id") == 2
         self.assert_model_exists("chat_group/2", {"chat_message_ids": [1]})
 
+    def test_create_correct_as_superadmin_not_in_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "chat_group/2": {"meeting_id": 1, "write_group_ids": [3]},
+                "group/3": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "chat_message.create", {"chat_group_id": 2, "content": "test"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Cannot create chat message: You are not a participant of the meeting."
+            in response.json["message"]
+        )
+
     def test_create_correct_with_right_can_manage(self) -> None:
         self.create_meeting()
         self.set_models(
