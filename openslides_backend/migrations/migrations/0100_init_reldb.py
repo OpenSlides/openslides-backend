@@ -119,7 +119,7 @@ class Sql_helper:
             return data
         elif isinstance(field, DecimalField):
             if field.constraints.get("minimum") == "0.000001" and data == "0.000000":
-                data = None
+                data = field.constraints["minimum"]
             else:
                 data = Decimal(data)
         elif isinstance(field, TimestampField):
