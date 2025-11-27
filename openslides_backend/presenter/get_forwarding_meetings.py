@@ -1,4 +1,5 @@
 from typing import Any
+from time import time
 
 import fastjsonschema
 
@@ -59,6 +60,7 @@ class GetForwardingMeetings(BasePresenter):
         )
 
         result = []
+        now = round(time())
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
                 fqid_from_collection_and_id("committee", forward_to_committee_id),
@@ -71,6 +73,8 @@ class GetForwardingMeetings(BasePresenter):
                     fqid_from_collection_and_id("meeting", meeting_id2),
                     ["name", "is_active_in_organization_id", "start_time", "end_time"],
                 )
+                end_time = end if (end:=meeting2.get("end_time")) else None
+                start_time =start if (start:=meeting2.get("start_time")) else None
                 if meeting2.get("is_active_in_organization_id"):
                     meeting_result.append(
                         {
