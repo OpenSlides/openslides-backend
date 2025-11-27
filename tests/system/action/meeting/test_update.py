@@ -386,14 +386,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.basic_test(
             {
                 "motion_poll_default_required_majority": "two_third_majority",
-                "assignment_poll_default_required_majority": "no_majority",
+                "assignment_poll_default_required_majority": "absolute_majority",
             }
         )
         self.assert_model_exists(
             "meeting/1",
             {
                 "motion_poll_default_required_majority": "two_third_majority",
-                "assignment_poll_default_required_majority": "no_majority",
+                "assignment_poll_default_required_majority": "absolute_majority",
             },
         )
 
