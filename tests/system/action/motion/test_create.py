@@ -93,7 +93,6 @@ class MotionCreateActionTest(BaseActionTestCase):
             "sort_parent_id": 1,
             "category_id": 124,
             "block_id": 78,
-            "supporter_meeting_user_ids": [1],
             "tag_ids": [56],
             "text": "test",
             "reason": "test",
@@ -106,6 +105,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             | {
                 "workflow_id": 12,
                 "attachment_mediafile_ids": [8],
+                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -115,9 +115,15 @@ class MotionCreateActionTest(BaseActionTestCase):
                 **motion,
                 "attachment_meeting_mediafile_ids": [80],
                 "additional_submitter": "test",
+                "supporter_ids": [1],
+                "submitter_ids": None,
+                "supporter_meeting_user_ids": None,
             },
         )
-        assert motion.get("submitter_ids") is None
+        self.assert_model_exists(
+            "motion_supporter/1",
+            {"motion_id": 2, "meeting_id": 1, "meeting_user_id": 1},
+        )
 
     def test_create_normal_and_additional_submitter(self) -> None:
         """Also checks that this works with just Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE_METADATA permissions."""

@@ -111,6 +111,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         for i in range(4):
             self.assert_model_deleted(f"motion_submitter/{i+1}")
         self.assert_model_deleted("motion_comment/1")
+        self.assert_model_deleted("motion_supporter/1")
         self.assert_model_deleted("motion_comment_section/1")
         for i in range(2):
             self.assert_model_deleted(f"motion_category/{i+1}")
