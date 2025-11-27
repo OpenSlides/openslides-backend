@@ -215,17 +215,10 @@ class MeetingUser(Model):
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_user_id"}, is_view_field=True, equal_fields="meeting_id"
     )
-    supported_motion_ids = fields.RelationListField(
-        to={"motion": "supporter_meeting_user_ids"},
+    motion_supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "meeting_user_id"},
         is_view_field=True,
-        is_primary=True,
         equal_fields="meeting_id",
-        write_fields=(
-            "nm_meeting_user_supported_motion_ids_motion_t",
-            "meeting_user_id",
-            "motion_id",
-            [],
-        ),
     )
     motion_editor_ids = fields.RelationListField(
         to={"motion_editor": "meeting_user_id"},
@@ -941,6 +934,11 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+    motion_supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
     )
@@ -1894,16 +1892,11 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
     )
-    supporter_meeting_user_ids = fields.RelationListField(
-        to={"meeting_user": "supported_motion_ids"},
+    supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         equal_fields="meeting_id",
-        write_fields=(
-            "nm_meeting_user_supported_motion_ids_motion_t",
-            "motion_id",
-            "meeting_user_id",
-            [],
-        ),
     )
     editor_ids = fields.RelationListField(
         to={"motion_editor": "motion_id"},
@@ -2008,6 +2001,23 @@ class MotionSubmitter(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_submitter_ids"}, required=True, constant=True
+    )
+
+
+class MotionSupporter(Model):
+    collection = "motion_supporter"
+    verbose_name = "motion supporter"
+
+    id = fields.IntegerField(required=True, constant=True)
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_supporter_ids"})
+    motion_id = fields.RelationField(
+        to={"motion": "supporter_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_supporter_ids"}, required=True, constant=True
     )
 
 

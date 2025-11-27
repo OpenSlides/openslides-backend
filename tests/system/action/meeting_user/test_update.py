@@ -36,7 +36,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "assignment_candidate_ids": [1],
             "motion_working_group_speaker_ids": [1],
             "motion_editor_ids": [1],
-            "supported_motion_ids": [11],
+            "motion_supporter_ids": [1],
             "chat_message_ids": [1],
         }
         self.set_models(
@@ -82,6 +82,11 @@ class MeetingUserUpdate(BaseActionTestCase):
                     "content": "bla",
                     "meeting_user_id": 2,
                 },
+                "motion_supporter/1": {
+                    "motion_id": 11,
+                    "meeting_id": 1,
+                    "meeting_user_id": 2,
+                },
             }
         )
         response = self.request(
@@ -95,7 +100,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "assignment_candidate_ids": None,
                 "motion_working_group_speaker_ids": None,
                 "motion_editor_ids": None,
-                "supported_motion_ids": [11],
+                "motion_supporter_ids": None,
                 "chat_message_ids": None,
             },
         )

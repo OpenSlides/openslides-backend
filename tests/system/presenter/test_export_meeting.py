@@ -212,7 +212,11 @@ class TestExportMeeting(BasePresenterTestCase):
                 "meeting_user/112": {
                     "meeting_id": 1,
                     "user_id": 12,
-                    "supported_motion_ids": [30],
+                },
+                "motion_supporter/1": {
+                    "motion_id": 30,
+                    "meeting_id": 1,
+                    "meeting_user_id": 112,
                 },
                 "meeting_user/114": {
                     "meeting_id": 1,
