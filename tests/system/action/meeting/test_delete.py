@@ -232,9 +232,47 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "group/11": {
                     "meeting_user_ids": [2],
                 },
+                "assignment/53": {"history_entry_ids": [113], "meeting_id": 1},
+                "motion/53": {"history_entry_ids": [112], "meeting_id": 1},
+                "history_position/148": {
+                    "user_id": 1,
+                    "entry_ids": [112],
+                    "timestamp": 1761760881,
+                    "original_user_id": 1,
+                },
+                "history_entry/112": {
+                    "entries": [
+                        "Motion created",
+                    ],
+                    "meeting_id": 1,
+                    "position_id": 148,
+                    "original_model_id": "motion/53",
+                    "model_id": "motion/53",
+                },
+                "history_position/149": {
+                    "user_id": 1,
+                    "entry_ids": [113],
+                    "timestamp": 1761760881,
+                    "original_user_id": 1,
+                },
+                "history_entry/113": {
+                    "entries": [
+                        "Candidate removed",
+                        "Candidate removed",
+                        "Candidate removed",
+                        "Ballot deleted",
+                    ],
+                    "meeting_id": 1,
+                    "position_id": 149,
+                    "original_model_id": "assignment/53",
+                    "model_id": "assignment/53",
+                },
                 "meeting/1": {
                     "user_ids": [2],
                     "meeting_user_ids": [2],
+                    "motion_ids": [53],
+                    "assignment_ids": [53],
+                    "relevant_history_entry_ids": [112, 113],
                 },
             }
         )
@@ -282,6 +320,79 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [11]}
         )
+        self.assert_model_deleted("motion/53")
+        self.assert_model_deleted("assignment/53")
+        self.assert_model_exists(
+            "history_position/148",
+            {
+                "user_id": 1,
+                "entry_ids": [112],
+                "timestamp": 1761760881,
+                "original_user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/112",
+            {
+                "entries": ["Motion created"],
+                "position_id": 148,
+                "original_model_id": "motion/53",
+                "model_id": None,
+                "meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "history_position/149",
+            {
+                "user_id": 1,
+                "entry_ids": [113],
+                "timestamp": 1761760881,
+                "original_user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/113",
+            {
+                "entries": [
+                    "Candidate removed",
+                    "Candidate removed",
+                    "Candidate removed",
+                    "Ballot deleted",
+                ],
+                "position_id": 149,
+                "original_model_id": "assignment/53",
+                "model_id": None,
+                "meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "history_position/150",
+            {
+                "user_id": 1,
+                "entry_ids": [114, 115],
+                "original_user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/114",
+            {
+                "meeting_id": None,
+                "entries": ["Participant removed from meeting {}", "meeting/1"],
+                "model_id": "user/2",
+                "position_id": 150,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/115",
+            {
+                "meeting_id": None,
+                "entries": ["Motion deleted"],
+                "original_model_id": "motion/53",
+                "model_id": None,
+                "position_id": 150,
+            },
+        )
+        self.assert_model_not_exists("history_entry/116")
 
     def test_delete_archived_meeting(self) -> None:
         self.set_models(

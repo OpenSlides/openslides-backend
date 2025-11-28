@@ -472,6 +472,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                             for collection, models in data.items()
                             for id_, date in models.items()
                             if (meeting_id := date.get("meeting_id"))
+                            and not any(
+                                f"meeting/{meeting_id}" == event["fqid"]
+                                for event in events_by_type[EventType.Delete]
+                            )
                         },
                         touched_fqids - deleted_fqids,
                     )
