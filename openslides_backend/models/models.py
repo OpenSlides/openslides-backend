@@ -555,7 +555,10 @@ class Meeting(Model, MeetingModelMixin):
         },
     )
     motion_poll_default_required_majority = fields.CharField(
-        constraints={"enum": ["two_third_majority", "absolute_majority"]}
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
     )
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}
@@ -636,7 +639,10 @@ class Meeting(Model, MeetingModelMixin):
         },
     )
     assignment_poll_default_required_majority = fields.CharField(
-        constraints={"enum": ["two_third_majority", "absolute_majority"]}
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
     )
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}
@@ -1896,7 +1902,10 @@ class Poll(Model, PollModelMixin):
         },
     )
     required_majority = fields.CharField(
-        constraints={"enum": ["two_third_majority", "absolute_majority"]}
+        default="no_majority",
+        constraints={
+            "enum": ["no_majority", "two_third_majority", "absolute_majority"]
+        },
     )
     votesvalid = fields.DecimalField()
     votesinvalid = fields.DecimalField()
