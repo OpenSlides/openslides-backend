@@ -294,7 +294,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         if entry_id:
             history_entry = self.datastore.get(
-                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
+                fqid_from_collection_and_id("history_entry", entry_id),
+                ["entries"],
+                lock_result=False,
             )
             return history_entry.get("entries")
         else:

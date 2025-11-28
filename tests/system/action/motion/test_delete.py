@@ -95,9 +95,24 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         self.assert_model_exists("projector/1", {"current_projection_ids": None})
 
     def set_forwarded_motion(
-        self, meeting_id: int = 4, base: int = 112, origin_id: int = 111
+        self,
+        meeting_id: int = 4,
+        base: int = 112,
+        origin_id: int = 111,
+        all_origin_ids: list[int] = [111],
     ) -> None:
         self.create_motion(meeting_id, base, motion_data={"origin_id": origin_id})
+        events = [
+            event[0]
+            for id_ in all_origin_ids
+            for event in [
+                self.get_update_list_events(
+                    fqid_from_collection_and_id("motion", id_),
+                    add={"all_derived_motion_ids": [base]},
+                )
+            ]
+        ]
+        self.perform_write_request(events)
 
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
         self.create_meeting(4)
@@ -118,8 +133,8 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
     def test_delete_with_forwardings_complex(self) -> None:
         self.create_meeting(4)
         self.set_forwarded_motion(4, 112, 111)
-        self.set_forwarded_motion(1, 113, 112)
-        self.set_forwarded_motion(4, 114, 113)
+        self.set_forwarded_motion(1, 113, 112, [111, 112])
+        self.set_forwarded_motion(4, 114, 113, [111, 112, 113])
 
         response = self.request_multi(
             "motion.delete", [{"id": 112}, {"id": 113}, {"id": 114}]

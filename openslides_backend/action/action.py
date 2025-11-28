@@ -475,7 +475,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                             GetManyRequest(collection, ids, ["meeting_id"])
                             for collection, ids in collection_to_ids.items()
                             if model_registry[collection]().try_get_field("meeting_id")
-                        ]
+                        ],
+                        use_changed_models=False,
                     )
                     create_events, update_events = calculate_history_event_payloads(
                         self.user_id,
