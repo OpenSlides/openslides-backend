@@ -1,4 +1,5 @@
 from datastore.migrations import BaseModelMigration
+from datastore.reader.core.requests import GetManyRequestPart
 from datastore.writer.core.write_request import BaseRequestEvent, RequestUpdateEvent
 
 from ...shared.filters import And, FilterOperator, Or
@@ -16,7 +17,10 @@ class Migration(BaseModelMigration):
             return None
         events: list[BaseRequestEvent] = []
         filter_ = And(
-            FilterOperator("original_model_id", "%=", "motion/%"),
+            Or(
+                FilterOperator("original_model_id", "%=", f"{collection}/%")
+                for collection in ["assignment", "motion", "user"]
+            ),
             FilterOperator("meeting_id", "!=", None),
             FilterOperator("meta_deleted", "!=", True),
         )
@@ -29,38 +33,21 @@ class Migration(BaseModelMigration):
             if (meeting_id := entry.get("meeting_id"))
         }
         if potentially_broken_entries:
-            deleted_meetings = self.reader.filter(
-                "meeting",
-                And(
-                    FilterOperator("meta_deleted", "=", True),
-                    Or(
-                        *[
-                            FilterOperator("id", "=", id_)
-                            for id_ in potentially_affected_meetings
-                        ]
-                    ),
-                ),
-            )
+            meetings = self.reader.get_many(
+                [
+                    GetManyRequestPart(
+                        "meeting", list(potentially_affected_meetings), ["meta_deleted"]
+                    )
+                ]
+            ).get("meeting", {})
             events = [
                 *[
                     RequestUpdateEvent(
                         f"history_entry/{id_}", fields={"meeting_id": None}
                     )
                     for id_, entry in potentially_broken_entries.items()
-                    if entry["meeting_id"] in deleted_meetings
+                    if entry["meeting_id"] not in meetings
                 ],
             ]
-            # meetings = self.reader.get_many(
-            #     [
-            #         GetManyRequestPart("meeting", list(affected_meetings), ["meta_deleted"])
-            #     ]
-            # ).get("meeting", {})
-            # events = [
-            #     *[
-            #         RequestUpdateEvent(f"history_entry/{id_}", fields={"meeting_id": None})
-            #         for id_, entry in potentially_broken_entries.items()
-            #         if meetings[entry["meeting_id"]].get("meta_deleted") != True
-            #     ],
-            # ]
 
         return events
