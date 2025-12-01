@@ -76,6 +76,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 },
             )
         self.assert_status_code(response, 200)
+        timestamp = datetime.fromtimestamp(1234567890, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -91,16 +92,18 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "start_line_number": 13,
                 "created": datetime.fromtimestamp(1687339000, ZoneInfo("UTC")),
                 "additional_submitter": "test",
-                "workflow_timestamp": datetime.fromtimestamp(
-                    1234567890, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
-            ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
+            [
+                "Workflow_timestamp set to {}",
+                timestamp.isoformat(sep=" "),
+                "Motion updated",
+            ],
         )
-        assert counter.calls == 11
+        assert counter.calls == 12
 
     def test_update_wrong_id(self) -> None:
         self.set_test_models()
@@ -219,6 +222,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
             },
         )
         # motion/113 does not exist and should therefore not be present in the relations
+        timestamp = datetime.fromtimestamp(9876543210, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -232,16 +236,14 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "attachment_meeting_mediafile_ids": None,
                 "state_extension_reference_ids": ["motion/112"],
                 "recommendation_extension_reference_ids": ["motion/112"],
-                "workflow_timestamp": datetime.fromtimestamp(
-                    9876543210, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
             [
                 "Workflow_timestamp set to {}",
-                "9876543210",
+                timestamp.isoformat(sep=" "),
                 "Category set to {}",
                 "motion_category/4",
                 "Motion block set to {}",
@@ -249,7 +251,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 32
+        assert counter.calls == 31
 
     def test_update_workflow_id(self) -> None:
         self.create_workflow(111)
