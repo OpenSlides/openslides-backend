@@ -1653,7 +1653,7 @@ class CreateForwardedTestWithAttachmentsSimple(
     ) -> None:
         self.test_models["organization/1"] = {"disable_forward_with_attachments": True}
         self.set_test_models()
-        origin_mediafiles_data = [
+        origin_mediafiles_data: list[dict[str, Any]] = [
             {"base": 1, "owner_meeting_id": 1, "is_directory": True},
             {"base": 2, "is_directory": True},
             {"base": 3, "owner_meeting_id": 1, "parent_id": 1},

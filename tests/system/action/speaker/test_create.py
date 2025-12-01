@@ -17,7 +17,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.los_23_data = {
+        self.los_23_data: dict[str, dict[str, Any]] = {
             "topic/1337": {"title": "leet", "meeting_id": 1},
             "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
             "list_of_speakers/23": {
@@ -1576,7 +1576,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def set_test_speaker_data_1_user(self, speaker_data: dict[str, Any] = {}) -> None:
+    def set_test_speaker_data_1_user(self, speaker_data: dict[str, Any] = {}) -> int:
         alice_id = self.create_user("alice", [3])
         self.set_models(
             {
@@ -1596,7 +1596,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def set_test_speaker_data_2_users(
         self, speakers_data: dict[int, dict[str, Any]] = {}
-    ) -> None:
+    ) -> int:
         alice_id = self.create_user("alice", [3])
         bob_id = self.create_user("bob", [3])
         models = {
@@ -1629,7 +1629,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def set_test_speaker_data_3_users(
         self, speakers_data: dict[int, dict[str, Any]] = {}
-    ) -> None:
+    ) -> int:
         alice_id = self.create_user("alice", [3])
         bob_id = self.create_user("bob", [3])
         colin_id = self.create_user("colin", [3])

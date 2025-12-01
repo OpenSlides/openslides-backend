@@ -1,8 +1,8 @@
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import BaseActionTestCase
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from tests.system.action.base import BaseActionTestCase
 
 
 class BaseMotionDeleteActionTest(BaseActionTestCase):
