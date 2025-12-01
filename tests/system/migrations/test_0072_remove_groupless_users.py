@@ -69,8 +69,148 @@ MOTION_MEETING_USER_MODELS = [
     "motion_supporter",
 ]
 
-# TODO: Write test with minimal data.
-# TODO: Write test with no intact target models found.
+
+def test_simple(write, finalize, assert_model):
+    test_data: dict[str, dict[str, Any]] = {
+        "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+        "meeting/1": {
+            "user_ids": [1],
+            "meeting_user_ids": [1],
+        },
+        "meeting_user/1": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+    }
+
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": data}
+            for fqid, data in test_data.items()
+        ]
+    )
+
+    finalize("0072_remove_groupless_users")
+
+    assert_model("user/1", {"meeting_ids": [1], "meeting_user_ids": []})
+    assert_model(
+        "meeting/1",
+        {
+            "user_ids": [1],
+            "meeting_user_ids": [],
+        },
+    )
+    assert_model(
+        "meeting_user/1",
+        {"user_id": 1, "meeting_id": 1, "group_ids": [], "meta_deleted": True},
+    )
+
+
+def test_only_deleted_target_meeting_users(write, finalize, assert_model):
+    test_data: dict[str, dict[str, Any]] = {
+        "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+        "meeting/1": {
+            "user_ids": [1],
+            "meeting_user_ids": [1],
+        },
+        "meeting_user/1": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+    }
+
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": data}
+            for fqid, data in test_data.items()
+        ]
+    )
+    write(
+        {"type": "delete", "fqid": "meeting_user/1"},
+        {
+            "type": "update",
+            "fqid": "user/1",
+            "fields": {},
+            "list_fields": {"remove": {"meeting_ids": [1], "meeting_user_ids": [1]}},
+        },
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {},
+            "list_fields": {"remove": {"user_ids": [1], "meeting_user_ids": [1]}},
+        },
+    )
+
+    finalize("0072_remove_groupless_users")
+
+    assert_model("user/1", {"meeting_ids": [], "meeting_user_ids": []})
+    assert_model(
+        "meeting/1",
+        {
+            "user_ids": [],
+            "meeting_user_ids": [],
+        },
+    )
+    assert_model(
+        "meeting_user/1",
+        {"user_id": 1, "meeting_id": 1, "group_ids": [], "meta_deleted": True},
+    )
+
+
+def test_no_intact_target_models(write, finalize, assert_model):
+    test_data: dict[str, dict[str, Any]] = {
+        "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+        "meeting/1": {
+            "user_ids": [1],
+            "meeting_user_ids": [1],
+        },
+        "meeting_user/1": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+    }
+
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": data}
+            for fqid, data in test_data.items()
+        ]
+    )
+    write(
+        {"type": "delete", "fqid": "meeting/1"},
+        {
+            "type": "update",
+            "fqid": "user/1",
+            "fields": {},
+            "list_fields": {"remove": {"meeting_ids": [1]}},
+        },
+    )
+
+    finalize("0072_remove_groupless_users")
+
+    assert_model("user/1", {"meeting_ids": [], "meeting_user_ids": []})
+    assert_model(
+        "meeting/1", {"user_ids": [1], "meeting_user_ids": [1], "meta_deleted": True}
+    )
+    assert_model(
+        "meeting_user/1",
+        {"user_id": 1, "meeting_id": 1, "group_ids": [], "meta_deleted": True},
+    )
+
+
+def test_no_groupless_meeting_users(write, finalize, assert_model):
+    test_data: dict[str, dict[str, Any]] = {
+        "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+        "meeting/1": {"user_ids": [1], "meeting_user_ids": [1], "group_ids": [1]},
+        "meeting_user/1": {"user_id": 1, "meeting_id": 1, "group_ids": [1]},
+        "group/1": {"meeting_id": 1, "meeting_user_ids": [1]},
+    }
+
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": data}
+            for fqid, data in test_data.items()
+        ]
+    )
+
+    finalize("0072_remove_groupless_users")
+
+    for fqid, data in test_data.items():
+        assert_model(
+            fqid,
+            data,
+        )
 
 
 def test_migration_complex(write, finalize, assert_model):
