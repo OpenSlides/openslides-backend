@@ -220,37 +220,6 @@ class TContext:
                 )
         return events
 
-    def get_delete_user_events(self, id_: int) -> list[dict[str, Any]]:
-        """
-        Deletes user,
-        removes reference from the history positions,
-        removes reference from the history entries
-        """
-        fqid = f"user/{id_}"
-        if not (context := self.context[fqid]):
-            return []
-        self.context[fqid] = None
-        events = [self.get_delete_event(fqid)]
-        entry_fqids = [
-            f"history_entry/{event_id}"
-            for event_id in context.get("history_entry_ids", [])
-        ]
-        for entry_fqid in entry_fqids:
-            if entry_fields := self.context[entry_fqid]:
-                entry_fields["model_id"] = None
-            events.append(self.get_update_event(entry_fqid, fields={"model_id": None}))
-        position_fqids = [
-            f"history_position/{event_id}"
-            for event_id in context.get("history_position_ids", [])
-        ]
-        for position_fqid in position_fqids:
-            if position_fields := self.context[position_fqid]:
-                position_fields["user_id"] = None
-            events.append(
-                self.get_update_event(position_fqid, fields={"user_id": None})
-            )
-        return events
-
     def get_delete_position_events(self, id_: int) -> list[dict[str, Any]]:
         """
         Deletes postion,
