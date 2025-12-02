@@ -19,7 +19,7 @@ IMAGE_TAG=openslides-backend-tests
 
 # Helpers
 DC="CONTEXT=dev docker compose -f dev/docker-compose.dev.yml"
-PATHS="openslides_backend/ tests/ cli/ meta/dev/"
+PATHS="openslides_backend/ tests/ cli/"
 
 # Safe Exit
 trap 'if [ -z "$LOCAL" ]; then eval "$DC down --volumes"; fi' EXIT
