@@ -151,15 +151,14 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_comment(self) -> None:
-        self.set_models(
-            {"meeting/1": {"name": "test meeting 1", "is_active_in_organization_id": 1}}
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
                 "comment": "blablabla",
                 "meeting_id": 1,
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -380,16 +379,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/2", {"member_number": None})
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
                 "username": "testname",
                 "meeting_id": 1,
+                "group_ids": [3],
                 "vote_delegations_from_ids": [],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
@@ -1474,6 +1470,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test",
                 "meeting_id": meeting_id,
                 "locked_out": True,
+                "group_ids": [1],
                 **other_payload_data,
             },
         )
