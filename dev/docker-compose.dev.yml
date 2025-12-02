@@ -31,7 +31,7 @@ services:
             - vote
     auth:
         build:
-            context: "https://github.com/OpenSlides/openslides-auth-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
+            context: "https://github.com/OpenSlides/openslides-auth-service.git#feature/relational-db"
             target: "dev"
             args:
                 CONTEXT: "dev"
@@ -47,7 +47,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#feature/relational-db"
             target: "dev"
             args:
                 CONTEXT: "dev"
