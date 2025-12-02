@@ -31,8 +31,7 @@ trap 'eval "$DC down --volumes"' EXIT
 
 # Execution
 if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
-eval "$DC up --build --detach"
-eval "$DC exec -T backend scripts/wait.sh datastore-writer 9011"
-eval "$DC exec -T backend scripts/wait.sh datastore-reader 9010"
+eval "$DC build --no-cache"
+eval "$DC up --detach"
 eval "$DC exec -T backend scripts/wait.sh auth 9004"
 eval "$DC exec -T backend ./entrypoint.sh pytest --cov"
