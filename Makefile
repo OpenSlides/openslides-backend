@@ -1,5 +1,5 @@
 override SERVICE=backend
-override paths = openslides_backend/ tests/ cli/
+override paths = openslides_backend/ tests/ cli/ meta/dev/
 
 # Build images for different contexts
 
