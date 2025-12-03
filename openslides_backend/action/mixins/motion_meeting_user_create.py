@@ -18,7 +18,9 @@ from ..util.default_schema import DefaultSchema
 
 
 def build_motion_meeting_user_create_action(
-    ModelClass: type[Model], ignore_meeting_if_internal: bool = False
+    ModelClass: type[Model],
+    ignore_meeting_if_internal: bool = False,
+    with_weight: bool = True,
 ) -> type[CreateAction]:
     class BaseMotionMeetingUserCreateAction(
         WeightMixin, CreateActionWithInferredMeetingMixin, CreateAction
@@ -26,7 +28,7 @@ def build_motion_meeting_user_create_action(
         model = ModelClass()
         schema = DefaultSchema(ModelClass()).get_create_schema(
             required_properties=["motion_id", "meeting_user_id"],
-            optional_properties=["weight"],
+            optional_properties=["weight"] if with_weight else [],
         )
         permission = Permissions.Motion.CAN_MANAGE_METADATA
 
@@ -68,7 +70,7 @@ def build_motion_meeting_user_create_action(
             )
             if exists:
                 raise ActionException("(meeting_user_id, motion_id) must be unique.")
-            if instance.get("weight") is None:
+            if with_weight and instance.get("weight") is None:
                 filter = And(
                     FilterOperator("meeting_id", "=", instance["meeting_id"]),
                     FilterOperator("motion_id", "=", instance["motion_id"]),
