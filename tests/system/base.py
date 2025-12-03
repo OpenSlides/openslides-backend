@@ -317,7 +317,6 @@ class BaseSystemTestCase(TestCase):
                 raise JsonSchemaException(e.message)
 
     def get_model(self, fqid: str, raise_exception: bool = True) -> dict[str, Any]:
-        self.connection.commit()
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
