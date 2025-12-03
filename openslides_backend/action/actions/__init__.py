@@ -30,6 +30,7 @@ def prepare_actions_map() -> None:
         motion_editor,
         motion_state,
         motion_submitter,
+        motion_supporter,
         motion_workflow,
         motion_working_group_speaker,
         option,
