@@ -478,7 +478,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                         ],
                         use_changed_models=False,
                     )
-                    create_events, update_events = calculate_history_event_payloads(
+                    create_events = calculate_history_event_payloads(
                         self.user_id,
                         information,
                         position_id,
@@ -499,16 +499,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                 fields=cast(dict[str, Any], fields),
                             )
                             for fqid, fields in create_events
-                        ]
-                    )
-                    events_by_type[EventType.Update].extend(
-                        [
-                            Event(
-                                type=EventType.Update,
-                                fqid=fqid,
-                                list_fields=cast(ListFields, fields),
-                            )
-                            for fqid, fields in update_events
                         ]
                     )
             write_request.user_id = self.user_id

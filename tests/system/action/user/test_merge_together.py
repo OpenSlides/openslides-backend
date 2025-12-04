@@ -467,7 +467,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting/4": {"present_user_ids": [4], "locked_from_inside": True},
                 "meeting/7": {"present_user_ids": [3, 4]},
                 "meeting/10": {"present_user_ids": [5]},
-                "user/1": {"history_position_ids": [1]},
                 "user/2": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "pronoun": "he",
@@ -481,7 +480,6 @@ class UserMergeTogether(BaseActionTestCase):
                     ),
                     "committee_management_ids": [60],
                     "home_committee_id": 60,
-                    "history_entry_ids": [1, 4],
                 },
                 "user/3": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -494,7 +492,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "last_login": datetime.fromtimestamp(987654321, ZoneInfo("UTC")),
                     "is_present_in_meeting_ids": [7],
                     "external": True,
-                    "history_entry_ids": [2, 5],
                 },
                 "user/4": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
@@ -507,8 +504,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "is_present_in_meeting_ids": [4, 7],
                     "member_number": "souperadmin",
                     "external": False,
-                    "history_position_ids": [2],
-                    "history_entry_ids": [3],
                 },
                 "user/5": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
@@ -518,9 +513,8 @@ class UserMergeTogether(BaseActionTestCase):
                     "can_change_own_password": False,
                     "is_present_in_meeting_ids": [4],
                     "committee_management_ids": [1, 3],
-                    "history_entry_ids": [6],
                 },
-                "user/6": {"email": "rob.banks@allof.them", "history_entry_ids": [7]},
+                "user/6": {"email": "rob.banks@allof.them"},
                 "meeting_user/12": {
                     "about_me": "I am an enthusiastic explorer",
                     "comment": "Nicks everything",
@@ -557,7 +551,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "timestamp": datetime.fromtimestamp(100000, ZoneInfo("UTC")),
                     "original_user_id": 1,
                     "user_id": 1,
-                    "entry_ids": [1, 2, 3],
                 },
                 "history_entry/1": {
                     "original_model_id": "user/2",
@@ -581,7 +574,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "timestamp": datetime.fromtimestamp(200000, ZoneInfo("UTC")),
                     "original_user_id": 4,
                     "user_id": 4,
-                    "entry_ids": [4, 5, 6, 7],
                 },
                 "history_entry/4": {
                     "original_model_id": "user/2",
