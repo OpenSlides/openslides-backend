@@ -335,6 +335,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "agenda_show_topic_navigation_on_detail_view": True,
             "motions_hide_metadata_background": True,
             "motions_create_enable_additional_submitter_text": True,
+            "motions_enable_restricted_editor_for_manager": True,
+            "motions_enable_restricted_editor_for_non_manager": True,
         }
         self.basic_test(data)
         self.assert_model_exists("meeting/1", data)
@@ -441,6 +443,29 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.set_organization_management_level(None)
         self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+
+    def test_update_group_d_committee_parent_permissions(self) -> None:
+        self.create_meeting()
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([59], 1)
         response = self.request(
             "meeting.update",
             {

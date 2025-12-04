@@ -60,7 +60,26 @@ class PollAnonymize(BasePollTestCase):
         response = self.request("poll.anonymize", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_anonymize()
-        self.assert_history_information("topic/1", ["Voting anonymized"])
+        self.assert_history_information("topic/1", None)
+
+    def test_anonymize_motion_poll(self) -> None:
+        self.create_motion(1, 11)
+        self.set_models(
+            {
+                "poll/1": {
+                    "title": "Poll 1",
+                    "meeting_id": 1,
+                    "type": Poll.TYPE_NAMED,
+                    "state": Poll.STATE_FINISHED,
+                    "content_object_id": "motion/11",
+                    "pollmethod": "Y",
+                    "onehundred_percent_base": Poll.ONEHUNDRED_PERCENT_BASE_Y,
+                },
+            }
+        )
+        response = self.request("poll.anonymize", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/11", ["Voting anonymized"])
 
     def test_anonymize_assignment_poll(self) -> None:
         self.create_assignment(1, 1)

@@ -76,6 +76,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 },
             )
         self.assert_status_code(response, 200)
+        timestamp = datetime.fromtimestamp(1234567890, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -91,16 +92,18 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "start_line_number": 13,
                 "created": datetime.fromtimestamp(1687339000, ZoneInfo("UTC")),
                 "additional_submitter": "test",
-                "workflow_timestamp": datetime.fromtimestamp(
-                    1234567890, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
-            ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
+            [
+                "Workflow_timestamp set to {}",
+                timestamp.isoformat(sep=" "),
+                "Motion updated",
+            ],
         )
-        assert counter.calls == 11
+        assert counter.calls == 12
 
     def test_update_wrong_id(self) -> None:
         self.set_test_models()
@@ -199,7 +202,6 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                     "recommendation_extension": "ext [motion/112] [motion/113]",
                     "category_id": 4,
                     "block_id": 51,
-                    "supporter_meeting_user_ids": [],
                     "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_mediafile_ids": [],
@@ -207,7 +209,20 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 },
             )
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/111",
+            {
+                "state_extension": "ext [motion/112] [motion/113]",
+                "recommendation_extension": "ext [motion/112] [motion/113]",
+                "category_id": 4,
+                "block_id": 51,
+                "additional_submitter": "additional",
+                "tag_ids": None,
+                "attachment_meeting_mediafile_ids": None,
+            },
+        )
         # motion/113 does not exist and should therefore not be present in the relations
+        timestamp = datetime.fromtimestamp(9876543210, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -221,17 +236,14 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "attachment_meeting_mediafile_ids": None,
                 "state_extension_reference_ids": ["motion/112"],
                 "recommendation_extension_reference_ids": ["motion/112"],
-                "workflow_timestamp": datetime.fromtimestamp(
-                    9876543210, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
             [
-                "Supporters changed",
                 "Workflow_timestamp set to {}",
-                "9876543210",
+                timestamp.isoformat(sep=" "),
                 "Category set to {}",
                 "motion_category/4",
                 "Motion block set to {}",
@@ -239,7 +251,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 32
+        assert counter.calls == 31
 
     def test_update_workflow_id(self) -> None:
         self.create_workflow(111)
@@ -340,7 +352,6 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "recommendation_extension": "ext_sldennt [motion/112]",
                 "category_id": 4,
                 "block_id": 51,
-                "supporter_meeting_user_ids": [],
                 "tag_ids": [],
                 "attachment_mediafile_ids": [],
             },
@@ -412,19 +423,6 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
         )
         self.assert_model_exists(
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": None}
-        )
-
-    def test_set_supporter_other_meeting(self) -> None:
-        self.set_test_models()
-        self.create_meeting(4)
-        self.set_user_groups(1, [4])
-        response = self.request(
-            "motion.update", {"id": 111, "supporter_meeting_user_ids": [1]}
-        )
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            "The following models do not belong to meeting 1: ['meeting_user/1']",
-            response.json["message"],
         )
 
     def test_update_identical_motions(self) -> None:
@@ -648,7 +646,6 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
-                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -663,7 +660,6 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "created": datetime.fromtimestamp(now, ZoneInfo("UTC")),
                 "tag_ids": [3],
                 "block_id": 4,
-                "supporter_meeting_user_ids": [1],
             },
         )
 

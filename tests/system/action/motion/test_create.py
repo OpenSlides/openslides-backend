@@ -80,7 +80,10 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "mediafile_id": 8,
                     "is_public": False,
                 },
-                "meeting/1": {"motions_create_enable_additional_submitter_text": True},
+                "meeting/1": {
+                    "motions_create_enable_additional_submitter_text": True,
+                    "motions_supporters_min_amount": 1,
+                },
                 "motion_state/1": {"set_workflow_timestamp": True},
             }
         )
@@ -91,7 +94,6 @@ class MotionCreateActionTest(BaseActionTestCase):
             "sort_parent_id": 1,
             "category_id": 124,
             "block_id": 78,
-            "supporter_meeting_user_ids": [1],
             "tag_ids": [56],
             "text": "test",
             "reason": "test",
@@ -100,7 +102,12 @@ class MotionCreateActionTest(BaseActionTestCase):
 
         response = self.request(
             "motion.create",
-            motion | {"workflow_id": 1, "attachment_mediafile_ids": [8]},
+            motion
+            | {
+                "workflow_id": 1,
+                "attachment_mediafile_ids": [8],
+                "supporter_meeting_user_ids": [1],
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -110,7 +117,14 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "attachment_meeting_mediafile_ids": [80],
                 "submitter_ids": None,
                 "additional_submitter": "test",
+                "supporter_ids": [1],
+                "submitter_ids": None,
+                "supporter_meeting_user_ids": None,
             },
+        )
+        self.assert_model_exists(
+            "motion_supporter/1",
+            {"motion_id": 2, "meeting_id": 1, "meeting_user_id": 1},
         )
 
     def test_create_normal_and_additional_submitter(self) -> None:
@@ -919,6 +933,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def base_assign_external_self_test(self, oml: OrganizationManagementLevel) -> None:
+        """also tests the history collection feature in case of the creation of multiple history entries with just one history position"""
         bob_id = self.create_user("bob", organization_management_level=oml)
         self.login(bob_id)
         response = self.request_multi(
@@ -954,6 +969,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "text": "test",
                 "submitter_ids": [1],
+                "history_entry_ids": [2],
             },
         )
         self.assert_model_exists(
@@ -963,6 +979,38 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "text": "test 2",
                 "submitter_ids": [2],
+                "history_entry_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "history_position/1",
+            {"original_user_id": bob_id, "user_id": bob_id, "entry_ids": [1, 2, 3]},
+        )
+        self.assert_model_exists(
+            "history_entry/1",
+            {
+                "entries": ["Participant added to meeting {}.", "meeting/1"],
+                "original_model_id": f"user/{bob_id}",
+                "model_id": f"user/{bob_id}",
+                "position_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/2",
+            {
+                "entries": ["Motion created"],
+                "original_model_id": "motion/1",
+                "model_id": "motion/1",
+                "position_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "history_entry/3",
+            {
+                "entries": ["Motion created"],
+                "original_model_id": "motion/2",
+                "model_id": "motion/2",
+                "position_id": 1,
             },
         )
 

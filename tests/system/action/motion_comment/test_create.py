@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -146,3 +147,39 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                 "user_id": 2,
             },
         )
+
+    def test_create_permission_non_meeting_committee_admin(self) -> None:
+        self.set_committee_management_level([60])
+        self.base_create_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.set_committee_management_level([59])
+        self.set_models(
+            {
+                "committee/59": {"child_ids": [60], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 59, "all_parent_ids": [59]},
+            }
+        )
+        self.base_create_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_orga_admin(self) -> None:
+        self.base_create_permission_non_meeting_admin(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+    def test_create_permission_non_meeting_superadmin(self) -> None:
+        self.base_create_permission_non_meeting_admin(
+            OrganizationManagementLevel.SUPERADMIN
+        )
+
+    def base_create_permission_non_meeting_admin(
+        self, permission: OrganizationManagementLevel | None = None
+    ) -> None:
+        self.set_organization_management_level(permission)
+        response = self.request(
+            "motion_comment.create",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_comment/1", {"comment": "test_Xcdfgee"})

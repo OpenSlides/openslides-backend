@@ -83,6 +83,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         for i in range(4):
             self.assert_model_not_exists(f"motion_submitter/{i+1}")
         self.assert_model_not_exists("motion_comment/1")
+        self.assert_model_not_exists("motion_supporter/1")
         self.assert_model_not_exists("motion_comment_section/1")
         for i in range(2):
             self.assert_model_not_exists(f"motion_category/{i+1}")

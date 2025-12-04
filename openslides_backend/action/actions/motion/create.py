@@ -46,7 +46,6 @@ class MotionCreate(
             "sort_parent_id",
             "category_id",
             "block_id",
-            "supporter_meeting_user_ids",
             "tag_ids",
             "text",
             "lead_motion_id",
@@ -59,6 +58,7 @@ class MotionCreate(
             "submitter_ids": id_list_schema,
             "amendment_paragraphs": number_string_json_schema,
             "attachment_mediafile_ids": id_list_schema,
+            "supporter_meeting_user_ids": id_list_schema,
             **agenda_creation_properties,
         },
     )
@@ -131,6 +131,7 @@ class MotionCreate(
 
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
+        self.create_supporters(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
         instance = super().update_instance(instance)

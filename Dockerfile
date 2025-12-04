@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.12.9-slim-bookworm as base
+FROM python:3.12.9-slim-bookworm AS base
 
 ## Setup
 ARG CONTEXT
@@ -35,7 +35,7 @@ RUN REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
     REQUIREMENTS_FILE=${REQUIEREMENTS_FILE_OVERWRITE:-$REQUIREMENTS_FILE} && \
     . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
 
-ENV PYTHONPATH /app
+ENV PYTHONPATH=/app
 
 ENV EMAIL_HOST=postfix
 ENV EMAIL_PORT=25
@@ -58,7 +58,7 @@ COPY ./dev/command.sh ./
 RUN chmod +x command.sh
 CMD ["./command.sh"]
 
-HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ && curl --fail http://localhost:9003/system/presenter/health/ || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ || curl --fail http://localhost:9003/system/presenter/health/ || exit 1
 
 #HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
 #   CMD (curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9002/system/action/health/xxx" && curl -f --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:9003/system/presenter/health/") || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
@@ -66,10 +66,11 @@ HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ && curl 
 ENTRYPOINT ["./entrypoint.sh"]
 
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .
+COPY dev/run-lint.sh ./dev/
 
 # Copy files which are mounted to make the full stack work
 COPY scripts scripts
@@ -89,13 +90,12 @@ EXPOSE 5678
 STOPSIGNAL SIGKILL
 
 # Test Image (same as dev)
-FROM dev as tests
+FROM dev AS tests
 
 # Production Image
-FROM base as prod
+FROM base AS prod
 
-# Große Sicherheitslücke hier umgehen:
-# Das sorgt dafür dass alle Commands innerhalb des Containers als unprivilegierter User durchgeführt werden und nicht als root
+# This disables root access for the enduser, which could pose a security risk
 RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts

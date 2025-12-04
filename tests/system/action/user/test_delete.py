@@ -183,8 +183,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
         self.assert_model_not_exists("meeting_user/1111")
-        self.assert_model_not_exists("motion_submitter/34")
-        self.assert_model_exists("motion/50", {"submitter_ids": None})
+        self.assert_model_exists(
+            "motion_submitter/34", {"meeting_user_id": None, "motion_id": 50}
+        )
+        self.assert_model_exists("motion/50", {"submitter_ids": [34]})
 
     def test_delete_with_poll_candidate(self) -> None:
         self.create_meeting()
@@ -279,8 +281,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_not_exists("user/2")
         self.assert_model_not_exists("meeting_user/12")
         self.assert_model_exists("group/1", {"meeting_user_ids": None})
-        self.assert_model_not_exists("motion_submitter/1")
-        self.assert_model_exists("motion/1", {"submitter_ids": None})
+        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": None})
+        self.assert_model_exists("motion/1", {"submitter_ids": [1]})
 
     def test_delete_with_delegation_to(self) -> None:
         self.create_meeting()

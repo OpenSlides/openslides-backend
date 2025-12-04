@@ -789,7 +789,29 @@ class CreatePoll(BasePollTestCase):
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
             },
+            Permissions.Assignment.CAN_MANAGE_POLLS,
+        )
+
+    def test_create_permissions_assignment_not_working_with_just_can_manage(
+        self,
+    ) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+            },
             Permissions.Assignment.CAN_MANAGE,
+            fail=True,
         )
 
     def test_create_permissions_assignment_locked_meeting(self) -> None:

@@ -18,6 +18,7 @@
     users_email_subject: string;
     users_email_body: text;
     require_duplicate_from: boolean;
+    disable_forward_with_attachments: boolean;
     
 // Group B
     enable_electronic_voting: boolean;

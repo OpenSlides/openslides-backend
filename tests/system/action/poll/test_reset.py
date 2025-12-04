@@ -90,7 +90,15 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         )
 
         # test history
-        self.assert_history_information("topic/1", ["Voting reset"])
+        self.assert_history_information("topic/1", None)
+
+    def test_reset_motion(self) -> None:
+        self.create_motion(1, 1)
+        self.test_models["poll/1"]["content_object_id"] = "motion/1"
+        self.set_models(self.test_models)
+        response = self.request("poll.reset", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/1", ["Voting reset"])
 
     def test_reset_assignment(self) -> None:
         self.create_assignment(1, 1)

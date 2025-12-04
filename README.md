@@ -20,7 +20,7 @@ Documentation for the presenters: [Presenter overview](docs/Presenter-Overview.m
 
 The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run
 
-    $ make run-dev
+    $ make dev
 
 All containers can be stopped afterwards by running
 
@@ -32,7 +32,7 @@ You can also start the components manually. To do that, run
 
 Then run in a separate terminal
 
-    $ make run-dev-attach
+    $ make dev-attach
 
 Inside this terminal you may use some commands you find in the [Makefile](Makefile). You may want to use
 
@@ -137,17 +137,17 @@ The action component listens to port 9002. The presenter component listens to po
 
   `DATABASE_USER`
   User of database. Default: `openslides`
-  
+
   `DATABASE_NAME`
   Name of database. Default: `openslides`
 
 * `AUTH_HOST`
 
-  Host of auth service. Used by the `authlib` package. Default: `localhost`
+  Host of auth service. Used by the `osauthlib` package. Default: `localhost`
 
 * `AUTH_PORT`
 
-  Port of auth service. Used by the `authlib` package. Default: `9004`
+  Port of auth service. Used by the `osauthlib` package. Default: `9004`
 
 
 # Some curl examples

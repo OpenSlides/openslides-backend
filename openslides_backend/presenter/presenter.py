@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
 import fastjsonschema
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from fastjsonschema import JsonSchemaException
+from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
