@@ -37,38 +37,6 @@ def calculate_history_event_payloads(
         )
         for id_, fqid, entries in transformed_information
     ]
-    update_events: list[EventPayload] = [
-        (
-            fqid,
-            {"add": {"history_entry_ids": [id_]}},
-        )
-        for id_, fqid, entries in transformed_information
-        if fqid in existing_fqids
-    ]
-    meeting_to_entry_ids: dict[int, list[int]] = defaultdict(list)
-    for entry in create_events:
-        if meeting_id := cast(dict[str, Any], entry[1]).get("meeting_id"):
-            meeting_to_entry_ids[meeting_id].append(id_from_fqid(entry[0]))
-    update_events.extend(
-        [
-            (
-                fqid_from_collection_and_id("meeting", meeting_id),
-                {"add": {"relevant_history_entry_ids": ids}},
-            )
-            for meeting_id, ids in meeting_to_entry_ids.items()
-        ]
-    )
-    if set_user := (
-        user_id
-        and user_id > 0
-        and fqid_from_collection_and_id("user", user_id) in existing_fqids
-    ):
-        update_events.append(
-            (
-                fqid_from_collection_and_id("user", user_id),
-                {"add": {"history_position_ids": [position_id]}},
-            )
-        )
     create_events.append(
         (
             fqid_from_collection_and_id("history_position", position_id),
