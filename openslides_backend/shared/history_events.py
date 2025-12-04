@@ -79,7 +79,6 @@ def calculate_history_event_payloads(
                     if timestamp is not None
                     else datetime.now(ZoneInfo("UTC"))
                 ),
-                "entry_ids": list(model_fqid_to_entry_id.values()),
                 "original_user_id": user_id,
                 "user_id": user_id if set_user else None,
             },
