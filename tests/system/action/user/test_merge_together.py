@@ -31,77 +31,39 @@ class UserMergeTogether(BaseActionTestCase):
         models: dict[str, dict[str, Any]] = {
             "user/2": {
                 "username": "user2",
-                "is_active": True,
                 "default_password": "user2",
                 "password": self.auth.hash("user2"),
-                "meeting_user_ids": [12, 42],
-                "committee_ids": [60],
-                "organization_id": 1,
             },
             "user/3": {
                 "username": "user3",
-                "is_active": True,
                 "default_password": "user3",
                 "password": self.auth.hash("user3"),
-                "meeting_user_ids": [43, 73],
-                "committee_ids": [60, 66],
-                "organization_id": 1,
             },
             "user/4": {
                 "username": "user4",
-                "is_active": True,
                 "default_password": "user4",
                 "password": self.auth.hash("user4"),
-                "meeting_user_ids": [14, 44, 74],
-                "committee_ids": [60, 66],
-                "organization_id": 1,
             },
             "user/5": {
                 "username": "user5",
-                "is_active": True,
                 "default_password": "user5",
                 "password": self.auth.hash("user5"),
-                "meeting_user_ids": [15, 105],
-                "committee_ids": [60, 69],
-                "organization_id": 1,
             },
             "user/6": {
                 "username": "user6",
-                "is_active": True,
                 "default_password": "user6",
                 "password": self.auth.hash("user6"),
-                "meeting_user_ids": [],
-                "committee_ids": [],
-                "organization_id": 1,
             },
-            "organization/1": {
-                "limit_of_meetings": 0,
-                "enable_electronic_voting": True,
-                "user_ids": [2, 3, 4, 5, 6],
-                "gender_ids": [1, 2, 3, 4],
-            },
-            "gender/1": {
-                "name": "male",
-                "organization_id": 1,
-            },
-            "gender/2": {
-                "name": "female",
-                "organization_id": 1,
-            },
-            "gender/3": {
-                "name": "diverse",
-                "organization_id": 1,
-            },
-            "gender/4": {
-                "name": "non-binary",
-                "organization_id": 1,
-            },
+            "organization/1": {"limit_of_meetings": 0},
+            "gender/1": {"name": "male"},
+            "gender/2": {"name": "female"},
+            "gender/3": {"name": "diverse"},
+            "gender/4": {"name": "non-binary"},
             "meeting/1": {
                 "name": "Meeting 1",
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 1,
                 "default_group_id": 3,
-                "meeting_user_ids": [12, 14, 15],
             },
             "group/1": {
                 "name": "Group 1",
@@ -113,24 +75,20 @@ class UserMergeTogether(BaseActionTestCase):
             },
             "group/3": {
                 "name": "Group 3",
-                "meeting_user_ids": [],
             },
             "meeting_user/12": {
                 "user_id": 2,
                 "meeting_id": 1,
-                "group_ids": [1, 2],
                 "vote_weight": Decimal("1"),
             },
             "meeting_user/14": {
                 "user_id": 4,
                 "meeting_id": 1,
-                "group_ids": [2],
                 "vote_weight": Decimal("1"),
             },
             "meeting_user/15": {
                 "user_id": 5,
                 "meeting_id": 1,
-                "group_ids": [2],
                 "vote_weight": Decimal("1"),
             },
             "meeting/4": {
@@ -149,26 +107,20 @@ class UserMergeTogether(BaseActionTestCase):
                 "name": "Group 5",
                 "meeting_user_ids": [42, 43],
             },
-            "group/6": {
-                "name": "Group 6",
-                "meeting_user_ids": [],
-            },
+            "group/6": {"name": "Group 6"},
             "meeting_user/42": {
                 "user_id": 2,
                 "meeting_id": 4,
-                "group_ids": [5],
                 "vote_weight": Decimal("1"),
             },
             "meeting_user/43": {
                 "user_id": 3,
                 "meeting_id": 4,
-                "group_ids": [5],
                 "vote_weight": Decimal("1"),
             },
             "meeting_user/44": {
                 "user_id": 4,
                 "meeting_id": 4,
-                "group_ids": [4],
                 "vote_weight": Decimal("1"),
             },
             "meeting/7": {
@@ -176,12 +128,8 @@ class UserMergeTogether(BaseActionTestCase):
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 7,
                 "default_group_id": 9,
-                "meeting_user_ids": [73, 74],
             },
-            "group/7": {
-                "name": "Group 7",
-                "meeting_user_ids": [],
-            },
+            "group/7": {"name": "Group 7"},
             "group/8": {
                 "name": "Group 8",
                 "meeting_user_ids": [73],
@@ -193,13 +141,11 @@ class UserMergeTogether(BaseActionTestCase):
             "meeting_user/73": {
                 "user_id": 3,
                 "meeting_id": 7,
-                "group_ids": [8],
                 "vote_weight": Decimal("1"),
             },
             "meeting_user/74": {
                 "user_id": 4,
                 "meeting_id": 7,
-                "group_ids": [9],
                 "vote_weight": Decimal("1"),
             },
             "meeting/10": {
@@ -207,24 +153,16 @@ class UserMergeTogether(BaseActionTestCase):
                 "users_enable_vote_delegations": True,
                 "admin_group_id": 10,
                 "default_group_id": 12,
-                "meeting_user_ids": [105],
             },
             "group/10": {
                 "name": "Group 10",
                 "meeting_user_ids": [105],
             },
-            "group/11": {
-                "name": "Group 11",
-                "meeting_user_ids": [],
-            },
-            "group/12": {
-                "name": "Group 12",
-                "meeting_user_ids": [],
-            },
+            "group/11": {"name": "Group 11"},
+            "group/12": {"name": "Group 12"},
             "meeting_user/105": {
                 "user_id": 5,
                 "meeting_id": 10,
-                "group_ids": [10],
                 "vote_weight": Decimal("1"),
             },
         }
@@ -478,7 +416,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "last_email_sent": datetime.fromtimestamp(
                         123456789, ZoneInfo("UTC")
                     ),
-                    "committee_management_ids": [60],
                     "home_committee_id": 60,
                 },
                 "user/3": {
@@ -490,7 +427,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "is_physical_person": True,
                     "default_vote_weight": Decimal("1.234567"),
                     "last_login": datetime.fromtimestamp(987654321, ZoneInfo("UTC")),
-                    "is_present_in_meeting_ids": [7],
                     "external": True,
                 },
                 "user/4": {
@@ -501,7 +437,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "last_email_sent": datetime.fromtimestamp(
                         234567890, ZoneInfo("UTC")
                     ),
-                    "is_present_in_meeting_ids": [4, 7],
                     "member_number": "souperadmin",
                     "external": False,
                 },
@@ -511,8 +446,6 @@ class UserMergeTogether(BaseActionTestCase):
                     "title": "Prof. Dr. Dr.",
                     "last_name": "Everything",
                     "can_change_own_password": False,
-                    "is_present_in_meeting_ids": [4],
-                    "committee_management_ids": [1, 3],
                 },
                 "user/6": {"email": "rob.banks@allof.them"},
                 "meeting_user/12": {
@@ -891,10 +824,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/15": {"vote_delegated_to_id": 14},
-                "meeting_user/14": {"vote_delegations_from_ids": [15]},
                 "meeting_user/43": {"vote_delegated_to_id": 44},
-                "meeting_user/44": {"vote_delegations_from_ids": [43]},
-                "meeting_user/73": {"vote_delegations_from_ids": [74]},
                 "meeting_user/74": {"vote_delegated_to_id": 73},
             }
         )
@@ -912,7 +842,6 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting/7": {"present_user_ids": [2, 3, 4]},
                 "meeting/10": {"present_user_ids": [5]},
                 "meeting_user/15": {"vote_delegated_to_id": 14},
-                "meeting_user/43": {"motion_submitter_ids": [1]},
                 "assignment/1": {
                     "id": 1,
                     "title": "Assignment 1",
