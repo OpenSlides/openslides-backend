@@ -882,7 +882,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "gender_id": 2,
                 "email": "user.in@this.organization",
                 "is_active": False,
-                "is_physical_person": True,
+                "is_physical_person": None,
                 "default_vote_weight": Decimal("0.424242"),
             },
         )
