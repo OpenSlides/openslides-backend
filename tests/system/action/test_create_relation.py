@@ -8,13 +8,18 @@ from openslides_backend.action.mixins.create_action_with_dependencies import (
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from openslides_backend.models.base import model_registry
 from openslides_backend.shared.patterns import Collection
+from tests.patch_model_registry_helper import (
+    FakeModel,
+    PatchModelRegistryMixin,
+    fake_registry,
+)
 
 from .base_generic import BaseGenericTestCase
 
 
-class FakeModelCRA(Model):
+class FakeModelCRA(FakeModel):
     collection: Collection = "fake_model_cr_a"
     verbose_name = "fake model for simple field creation"
     id = fields.IntegerField()
@@ -23,7 +28,7 @@ class FakeModelCRA(Model):
     not_req_field = fields.IntegerField()
 
 
-class FakeModelCRB(Model):
+class FakeModelCRB(FakeModel):
     collection: Collection = "fake_model_cr_b"
     verbose_name = "fake model for create relation b"
     id = fields.IntegerField()
@@ -34,7 +39,7 @@ class FakeModelCRB(Model):
     )
 
 
-class FakeModelCRC(Model):
+class FakeModelCRC(FakeModel):
     collection: Collection = "fake_model_cr_c"
     verbose_name = "fake model for create relation c"
     id = fields.IntegerField()
@@ -48,7 +53,7 @@ class FakeModelCRC(Model):
     )
 
 
-class FakeModelCRD(Model):
+class FakeModelCRD(FakeModel):
     collection: Collection = "fake_model_cr_d"
     verbose_name = "fake model for create relation d"
     id = fields.IntegerField()
@@ -99,17 +104,12 @@ class FakeModelCRDCreateAction(CreateAction):
     skip_archived_meeting_check = True
 
 
-class TestCreateRelation(BaseGenericTestCase):
+class TestCreateRelation(PatchModelRegistryMixin, BaseGenericTestCase):
     collection_a = "fake_model_cr_a"
     collection_b = "fake_model_cr_b"
     collection_c = "fake_model_cr_c"
     collection_d = "fake_model_cr_d"
-    tables_to_reset = [
-        f"{collection_a}_t",
-        f"{collection_b}_t",
-        f"{collection_c}_t",
-        f"{collection_d}_t",
-    ]
+    fake_model_registry = model_registry | fake_registry
     yml = f"""
     _meta:
         id_field: &id_field
