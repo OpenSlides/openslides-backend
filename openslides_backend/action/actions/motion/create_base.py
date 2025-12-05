@@ -14,6 +14,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
 )
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion_submitter.create import MotionSubmitterCreateAction
+from ..motion_supporter.create import MotionSupporterCreateAction
 from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
@@ -67,6 +68,22 @@ class MotionCreateBase(
             weight += 1
             self.execute_other_action(
                 MotionSubmitterCreateAction, [data], skip_history=True
+            )
+
+    def create_supporters(self, instance: dict[str, Any]) -> None:
+        supporter_ids = instance.pop("supporter_meeting_user_ids", [])
+        if supporter_ids:
+            self.apply_instance(instance)
+            self.execute_other_action(
+                MotionSupporterCreateAction,
+                [
+                    {
+                        "motion_id": instance["id"],
+                        "meeting_user_id": meeting_user_id,
+                    }
+                    for meeting_user_id in supporter_ids
+                ],
+                skip_history=True,
             )
 
     def set_sequential_number(self, instance: dict[str, Any]) -> None:
