@@ -382,6 +382,21 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_poll_default_required_majority_fields(self) -> None:
+        self.basic_test(
+            {
+                "motion_poll_default_required_majority": "two_third_majority",
+                "assignment_poll_default_required_majority": "no_majority",
+            }
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "motion_poll_default_required_majority": "two_third_majority",
+                "assignment_poll_default_required_majority": "no_majority",
+            },
+        )
+
     def test_update_poll_default_live_voting_enabled(self) -> None:
         self.basic_test({"poll_default_live_voting_enabled": True})
         self.assert_model_exists(
