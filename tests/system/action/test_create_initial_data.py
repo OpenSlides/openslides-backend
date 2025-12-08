@@ -2,14 +2,11 @@ import tempfile
 from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.interfaces.event import Event, EventType
 from tests.system.action.base import BaseActionTestCase
 
 
-@pytest.mark.usefixtures("auth_mockers")
 class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
         self.init_with_login = False
@@ -22,15 +19,11 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.env.vars.update(self.vars)
 
     def test_initial_data_dev_mode(self) -> None:
-        # self.auth_mockers["login_patch"].stop()
-        # self.auth_mockers["auth_http_adapter_patch"].stop()
         self.app.create_initial_data()
         self.logger.info.assert_any_call("Creating initial data...")
         self.logger.error.assert_not_called()
         self.assert_model_exists("organization/1", {"name": "Test Organization"})
         self.assert_model_exists("user/1", {"username": "admin"})
-        # self.auth_mockers["login_patch"].start()
-        # self.auth_mockers["auth_http_adapter_patch"].start()
 
     @patch(
         "openslides_backend.action.action_handler.ActionHandler.execute_internal_action"
