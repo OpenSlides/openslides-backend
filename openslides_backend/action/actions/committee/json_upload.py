@@ -221,8 +221,8 @@ class CommitteeJsonUpload(
                         end_of_day = start_of_day + timedelta(days=1)
                         parts.extend(
                             (
-                                FilterOperator(field, ">=", start_of_day.timestamp()),
-                                FilterOperator(field, "<", end_of_day.timestamp()),
+                                FilterOperator(field, ">=", start_of_day),
+                                FilterOperator(field, "<", end_of_day),
                             )
                         )
                     else:
@@ -261,7 +261,10 @@ class CommitteeJsonUpload(
                 for meeting in meetings:
                     if all(
                         self.is_same_day(
-                            entry.get(f"meeting_{field}"), meeting.get(field)
+                            datetime.fromtimestamp(
+                                entry.get(f"meeting_{field}"), timezone.utc
+                            ),
+                            meeting.get(field),
                         )
                         for field in ("start_time", "end_time")
                     ):
@@ -302,11 +305,9 @@ class CommitteeJsonUpload(
                         )
             self.check_admin_groups_for_meeting(row)
 
-    def is_same_day(self, a: int | None, b: int | None) -> bool:
-        if a is None or b is None:
-            return a == b
-        dt_a = datetime.fromtimestamp(a, timezone.utc)
-        dt_b = datetime.fromtimestamp(b, timezone.utc)
+    def is_same_day(self, dt_a: datetime | None, dt_b: datetime | None) -> bool:
+        if dt_a is None or dt_b is None:
+            return dt_a == dt_b
         return dt_a.date() == dt_b.date()
 
     def validate_with_lookup(

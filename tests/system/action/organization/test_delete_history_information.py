@@ -4,13 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class OrganizationDeleteHistoryInformation(BaseActionTestCase):
     def test_delete_history_information_no_permission(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"name": "Orga"},
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-                },
-            }
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         response = self.request("organization.delete_history_information", {"id": 1})
         self.assert_status_code(response, 403)
@@ -23,6 +18,10 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
                 "assignment/1": {
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },
             }
@@ -40,7 +39,12 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_history_information("assignment/1", ["Ballot created"])
+        for collection in ["history_position", "history_entry"]:
+            self.assert_model_exists(f"{collection}/1")
+            self.assert_model_not_exists(f"{collection}/2")
 
         response = self.request("organization.delete_history_information", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_history_information("assignment/1", None)
+        for collection in ["history_position", "history_entry"]:
+            self.assert_model_not_exists(f"{collection}/1")

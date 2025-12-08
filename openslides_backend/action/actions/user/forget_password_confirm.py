@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any
 from urllib.parse import unquote
 
-from authlib.exceptions import InvalidCredentialsException
+from osauthlib.exceptions import InvalidCredentialsException
 
 from openslides_backend.action.util.typing import ActionData
 

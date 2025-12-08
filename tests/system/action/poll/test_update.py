@@ -1,8 +1,10 @@
+from decimal import Decimal
 from typing import Any
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from .base_poll_test import BasePollTestCase
 
@@ -24,18 +26,13 @@ class UpdatePollTestCase(BasePollTestCase):
                 "vote_delegated_to_user_id": 2,
             },
         ]
+
         self.create_meeting()
+        self.create_assignment(1, 1, {"open_posts": 1})
         self.set_models(
             {
-                "assignment/1": {
-                    "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                    "open_posts": 1,
-                },
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
-                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"meeting_user_ids": [11], "poll_ids": [1]},
+                "meeting/1": {"present_user_ids": [1]},
+                "group/1": {"poll_ids": [1], "meeting_user_ids": [11]},
                 "poll/1": {
                     "content_object_id": "assignment/1",
                     "title": "test_title_beeFaihuNae1vej2ai8m",
@@ -44,23 +41,13 @@ class UpdatePollTestCase(BasePollTestCase):
                     "onehundred_percent_base": "Y",
                     "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
-                    "option_ids": [1, 2],
-                    "entitled_group_ids": [1],
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                     "max_votes_per_option": 1,
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "option/2": {"meeting_id": 1, "poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [1],
-                    "meeting_user_ids": [11],
-                },
-                "meeting_user/11": {
-                    "user_id": 1,
-                    "meeting_id": 1,
-                    "group_ids": [1],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
             }
         )
 
@@ -144,10 +131,7 @@ class UpdatePollTestCase(BasePollTestCase):
         self.assertEqual(poll.get("title"), "test_title_Aishohh1ohd0aiSut7gi")
 
     def test_prevent_updating_content_object(self) -> None:
-        self.create_model(
-            "assignment/2",
-            {"title": "test_title_phohdah8quukooHeetuz", "open_posts": 1},
-        )
+        self.create_assignment(2, 1, {"open_posts": 1})
         response = self.request(
             "poll.update",
             {"content_object_id": "assignment/2", "id": 1},
@@ -199,17 +183,16 @@ class UpdatePollTestCase(BasePollTestCase):
         response = self.request("poll.update", {"entitled_group_ids": [], "id": 1})
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
-        assert poll.get("entitled_group_ids") == []
+        assert poll.get("entitled_group_ids") is None
 
     def test_update_groups(self) -> None:
-        self.create_model("group/4", {"meeting_id": 1, "poll_ids": []})
         response = self.request(
             "poll.update",
-            {"entitled_group_ids": [4], "id": 1},
+            {"entitled_group_ids": [2], "id": 1},
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("entitled_group_ids"), [4])
+        self.assertEqual(poll.get("entitled_group_ids"), [2])
 
     def test_update_groups_with_anonymous(self) -> None:
         group_id = self.set_anonymous()
@@ -403,19 +386,15 @@ class UpdatePollTestCase(BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "votescast": "1.000000",
-                "votesvalid": "-2.000000",
-                "votesinvalid": "-2.000000",
+                "votescast": Decimal("1.000000"),
+                "votesvalid": Decimal("-2.000000"),
+                "votesinvalid": Decimal("-2.000000"),
             },
         )
 
     def test_motion_history_information(self) -> None:
-        self.set_models(
-            {
-                "poll/1": {"content_object_id": "motion/1"},
-                "motion/1": {"meeting_id": 1, "poll_ids": [1]},
-            }
-        )
+        self.create_motion(1, 2)
+        self.set_models({"poll/1": {"content_object_id": "motion/2"}})
         response = self.request(
             "poll.update",
             {"id": 1, "title": "test"},
@@ -435,7 +414,16 @@ class UpdatePollTestCase(BasePollTestCase):
             {},
             "poll.update",
             {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+            Permissions.Assignment.CAN_MANAGE_POLLS,
+        )
+
+    def test_update_wrong_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
             Permissions.Assignment.CAN_MANAGE,
+            fail=True,
         )
 
     def test_update_permissions_locked_meeting(self) -> None:
@@ -448,10 +436,7 @@ class UpdatePollTestCase(BasePollTestCase):
     def test_update_entitled_users_at_stop_error(self) -> None:
         response = self.request(
             "poll.update",
-            {
-                "entitled_users_at_stop": self.entitled_users_at_stop_data,
-                "id": 1,
-            },
+            {"entitled_users_at_stop": self.entitled_users_at_stop_data, "id": 1},
             internal=False,
         )
         self.assert_status_code(response, 400)
@@ -462,7 +447,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_fields_changed_error(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -495,7 +484,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_list_shortened_error(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -510,7 +503,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_list_lengthened_error(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -531,7 +528,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_wrong_format_error(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -545,7 +546,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_wrong_format_error_2(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -559,7 +564,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_wrong_format_error_3(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -576,7 +585,11 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_update_entitled_users_at_stop_nothing_changed(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -585,12 +598,17 @@ class UpdatePollTestCase(BasePollTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "poll/1", {"entitled_users_at_stop": self.entitled_users_at_stop_data}
+            "poll/1",
+            {"entitled_users_at_stop": self.entitled_users_at_stop_data},
         )
 
     def test_update_entitled_users_at_stop_fields_changed_success(self) -> None:
         self.set_models(
-            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+            {
+                "poll/1": {
+                    "entitled_users_at_stop": Jsonb(self.entitled_users_at_stop_data)
+                }
+            }
         )
         response = self.request(
             "poll.update",
@@ -623,12 +641,8 @@ class UpdatePollTestCase(BasePollTestCase):
         )
 
     def test_live_voting_named_motion_poll(self) -> None:
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "state_id": 444},
-                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-            }
-        )
+        self.create_motion(1, 3)
+        self.set_models({"motion_state/1": {"allow_create_poll": True}})
         self.update_model(
             "poll/1", {"type": Poll.TYPE_NAMED, "content_object_id": "motion/3"}
         )
@@ -650,18 +664,14 @@ class UpdatePollTestCase(BasePollTestCase):
         self, poll_type: str, is_motion_poll: bool
     ) -> None:
         if is_motion_poll:
-            self.set_models(
-                {
-                    "motion/3": {"meeting_id": 1, "state_id": 444},
-                    "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
-                }
-            )
+            self.create_motion(1, 3)
+            self.set_models({"motion_state/1": {"allow_create_poll": True}})
             self.update_model("poll/1", {"content_object_id": "motion/3"})
         self.update_model("poll/1", {"type": poll_type})
 
         response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
         self.assert_status_code(response, 400)
-        self.assert_model_exists("poll/1", {"live_voting_enabled": None})
+        self.assert_model_exists("poll/1", {"live_voting_enabled": False})
         assert (
             "live_voting_enabled only allowed for named motion polls."
         ) in response.json["message"]

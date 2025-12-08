@@ -16,23 +16,21 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
             },
             "topic/32": {
                 "title": "leet improvement discussion",
-                "sequential_number": 32,
                 "meeting_id": 1,
             },
             "topic/42": {
                 "title": "leet improvement discussion 2nd",
-                "sequential_number": 42,
                 "meeting_id": 1,
             },
+            "agenda_item/1": {"content_object_id": "topic/32", "meeting_id": 1},
+            "agenda_item/2": {"content_object_id": "topic/42", "meeting_id": 1},
             "list_of_speakers/1": {
                 "meeting_id": 1,
-                "sequential_number": 1,
                 "content_object_id": "topic/32",
                 "structure_level_list_of_speakers_ids": [1, 2, 3],
             },
             "list_of_speakers/2": {
                 "meeting_id": 1,
-                "sequential_number": 2,
                 "content_object_id": "topic/42",
                 "structure_level_list_of_speakers_ids": [4],
             },

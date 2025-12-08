@@ -5,6 +5,7 @@ from openslides_backend.migrations.migration_helper import MigrationHelper
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
+from ....models.base import json_dict_to_non_json_data_types
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
@@ -39,13 +40,18 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
         instance = next(iter(action_data))
         self.validate_instance(instance)
         instance = self.update_instance(instance)
@@ -63,7 +69,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         if not data:
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
-
+        json_dict_to_non_json_data_types(data)
         # check datavalidation
         checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:

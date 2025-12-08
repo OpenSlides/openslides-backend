@@ -14,13 +14,12 @@ class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
             },
             "topic/32": {
                 "title": "leet improvement discussion",
-                "sequential_number": 32,
                 "meeting_id": 1,
             },
+            "agenda_item/1": {"content_object_id": "topic/32", "meeting_id": 1},
             "structure_level/1": {"meeting_id": 1, "name": "d."},
             "list_of_speakers/2": {
                 "meeting_id": 1,
-                "sequential_number": 1,
                 "content_object_id": "topic/32",
             },
         }

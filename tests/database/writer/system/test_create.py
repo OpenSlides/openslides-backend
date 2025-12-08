@@ -117,20 +117,36 @@ def test_create_11_field_as_1n() -> None:
                 "events": [
                     {
                         "type": EventType.Create,
-                        "fqid": "topic/1",
+                        "fqid": "motion/1",
                         "fields": {
                             "title": "2",
                             "meeting_id": 1,
-                            "sequential_number": 1,
+                            "state_id": 1,
                         },
                     },
                     {
                         "type": EventType.Create,
-                        "fqid": "topic/2",
+                        "fqid": "motion/2",
                         "fields": {
                             "title": "2",
                             "meeting_id": 1,
-                            "sequential_number": 2,
+                            "state_id": 1,
+                        },
+                    },
+                    {
+                        "type": EventType.Create,
+                        "fqid": "list_of_speakers/1",
+                        "fields": {
+                            "content_object_id": "motion/1",
+                            "meeting_id": 1,
+                        },
+                    },
+                    {
+                        "type": EventType.Create,
+                        "fqid": "list_of_speakers/2",
+                        "fields": {
+                            "content_object_id": "motion/2",
+                            "meeting_id": 1,
                         },
                     },
                 ]
@@ -145,7 +161,7 @@ def test_create_11_field_as_1n() -> None:
                         "type": EventType.Create,
                         "fqid": "agenda_item/1",
                         "fields": {
-                            "content_object_id": "topic/1",
+                            "content_object_id": "motion/1",
                             "id": 1,
                             "closed": False,
                             "type": "common",
@@ -160,7 +176,7 @@ def test_create_11_field_as_1n() -> None:
                         "type": EventType.Create,
                         "fqid": "agenda_item/2",
                         "fields": {
-                            "content_object_id": "topic/1",
+                            "content_object_id": "motion/1",
                             "id": 2,
                             "closed": False,
                             "type": "common",
@@ -173,7 +189,7 @@ def test_create_11_field_as_1n() -> None:
                     },
                     {
                         "type": EventType.Update,
-                        "fqid": "topic/1",
+                        "fqid": "motion/1",
                         "fields": {"agenda_item_id": 2},
                     },
                     {
@@ -193,8 +209,8 @@ def test_create_11_field_as_1n() -> None:
         "Relation from agenda_item/2 violates UNIQUE constraint: "
         in e_info.value.message
     )
-    assert_model("topic/2", {"title": "2", "meeting_id": 1, "id": 2})
-    assert_model("topic/1", {"title": "2", "meeting_id": 1, "id": 1})
+    assert_model("motion/2", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 2})
+    assert_model("motion/1", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 1})
     assert_no_model("agenda_item/1")
     assert_no_model("agenda_item/2")
 

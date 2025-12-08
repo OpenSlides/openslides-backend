@@ -1,4 +1,7 @@
+from datetime import datetime
 from typing import Any, cast
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -127,6 +130,8 @@ meeting_settings_keys = [
     "motions_export_preamble",
     "motions_export_submitter_recommendation",
     "motions_export_follow_recommendation",
+    "motions_enable_restricted_editor_for_manager",
+    "motions_enable_restricted_editor_for_non_manager",
     "motion_poll_ballot_paper_selection",
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",
@@ -334,6 +339,14 @@ class MeetingUpdate(
             ],
             anonymous_group_id,
         )
+
+        for field in ["start_time", "end_time"]:
+            raw_value = instance.get(field)
+            if isinstance(raw_value, int):
+                instance[field] = datetime.fromtimestamp(raw_value)
+
+        if (translations := instance.get("custom_translations")) is not None:
+            instance["custom_translations"] = Jsonb(translations)
 
         instance = super().update_instance(instance)
         return instance

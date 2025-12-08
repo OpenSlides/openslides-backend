@@ -1,9 +1,11 @@
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MotionComment
+from ....permissions.permission_helper import has_committee_management_level
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, FilterOperator
@@ -30,7 +32,7 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         meeting_id = section["meeting_id"]
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
-            ["admin_group_id"],
+            ["admin_group_id", "committee_id"],
             lock_result=False,
         )
 
@@ -38,6 +40,22 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         allowed_groups.add(meeting["admin_group_id"])
         user_groups = self.get_groups_from_meeting_user(meeting_id, self.user_id)
         if allowed_groups.intersection(user_groups):
+            return
+
+        if has_committee_management_level(
+            self.datastore, self.user_id, meeting["committee_id"]
+        ):
+            return
+
+        user_orga_management_level = self.datastore.get(
+            fqid_from_collection_and_id("user", self.user_id),
+            ["organization_management_level"],
+            lock_result=False,
+        ).get("organization_management_level")
+        if user_orga_management_level in [
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            OrganizationManagementLevel.SUPERADMIN,
+        ]:
             return
 
         if section.get("submitter_can_write"):

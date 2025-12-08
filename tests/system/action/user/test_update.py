@@ -2979,6 +2979,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_group_removal_with_speaker(self) -> None:
         self.create_meeting(4)
         self.create_meeting(7)
+        self.create_topic(1, 4)
         self.set_models(
             {
                 "user/1234": {
@@ -3003,12 +3004,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/7": {
                     "committee_id": 63,
                     "present_user_ids": [1234],
-                },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
-                "list_of_speakers/1": {
-                    "meeting_id": 4,
-                    "sequential_number": 1,
-                    "content_object_id": "topic/1",
                 },
                 "speaker/14": {
                     "list_of_speakers_id": 1,
@@ -3073,6 +3068,7 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_partial_group_removal_with_speaker(self) -> None:
         self.create_meeting(4)
+        self.create_topic(1, 4)
         self.set_models(
             {
                 "user/1234": {
@@ -3082,12 +3078,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 4,
                     "user_id": 1234,
                     "speaker_ids": [14, 24],
-                },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 4},
-                "list_of_speakers/1": {
-                    "meeting_id": 4,
-                    "sequential_number": 1,
-                    "content_object_id": "topic/1",
                 },
                 "speaker/14": {
                     "list_of_speakers_id": 1,
@@ -3131,6 +3121,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_user("dummy2", [1])
         self.create_user("dummy3", [1])
+        self.create_topic(1, 1)
         self.set_models(
             {
                 "user/1": {
@@ -3147,14 +3138,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "poll_candidate_ids": [1],
                     "vote_ids": [1, 2],
                 },
-                "topic/1": {"title": "tropic", "sequential_number": 1, "meeting_id": 1},
                 "poll/1": {
                     "title": "pull",
                     "type": "analog",
                     "pollmethod": "YNA",
                     "meeting_id": 1,
                     "option_ids": [1, 2],
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                 },
                 "option/1": {
@@ -3389,17 +3378,15 @@ class UserUpdateActionTest(BaseActionTestCase):
             ),
             None,
         )
-        users["committeead60"] = self.create_user("committeead60"), None
+        users["committeead60"] = (
+            self.create_user("committeead60", committee_management_ids=[60]),
+            None,
+        )
         users["meetingad1"] = self.create_user("meetingad1", [2]), 1
         users["can_manage1"] = self.create_user("can_manage1", [3]), 2
         users["can_update4"] = self.create_user("can_update1", [6]), 3
         users["participant1"] = self.create_user("participant1", [1]), 4
         users["account"] = self.create_user("account"), None
-        self.set_models(
-            {
-                "committee/60": {"manager_ids": [users["committeead60"][0]]},
-            }
-        )
         self.create_user("dummy_meeting_ad", [2])
         return users
 

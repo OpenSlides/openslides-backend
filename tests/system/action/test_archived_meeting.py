@@ -4,15 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class InMeetingActions(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "meeting/1": {"name": "test"},
-                "motion/1": {
-                    "title": "test_title",
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.create_meeting(meeting_data={"is_active_in_organization_id": None})
+        self.create_motion(1)
 
     def test_create_motion(self) -> None:
         response = self.request(
@@ -24,7 +17,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
@@ -38,7 +31,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
@@ -51,7 +44,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
@@ -59,27 +52,15 @@ class InMeetingActions(BaseActionTestCase):
 class MeetingActions(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "committee/1": {
-                    "name": "committee1",
-                    "meeting_ids": [1],
-                    "organization_id": 1,
-                },
-                "meeting/1": {"name": "test", "committee_id": 1, "motion_ids": [1]},
-                "motion/1": {
-                    "title": "test_title",
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.create_meeting(meeting_data={"is_active_in_organization_id": None})
+        self.create_motion(1)
 
     def test_create_meeting(self) -> None:
         response = self.request(
             "meeting.create",
             {
                 "name": "test_meeting",
-                "committee_id": 1,
+                "committee_id": 60,
                 "language": "en",
                 "admin_ids": [1],
             },
@@ -99,40 +80,31 @@ class MeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
     def test_delete_meeting(self) -> None:
+        self.create_user_for_meeting(1)
         self.set_models(
             {
-                "meeting/1": {
-                    "list_of_speakers_ids": [11, 12],
-                    "speaker_ids": [1, 2, 3],
-                    "group_ids": [1],
-                    "meeting_user_ids": [3, 4],
-                },
-                "group/1": {"meeting_user_ids": [3], "meeting_id": 1},
-                "user/2": {
-                    "username": "user2",
-                    "is_active": True,
-                    "meeting_user_ids": [3],
-                },
-                "user/1": {
-                    "meeting_user_ids": [4],
-                },
                 "meeting_user/3": {
                     "user_id": 2,
                     "meeting_id": 1,
-                    "speaker_ids": [2, 3],
-                    "group_ids": [1],
                 },
                 "meeting_user/4": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "speaker_ids": [1],
                 },
-                "list_of_speakers/11": {"meeting_id": 1, "speaker_ids": [1, 2]},
+                "topic/23": {
+                    "title": "to pic",
+                    "meeting_id": 1,
+                },
+                "agenda_item/8": {"content_object_id": "topic/23", "meeting_id": 1},
+                "list_of_speakers/11": {
+                    "content_object_id": "topic/23",
+                    "meeting_id": 1,
+                },
                 "speaker/1": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 11,
@@ -143,7 +115,15 @@ class MeetingActions(BaseActionTestCase):
                     "list_of_speakers_id": 11,
                     "meeting_user_id": 3,
                 },
-                "list_of_speakers/12": {"meeting_id": 1, "speaker_ids": [3]},
+                "topic/42": {
+                    "title": "to pic",
+                    "meeting_id": 1,
+                },
+                "agenda_item/9": {"content_object_id": "topic/42", "meeting_id": 1},
+                "list_of_speakers/12": {
+                    "content_object_id": "topic/42",
+                    "meeting_id": 1,
+                },
                 "speaker/3": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 12,
@@ -171,66 +151,26 @@ class MeetingActions(BaseActionTestCase):
 class OutMeetingActions(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "committee/1": {
-                    "name": "committee1",
-                    "meeting_ids": [1],
-                    "organization_id": 1,
-                },
-                "meeting/1": {"name": "test", "committee_id": 1},
-            }
-        )
+        self.create_meeting(meeting_data={"is_active_in_organization_id": None})
 
     def test_change_user_group(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [1, 2]},
-                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
-                "group/2": {"meeting_id": 1},
-                "user/2": {
-                    "username": "user2",
-                    "is_active": True,
-                    "meeting_user_ids": [2],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 1,
-                    "user_id": 2,
-                    "group_ids": [1],
-                },
-            }
-        )
+        self.create_user_for_meeting(1)
         response = self.request(
             "meeting_user.update",
             {
-                "id": 2,
+                "id": 1,
                 "group_ids": [2],
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
     def test_delete_user(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"group_ids": [1], "user_ids": [1, 2]},
-                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
-                "user/2": {
-                    "username": "user2",
-                    "is_active": True,
-                    "meeting_user_ids": [2],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 1,
-                    "user_id": 2,
-                    "group_ids": [1],
-                },
-            }
-        )
-
+        self.set_user_groups(1, [3])
+        self.create_user_for_meeting(1)
         response = self.request(
             "user.delete",
             {
@@ -239,21 +179,21 @@ class OutMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/2")
-        self.assert_model_exists("group/1", {"meeting_user_ids": []})
-        self.assert_model_exists("meeting/1", {"group_ids": [1], "user_ids": [1]})
+        self.assert_model_exists("group/1", {"meeting_user_ids": None})
+        self.assert_model_exists("meeting/1", {"group_ids": [1, 2, 3], "user_ids": [1]})
 
     def test_delete_organization_tag(self) -> None:
         self.set_models(
             {
-                "committee/1": {"organization_tag_ids": [1, 2]},
-                "meeting/1": {"organization_tag_ids": [1, 2]},
                 "organization_tag/1": {
                     "name": "tag1",
-                    "tagged_ids": ["meeting/1", "committee/1"],
+                    "tagged_ids": ["meeting/1", "committee/60"],
+                    "color": "#333333",
                 },
                 "organization_tag/2": {
                     "name": "tag2",
-                    "tagged_ids": ["meeting/1", "committee/1"],
+                    "tagged_ids": ["meeting/1", "committee/60"],
+                    "color": "#333333",
                 },
             }
         )
@@ -265,5 +205,5 @@ class OutMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("organization_tag/1")
-        self.assert_model_exists("committee/1", {"organization_tag_ids": [2]})
+        self.assert_model_exists("committee/60", {"organization_tag_ids": [2]})
         self.assert_model_exists("meeting/1", {"organization_tag_ids": [2]})

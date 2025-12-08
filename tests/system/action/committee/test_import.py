@@ -1,7 +1,10 @@
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.import_mixins import ImportState
-from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.base import ADMIN_USERNAME
 from tests.util import Response
@@ -45,8 +48,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "committee_id": 2,
                 "name": "meeting",
-                "start_time": 1691539200,
-                "end_time": 1691625600,
+                "start_time": datetime.fromtimestamp(1691539200, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1691625600, ZoneInfo("UTC")),
             },
         )
         self.assert_model_exists(
@@ -82,11 +85,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee.json_upload",
             {"data": [{"name": "test"}]},
         )
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
 
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -97,11 +96,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         ]
 
     def test_import_update_correct(self) -> None:
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test", "description": "test"}]},
@@ -119,22 +114,25 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 12,
-                                    "name": {
-                                        "value": "test1",
-                                        "state": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 12,
+                                        "name": {
+                                            "value": "test1",
+                                            "state": ImportState.DONE,
+                                            "id": 12,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        },
+                    ),
                 },
             }
         )
@@ -153,22 +151,25 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 12,
-                                    "name": {
-                                        "value": "test1",
-                                        "state": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 12,
+                                        "name": {
+                                            "value": "test1",
+                                            "state": ImportState.DONE,
+                                            "id": 12,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -182,20 +183,12 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         ]
 
     def test_import_update_name_mismatch(self) -> None:
-        self.set_models(
-            {
-                "committee/12": {"name": "test"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "test"}})
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test"}]},
         )
-        self.set_models(
-            {
-                "committee/12": {"name": "other"},
-            }
-        )
+        self.set_models({"committee/12": {"name": "other"}})
 
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -212,21 +205,24 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "name": {
-                                        "value": "test",
-                                        "state": ImportState.DONE,
-                                        "id": 12,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "name": {
+                                            "value": "test",
+                                            "state": ImportState.DONE,
+                                            "id": 12,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -245,56 +241,62 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "name": {
-                                        "value": "other",
-                                        "info": ImportState.DONE,
-                                    },
-                                },
-                            },
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "name": {
-                                        "value": "this",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "forward_to_committees": [
-                                        {
-                                            "value": "test",
-                                            "info": ImportState.DONE,
-                                            "id": 12,
-                                        },
-                                        {"value": "test2", "info": ImportState.WARNING},
-                                        {
-                                            "value": "renamed_old",
-                                            "info": ImportState.DONE,
-                                            "id": 13,
-                                        },
-                                        {
-                                            "value": "deleted",
-                                            "info": ImportState.DONE,
-                                            "id": 14,
-                                        },
-                                        {
-                                            "value": "this",
-                                            "info": ImportState.DONE,
-                                        },
-                                        {
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "name": {
                                             "value": "other",
                                             "info": ImportState.DONE,
                                         },
-                                    ],
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "name": {
+                                            "value": "this",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "forward_to_committees": [
+                                            {
+                                                "value": "test",
+                                                "info": ImportState.DONE,
+                                                "id": 12,
+                                            },
+                                            {
+                                                "value": "test2",
+                                                "info": ImportState.WARNING,
+                                            },
+                                            {
+                                                "value": "renamed_old",
+                                                "info": ImportState.DONE,
+                                                "id": 13,
+                                            },
+                                            {
+                                                "value": "deleted",
+                                                "info": ImportState.DONE,
+                                                "id": 14,
+                                            },
+                                            {
+                                                "value": "this",
+                                                "info": ImportState.DONE,
+                                            },
+                                            {
+                                                "value": "other",
+                                                "info": ImportState.DONE,
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -310,53 +312,59 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {"name": "other", "receive_forwardings_from_committee_ids": [15]},
         )
         self.assert_model_exists(
-            "committee/15", {"name": "this", "forward_to_committee_ids": [12, 15, 14]}
+            "committee/15", {"name": "this", "forward_to_committee_ids": [12, 14, 15]}
         )
 
     def test_import_organization_tags(self) -> None:
         self.set_models(
             {
-                "organization_tag/12": {"name": "test"},
-                "organization_tag/13": {"name": "renamed_new"},
+                "organization_tag/12": {"name": "test", "color": "#123456"},
+                "organization_tag/13": {"name": "renamed_new", "color": "#FEDCBA"},
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "name": {
-                                        "value": "this",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "name": {
+                                            "value": "this",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "organization_tags": [
+                                            {
+                                                "value": "test",
+                                                "info": ImportState.DONE,
+                                                "id": 12,
+                                            },
+                                            {
+                                                "value": "test2",
+                                                "info": ImportState.WARNING,
+                                            },
+                                            {
+                                                "value": "renamed_old",
+                                                "info": ImportState.DONE,
+                                                "id": 13,
+                                            },
+                                            {
+                                                "value": "deleted",
+                                                "info": ImportState.DONE,
+                                                "id": 14,
+                                            },
+                                            {
+                                                "value": "new",
+                                                "info": ImportState.DONE,
+                                            },
+                                        ],
                                     },
-                                    "organization_tags": [
-                                        {
-                                            "value": "test",
-                                            "info": ImportState.DONE,
-                                            "id": 12,
-                                        },
-                                        {"value": "test2", "info": ImportState.WARNING},
-                                        {
-                                            "value": "renamed_old",
-                                            "info": ImportState.DONE,
-                                            "id": 13,
-                                        },
-                                        {
-                                            "value": "deleted",
-                                            "info": ImportState.DONE,
-                                            "id": 14,
-                                        },
-                                        {
-                                            "value": "new",
-                                            "info": ImportState.DONE,
-                                        },
-                                    ],
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -392,38 +400,44 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "name": {
-                                        "value": "this",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "name": {
+                                            "value": "this",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "managers": [
+                                            {
+                                                "value": "test",
+                                                "info": ImportState.DONE,
+                                                "id": 12,
+                                            },
+                                            {
+                                                "value": "test2",
+                                                "info": ImportState.WARNING,
+                                            },
+                                            {
+                                                "value": "renamed_old",
+                                                "info": ImportState.DONE,
+                                                "id": 13,
+                                            },
+                                            {
+                                                "value": "deleted",
+                                                "info": ImportState.DONE,
+                                                "id": 14,
+                                            },
+                                        ],
                                     },
-                                    "managers": [
-                                        {
-                                            "value": "test",
-                                            "info": ImportState.DONE,
-                                            "id": 12,
-                                        },
-                                        {"value": "test2", "info": ImportState.WARNING},
-                                        {
-                                            "value": "renamed_old",
-                                            "info": ImportState.DONE,
-                                            "id": 13,
-                                        },
-                                        {
-                                            "value": "deleted",
-                                            "info": ImportState.DONE,
-                                            "id": 14,
-                                        },
-                                    ],
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -439,179 +453,134 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
     def test_import_meeting_template(self) -> None:
         self.set_models(
             {
-                "committee/12": {"name": "test1", "meeting_ids": [1]},
+                "committee/12": {"name": "test1"},
                 "committee/13": {"name": "test2"},
-                "committee/14": {"name": "test3", "meeting_ids": [2]},
+                "committee/14": {"name": "test3"},
                 "committee/15": {"name": "test4"},
-                "meeting/1": {
-                    "name": "test",
-                    "committee_id": 12,
-                    "description": "test",
-                    "language": "en",
-                    "default_group_id": 1,
-                    "motions_default_amendment_workflow_id": 1,
-                    "motions_default_workflow_id": 1,
-                    "reference_projector_id": 1,
-                    "projector_ids": [1],
-                    "group_ids": [1, 2],
-                    "motion_state_ids": [1],
-                    "motion_workflow_ids": [1],
-                    **{field: [1] for field in Meeting.all_default_projectors()},
-                    "is_active_in_organization_id": 1,
-                    "admin_group_id": 2,
-                },
-                "group/1": {
-                    "meeting_id": 1,
-                    "name": "default group",
-                    "weight": 1,
-                    "default_group_for_meeting_id": 1,
-                },
-                "group/2": {
-                    "meeting_id": 1,
-                    "name": "default group",
-                    "weight": 1,
-                    "admin_group_for_meeting_id": 1,
-                },
-                "motion_workflow/1": {
-                    "meeting_id": 1,
-                    "name": "blup",
-                    "first_state_id": 1,
-                    "default_amendment_workflow_meeting_id": 1,
-                    "default_workflow_meeting_id": 1,
-                    "state_ids": [1],
-                    "sequential_number": 1,
-                },
-                "motion_state/1": {
-                    "css_class": "lightblue",
-                    "meeting_id": 1,
-                    "workflow_id": 1,
-                    "name": "test",
-                    "weight": 1,
-                    "workflow_id": 1,
-                    "first_state_of_workflow_id": 1,
-                },
-                "projector/1": {
-                    "sequential_number": 1,
-                    "meeting_id": 1,
-                    "used_as_reference_projector_meeting_id": 1,
-                    "name": "Default projector",
-                    **{field: 1 for field in Meeting.reverse_default_projectors()},
-                },
-                "meeting/2": {
-                    "name": "renamed_new",
-                    "committee_id": 14,
-                    "description": "test",
-                    "admin_group_id": 3,
-                    "group_ids": [3],
-                },
-                "group/3": {
-                    "meeting_id": 2,
-                    "name": "default group",
-                    "weight": 1,
-                    "admin_group_for_meeting_id": 2,
-                },
+            }
+        )
+        self.create_meeting(
+            meeting_data={
+                "name": "test",
+                "committee_id": 12,
+                "description": "test",
+            }
+        )
+        self.create_meeting(
+            4,
+            meeting_data={
+                "name": "renamed_new",
+                "committee_id": 14,
+                "description": "test",
+            },
+        )
+        self.set_models(
+            {
                 "import_preview/1": {
                     "name": "committee",
                     "state": ImportState.DONE,
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 12,
-                                    "name": {
-                                        "value": "test1",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "meeting_name": "meeting",
-                                    "meeting_template": {
-                                        "value": "test",
-                                        "info": ImportState.DONE,
-                                        "id": 1,
-                                    },
-                                    "meeting_admins": [
-                                        {
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "id": 12,
+                                        "name": {
+                                            "value": "test1",
                                             "info": ImportState.DONE,
-                                            "value": ADMIN_USERNAME,
-                                            "id": 1,
-                                        }
-                                    ],
-                                },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 13,
-                                    "name": {
-                                        "value": "test2",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "meeting_name": "meeting",
-                                    "meeting_template": {
-                                        "value": "missing",
-                                        "info": ImportState.WARNING,
-                                    },
-                                    "meeting_admins": [
-                                        {
+                                        },
+                                        "meeting_name": "meeting",
+                                        "meeting_template": {
+                                            "value": "test",
                                             "info": ImportState.DONE,
-                                            "value": ADMIN_USERNAME,
                                             "id": 1,
-                                        }
-                                    ],
+                                        },
+                                        "meeting_admins": [
+                                            {
+                                                "info": ImportState.DONE,
+                                                "value": ADMIN_USERNAME,
+                                                "id": 1,
+                                            }
+                                        ],
+                                    },
                                 },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 14,
-                                    "name": {
-                                        "value": "test3",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "meeting_name": "meeting",
-                                    "meeting_template": {
-                                        "value": "renamed_old",
-                                        "info": ImportState.DONE,
-                                        "id": 2,
-                                    },
-                                    "meeting_admins": [
-                                        {
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "id": 13,
+                                        "name": {
+                                            "value": "test2",
                                             "info": ImportState.DONE,
-                                            "value": ADMIN_USERNAME,
-                                            "id": 1,
-                                        }
-                                    ],
+                                        },
+                                        "meeting_name": "meeting",
+                                        "meeting_template": {
+                                            "value": "missing",
+                                            "info": ImportState.WARNING,
+                                        },
+                                        "meeting_admins": [
+                                            {
+                                                "info": ImportState.DONE,
+                                                "value": ADMIN_USERNAME,
+                                                "id": 1,
+                                            }
+                                        ],
+                                    },
                                 },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 15,
-                                    "name": {
-                                        "value": "test4",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "meeting_name": "meeting",
-                                    "meeting_template": {
-                                        "value": "deleted",
-                                        "info": ImportState.DONE,
-                                        "id": 17,
-                                    },
-                                    "meeting_admins": [
-                                        {
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "id": 14,
+                                        "name": {
+                                            "value": "test3",
                                             "info": ImportState.DONE,
-                                            "value": ADMIN_USERNAME,
-                                            "id": 1,
-                                        }
-                                    ],
+                                        },
+                                        "meeting_name": "meeting",
+                                        "meeting_template": {
+                                            "value": "renamed_old",
+                                            "info": ImportState.DONE,
+                                            "id": 4,
+                                        },
+                                        "meeting_admins": [
+                                            {
+                                                "info": ImportState.DONE,
+                                                "value": ADMIN_USERNAME,
+                                                "id": 1,
+                                            }
+                                        ],
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "id": 15,
+                                        "name": {
+                                            "value": "test4",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "meeting_name": "meeting",
+                                        "meeting_template": {
+                                            "value": "deleted",
+                                            "info": ImportState.DONE,
+                                            "id": 17,
+                                        },
+                                        "meeting_admins": [
+                                            {
+                                                "info": ImportState.DONE,
+                                                "value": ADMIN_USERNAME,
+                                                "id": 1,
+                                            }
+                                        ],
+                                    },
+                                },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -630,9 +599,9 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": [],
             "state": "done",
         }
-        self.assert_model_exists("committee/12", {"meeting_ids": [1, 6]})
+        self.assert_model_exists("committee/12", {"meeting_ids": [1, 8]})
         self.assert_model_exists(
-            "meeting/6", {"name": "meeting", "committee_id": 12, "description": "test"}
+            "meeting/8", {"name": "meeting", "committee_id": 12, "description": "test"}
         )
         assert self.get_row(response, 1) == {
             "data": {
@@ -647,13 +616,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": [],
             "state": "done",
         }
-        self.assert_model_exists("committee/13", {"meeting_ids": [3]})
+        self.assert_model_exists("committee/13", {"meeting_ids": [5]})
         self.assert_model_exists(
-            "meeting/3",
+            "meeting/5",
             {
                 "name": "meeting",
                 "committee_id": 13,
-                "description": "Presentation and assembly system",
+                "description": None,
             },
         )
         assert self.get_row(response, 2) == {
@@ -662,7 +631,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": {"info": "done", "value": "test3"},
                 "meeting_name": "meeting",
                 "meeting_template": {
-                    "id": 2,
+                    "id": 4,
                     "info": "warning",
                     "value": "renamed_old",
                 },
@@ -671,17 +640,17 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 ],
             },
             "messages": [
-                "Expected model '2 renamed_old' changed its name to 'renamed_new'."
+                "Expected model '4 renamed_old' changed its name to 'renamed_new'."
             ],
             "state": "done",
         }
-        self.assert_model_exists("committee/14", {"meeting_ids": [2, 4]})
+        self.assert_model_exists("committee/14", {"meeting_ids": [4, 6]})
         self.assert_model_exists(
-            "meeting/4",
+            "meeting/6",
             {
                 "name": "meeting",
                 "committee_id": 14,
-                "description": "Presentation and assembly system",
+                "description": None,
             },
         )
         assert self.get_row(response, 3) == {
@@ -697,13 +666,13 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "messages": ["Model '17 deleted' doesn't exist anymore"],
             "state": "done",
         }
-        self.assert_model_exists("committee/15", {"meeting_ids": [5]})
+        self.assert_model_exists("committee/15", {"meeting_ids": [7]})
         self.assert_model_exists(
-            "meeting/5",
+            "meeting/7",
             {
                 "name": "meeting",
                 "committee_id": 15,
-                "description": "Presentation and assembly system",
+                "description": None,
             },
         )
 
@@ -758,7 +727,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert self.get_row(response, 0) == {
             "data": {
                 "id": 61,
-                "name": {"info": "done", "value": "committee", "id": 61},
+                "name": {"info": "done", "value": "Committee61", "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {"id": 2, "info": "done", "value": "template"},
                 "meeting_admins": [
@@ -778,7 +747,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert self.get_row(response, 0) == {
             "data": {
                 "id": 61,
-                "name": {"info": "done", "value": "committee", "id": 61},
+                "name": {"info": "done", "value": "Committee61", "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {"id": 2, "info": "done", "value": "template"},
             },
@@ -790,21 +759,17 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
 
     def test_json_upload_meeting_template_with_admins_no_longer_found(self) -> None:
         self.json_upload_meeting_template_with_admins_found()
-        self.request("meeting.delete", {"id": 2})
+        response = self.request("meeting.delete", {"id": 2})
+        self.assert_status_code(response, 200)
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         preview_row = self.get_row(response, 0)
         assert preview_row["data"] == {
             "id": 61,
-            "name": {"info": "done", "value": "committee", "id": 61},
+            "name": {"info": "done", "value": "Committee61", "id": 61},
             "meeting_name": "test",
             "meeting_template": {"id": 2, "info": "warning", "value": "template"},
-            "meeting_admins": [
-                {
-                    "info": "error",
-                    "value": "",
-                },
-            ],
+            "meeting_admins": [{"info": "error", "value": ""}],
         }
         assert sorted(preview_row["messages"]) == sorted(
             [
@@ -813,7 +778,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             ]
         )
         assert preview_row["state"] == "error"
-        self.assert_model_exists("committee/61", {"meeting_ids": []})
+        self.assert_model_exists("committee/61", {"meeting_ids": None})
         self.assert_model_not_exists("meeting/3")
 
     def test_json_upload_meeting_template_admin_not_found_anymore(self) -> None:
@@ -828,10 +793,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "meeting_template": {"info": "warning", "value": "test"},
             "meeting_admins": [
                 {"info": ImportState.WARNING, "value": "bob", "id": 2},
-                {
-                    "info": "error",
-                    "value": "",
-                },
+                {"info": "error", "value": ""},
             ],
         }
         assert sorted(preview_row["messages"]) == sorted(
@@ -858,14 +820,14 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         ] = {
             1: ("one", None, None, None, None),
             2: ("two", 6, [3, 10], [6], [3, 10]),
-            3: ("three", 2, None, [6, 2], None),
+            3: ("three", 2, None, [2, 6], None),
             4: ("nine", 9, None, [6, 8, 9], None),
             5: ("four", None, None, None, None),
-            6: ("five", None, [2, 7, 8], [], [2, 3, 4, 7, 8, 9, 10]),
+            6: ("five", None, [2, 7, 8], None, [2, 3, 4, 7, 8, 9, 10]),
             7: ("six", 6, None, [6], None),
             8: ("seven", 6, [9], [6], [4, 9]),
             9: ("eight", 8, [4], [6, 8], [4]),
-            10: ("ten", 2, None, [6, 2], None),
+            10: ("ten", 2, None, [2, 6], None),
         }
         for id_, (
             name,
@@ -933,10 +895,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
         assert response.json["results"][0][0]["state"] == ImportState.DONE
         assert self.get_row(response) == {
             "data": {
-                "name": {
-                    "info": ImportState.NEW,
-                    "value": "two",
-                },
+                "name": {"info": ImportState.NEW, "value": "two"},
                 "parent": {"info": ImportState.WARNING, "value": "one", "id": 1},
             },
             "messages": ["Expected model '1 one' changed its name to 'Committee one'."],
@@ -1009,7 +968,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/4",
             {
                 "parent_id": 3,
-                "all_parent_ids": [1, 9, 13, 14, 3],
+                "all_parent_ids": [1, 3, 9, 13, 14],
                 "child_ids": [10],
                 "all_child_ids": [10, 11, 12],
             },
@@ -1028,8 +987,8 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             {
                 "parent_id": 2,
                 "all_parent_ids": [1, 2],
-                "child_ids": [7, 8, 5],
-                "all_child_ids": [7, 8, 5],
+                "child_ids": [5, 7, 8],
+                "all_child_ids": [5, 7, 8],
             },
         )
         for id_ in [7, 8]:
@@ -1048,7 +1007,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "parent_id": 1,
                 "all_parent_ids": [1],
                 "child_ids": [13],
-                "all_child_ids": [10, 11, 12, 13, 14, 15, 3, 4],
+                "all_child_ids": [3, 4, 10, 11, 12, 13, 14, 15],
                 "description": "Now this ain't just any ol' 'mittee, this is THE 'mittee I tell ya.",
             },
         )
@@ -1056,7 +1015,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/10",
             {
                 "parent_id": 4,
-                "all_parent_ids": [1, 9, 13, 14, 3, 4],
+                "all_parent_ids": [1, 3, 4, 9, 13, 14],
                 "child_ids": [11, 12],
                 "all_child_ids": [11, 12],
             },
@@ -1065,7 +1024,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/11",
             {
                 "parent_id": 10,
-                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "all_parent_ids": [1, 3, 4, 9, 10, 13, 14],
                 "child_ids": None,
                 "all_child_ids": None,
                 "description": "Now we here ain't snobs like them guys from 'mittee 9, y'all can relax here.",
@@ -1075,7 +1034,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
             "committee/12",
             {
                 "parent_id": 10,
-                "all_parent_ids": [1, 9, 13, 14, 3, 4, 10],
+                "all_parent_ids": [1, 3, 4, 9, 10, 13, 14],
                 "child_ids": None,
                 "all_child_ids": None,
             },
@@ -1086,7 +1045,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "parent_id": 9,
                 "all_parent_ids": [1, 9],
                 "child_ids": [14, 15],
-                "all_child_ids": [14, 15, 3, 10, 11, 4, 12],
+                "all_child_ids": [3, 4, 10, 11, 12, 14, 15],
             },
         )
         self.assert_model_exists(
@@ -1095,7 +1054,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "parent_id": 13,
                 "all_parent_ids": [1, 9, 13],
                 "child_ids": [3],
-                "all_child_ids": [3, 10, 11, 4, 12],
+                "all_child_ids": [3, 4, 10, 11, 12],
             },
         )
         self.assert_model_exists(

@@ -12,33 +12,10 @@ from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
 
 
-class MotionUpdateActionTest(BaseActionTestCase):
+class BaseMotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/111": {
-                "title": "title_srtgb123",
-                "sequential_number": 111,
-                "meeting_id": 1,
-                "state_id": 1,
-                "number": "123",
-                "text": "<i>test</i>",
-                "reason": "<b>test2</b>",
-                "modified_final_version": "blablabla",
-                "amendment_paragraphs": Jsonb({"3": "testtesttest"}),
-            },
-            "meeting_user/1": {
-                "meeting_id": 1,
-                "user_id": 1,
-            },
-            "motion_submitter/1": {
-                "meeting_id": 1,
-                "motion_id": 111,
-                "meeting_user_id": 1,
-            },
-            "motion_state/1": {"allow_submitter_edit": True},
-        }
 
     def set_test_models(self, motion_111_data: dict[str, Any] = {}) -> None:
         self.create_motion(
@@ -62,7 +39,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             {
                 f"motion_workflow/{base}": {
                     "name": f"motion_workflow{base}",
-                    "sequential_number": base,
                     "first_state_id": base,
                     "meeting_id": meeting_id,
                 },
@@ -76,6 +52,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
             }
         )
 
+
+class MotionUpdateActionTest(BaseMotionUpdateActionTest):
     def test_update_correct(self) -> None:
         self.set_test_models({"created": datetime.fromtimestamp(1687339000)})
         with CountDatastoreCalls() as counter:
@@ -98,6 +76,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
+        timestamp = datetime.fromtimestamp(1234567890, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -113,16 +92,18 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "start_line_number": 13,
                 "created": datetime.fromtimestamp(1687339000, ZoneInfo("UTC")),
                 "additional_submitter": "test",
-                "workflow_timestamp": datetime.fromtimestamp(
-                    1234567890, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
-            ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
+            [
+                "Workflow_timestamp set to {}",
+                timestamp.isoformat(sep=" "),
+                "Motion updated",
+            ],
         )
-        assert counter.calls == 11
+        assert counter.calls == 12
 
     def test_update_wrong_id(self) -> None:
         self.set_test_models()
@@ -200,13 +181,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "motion_category/4": {
                     "meeting_id": 1,
                     "name": "name_GdPzDztT",
-                    "sequential_number": 4,
                 },
                 "motion_block/51": {
                     "meeting_id": 1,
                     "title": "title_ddyvpXch",
-                    "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "meeting_id": 1,
                 },
             }
         )
@@ -220,7 +202,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "recommendation_extension": "ext [motion/112] [motion/113]",
                     "category_id": 4,
                     "block_id": 51,
-                    "supporter_meeting_user_ids": [],
                     "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_mediafile_ids": [],
@@ -228,7 +209,20 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/111",
+            {
+                "state_extension": "ext [motion/112] [motion/113]",
+                "recommendation_extension": "ext [motion/112] [motion/113]",
+                "category_id": 4,
+                "block_id": 51,
+                "additional_submitter": "additional",
+                "tag_ids": None,
+                "attachment_meeting_mediafile_ids": None,
+            },
+        )
         # motion/113 does not exist and should therefore not be present in the relations
+        timestamp = datetime.fromtimestamp(9876543210, ZoneInfo("UTC"))
         self.assert_model_exists(
             "motion/111",
             {
@@ -242,17 +236,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "attachment_meeting_mediafile_ids": None,
                 "state_extension_reference_ids": ["motion/112"],
                 "recommendation_extension_reference_ids": ["motion/112"],
-                "workflow_timestamp": datetime.fromtimestamp(
-                    9876543210, ZoneInfo("UTC")
-                ),
+                "workflow_timestamp": timestamp,
             },
         )
         self.assert_history_information(
             "motion/111",
             [
-                "Supporters changed",
                 "Workflow_timestamp set to {}",
-                "9876543210",
+                timestamp.isoformat(sep=" "),
                 "Category set to {}",
                 "motion_category/4",
                 "Motion block set to {}",
@@ -260,7 +251,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 32
+        assert counter.calls == 31
 
     def test_update_workflow_id(self) -> None:
         self.create_workflow(111)
@@ -341,13 +332,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "motion_category/4": {
                     "name": "name_GdPzDztT",
                     "meeting_id": 1,
-                    "sequential_number": 4,
                 },
                 "motion_block/51": {
                     "title": "title_ddyvpXch",
                     "meeting_id": 1,
-                    "sequential_number": 51,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/51",
+                    "meeting_id": 1,
                 },
             }
         )
@@ -360,7 +352,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "recommendation_extension": "ext_sldennt [motion/112]",
                 "category_id": 4,
                 "block_id": 51,
-                "supporter_meeting_user_ids": [],
                 "tag_ids": [],
                 "attachment_mediafile_ids": [],
             },
@@ -434,19 +425,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": None}
         )
 
-    def test_set_supporter_other_meeting(self) -> None:
-        self.set_test_models()
-        self.create_meeting(4)
-        self.set_user_groups(1, [4])
-        response = self.request(
-            "motion.update", {"id": 111, "supporter_meeting_user_ids": [1]}
-        )
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            "The following models do not belong to meeting 1: ['meeting_user/1']",
-            response.json["message"],
-        )
-
     def test_update_identical_motions(self) -> None:
         text1 = "test1"
         hash1 = TextHashMixin.get_hash(text1)
@@ -474,8 +452,83 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("motion/3", {"identical_motion_ids": [2]})
 
-    def test_update_no_permissions(self) -> None:
+    def test_update_check_not_unique_number(self) -> None:
+        self.create_motion(1, 1, motion_data={"number": "T001"})
+        self.create_motion(1, 2, motion_data={"number": "A001"})
+        response = self.request("motion.update", {"id": 1, "number": "A001"})
+        self.assert_status_code(response, 400)
+        self.assertEqual("Number is not unique.", response.json["message"])
+
+    def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
         self.set_test_models()
+        self.create_mediafile(1)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "attachment_mediafile_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/1",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": [2],
+                "inherited_access_group_ids": [2],
+                "is_public": False,
+            },
+        )
+
+    def test_update_with_published_orga_mediafile(self) -> None:
+        self.set_test_models()
+        self.create_mediafile(1)
+        self.set_models(
+            {
+                "meeting_mediafile/11": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "is_public": True,
+                },
+            },
+        )
+        response = self.request(
+            "motion.update",
+            {"id": 111, "attachment_mediafile_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_mediafile/11",
+            {
+                "attachment_ids": ["motion/111"],
+                "meeting_id": 1,
+                "mediafile_id": 1,
+                "access_group_ids": None,
+                "inherited_access_group_ids": None,
+                "is_public": True,
+            },
+        )
+
+
+class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_test_models()
+        self.permission_test_models: dict[str, dict[str, Any]] = {
+            "meeting_user/1": {
+                "meeting_id": 1,
+                "user_id": 1,
+            },
+            "motion_submitter/1": {
+                "meeting_id": 1,
+                "motion_id": 111,
+                "meeting_user_id": 1,
+            },
+        }
+
+    def test_update_no_permissions(self) -> None:
         self.set_organization_management_level(None)
         self.set_user_groups(1, [3])
         self.set_models({"motion_state/1": {"allow_submitter_edit": False}})
@@ -532,7 +585,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def setup_can_manage_metadata(self) -> None:
-        self.set_test_models()
         self.set_organization_management_level(None)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
@@ -570,13 +622,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "motion_category/2": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 2,
                 },
                 "motion_block/4": {
                     "meeting_id": 1,
                     "title": "blocky",
-                    "sequential_number": 4,
-                    "list_of_speakers_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion_block/4",
+                    "meeting_id": 1,
                 },
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
@@ -593,7 +646,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
-                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -608,7 +660,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "created": datetime.fromtimestamp(now, ZoneInfo("UTC")),
                 "tag_ids": [3],
                 "block_id": 4,
-                "supporter_meeting_user_ids": [1],
             },
         )
 
@@ -636,7 +687,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "motion_category/2": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 2,
                 }
             }
         )
@@ -651,13 +701,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-
-    def test_update_check_not_unique_number(self) -> None:
-        self.create_motion(1, 1, motion_data={"number": "T001"})
-        self.create_motion(1, 2, motion_data={"number": "A001"})
-        response = self.request("motion.update", {"id": 1, "number": "A001"})
-        self.assert_status_code(response, 400)
-        self.assertEqual("Number is not unique.", response.json["message"])
 
     def test_update_permission_with_mediafile(self) -> None:
         self.setup_can_manage_metadata()
@@ -679,56 +722,4 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_mediafile/11", {"attachment_ids": ["motion/111"]}
-        )
-
-    def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
-        self.set_test_models()
-        self.create_mediafile(1)
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "attachment_mediafile_ids": [1],
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_mediafile/1",
-            {
-                "attachment_ids": ["motion/111"],
-                "meeting_id": 1,
-                "mediafile_id": 1,
-                "access_group_ids": [2],
-                "inherited_access_group_ids": [2],
-                "is_public": False,
-            },
-        )
-
-    def test_update_with_published_orga_mediafile(self) -> None:
-        self.set_test_models()
-        self.create_mediafile(1)
-        self.set_models(
-            {
-                "meeting_mediafile/11": {
-                    "meeting_id": 1,
-                    "mediafile_id": 1,
-                    "is_public": True,
-                },
-            },
-        )
-        response = self.request(
-            "motion.update",
-            {"id": 111, "attachment_mediafile_ids": [1]},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_mediafile/11",
-            {
-                "attachment_ids": ["motion/111"],
-                "meeting_id": 1,
-                "mediafile_id": 1,
-                "access_group_ids": None,
-                "inherited_access_group_ids": None,
-                "is_public": True,
-            },
         )

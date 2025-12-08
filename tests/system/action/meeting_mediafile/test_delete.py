@@ -42,7 +42,6 @@ class MeetingMediafileDelete(BaseActionTestCase):
                 },
                 "list_of_speakers/3": {
                     "meeting_id": 1,
-                    "sequential_number": 3,
                     "content_object_id": "meeting_mediafile/2",
                 },
                 "projection/4": {
@@ -51,8 +50,12 @@ class MeetingMediafileDelete(BaseActionTestCase):
                 },
                 "topic/5": {
                     "meeting_id": 1,
-                    "sequential_number": 5,
                     "title": "pic me",
+                },
+                "agenda_item/6": {"content_object_id": "topic/5", "meeting_id": 1},
+                "list_of_speakers/7": {
+                    "content_object_id": "topic/5",
+                    "meeting_id": 1,
                 },
             }
         )

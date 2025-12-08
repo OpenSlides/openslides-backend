@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
+from psycopg.errors import RaiseException
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -13,6 +14,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
+    RelationException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
@@ -118,42 +120,51 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            with get_new_os_conn() as conn:
-                self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-                results: ActionsResponseResults = []
-                if atomic:
-                    results = self.execute_write_requests(self.parse_actions, payload)
-                else:
+            try:
+                with get_new_os_conn() as conn:
+                    self.datastore = ExtendedDatabase(conn, self.logging, self.env)
+                    results: ActionsResponseResults = []
+                    if atomic:
+                        results = self.execute_write_requests(
+                            self.parse_actions, payload
+                        )
+                    else:
 
-                    def transform_to_list(
-                        tuple: tuple[WriteRequest | None, ActionResults | None],
-                    ) -> tuple[list[WriteRequest], ActionResults | None]:
-                        return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
-
-                    for element in payload:
-                        try:
-                            result = self.execute_write_requests(
-                                lambda e: transform_to_list(self.perform_action(e)),
-                                element,
+                        def transform_to_list(
+                            tuple: tuple[WriteRequest | None, ActionResults | None],
+                        ) -> tuple[list[WriteRequest], ActionResults | None]:
+                            return (
+                                [tuple[0]] if tuple[0] is not None else [],
+                                tuple[1],
                             )
-                            results.append(result)
-                        except ActionException as exception:
-                            error = cast(ActionError, exception.get_json())
-                            results.append(error)
-                        self.datastore.reset()
 
-                # execute cleanup methods
-                for on_success in self.on_success:
-                    on_success()
+                        for element in payload:
+                            try:
+                                result = self.execute_write_requests(
+                                    lambda e: transform_to_list(self.perform_action(e)),
+                                    element,
+                                )
+                                results.append(result)
+                            except ActionException as exception:
+                                error = cast(ActionError, exception.get_json())
+                                results.append(error)
+                            self.datastore.reset()
 
-                # Return action result
-                self.logger.info("Request was successful. Send response now.")
-                return ActionsResponse(
-                    status_code=HTTPStatus.OK.value,
-                    success=True,
-                    message="Actions handled successfully",
-                    results=results,
-                )
+                    # execute cleanup methods
+                    for on_success in self.on_success:
+                        on_success()
+
+                    # Return action result
+                    self.logger.info("Request was successful. Send response now.")
+                    return ActionsResponse(
+                        status_code=HTTPStatus.OK.value,
+                        success=True,
+                        message="Actions handled successfully",
+                        results=results,
+                    )
+            except RaiseException as e:
+                # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                raise RelationException(f"Relation violates required constraint: {e}")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
         """Helper function to execute an internal action with user id -1."""

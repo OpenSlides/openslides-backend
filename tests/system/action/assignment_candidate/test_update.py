@@ -8,8 +8,11 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/222": {
-                    "sequential_number": 1,
                     "title": "title_SNLGsvIV",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/222",
                     "meeting_id": 1,
                 },
                 "user/233": {"username": "username_233"},

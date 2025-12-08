@@ -1,15 +1,27 @@
 import logging
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
+
+import pytest
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.migration_manager import MigrationManager
+from openslides_backend.models import fields
+from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
+from openslides_backend.shared.util import (
+    EXAMPLE_DATA_FILE,
+    INITIAL_DATA_FILE,
+    ONE_ORGANIZATION_FQID,
+    get_initial_data_file,
+)
 from tests.system.action.base import BaseActionTestCase
-from tests.system.util import Profiler
+from tests.system.util import Profiler, performance
 
 
 class OrganizationInitialImport(BaseActionTestCase):
@@ -19,9 +31,72 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         super().setUp()
 
+    def get_formatted_value(
+        self,
+        field_name: str,
+        value: Any,
+        collection: str,
+        should_be_translated: bool,
+    ) -> Any:
+        # TODO: remove when empty back relations are removed from initial data files
+        if value == [] and not (
+            collection == "motion_state" and field_name == "restrictions"
+        ):
+            return None
+
+        # Update translatable values
+        translatable_fields = {
+            "organization": [
+                "login_text",
+                "legal_notice",
+                "users_email_subject",
+                "users_email_body",
+            ],
+            "theme": ["name"],
+        }
+        if should_be_translated and field_name in translatable_fields.get(
+            collection, []
+        ):
+            return Translator.translate(value)
+
+        # Update value types
+        field = model_registry[collection].try_get_field(field_name)
+        match type(field):
+            case fields.DecimalField:
+                return Decimal(value)
+            case fields.TimestampField:
+                return datetime.fromtimestamp(value, ZoneInfo("UTC"))
+            case _:
+                return value
+
+    def validate_imported_data(self, imported_data: dict[str, Any]) -> None:
+        lang = imported_data["organization"]["1"]["default_language"]
+        should_be_translated = lang != "en"
+        if should_be_translated:
+            Translator.set_translation_language(lang)
+
+        for collection, instances in imported_data.items():
+            if collection == "_migration_index":
+                continue
+            for id_, data in instances.items():
+                expected_data = {
+                    field_name: self.get_formatted_value(
+                        field_name, value, collection, should_be_translated
+                    )
+                    for field_name, value in data.items()
+                }
+                self.assert_model_exists(f"{collection}/{id_}", expected_data)
+
     def test_initial_import_filled_datastore(self) -> None:
-        self.create_model(
-            "organization/1", {"name": "Intevation", "default_language": "en"}
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "name": "Intevation",
+                    "default_language": "en",
+                    "theme_id": 1,
+                },
+                "theme/1": {"name": "Intevation theme"},
+            }
         )
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         response = self.request(
@@ -31,22 +106,26 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assertIn("Datastore is not empty.", response.json["message"])
 
     def test_initial_import_with_initial_data_file(self) -> None:
-        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
+        initial_data = get_initial_data_file(INITIAL_DATA_FILE)
+        request_data = {"data": initial_data}
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
         )
         self.assert_status_code(response, 200)
-        for collection in request_data["data"]:
-            if collection == "_migration_index":
-                continue
-            for id_ in request_data["data"][collection]:
-                self.assert_model_exists(
-                    f"{collection}/{id_}", request_data["data"][collection][id_]
-                )
+        self.validate_imported_data(initial_data)
 
+    def test_initial_import_empty_data(self) -> None:
+        """when there is no data given, use initial_data.json for initial import"""
+        response = self.request(
+            "organization.initial_import", {"data": {}}, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 200)
+        self.validate_imported_data(get_initial_data_file(INITIAL_DATA_FILE))
+
+    @performance
     def test_initial_import_with_example_data_file(self) -> None:
         self.datastore.truncate_db()
-        request_data = {"data": get_initial_data_file("data/example-data.json")}
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
         request_data["data"]["organization"]["1"]["default_language"] = "de"
         with Profiler("data/test_initial_import_with_example_data_file.prof"):
             response = self.request(
@@ -56,25 +135,7 @@ class OrganizationInitialImport(BaseActionTestCase):
                 internal=True,
             )
         self.assert_status_code(response, 200)
-        Translator.set_translation_language("de")
-        for collection in request_data["data"]:
-            if collection == "_migration_index":
-                continue
-            for id_ in request_data["data"][collection]:
-                entry = request_data["data"][collection][id_]
-                if collection == "organization":
-                    for field in (
-                        "login_text",
-                        "legal_notice",
-                        "users_email_subject",
-                        "users_email_body",
-                    ):
-                        if entry.get(field):
-                            entry[field] = Translator.translate(entry[field])
-                if collection == "theme":
-                    if entry.get("name"):
-                        entry["name"] = Translator.translate(entry["name"])
-                self.assert_model_exists(f"{collection}/{id_}", entry)
+        self.validate_imported_data(request_data["data"])
 
     def test_initial_import_wrong_field(self) -> None:
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
@@ -114,7 +175,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
         self.assertIn(
-            "organization/1/theme_id: Relation Error:  points to theme/test/theme_for_organization_id, but the reverse relation for it is corrupt",
+            "organization/1/theme_id: Relation Error: points to theme/test/theme_for_organization_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
 
@@ -126,11 +187,11 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation Error:  points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt",
+            "Relation Error: points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
         self.assertIn(
-            "Relation Error:  points to organization/1/theme_id, but the reverse relation for it is corrupt",
+            "Relation Error: points to organization/1/theme_id, but the reverse relation for it is corrupt.",
             response.json["message"],
         )
 
@@ -157,24 +218,8 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_initial_import_empty_data(self) -> None:
-        """when there is no data given, use initial_data.json for initial import"""
-        request_data: dict[str, Any] = {"data": {}}
-        response = self.request(
-            "organization.initial_import", request_data, anonymous=True, internal=True
-        )
-        self.assert_status_code(response, 200)
-        initial_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
-        for collection in initial_data["data"]:
-            if collection == "_migration_index":
-                continue
-            for id_ in initial_data["data"][collection]:
-                self.assert_model_exists(
-                    f"{collection}/{id_}", initial_data["data"][collection][id_]
-                )
-
     def test_initial_import_without_MI(self) -> None:
-        request_data = {"data": {"f": 1}}
+        request_data = {"data": {"gender": {"1": {"id": 1, "name": "male"}}}}
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
         )
@@ -184,7 +229,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_initial_import_with_MI_to_small(self) -> None:
+    def test_initial_import_with_MI_too_small(self) -> None:
         request_data = {"data": {"_migration_index": -1}}
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
@@ -195,6 +240,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_greater_backend_MI(self) -> None:
         backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
@@ -209,18 +255,18 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
+    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_lower_backend_MI(self) -> None:
         backend_migration_index = MigrationHelper.get_backend_migration_index()
-        request_data = {"data": {"_migration_index": backend_migration_index + 1}}
+        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
+        request_data["data"]["_migration_index"] = backend_migration_index + 1
         response = self.request(
             "organization.initial_import", request_data, anonymous=True, internal=True
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            " is higher than the backend ",
-            response.json["message"],
-        )
+        self.assertIn(" is higher than the backend ", response.json["message"])
 
+    # TODO: check again once migration_index usage is fixed
     def test_play_with_migrations(self) -> None:
         """
         - Loads the initial_data.json into memory

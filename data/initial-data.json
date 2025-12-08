@@ -1,5 +1,5 @@
 {
-    "_migration_index": 70,
+    "_migration_index": 100,
     "gender":{
         "1":{
             "id": 1,
@@ -30,8 +30,8 @@
         "1": {
             "id": 1,
             "name": "[Your organization]",
-            "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.",
-            "login_text": "Welcome to OpenSlides. Please login.",
+            "legal_notice": "The organizer is responsible for the content under press law.",
+            "login_text": "",
             "gender_ids": [1, 2, 3, 4],
             "default_language": "en",
             "enable_electronic_voting": true,

@@ -3,6 +3,17 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AssignmentUpdateActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "assignment/111": {
+            "title": "title_srtgb123",
+            "meeting_id": 1,
+        },
+        "list_of_speakers/23": {
+            "content_object_id": "assignment/111",
+            "meeting_id": 1,
+        },
+    }
+
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
@@ -11,8 +22,11 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/111",
                     "meeting_id": 1,
                 },
             }
@@ -31,8 +45,11 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                     "assignment_poll_add_candidates_to_list_of_speakers": True
                 },
                 "assignment/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/111",
                     "meeting_id": 1,
                 },
                 "meeting_mediafile/11": {
@@ -74,9 +91,12 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             {
                 "assignment/111": {
                     "title": "title_srtgb123",
-                    "sequential_number": 1,
                     "meeting_id": 1,
-                }
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "assignment/111",
+                    "meeting_id": 1,
+                },
             },
         )
         response = self.request(
@@ -99,12 +119,10 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 },
                 "assignment/1": {
                     "title": "assignment_with_candidates",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "phase": phase,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },
@@ -165,26 +183,14 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "title": "title_srtgb123",
-                    "meeting_id": 1,
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.update",
             {"id": 111, "title": "title_Xcdfgee"},
         )
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "title": "title_srtgb123",
-                    "meeting_id": 1,
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.update",
             {"id": 111, "title": "title_Xcdfgee"},
             Permissions.Assignment.CAN_MANAGE,
@@ -192,13 +198,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
 
     def test_update_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {
-                "assignment/111": {
-                    "sequential_number": 1,
-                    "title": "title_srtgb123",
-                    "meeting_id": 1,
-                },
-            },
+            self.PERMISSION_TEST_MODELS,
             "assignment.update",
             {"id": 111, "title": "title_Xcdfgee"},
         )

@@ -42,7 +42,7 @@ def test_simple(db_connection: Connection) -> None:
 def test_view_field_relation_list_ordered(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     insert_into_intermediate_table(
-        "nm_committee_manager_ids_user", ["committee_id", "user_id"], [(2, 1), (1, 1)]
+        "nm_committee_manager_ids_user_t", ["committee_id", "user_id"], [(2, 1), (1, 1)]
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())

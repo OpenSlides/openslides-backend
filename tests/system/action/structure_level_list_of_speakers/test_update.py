@@ -18,14 +18,14 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "topic/42": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 42,
                     "meeting_id": 1,
                 },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/2": {"content_object_id": "topic/42", "meeting_id": 1},
                 "structure_level/1": {
                     "name": "cake party",
                     "meeting_id": 1,
@@ -34,7 +34,6 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                 "list_of_speakers/2": {
                     "meeting_id": 1,
                     "content_object_id": "topic/1337",
-                    "sequential_number": 2,
                     "structure_level_list_of_speakers_ids": [3],
                 },
                 "structure_level_list_of_speakers/3": {
@@ -47,7 +46,6 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                 "list_of_speakers/4": {
                     "meeting_id": 1,
                     "content_object_id": "topic/42",
-                    "sequential_number": 4,
                     "structure_level_list_of_speakers_ids": [5],
                 },
                 "structure_level_list_of_speakers/5": {

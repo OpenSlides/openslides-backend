@@ -25,11 +25,10 @@ class MeetingUserDelete(BaseActionTestCase):
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "topic/11": {
                     "title": "tipic",
-                    "sequential_number": 11,
                     "meeting_id": 10,
                 },
+                "agenda_item/6": {"content_object_id": "topic/11", "meeting_id": 101},
                 "list_of_speakers/11": {
-                    "sequential_number": 11,
                     "content_object_id": "topic/11",
                     "meeting_id": 10,
                 },
@@ -64,18 +63,11 @@ class MeetingUserDelete(BaseActionTestCase):
         self.assert_model_exists("meeting/101", {"present_user_ids": [1]})
 
     def test_delete_with_editor_and_working_group_speaker(self) -> None:
+        self.create_motion(10, 11)
         self.set_models(
             {
-                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "list_of_speakers/12": {
-                    "sequential_number": 12,
-                    "content_object_id": "motion/11",
-                    "meeting_id": 10,
-                },
-                "motion/11": {
-                    "title": "morse",
-                    "sequential_number": 11,
-                    "state_id": 10,
+                "meeting_user/5": {
+                    "user_id": 1,
                     "meeting_id": 10,
                 },
                 "motion_editor/1": {
@@ -88,16 +80,28 @@ class MeetingUserDelete(BaseActionTestCase):
                     "motion_id": 11,
                     "meeting_id": 10,
                 },
+                "motion_submitter/3": {
+                    "meeting_user_id": 5,
+                    "meeting_id": 10,
+                    "motion_id": 11,
+                },
             }
         )
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting_user/5")
-        self.assert_model_not_exists("motion_editor/1")
-        self.assert_model_not_exists("motion_working_group_speaker/2")
+        self.assert_model_exists("motion_editor/1", {"meeting_user_id": None})
+        self.assert_model_exists(
+            "motion_working_group_speaker/2", {"meeting_user_id": None}
+        )
+        self.assert_model_exists("motion_submitter/3", {"meeting_user_id": None})
         self.assert_model_exists(
             "meeting/10",
-            {"motion_editor_ids": None, "motion_working_group_speaker_ids": None},
+            {
+                "motion_editor_ids": [1],
+                "motion_working_group_speaker_ids": [2],
+                "motion_submitter_ids": [3],
+            },
         )
 
     def test_delete_with_chat_message(self) -> None:

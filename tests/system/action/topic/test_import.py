@@ -75,9 +75,9 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_exists("import_preview/2")
 
     def test_import_found_id_and_text_field(self) -> None:
+        self.create_topic(1, 22)
         self.set_models(
             {
-                "topic/1": {"sequential_number": 1, "title": "test", "meeting_id": 22},
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "topic",
@@ -114,19 +114,10 @@ class TopicJsonImport(BaseActionTestCase):
         )
 
     def test_import_found_id_and_agenda_fields(self) -> None:
+        self.create_topic(1, 22)
         self.set_models(
             {
-                "topic/1": {
-                    "sequential_number": 1,
-                    "title": "test",
-                    "meeting_id": 22,
-                    "agenda_item_id": 7,
-                },
-                "agenda_item/7": {
-                    "content_object_id": "topic/1",
-                    "meeting_id": 22,
-                    "duration": 20,
-                },
+                "agenda_item/1": {"duration": 20},
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "topic",
@@ -161,10 +152,10 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "topic/1",
-            {"title": "test", "meeting_id": 22, "agenda_item_id": 7},
+            {"title": "test", "meeting_id": 22, "agenda_item_id": 1},
         )
         self.assert_model_exists(
-            "agenda_item/7",
+            "agenda_item/1",
             {
                 "content_object_id": "topic/1",
                 "comment": "test",
@@ -174,12 +165,7 @@ class TopicJsonImport(BaseActionTestCase):
         )
 
     def test_import_duplicate_and_topic_deleted(self) -> None:
-        self.set_models(
-            {
-                "topic/1": {"sequential_number": 1, "title": "test", "meeting_id": 22},
-                "meeting/22": {"topic_ids": [1]},
-            }
-        )
+        self.create_topic(1, 22)
         response = self.request(
             "topic.json_upload", {"meeting_id": 22, "data": [{"title": "test"}]}
         )
@@ -245,9 +231,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
         self.json_upload_duplicate_in_db()
         self.request("topic.delete", {"id": 3})
         self.assert_model_not_exists("topic/3")
-        self.create_model(
-            "topic/4", {"sequential_number": 2, "title": "test", "meeting_id": 22}
-        )
+        self.create_topic(4, 22)
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -259,9 +243,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
 
     def test_import_topic_duplicate_id(self) -> None:
         self.json_upload_duplicate_in_db()
-        self.create_model(
-            "topic/4", {"sequential_number": 2, "title": "test", "meeting_id": 22}
-        )
+        self.create_topic(4, 22)
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]

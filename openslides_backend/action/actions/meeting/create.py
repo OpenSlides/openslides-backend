@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.models.models import Meeting
@@ -148,11 +149,13 @@ class MeetingCreate(
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
                     Permissions.Assignment.CAN_MANAGE,
+                    Permissions.Assignment.CAN_MANAGE_POLLS,
                     Permissions.ListOfSpeakers.CAN_MANAGE,
                     Permissions.Mediafile.CAN_MANAGE,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Motion.CAN_MANAGE,
+                    Permissions.Motion.CAN_MANAGE_POLLS,
                     Permissions.Projector.CAN_MANAGE,
                     Permissions.Tag.CAN_MANAGE,
                     Permissions.User.CAN_MANAGE,
@@ -220,6 +223,10 @@ class MeetingCreate(
         instance["list_of_speakers_countdown_id"] = action_results[0]["id"]  # type: ignore
         instance["poll_countdown_id"] = action_results[1]["id"]  # type: ignore
 
+        # Set proper types for TimestampFields
+        for field_name in ["start_time", "end_time"]:
+            if (value := instance.get(field_name)) and isinstance(value, int):
+                instance[field_name] = datetime.fromtimestamp(value)
         return instance
 
     def get_dependent_action_data(

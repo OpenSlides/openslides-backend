@@ -57,10 +57,15 @@ class UserSendInvitationMail(UpdateAction):
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
         global_result: dict[str, Any] = {"sent": False}
 
         if not EmailUtils.check_email(EmailSettings.default_from_email):

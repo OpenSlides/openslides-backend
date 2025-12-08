@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 from ....models.models import Motion
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
-from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
 from ..agenda_item.create import AgendaItemCreate
 from ..list_of_speakers.create import ListOfSpeakersCreate
@@ -14,6 +13,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
 )
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion_submitter.create import MotionSubmitterCreateAction
+from ..motion_supporter.create import MotionSupporterCreateAction
 from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
@@ -22,7 +22,6 @@ class MotionCreateBase(
     MeetingUserHelperMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
-    SequentialNumbersMixin,
     SetNumberMixin,
     CreateActionWithListOfSpeakersMixin,
 ):
@@ -64,10 +63,21 @@ class MotionCreateBase(
                 MotionSubmitterCreateAction, [data], skip_history=True
             )
 
-    def set_sequential_number(self, instance: dict[str, Any]) -> None:
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
+    def create_supporters(self, instance: dict[str, Any]) -> None:
+        supporter_ids = instance.pop("supporter_meeting_user_ids", [])
+        if supporter_ids:
+            self.apply_instance(instance)
+            self.execute_other_action(
+                MotionSupporterCreateAction,
+                [
+                    {
+                        "motion_id": instance["id"],
+                        "meeting_user_id": meeting_user_id,
+                    }
+                    for meeting_user_id in supporter_ids
+                ],
+                skip_history=True,
+            )
 
     def set_created_last_modified_and_number(self, instance: dict[str, Any]) -> None:
         self.set_created_last_modified(instance)

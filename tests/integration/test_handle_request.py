@@ -14,7 +14,11 @@ from openslides_backend.shared.typing import Schema
 
 class BaseTestAction(Action):
     def perform(
-        self, payload: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults]:
         return (None, self.mock_perform())
 

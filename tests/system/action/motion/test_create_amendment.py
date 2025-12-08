@@ -19,12 +19,14 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "motion_category/12": {
                     "meeting_id": 1,
                     "name": "Category 12",
-                    "sequential_number": 1,
                 },
                 "motion_block/13": {
                     "meeting_id": 1,
                     "title": "Block 13",
-                    "sequential_number": 1,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "motion_block/13",
+                    "meeting_id": 1,
                 },
             }
         )

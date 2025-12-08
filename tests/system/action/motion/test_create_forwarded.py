@@ -323,13 +323,11 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 14,
                 "non_forwarded_amendment_amount": 0,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "amendment_result_data": [],
                         "id": 15,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                     }
                 ],
             }
@@ -344,6 +342,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_ids": [15],
                 "state_id": 4,
                 "additional_submitter": "committee_forwarder",
+                "sequential_number": 2,
             },
         )
         self.assert_model_exists(
@@ -357,6 +356,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "committee_forwarder",
                 "marked_forwarded": False,
+                "sequential_number": 1,
             },
         )
 
@@ -472,23 +472,19 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 18,
                 "non_forwarded_amendment_amount": 1,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "id": 19,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                         "amendment_result_data": [],
                     },
                     {
                         "id": 20,
                         "non_forwarded_amendment_amount": 1,
-                        "sequential_number": 3,
                         "amendment_result_data": [
                             {
                                 "id": 21,
                                 "non_forwarded_amendment_amount": 0,
-                                "sequential_number": 4,
                                 "amendment_result_data": [],
                             },
                         ],
@@ -506,7 +502,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "text": "test",
                 "amendment_ids": [19, 20],
                 "additional_submitter": "A man, A hairy woman",
-                "sequential_number": 1,
+                "sequential_number": 4,
                 "state_id": 4,
             },
         )
@@ -520,7 +516,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "meeting_id": 4,
                 "amendment_paragraphs": {"0": "texts"},
                 "additional_submitter": "A man",
-                "sequential_number": 2,
+                "sequential_number": 1,
                 "state_id": 4,
                 "marked_forwarded": True,
             },
@@ -552,7 +548,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "state_id": 4,
                 "amendment_paragraphs": {"0": "testssss"},
                 "additional_submitter": None,
-                "sequential_number": 4,
+                "sequential_number": 2,
                 "marked_forwarded": True,
             },
         )
@@ -1277,12 +1273,10 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             {
                 "id": 4,
                 "non_forwarded_amendment_amount": 1,
-                "sequential_number": 1,
                 "amendment_result_data": [
                     {
                         "id": 5,
                         "non_forwarded_amendment_amount": 0,
-                        "sequential_number": 2,
                         "amendment_result_data": [],
                     },
                 ],
@@ -1300,7 +1294,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_ids": [5],
                 "all_origin_ids": [1],
                 "origin_meeting_id": 1,
-                "sequential_number": 1,
+                "sequential_number": 2,
                 "additional_submitter": "committee_forwarder",
                 "identical_motion_ids": None,
             },
@@ -1317,6 +1311,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_paragraphs": {"0": "paragraph"},
                 "all_origin_ids": [3],
                 "additional_submitter": "committee_forwarder",
+                "sequential_number": 1,
             },
         )
         self.assert_model_not_exists("motion/6")
@@ -1653,6 +1648,44 @@ class CreateForwardedTestWithAttachmentsSimple(
             },
         )
 
+    def test_forward_with_attachment_true_and_forward_with_attachments_disabled(
+        self,
+    ) -> None:
+        self.test_models["organization/1"] = {"disable_forward_with_attachments": True}
+        self.set_test_models()
+        origin_mediafiles_data: list[dict[str, Any]] = [
+            {"base": 1, "owner_meeting_id": 1, "is_directory": True},
+            {"base": 2, "is_directory": True},
+            {"base": 3, "owner_meeting_id": 1, "parent_id": 1},
+            {"base": 4, "owner_meeting_id": 1, "parent_id": 1},
+            {"base": 5, "is_directory": True, "parent_id": 2},
+            {"base": 6, "parent_id": 5},
+        ]
+        for mediafile in origin_mediafiles_data:
+            self.create_mediafile(**mediafile)
+            mediafile_id = mediafile["base"]
+            self.create_meeting_mediafile(
+                base=mediafile_id + 10,
+                mediafile_id=mediafile_id,
+                meeting_id=1,
+                motion_ids=[12],
+            )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Mot 1",
+                "meeting_id": 4,
+                "origin_id": 12,
+                "text": "test",
+                "with_attachments": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Forward with attachments is disabled"
+        self.assert_model_not_exists("mediafile/7")
+        self.assert_model_not_exists("meeting_mediafile/17")
+
     def test_forward_to_the_same_meeting_with_orga_wide_mediafile(self) -> None:
         """
         Verify orga-wide mediafile is reused correctly when motion is forwarded
@@ -1719,8 +1752,11 @@ class CreateForwardedTestWithAttachmentsSimple(
         expected_mediafile_ids = [2]
         expected_meeting_mediafile_ids = [12]
         if with_attachments:
+            self.media.duplicate_mediafile.assert_called_once_with(1, 3)
             expected_mediafile_ids.append(3)
             expected_meeting_mediafile_ids.append(13)
+        else:
+            self.media.duplicate_mediafile.assert_not_called()
 
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -2477,5 +2513,229 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
                 "meeting_id": 4,
                 "mediafile_id": 21,
                 "attachment_ids": ["motion/20", "motion/21"],
+            },
+        )
+
+    def test_forward_with_deleted_submitters(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.create_meeting(7)
+        self.create_meeting(10)
+        self.create_user("alice", [1])
+        self.create_user("bob", [1])
+        self.create_user("colin", [1])
+        self.create_motion(1, 1, motion_data={"title": "A lead motion with submitters"})
+        self.create_motion(
+            1,
+            2,
+            state_id=1,
+            motion_data={
+                "title": "An amendment with submitters",
+                "lead_motion_id": 1,
+                "text": "Amendment text",
+            },
+        )
+        self.create_motion(
+            1,
+            3,
+            state_id=1,
+            motion_data={
+                "title": "Another amendment with submitters",
+                "lead_motion_id": 1,
+                "text": "Another amendment text",
+            },
+        )
+        self.set_models(
+            {
+                "organization/1": {"default_language": "fr"},
+                "committee/60": {"forward_to_committee_ids": [63, 66, 69]},
+                "meeting/1": {"language": "it"},  # shouldn't matter
+                "meeting/7": {"language": "de"},
+                "meeting/10": {"language": None},  # Should use orga default lang
+                "motion_state/1": {
+                    "allow_motion_forwarding": True,
+                    "allow_amendment_forwarding": True,
+                },
+                "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 1,
+                    "weight": 1,
+                },
+                "motion_submitter/2": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 2,
+                    "weight": 2,
+                },
+                "motion_submitter/3": {
+                    "meeting_id": 1,
+                    "motion_id": 1,
+                    "meeting_user_id": 3,
+                    "weight": 3,
+                },
+                "motion_submitter/4": {"meeting_id": 1, "motion_id": 2, "weight": 1},
+                "motion_submitter/5": {"meeting_id": 1, "motion_id": 2, "weight": 2},
+                "motion_submitter/6": {
+                    "meeting_id": 1,
+                    "motion_id": 3,
+                    "meeting_user_id": 1,
+                    "weight": 3,
+                },
+                "motion_submitter/7": {
+                    "meeting_id": 1,
+                    "motion_id": 3,
+                    "meeting_user_id": 3,
+                    "weight": 1,
+                },
+                "motion_submitter/8": {"meeting_id": 1, "motion_id": 3, "weight": 2},
+                "meeting_user/2": {"structure_level_ids": [1]},
+                "structure_level/1": {
+                    "name": "Construction commission",
+                    "meeting_id": 1,
+                },
+                "user/2": {"first_name": "Alice", "last_name": "in Wonderland"},
+                "user/3": {"first_name": "Bob"},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "First forward",
+                    "meeting_id": 4,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+                {
+                    "title": "Second forward",
+                    "meeting_id": 7,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+                {
+                    "title": "Third forward",
+                    "meeting_id": 10,
+                    "origin_id": 1,
+                    "text": "test",
+                    "with_amendments": True,
+                    "use_original_submitter": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        # meeting 4 -> english translation
+        self.assert_model_exists(
+            "motion/4",
+            {
+                "title": "First forward",
+                "meeting_id": 4,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [7, 8],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/7",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 4,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 4,
+                "additional_submitter": "Deleted user, Deleted user",
+            },
+        )
+        self.assert_model_exists(
+            "motion/8",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 4,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 4,
+                "additional_submitter": "User 4, Deleted user, Alice in Wonderland",
+            },
+        )
+        # meeting 7 -> german translation
+        self.assert_model_exists(
+            "motion/5",
+            {
+                "title": "Second forward",
+                "meeting_id": 7,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [9, 10],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/9",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 7,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 5,
+                "additional_submitter": "Gelöschter Nutzer, Gelöschter Nutzer",
+            },
+        )
+        self.assert_model_exists(
+            "motion/10",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 7,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 5,
+                "additional_submitter": "User 4, Gelöschter Nutzer, Alice in Wonderland",
+            },
+        )
+        # meeting 10 -> default french translation
+        self.assert_model_exists(
+            "motion/6",
+            {
+                "title": "Third forward",
+                "meeting_id": 10,
+                "origin_id": 1,
+                "origin_meeting_id": 1,
+                "text": "test",
+                "amendment_ids": [11, 12],
+                "additional_submitter": "Alice in Wonderland, Bob (Construction commission), User 4",
+            },
+        )
+        self.assert_model_exists(
+            "motion/11",
+            {
+                "title": "An amendment with submitters",
+                "meeting_id": 10,
+                "origin_id": 2,
+                "origin_meeting_id": 1,
+                "text": "Amendment text",
+                "lead_motion_id": 6,
+                "additional_submitter": "Utilisateur supprimé, Utilisateur supprimé",
+            },
+        )
+        self.assert_model_exists(
+            "motion/12",
+            {
+                "title": "Another amendment with submitters",
+                "meeting_id": 10,
+                "origin_id": 3,
+                "origin_meeting_id": 1,
+                "text": "Another amendment text",
+                "lead_motion_id": 6,
+                "additional_submitter": "User 4, Utilisateur supprimé, Alice in Wonderland",
             },
         )
