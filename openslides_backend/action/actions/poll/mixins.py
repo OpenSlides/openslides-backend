@@ -2,6 +2,8 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Any, cast
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....services.database.commands import GetManyRequest
@@ -174,8 +176,8 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(
-            poll | instance, meeting
+        instance["entitled_users_at_stop"] = Jsonb(
+            self.get_entitled_users(poll | instance, meeting)
         )
 
     def get_entitled_users(
