@@ -62,9 +62,9 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
 
         CREATE OR REPLACE FUNCTION init_table_contents() RETURNS void AS $$
         BEGIN
-            INSERT INTO version (migration_index, migration_state, database_writable)
-            VALUES ({MigrationHelper.get_backend_migration_index()}, '{MigrationState.NO_MIGRATION_REQUIRED}', true)
-            ON CONFLICT (migration_index) DO UPDATE SET migration_state = EXCLUDED.migration_state, database_writable = EXCLUDED.database_writable;
+            INSERT INTO version (migration_index, migration_state)
+            VALUES ({MigrationHelper.get_backend_migration_index()}, '{MigrationState.FINALIZED}')
+            ON CONFLICT (migration_index) DO UPDATE SET migration_state = EXCLUDED.migration_state;
         END;
         $$ LANGUAGE plpgsql;
         """

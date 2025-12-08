@@ -24,10 +24,13 @@ class MigrationState(StrEnum):
     migrations are required and required migration implicates that finalization is also required.
     """
 
-    NO_MIGRATION_REQUIRED = "no_migration_required"
-    MIGRATION_RUNNING = "migration_running"
     MIGRATION_REQUIRED = "migration_required"
+    MIGRATION_RUNNING = "migration_running"
+    MIGRATION_FAILED = "migration_failed"
     FINALIZATION_REQUIRED = "finalization_required"
+    FINALIZATION_RUNNING = "finalization_running"
+    FINALIZED = "finalized"
+    FINALIZATION_FAILED = "finalization_failed"
 
 
 class MigrationCommand(StrEnum):
@@ -147,11 +150,11 @@ class MigrationHelper:
     @staticmethod
     def get_database_migration_index(curs: Cursor[DictRow]) -> int:
         """
-        Returns the maximum migration index which is in state NO_MIGRATION_REQUIRED.
+        Returns the maximum migration index which is in state FINALIZED.
         """
         if tmp := curs.execute(
             "SELECT MAX(migration_index) FROM version WHERE migration_state = %s;",
-            (MigrationState.NO_MIGRATION_REQUIRED,),
+            (MigrationState.FINALIZED,),
         ).fetchone():
             return tmp.get("max") or LAST_NON_REL_MIGRATION
         raise MigrationException(
@@ -187,7 +190,6 @@ class MigrationHelper:
         migration_index: int,
         state: str,
         replace_tables: dict[str, str] | None = None,
-        writable: bool = False,
     ) -> None:
         """
         Overwrites the databases migration info in the version table at the given migration index and commits the transaction.
@@ -195,7 +197,6 @@ class MigrationHelper:
         params = {
             "migration_index": migration_index,
             "migration_state": state,
-            "database_writable": writable,
         }
         if replace_tables is not None:
             params["replace_tables"] = Jsonb(replace_tables)
@@ -259,20 +260,24 @@ class MigrationHelper:
     def get_migration_state(curs: Cursor[DictRow]) -> MigrationState:
         """
         Returns the highest MigrationState among all migrations in the ascending order of
-        NO_MIGRATION_REQUIRED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
+        FINALIZED, FINALIZATION_REQUIRED, MIGRATION_REQUIRED, MIGRATION_RUNNING.
         """
         states_and_indices = curs.execute(
             sql.SQL(
                 "SELECT migration_index, migration_state FROM version WHERE migration_state != %s"
             ),
-            (MigrationState.NO_MIGRATION_REQUIRED,),
+            (MigrationState.FINALIZED,),
         ).fetchall()
         if not states_and_indices:
-            return MigrationState.NO_MIGRATION_REQUIRED
+            return MigrationState.FINALIZED
         states = {elem.get("migration_state") for elem in states_and_indices}
+        # 1. migration, 2. finalization -> failed > running > required
         for state in [
+            MigrationState.MIGRATION_FAILED,
             MigrationState.MIGRATION_RUNNING,
             MigrationState.MIGRATION_REQUIRED,
+            MigrationState.FINALIZATION_FAILED,
+            MigrationState.FINALIZATION_RUNNING,
             MigrationState.FINALIZATION_REQUIRED,
         ]:
             if state in states:

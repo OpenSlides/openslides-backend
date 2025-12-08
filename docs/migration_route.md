@@ -13,10 +13,13 @@ While a migration is running (either via `migrate` or `finalize`), no other comm
 The output of all commands except `stats` is the following (for a successful request):
 ```js
 enum MigrationState {
-    MIGRATION_RUNNING = "migration_running"
     MIGRATION_REQUIRED = "migration_required"
+    MIGRATION_RUNNING = "migration_running"
+    MIGRATION_FAILED = "migration_failed"
     FINALIZATION_REQUIRED = "finalization_required"
-    NO_MIGRATION_REQUIRED = "no_migration_required"
+    FINALIZATION_RUNNING = "finalization_running"
+    FINALIZED = "finalized"
+    FINALIZATION_FAILED = "finalization_failed"
 }
 
 {

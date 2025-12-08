@@ -76,20 +76,17 @@ def create_schema() -> None:
                     # migration states for indices higher than last non-relational migration will be set by the migration manager.
                     type_ = "legacy"
                     db_migration_index -= 1
-                    writable = False
                 else:
                     type_ = "fresh"
                     db_migration_index = MigrationHelper.get_backend_migration_index()
-                    writable = True
                 print(f"Assuming {type_} database for migration_state.")
                 MigrationHelper.set_database_migration_info(
                     cursor,
                     db_migration_index,
-                    MigrationState.NO_MIGRATION_REQUIRED,
-                    writable=writable,
+                    MigrationState.FINALIZED,
                 )
                 print(
-                    f"Migration info written: {db_migration_index} - {MigrationState.NO_MIGRATION_REQUIRED}"
+                    f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
                 )
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")

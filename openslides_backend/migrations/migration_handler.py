@@ -70,7 +70,7 @@ class MigrationHandler(BaseHandler):
                 MigrationHelper.write_line("finished")
             case MigrationState.FINALIZATION_REQUIRED:
                 self.logger.info("Done. Finalizing is still needed.")
-            case MigrationState.NO_MIGRATION_REQUIRED:
+            case MigrationState.FINALIZED:
                 self.logger.info("No migration needed.")
             case MigrationState.MIGRATION_RUNNING:
                 self.logger.info("There is already a migration running.")
@@ -125,7 +125,7 @@ class MigrationHandler(BaseHandler):
         """
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
-            case MigrationState.NO_MIGRATION_REQUIRED:
+            case MigrationState.FINALIZED:
                 return
             case MigrationState.MIGRATION_REQUIRED:
                 self.migrate()
@@ -135,7 +135,7 @@ class MigrationHandler(BaseHandler):
                 self.logger.info("Finalize migrations.")
             case _:
                 raise MigrationException(
-                    "Finalization not possible if it's not required."
+                    f"State is: {state} Finalization not possible if it's not required."
                 )
 
         for index, migration in MigrationHelper.migrations.items():
@@ -163,7 +163,7 @@ class MigrationHandler(BaseHandler):
             self.cursor.execute(f"ALTER TABLE {shadow_name} RENAME TO {real_name}")
         for mi in relevant_mis:
             MigrationHelper.set_database_migration_info(
-                self.cursor, mi, MigrationState.NO_MIGRATION_REQUIRED, writable=True
+                self.cursor, mi, MigrationState.FINALIZED
             )
         self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
 
@@ -174,11 +174,30 @@ class MigrationHandler(BaseHandler):
         self.logger.info("Reset migrations.")
         self.close_migrate_thread_stream()
         self._clean_migration_data()
-        # TODO reset version for non finalized indices
+        indices = MigrationHelper.get_indices_from_database(self.cursor)
+        for idx, state in MigrationHelper.get_database_migration_states(
+            self.cursor, indices
+        ).items():
+            if state != MigrationState.FINALIZED:
+                self.cursor.execute(
+                    f"DELETE from version WHERE migration_index = {idx};"
+                )
 
     def _clean_migration_data(self) -> None:
         self.logger.info("Clean up migration data...")
         assert self.cursor, "Handlers cursor must be initialized."
+        indices = MigrationHelper.get_indices_from_database(self.cursor)
+        state_per_idx = MigrationHelper.get_database_migration_states(
+            self.cursor, indices
+        )
+        replace_tables = {
+            k: v
+            for idx, state in state_per_idx.items()
+            if state != MigrationState.FINALIZED
+            for k, v in MigrationHelper.get_replace_tables(idx).items()
+        }
+        for table_m in replace_tables.values():
+            self.cursor.execute("DROP TABLE ")
 
     # TODO delete shadow copies and as other possibly necessary alterations
     #     self.cursor.execute("delete from migration_positions", [])

@@ -1,3 +1,4 @@
+# TODO revise this file
 # Migrations for the Database
 
 The migrations will create shadow copies with `{name}_mig` of all tables to be migrated and rereference all triggers and references to those. Migration will be done on the `_mig`-tables. In the finalization step the original tables are deleted and the shadow copies put into place.

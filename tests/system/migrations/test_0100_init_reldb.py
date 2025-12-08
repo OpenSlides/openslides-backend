@@ -260,7 +260,7 @@ class BaseMigrationTestCase(TestCase):
                         continue
                     assert {
                         "migration_index": idx,
-                        "migration_state": MigrationState.NO_MIGRATION_REQUIRED,
+                        "migration_state": MigrationState.FINALIZED,
                     } == row
 
     def test_migration_handler(self) -> None:
@@ -337,7 +337,7 @@ class BaseMigrationTestCase(TestCase):
             with conn.cursor() as curs:
                 while (
                     MigrationHelper.get_migration_state(curs)
-                    != MigrationState.NO_MIGRATION_REQUIRED
+                    != MigrationState.FINALIZED
                 ):
                     sleep(1)
                     curs.connection.commit()
@@ -398,6 +398,7 @@ class BaseMigrationTestCase(TestCase):
                     "motion_comment_section": {"count": 1, "migrated": 0},
                     "motion_state": {"count": 15, "migrated": 0},
                     "motion_submitter": {"count": 4, "migrated": 0},
+                    "motion_supporter": {"count": 1, "migrated": 0},
                     "motion_workflow": {"count": 2, "migrated": 0},
                     "option": {"count": 13, "migrated": 0},
                     "organization": {"count": 1, "migrated": 0},
@@ -422,7 +423,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\n",
+            "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\n",
         }
 
         response = self.request("stats")
@@ -430,7 +431,7 @@ class BaseMigrationTestCase(TestCase):
             "success": True,
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
-                "output": "160 of 160 models written to tables.\n",
+                "output": "161 of 161 models written to tables.\n",
                 "current_migration_index": LAST_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -470,7 +471,7 @@ class BaseMigrationTestCase(TestCase):
                 )
         assert response == {
             "success": True,
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
         }
 
         self.assert_index_finalized()
@@ -502,7 +503,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 160 models written to tables.\n160 of 160 models written to tables.\n",
+            "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\n",
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
@@ -510,7 +511,7 @@ class BaseMigrationTestCase(TestCase):
         start = datetime.now()
         while (response := self.request("migrate").json) != {
             "success": True,
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
         }:
             sleep(1)
             if datetime.now() - start > max_time:
@@ -519,7 +520,7 @@ class BaseMigrationTestCase(TestCase):
                 )
         assert response == {
             "success": True,
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
         }
 
         self.assert_index_finalized()

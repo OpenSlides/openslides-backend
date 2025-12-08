@@ -357,7 +357,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         100,
         MigrationState.FINALIZATION_REQUIRED,
         replace_tables={},
-        writable=True,
     )
 
 

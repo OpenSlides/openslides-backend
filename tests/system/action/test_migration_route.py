@@ -43,7 +43,7 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
             with self.connection.cursor() as curs:
                 while (
                     MigrationHelper.get_migration_state(curs)
-                    != MigrationState.NO_MIGRATION_REQUIRED
+                    != MigrationState.FINALIZED
                 ):
                     sleep(0.02)
                     self.connection.commit()
@@ -61,7 +61,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -125,8 +125,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
                 MigrationHelper.set_database_migration_info(
                     curs,
                     self.backend_migration_index,
-                    MigrationState.NO_MIGRATION_REQUIRED,
-                    writable=True,
+                    MigrationState.FINALIZED,
                 )
             MigrationHelper.write_line("finish")
 
@@ -170,8 +169,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
             MigrationHelper.set_database_migration_info(
                 curs,
                 LAST_NON_REL_MIGRATION,
-                MigrationState.NO_MIGRATION_REQUIRED,
-                writable=True,
+                MigrationState.FINALIZED,
             )
         wait_lock = Lock()
         wait_lock.acquire()
@@ -198,7 +196,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
             "output": "finish\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
@@ -210,7 +208,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
-            "status": MigrationState.NO_MIGRATION_REQUIRED,
+            "status": MigrationState.FINALIZED,
             "output": "finish\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
