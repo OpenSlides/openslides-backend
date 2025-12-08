@@ -39,21 +39,29 @@ class BaseGenericTestCase(BaseActionTestCase):
             return
 
         with get_new_os_conn() as conn, conn.cursor() as curs:
-            for trigger, table in getattr(cls, "trigger_table_map", {}).items():
-                curs.execute(f"DROP TRIGGER IF EXISTS {trigger} ON {table};")
-
-            for table in getattr(cls, "tables_to_reset", []):
-                curs.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
+            curs.execute(
+                "".join(
+                    f"DROP TRIGGER IF EXISTS {trigger} ON {table};"
+                    for trigger, table in getattr(cls, "trigger_table_map", {}).items()
+                )
+            )
+            curs.execute(
+                "".join(
+                    f"""DROP TABLE IF EXISTS {table} CASCADE;"""
+                    for table in getattr(cls, "tables_to_reset", [])
+                )
+            )
 
     def tearDown(self) -> None:
         super().tearDown()
         if self.tables_to_reset:
             with self.connection.cursor() as curs:
-                sql = " ".join(
-                    f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE;"
-                    for table in self.tables_to_reset
+                curs.execute(
+                    "".join(
+                        f"""TRUNCATE TABLE {table} RESTART IDENTITY CASCADE;"""
+                        for table in self.tables_to_reset
+                    )
                 )
-                curs.execute(sql)
 
     @classmethod
     def create_table_view(cls, yml: str) -> None:
@@ -109,6 +117,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             re.IGNORECASE,
         )
 
-        matches = trigger_map_pattern.findall(sql)
-        cls.trigger_table_map = {trigger: table for trigger, table in matches}
+        cls.trigger_table_map = {
+            trigger: table for trigger, table in trigger_map_pattern.findall(sql)
+        }
         cls.tables_to_reset = table_pattern.findall(sql)
