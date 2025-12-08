@@ -4,6 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetNumberMixinTest(BaseActionTestCase):
     def test_create_set_number_return_because_number_preset(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -40,6 +41,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_return_because_number_type_manually(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -80,6 +82,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_good(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "user/1": {"meeting_ids": [222]},
@@ -113,6 +116,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_min_digits(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -150,6 +154,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_prefix_blank_lead_motion(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -196,6 +201,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_prefix_blank_lead_motion_number_inc(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -251,6 +257,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_get_number_per_category(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -300,6 +307,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_create_set_number_unique_check_jump(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -357,6 +365,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
     def test_set_number_false(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -395,6 +404,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 class SetNumberMixinSetStateTest(BaseActionTestCase):
     def test_set_state_correct_next_state(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "user/1": {"meeting_ids": [222]},
@@ -427,6 +437,7 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
 class SetNumberMixinManuallyTest(BaseActionTestCase):
     def _create_models_for_number_manually_tests(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -524,6 +535,7 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 class SetNumberMixinSerialTest(BaseActionTestCase):
     def _create_models_for_number_prefix_test(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -681,6 +693,7 @@ class SetNumberMixinSerialTest(BaseActionTestCase):
 class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
     def _create_models_for_number_per_category_1(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -844,6 +857,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 
     def _create_models_for_number_per_category_2(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "meeting/222": {
@@ -1105,6 +1119,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
     def test_set_number(self) -> None:
         self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.set_models(
             {
                 "user/1": {"meeting_ids": [222]},

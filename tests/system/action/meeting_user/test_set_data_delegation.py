@@ -94,20 +94,12 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "User 4 can't delegate the vote to himself.", response.json["message"]
         )
 
-    def test_delegated_to_success_without_group(self) -> None:
+    def test_delegated_to_without_group(self) -> None:
         response = self.request_executor({"group_ids": [], "vote_delegated_to_id": 13})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_user/14",
-            {
-                "vote_delegated_to_id": 13,
-                "group_ids": [],
-                "meeting_id": 222,
-                "user_id": 4,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/13", {"vote_delegations_from_ids": [12, 14]}
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Update of meeting_user/14: You try to set following required fields to an empty value: ['group_ids']",
+            response.json["message"],
         )
 
     def test_delegated_to_error_group_do_not_match_meeting(self) -> None:

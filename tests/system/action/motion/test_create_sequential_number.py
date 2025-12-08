@@ -27,12 +27,8 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         )
 
     def test_create_sequential_numbers(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "user/1": {"meeting_ids": [222]},
-            }
-        )
+        self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.create_workflow()
 
         response = self.request(
@@ -63,21 +59,9 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.assertEqual(model.get("sequential_number"), 2)
 
     def test_create_sequential_numbers_2meetings(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "meeting222",
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 1,
-                },
-                "meeting/223": {
-                    "name": "meeting223",
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 2,
-                },
-                "user/1": {"meeting_ids": [222]},
-            }
-        )
+        self.create_meeting(222)
+        self.create_meeting(225)
+        self.set_user_groups(1, [223, 225])
 
         self.create_workflow()
         response = self.request(
@@ -93,12 +77,12 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         model = self.get_model("motion/1")
         self.assertEqual(model.get("sequential_number"), 1)
 
-        self.create_workflow(workflow_id=13, meeting_id=223)
+        self.create_workflow(workflow_id=13, meeting_id=225)
         response = self.request(
             "motion.create",
             {
                 "title": "motion_title",
-                "meeting_id": 223,
+                "meeting_id": 225,
                 "workflow_id": 13,
                 "text": "test",
             },
@@ -108,12 +92,8 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.assertEqual(model.get("sequential_number"), 1)
 
     def test_create_sequential_numbers_deleted_motion(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "user/1": {"meeting_ids": [222]},
-            }
-        )
+        self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.create_workflow()
 
         response = self.request(
@@ -162,12 +142,8 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         ActionHandler.MAX_RETRY = 3
         self.set_thread_watch_timeout(-2)
         pytest_thread_local.name = "MainThread_RC"
-        self.set_models(
-            {
-                "meeting/222": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "user/1": {"meeting_ids": [222]},
-            }
-        )
+        self.create_meeting(222)
+        self.set_user_groups(1, [223])
         self.create_workflow(workflow_id=12, meeting_id=222)
         self.create_workflow(workflow_id=13, meeting_id=222)
 
