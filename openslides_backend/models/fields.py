@@ -186,11 +186,11 @@ class JSONField(Field):
         return self.extend_schema(super().get_schema(), type=types)
 
     def validate_with_schema(
-        self, fqid: FullQualifiedId, field_name: str, value: dict | Jsonb
+        self, fqid: FullQualifiedId, field_name: str, value: list | dict | Jsonb
     ) -> None:
         if isinstance(value, Jsonb):
             value = value.obj
-        elif not isinstance(value, dict | None):
+        elif not isinstance(value, list | dict | None):
             raise NotImplementedError(
                 f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
             )
