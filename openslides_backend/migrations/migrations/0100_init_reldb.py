@@ -31,8 +31,7 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.typing import Collection
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
-READ_MODELS = ["models"]
-WRITE_MODELS = ["all"]
+ORIGIN_COLLECTIONS = [col for col in model_registry]
 
 
 class Sql_helper:

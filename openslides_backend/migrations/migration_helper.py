@@ -10,7 +10,6 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations.core.exceptions import MigrationException
-from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
@@ -291,11 +290,9 @@ class MigrationHelper:
         """
         module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
-        if migration_module.WRITE_MODELS == ["all"]:
-            collections = model_registry
-        else:
-            collections = migration_module.WRITE_MODELS
-        return {col + "_t": col + "_t_mig" for col in collections}
+        return {
+            col + "_t": col + "_t_mig" for col in migration_module.ORIGIN_COLLECTIONS
+        }
 
     @staticmethod
     def get_replace_tables_from_database(
