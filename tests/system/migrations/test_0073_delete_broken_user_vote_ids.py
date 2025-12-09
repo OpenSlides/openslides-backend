@@ -17,7 +17,11 @@ def test_migration_simple(write, finalize, assert_model):
         # healthy relation
         {"type": "create", "fqid": "user/3", "fields": {"vote_ids": [4]}},
         {"type": "create", "fqid": "user/4", "fields": {"delegated_vote_ids": [4]}},
-        {"type": "create", "fqid": "vote/4", "fields": {"user_id": 3,  "delegated_user_id": 4}},
+        {
+            "type": "create",
+            "fqid": "vote/4",
+            "fields": {"user_id": 3, "delegated_user_id": 4},
+        },
         # deleted vote
         {"type": "create", "fqid": "user/5", "fields": {"vote_ids": [6]}},
         {"type": "create", "fqid": "user/6", "fields": {"delegated_vote_ids": [6]}},
@@ -42,6 +46,7 @@ def test_migration_simple(write, finalize, assert_model):
     assert_model("user/6", {"delegated_vote_ids": []})
     assert_model("vote/6", {"user_id": 5, "delegated_user_id": 6, "meta_deleted": True})
 
+
 def test_migration_mixed(write, finalize, assert_model):
     """
     Tests the following cases with both vote_ids and delegated_vote_ids at the same time:
@@ -51,17 +56,33 @@ def test_migration_mixed(write, finalize, assert_model):
     """
     write(
         # halfed relation
-        {"type": "create", "fqid": "user/1", "fields": {"vote_ids": [2], "delegated_vote_ids": [2]}},
+        {
+            "type": "create",
+            "fqid": "user/1",
+            "fields": {"vote_ids": [2], "delegated_vote_ids": [2]},
+        },
         {
             "type": "create",
             "fqid": "vote/2",
             "fields": {"user_id": None, "delegated_user_id": None},
         },
         # healthy relation
-        {"type": "create", "fqid": "user/3", "fields": {"vote_ids": [4], "delegated_vote_ids": [4]}},
-        {"type": "create", "fqid": "vote/4", "fields": {"user_id": 3, "delegated_user_id": 3}},
+        {
+            "type": "create",
+            "fqid": "user/3",
+            "fields": {"vote_ids": [4], "delegated_vote_ids": [4]},
+        },
+        {
+            "type": "create",
+            "fqid": "vote/4",
+            "fields": {"user_id": 3, "delegated_user_id": 3},
+        },
         # deleted vote
-        {"type": "create", "fqid": "user/5", "fields": {"vote_ids": [6], "delegated_vote_ids": [6]}},
+        {
+            "type": "create",
+            "fqid": "user/5",
+            "fields": {"vote_ids": [6], "delegated_vote_ids": [6]},
+        },
         {
             "type": "create",
             "fqid": "vote/6",
