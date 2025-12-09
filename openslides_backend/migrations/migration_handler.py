@@ -175,13 +175,19 @@ class MigrationHandler(BaseHandler):
         self.close_migrate_thread_stream()
         self._clean_migration_data()
         indices = MigrationHelper.get_indices_from_database(self.cursor)
-        for idx, state in MigrationHelper.get_database_migration_states(
-            self.cursor, indices
-        ).items():
-            if state != MigrationState.FINALIZED:
-                self.cursor.execute(
-                    f"DELETE from version WHERE migration_index = {idx};"
-                )
+        to_delete_indices = [
+            idx
+            for idx, state in MigrationHelper.get_database_migration_states(
+                self.cursor, indices
+            ).items()
+            if state != MigrationState.FINALIZED
+        ]
+        self.cursor.execute(
+            sql.SQL("DELETE from version WHERE migration_index = ANY(")
+            + sql.Placeholder()
+            + sql.SQL(");"),
+            (to_delete_indices,),
+        )
 
     def _clean_migration_data(self) -> None:
         self.logger.info("Clean up migration data...")
