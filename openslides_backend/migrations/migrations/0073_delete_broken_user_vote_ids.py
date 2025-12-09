@@ -52,14 +52,14 @@ class Migration(BaseModelMigration):
         to_delete_vote_ids_per_user = defaultdict(set)
         to_delete_delegated_vote_ids_per_user = defaultdict(set)
         for user_id, user in potentially_broken_users.items():
-            for delegated_vote_id in user.get("vote_ids") or {}:
+            for delegated_vote_id in user.get("vote_ids") or []:
                 if not (
                     delegated_vote_id in potentially_broken_votes
                     and user_id
                     == potentially_broken_votes[delegated_vote_id].get("user_id")
                 ):
                     to_delete_vote_ids_per_user[user_id].add(delegated_vote_id)
-            for delegated_vote_id in user.get("delegated_vote_ids") or {}:
+            for delegated_vote_id in user.get("delegated_vote_ids") or []:
                 if not (
                     delegated_vote_id in potentially_broken_votes
                     and user_id
