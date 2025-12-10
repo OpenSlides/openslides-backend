@@ -1,7 +1,7 @@
 from importlib import import_module
 from typing import Any
 
-from psycopg import Cursor
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
@@ -151,16 +151,36 @@ class MigrationHandler(BaseHandler):
             if mi > current_mi
         ]
         replace_tables = {
-            k: v
+            collection: shadows
             for migration_number in relevant_mis
-            for k, v in MigrationHelper.get_replace_tables_from_database(
+            for collection, shadows in MigrationHelper.get_replace_tables_from_database(
                 self.cursor, migration_number
             ).items()
         }
-        for real_name, shadow_name in replace_tables.items():
-            # TODO automatism to re-reference the constraints trigger etc when copying the tables.
-            self.cursor.execute(f"DROP TABLE {real_name}")
-            self.cursor.execute(f"ALTER TABLE {shadow_name} RENAME TO {real_name}")
+        for collection, shadow_names in replace_tables.items():
+            # TODO automatism to redo the constraints trigger etc before and after copying the table contents.
+            self.cursor.execute(
+                sql.SQL("DROP TABLE {real_name}").format(
+                    real_name=sql.Identifier(collection + "_t")
+                )
+            )
+            self.cursor.execute(
+                ("ALTER TABLE {shadow_name} RENAME TO {real_name}").format(
+                    real_name=sql.Identifier(collection + "_t"),
+                    shadow_name=sql.Identifier(shadow_names["table"]),
+                )
+            )
+            self.cursor.execute(
+                sql.SQL("DROP VIEW {real_name}").format(
+                    real_name=sql.Identifier(collection)
+                )
+            )
+            self.cursor.execute(
+                ("ALTER VIEW {shadow_name} RENAME TO {real_name}").format(
+                    real_name=sql.Identifier(collection),
+                    shadow_name=sql.Identifier(shadow_names["view"]),
+                )
+            )
         for mi in relevant_mis:
             MigrationHelper.set_database_migration_info(
                 self.cursor, mi, MigrationState.FINALIZED
@@ -202,8 +222,9 @@ class MigrationHandler(BaseHandler):
             if state != MigrationState.FINALIZED
             for k, v in MigrationHelper.get_replace_tables(idx).items()
         }
-        for table_m in replace_tables.values():
-            self.cursor.execute("DROP TABLE ")
+        for table_view in replace_tables.values():
+            self.cursor.execute(f"DROP TABLE {table_view['table']}")
+            self.cursor.execute(f"DROP VIEW {table_view['view']}")
 
     # TODO delete shadow copies and as other possibly necessary alterations
     #     self.cursor.execute("delete from migration_positions", [])

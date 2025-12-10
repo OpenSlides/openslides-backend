@@ -91,14 +91,17 @@ class MigrationManager:
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if current_migration_index == LAST_NON_REL_MIGRATION:
-                if table.endswith("_mig"):
+                if table.endswith("_m"):
+                    # initial migration uses the original table_t instead of shadow table_m
+                    # to count migrated models.
                     statement_part = sql.SQL("{table}").format(
-                        table=sql.Identifier(table[:-4])
+                        table=sql.Identifier(table[:-2] + "_t")
                     )
                 else:
+                    # initial migration uses the models instead of table_t to count models
                     statement_part = sql.SQL(
-                        "models WHERE fqid LIKE '{table}/%' and deleted = false"
-                    ).format(table=sql.SQL(table[:-2]))
+                        "models WHERE fqid LIKE '{collection}/%' and deleted = false"
+                    ).format(collection=sql.SQL(table[:-2]))
             else:
                 statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
             response = self.cursor.execute(
@@ -118,22 +121,20 @@ class MigrationManager:
             self.cursor, migration_indices
         )
         unmigrated_collections = {
-            collection_table: migration_table
+            collection: shadow["table"]
             for mi in migration_indices
             if mi > current_migration_index
             if state_per_mi[mi]
             in (MigrationState.MIGRATION_REQUIRED, MigrationState.MIGRATION_RUNNING)
-            for collection_table, migration_table in MigrationHelper.get_replace_tables(
-                mi
-            ).items()
+            for collection, shadow in MigrationHelper.get_replace_tables(mi).items()
         }
         stats = {
-            table[:-2]: {
+            collection: {
                 "count": amount,
                 "migrated": count(migration_table, self.cursor),
             }
-            for table, migration_table in unmigrated_collections.items()
-            if (amount := count(table, self.cursor))
+            for collection, migration_table in unmigrated_collections.items()
+            if (amount := count(collection + "_t", self.cursor))
         }
 
         return {

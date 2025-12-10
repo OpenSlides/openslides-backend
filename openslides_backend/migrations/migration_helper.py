@@ -188,7 +188,7 @@ class MigrationHelper:
         curs: Cursor[DictRow],
         migration_index: int,
         state: str,
-        replace_tables: dict[str, str] | None = None,
+        replace_tables: dict[str, dict[str, str]] | None = None,
     ) -> None:
         """
         Overwrites the databases migration info in the version table at the given migration index and commits the transaction.
@@ -284,14 +284,15 @@ class MigrationHelper:
         raise MigrationException("No such State implemented.")
 
     @staticmethod
-    def get_replace_tables(migration_number: int) -> dict[str, str]:
+    def get_replace_tables(migration_number: int) -> dict[str, dict[str, str]]:
         """
         Returns the replace tables mapping origin table to its shadow copy.
         """
         module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
         return {
-            col + "_t": col + "_t_mig" for col in migration_module.ORIGIN_COLLECTIONS
+            col: {"table": col + "_m", "view": col + "vm"}
+            for col in migration_module.ORIGIN_COLLECTIONS
         }
 
     @staticmethod
