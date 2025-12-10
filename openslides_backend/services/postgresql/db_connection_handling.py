@@ -24,6 +24,12 @@ class DatabaseError(Exception):
 
 
 class ConnectionContext:
+    """
+    Custom connection context.
+    Generates a connection object upon entering in a with statement.
+    Sets autocommit to False and transaction isolation to REPEATABLE_READ.
+    """
+
     def __init__(self, context_manager: _GeneratorContextManager) -> None:
         self.connection_context = context_manager
 
@@ -46,7 +52,12 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.Dic
         # provides type hinting
         connection_class=Connection[rows.DictRow],  # type:ignore
         # works at runtime
-        kwargs={"autocommit": True, "row_factory": rows.dict_row},
+        # TODO allow prepared statements again. Currently disabled since those would randomly be reused when not avaiable.
+        kwargs={
+            "autocommit": True,
+            "row_factory": rows.dict_row,
+            "prepare_threshold": None,
+        },
         min_size=int(env.DB_POOL_MIN_SIZE),
         max_size=int(env.DB_POOL_MAX_SIZE),
         open=open,
@@ -78,6 +89,7 @@ def get_current_os_conn_pool() -> ConnectionPool[Connection[rows.DictRow]]:
 
 def get_new_os_conn() -> ConnectionContext:
     os_conn_pool = get_current_os_conn_pool()
+    os_conn_pool.check()
     return ConnectionContext(os_conn_pool.connection())
 
 

@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.action_worker import ActionWorkerState
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -851,7 +851,7 @@ class MeetingClone(BaseActionTestCase):
             for collection, models in result.items()
             if collection not in ["action_worker", "import_preview"]
         }
-        data["_migration_index"] = get_backend_migration_index()
+        data["_migration_index"] = MigrationHelper.get_backend_migration_index()
         Checker(
             data=data,
             mode="all",

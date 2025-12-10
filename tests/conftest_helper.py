@@ -1,5 +1,9 @@
 from textwrap import dedent
 
+from openslides_backend.migrations.migration_helper import (
+    MigrationHelper,
+    MigrationState,
+)
 from openslides_backend.services.postgresql.db_connection_handling import env
 
 openslides_db = env.DATABASE_NAME
@@ -23,6 +27,7 @@ def generate_remove_all_test_functions() -> str:
 
 
 def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
+    MigrationHelper.load_migrations()
     return dedent(
         f"""
         CREATE TABLE IF NOT EXISTS truncate_tables (
@@ -49,9 +54,17 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
                     (SELECT 'TRUNCATE TABLE '
                     || string_agg(tablename, ', ')
                     || ' RESTART IDENTITY CASCADE'
-                    FROM   truncate_tables);
+                    FROM truncate_tables);
             END IF;
             TRUNCATE TABLE truncate_tables RESTART IDENTITY CASCADE;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE OR REPLACE FUNCTION init_table_contents() RETURNS void AS $$
+        BEGIN
+            INSERT INTO version (migration_index, migration_state)
+            VALUES ({MigrationHelper.get_backend_migration_index()}, '{MigrationState.FINALIZED}')
+            ON CONFLICT (migration_index) DO UPDATE SET migration_state = EXCLUDED.migration_state;
         END;
         $$ LANGUAGE plpgsql;
         """

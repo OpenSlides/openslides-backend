@@ -1,160 +1,214 @@
-from enum import StrEnum
-from io import StringIO
-from threading import Lock, Thread
+from importlib import import_module
 from typing import Any
 
-from ..shared.exceptions import View400Exception
+from psycopg import Cursor
+from psycopg.rows import DictRow
+
+from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
+from ..migrations.migration_helper import MODULE_PATH, MigrationHelper, MigrationState
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
-from . import MigrationWrapper
-
-# from openslides_backend.migrations import MigrationState as DatastoreMigrationState
-
-
-# Amount of time that should be waited for a result from the migrate thread before returning an empty result
-THREAD_WAIT_TIME = 0.2
-
-
-# class MigrationState(StrEnum):
-#     """
-#     All possible migration states, ordered by priority. E.g. a running migration implicates that
-#     migrations are required and required migration implicates that finalization is also required.
-#     """
-
-#     MIGRATION_RUNNING = "migration_running"
-#     MIGRATION_REQUIRED = DatastoreMigrationState.MIGRATION_REQUIRED.value
-#     FINALIZATION_REQUIRED = DatastoreMigrationState.FINALIZATION_REQUIRED.value
-#     NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
-
-
-class MigrationCommand(StrEnum):
-    MIGRATE = "migrate"
-    FINALIZE = "finalize"
-    RESET = "reset"
-    CLEAR_COLLECTIONFIELD_TABLES = "clear-collectionfield-tables"
-    STATS = "stats"
-    PROGRESS = "progress"
 
 
 class MigrationHandler(BaseHandler):
-    lock = Lock()
-    migration_running = False
-    migrate_thread_stream: StringIO | None = None
-    migrate_thread_stream_can_be_closed: bool = False
-    migrate_thread_exception: Exception | None = None
 
-    def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
+    def __init__(
+        self,
+        curs: Cursor[DictRow],
+        env: Env,
+        services: Services,
+        logging: LoggingModule,
+    ) -> None:
         super().__init__(env, services, logging)
-        self.migration_wrapper = MigrationWrapper(False, self.logger.info)
+        self.cursor = curs
+        self.replace_tables: dict[str, Any]
 
-    def handle_request(self, payload: dict[str, Any]) -> dict[str, Any]:
-        if not (command := payload.get("cmd")):
-            raise View400Exception("No command provided")
-        self.logger.info(f"Migration command: {command}")
+    def execute_migrations(self) -> None:
+        """
+        Executes the data_definition and data_manipulation methods of the migrations
+        stored in MigrationHelper.migrations.
 
-        with MigrationHandler.lock:
-            if command == MigrationCommand.PROGRESS:
-                return self.handle_progress_command()
+        Returns:
+        - None
+        """
+        module_name: str
 
-            if MigrationHandler.migration_running:
-                raise View400Exception(
-                    "Migration is running, only 'progress' command is allowed"
+        for index, migration in MigrationHelper.migrations.items():
+            module_name = migration
+            migration_module = import_module(f"{MODULE_PATH}{module_name}")
+            print("Executing migration: " + module_name)
+            if getattr(migration_module, "IN_MEMORY", False):
+                # TODO In-Memory migration
+                migration_module.in_memory_method()
+            else:
+                MigrationHelper.set_database_migration_info(
+                    self.cursor, index, MigrationState.MIGRATION_RUNNING
                 )
 
-            if MigrationHandler.migrate_thread_stream:
-                if MigrationHandler.migrate_thread_stream_can_be_closed is False:
-                    raise View400Exception(
-                        "Last migration output not read yet. Please call 'progress' first."
-                    )
-                else:
-                    self.close_migrate_thread_stream()
+                # checks wether the methods are available and executes them.
+                if callable(getattr(migration_module, "data_definition", None)):
+                    migration_module.data_definition(self.cursor)
+                if callable(getattr(migration_module, "data_manipulation", None)):
+                    migration_module.data_manipulation(self.cursor)
 
-            verbose = payload.get("verbose", False)
-            if command == "stats":
-                # stats = self.migration_wrapper.handler.get_stats()
-                return {
-                    # "stats": stats,
-                }
-            elif command in iter(MigrationCommand):
-                MigrationHandler.migrate_thread_stream = StringIO()
-                thread = Thread(
-                    target=self.execute_migrate_command, args=[command, verbose]
+                MigrationHelper.set_database_migration_info(
+                    self.cursor, index, MigrationState.FINALIZATION_REQUIRED
                 )
-                thread.start()
-                thread.join(THREAD_WAIT_TIME)
-                if thread.is_alive():
-                    # Migration still running. Report current progress and return
-                    return {
-                        # "status": MigrationState.MIGRATION_RUNNING,
-                        "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                    }
-                else:
-                    # Migration already finished/had nothing to do
-                    return self.get_migration_result()
-            else:
-                raise View400Exception("Unknown command: " + command)
 
-    def execute_migrate_command(self, command: str, verbose: bool) -> None:
-        MigrationHandler.migration_running = True
-        handler = MigrationWrapper(verbose, self.write_line)
-        try:
-            return handler.execute_command(command)
-        except Exception as e:
-            MigrationHandler.migrate_thread_exception = e
-            self.logger.exception(e)
-        finally:
-            MigrationHandler.migration_running = False
+    def migrate(self) -> None:
+        """
+        Starts the migration process.
+        """
+        self.logger.info("Running migrations.")
+        state = MigrationHelper.get_migration_state(self.cursor)
+        match state:
+            case MigrationState.MIGRATION_REQUIRED:
+                self.execute_migrations()
+                MigrationHelper.migrate_thread_stream_can_be_closed = True
+                MigrationHelper.write_line("finished")
+            case MigrationState.FINALIZATION_REQUIRED:
+                self.logger.info("Done. Finalizing is still needed.")
+            case MigrationState.FINALIZED:
+                self.logger.info("No migration needed.")
+            case MigrationState.MIGRATION_RUNNING:
+                self.logger.info("There is already a migration running.")
+            case _:
+                raise MigrationException(
+                    f"{state} not allowed when executing migrate command."
+                )
 
-    def handle_progress_command(self) -> dict[str, Any]:
-        if MigrationHandler.migration_running:
-            if MigrationHandler.migrate_thread_stream:
-                # Migration still running
-                return {
-                    # "status": MigrationState.MIGRATION_RUNNING,
-                    "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                }
-            else:
-                raise RuntimeError("Invalid migration handler state")
+    def execute_command(self, command: str) -> None:
+        """
+        Low level entry point.
+        """
+        assert (
+            self.cursor and not self.cursor.closed
+        ), "Handlers cursor must be initialized."
+        if command == "migrate":
+            self.migrate()
+        elif command == "finalize":
+            self.finalize()
+        elif command == "reset":
+            self.reset()
         else:
-            return self.get_migration_result()
+            raise InvalidMigrationCommand(command)
 
-    def get_migration_result(self) -> dict[str, Any]:
-        # stats = self.migration_wrapper.handler.get_stats()
-        if MigrationHandler.migrate_thread_stream:
-            # Migration finished and the full output can be returned. Do not remove the
-            # output in case the response is lost and must be delivered again, but set
-            # flag that it can be removed.
-            MigrationHandler.migrate_thread_stream_can_be_closed = True
-            # handle possible exception
-            if MigrationHandler.migrate_thread_exception:
-                exception_data = {
-                    "exception": str(MigrationHandler.migrate_thread_exception)
-                }
-            else:
-                exception_data = {}
-            return {
-                # "status": stats["status"],
-                "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                **exception_data,
-            }
-        else:
-            # Nothing to report
-            return {
-                # "status": stats["status"],
-            }
+    # TODO affected tables to read only plus this information to version table -> needs to store collections and trigger names in migration manager
+    # CREATE OR REPLACE FUNCTION prevent_writes() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'Table % is currently read-only', TG_TABLE_NAME; END; $$ LANGUAGE plpgsql;
+    # CREATE TRIGGER block_writes BEFORE INSERT OR UPDATE OR DELETE ON your_schema.your_table FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();
+    # To remove later: DROP TRIGGER block_writes ON your_schema.your_table; DROP FUNCTION prevent_writes();
 
-    def write_line(self, message: str) -> None:
-        assert (stream := MigrationHandler.migrate_thread_stream)
-        stream.write(message + "\n")
+    # or simply REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE your_schema.your_table FROM PUBLIC;
+
+    # which option needs transaction monitioring before migration can start?
+    # SELECT pid, usename, application_name, client_addr, state, backend_xid, query FROM pg_stat_activity WHERE datname = current_database();
 
     @classmethod
     def close_migrate_thread_stream(cls) -> str:
-        assert (stream := MigrationHandler.migrate_thread_stream)
+        """
+        Closes the migration threads io stream.
+        """
+        assert (stream := MigrationHelper.migrate_thread_stream)
         output = stream.getvalue()
         stream.close()
-        MigrationHandler.migrate_thread_stream = None
-        MigrationHandler.migrate_thread_stream_can_be_closed = False
-        MigrationHandler.migrate_thread_exception = None
+        MigrationHelper.migrate_thread_stream = None
+        MigrationHelper.migrate_thread_stream_can_be_closed = False
+        MigrationHelper.migrate_thread_exception = None
         return output
+
+    def finalize(self) -> None:
+        """
+        Executes the cleanup method and copies tables into place.
+        Also sets the migration index correctly.
+        """
+        state = MigrationHelper.get_migration_state(self.cursor)
+        match state:
+            case MigrationState.FINALIZED:
+                return
+            case MigrationState.MIGRATION_REQUIRED:
+                self.migrate()
+                return self.finalize()
+            case MigrationState.FINALIZATION_REQUIRED:
+                # TODO do we need to set a new state FINALIZATION_RUNNING?
+                self.logger.info("Finalize migrations.")
+            case _:
+                raise MigrationException(
+                    f"State is: {state} Finalization not possible if it's not required."
+                )
+
+        for index, migration in MigrationHelper.migrations.items():
+            module_name = migration
+            migration_module = import_module(f"{MODULE_PATH}{module_name}")
+            if callable(getattr(migration_module, "cleanup", None)):
+                migration_module.cleanup(self.cursor)
+
+        current_mi = MigrationHelper.get_database_migration_index(self.cursor)
+        relevant_mis = [
+            mi
+            for mi in MigrationHelper.get_indices_from_database(self.cursor)
+            if mi > current_mi
+        ]
+        replace_tables = {
+            k: v
+            for migration_number in relevant_mis
+            for k, v in MigrationHelper.get_replace_tables_from_database(
+                self.cursor, migration_number
+            ).items()
+        }
+        for real_name, shadow_name in replace_tables.items():
+            # TODO automatism to re-reference the constraints trigger etc when copying the tables.
+            self.cursor.execute(f"DROP TABLE {real_name}")
+            self.cursor.execute(f"ALTER TABLE {shadow_name} RENAME TO {real_name}")
+        for mi in relevant_mis:
+            MigrationHelper.set_database_migration_info(
+                self.cursor, mi, MigrationState.FINALIZED
+            )
+        self.logger.info(f"Set the new migration index to {max(relevant_mis)}...")
+
+    def reset(self) -> None:
+        """
+        Resets the migrations currently in progress and restores the state before the migration.
+        """
+        self.logger.info("Reset migrations.")
+        self.close_migrate_thread_stream()
+        self._clean_migration_data()
+        indices = MigrationHelper.get_indices_from_database(self.cursor)
+        to_delete_indices = [
+            idx
+            for idx, state in MigrationHelper.get_database_migration_states(
+                self.cursor, indices
+            ).items()
+            if state != MigrationState.FINALIZED
+        ]
+        self.cursor.execute(
+            sql.SQL("DELETE from version WHERE migration_index = ANY(")
+            + sql.Placeholder()
+            + sql.SQL(");"),
+            (to_delete_indices,),
+        )
+
+    def _clean_migration_data(self) -> None:
+        self.logger.info("Clean up migration data...")
+        assert self.cursor, "Handlers cursor must be initialized."
+        indices = MigrationHelper.get_indices_from_database(self.cursor)
+        state_per_idx = MigrationHelper.get_database_migration_states(
+            self.cursor, indices
+        )
+        replace_tables = {
+            k: v
+            for idx, state in state_per_idx.items()
+            if state != MigrationState.FINALIZED
+            for k, v in MigrationHelper.get_replace_tables(idx).items()
+        }
+        for table_m in replace_tables.values():
+            self.cursor.execute("DROP TABLE ")
+
+    # TODO delete shadow copies and as other possibly necessary alterations
+    #     self.cursor.execute("delete from migration_positions", [])
+    #     self.cursor.execute("delete from migration_events", [])
+    #     sequence = self.cursor.execute(
+    #         "select pg_get_serial_sequence('migration_events', 'id');", []
+    #     ).fetchone()
+    #     self.cursor.execute(f"alter sequence {sequence} restart with 1", [])
