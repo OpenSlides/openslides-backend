@@ -350,6 +350,12 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     for command, values in insert_intermediate_t_commands:
         curs.execute(command, values)
 
+    # 5) UPDATE id sequences
+    for collection in ORIGIN_COLLECTIONS:
+        curs.execute(
+            f"SELECT setval('{collection}_t_id_seq', (SELECT MAX(id) FROM {collection}_t));"
+        )
+
     # clear replace tables as this migration writes the tables directly
     MigrationHelper.set_database_migration_info(
         curs,
