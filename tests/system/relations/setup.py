@@ -123,6 +123,9 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
             reference: {collection_b}
     {fake_meeting}:
         id: *id_field
+        real_value:
+            type: string
+            default: ⚞(⚬___⚬)⚟
         {collection_a}_ids:
             type: relation-list
             to: {collection_a}/meeting_id
@@ -184,6 +187,7 @@ class FakeModelA(FakeModel):
     fake_model_b_generic_oo = fields.RelationField(
         to={"fake_model_b": "fake_model_a_generic_oo"}
     )
+    # This is a currently unused relation type
     # fake_model_b_generic_om = fields.RelationField(
     #     to={"fake_model_b": "fake_model_a_generic_mo"},
     # )
@@ -237,6 +241,7 @@ class FakeModelB(FakeModel):
     fake_model_a_generic_oo = fields.GenericRelationField(
         to={"fake_model_a": "fake_model_b_generic_oo"}
     )
+    # This is a currently unused relation type
     # fake_model_a_generic_mo = fields.GenericRelationListField(
     #     to={"fake_model_a": "fake_model_b_generic_om"},
     # )
@@ -285,6 +290,7 @@ class FakeMeeting(FakeModel):
     verbose_name = "fake meeting"
 
     id = fields.IntegerField(required=True, constant=True)
+    real_value = fields.CharField(default="⚞(⚬___⚬)⚟")
     fake_model_a_ids = fields.RelationListField(
         to={"fake_model_a": "meeting_id"}, is_view_field=True, is_primary=True
     )

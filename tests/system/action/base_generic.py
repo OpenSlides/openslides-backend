@@ -23,7 +23,6 @@ class BaseGenericTestCase(BaseActionTestCase):
     """
 
     tables_to_reset: list[str]
-    trigger_table_map: dict[str, str]
     yml: str
 
     @classmethod
@@ -41,14 +40,8 @@ class BaseGenericTestCase(BaseActionTestCase):
         with get_new_os_conn() as conn, conn.cursor() as curs:
             curs.execute(
                 "".join(
-                    f"DROP TRIGGER IF EXISTS {trigger} ON {table};"
-                    for trigger, table in getattr(cls, "trigger_table_map", {}).items()
-                )
-            )
-            curs.execute(
-                "".join(
                     f"""DROP TABLE IF EXISTS {table} CASCADE;"""
-                    for table in getattr(cls, "tables_to_reset", [])
+                    for table in cls.tables_to_reset
                 )
             )
 
@@ -95,29 +88,18 @@ class BaseGenericTestCase(BaseActionTestCase):
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute(sql)
-        cls.extract_sql_objects(sql)
+        cls.generate_tables_to_reset(sql)
 
     @classmethod
-    def extract_sql_objects(cls, sql: str) -> None:
+    def generate_tables_to_reset(cls, sql: str) -> None:
         """
         Populate:
-            - cls.trigger_table_map = {trigger_name: table_name}
             - cls.tables_to_reset = [table_name, ...]
         """
-        trigger_map_pattern = re.compile(
-            r"CREATE\s+(?:CONSTRAINT\s+)?TRIGGER\s+"
-            r"(tr_[a-zA-Z0-9_]+)"
-            r".+?ON\s+([a-zA-Z0-9_.]+)",
-            re.IGNORECASE | re.DOTALL,
-        )
 
         table_pattern = re.compile(
             r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
             r"([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)",
             re.IGNORECASE,
         )
-
-        cls.trigger_table_map = {
-            trigger: table for trigger, table in trigger_map_pattern.findall(sql)
-        }
         cls.tables_to_reset = table_pattern.findall(sql)
