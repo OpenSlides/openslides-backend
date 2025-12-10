@@ -2,12 +2,12 @@ from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
 from .base_generic import BaseGenericTestCase
 
 
-class FakeModelCDA(Model):
+class FakeModelCDA(FakeModel):
     collection = "fake_model_cd_a"
     verbose_name = "fake model for cascade deletion a"
     id = fields.IntegerField()
@@ -34,7 +34,7 @@ class FakeModelCDA(Model):
     )
 
 
-class FakeModelCDB(Model):
+class FakeModelCDB(FakeModel):
     collection = "fake_model_cd_b"
     verbose_name = "fake model for cascade deletion b"
     id = fields.IntegerField()
@@ -55,7 +55,7 @@ class FakeModelCDB(Model):
     )
 
 
-class FakeModelCDC(Model):
+class FakeModelCDC(FakeModel):
     collection = "fake_model_cd_c"
     verbose_name = "fake model for cascade deletion c"
     id = fields.IntegerField()
@@ -69,7 +69,7 @@ class FakeModelCDC(Model):
     )
 
 
-class FakeModelCDD(Model):
+class FakeModelCDD(FakeModel):
     collection = "fake_model_cd_d"
     verbose_name = "fake model for cascade deletion d"
     id = fields.IntegerField()
@@ -108,17 +108,11 @@ class FakeModelCDDDeleteAction(DeleteAction):
     skip_archived_meeting_check = True
 
 
-class TestDeleteCascade(BaseGenericTestCase):
+class TestDeleteCascade(PatchModelRegistryMixin, BaseGenericTestCase):
     collection_a = "fake_model_cd_a"
     collection_b = "fake_model_cd_b"
     collection_c = "fake_model_cd_c"
     collection_d = "fake_model_cd_d"
-    tables_to_reset = [
-        f"{collection_a}_t",
-        f"{collection_b}_t",
-        f"{collection_c}_t",
-        f"{collection_d}_t",
-    ]
     yml = f"""
     _meta:
         id_field: &id_field
