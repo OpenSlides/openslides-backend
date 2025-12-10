@@ -1,11 +1,16 @@
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from openslides_backend.models.base import model_registry
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
+)
+from tests.patch_model_registry_helper import (
+    FakeModel,
+    PatchModelRegistryMixin,
+    fake_registry,
 )
 
 from .base import BaseActionTestCase
@@ -28,7 +33,7 @@ def create_table_view() -> None:
             curs.execute(sql)
 
 
-class FakeModelP(Model):
+class FakeModelP(FakeModel):
     collection = "fake_model_p"
     verbose_name = "fake model for permissions"
     id = fields.IntegerField()
@@ -42,7 +47,10 @@ class FakeModelPCreate(CreateAction):
     permission = Permissions.Motion.CAN_CREATE
 
 
-class TestPermissions(BaseActionTestCase):
+class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
+    fake_model_registry = model_registry | fake_registry
+    init_with_login = True
+
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()

@@ -1,8 +1,9 @@
-from ..action.base import BaseActionTestCase
-from .setup import FakeModelA, SingleRelationHandlerWithContext
+import pytest
+
+from .setup import BaseRelationsTestCase, FakeModelA, SingleRelationHandlerWithContext
 
 
-class GenericRelationsTest(BaseActionTestCase):
+class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandlerWithContext(
@@ -73,11 +74,12 @@ class GenericRelationsTest(BaseActionTestCase):
         }
         assert result == expected
 
+    @pytest.mark.skip(reason="Relation type does not exist")
     def test_generic_O2M_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_om,
+            field=FakeModelA.fake_model_b_generic_om,  # type: ignore
             field_name="fake_model_b_generic_om",
             instance={"id": 1, "fake_model_b_generic_om": 2},
         )
@@ -91,6 +93,7 @@ class GenericRelationsTest(BaseActionTestCase):
         }
         assert result == expected
 
+    @pytest.mark.skip(reason="Relation type does not exist")
     def test_generic_O2M_add(self) -> None:
         self.set_models(
             {
@@ -101,7 +104,7 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_om,
+            field=FakeModelA.fake_model_b_generic_om,  # type: ignore
             field_name="fake_model_b_generic_om",
             instance={"id": 2, "fake_model_b_generic_om": 3},
         )
@@ -115,6 +118,7 @@ class GenericRelationsTest(BaseActionTestCase):
         }
         assert result == expected
 
+    @pytest.mark.skip(reason="Relation type does not exist")
     def test_generic_O2M_delete(self) -> None:
         self.set_models(
             {
@@ -124,7 +128,7 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
-            field=FakeModelA.fake_model_b_generic_om,
+            field=FakeModelA.fake_model_b_generic_om,  # type: ignore
             field_name="fake_model_b_generic_om",
             instance={"id": 1, "fake_model_b_generic_om": None},
         )
