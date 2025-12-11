@@ -300,7 +300,7 @@ class MigrationHelper:
         curs: Cursor[DictRow], migration_number: int
     ) -> dict[str, Any]:
         """
-        Returns the migration indexes replace tables, mapping the collection to its 
+        Returns the migration indexes replace tables, mapping the collection to its
         shadow copies, stored in the database.
         """
         if replace_tables := curs.execute(
@@ -314,7 +314,7 @@ class MigrationHelper:
         curs: Cursor[DictRow],
     ) -> tuple[dict[str, Any], list[int]]:
         """
-        Returns the replace tables, mapping the collection to its shadow copies, 
+        Returns the replace tables, mapping the collection to its shadow copies,
         stored in the database unified for all -non- migrated indices.
         Returns the list of used (unmigrated) migration indices as a side product.
         """
