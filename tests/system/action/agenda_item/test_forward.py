@@ -1,17 +1,17 @@
+from datetime import datetime
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
-from datetime import datetime
-from zoneinfo import ZoneInfo
-from psycopg.types.json import Jsonb
-
 
 # begin_time, end_time, total_pause, speech_state, answer, note, point_of_order, meeting_user_id
 SpeakerData = tuple[
-    int | None,
-    int | None,
+    datetime | None,
+    datetime | None,
     int | None,
     SpeechState | None,
     bool | None,
@@ -1103,7 +1103,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     )
 
     def assert_pooc_data(
-        self, expected_pooc_data: dict[int, dict[int, tuple[str, int, list[int]]]]
+        self,
+        expected_pooc_data: dict[int, dict[int, tuple[str, int, list[int] | None]]],
     ) -> None:
         """
         Takes pooc data in the format
@@ -1135,7 +1136,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 tuple[
                     dict[str, Any],
                     tuple[str, FileEndString | None],
-                    dict[int, tuple[int, list[int], dict[str, Any]]],
+                    dict[int, tuple[int, list[int] | None, dict[str, Any]]],
                     bool,
                 ],
             ],

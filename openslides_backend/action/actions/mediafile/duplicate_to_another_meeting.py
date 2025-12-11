@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
+
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
@@ -14,7 +16,6 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import MediafileCreateMixin
-from psycopg.types.json import Jsonb
 
 FIELDS = [
     "title",
