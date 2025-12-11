@@ -33,6 +33,9 @@ msgstr ""
 msgid "Delegates"
 msgstr ""
 
+msgid "Deleted user"
+msgstr ""
+
 msgid "Elections"
 msgstr ""
 
