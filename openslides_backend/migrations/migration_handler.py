@@ -5,7 +5,12 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
-from ..migrations.migration_helper import MODULE_PATH, MigrationHelper, MigrationState
+from ..migrations.migration_helper import (
+    LAST_NON_REL_MIGRATION,
+    MODULE_PATH,
+    MigrationHelper,
+    MigrationState,
+)
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
@@ -25,6 +30,27 @@ class MigrationHandler(BaseHandler):
         self.cursor = curs
         self.replace_tables: dict[str, Any]
 
+    def set_migration_relations(self) -> None:
+        """Sets the tables and views used within the migration."""
+        unified_replace_tables, _ = (
+            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
+        )
+        for collection, m_data in unified_replace_tables.items():
+            self.cursor.execute(
+                sql.SQL(
+                    "CREATE TABLE {table_m} (LIKE {table_t} INCLUDING ALL);"
+                ).format(
+                    table_m=sql.Identifier(m_data["table"]),
+                    table_t=sql.Identifier(collection + "_t"),
+                )
+            )
+            self.cursor.execute(
+                sql.SQL("CREATE VIEW {view_m} (LIKE {view} INCLUDING ALL);").format(
+                    view_m=sql.Identifier(m_data["view"]),
+                    view=sql.Identifier(collection),
+                )
+            )
+
     def execute_migrations(self) -> None:
         """
         Executes the data_definition and data_manipulation methods of the migrations
@@ -38,6 +64,9 @@ class MigrationHandler(BaseHandler):
         for index, migration in MigrationHelper.migrations.items():
             module_name = migration
             migration_module = import_module(f"{MODULE_PATH}{module_name}")
+            current_mi = MigrationHelper.get_database_migration_index(self.cursor)
+            if not current_mi == LAST_NON_REL_MIGRATION:
+                self.set_migration_relations()
             print("Executing migration: " + module_name)
             if getattr(migration_module, "IN_MEMORY", False):
                 # TODO In-Memory migration
@@ -144,20 +173,23 @@ class MigrationHandler(BaseHandler):
             if callable(getattr(migration_module, "cleanup", None)):
                 migration_module.cleanup(self.cursor)
 
-        current_mi = MigrationHelper.get_database_migration_index(self.cursor)
-        relevant_mis = [
-            mi
-            for mi in MigrationHelper.get_indices_from_database(self.cursor)
-            if mi > current_mi
-        ]
-        replace_tables = {
-            collection: shadows
-            for migration_number in relevant_mis
-            for collection, shadows in MigrationHelper.get_replace_tables_from_database(
-                self.cursor, migration_number
-            ).items()
-        }
-        for collection, shadow_names in replace_tables.items():
+        # current_mi = MigrationHelper.get_database_migration_index(self.cursor)
+        # relevant_mis = [
+        #     mi
+        #     for mi in MigrationHelper.get_indices_from_database(self.cursor)
+        #     if mi > current_mi
+        # ]
+        # replace_tables = {
+        #     collection: shadows
+        #     for migration_number in relevant_mis
+        #     for collection, shadows in MigrationHelper.get_replace_tables_from_database(
+        #         self.cursor, migration_number
+        #     ).items()
+        # }
+        unified_replace_tables, relevant_mis = (
+            MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
+        )
+        for collection, shadow_names in unified_replace_tables.items():
             # TODO automatism to redo the constraints trigger etc before and after copying the table contents.
             self.cursor.execute(
                 sql.SQL("DROP TABLE {real_name}").format(

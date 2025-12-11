@@ -300,10 +300,37 @@ class MigrationHelper:
         curs: Cursor[DictRow], migration_number: int
     ) -> dict[str, Any]:
         """
-        Returns the replace tables mapping origin table to its shadow copy stored in the database.
+        Returns the migration indexes replace tables, mapping the collection to its 
+        shadow copies, stored in the database.
         """
         if replace_tables := curs.execute(
             f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
         ).fetchone():
             return replace_tables["replace_tables"]
         raise MigrationException("Could not retrieve replace tables from database.")
+
+    @staticmethod
+    def get_unified_replace_tables_from_database(
+        curs: Cursor[DictRow],
+    ) -> tuple[dict[str, Any], list[int]]:
+        """
+        Returns the replace tables, mapping the collection to its shadow copies, 
+        stored in the database unified for all -non- migrated indices.
+        Returns the list of used (unmigrated) migration indices as a side product.
+        """
+        current_mi = MigrationHelper.get_database_migration_index(curs)
+        relevant_mis = [
+            mi
+            for mi in MigrationHelper.get_indices_from_database(curs)
+            if mi > current_mi
+        ]
+        return (
+            {
+                collection: shadows
+                for migration_number in relevant_mis
+                for collection, shadows in MigrationHelper.get_replace_tables_from_database(
+                    curs, migration_number
+                ).items()
+            },
+            relevant_mis,
+        )
