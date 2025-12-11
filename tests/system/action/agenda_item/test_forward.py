@@ -3,6 +3,10 @@ from typing import Any, Literal
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from psycopg.types.json import Jsonb
+
 
 # begin_time, end_time, total_pause, speech_state, answer, note, point_of_order, meeting_user_id
 SpeakerData = tuple[
@@ -23,10 +27,19 @@ FileEndString = Literal["png", "txt", "pdf"]
 
 EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
     [
-        (100, 200, None, SpeechState.PRO, None, None, False, 4),
         (
-            200,
-            300,
+            datetime.fromtimestamp(100, ZoneInfo("UTC")),
+            datetime.fromtimestamp(200, ZoneInfo("UTC")),
+            None,
+            SpeechState.PRO,
+            None,
+            None,
+            False,
+            4,
+        ),
+        (
+            datetime.fromtimestamp(200, ZoneInfo("UTC")),
+            datetime.fromtimestamp(300, ZoneInfo("UTC")),
             50,
             None,
             None,
@@ -34,15 +47,42 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
             True,
             5,
         ),
-        (300, 400, None, SpeechState.CONTRIBUTION, None, None, None, 6),
+        (
+            datetime.fromtimestamp(300, ZoneInfo("UTC")),
+            datetime.fromtimestamp(400, ZoneInfo("UTC")),
+            None,
+            SpeechState.CONTRIBUTION,
+            None,
+            None,
+            None,
+            6,
+        ),
         (None, None, None, SpeechState.CONTRIBUTION, True, None, None, 4),
     ],
     [
-        (400, 600, 100, None, None, None, None, 7),
-        (600, 700, 50, SpeechState.INTERPOSED_QUESTION, False, None, None, 8),
         (
-            625,
-            675,
+            datetime.fromtimestamp(400, ZoneInfo("UTC")),
+            datetime.fromtimestamp(600, ZoneInfo("UTC")),
+            100,
+            None,
+            None,
+            None,
+            None,
+            7,
+        ),
+        (
+            datetime.fromtimestamp(600, ZoneInfo("UTC")),
+            datetime.fromtimestamp(700, ZoneInfo("UTC")),
+            50,
+            SpeechState.INTERPOSED_QUESTION,
+            False,
+            None,
+            None,
+            8,
+        ),
+        (
+            datetime.fromtimestamp(625, ZoneInfo("UTC")),
+            datetime.fromtimestamp(675, ZoneInfo("UTC")),
             None,
             SpeechState.INTERPOSED_QUESTION,
             True,
@@ -51,8 +91,8 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
             7,
         ),
         (
-            700,
-            800,
+            datetime.fromtimestamp(700, ZoneInfo("UTC")),
+            datetime.fromtimestamp(800, ZoneInfo("UTC")),
             None,
             None,
             None,
@@ -61,8 +101,8 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
             9,
         ),
         (
-            800,
-            900,
+            datetime.fromtimestamp(800, ZoneInfo("UTC")),
+            datetime.fromtimestamp(900, ZoneInfo("UTC")),
             None,
             None,
             None,
@@ -85,8 +125,8 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
     ],
     [
         (
-            900,
-            1000,
+            datetime.fromtimestamp(900, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1000, ZoneInfo("UTC")),
             None,
             None,
             None,
@@ -94,14 +134,68 @@ EXAMPLE_LOS_DATA: list[list[SpeakerData]] = [
             True,
             11,
         ),  # 20
-        (1000, 1100, None, None, None, None, True, 13),  # 21
-        (1100, 1200, None, None, None, None, True, 16),  # 22
+        (
+            datetime.fromtimestamp(1000, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1100, ZoneInfo("UTC")),
+            None,
+            None,
+            None,
+            None,
+            True,
+            13,
+        ),  # 21
+        (
+            datetime.fromtimestamp(1100, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1200, ZoneInfo("UTC")),
+            None,
+            None,
+            None,
+            None,
+            True,
+            16,
+        ),  # 22
     ],
     [
-        (1200, 1300, None, SpeechState.CONTRIBUTION, None, None, None, 4),  # 23
-        (1300, 1400, None, None, None, None, None, 5),  # 24
-        (1400, 1500, 50, None, None, None, None, 6),  # 25
-        (1500, 1600, None, None, None, None, None, 7),  # 26
+        (
+            datetime.fromtimestamp(1200, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1300, ZoneInfo("UTC")),
+            None,
+            SpeechState.CONTRIBUTION,
+            None,
+            None,
+            None,
+            4,
+        ),  # 23
+        (
+            datetime.fromtimestamp(1300, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1400, ZoneInfo("UTC")),
+            None,
+            None,
+            None,
+            None,
+            None,
+            5,
+        ),  # 24
+        (
+            datetime.fromtimestamp(1400, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1500, ZoneInfo("UTC")),
+            50,
+            None,
+            None,
+            None,
+            None,
+            6,
+        ),  # 25
+        (
+            datetime.fromtimestamp(1500, ZoneInfo("UTC")),
+            datetime.fromtimestamp(1600, ZoneInfo("UTC")),
+            None,
+            None,
+            None,
+            None,
+            None,
+            7,
+        ),  # 26
         (None, None, None, None, None, None, None, 8),  # 27
         (None, None, None, None, None, None, None, 9),  # 28
     ],
@@ -403,7 +497,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
 
     def get_mediafile_data(
-        self, name: str, filetype: FileEndString | None = None
+        self, name: str, filetype: FileEndString | None = None, for_writing: bool = True
     ) -> dict[str, Any]:
         title = f"{name}.{filetype}" if filetype else name
         data: dict[str, Any] = {
@@ -417,7 +511,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 else "image/png" if filetype == "png" else "application/png"
             )
             if filetype == "pdf":
-                data["pdf_information"] = {"pages": 1}
+                if for_writing:
+                    data["pdf_information"] = Jsonb({"pages": 1})
+                else:
+                    data["pdf_information"] = {"pages": 1}
         else:
             data["is_directory"] = True
         return data
@@ -656,7 +753,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "mediafile/1": {
                         "child_ids": [2, 3],
                         "is_directory": True,
-                        "create_timestamp": 100,
+                        "create_timestamp": datetime.fromtimestamp(
+                            100, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("A"),
                         **orga_data,
                     },
@@ -665,7 +764,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         "child_ids": [4],
                         "is_directory": True,
                         "filesize": 100,
-                        "create_timestamp": 200,
+                        "create_timestamp": datetime.fromtimestamp(
+                            200, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("B"),
                         **orga_data,
                         "meeting_mediafile_ids": [21, 24],
@@ -673,14 +774,18 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_mediafile/21": {
                         "mediafile_id": 2,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "meeting_mediafile/24": {
                         "mediafile_id": 2,
                         "meeting_id": 4,
+                        "is_public": True,
                     },
                     "mediafile/3": {
                         "parent_id": 1,
-                        "create_timestamp": 300,
+                        "create_timestamp": datetime.fromtimestamp(
+                            300, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("C", "txt"),
                         **orga_data,
                         "meeting_mediafile_ids": [31, 34],
@@ -688,15 +793,19 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_mediafile/31": {
                         "mediafile_id": 3,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "meeting_mediafile/34": {
                         "mediafile_id": 3,
                         "meeting_id": 4,
+                        "is_public": True,
                     },
                     "mediafile/4": {
                         "parent_id": 2,
                         "filesize": 200,
-                        "create_timestamp": 400,
+                        "create_timestamp": datetime.fromtimestamp(
+                            400, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("D", "png"),
                         **orga_data,
                         "meeting_mediafile_ids": [41, 44],
@@ -704,14 +813,18 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_mediafile/41": {
                         "mediafile_id": 4,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "meeting_mediafile/44": {
                         "mediafile_id": 4,
                         "meeting_id": 4,
+                        "is_public": True,
                     },
                     "mediafile/5": {
                         "filesize": 300,
-                        "create_timestamp": 500,
+                        "create_timestamp": datetime.fromtimestamp(
+                            500, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("E", "png"),
                         **orga_data,
                         "meeting_mediafile_ids": [51],
@@ -719,68 +832,84 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_mediafile/51": {
                         "mediafile_id": 5,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     # Meeting specific
                     "mediafile/6": {
                         "owner_id": "meeting/1",
                         "filesize": 150,
-                        "create_timestamp": 600,
+                        "create_timestamp": datetime.fromtimestamp(
+                            600, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("F", "pdf"),
                         "meeting_mediafile_ids": [61],
                     },
                     "meeting_mediafile/61": {
                         "mediafile_id": 6,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "mediafile/7": {
                         "owner_id": "meeting/1",
                         "child_ids": [8],
                         "is_directory": True,
-                        "create_timestamp": 700,
+                        "create_timestamp": datetime.fromtimestamp(
+                            700, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("G"),
                         "meeting_mediafile_ids": [71],
                     },
                     "meeting_mediafile/71": {
                         "mediafile_id": 7,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "mediafile/8": {
                         "owner_id": "meeting/1",
                         "parent_id": 7,
                         "child_ids": [9],
                         "is_directory": True,
-                        "create_timestamp": 800,
+                        "create_timestamp": datetime.fromtimestamp(
+                            800, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("H"),
                         "meeting_mediafile_ids": [81],
                     },
                     "meeting_mediafile/81": {
                         "mediafile_id": 8,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "mediafile/9": {
                         "owner_id": "meeting/1",
                         "parent_id": 8,
                         "child_ids": [10],
                         "is_directory": True,
-                        "create_timestamp": 900,
+                        "create_timestamp": datetime.fromtimestamp(
+                            900, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("I"),
                         "meeting_mediafile_ids": [91],
                     },
                     "meeting_mediafile/91": {
                         "mediafile_id": 9,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                     "mediafile/10": {
                         "owner_id": "meeting/1",
                         "parent_id": 9,
                         "filesize": 100,
-                        "create_timestamp": 1000,
+                        "create_timestamp": datetime.fromtimestamp(
+                            1000, ZoneInfo("UTC")
+                        ),
                         **self.get_mediafile_data("J", "txt"),
                         "meeting_mediafile_ids": [101],
                     },
                     "meeting_mediafile/101": {
                         "mediafile_id": 10,
                         "meeting_id": 1,
+                        "is_public": True,
                     },
                 }
             )
@@ -1155,7 +1284,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     {
                         **data,
                         **mediafile_data[0],
-                        **self.get_mediafile_data(*mediafile_data[1]),
+                        **self.get_mediafile_data(
+                            *mediafile_data[1], for_writing=False
+                        ),
                         "meeting_mediafile_ids": (
                             list(mediafile_data[2].keys())
                             if mediafile_data[2]
@@ -1167,7 +1298,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     # For new mediafiles, if the create_timestamp is over 9000,
                     # we can assume that it was set to current time
                     # and not copied over
-                    assert med_file["create_timestamp"] > 9000
+                    assert med_file["create_timestamp"] > datetime.fromtimestamp(
+                        9000, ZoneInfo("UTC")
+                    )
                 for mmediafile_id, mmediafile_data in mediafile_data[2].items():
                     self.assert_model_exists(
                         f"meeting_mediafile/{mmediafile_id}",
@@ -1199,7 +1332,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 100,
                     "meeting_id": 1,
                     "meeting_user_id": 1,
-                    "begin_time": 100,
+                    "begin_time": datetime.fromtimestamp(100),
                     "weight": 1,
                 },
                 "meeting_user/1": {"speaker_ids": [1000]},
@@ -1228,8 +1361,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 100,
                     "meeting_id": 1,
                     "meeting_user_id": 1,
-                    "begin_time": 100,
-                    "end_time": 50,
+                    "begin_time": datetime.fromtimestamp(100),
+                    "end_time": datetime.fromtimestamp(50),
                     "weight": 1,
                 },
                 "meeting_user/1": {"speaker_ids": [1000]},
@@ -1258,8 +1391,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 100,
                     "meeting_id": 1,
                     "meeting_user_id": 1,
-                    "begin_time": 100,
-                    "pause_time": 200,
+                    "begin_time": datetime.fromtimestamp(100),
+                    "pause_time": datetime.fromtimestamp(200),
                     "weight": 1,
                 },
                 "meeting_user/1": {"speaker_ids": [1000]},
@@ -1437,27 +1570,13 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
     def test_forward_non_topic_agenda_item_error(self) -> None:
         self.create_meeting(1)
         self.create_meeting(4)
+        self.create_motion(1, 100)
         self.set_models(
             {
-                "meeting/1": {
-                    "agenda_item_ids": [10],
-                    "motion_ids": [100],
-                    "list_of_speakers_ids": [1000],
-                },
                 "agenda_item/10": {
                     "content_object_id": "motion/100",
                     "meeting_id": 1,
                     "weight": 1,
-                },
-                "motion/100": {
-                    "agenda_item_id": 10,
-                    "list_of_speakers_id": 1000,
-                    "meeting_id": 1,
-                },
-                "list_of_speakers/1000": {
-                    "content_object_id": "motion/100",
-                    "meeting_id": 1,
-                    "sequential_number": 1,
                 },
             }
         )
@@ -1584,7 +1703,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting /4 cannot be changed, because it is archived.",
+            "Meeting OpenSlides/4 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
@@ -2157,7 +2276,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     14: (
                         9,
                         [6, 10],
-                        [],
+                        None,
                         self.get_meeting_user_data(14),
                         False,
                     ),  # Take 6 add 10
@@ -2222,7 +2341,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     29: (
                         8,
                         [12],
-                        [],
+                        None,
                         self.get_meeting_user_data(11),
                         True,
                     ),  # From meeting_user 11
@@ -2307,9 +2426,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, []),
+                    4: ("You have", 1, None),
                     5: ("A point", 2, [37]),
-                    6: ("A", 3, []),
+                    6: ("A", 3, None),
                     7: ("Small point", 4, [50]),
                     8: ("Big point", 1, [36, 48, 49]),  # new
                 },
@@ -2327,7 +2446,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             "child_ids": [2, 3],
                             "is_directory": True,
-                            "create_timestamp": 100,
+                            "create_timestamp": datetime.fromtimestamp(
+                                100, ZoneInfo("UTC")
+                            ),
                         },
                         ("A", None),
                         {},
@@ -2339,7 +2460,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                             "child_ids": [4],
                             "is_directory": True,
                             "filesize": 100,
-                            "create_timestamp": 200,
+                            "create_timestamp": datetime.fromtimestamp(
+                                200, ZoneInfo("UTC")
+                            ),
                         },
                         ("B", None),
                         {
@@ -2360,7 +2483,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     3: (
                         {
                             "parent_id": 1,
-                            "create_timestamp": 300,
+                            "create_timestamp": datetime.fromtimestamp(
+                                300, ZoneInfo("UTC")
+                            ),
                         },
                         ("C", "txt"),
                         {
@@ -2382,7 +2507,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             "parent_id": 2,
                             "filesize": 200,
-                            "create_timestamp": 400,
+                            "create_timestamp": datetime.fromtimestamp(
+                                400, ZoneInfo("UTC")
+                            ),
                         },
                         ("D", "png"),
                         {
@@ -2403,7 +2530,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     5: (
                         {
                             "filesize": 300,
-                            "create_timestamp": 500,
+                            "create_timestamp": datetime.fromtimestamp(
+                                500, ZoneInfo("UTC")
+                            ),
                         },
                         ("E", "png"),
                         {
@@ -2433,8 +2562,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting/1": {
                     6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
                     7: ({}, ("G", None), {71: (1, [66], {})}, False),
-                    8: ({}, ("H", None), {81: (1, [], {})}, False),
-                    9: ({}, ("I", None), {91: (1, [], {})}, False),
+                    8: ({}, ("H", None), {81: (1, None, {})}, False),
+                    9: ({}, ("I", None), {91: (1, None, {})}, False),
                     10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
@@ -2476,10 +2605,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             104: (
                                 4,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2492,10 +2621,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             105: (
                                 4,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2511,7 +2640,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [82, 83],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2558,10 +2687,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             110: (
                                 7,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2574,10 +2703,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             111: (
                                 7,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2593,7 +2722,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2633,7 +2762,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             "child_ids": [2, 3],
                             "is_directory": True,
-                            "create_timestamp": 100,
+                            "create_timestamp": datetime.fromtimestamp(
+                                100, ZoneInfo("UTC")
+                            ),
                         },
                         ("A", None),
                         {},
@@ -2645,7 +2776,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                             "child_ids": [4],
                             "is_directory": True,
                             "filesize": 100,
-                            "create_timestamp": 200,
+                            "create_timestamp": datetime.fromtimestamp(
+                                200, ZoneInfo("UTC")
+                            ),
                         },
                         ("B", None),
                         {
@@ -2666,7 +2799,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     3: (
                         {
                             "parent_id": 1,
-                            "create_timestamp": 300,
+                            "create_timestamp": datetime.fromtimestamp(
+                                300, ZoneInfo("UTC")
+                            ),
                         },
                         ("C", "txt"),
                         {
@@ -2688,7 +2823,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             "parent_id": 2,
                             "filesize": 200,
-                            "create_timestamp": 400,
+                            "create_timestamp": datetime.fromtimestamp(
+                                400, ZoneInfo("UTC")
+                            ),
                         },
                         ("D", "png"),
                         {
@@ -2709,7 +2846,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     5: (
                         {
                             "filesize": 300,
-                            "create_timestamp": 500,
+                            "create_timestamp": datetime.fromtimestamp(
+                                500, ZoneInfo("UTC")
+                            ),
                         },
                         ("E", "png"),
                         {
@@ -2739,8 +2878,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting/1": {
                     6: ({}, ("F", "pdf"), {61: (1, [55, 66], {})}, False),
                     7: ({}, ("G", None), {71: (1, [66], {})}, False),
-                    8: ({}, ("H", None), {81: (1, [], {})}, False),
-                    9: ({}, ("I", None), {91: (1, [], {})}, False),
+                    8: ({}, ("H", None), {81: (1, None, {})}, False),
+                    9: ({}, ("I", None), {91: (1, None, {})}, False),
                     10: ({}, ("J", "txt"), {101: (1, [44, 55], {})}, False),
                 },
                 "meeting/4": {
@@ -2782,10 +2921,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             104: (
                                 4,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2798,10 +2937,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             105: (
                                 4,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2817,7 +2956,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [82, 83],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [5],
                                 },
                             )
@@ -2864,10 +3003,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             110: (
                                 7,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2880,10 +3019,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         {
                             111: (
                                 7,
-                                [],
+                                None,
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2899,7 +3038,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                                 [88, 89],
                                 {
                                     "is_public": False,
-                                    "access_group_ids": [],
+                                    "access_group_ids": None,
                                     "inherited_access_group_ids": [8],
                                 },
                             )
@@ -2936,13 +3075,13 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_model_not_exists("group/10")
 
     def test_full_dataset_everywhere_speaker_flag(self) -> None:
+        self.create_full_dataset(with_mediafiles=False)
         self.set_models(
             {
                 "meeting/4": {"list_of_speakers_default_structure_level_time": 60},
                 "meeting/7": {"list_of_speakers_default_structure_level_time": 60},
             }
         )
-        self.create_full_dataset(with_mediafiles=False)
 
         response = self.request(
             "agenda_item.forward",
@@ -3112,7 +3251,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     14: (
                         9,
                         [6, 10],
-                        [],
+                        None,
                         self.get_meeting_user_data(14),
                         False,
                     ),  # Take 6 add 10
@@ -3177,7 +3316,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     29: (
                         8,
                         [12],
-                        [],
+                        None,
                         self.get_meeting_user_data(11),
                         True,
                     ),  # From meeting_user 11
@@ -3262,9 +3401,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, []),
+                    4: ("You have", 1, None),
                     5: ("A point", 2, [37]),
-                    6: ("A", 3, []),
+                    6: ("A", 3, None),
                     7: ("Small point", 4, [50]),
                     8: ("Big point", 1, [36, 48, 49]),  # new
                 },
@@ -3322,14 +3461,14 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "max_votes_per_option": 1,
                     "onehundred_percent_base": "Y",
                     "sequential_number": 1,
-                    "content_object_id": "topic/10",
+                    "content_object_id": "topic/11",
                     "option_ids": [123, 234],
                 },
                 "option/123": {"meeting_id": 1, "poll_id": 1234, "text": "Option A"},
                 "option/234": {"meeting_id": 1, "poll_id": 1234, "text": "Option B"},
                 # mediafiles
                 "mediafile/3": {
-                    "create_timestamp": 300,
+                    "create_timestamp": datetime.fromtimestamp(300, ZoneInfo("UTC")),
                     **self.get_mediafile_data("C", "txt"),
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
@@ -3339,10 +3478,12 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "mediafile_id": 3,
                     "meeting_id": 1,
                     "attachment_ids": ["topic/11"],
+                    "is_public": True,
                 },
                 "meeting_mediafile/34": {
                     "mediafile_id": 3,
                     "meeting_id": 4,
+                    "is_public": True,
                 },
             }
         )
@@ -3471,7 +3612,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {
                     3: (
                         {
-                            "create_timestamp": 300,
+                            "create_timestamp": datetime.fromtimestamp(
+                                300, ZoneInfo("UTC")
+                            ),
                         },
                         ("C", "txt"),
                         {
@@ -3569,7 +3712,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "group/6": {"name": "Bananas"},
                 "topic/22": {"attachment_meeting_mediafile_ids": [11]},
                 "mediafile/1": {
-                    "create_timestamp": 300,
+                    "create_timestamp": datetime.fromtimestamp(300, ZoneInfo("UTC")),
                     **self.get_mediafile_data("C", "txt"),
                     "owner_id": "meeting/1",
                     "meeting_mediafile_ids": [11],
@@ -3577,6 +3720,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 "meeting_mediafile/11": {
                     "mediafile_id": 1,
                     "meeting_id": 1,
+                    "is_public": True,
                     "attachment_ids": ["topic/22"],
                 },
             }
@@ -3597,15 +3741,51 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.create_speakers_for_los(
             los_id=110,
             speaker_data=[
-                (100, 200, 20, None, None, "a point of order", True, 1),
+                (
+                    datetime.fromtimestamp(100, ZoneInfo("UTC")),
+                    datetime.fromtimestamp(200, ZoneInfo("UTC")),
+                    20,
+                    None,
+                    None,
+                    "a point of order",
+                    True,
+                    1,
+                ),
             ],
         )
         self.create_speakers_for_los(
             los_id=220,
             speaker_data=[
-                (100, 200, 20, None, None, "a point of order", True, 2),
-                (200, 300, None, None, None, "a second point of order", True, 3),
-                (300, 400, None, None, None, "a second point of order", True, 4),
+                (
+                    datetime.fromtimestamp(100, ZoneInfo("UTC")),
+                    datetime.fromtimestamp(200, ZoneInfo("UTC")),
+                    20,
+                    None,
+                    None,
+                    "a point of order",
+                    True,
+                    2,
+                ),
+                (
+                    datetime.fromtimestamp(200, ZoneInfo("UTC")),
+                    datetime.fromtimestamp(300, ZoneInfo("UTC")),
+                    None,
+                    None,
+                    None,
+                    "a second point of order",
+                    True,
+                    3,
+                ),
+                (
+                    datetime.fromtimestamp(300, ZoneInfo("UTC")),
+                    datetime.fromtimestamp(400, ZoneInfo("UTC")),
+                    None,
+                    None,
+                    None,
+                    "a second point of order",
+                    True,
+                    4,
+                ),
                 (None, None, None, None, None, None, None, 2),
                 (None, None, None, None, None, None, None, 2),
             ],
@@ -3696,9 +3876,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_meeting_user_data(
             {
                 4: {
-                    5: (2, [8], [], {}, True),
-                    6: (3, [9], [], {}, True),
-                    7: (4, [10], [], {}, False),
+                    5: (2, [8], None, {}, True),
+                    6: (3, [9], None, {}, True),
+                    7: (4, [10], None, {}, False),
                 },
             }
         )
@@ -3706,12 +3886,24 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             {
                 4: {
                     221: [
-                        (7, (100, 200, 20, None, None, "a point of order", True, 2)),
+                        (
+                            7,
+                            (
+                                datetime.fromtimestamp(100, ZoneInfo("UTC")),
+                                datetime.fromtimestamp(200, ZoneInfo("UTC")),
+                                20,
+                                None,
+                                None,
+                                "a point of order",
+                                True,
+                                2,
+                            ),
+                        ),
                         (
                             8,
                             (
-                                200,
-                                300,
+                                datetime.fromtimestamp(200, ZoneInfo("UTC")),
+                                datetime.fromtimestamp(300, ZoneInfo("UTC")),
                                 None,
                                 None,
                                 None,
@@ -3723,8 +3915,8 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                         (
                             9,
                             (
-                                300,
-                                400,
+                                datetime.fromtimestamp(300, ZoneInfo("UTC")),
+                                datetime.fromtimestamp(400, ZoneInfo("UTC")),
                                 None,
                                 None,
                                 None,
@@ -3825,7 +4017,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             {
                 4: {
                     12: (8, [5], [16, 17, 18, 19, 20], {}, False),
-                    14: (9, [6], [], {}, False),
+                    14: (9, [6], None, {}, False),
                     17: (10, [4, 5], [14, 16, 18, 20], {}, False),
                 }
             }
@@ -3856,9 +4048,9 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         self.assert_pooc_data(
             {
                 4: {
-                    4: ("You have", 1, []),
-                    5: ("A point", 2, []),
-                    6: ("A", 3, []),
+                    4: ("You have", 1, None),
+                    5: ("A point", 2, None),
+                    6: ("A", 3, None),
                     7: ("Small point", 4, [31]),
                     8: ("Big point", 1, [29, 30]),
                 }

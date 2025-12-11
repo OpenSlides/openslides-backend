@@ -14,6 +14,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import MediafileCreateMixin
+from psycopg.types.json import Jsonb
 
 FIELDS = [
     "title",
@@ -68,7 +69,12 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
         origin_instance.pop("id")
         instance.update(origin_instance)
         self.ensure_unique_title_within_parent(instance)
+
         instance["create_timestamp"] = datetime.now(ZoneInfo("UTC"))
+        raw_pdf_information = instance.get("pdf_information")
+        if raw_pdf_information and not isinstance(raw_pdf_information, Jsonb):
+            instance["pdf_information"] = Jsonb(raw_pdf_information)
+
         if not instance.get("is_directory"):
             self.media.duplicate_mediafile(origin_id, instance["id"])
         return instance
