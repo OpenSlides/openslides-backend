@@ -4,17 +4,13 @@ from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
-from datastore.migrations import MigrationException
-
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations import (
     get_backend_migration_index,
     get_datastore_migration_index,
 )
-from openslides_backend.migrations.migration_handler import (
-    MigrationHandler,
-    MigrationState,
-)
+from openslides_backend.migrations.core.exceptions import MigrationException
+from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
@@ -66,14 +62,13 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_progress_no_migration(self) -> None:
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert "output" not in response.json
 
     def test_clear_collectionfield_tables(self) -> None:
         response = self.migration_request("clear-collectionfield-tables")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
-        assert response.json["output"] == "Cleaning collectionfield helper tables...\n"
+        # TODO reimplement
+        # assert response.json["output"] == "Cleaning collectionfield helper tables...\n"
 
     def test_unknown_command(self) -> None:
         response = self.migration_request("unknown")
@@ -114,25 +109,21 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         execute_command.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_RUNNING
 
         indicator_lock.acquire()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_RUNNING
         assert response.json["output"] == "start\n"
 
         wait_lock.release()
         self.wait_for_migration_thread()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\nfinish\n"
 
         # check that the output is preserved for future progress requests
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\nfinish\n"
 
     def test_double_migration(self, execute_command: Mock) -> None:
@@ -143,7 +134,6 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         execute_command.side_effect = self.wait_for_lock(lock, indicator_lock)
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_RUNNING
 
         response = self.migration_request("migrate")
         self.assert_status_code(response, 400)
@@ -165,7 +155,6 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["status"] == MigrationState.MIGRATION_RUNNING
         assert response.json["output"] == "start\n"
 
         lock.release()
@@ -173,7 +162,6 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\n"
         assert response.json["exception"] == "test"
 

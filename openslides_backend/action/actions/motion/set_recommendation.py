@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -46,7 +47,7 @@ class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationM
             raise ActionException(
                 "Recommendation label of a recommendation must be set."
             )
-        instance["last_modified"] = round(time.time())
+        instance["last_modified"] = datetime.now(ZoneInfo("UTC"))
         return instance
 
     def get_history_information(self) -> HistoryInformation | None:

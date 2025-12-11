@@ -1,9 +1,6 @@
 from typing import Any, Literal
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
-from openslides_backend.services.datastore.with_database_context import (
-    with_database_context,
-)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -135,7 +132,6 @@ EXAMPLE_SLLOS_DATA: list[list[SLLOSData]] = [
 
 
 class AgendaItemForwardActionTest(BaseActionTestCase):
-    @with_database_context
     def create_topic_agenda_item(
         self,
         agenda_item_id: int = 1,
@@ -202,7 +198,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 }
             )
 
-    @with_database_context
     def create_speakers_for_los(
         self,
         meeting_id: int = 1,

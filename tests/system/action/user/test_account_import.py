@@ -1,4 +1,8 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.import_mixins import BaseImportAction, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -20,69 +24,83 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "jonny",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "jonny",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "first_name": "Testy",
                                     },
-                                    "first_name": "Testy",
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
                 "import_preview/3": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "TestyTester",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "first_name": "Testy",
-                                    "last_name": "Tester",
-                                    "email": {
-                                        "value": "email@test.com",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "gender_id": {
-                                        "value": 1,
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "TestyTester",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "first_name": "Testy",
+                                        "last_name": "Tester",
+                                        "email": {
+                                            "value": "email@test.com",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "gender_id": {
+                                            "value": 1,
+                                            "info": ImportState.DONE,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
                 "import_preview/4": {
                     "state": ImportState.ERROR,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.ERROR,
-                                "messages": ["test"],
-                                "data": {
-                                    "gender_id": {
-                                        "value": 1,
-                                        "info": ImportState.DONE,
-                                    }
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.ERROR,
+                                    "messages": ["test"],
+                                    "data": {
+                                        "gender_id": {
+                                            "value": 1,
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
-                "import_preview/5": {"result": None},
+                "import_preview/5": {
+                    "state": ImportState.WARNING,
+                    "name": "participant",
+                    "created": datetime.now(),
+                    "result": None,
+                },
                 "user/2": {
                     "username": "test",
                     "default_password": "secret",
@@ -91,30 +109,33 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/6": {
                     "state": ImportState.WARNING,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 2,
-                                    "username": {
-                                        "value": "test",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 2,
-                                    },
-                                    "saml_id": {
-                                        "value": "12345",
-                                        "info": ImportState.DONE,
-                                    },
-                                    "default_password": {
-                                        "value": "",
-                                        "info": ImportState.WARNING,
+                                        "username": {
+                                            "value": "test",
+                                            "info": ImportState.DONE,
+                                            "id": 2,
+                                        },
+                                        "saml_id": {
+                                            "value": "12345",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "default_password": {
+                                            "value": "",
+                                            "info": ImportState.WARNING,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -152,27 +173,30 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "id": 1,
-                                    "username": {
-                                        "value": "user1",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
                                         "id": 1,
-                                    },
-                                    "first_name": "Testy",
-                                    "gender_id": {
-                                        "value": 4,
-                                        "info": ImportState.DONE,
+                                        "username": {
+                                            "value": "user1",
+                                            "info": ImportState.DONE,
+                                            "id": 1,
+                                        },
+                                        "first_name": "Testy",
+                                        "gender_id": {
+                                            "value": 4,
+                                            "info": ImportState.DONE,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -189,28 +213,31 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [
-                                    "GenderId '5' is not in the allowed gender list."
-                                ],
-                                "data": {
-                                    "id": 1,
-                                    "username": {
-                                        "value": "user1",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [
+                                        "GenderId '5' is not in the allowed gender list."
+                                    ],
+                                    "data": {
                                         "id": 1,
-                                    },
-                                    "gender_id": {
-                                        "value": 5,
-                                        "info": ImportState.WARNING,
+                                        "username": {
+                                            "value": "user1",
+                                            "info": ImportState.DONE,
+                                            "id": 1,
+                                        },
+                                        "gender_id": {
+                                            "value": 5,
+                                            "info": ImportState.WARNING,
+                                        },
                                     },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -249,15 +276,18 @@ class AccountJsonImport(BaseActionTestCase):
             f"import_preview/{number}": {
                 "state": get_import_state(),
                 "name": "account",
-                "result": {
-                    "rows": [
-                        {
-                            "state": row_state,
-                            "messages": [],
-                            "data": data,
-                        },
-                    ],
-                },
+                "created": datetime.now(),
+                "result": Jsonb(
+                    {
+                        "rows": [
+                            {
+                                "state": row_state,
+                                "messages": [],
+                                "data": data,
+                            },
+                        ],
+                    }
+                ),
             }
         }
 
@@ -374,30 +404,33 @@ class AccountJsonImport(BaseActionTestCase):
                 "import_preview/7": {
                     "state": ImportState.DONE,
                     "name": "account",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "durban",
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "durban",
+                                            "info": ImportState.DONE,
+                                        }
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 }
             }
         )
@@ -469,7 +502,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "test_saml_id",
                 "default_password": "",
                 "can_change_own_password": False,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "organization_id": 1,
                 "is_physical_person": True,
             },
@@ -480,7 +513,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test_saml_id1",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user36["default_password"]
@@ -492,7 +525,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test_saml_id21",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user37["default_password"]
@@ -530,7 +563,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "",
                 "can_change_own_password": False,
                 "password": "",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_not_exists("import_preview/1")
@@ -544,7 +577,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             {
                 "username": "test",
                 "saml_id": "new_one",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_not_exists("import_preview/1")
@@ -600,7 +633,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "first_name": "Max",
                 "organization_id": 1,
                 "is_physical_person": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "can_change_own_password": True,
             },
         )
@@ -633,7 +666,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "test",
                 "organization_id": 1,
                 "is_physical_person": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "can_change_own_password": True,
             },
         )
@@ -663,7 +696,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
@@ -689,7 +722,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "test_saml_id2",
                 "username": "user2",
                 "default_password": "",
-                "default_vote_weight": "2.345678",
+                "default_vote_weight": Decimal("2.345678"),
                 "password": "",
                 "can_change_own_password": False,
             },
@@ -701,7 +734,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "saml3",
                 "username": "user3",
                 "default_password": "",
-                "default_vote_weight": "3.345678",
+                "default_vote_weight": Decimal("3.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -714,7 +747,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "first_name": "Martin",
                 "last_name": "Luther King",
                 "default_password": "secret",
-                "default_vote_weight": "4.345678",
+                "default_vote_weight": Decimal("4.345678"),
                 "can_change_own_password": True,
             },
         )
@@ -725,7 +758,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "saml5",
                 "username": "new_user5",
                 "default_password": "",
-                "default_vote_weight": "5.345678",
+                "default_vote_weight": Decimal("5.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -736,7 +769,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "saml_id": "new_saml6",
                 "username": "new_saml6",
                 "default_password": "",
-                "default_vote_weight": "6.345678",
+                "default_vote_weight": Decimal("6.345678"),
                 "can_change_own_password": False,
             },
         )
@@ -747,7 +780,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "username": "JoanBaez7",
                 "first_name": "Joan",
                 "last_name": "Baez7",
-                "default_vote_weight": "7.345678",
+                "default_vote_weight": Decimal("7.345678"),
                 "can_change_own_password": True,
             },
         )
@@ -878,7 +911,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "saml_id": "old_one",
-                "default_vote_weight": "4.500000",
+                "default_vote_weight": Decimal("4.5"),
             },
         )
 
@@ -946,7 +979,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "id": 2,
                 "username": "test",
                 "member_number": "old_one",
-                "default_vote_weight": "4.345678",
+                "default_vote_weight": Decimal("4.345678"),
             },
         )
 

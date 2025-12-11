@@ -34,11 +34,11 @@ class ProjectionDelete(DeleteAction):
         if not (
             projection.get("current_projector_id")
             or projection.get("preview_projector_id")
-            or self.is_meeting_deleted(projection["meeting_id"])
-            or self.is_deleted(projection["content_object_id"])
+            or self.is_meeting_to_be_deleted(projection["meeting_id"])
+            or self.is_to_be_deleted(projection["content_object_id"])
             or (
                 "history_projector_id" in projection
-                and self.is_deleted(
+                and self.is_to_be_deleted(
                     fqid_from_collection_and_id(
                         "projector", projection["history_projector_id"]
                     )

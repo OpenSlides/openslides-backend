@@ -1,6 +1,8 @@
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.shared.interfaces.write_request import (
     WriteRequestWithMigrationIndex,
@@ -92,10 +94,12 @@ class GeneralActionWSGITester(BaseActionTestCase):
             self.assertIn(action, actions.keys())
 
 
+@pytest.mark.skip(
+    reason="Test not relevant anymore after migration to relational database"
+)
 class TestWSGIWithMigrations(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.datastore.truncate_db()
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:
@@ -104,8 +108,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             user_id=0,
             migration_index=5,
         )
-        with self.datastore.get_database_context():
-            self.datastore.write(write_request)
+        self.datastore.write(write_request)
         gbmi.return_value = 6
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)
@@ -122,8 +125,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             migration_index=6,
         )
         write_request.migration_index = 6
-        with self.datastore.get_database_context():
-            self.datastore.write(write_request)
+        self.datastore.write(write_request)
         gbmi.return_value = 5
         response = self.request("dummy", {})
         self.assert_status_code(response, 400)

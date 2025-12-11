@@ -5,6 +5,7 @@ debugpy==1.8.17
 flake8==7.3.0
 isort==7.0.0
 mypy==1.18.2
+sqlfluff==3.4.2
 pip-check==3.2.1
 pytest==9.0.1
 pytest-cov==7.0.0
@@ -20,3 +21,6 @@ types-PyYAML==6.0.12.20250915
 types-requests==2.32.4.20250913
 types-simplejson==3.20.0.20250822
 types-Pygments==2.19.0.20251121
+
+# analyze pstats from Profiler
+snakeviz==2.2.0

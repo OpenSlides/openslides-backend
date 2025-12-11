@@ -4,50 +4,22 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class GenderCreateActionTest(BaseActionTestCase):
-
     def test_create(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "test_organization1",
-                    "gender_ids": [1],
-                },
-                "user/20": {"username": "test_user20"},
-                "gender/1": {"organization_id": 1, "name": "male"},
-            }
-        )
+        self.set_models({"gender/1": {"organization_id": 1, "name": "male"}})
         gender_name = "female"
 
-        response = self.request(
-            "gender.create",
-            {
-                "name": gender_name,
-            },
-        )
+        response = self.request("gender.create", {"name": gender_name})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("gender/1", {"name": "male", "organization_id": 1})
         self.assert_model_exists(
-            "gender/1",
-            {
-                "name": "male",
-                "organization_id": 1,
-            },
-        )
-        self.assert_model_exists(
-            "gender/2",
-            {
-                "name": gender_name,
-                "organization_id": 1,
-            },
+            "gender/2", {"name": gender_name, "organization_id": 1}
         )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"gender_ids": [1, 2]})
 
     def test_create_wrong_field(self) -> None:
         response = self.request(
             "gender.create",
-            {
-                "name": "test_gender_name",
-                "wrong_field": "test",
-            },
+            {"name": "test_gender_name", "wrong_field": "test"},
         )
 
         self.assert_status_code(response, 400)
@@ -61,9 +33,7 @@ class GenderCreateActionTest(BaseActionTestCase):
         self.set_models({"gender/1": {"name": "exists"}})
         response = self.request(
             "gender.create",
-            {
-                "name": "exists",
-            },
+            {"name": "exists"},
         )
 
         self.assert_status_code(response, 400)
@@ -101,9 +71,7 @@ class GenderCreateActionTest(BaseActionTestCase):
         self.base_permission_test(
             {},
             "gender.create",
-            {
-                "name": "test_Xcdfgee",
-            },
+            {"name": "test_Xcdfgee"},
             OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
 
@@ -111,7 +79,5 @@ class GenderCreateActionTest(BaseActionTestCase):
         self.base_permission_test(
             {},
             "gender.create",
-            {
-                "name": "test_Xcdfghee",
-            },
+            {"name": "test_Xcdfghee"},
         )

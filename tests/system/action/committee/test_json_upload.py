@@ -1,9 +1,8 @@
-from math import ceil, floor
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.mixins.import_mixins import ImportState, StatisticEntry
-from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 from tests.system.base import ADMIN_USERNAME
@@ -24,12 +23,12 @@ class BaseCommitteeJsonUploadTest(BaseActionTestCase):
 
 class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
     def test_json_upload_minimal_fields(self) -> None:
-        start = floor(time())
+        start = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test"}]},
         )
-        end = ceil(time())
+        end = datetime.now(ZoneInfo("UTC"))
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
         assert "Actions handled successfully" in response.json["message"]
@@ -178,7 +177,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
 
     def test_json_upload_organization_tags(self) -> None:
-        self.set_models({"organization_tag/37": {"name": "test"}})
+        self.set_models({"organization_tag/37": {"name": "test", "color": "#FFFF00"}})
         response = self.request(
             "committee.json_upload",
             {
@@ -415,23 +414,20 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         }
 
     def test_json_upload_duplicate_meeting(self) -> None:
-        self.set_models(
+        self.create_meeting(
+            2,
             {
-                "committee/1": {"name": "committee", "meeting_ids": [2]},
-                "meeting/2": {
-                    "name": "meeting",
-                    "committee_id": 1,
-                    "start_time": 1691582400,
-                    "end_time": 1691668800,
-                },
-            }
+                "name": "meeting",
+                "start_time": datetime.fromtimestamp(1691582400),
+                "end_time": datetime.fromtimestamp(1691668800),
+            },
         )
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "committee",
+                        "name": "Committee61",
                         "meeting_name": "meeting",
                         "meeting_start_time": "2023-08-09",
                         "meeting_end_time": "2023-08-10",
@@ -445,8 +441,8 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "state": ImportState.ERROR,
             "messages": ["Error: A meeting with this name and dates already exists."],
             "data": {
-                "id": 1,
-                "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
+                "id": 61,
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
@@ -586,18 +582,13 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 0})
 
     def test_json_upload_meeting_template_found_but_no_admin(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {"name": "committee", "meeting_ids": [2]},
-                "meeting/2": {"name": "template", "committee_id": 1},
-            }
-        )
+        self.create_meeting(2, {"name": "template"})
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "committee",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                     }
@@ -609,8 +600,8 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "state": ImportState.ERROR,
             "messages": ["Error: Meeting cannot be created without admins"],
             "data": {
-                "id": 1,
-                "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
+                "id": 61,
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",
@@ -625,19 +616,14 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         )
 
     def test_json_upload_meeting_template_in_another_committee(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {"name": "committee1", "meeting_ids": [2]},
-                "committee/2": {"name": "committee2"},
-                "meeting/2": {"name": "template", "committee_id": 1},
-            }
-        )
+        self.create_meeting(2, {"name": "template"})
+        self.set_models({"committee/62": {"name": "committee62"}})
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "committee2",
+                        "name": "committee62",
                         "meeting_name": "test",
                         "meeting_template": "template",
                         "meeting_admins": [ADMIN_USERNAME],
@@ -652,8 +638,8 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "The meeting template template was not found, the meeting will be created without a template."
             ],
             "data": {
-                "id": 2,
-                "name": {"value": "committee2", "info": ImportState.DONE, "id": 2},
+                "id": 62,
+                "name": {"value": "committee62", "info": ImportState.DONE, "id": 62},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",
@@ -1086,43 +1072,13 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
         self.assert_statistics(response, {"meetings_created": 1})
 
     def json_upload_admin_defined_meeting_template_found(self) -> None:
-        self.create_meeting(2)
-        self.set_models(
-            {
-                "committee/61": {"name": "committee"},
-                "meeting/2": {
-                    "name": "template",
-                    "language": "en",
-                    "reference_projector_id": 1,
-                    "projector_ids": [1],
-                    "motion_workflow_ids": [2],
-                    "motion_state_ids": [2],
-                    "motions_default_amendment_workflow_id": 2,
-                    **{field: [1] for field in Meeting.all_default_projectors()},
-                },
-                "projector/1": {
-                    "sequential_number": 1,
-                    "meeting_id": 2,
-                    "used_as_reference_projector_meeting_id": 2,
-                    "name": "Default projector",
-                    **{field: 2 for field in Meeting.reverse_default_projectors()},
-                },
-                "motion_workflow/2": {
-                    "name": "yay",
-                    "default_amendment_workflow_meeting_id": 2,
-                    "sequential_number": 1,
-                },
-                "motion_state/2": {"weight": 1, "name": "dismissed"},
-                "user/2": {"organization_id": 1},
-                "organization/1": {"user_ids": [1, 2]},
-            }
-        )
+        self.create_meeting(2, meeting_data={"name": "template"})
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "committee",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                         "meeting_admins": [ADMIN_USERNAME],
@@ -1136,7 +1092,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "messages": [],
             "data": {
                 "id": 61,
-                "name": {"value": "committee", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",
@@ -1151,44 +1107,14 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
         self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
 
     def json_upload_meeting_template_with_admins_found(self) -> None:
-        self.create_meeting(2)
+        self.create_meeting(2, meeting_data={"name": "template"})
         self.create_user("bob", [3])  # create admin for meeting 2
-        self.set_models(
-            {
-                "committee/61": {"name": "committee"},
-                "meeting/2": {
-                    "name": "template",
-                    "language": "en",
-                    "reference_projector_id": 1,
-                    "projector_ids": [1],
-                    "motion_workflow_ids": [2],
-                    "motion_state_ids": [2],
-                    "motions_default_amendment_workflow_id": 2,
-                    **{field: [1] for field in Meeting.all_default_projectors()},
-                },
-                "projector/1": {
-                    "sequential_number": 1,
-                    "meeting_id": 2,
-                    "used_as_reference_projector_meeting_id": 2,
-                    "name": "Default projector",
-                    **{field: 2 for field in Meeting.reverse_default_projectors()},
-                },
-                "motion_workflow/2": {
-                    "name": "yay",
-                    "default_amendment_workflow_meeting_id": 2,
-                    "sequential_number": 1,
-                },
-                "motion_state/2": {"weight": 1, "name": "dismissed"},
-                "user/2": {"organization_id": 1},
-                "organization/1": {"user_ids": [1, 2]},
-            }
-        )
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "committee",
+                        "name": "Committee61",
                         "meeting_name": "test",
                         "meeting_template": "template",
                     }
@@ -1201,7 +1127,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
             "messages": [],
             "data": {
                 "id": 61,
-                "name": {"value": "committee", "info": ImportState.DONE, "id": 61},
+                "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "test",
                 "meeting_template": {
                     "value": "template",

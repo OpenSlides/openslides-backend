@@ -2,13 +2,13 @@ import re
 from copy import deepcopy
 from typing import Any
 
-from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....presenter.search_users import SearchUsers
-from ....services.datastore.interface import DatastoreService
+from ....services.database.interface import Database
 from ....shared.exceptions import ActionException
 from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
@@ -275,7 +275,7 @@ class DuplicateCheckMixin(Action):
         return []
 
 
-def check_gender_exists(datastore: DatastoreService, instance: dict[str, Any]) -> None:
+def check_gender_exists(datastore: Database, instance: dict[str, Any]) -> None:
     """raises ActionException if the gender is non existant"""
     if gender_id := instance.get("gender_id"):
         if not datastore.get(

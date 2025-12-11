@@ -1,8 +1,19 @@
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
-from datastore.shared.services import ReadDatabase
-
 from ..shared.exceptions import ActionException
+from .core.base_migrations import BaseMigration
+from .core.events import (
+    BadEventException,
+    BaseEvent,
+    CreateEvent,
+    DeleteEvent,
+    DeleteFieldsEvent,
+    ListUpdateEvent,
+    UpdateEvent,
+)
+from .core.exceptions import (
+    MigrationException,
+    MigrationSetupException,
+    MismatchingMigrationIndicesException,
+)
 from .migrate import MigrationWrapper
 
 
@@ -18,31 +29,36 @@ def get_backend_migration_index() -> int:
 
 
 def get_datastore_migration_index() -> int:
-    read_db = injector.get(ReadDatabase)
-    with read_db.get_context():
-        datastore_migration_index = read_db.get_current_migration_index()
-    return datastore_migration_index
+    # TODO: Re-implement
+    # read_db = injector.get(ReadDatabase)
+    # with read_db.get_context():
+    #     datastore_migration_index = read_db.get_current_migration_index()
+    # return datastore_migration_index
+
+    return 1
 
 
 def assert_migration_index() -> None:
-    connection = injector.get(ConnectionHandler)
-    with connection.get_connection_context():
-        if connection.query_single_value("select count(*) from positions", []) == 0:
-            return  # Datastore is empty; nothing to check.
+    # TODO: Re-implement
+    # connection = injector.get(ConnectionHandler)
+    # with connection.get_connection_context():
+    #     if connection.query_single_value("select count(*) from positions", []) == 0:
+    #         return  # Datastore is empty; nothing to check.
 
-    datastore_migration_index = get_datastore_migration_index()
+    # datastore_migration_index = get_datastore_migration_index()
 
-    if datastore_migration_index == -1:
-        return  # Datastore is up-to-date; nothing to do.
+    # if datastore_migration_index == -1:
+    #     return  # Datastore is up-to-date; nothing to do.
 
-    backend_migration_index = get_backend_migration_index()
+    # backend_migration_index = get_backend_migration_index()
 
-    if backend_migration_index > datastore_migration_index:
-        raise ActionException(
-            f"Missing {backend_migration_index-datastore_migration_index} migrations to apply."
-        )
+    # if backend_migration_index > datastore_migration_index:
+    #     raise ActionException(
+    #         f"Missing {backend_migration_index-datastore_migration_index} migrations to apply."
+    #     )
 
-    if backend_migration_index < datastore_migration_index:
-        raise ActionException(
-            f"Migration indices do not match: Datastore has {datastore_migration_index} and the backend has {backend_migration_index}"
-        )
+    # if backend_migration_index < datastore_migration_index:
+    #     raise ActionException(
+    #         f"Migration indices do not match: Datastore has {datastore_migration_index} and the backend has {backend_migration_index}"
+    #     )
+    pass

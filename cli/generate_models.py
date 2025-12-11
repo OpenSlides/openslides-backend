@@ -11,6 +11,12 @@ from cli.util.util import (
     open_yml_file,
     parse_arguments,
 )
+from meta.dev.src.helper_get_names import (
+    FieldSqlErrorType,
+    HelperGetNames,
+    InternalHelper,
+    TableFieldType,
+)
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
@@ -97,6 +103,8 @@ def main() -> None:
     global MODELS
     MODELS = open_yml_file(args.filename)
 
+    InternalHelper.MODELS = MODELS
+
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
         dest.write(FILE_TEMPLATE)
@@ -163,7 +171,9 @@ class Model(Node):
         for field_name, field in fields.items():
             if field.get("calculated"):
                 continue
-            self.attributes[field_name] = Attribute(field)
+            self.attributes[field_name] = Attribute(
+                field.copy(), collection, field_name
+            )
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
@@ -199,49 +209,57 @@ class Attribute(Node):
     default: Any = None
     on_delete: OnDelete | None = None
     equal_fields: str | list[str] | None = None
-    contraints: dict[str, Any]
+    constraints: dict[str, Any]
+    is_view_field: bool = False
+    is_primary: bool = False
+    write_fields: tuple[str, str, str, list[str]] | None = None
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(self, value: str | dict) -> None:
+    def __init__(
+        self, value: str | dict, collection_name: str, field_name: str
+    ) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
         }
-        self.contraints = {}
+        self.constraints = {}
         self.in_array_constraints = {}
         if isinstance(value, str):
             self.type = value
         else:
             self.type = value.get("type", "")
             if self.type in RELATION_FIELD_CLASSES.keys():
-                self.to = To(value.get("to", {}))
-                self.on_delete = value.get("on_delete")
+                self.is_view_field, self.is_primary, self.write_fields = (
+                    self.get_view_field_state_write_fields(
+                        collection_name, field_name, value
+                    )
+                )
+                self.to = To(value.pop("to"))
+                self.on_delete = value.pop("on_delete", None)
             else:
                 assert self.type in COMMON_FIELD_CLASSES.keys(), (
                     "Invalid type: " + self.type
                 )
-            self.required = value.get("required", False)
-            self.read_only = value.get("read_only", False)
-            self.constant = value.get("constant", False)
-            self.default = value.get("default")
-            self.equal_fields = value.get("equal_fields")
+            value.pop("type")
+            self.required = value.pop("required", False)
+            self.read_only = value.pop("read_only", False)
+            self.constant = value.pop("constant", False)
+            self.default = value.pop("default", None)
+            self.equal_fields = value.pop("equal_fields", None)
             for k, v in value.items():
                 if k not in (
-                    "type",
-                    "to",
-                    "required",
-                    "read_only",
-                    "constant",
-                    "default",
-                    "on_delete",
-                    "equal_fields",
                     "items",
                     "restriction_mode",
+                    # database metadata
+                    "reference",
+                    "sql",
+                    "deferred",
+                    "unique",
                 ):
-                    self.contraints[k] = v
+                    self.constraints[k] = v
                 elif self.type in ("string[]", "number[]") and k == "items":
                     self.in_array_constraints.update(v)
 
@@ -256,6 +274,10 @@ class Attribute(Node):
         if self.on_delete:
             assert self.on_delete in [mode for mode in OnDelete]
             properties += f"on_delete=fields.OnDelete.{self.on_delete}, "
+        if self.is_view_field:
+            properties += "is_view_field=True, "
+        if self.is_primary:
+            properties += "is_primary=True, "
         if self.required:
             properties += "required=True, "
         if self.read_only:
@@ -266,16 +288,106 @@ class Attribute(Node):
             properties += f"default={repr(self.default)}, "
         if self.equal_fields is not None:
             properties += f"equal_fields={repr(self.equal_fields)}, "
-        if self.contraints:
-            properties += f"constraints={repr(self.contraints)}, "
+        if self.constraints:
+            properties += f"constraints={repr(self.constraints)}, "
+        if self.write_fields is not None:
+            properties += f"write_fields={repr(self.write_fields)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
             properties += f"in_array_constraints={repr(self.in_array_constraints)}"
+
         return self.FIELD_TEMPLATE.substitute(
             dict(
                 field_name=field_name,
                 field_class=field_class,
                 properties=properties.rstrip(", "),
             )
+        )
+
+    def get_view_field_state_write_fields(
+        self, collection_name: str, field_name: str, value: dict[str, Any]
+    ) -> tuple[bool, bool, tuple[str, str, str, list[str]] | None]:
+        """
+        Purpose:
+            Checks whether a field is a view field and if other fields need to be written in an intermediate
+            table.
+        Input:
+        - collection_name
+        - field_name
+        - value : represents the definition of the field ( field_name in collection_name )
+        Returns:
+        - is_view_field : whether the field is a view field or not
+        - is_primary: wether the field is primary or not
+        - write_fields:
+            - None if no fields need to be written
+            - Tuple
+                table_name : name of the intermediate table
+                field1
+                field2
+                foreign_fields
+        """
+        # variable declaration
+        own: TableFieldType
+        field_type: str
+        state: FieldSqlErrorType
+        primary: bool
+        error: str
+        is_view_field: bool
+        foreign: TableFieldType
+        foreign_type: str
+        table_name: str = ""
+        field1: str = ""
+        field2: str = ""
+        write_fields: tuple[str, str, str, list[str]] | None = None
+
+        # create TableFieldType own out of collection_name, field_name, value as field_def
+        own = TableFieldType(collection_name, field_name, value)
+        field_type = own.field_def.get("type", "")
+
+        # get the foreign field list and check the relations
+        foreign_fields = InternalHelper.get_definitions_from_foreign_list(
+            value.get("to", None), value.get("reference", None)
+        )
+        state, primary, _, error = InternalHelper.check_relation_definitions(
+            own, foreign_fields
+        )
+        is_view_field = state == FieldSqlErrorType.SQL
+
+        if not value.get("sql"):
+            foreign = foreign_fields[0]
+            foreign_type = foreign.field_def.get("type", "")
+            if "relation-list" == field_type == foreign_type:
+                table_name = HelperGetNames.get_nm_table_name(own, foreign)
+                field1 = HelperGetNames.get_field_in_n_m_relation_list(
+                    own, foreign.table
+                )
+                field2 = HelperGetNames.get_field_in_n_m_relation_list(
+                    foreign, own.table
+                )
+                if field1 == field2:
+                    field1 += "_1"
+                    field2 += "_2"
+                if own.table == foreign.table:
+                    write_fields = (table_name, field2, field1, [])
+                else:
+                    write_fields = (table_name, field1, field2, [])
+            elif "generic-relation-list" in (field_type, foreign_type):
+                write_fields = self.get_write_fields_for_generic(own, foreign_fields)
+
+        assert error == "", error
+
+        return is_view_field, primary, write_fields
+
+    def get_write_fields_for_generic(
+        self, own: TableFieldType, foreign_fields: list[TableFieldType]
+    ) -> tuple[str, str, str, list[str]] | None:
+        table_name = HelperGetNames.get_gm_table_name(own)
+        field1 = f"{own.table}_{own.ref_column}"
+        field2 = own.intermediate_column
+        return (
+            table_name,
+            field1,
+            field2,
+            [f"{field2}_{field.table}_{field.ref_column}" for field in foreign_fields],
         )
 
 

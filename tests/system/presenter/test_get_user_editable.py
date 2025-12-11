@@ -1,73 +1,65 @@
+from typing import Any
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 
 from .base import BasePresenterTestCase
 
 
 class TestGetUSerEditable(BasePresenterTestCase):
-    def set_up(self) -> None:
-        self.create_model(
-            "user/111",
-            {
+    def setUp(self) -> None:
+        super().setUp()
+        self.user111 = {
+            "user/111": {
                 "username": "Helmhut",
                 "last_name": "Schmidt",
                 "is_active": True,
                 "password": self.auth.hash("Kohl"),
                 "default_password": "Kohl",
-            },
-        )
-        self.login(111)
-        self.set_models(
-            {
-                "meeting/1": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                # archived meeting
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": None,
-                    "is_archived_in_organization_id": 1,
-                },
-                "committee/1": {},
-                "committee/2": {"meeting_ids": [1, 2]},
-                "user/2": {
-                    "username": "only_oml_level",
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                },
-                "user/3": {
-                    "username": "only_cml_level",
-                    "committee_management_ids": [1],
-                    "meeting_ids": [],
-                },
-                "user/4": {
-                    "username": "cml_and_meeting",
-                    "meeting_ids": [1],
-                    "committee_management_ids": [2],
-                },
-                "user/5": {
-                    "username": "no_organization",
-                    "meeting_ids": [],
-                },
-                "user/6": {
-                    "username": "oml_and_meeting",
-                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                    "meeting_ids": [1],
-                },
-                "user/7": {
-                    "username": "meeting_and_archived_meeting",
-                    "meeting_ids": [1, 2],
-                },
             }
-        )
-
-    def test_with_oml(self) -> None:
-        self.set_up()
-        self.update_model(
-            "user/111",
-            {
+        }
+        self.data: dict[str, dict[str, Any]] = {
+            **self.user111,
+            "user/2": {
+                "username": "only_oml_level",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
+            "user/3": {"username": "only_cml_level"},
+            "user/4": {"username": "cml_and_meeting"},
+            "user/5": {"username": "no_organization"},
+            "user/6": {
+                "username": "oml_and_meeting",
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+            },
+            "user/7": {"username": "meeting_and_archived_meeting"},
+            "committee/60": {"manager_ids": [4]},
+            "committee/63": {"manager_ids": [3]},
+            "meeting_user/14": {"meeting_id": 1, "user_id": 4},
+            "meeting_user/16": {"meeting_id": 1, "user_id": 6},
+            "meeting_user/17": {"meeting_id": 1, "user_id": 7},
+            "meeting_user/47": {"meeting_id": 4, "user_id": 7},
+            "group/1": {"meeting_user_ids": [14, 16, 17]},
+            "group/4": {"meeting_user_ids": [47]},
+        }
+
+    def set_up(self) -> None:
+        self.create_meeting(1)
+        self.create_meeting(
+            4,
+            {
+                "committee_id": 60,
+                "is_active_in_organization_id": None,
+                "is_archived_in_organization_id": 1,
+            },
         )
+        self.set_models(self.data)
+        self.login(111)
+
+    def test_with_oml(self) -> None:
+        self.data["user/111"][
+            "organization_management_level"
+        ] = OrganizationManagementLevel.CAN_MANAGE_USERS
+        self.set_up()
         status_code, data = self.request(
             "get_user_editable",
             {
@@ -113,13 +105,8 @@ class TestGetUSerEditable(BasePresenterTestCase):
         )
 
     def test_with_cml(self) -> None:
+        self.data["committee/60"]["manager_ids"] = [111, 4]
         self.set_up()
-        self.update_model(
-            "user/111",
-            {
-                "committee_management_ids": [2],
-            },
-        )
         status_code, data = self.request(
             "get_user_editable",
             {
@@ -144,11 +131,11 @@ class TestGetUSerEditable(BasePresenterTestCase):
                 "3": {
                     "default_password": [
                         False,
-                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 63",
                     ],
                     "first_name": [
                         False,
-                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+                        "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 63",
                     ],
                 },
                 "4": {
@@ -187,53 +174,31 @@ class TestGetUSerEditable(BasePresenterTestCase):
         User 5 can be edited because he is only in meetings which User 111 is admin of.
         User 7 can not be edited because he is in two of the same meetings but User 111 is not admin in all of them.
         """
-        self.set_up()
-        self.create_meeting_for_two_users(5, 111, 1)
-        self.create_meeting_for_two_users(5, 111, 4)
-        self.create_meeting_for_two_users(7, 111, 7)
-        self.create_meeting_for_two_users(7, 111, 10)
-        self.update_model("meeting/1", {"committee_id": 1})
-        self.update_model("meeting/4", {"committee_id": 2})
-        self.update_model("meeting/7", {"committee_id": 1})
-        self.update_model("meeting/10", {"committee_id": 2})
+        self.set_models(
+            {
+                **self.user111,
+                "user/5": {"username": "user5"},
+                "user/7": {"username": "user7"},
+            }
+        )
+
+        self.create_meeting_for_two_users(1, 5, 111)
+        self.create_meeting_for_two_users(4, 5, 111)
+        self.create_meeting_for_two_users(7, 7, 111, {"committee_id": 60})
+        self.create_meeting_for_two_users(10, 7, 111, {"committee_id": 66})
+
         # User 111 is meeting admin in meeting 1, 4 and 7 but normal user in 10
         # User 5 is normal user in meeting 1 and 4
         # User 7 is normal user in meeting 7 and 10
-        meeting_user_to_group = {
-            1111: 2,
-            4111: 5,
-            15: 1,
-            45: 4,
-            7111: 8,
-            10111: 10,
-            77: 7,
-            107: 10,
-        }
-        self.move_user_to_group(meeting_user_to_group)
-        self.update_model(
-            "user/5",
+        self.move_users_to_groups(
             {
-                "meeting_user_ids": [
-                    15,
-                    45,
-                ],
-                "meeting_ids": [1, 4],
-            },
+                111: [2, 5, 8, 10],
+                5: [1, 4],
+                7: [7, 10],
+            }
         )
-        self.update_model(
-            "user/7",
-            {
-                "meeting_user_ids": [77, 107],
-                "meeting_ids": [7, 10],
-            },
-        )
-        self.update_model(
-            "user/111",
-            {
-                "meeting_user_ids": [1111, 4111, 7111, 10111],
-                "meeting_ids": [1, 4, 7, 10],
-            },
-        )
+        self.login(111)
+
         status_code, data = self.request(
             "get_user_editable",
             {
@@ -264,57 +229,33 @@ class TestGetUSerEditable(BasePresenterTestCase):
         User 5 can be edited because he is only in meetings which User 111 has can_manage of.
         User 7 can be edited because he is only in meetings which User 111 has can_update of.
         """
-        self.set_up()
-        self.create_meeting_for_two_users(5, 111, 1)
-        self.create_meeting_for_two_users(5, 111, 4)
-        self.create_meeting_for_two_users(7, 111, 7)
-        self.create_meeting_for_two_users(7, 111, 10)
-        self.update_model("meeting/1", {"committee_id": 1})
-        self.update_model("meeting/4", {"committee_id": 2})
-        self.update_model("meeting/7", {"committee_id": 1})
-        self.update_model("meeting/10", {"committee_id": 2})
-        self.update_model("group/3", {"permissions": ["user.can_update"]})
-        self.update_model("group/6", {"permissions": ["user.can_update"]})
-        self.update_model("group/9", {"permissions": ["user.can_manage"]})
-        self.update_model("group/12", {"permissions": ["user.can_manage"]})
+        self.set_models(
+            {
+                **self.user111,
+                "user/5": {"username": "user5"},
+                "user/7": {"username": "user7"},
+            }
+        )
+
+        self.create_meeting_for_two_users(1, 5, 111)
+        self.create_meeting_for_two_users(4, 5, 111)
+        self.create_meeting_for_two_users(7, 7, 111, {"committee_id": 60})
+        self.create_meeting_for_two_users(10, 7, 111, {"committee_id": 66})
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        self.set_group_permissions(9, [Permissions.User.CAN_MANAGE])
+        self.set_group_permissions(12, [Permissions.User.CAN_MANAGE])
         # User 111 has sufficient group rights in meeting 1, 4, 7 and 10
         # User 5 is normal user in meeting 1 and 4
         # User 7 is normal user in meeting 7 and 10
-        meeting_user_to_group = {
-            1111: 3,
-            4111: 6,
-            15: 1,
-            45: 4,
-            7111: 9,
-            10111: 12,
-            77: 7,
-            107: 10,
-        }
-        self.move_user_to_group(meeting_user_to_group)
-        self.update_model(
-            "user/5",
+        self.move_users_to_groups(
             {
-                "meeting_user_ids": [
-                    15,
-                    45,
-                ],
-                "meeting_ids": [1, 4],
-            },
+                111: [3, 6, 9, 12],
+                5: [1, 4],
+                7: [7, 10],
+            }
         )
-        self.update_model(
-            "user/7",
-            {
-                "meeting_user_ids": [77, 107],
-                "meeting_ids": [7, 10],
-            },
-        )
-        self.update_model(
-            "user/111",
-            {
-                "meeting_user_ids": [1111, 4111, 7111, 10111],
-                "meeting_ids": [1, 4, 7, 10],
-            },
-        )
+        self.login(111)
         status_code, data = self.request(
             "get_user_editable",
             {
@@ -335,13 +276,10 @@ class TestGetUSerEditable(BasePresenterTestCase):
         """
         Tests all user.create/update payload field groups. Especially the field 'saml_id'.
         """
+        self.data["user/111"][
+            "organization_management_level"
+        ] = OrganizationManagementLevel.CAN_MANAGE_USERS
         self.set_up()
-        self.update_model(
-            "user/111",
-            {
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-            },
-        )
         status_code, data = self.request(
             "get_user_editable",
             {

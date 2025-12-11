@@ -9,7 +9,7 @@ from ....permissions.permission_helper import (
     is_admin,
 )
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
