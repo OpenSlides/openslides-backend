@@ -19,7 +19,6 @@ Includes workflow_timestamp from Issue2112
     recommendation_extension: string;
     category_id: Id;
     block_id: Id;
-    supporter_meeting_user_ids: Id[];
     tag_ids: Id[];
     attachment_mediafile_ids: Id[];
     workflow_id: Id;
@@ -45,7 +44,6 @@ If the request user does not have `motion.can_manage`, the fields in the payload
     * `category_id`
     * `motion_block_id`
     * `origin`
-    * `supporter_meeting_user_ids`
     * `additional_submitter`
     * `recommendation_extension`
     * `start_line_number`
