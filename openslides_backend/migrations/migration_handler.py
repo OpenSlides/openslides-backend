@@ -1,8 +1,11 @@
+import re
 from importlib import import_module
 from typing import Any
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
+
+from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
@@ -32,6 +35,7 @@ class MigrationHandler(BaseHandler):
 
     def setup_migration_relations(self) -> None:
         """Sets the tables and views used within the migration and copies their data."""
+        # TODO this method needs to be tested.
         unified_replace_tables, _ = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
         )
@@ -43,10 +47,32 @@ class MigrationHandler(BaseHandler):
                     "CREATE TABLE {table_m} (LIKE {table_t} INCLUDING ALL);"
                 ).format(table_m=table_m, table_t=table_t)
             )
+
+            def replace_suffix(m: re.Match) -> str:
+                base = m.group(1)
+                return base + ("_m")
+            # TODO create regex specifically for the replace tables
+            table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t|_T)\b")
+
             self.cursor.execute(
-                sql.SQL("CREATE VIEW {view_m} (LIKE {view} INCLUDING ALL);").format(
+                """
+                SELECT pg_class.relkind,
+                    pg_get_viewdef(%s::regclass, true) AS viewdef
+                FROM pg_class
+                WHERE relname = %s
+                """,
+                (m_data["view"], m_data["view"]),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise ValueError(f"Source view not found: {source_fullname}")
+            relkind, viewdef = row
+            assert relkind == 'v', "Relationkind must be a normal view to create a view copy."
+            viewdef = table_re.sub(replace_suffix, viewdef)
+            self.cursor.execute(
+                sql.SQL("CREATE VIEW {view_m} AS {viewdef};").format(
                     view_m=sql.Identifier(m_data["view"]),
-                    view=sql.Identifier(collection),
+                    viewdef=sql.Identifier(viewdef),
                 )
             )
             self.cursor.execute(
@@ -54,6 +80,41 @@ class MigrationHandler(BaseHandler):
                     table_m=table_m, table_t=table_t
                 )
             )
+            # TODO rereference all models pointing to this collection
+        # TODO CodeBlocks probably needs a reset of generated trigger names
+        (
+            pre_code,
+            table_name_code,
+            view_name_code, # Should be used for reads of migration. So original needs to be subbstituted with shadow table names
+            alter_table_code,
+            final_info_code,
+            missing_handled_attributes,
+            im_table_code, # TODO check the rereference of this also
+            create_trigger_partitioned_sequences_code, # TODO ALTER SEQUENCE to not be deleted when owner column gets deleted
+            create_trigger_1_1_relation_not_null_code,
+            create_trigger_relationlistnotnull_code,
+            create_trigger_unique_ids_pair_code,
+            create_trigger_notify_code,
+            errors,
+        ) = GenerateCodeBlocks.generate_the_code()
+        sql_text = (
+            # + alter_table_code TODO are these foreign key constraints copied over or not?
+            create_trigger_1_1_relation_not_null_code
+            + create_trigger_relationlistnotnull_code
+            + create_trigger_unique_ids_pair_code
+        )
+        replaced_blocks = []
+        trigger_re = re.compile(
+            r"(CREATE\s+(?:CONSTRAINT\s+)?TRIGGER\b.*?;)", re.IGNORECASE | re.DOTALL
+        )
+
+        for match in trigger_re.finditer(sql_text):
+            block = match.group(0)
+            if table_re.search(block):
+                modified_block = table_re.sub(replace_suffix, block)
+                replaced_blocks.append(modified_block)
+        sql_text = "".join(replaced_blocks)
+        self.cursor.execute(sql_text)
 
     def execute_migrations(self) -> None:
         """
@@ -177,19 +238,7 @@ class MigrationHandler(BaseHandler):
             if callable(getattr(migration_module, "cleanup", None)):
                 migration_module.cleanup(self.cursor)
 
-        # current_mi = MigrationHelper.get_database_migration_index(self.cursor)
-        # relevant_mis = [
-        #     mi
-        #     for mi in MigrationHelper.get_indices_from_database(self.cursor)
-        #     if mi > current_mi
-        # ]
-        # replace_tables = {
-        #     collection: shadows
-        #     for migration_number in relevant_mis
-        #     for collection, shadows in MigrationHelper.get_replace_tables_from_database(
-        #         self.cursor, migration_number
-        #     ).items()
-        # }
+        # initial migration sets these to {}
         unified_replace_tables, relevant_mis = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
         )
@@ -201,22 +250,46 @@ class MigrationHandler(BaseHandler):
                 )
             )
             self.cursor.execute(
-                ("ALTER TABLE {shadow_name} RENAME TO {real_name}").format(
+                sql.SQL("ALTER TABLE {shadow_name} RENAME TO {real_name}").format(
                     real_name=sql.Identifier(collection + "_t"),
                     shadow_name=sql.Identifier(shadow_names["table"]),
                 )
             )
             self.cursor.execute(
-                sql.SQL("DROP VIEW {real_name}").format(
+                sql.SQL("DROP VIEW {real_name};").format(
                     real_name=sql.Identifier(collection)
                 )
             )
             self.cursor.execute(
-                ("ALTER VIEW {shadow_name} RENAME TO {real_name}").format(
-                    real_name=sql.Identifier(collection),
+                sql.SQL("DROP VIEW {shadow_name};").format(
                     shadow_name=sql.Identifier(shadow_names["view"]),
                 )
             )
+        (
+            pre_code,
+            table_name_code,
+            view_name_code,
+            alter_table_code,
+            final_info_code,
+            missing_handled_attributes,
+            im_table_code,
+            create_trigger_partitioned_sequences_code,
+            create_trigger_1_1_relation_not_null_code,
+            create_trigger_relationlistnotnull_code,
+            create_trigger_unique_ids_pair_code,
+            create_trigger_notify_code,
+            errors,
+        ) = GenerateCodeBlocks.generate_the_code()
+        sql_text = (
+            view_name_code
+            # + alter_table_code TODO are foreign key constraints copied over or not?
+            + create_trigger_partitioned_sequences_code
+            + create_trigger_1_1_relation_not_null_code
+            + create_trigger_relationlistnotnull_code
+            + create_trigger_unique_ids_pair_code
+            + create_trigger_notify_code
+        )
+        self.cursor.execute(sql_text)
         for mi in relevant_mis:
             MigrationHelper.set_database_migration_info(
                 self.cursor, mi, MigrationState.FINALIZED
