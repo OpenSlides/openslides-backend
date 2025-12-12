@@ -315,7 +315,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             }
         )
 
-    def add_structure_levels_to_meeting_users(
+    def set_structure_levels_for_meeting_users(
         self, mu_to_sl_ids: dict[int, list[int] | None]
     ) -> None:
         self.set_models(
@@ -582,7 +582,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 base_level_id=13,
                 meeting_id=4,
             )
-            self.add_structure_levels_to_meeting_users(
+            self.set_structure_levels_for_meeting_users(
                 mu_to_sl_ids={
                     2: [17],  # meeting 4
                     4: [1],
