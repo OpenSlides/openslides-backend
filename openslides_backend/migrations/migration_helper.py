@@ -43,7 +43,7 @@ class MigrationCommand(StrEnum):
 # relative path to the migrations
 MIGRATIONS_PATH = "openslides_backend/migrations/migrations/"
 MODULE_PATH = MIGRATIONS_PATH.replace("/", ".")
-LAST_NON_REL_MIGRATION = 72
+LAST_NON_REL_MIGRATION = 73
 
 
 class MigrationHelper:
