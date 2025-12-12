@@ -246,6 +246,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     "meeting_id": meeting_id,
                     "weight": agenda_item_id,
                     **extra_agenda_fields,
+                    **({"parent_id": parent_id} if parent_id else {}),
                 },
                 f"topic/{topic_id}": {
                     "meeting_id": meeting_id,
@@ -261,8 +262,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 },
             }
         )
-        if parent_id:
-            self.set_models({f"agenda_item/{agenda_item_id}": {"parent_id": parent_id}})
 
     def create_speakers_for_los(
         self,
@@ -317,14 +316,13 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
 
     def add_structure_levels_to_meeting_users(
-        self, mu_to_sl_ids: dict[int, list[int]]
+        self, mu_to_sl_ids: dict[int, list[int] | None]
     ) -> None:
         self.set_models(
             {
                 **{
                     f"meeting_user/{mu_id}": {"structure_level_ids": sl_ids}
                     for mu_id, sl_ids in mu_to_sl_ids.items()
-                    if sl_ids
                 },
             }
         )
@@ -594,10 +592,10 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                     8: [2, 4, 6, 8, 10, 12],
                     9: [1, 3, 5, 7, 9, 11],
                     10: [13, 14, 15],  # meeting 4
-                    11: [],
+                    11: None,
                     12: [16, 17, 18, 19, 20],  # meeting 4
                     13: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                    14: [],  # meeting 4
+                    14: None,  # meeting 4
                     16: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                     17: [14, 16, 18, 20],  # meeting 4
                 }
