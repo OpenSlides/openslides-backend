@@ -120,6 +120,10 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.validate_imported_data(get_initial_data_file(INITIAL_DATA_FILE))
+        with self.datastore.connection.cursor() as curs:
+            assert curs.execute(
+                "SELECT last_value FROM gender_t_id_seq;"
+            ).fetchone() == {"last_value": 4}
 
     @performance
     def test_initial_import_with_example_data_file(self) -> None:
