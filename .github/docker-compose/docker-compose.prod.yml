@@ -1,7 +1,10 @@
-version: "3"
 services:
     backend-action:
-        build: ../..
+        build: 
+            context: ../..
+            target: "prod"
+            args:
+                CONTEXT: "prod"
         image: openslides-backend
         ports:
             - "9002:9002"
@@ -14,7 +17,11 @@ services:
         secrets:
             - postgres_password
     backend-presenter:
-        build: ../..
+        build: 
+            context: ../..
+            target: "prod"
+            args:
+                CONTEXT: "prod"
         image: openslides-backend
         ports:
             - "9003:9003"

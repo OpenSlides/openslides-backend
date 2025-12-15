@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TypedDict, Union
+from typing import TypedDict
 
 from openslides_backend.shared.patterns import Field
 from openslides_backend.shared.typing import JSON, HistoryInformation
@@ -29,7 +29,7 @@ class WriteRequestWithMigrationIndex(WriteRequest):
     migration_index: int | None = None
 
 
-ListUpdatesDict = dict[Field, list[Union[str, int]]]
+ListUpdatesDict = dict[Field, list[str] | list[int]]
 
 
 class ListFieldsData(TypedDict, total=False):

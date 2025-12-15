@@ -96,6 +96,10 @@ class InvalidFormat(DatabaseException):
     pass
 
 
+class InvalidData(DatabaseException):
+    pass
+
+
 class RelationException(DatabaseException):
     pass
 
