@@ -33,7 +33,10 @@ jobs:
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
+      run: |
+        ls -a 
+        cat secrets/postgres_password
+        docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
 
     - name: Wait for presenter service
       # we have to execute this inside the container since the port to the outside is opened directly after the
