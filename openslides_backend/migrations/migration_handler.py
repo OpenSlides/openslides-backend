@@ -335,9 +335,13 @@ class MigrationHandler(BaseHandler):
             if state != MigrationState.FINALIZED
             for k, v in MigrationHelper.get_replace_tables(idx).items()
         }
-        for table_view in replace_tables.values():
-            self.cursor.execute(f"DROP TABLE {table_view['table']}")
-            self.cursor.execute(f"DROP VIEW {table_view['view']}")
+        if MigrationHelper.get_database_migration_index() == LAST_NON_REL_MIGRATION:
+            for collection in replace_tables:
+                self.cursor.execute(f"DROP TABLE {collection}_t;")
+        if any(mi > 100 for mi in indices):
+            for table_view in replace_tables.values():
+                self.cursor.execute(f"DROP TABLE {table_view['table']};")
+                self.cursor.execute(f"DROP VIEW {table_view['view']};")
 
     # TODO delete shadow copies and as other possibly necessary alterations
     #     self.cursor.execute("delete from migration_positions", [])

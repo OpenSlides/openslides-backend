@@ -288,6 +288,8 @@ class MigrationHelper:
         """
         Returns the replace tables mapping origin table to its shadow copy.
         """
+        if migration_number == 100:
+            return {}
         module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
         return {
