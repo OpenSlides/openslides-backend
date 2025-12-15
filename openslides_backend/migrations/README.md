@@ -8,7 +8,7 @@ Collections in WRITE_MODELS will additionally prevent reading on corresponding t
 The migrations itself are in the `migrations` folder. Each file must start with a four digit number and can include certain functions that can be found by the loader. A psycopg cursor object will be passed as function parameter.
  * data_definition: should do necessary schema changes
  * data_manipulation: should pass the altered original data from the table to table_mig
- * cleanup: should do all cleanups that aren't done automatically like deleting additional temporary tables. This step happens during finalization bafore all automatic changes.
+ * cleanup: should do all cleanups that aren't done automatically like deleting additional temporary tables. This step happens during finalization before all automatic changes.
 
 #### Scripts for setting initial data
 
