@@ -335,7 +335,10 @@ class MigrationHandler(BaseHandler):
             if state != MigrationState.FINALIZED
             for k, v in MigrationHelper.get_replace_tables(idx).items()
         }
-        if MigrationHelper.get_database_migration_index() == LAST_NON_REL_MIGRATION:
+        if (
+            MigrationHelper.get_database_migration_index(self.cursor)
+            == LAST_NON_REL_MIGRATION
+        ):
             for collection in replace_tables:
                 self.cursor.execute(f"DROP TABLE {collection}_t;")
         if any(mi > 100 for mi in indices):
