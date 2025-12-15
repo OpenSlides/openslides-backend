@@ -51,9 +51,11 @@ class MigrationHandler(BaseHandler):
             def replace_suffix(m: re.Match) -> str:
                 base = m.group(1)
                 return base + ("_m")
+
             # TODO create regex specifically for the replace tables
             table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t|_T)\b")
 
+            migration_view = m_data["view"]
             self.cursor.execute(
                 """
                 SELECT pg_class.relkind,
@@ -61,17 +63,19 @@ class MigrationHandler(BaseHandler):
                 FROM pg_class
                 WHERE relname = %s
                 """,
-                (m_data["view"], m_data["view"]),
+                (migration_view, migration_view),
             )
-            row = cur.fetchone()
+            row = self.cursor.fetchone()
             if row is None:
-                raise ValueError(f"Source view not found: {source_fullname}")
+                raise ValueError(f"Source view not found: {migration_view}")
             relkind, viewdef = row
-            assert relkind == 'v', "Relationkind must be a normal view to create a view copy."
+            assert (
+                relkind == "v"
+            ), "Relationkind must be a normal view to create a view copy."
             viewdef = table_re.sub(replace_suffix, viewdef)
             self.cursor.execute(
                 sql.SQL("CREATE VIEW {view_m} AS {viewdef};").format(
-                    view_m=sql.Identifier(m_data["view"]),
+                    view_m=sql.Identifier(migration_view),
                     viewdef=sql.Identifier(viewdef),
                 )
             )
@@ -85,12 +89,12 @@ class MigrationHandler(BaseHandler):
         (
             pre_code,
             table_name_code,
-            view_name_code, # Should be used for reads of migration. So original needs to be subbstituted with shadow table names
+            view_name_code,  # Should be used for reads of migration. So original needs to be subbstituted with shadow table names
             alter_table_code,
             final_info_code,
             missing_handled_attributes,
-            im_table_code, # TODO check the rereference of this also
-            create_trigger_partitioned_sequences_code, # TODO ALTER SEQUENCE to not be deleted when owner column gets deleted
+            im_table_code,  # TODO check the rereference of this also
+            create_trigger_partitioned_sequences_code,  # TODO ALTER SEQUENCE to not be deleted when owner column gets deleted
             create_trigger_1_1_relation_not_null_code,
             create_trigger_relationlistnotnull_code,
             create_trigger_unique_ids_pair_code,
