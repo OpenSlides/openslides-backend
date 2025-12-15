@@ -80,6 +80,11 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         self.translate_organization_and_theme(data)
         self.data_migration_index = data["_migration_index"]
 
+        for collection, models in data.items():
+            if collection == "_migration_index":
+                continue
+            self.datastore.reserve_ids(collection, len(models))
+
         return instance
 
     def check_empty_datastore(self) -> None:
