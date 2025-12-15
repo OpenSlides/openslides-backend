@@ -23,6 +23,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        submodules: recursive
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -33,10 +35,7 @@ jobs:
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: |
-        ls -a 
-        cat secrets/postgres_password
-        docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
+      run: docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
 
     - name: Wait for presenter service
       # we have to execute this inside the container since the port to the outside is opened directly after the
@@ -67,6 +66,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         path: openslides-backend
+        submodules: recursive
 
     - name: Set env vars
       working-directory: openslides-backend/requirements
