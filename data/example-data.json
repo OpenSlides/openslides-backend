@@ -358,6 +358,7 @@
             "motion_poll_default_type": "pseudoanonymous",
             "motion_poll_default_method": "YNA",
             "motion_poll_default_onehundred_percent_base": "YNA",
+            "motion_poll_default_required_majority": "no_majority",
             "motion_poll_default_group_ids": [
                 2,
                 3
@@ -384,6 +385,7 @@
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "Y",
             "assignment_poll_default_onehundred_percent_base": "valid",
+            "assignment_poll_default_required_majority": "no_majority",
             "assignment_poll_default_group_ids": [
                 2,
                 3
@@ -1956,6 +1958,7 @@
             "max_votes_amount": 1,
             "max_votes_per_option": 1,
             "onehundred_percent_base": "YNA",
+            "required_majority": "no_majority",
             "votesvalid": "2.000000",
             "votesinvalid": "9.000000",
             "votescast": "2.000000",
@@ -1982,6 +1985,7 @@
             "max_votes_amount": 1,
             "max_votes_per_option": 1,
             "onehundred_percent_base": "YNA",
+            "required_majority": "no_majority",
             "sequential_number": 2,
             "content_object_id": "motion/1",
             "option_ids": [
@@ -2008,6 +2012,7 @@
             "global_no": true,
             "global_abstain": true,
             "onehundred_percent_base": "YNA",
+            "required_majority": "no_majority",
             "sequential_number": 3,
             "content_object_id": "assignment/1",
             "option_ids": [
@@ -2031,6 +2036,7 @@
             "global_no": true,
             "global_abstain": true,
             "onehundred_percent_base": "Y",
+            "required_majority": "no_majority",
             "votesvalid": "9.000000",
             "votesinvalid": "2.000000",
             "votescast": "16.000000",
@@ -2059,6 +2065,7 @@
             "global_no": true,
             "global_abstain": false,
             "onehundred_percent_base": "valid",
+            "required_majority": "no_majority",
             "votesvalid": "1.000000",
             "votesinvalid": "0.000000",
             "votescast": "1.000000",

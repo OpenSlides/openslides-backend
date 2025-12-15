@@ -174,6 +174,14 @@ class UpdatePollTestCase(BasePollTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("poll/1", {"backend": "long"})
 
+    def test_update_required_majority(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"required_majority": "absolute_majority", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"required_majority": "absolute_majority"})
+
     def test_update_backend_not_allowed(self) -> None:
         self.set_models({"poll/1": {"state": Poll.STATE_FINISHED}})
         response = self.request(

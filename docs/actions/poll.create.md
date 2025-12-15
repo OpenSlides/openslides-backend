@@ -36,6 +36,7 @@ Payload:
     global_no: boolean,
     global_abstain: boolean,
     onehundred_percent_base: string,
+    required_majority: string,
     backend: string,
 
 // Optional, only for type==named

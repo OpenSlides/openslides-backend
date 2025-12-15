@@ -21,6 +21,7 @@
     title: string,
     description: string,
     onehundred_percent_base: string,
+    required_majority: string,
 
 // Optional, type==analog, every state
     votesvalid: number,
