@@ -5,7 +5,6 @@ debugpy==1.8.17
 flake8==7.3.0
 isort==7.0.0
 mypy==1.18.2
-sqlfluff==3.4.2
 pip-check==3.2.1
 pytest==9.0.1
 pytest-cov==7.0.0
