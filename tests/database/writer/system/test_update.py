@@ -1,3 +1,4 @@
+from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
@@ -416,7 +417,10 @@ def test_list_update(
     ],
 )
 def test_list_fields_update_multiple(
-    action, original_permissions, request_permissions, expected_permissions
+    action: Literal["add", "remove"],
+    original_permissions: dict[int, list[str]],
+    request_permissions: dict[int, list[str]],
+    expected_permissions: dict[int, list[str]],
 ) -> None:
     data = get_group_base_data()
     data[0]["events"][0]["fields"]["permissions"] = original_permissions[1]
