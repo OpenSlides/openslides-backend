@@ -146,7 +146,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "Participant added to meeting {}.",
                 "meeting/114",
                 "Participant added to group {} in meeting {}.",
-                "group/111",
+                "group/114",
                 "meeting/114",
             ],
         )
