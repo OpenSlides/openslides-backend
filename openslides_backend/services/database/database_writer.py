@@ -222,10 +222,11 @@ class DatabaseWriter(SqlQueryHelper):
         table = sql.Identifier(f"{collection}_t")
         statement = sql.SQL(
             """
-            UPDATE {table} SET
+            UPDATE {table} AS {row} SET
             """
         ).format(
             table=table,
+            row=sql.Identifier(f"{collection}_row"),
         )
 
         event_fields = event["fields"]
@@ -476,7 +477,7 @@ class DatabaseWriter(SqlQueryHelper):
                     col_or_placeholder_plus_type=(
                         sql.Placeholder() + self.get_array_type(list_type)
                         if field_name in set_dict
-                        else sql.Identifier(field_name)
+                        else sql.Identifier(f"{collection}_row", field_name)
                     ),
                     nothing_or_table=(
                         sql.SQL("")

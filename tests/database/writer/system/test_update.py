@@ -393,6 +393,63 @@ def test_list_update(
     assert_model(f"group/{id_}", {"id": id_, "name": "1", **expected_fields})
 
 
+@pytest.mark.parametrize(
+    "action, original_permissions, request_permissions, expected_permissions",
+    [
+        pytest.param(
+            "add",
+            {1: None, 2: None},
+            {1: ["user.can_manage"], 2: ["user.can_update"]},
+            {1: ["user.can_manage"], 2: ["user.can_update"]},
+            id="list_fields_add",
+        ),
+        pytest.param(
+            "remove",
+            {
+                1: ["user.can_see", "user.can_update"],
+                2: ["user.can_see", "user.can_manage"],
+            },
+            {1: ["user.can_see"], 2: ["user.can_manage"]},
+            {1: ["user.can_update"], 2: ["user.can_see"]},
+            id="list_fields_remove",
+        ),
+    ],
+)
+def test_list_fields_update_multiple(
+    action, original_permissions, request_permissions, expected_permissions
+) -> None:
+    data = get_group_base_data()
+    data[0]["events"][0]["fields"]["permissions"] = original_permissions[1]
+    data[0]["events"] += [
+        {
+            "type": EventType.Create,
+            "fqid": "group/2",
+            "fields": {
+                "name": "2",
+                "meeting_id": 1,
+                "permissions": original_permissions[2],
+            },
+        },
+        {
+            "type": EventType.Update,
+            "fqid": "group/1",
+            "list_fields": {action: {"permissions": request_permissions[1]}},
+        },
+        {
+            "type": EventType.Update,
+            "fqid": "group/2",
+            "list_fields": {action: {"permissions": request_permissions[2]}},
+        },
+    ]
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        extended_database.write(create_write_requests(data))
+    for id_, permissions in expected_permissions.items():
+        assert_model(
+            f"group/{id_}", {"id": id_, "name": str(id_), "permissions": permissions}
+        )
+
+
 def test_list_update_add_wrong_field_type() -> None:
     data = get_data()
     id_ = create_models(data)[0]
