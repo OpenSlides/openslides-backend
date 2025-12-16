@@ -260,9 +260,30 @@ def test_invalid_collection(db_connection: Connection) -> None:
     assert "Collection 'usarr' does not exist in the database:" in e.value.message
 
 
-def test_invalid_filter_field(db_connection: Connection) -> None:
+@pytest.mark.parametrize(
+    "filter_",
+    [
+        pytest.param(FilterOperator("usarrname", "=", "data"), id="simple"),
+        pytest.param(Not(FilterOperator("usarrname", "=", "data")), id="not"),
+        pytest.param(
+            And(
+                FilterOperator("usarrname", "=", "3"),
+                FilterOperator("is_demo_user", "=", True),
+            ),
+            id="and",
+        ),
+        pytest.param(
+            Or(
+                FilterOperator("usarrname", "=", "3"),
+                FilterOperator("is_demo_user", "=", True),
+            ),
+            id="or",
+        ),
+    ],
+)
+def test_invalid_filter_field(db_connection: Connection, filter_: Filter) -> None:
     with pytest.raises(InvalidFormat) as e:
-        base_test(db_connection, "user", FilterOperator("usarrname", "=", "data"), 0)
+        base_test(db_connection, "user", filter_, 0)
     assert (
         "Field 'usarrname' does not exist in collection 'user': column"
         in e.value.message
@@ -273,7 +294,60 @@ def test_invalid_filter_field(db_connection: Connection) -> None:
 @pytest.mark.parametrize(
     "filter_,to_be_found_ids",
     [
-        pytest.param(last_login_filter, [2], id="operator"),
+        pytest.param(last_login_filter, [2], id="operator_eq"),
+        pytest.param(
+            FilterOperator(
+                "last_login",
+                "!=",
+                datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
+            ),
+            [1, 4],
+            id="operator_ne",
+        ),
+        pytest.param(
+            FilterOperator(
+                "last_login",
+                "<=",
+                datetime(2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo("UTC")),
+            ),
+            [1, 2, 4],
+            id="operator_lte",
+        ),
+        pytest.param(
+            FilterOperator(
+                "last_login",
+                "<",
+                datetime(2042, 11, 19, 9, 53, 20, tzinfo=ZoneInfo("UTC")),
+            ),
+            [2, 4],
+            id="operator_lt",
+        ),
+        pytest.param(
+            FilterOperator(
+                "last_login",
+                ">",
+                datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
+            ),
+            [1, 4],
+            id="operator_gt",
+        ),
+        pytest.param(
+            FilterOperator(
+                "last_login",
+                "in",
+                [
+                    datetime(2012, 11, 10, 0, 0, tzinfo=ZoneInfo("UTC")),
+                    datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
+                ],
+            ),
+            [2, 4],
+            id="operator_in",
+        ),
+        pytest.param(
+            FilterOperator("title", "~=", "the tHirD"),
+            [2],
+            id="operator_eq_case_insensitive",
+        ),
         pytest.param(FilterOperator("last_name", "=", None), [1, 4], id="none_db"),
         pytest.param(
             FilterOperator("committee_management_ids", "!=", None),
@@ -398,11 +472,19 @@ def test_changed_models(
         ex_db.apply_changed_model(
             "user/1", {"username": "3", "committee_management_ids": None}
         )
-        ex_db.apply_changed_model("user/2", {"username": "3", "is_demo_user": True})
+        ex_db.apply_changed_model(
+            "user/2",
+            {"username": "3", "is_demo_user": True, "title": "The Third"},
+        )
         ex_db.apply_changed_model("user/3", DeletedModel())
         ex_db.apply_changed_model(
             "user/4",
-            {"username": "3", "meta_new": True, "committee_management_ids": [1, 2]},
+            {
+                "username": "3",
+                "meta_new": True,
+                "committee_management_ids": [1, 2],
+                "last_login": datetime(2012, 11, 10, 0, 0, tzinfo=ZoneInfo("UTC")),
+            },
         )
         response = ex_db.filter("user", filter_, ["username", "default_vote_weight"])
     for id_ in response:
@@ -410,6 +492,35 @@ def test_changed_models(
     for id_ in to_be_found_ids:
         assert id_ in response
         assert response[id_] == expected_response_changed_models[id_]
+
+
+@pytest.mark.parametrize(
+    "filter_operator",
+    [
+        pytest.param("%=", id="ilike_for_changed_model"),
+        pytest.param("=~", id="non_existent_operator"),
+    ],
+)
+def test_not_implemented_operators(
+    db_connection: Connection, filter_operator: FilterLiteral
+) -> None:
+    """
+    Tests various combinations of data in changed models and the database.
+    `split` in the param id means that one representation of the same model matches
+    but the other won't.
+    """
+    setup_data(db_connection, standard_data)
+    with pytest.raises(NotImplementedError) as e:
+        with get_new_os_conn() as conn:
+            ex_db = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            ex_db.apply_changed_model("user/1", {"first_name": "data"})
+            ex_db.filter(
+                "user",
+                FilterOperator("first_name", filter_operator, "DAt%"),
+                ["first_name"],
+                use_changed_models=True,
+            )
+    assert f"Operator {filter_operator} is not supported" == e.value.args[0]
 
 
 @performance

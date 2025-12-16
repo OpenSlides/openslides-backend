@@ -618,6 +618,7 @@ class DatabaseWriter(SqlQueryHelper):
 
         return 0
 
+    # TODO: check if still can be needed. Not used at all currently
     def get_models_from_database(
         self, events: list[Event]
     ) -> dict[FullQualifiedId, Model]:
