@@ -23,7 +23,8 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.logger.info.assert_any_call("Creating initial data...")
         self.logger.error.assert_not_called()
         self.assert_model_exists("organization/1", {"name": "Test Organization"})
-        self.assert_model_exists("user/1", {"username": "admin"})
+        user = self.assert_model_exists("user/1", {"username": "admin"})
+        assert self.auth.is_equal("admin", user["password"])
 
     @patch(
         "openslides_backend.action.action_handler.ActionHandler.execute_internal_action"
