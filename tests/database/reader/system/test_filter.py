@@ -210,7 +210,7 @@ def test_mapped_fields(db_connection: Connection) -> None:
 def test_sql_view_field(db_connection: Connection) -> None:
     """
     Asserts that view fields on nm tables are used in filter method.
-    Asserts that views also contain databse calculated fields. In this case committee_ids.
+    Asserts that views also contain database calculated fields. In this case committee_ids.
     """
     setup_data(db_connection, standard_data)
     insert_into_intermediate_table(
