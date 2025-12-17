@@ -498,7 +498,7 @@ def test_changed_models(
     "filter_operator",
     [
         pytest.param("%=", id="ilike_for_changed_model"),
-        pytest.param("=~", id="non_existent_operator"),
+        pytest.param("=^.^=", id="non_existent_operator"),
     ],
 )
 def test_not_implemented_operators(
