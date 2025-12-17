@@ -24,6 +24,7 @@ from openslides_backend.models.fields import (
     RelationField,
     RelationListField,
     TextField,
+    TextArrayField,
     TimestampField,
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -467,6 +468,12 @@ class TestCheckerCheckData(TestCase):
                 "collection": "group",
                 "field_name": "permissions",
                 "value": ["1", "2"],
+            },
+            {
+                "field_type": TextArrayField,
+                "collection": "group",
+                "field_name": "permissions",
+                "value": ["1" * 257, "2" * 420],
             },
             {
                 "field_type": GenericRelationListField,

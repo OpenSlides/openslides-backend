@@ -3151,7 +3151,7 @@ class HistoryEntry(Model):
     verbose_name = "history entry"
 
     id = fields.IntegerField(required=True, constant=True)
-    entries = fields.CharArrayField()
+    entries = fields.TextArrayField()
     original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={

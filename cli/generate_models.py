@@ -51,6 +51,7 @@ COMMON_FIELD_CLASSES = {
     "string[]": "CharArrayField",
     "number[]": "NumberArrayField",
     "text": "TextField",
+    "text[]": "TextArrayField",
 }
 
 RELATION_FIELD_CLASSES = {
