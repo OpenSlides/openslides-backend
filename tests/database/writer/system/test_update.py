@@ -395,7 +395,7 @@ def test_list_update(
 
 
 @pytest.mark.parametrize(
-    "action, original_permissions, request_permissions, expected_permissions",
+    "action,original_permissions,request_permissions,expected_permissions",
     [
         pytest.param(
             "add",

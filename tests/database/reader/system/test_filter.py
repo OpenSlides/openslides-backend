@@ -504,11 +504,6 @@ def test_changed_models(
 def test_not_implemented_operators(
     db_connection: Connection, filter_operator: FilterLiteral
 ) -> None:
-    """
-    Tests various combinations of data in changed models and the database.
-    `split` in the param id means that one representation of the same model matches
-    but the other won't.
-    """
     setup_data(db_connection, standard_data)
     with pytest.raises(NotImplementedError) as e:
         with get_new_os_conn() as conn:
