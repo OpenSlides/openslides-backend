@@ -395,7 +395,7 @@ def test_list_update(
 
 
 @pytest.mark.parametrize(
-    "action,original_permissions,request_permissions,expected_permissions",
+    "action,create_event_permissions,update_event_permissions,expected_permissions",
     [
         pytest.param(
             "add",
@@ -418,12 +418,12 @@ def test_list_update(
 )
 def test_list_fields_update_multiple(
     action: Literal["add", "remove"],
-    original_permissions: dict[int, list[str]],
-    request_permissions: dict[int, list[str]],
+    create_event_permissions: dict[int, list[str]],
+    update_event_permissions: dict[int, list[str]],
     expected_permissions: dict[int, list[str]],
 ) -> None:
     data = get_group_base_data()
-    data[0]["events"][0]["fields"]["permissions"] = original_permissions[1]
+    data[0]["events"][0]["fields"]["permissions"] = create_event_permissions[1]
     data[0]["events"] += [
         {
             "type": EventType.Create,
@@ -431,18 +431,18 @@ def test_list_fields_update_multiple(
             "fields": {
                 "name": "2",
                 "meeting_id": 1,
-                "permissions": original_permissions[2],
+                "permissions": create_event_permissions[2],
             },
         },
         {
             "type": EventType.Update,
             "fqid": "group/1",
-            "list_fields": {action: {"permissions": request_permissions[1]}},
+            "list_fields": {action: {"permissions": update_event_permissions[1]}},
         },
         {
             "type": EventType.Update,
             "fqid": "group/2",
-            "list_fields": {action: {"permissions": request_permissions[2]}},
+            "list_fields": {action: {"permissions": update_event_permissions[2]}},
         },
     ]
     with get_new_os_conn() as conn:

@@ -44,7 +44,7 @@ def test_basic(
     assert response == to_be_found_max
 
 
-def test_case_insensitive(
+def test_case_sensitive(
     db_connection: Connection,
 ) -> None:
     data = {

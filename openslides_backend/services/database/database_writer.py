@@ -21,7 +21,6 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationListField,
 )
-from openslides_backend.services.database.interface import FQID_MAX_LEN
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
 )
@@ -46,15 +45,13 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
     Id,
     collection_and_id_from_fqid,
-    collection_from_fqid,
     fqid_from_collection_and_id,
-    id_from_fqid,
 )
-from openslides_backend.shared.typing import JSON, Model, PartialModel
+from openslides_backend.shared.typing import JSON, PartialModel
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
-from .database_reader import DatabaseReader, GetManyRequest
+from .database_reader import DatabaseReader
 from .event_types import EVENT_TYPE
 from .query_helper import SqlQueryHelper
 
@@ -617,27 +614,6 @@ class DatabaseWriter(SqlQueryHelper):
             )
 
         return 0
-
-    # TODO: check if still can be needed. Not used at all currently
-    def get_models_from_database(
-        self, events: list[Event]
-    ) -> dict[FullQualifiedId, Model]:
-        ids_per_collection: dict[Collection, set[Id]] = dict()
-        for event in events:
-            if not event.get("fqid"):
-                continue
-            if len(event["fqid"]) > FQID_MAX_LEN:
-                raise InvalidFormat(
-                    f"fqid {event['fqid']} is too long (max: {FQID_MAX_LEN})"
-                )
-            collection = collection_from_fqid(events[0]["fqid"])
-            ids_per_collection[collection].add(id_from_fqid(event["fqid"]))
-        return {
-            collection: self.database_reader.get_many(
-                [GetManyRequest(collection, sorted(ids))]
-            )
-            for collection, ids in ids_per_collection.items()
-        }
 
     @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> list[Id]:
