@@ -490,7 +490,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             [
                 "Participant removed from group {} in meeting {}",
                 "group/600",
-                "meeting/60",
+                "meeting/1",
                 "Personal data changed",
                 "Committee management changed",
             ],

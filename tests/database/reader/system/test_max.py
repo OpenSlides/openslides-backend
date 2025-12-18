@@ -19,6 +19,7 @@ from tests.database.reader.system.util import setup_data, standard_data
         pytest.param("user", FilterOperator("id", "<", 2), "id", 1, id="single"),
         pytest.param("user", FilterOperator("id", "<=", 2), "id", 2, id="multiple"),
         pytest.param("user", None, "id", 3, id="collection"),
+        pytest.param("user", None, "last_name", "nerad", id="with_empty_fields"),
         pytest.param(
             "committee", FilterOperator("id", "<=", 2), "name", "42", id="text"
         ),
@@ -41,6 +42,22 @@ def test_basic(
             collection, filter_, field, use_changed_models=False
         )
     assert response == to_be_found_max
+
+
+def test_case_sensitive(
+    db_connection: Connection,
+) -> None:
+    data = {
+        "committee": {
+            1: {"name": "Frfr"},
+            2: {"name": "frfr"},
+        }
+    }
+    setup_data(db_connection, data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.max("committee", None, "name")
+    assert response == "Frfr"
 
 
 def test_on_empty_fields(

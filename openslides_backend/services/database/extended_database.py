@@ -489,9 +489,7 @@ class ExtendedDatabase(Database):
                     else:
                         return None
                 case _:
-                    raise BadCodingException(
-                        f"Invalid aggregate function: {method} frfr"
-                    )
+                    raise BadCodingException(f"Invalid aggregate function: {method}")
         else:
             return self.database_reader.aggregate(
                 collection, filter_, method, field_or_star, lock_result
