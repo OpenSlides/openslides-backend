@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
@@ -32,7 +33,7 @@ class MediafileCreateDirectory(MediafileCreateMixin, CreateAction):
         """
         instance = super().update_instance(instance)
         instance["is_directory"] = True
-        instance["create_timestamp"] = round(time.time())
+        instance["create_timestamp"] = datetime.now(ZoneInfo("UTC"))
         collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
             self.handle_meeting_meeting_mediafile_creation(meeting_id, instance)

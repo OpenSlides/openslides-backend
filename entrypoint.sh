@@ -1,9 +1,13 @@
 #!/bin/bash
 
-source scripts/export_datastore_variables.sh
+source scripts/export_database_variables.sh
 
 if [ ! $ANONYMOUS_ONLY ]; then
-  scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
+  meta/dev/scripts/wait-for-database.sh
 fi
+
+printf "Create schema.\n"
+python cli/create_schema.py
+printf "\n"
 
 exec "$@"

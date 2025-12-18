@@ -1,19 +1,20 @@
+from decimal import Decimal
+
 import pytest
 
 from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingUserSetData(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(10)
+
     def test_set_data_with_meeting_user(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                    "structure_level_ids": [31],
-                },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "structure_level/31": {"meeting_id": 10},
+                "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
         test_dict = {
@@ -27,18 +28,15 @@ class MeetingUserSetData(BaseActionTestCase):
         }
         response = self.request("meeting_user.set_data", test_dict)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/5", test_dict)
+        self.assert_model_exists(
+            "meeting_user/5", {**test_dict, "vote_weight": Decimal("1.5")}
+        )
 
     def test_set_data_with_meeting_user_and_id(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                    "structure_level_ids": [31],
-                },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "structure_level/31": {"meeting_id": 10},
+                "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
         test_dict = {
@@ -52,16 +50,18 @@ class MeetingUserSetData(BaseActionTestCase):
         response = self.request("meeting_user.set_data", test_dict)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting_user/5", {"meeting_id": 10, "user_id": 1, **test_dict}
+            "meeting_user/5",
+            {
+                "meeting_id": 10,
+                "user_id": 1,
+                **test_dict,
+                "vote_weight": Decimal("1.5"),
+            },
         )
 
     def test_set_data_with_meeting_user_and_wrong_meeting_id(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
             }
         )
@@ -76,10 +76,6 @@ class MeetingUserSetData(BaseActionTestCase):
     def test_set_data_with_meeting_user_and_wrong_user_id(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
             }
         )
@@ -94,12 +90,7 @@ class MeetingUserSetData(BaseActionTestCase):
     def test_set_data_without_meeting_user(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [],
-                    "structure_level_ids": [31],
-                },
-                "structure_level/31": {"meeting_id": 10},
+                "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
         test_dict = {
@@ -113,15 +104,13 @@ class MeetingUserSetData(BaseActionTestCase):
         }
         response = self.request("meeting_user.set_data", test_dict)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/1", test_dict)
+        self.assert_model_exists(
+            "meeting_user/1", {**test_dict, "vote_weight": Decimal("1.5")}
+        )
 
     def test_set_data_missing_identifiers(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
             }
         )
@@ -138,10 +127,6 @@ class MeetingUserSetData(BaseActionTestCase):
     def test_prevent_zero_vote_weight(self) -> None:
         self.set_models(
             {
-                "meeting/10": {
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [5],
-                },
                 "meeting_user/5": {
                     "user_id": 1,
                     "meeting_id": 10,
@@ -151,17 +136,16 @@ class MeetingUserSetData(BaseActionTestCase):
         )
         response = self.request("meeting_user.set_data", {"vote_weight": "0.000000"})
         self.assert_status_code(response, 400)
-        self.assert_model_exists("meeting_user/5", {"vote_weight": "1.000000"})
+        self.assert_model_exists("meeting_user/5", {"vote_weight": Decimal("1.000000")})
 
     def test_set_data_anonymous_group_id(self) -> None:
-        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"group_ids": [1, 2, 3, 4]},
-                "group/4": {"anonymous_group_for_meeting_id": 1},
+                "meeting/10": {"anonymous_group_id": 4},
+                "group/4": {"name": "groupy", "meeting_id": 10},
             }
         )
-        self.create_user("dummy", [1])
+        self.create_user("dummy", [10])
         response = self.request(
             "meeting_user.set_data",
             {
@@ -176,11 +160,10 @@ class MeetingUserSetData(BaseActionTestCase):
         )
 
     def test_set_data_anonymous_group_id_2(self) -> None:
-        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"group_ids": [1, 2, 3, 4]},
-                "group/4": {"anonymous_group_for_meeting_id": 1},
+                "meeting/10": {"anonymous_group_id": 4},
+                "group/4": {"name": "groupy", "meeting_id": 10},
             }
         )
         user_id = self.create_user("dummy")
@@ -188,8 +171,8 @@ class MeetingUserSetData(BaseActionTestCase):
             "meeting_user.set_data",
             {
                 "user_id": user_id,
-                "meeting_id": 1,
-                "group_ids": [1, 4],
+                "meeting_id": 10,
+                "group_ids": [10, 4],
             },
         )
         self.assert_status_code(response, 400)

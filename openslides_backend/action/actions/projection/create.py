@@ -1,3 +1,7 @@
+from typing import Any
+
+from psycopg.types.json import Jsonb
+
 from ....models.models import Projection
 from ...generics.create import CreateAction
 from ...util.action_type import ActionType
@@ -24,3 +28,9 @@ class ProjectionCreate(CreateAction):
             "history_projector_id",
         ],
     )
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
+        if (options := instance.get("options")) is not None:
+            instance["options"] = Jsonb(options)
+        return instance

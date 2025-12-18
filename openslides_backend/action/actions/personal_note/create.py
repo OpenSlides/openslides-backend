@@ -84,7 +84,9 @@ class PersonalNoteCreateAction(
                 "content_object_id", "=", str(instance["content_object_id"])
             ),
         )
-        exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
+        exists = self.datastore.exists(
+            collection=self.model.collection, filter_=filter_
+        )
         if exists:
             raise ActionException(
                 "(meeting_user_id, content_object_id) must be unique."

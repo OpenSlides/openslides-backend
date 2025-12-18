@@ -1,13 +1,61 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Union
+from dataclasses import dataclass
+from typing import Any, Literal, Union
 
-from datastore.shared.util import And as BaseAnd
-from datastore.shared.util import FilterOperator as BaseFilterOperator
-from datastore.shared.util import Not as BaseNot
-from datastore.shared.util import Or as BaseOr
+from openslides_backend.shared.patterns import FIELD_PATTERN, Field
+
+filter_definitions_schema = {
+    "filter": {
+        "anyOf": [
+            {"$ref": "#/$defs/filter_operator"},
+            {"$ref": "#/$defs/not_filter"},
+            {"$ref": "#/$defs/and_filter"},
+            {"$ref": "#/$defs/or_filter"},
+        ],
+    },
+    "filter_operator": {
+        "type": "object",
+        "properties": {
+            "field": {"type": "string"},
+            "value": {},
+            "operator": {
+                "type": "string",
+                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"],
+            },
+        },
+        "required": ["field", "value", "operator"],
+    },
+    "not_filter": {
+        "type": "object",
+        "properties": {"not_filter": {"$ref": "#/$defs/filter"}},
+        "required": ["not_filter"],
+    },
+    "and_filter": {
+        "type": "object",
+        "properties": {
+            "and_filter": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/filter"},
+            },
+        },
+        "required": ["and_filter"],
+    },
+    "or_filter": {
+        "type": "object",
+        "properties": {
+            "or_filter": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/filter"},
+            },
+        },
+        "required": ["or_filter"],
+    },
+}
+
 
 FilterData = dict[str, Any]
+FilterLiteral = Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%=", "in", "has"]
 
 
 class _FilterBase(ABC):
@@ -18,10 +66,15 @@ class _FilterBase(ABC):
 
 class _ListFilterBase(_FilterBase, ABC):
     def __init__(
-        self, arg: Union["Filter", Iterable["Filter"]], *more_filters: "Filter"
+        self,
+        arg: Union["Filter", Iterable["Filter"]] = [],
+        *more_filters: "Filter",
+        **kwargs: Iterable["Filter"],
     ) -> None:
         self._set_filters(
-            (list(arg) if isinstance(arg, Iterable) else [arg]) + list(more_filters)
+            (list(arg) if isinstance(arg, Iterable) else [arg])
+            + list(more_filters)
+            + list(kwargs.get(self._get_field_name(), []))
         )
 
     def to_dict(self) -> FilterData:
@@ -41,7 +94,22 @@ class _ListFilterBase(_FilterBase, ABC):
         return hash((self._get_field_name(),) + tuple(self._get_filters()))
 
 
-class FilterOperator(_FilterBase, BaseFilterOperator):
+@dataclass
+class FilterOperator(_FilterBase):
+    field: Field
+    operator: FilterLiteral
+    value: Any
+
+    def __post_init__(self) -> None:
+        if (
+            self.field
+            and isinstance(self.field, str)
+            and not FIELD_PATTERN.match(self.field)
+        ):
+            raise Exception(
+                f"Filter field {self.field} does not comply with field format."
+            )
+
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}
 
@@ -49,15 +117,30 @@ class FilterOperator(_FilterBase, BaseFilterOperator):
         return hash((self.field, self.operator, self.value))
 
 
-class And(_ListFilterBase, BaseAnd):
+# We need to explicitly repeat the __hash__ method in the And and Or filter since the dataclass
+# wrapper will set them to None otherwise (see dataclass docs). This could be prevented by setting
+# frozen=True on all dataclasses, but this leads to the custom constructor in _ListFilterBase no
+# longer working.
+
+
+@dataclass(init=False)
+class And(_ListFilterBase):
     and_filter: Sequence["Filter"]
 
+    def __hash__(self) -> int:
+        return super().__hash__()
 
-class Or(_ListFilterBase, BaseOr):
+
+@dataclass(init=False)
+class Or(_ListFilterBase):
     or_filter: Sequence["Filter"]
 
+    def __hash__(self) -> int:
+        return super().__hash__()
 
-class Not(_FilterBase, BaseNot):
+
+@dataclass
+class Not(_FilterBase):
     not_filter: "Filter"
 
     def to_dict(self) -> FilterData:

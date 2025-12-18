@@ -9,19 +9,19 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             "motion_comment_section.create", {"name": "test_Xcdfgee", "meeting_id": 222}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion_comment_section/1")
-        assert model.get("name") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
-        assert model.get("weight") == 10000
-        assert model.get("sequential_number") == 1
+        self.assert_model_exists(
+            "motion_comment_section/1",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "weight": 10000,
+                "sequential_number": 1,
+            },
+        )
 
     def test_create_good_case_all_fields(self) -> None:
         self.create_meeting(222)
-        self.set_models(
-            {
-                "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
-            }
-        )
+        self.set_models({"group/23": {"name": "name_IIwngcUT", "meeting_id": 222}})
         response = self.request(
             "motion_comment_section.create",
             {
@@ -33,19 +33,23 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion_comment_section/1")
-        assert model.get("name") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
-        assert model.get("weight") == 10000
-        assert model.get("read_group_ids") == [23]
-        assert model.get("write_group_ids") == [23]
-        assert model.get("submitter_can_write") is True
+        self.assert_model_exists(
+            "motion_comment_section/1",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "weight": 10000,
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+                "submitter_can_write": True,
+            },
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion_comment_section.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['meeting_id', 'name'] properties",
+        self.assertEqual(
+            "Action motion_comment_section.create: data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 
@@ -60,8 +64,8 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must not contain {'wrong_field'} properties",
+        self.assertEqual(
+            "Action motion_comment_section.create: data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
 
@@ -89,11 +93,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_create_anonymous_may_read(self) -> None:
         self.create_meeting(222)
-        self.set_models(
-            {
-                "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
-            }
-        )
+        self.set_models({"group/23": {"name": "name_IIwngcUT", "meeting_id": 222}})
         anonymous_group = self.set_anonymous(meeting_id=222)
         response = self.request(
             "motion_comment_section.create",
@@ -117,11 +117,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_create_anonymous_may_not_write(self) -> None:
         self.create_meeting(222)
-        self.set_models(
-            {
-                "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
-            }
-        )
+        self.set_models({"group/23": {"name": "name_IIwngcUT", "meeting_id": 222}})
         anonymous_group = self.set_anonymous(meeting_id=222)
         response = self.request(
             "motion_comment_section.create",
@@ -133,7 +129,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "Anonymous group is not allowed in write_group_ids.",
             response.json["message"],
         )
