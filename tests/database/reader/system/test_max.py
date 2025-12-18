@@ -49,15 +49,15 @@ def test_case_sensitive(
 ) -> None:
     data = {
         "committee": {
-            1: {"name": "Committee"},
-            2: {"name": "committee"},
+            1: {"name": "Frfr"},
+            2: {"name": "frfr"},
         }
     }
     setup_data(db_connection, data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         response = extended_database.max("committee", None, "name")
-    assert response == "Committee"
+    assert response == "Frfr"
 
 
 def test_on_empty_fields(
