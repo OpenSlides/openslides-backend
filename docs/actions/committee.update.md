@@ -30,5 +30,5 @@ Re-calculates `committee/all_parent_ids` from the new `parent_id` for this and a
 
 ## Permissions
 - Group A: The user needs the CML `can_manage` or the OML `can_manage_organization`
-- Group B: The user needs the OML `can_manage_organization` or the CML `can_manage` for all target committees that were added/removed from the list
+- Group B: The user needs the OML `can_manage_organization` or the CML `can_manage` for all target committees that were added/removed from the list and not `organization/restrict_edit_forward_committees` to be set.
 - Group C: The user needs the OML `can_manage_organization` or the CML `can_manage` for a committee that is an _ancestor_ of the intended child committee and either the intended parent committee or one of its ancestors. Only organization managers may set this field to `None`.

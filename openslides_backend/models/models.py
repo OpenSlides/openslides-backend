@@ -18,6 +18,7 @@ class Organization(Model):
     reset_password_verbose_errors = fields.BooleanField()
     gender_ids = fields.RelationListField(to={"gender": "organization_id"})
     disable_forward_with_attachments = fields.BooleanField()
+    restrict_edit_forward_committees = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
