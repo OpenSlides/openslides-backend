@@ -23,8 +23,8 @@ from openslides_backend.models.fields import (
     IntegerField,
     RelationField,
     RelationListField,
-    TextField,
     TextArrayField,
+    TextField,
     TimestampField,
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
