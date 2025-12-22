@@ -4,7 +4,7 @@ bleach[css]==6.3.0
 dependency_injector==4.48.3
 fastjsonschema==2.21.2
 gunicorn==23.0.0
-pypdf[crypto]==6.4.2
+pypdf[crypto]==6.5.0
 requests==2.32.5
 roman==5.2
 simplejson==3.20.2
