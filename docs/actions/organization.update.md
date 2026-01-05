@@ -19,6 +19,7 @@
     users_email_body: text;
     require_duplicate_from: boolean;
     disable_forward_with_attachments: boolean;
+    restrict_editing_same_level_committee_admins: boolean;
     
 // Group B
     enable_electronic_voting: boolean;

@@ -12,6 +12,7 @@ from ....permissions.permission_helper import (
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -208,16 +209,42 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                     }
                 )
 
+        check_id: int = instance["id"]
+        if "manager_ids" in instance:
+            data = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "committee",
+                        [check_id],
+                        ["parent_id"],
+                    ),
+                    GetManyRequest(
+                        "organization",
+                        [ONE_ORGANIZATION_ID],
+                        ["restrict_editing_same_level_committee_admins"],
+                    ),
+                ],
+                lock_result=False,
+            )
+            if data["organization"][ONE_ORGANIZATION_ID].get(
+                "restrict_editing_same_level_committee_admins"
+            ):
+                if not (parent_id := data["committee"][check_id].get("parent_id", 0)):
+                    raise MissingPermission(
+                        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                    )
+                check_id = parent_id
+
         if has_committee_management_level(
             self.datastore,
             self.user_id,
-            instance["id"],
+            check_id,
         ):
             return
 
         raise MissingPermission(
             {
                 OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION: 1,
-                CommitteeManagementLevel.CAN_MANAGE: instance["id"],
+                CommitteeManagementLevel.CAN_MANAGE: check_id,
             }
         )

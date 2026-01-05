@@ -632,6 +632,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_group_a_permission_1(self) -> None:
+        """
+        Also tests the same for group d in case of the setting not being set.
+        """
         self.create_data()
         self.set_models(
             {
@@ -648,11 +651,15 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
+                "manager_ids": [20],
             },
         )
         self.assert_status_code(response, 200)
 
     def test_update_group_a_permission_2(self) -> None:
+        """
+        Also tests the same for group d in case of the setting not being set.
+        """
         self.create_data()
         self.set_models(
             {
@@ -673,13 +680,18 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
+                "manager_ids": [20],
             },
         )
         self.assert_status_code(response, 200)
 
     def test_update_group_a_permission_parent_committee_admin(self) -> None:
+        """
+        Also tests the same for group d in case of the setting not being set.
+        """
         self.create_committee(3)
         self.create_committee(4, parent_id=3)
+        bob_id = self.create_user("bob")
         self.set_committee_management_level([3])
         self.set_organization_management_level(None)
         response = self.request(
@@ -689,14 +701,19 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
+                "manager_ids": [1, bob_id],
             },
         )
         self.assert_status_code(response, 200)
 
     def test_update_group_a_permission_grandparent_committee_admin(self) -> None:
+        """
+        Also tests the same for group d in case of the setting not being set.
+        """
         self.create_committee(2)
         self.create_committee(3, parent_id=2)
         self.create_committee(4, parent_id=3)
+        bob_id = self.create_user("bob")
         self.set_committee_management_level([2])
         self.set_organization_management_level(None)
         response = self.request(
@@ -706,6 +723,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "name": "test",
                 "description": "blablabla",
                 "external_id": "test",
+                "manager_ids": [1, bob_id],
             },
         )
         self.assert_status_code(response, 200)
@@ -1334,3 +1352,189 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.test_update_add_forwarding_relations(
             fail_forward_to=True, fail_forward_from=True, fail_remove=True
         )
+
+    def test_update_group_d_no_setting_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                }
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )
+
+    def test_update_group_d_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                },
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_update_group_d_no_permission_with_parent(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                },
+                self.COMMITTEE_FQID: {"parent_id": 2, "all_parent_ids": [2]},
+                "committee/2": {
+                    "child_ids": [self.COMMITTEE_ID],
+                    "all_child_ids": [self.COMMITTEE_ID],
+                },
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 2",
+            response.json["message"],
+        )
+
+    def test_update_group_d_permission_1(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                },
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                },
+                "committee/1": {"organization_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_d_permission_2(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                },
+                "user/1": {
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {
+                    "organization_id": 1,
+                    "manager_ids": [1],
+                },
+            }
+        )
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_update_group_d_permission_2_with_parent(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                },
+                "user/1": {
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {
+                    "parent_id": 2,
+                    "all_parent_ids": [2],
+                    "organization_id": 1,
+                    "manager_ids": [1],
+                },
+                "committee/2": {
+                    "child_ids": [self.COMMITTEE_ID],
+                    "all_child_ids": [self.COMMITTEE_ID],
+                },
+            }
+        )
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {"id": 1, "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 2",
+            response.json["message"],
+        )
+
+    def test_update_group_d_permission_parent_committee_admin(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4, parent_id=3)
+        bob_id = self.create_user("bob")
+        self.set_committee_management_level([3])
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                }
+            }
+        )
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {"id": 4, "manager_ids": [1, bob_id]},
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_d_permission_grandparent_committee_admin(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_committee(4, parent_id=3)
+        bob_id = self.create_user("bob")
+        self.set_committee_management_level([2])
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "restrict_editing_same_level_committee_admins": True
+                }
+            }
+        )
+        self.set_organization_management_level(None)
+        response = self.request(
+            "committee.update",
+            {"id": 4, "manager_ids": [1, bob_id]},
+        )
+        self.assert_status_code(response, 200)

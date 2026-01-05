@@ -39,6 +39,7 @@ class Organization(Model):
     )
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
+    restrict_editing_same_level_committee_admins = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
