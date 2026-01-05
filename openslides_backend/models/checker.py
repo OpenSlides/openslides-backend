@@ -25,6 +25,7 @@ from openslides_backend.models.fields import (
     NumberArrayField,
     RelationField,
     RelationListField,
+    TextArrayField,
     TextField,
     TimestampField,
 )
@@ -141,6 +142,7 @@ checker_map: dict[type[Field], Callable[..., bool]] = {
     FloatField: check_float,
     BooleanField: check_boolean,
     CharArrayField: check_string_list,
+    TextArrayField: check_string_list,
     GenericRelationListField: check_string_list,
     NumberArrayField: check_number_list,
     RelationListField: check_number_list,
