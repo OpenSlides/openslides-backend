@@ -6,7 +6,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
-from ..user.set_present import UserSetPresentAction
+from .set_present import UserSetPresentAction
 
 
 class ConditionalSpeakerCascadeMixinHelper(Action):
