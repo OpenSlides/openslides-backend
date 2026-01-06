@@ -1538,3 +1538,25 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {"id": 4, "manager_ids": [1, bob_id]},
         )
         self.assert_status_code(response, 200)
+
+    def test_update_restrict_forwarding(self) -> None:
+        self.create_committee()
+        self.create_committee(2)
+        cmls = [1, 2]
+        self.set_committee_management_level(cmls)
+        self.set_organization_management_level(None)
+
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"restrict_edit_forward_committees": True}}
+        )
+        data = {
+            "forward_to_committee_ids": [2],
+            "receive_forwardings_from_committee_ids": [1],
+            "id": 2,
+        }
+        response = self.request("committee.update", data)
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "You are not allowed to set 'forward_to_committee_ids' and 'receive_forwardings_from_committee_ids', because it is restricted."
+        )
