@@ -38,6 +38,7 @@ class OrganizationUpdate(
         "users_email_body",
         "require_duplicate_from",
         "disable_forward_with_attachments",
+        "restrict_editing_same_level_committee_admins",
         "restrict_edit_forward_committees",
     )
 
