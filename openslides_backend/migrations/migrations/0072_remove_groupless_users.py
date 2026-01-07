@@ -160,9 +160,7 @@ class Migration(BaseModelMigration):
             for id_, model in musers.items()
             if not model.get("group_ids")
         }
-        speaker_ids_to_delete, events = self.calculate_speakers_to_delete(
-            musers_to_delete
-        )
+        speaker_ids_to_delete = self.calculate_speakers_to_delete(musers_to_delete)
         self.collection_to_model_ids_to_delete: dict[str, set[int]] = defaultdict(set)
         self.collection_to_model_ids_to_delete["speaker"] = set(speaker_ids_to_delete)
 
@@ -192,47 +190,46 @@ class Migration(BaseModelMigration):
                     ]
                 ).get(delete_collection, {})
                 self.migrate_collection(delete_collection, data_to_delete)
-        events.extend(
-            [
-                (
-                    RequestDeleteEvent(fqid)
-                    if fqid in self.fqids_to_delete
-                    else RequestUpdateEvent(
-                        fqid,
-                        fields={
-                            field: None
-                            for field in self.fqid_to_empty_fields.get(fqid, [])
-                        },
-                        list_fields=(
-                            {
-                                "remove": {
-                                    field: [val for val in lis]
-                                    for field, lis in list_data.items()
-                                }
+        events: list[BaseRequestEvent] = [
+            (
+                RequestDeleteEvent(fqid)
+                if fqid in self.fqids_to_delete
+                else RequestUpdateEvent(
+                    fqid,
+                    fields={
+                        field: None for field in self.fqid_to_empty_fields.get(fqid, [])
+                    },
+                    list_fields=(
+                        {
+                            "remove": {
+                                field: [val for val in lis]
+                                for field, lis in list_data.items()
                             }
-                            if (list_data := self.fqid_to_list_removal.get(fqid, {}))
-                            else {}
-                        ),
-                    )
+                        }
+                        if (list_data := self.fqid_to_list_removal.get(fqid, {}))
+                        else {}
+                    ),
                 )
-                for fqid in self.fqids_to_delete.union(
-                    self.fqid_to_empty_fields, self.fqid_to_list_removal
-                )
-            ]
-        )
+            )
+            for fqid in self.fqids_to_delete.union(
+                self.fqid_to_empty_fields, self.fqid_to_list_removal
+            )
+        ]
         return events
 
     def migrate_collection(
         self, collection: str, models_to_delete: dict[int, dict[str, Any]]
     ) -> None:
         self.load_data(collection, models_to_delete)
-        for id_, meeting_user in models_to_delete.items():
-            for field, value in meeting_user.items():
-                if field_data := COLLECTION_TO_MIGRATION_FIELDS[collection].get(field):
-                    if is_list_field(field) and value:
+        for id_, model in models_to_delete.items():
+            for field, value in model.items():
+                if value and (
+                    field_data := COLLECTION_TO_MIGRATION_FIELDS[collection].get(field)
+                ):
+                    if is_list_field(field):
                         for val_id in value:
                             self.handle_id(collection, id_, val_id, field, field_data)
-                    elif value:
+                    else:
                         self.handle_id(collection, id_, value, field, field_data)
 
     def load_data(
@@ -313,10 +310,9 @@ class Migration(BaseModelMigration):
 
     def calculate_speakers_to_delete(
         self, musers_to_delete: dict[int, dict[str, Any]]
-    ) -> tuple[list[int], list[BaseRequestEvent]]:
+    ) -> list[int]:
         """
-        Returns the list of speaker_ids that should be deleted ad pos 0
-        and the list of events for the countdown changes for that deletion at pos 1
+        Returns the list of speaker_ids that should be deleted
         """
         speaker_ids = [
             speaker_id
@@ -348,5 +344,4 @@ class Migration(BaseModelMigration):
             for id_, speaker in speakers.items()
             if speaker.get("begin_time") is None
         ]
-        self.countdown_change_events: list[BaseRequestEvent] = []
-        return delete_speaker_ids, self.countdown_change_events
+        return delete_speaker_ids

@@ -15,6 +15,7 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -130,10 +131,7 @@ class UserUpdate(
         if removed_meeting_id:
             meeting_users = self.datastore.filter(
                 "meeting_user",
-                And(
-                    FilterOperator("user_id", "=", instance["id"]),
-                    FilterOperator("meeting_id", "=", removed_meeting_id),
-                ),
+                get_meeting_user_filter(removed_meeting_id, instance["id"]),
                 [],
             )
             self.execute_other_action(
