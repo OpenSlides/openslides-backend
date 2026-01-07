@@ -143,7 +143,7 @@ class Migration(BaseModelMigration):
     This migration removes meeting_users without groups
     """
 
-    target_migration_index = 73
+    target_migration_index = 75
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         self.end_time = round(time())

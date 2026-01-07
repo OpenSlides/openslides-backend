@@ -678,9 +678,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_forwarding_relations_no_parent(self) -> None:
-        self.test_create_add_forwarding_relations(
-            fail_forward_to=True, has_parent_id=False
-        )
+        self.test_create_add_forwarding_relations(has_parent_id=False)
 
     def test_create_add_forwarding_relations_no_parent_fail_forward_to(self) -> None:
         self.test_create_add_forwarding_relations(
@@ -697,4 +695,28 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     ) -> None:
         self.test_create_add_forwarding_relations(
             fail_forward_to=True, fail_forward_from=True, has_parent_id=False
+        )
+
+    def test_create_restrict_forwarding(self) -> None:
+        self.create_committee()
+        self.create_committee(2)
+        cmls = [1, 2]
+        self.set_committee_management_level(cmls)
+        self.set_organization_management_level(None)
+
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"restrict_edit_forward_committees": True}}
+        )
+        data = {
+            "name": "Committee test 4",
+            "organization_id": 1,
+            "forward_to_committee_ids": [2],
+            "receive_forwardings_from_committee_ids": [1],
+            "parent_id": 1,
+        }
+        response = self.request("committee.create", data)
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "You are not allowed to set 'forward_to_committee_ids' and 'receive_forwardings_from_committee_ids', because it is restricted."
         )

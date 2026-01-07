@@ -267,6 +267,14 @@ class ArrayField(Field):
         return self.extend_schema(super().get_schema(), type=["array", "null"])
 
 
+class TextArrayField(ArrayField):
+    def get_schema(self) -> Schema:
+        items = dict(type="string")
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
+
+
 class CharArrayField(ArrayField):
     def get_schema(self) -> Schema:
         items = dict(type="string", maxLength=256)

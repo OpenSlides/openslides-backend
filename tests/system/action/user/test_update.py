@@ -4688,6 +4688,17 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_multi_delegation_doesnt_break_history(self) -> None:
+        self.create_meeting(1)
+        self.set_user_groups(1, [2])
+        for i in range(2, 68):
+            self.create_user(f"user{i}", group_ids=[3])
+        response = self.request(
+            "user.update",
+            {"id": 1, "meeting_id": 1, "vote_delegations_from_ids": list(range(2, 68))},
+        )
+        self.assert_status_code(response, 200)
+
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     committeePerms: set[int] = set()

@@ -87,7 +87,7 @@ def test_simple(write, finalize, assert_model):
         ]
     )
 
-    finalize("0072_remove_groupless_users")
+    finalize("0074_remove_groupless_users")
 
     assert_model("user/1", {"meeting_ids": [1], "meeting_user_ids": []})
     assert_model(
@@ -135,7 +135,7 @@ def test_only_deleted_target_meeting_users(write, finalize, assert_model):
         },
     )
 
-    finalize("0072_remove_groupless_users")
+    finalize("0074_remove_groupless_users")
 
     assert_model("user/1", {"meeting_ids": [], "meeting_user_ids": []})
     assert_model(
@@ -177,7 +177,7 @@ def test_no_intact_target_models(write, finalize, assert_model):
         },
     )
 
-    finalize("0072_remove_groupless_users")
+    finalize("0074_remove_groupless_users")
 
     assert_model("user/1", {"meeting_ids": [], "meeting_user_ids": []})
     assert_model(
@@ -204,7 +204,7 @@ def test_no_groupless_meeting_users(write, finalize, assert_model):
         ]
     )
 
-    finalize("0072_remove_groupless_users")
+    finalize("0074_remove_groupless_users")
 
     for fqid, data in test_data.items():
         assert_model(
@@ -831,7 +831,7 @@ def test_migration_complex(write, finalize, assert_model):
         ]
     )
 
-    finalize("0072_remove_groupless_users")
+    finalize("0074_remove_groupless_users")
 
     assert_model(
         "meeting/1",
