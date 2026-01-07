@@ -498,11 +498,10 @@ class MotionCreateActionTest(BaseActionTestCase):
             self.set_models(additional_data)
         return user_id
 
-    def test_create_no_permission_submitter(self) -> None:
+    def test_create_no_permission_additional_submitter(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
-        Also additionally for submitter_ids User.CAN_SEE.
+        Motion.CAN_MANAGE_METADATA when sending additional_submitter.
         """
         self.set_user_groups(1, [3])
         user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
@@ -514,12 +513,40 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "test",
                 "reason": "test",
                 "additional_submitter": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_permission_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE,
+        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_meeting_user_ids aside from himself.
+        """
+        self.set_user_groups(1, [3])
+        user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
                 "submitter_meeting_user_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Missing Permission: user.can_see"
+            "You are not allowed to perform action motion.create. Missing permissions: Permission user.can_see in meeting 1 and Permission motion.can_manage_metadata in meeting 1"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
@@ -550,7 +577,38 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Missing Permission: user.can_see"
+            "You are not allowed to perform action motion.create. Missing permission: Permission user.can_see in meeting 1"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_motion_can_manage_metadata_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE,
+        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_ids.
+        """
+        self.set_user_groups(1, [3])
+        user_id = self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.User.CAN_SEE]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "submitter_meeting_user_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Missing permission: Permission motion.can_manage_metadata in meeting 1"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
@@ -614,7 +672,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Missing Permission: user.can_see"
+            "You are not allowed to perform action motion.create. Missing permissions: Permission user.can_see in meeting 1 and Permission motion.can_manage_metadata in meeting 1"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")

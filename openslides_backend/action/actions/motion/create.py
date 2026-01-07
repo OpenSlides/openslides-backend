@@ -148,6 +148,10 @@ class MotionCreate(
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
+        extra_submitter_perms: list[Permission] = [
+            Permissions.User.CAN_SEE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        ]
         if (
             (submitter_mu_ids := instance.get("submitter_meeting_user_ids"))
             and (
@@ -162,14 +166,22 @@ class MotionCreate(
                     ).get("id")
                 )
             )
-            and not has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.User.CAN_SEE,
-                instance["meeting_id"],
+            and len(
+                missing_perms := {
+                    perm: instance["meeting_id"]
+                    for perm in extra_submitter_perms
+                    if not has_perm(
+                        self.datastore,
+                        self.user_id,
+                        perm,
+                        instance["meeting_id"],
+                    )
+                }
             )
         ):
-            raise MissingPermission(Permissions.User.CAN_SEE)
+            raise MissingPermission(
+                {key: val for key, val in missing_perms.items()}, use_and=True
+            )
 
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
         can_manage_whitelist = set()
@@ -179,7 +191,6 @@ class MotionCreate(
             Permissions.Mediafile.CAN_SEE: ["attachment_mediafile_ids"],
             Permissions.Motion.CAN_MANAGE_METADATA: [
                 "additional_submitter",
-                "submitter_meeting_user_ids",
             ],
         }
         for perm, fields in permission_to_fields.items():
@@ -213,6 +224,7 @@ class MotionCreate(
                     "workflow_id",
                     "id",
                     "meeting_id",
+                    "submitter_meeting_user_ids",
                 ]
             )
             if instance.get("lead_motion_id"):
