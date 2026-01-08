@@ -1,15 +1,17 @@
+import string
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
 
-from psycopg import Cursor
+from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.migrations.migration_helper import (
+    OLD_TABLES,
     MigrationHelper,
     MigrationState,
 )
@@ -188,7 +190,7 @@ class Sql_helper:
         field1 = field.write_fields[1]
         field2 = field.write_fields[2]
 
-        intermediate_table = HelperGetNames.get_table_name(intermediate_table)
+        intermediate_table = HelperGetNames.get_table_name(intermediate_table, True)
 
         # 1) Add sql command
         for data_item in values:
@@ -256,11 +258,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         n/a
     Returns:
         n/a
-    Commentary:
-        TODO: At the moment the iteration for the intermediate table (L.321) is very dirty
-        as it iterates over a potentially pretty big list (e.g. some known customers with lots of data).
-        Thus it is worth the idea to set the intermediate tables to INITIALLY DEFERRED as well
-        so they can be run immediately. This is a measure we already took for default tables.
     """
     Sql_helper.cursor = curs
 
@@ -275,16 +272,26 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
 
     insert_intermediate_t_commands = []
 
+    for table in OLD_TABLES:
+        sql.SQL(
+            "CREATE TRIGGER {trigger_name} BEFORE INSERT OR UPDATE OR DELETE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();"
+        ).format(
+            trigger_name=sql.SQL(f"tr_lock_table_{table}"),
+            table=sql.Identifier(table),
+        )
+
     result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
     assert result
     models_count = result["count"]
+    found_collections = set()
     # 1) Chunkwise loop trough all data_rows for the models table
     for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
         data_chunk = Sql_helper.get_next_data_row_chunk()
 
         for data_row in data_chunk:
             collection = data_row["fqid"].split("/")[0]
-            table_name = HelperGetNames.get_table_name(collection)
+            found_collections.add(collection)
+            table_name = HelperGetNames.get_table_name(collection, True)
             data = data_row["data"]
 
             if collection == "action_worker":
@@ -350,18 +357,38 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     for command, values in insert_intermediate_t_commands:
         curs.execute(command, values)
 
-    # 5) UPDATE id sequences
-    for collection in ORIGIN_COLLECTIONS:
-        curs.execute(
-            f"SELECT setval('{collection}_t_id_seq', (SELECT MAX(id) FROM {collection}_t));"
-        )
+    # 5) UPDATE sequences
+    for collection in found_collections:
+        table = HelperGetNames.get_table_name(collection)
+        curs.execute(f"SELECT setval('{table}_id_seq', (SELECT MAX(id) FROM {table}));")
+        if model_registry[collection]().try_get_field("sequential_number"):
+            results = curs.execute(
+                sql.SQL(
+                    "SELECT MAX(sequential_number), meeting_id FROM {table} GROUP BY meeting_id;"
+                ).format(
+                    table=sql.Identifier(
+                        HelperGetNames.get_table_name(collection, True)
+                    )
+                )
+            ).fetchall()
+            SEQ_NAME = string.Template(
+                table + "_meeting_id${meeting_id}_sequential_number_seq"
+            )
+            for result in results:
+                seq_name = SEQ_NAME.substitute({"meeting_id": result["meeting_id"]})
+                curs.execute(sql.SQL(f"CREATE SEQUENCE IF NOT EXISTS {seq_name};"))
+                curs.execute(
+                    sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
+                        sequence_name=sql.SQL(seq_name),
+                        maximum=result["max"],
+                    )
+                )
 
     # clear replace tables as this migration writes the tables directly
     MigrationHelper.set_database_migration_info(
         curs,
         100,
         MigrationState.FINALIZATION_REQUIRED,
-        replace_tables={},
     )
 
 
@@ -372,18 +399,6 @@ def cleanup(curs: Cursor[DictRow]) -> None:
     Input:
         cursor
     """
-    OLD_TABLES = (
-        "models",
-        "events",
-        "positions",
-        "id_sequences",
-        "collectionfields",
-        "events_to_collectionfields",
-        "migration_keyframes",
-        "migration_keyframe_models",
-        "migration_events",
-        "migration_positions",
-    )
     for table_name in OLD_TABLES:
         curs.execute(f"DROP TABLE {table_name} CASCADE;")
 

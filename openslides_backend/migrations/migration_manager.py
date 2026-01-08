@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from io import StringIO
 from threading import Thread
-from typing import Any
+from typing import Any, cast
 
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
@@ -64,7 +64,7 @@ class MigrationManager:
 
     def get_migration_result(self) -> dict[str, Any]:
         """
-        Closes the migration threads io stream.
+        Gets the 'status' and migration threads 'output' string. 'exception' if an exception occured.
         """
         state = MigrationHelper.get_migration_state(self.cursor)
         result = {"status": str(state)}
@@ -73,9 +73,11 @@ class MigrationManager:
         ):
             # The last line (index -1) will always be an empty string.
             last_line = output.split("\n")[-2]
-            MigrationHelper.write_line(last_line)
             result["output"] = f"{last_line}\n"
-        if MigrationHelper.migrate_thread_exception:
+        if state in (
+            MigrationState.MIGRATION_FAILED,
+            MigrationState.FINALIZATION_FAILED,
+        ):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
         return result
 
@@ -92,7 +94,7 @@ class MigrationManager:
         def count(table: str, curs: Cursor[DictRow]) -> int:
             if current_migration_index == LAST_NON_REL_MIGRATION:
                 if table.endswith("_m"):
-                    # initial migration uses the original table_t instead of shadow table_m
+                    # initial migration uses the original table_t instead of migration table_m
                     # to count migrated models.
                     statement_part = sql.SQL("{table}").format(
                         table=sql.Identifier(table[:-2] + "_t")
@@ -121,12 +123,12 @@ class MigrationManager:
             self.cursor, migration_indices
         )
         unmigrated_collections = {
-            collection: shadow["table"]
+            collection: cast(str, r_tables["table"])
             for mi in migration_indices
             if mi > current_migration_index
             if state_per_mi[mi]
             in (MigrationState.MIGRATION_REQUIRED, MigrationState.MIGRATION_RUNNING)
-            for collection, shadow in MigrationHelper.get_replace_tables(mi).items()
+            for collection, r_tables in MigrationHelper.get_replace_tables(mi).items()
         }
         stats = {
             collection: {
@@ -175,14 +177,27 @@ class MigrationManager:
                 self.cursor = curs
                 if command == MigrationCommand.PROGRESS:
                     return self.handle_progress_command()
-                if command == "stats":
+                elif command == MigrationCommand.STATS:
                     return {"stats": self.get_stats()}
                 self.assert_valid_migration_index(curs)
 
-                state = MigrationHelper.get_migration_state(curs)
-                if state == MigrationState.MIGRATION_RUNNING:
+                match MigrationHelper.get_migration_state(curs):
+                    case MigrationState.MIGRATION_RUNNING:
+                        process = "Migration"
+                    case MigrationState.FINALIZATION_RUNNING:
+                        process = "Finalization"
+                    case (
+                        MigrationState.MIGRATION_FAILED
+                        | MigrationState.FINALIZATION_FAILED
+                    ):
+                        raise MigrationException(
+                            f"Migration in a failed state. Reset before trying {command} again."
+                        )
+                    case _:
+                        process = ""
+                if process:
                     raise View400Exception(
-                        "Migration is running, only 'stats' command is allowed."
+                        f"{process} is running, only 'stats' command is allowed."
                     )
 
                 verbose = payload.get("verbose", False)
@@ -194,9 +209,11 @@ class MigrationManager:
                     thread.start()
                     thread.join(THREAD_WAIT_TIME)
                     if thread.is_alive():
+                        # Read isolation would prevent seeing the newest status otherwise.
+                        self.cursor.connection.commit()
                         # Migration still running. Report current progress and return
                         return {
-                            "status": MigrationState.MIGRATION_RUNNING,
+                            "status": MigrationHelper.get_migration_state(self.cursor),
                             "output": MigrationHelper.migrate_thread_stream.getvalue(),
                         }
                     else:
@@ -229,3 +246,14 @@ class MigrationManager:
         except Exception as e:
             MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)
+            # TODO catch this on a lower level and set it for specific faulty migration index
+            with get_new_os_conn() as conn:
+                with conn.cursor() as curs:
+                    relevant_mis = MigrationHelper.get_unfinalized_indices(curs)
+                    match command:
+                        case MigrationCommand.MIGRATE:
+                            state = MigrationState.MIGRATION_FAILED
+                        case MigrationCommand.FINALIZE:
+                            state = MigrationState.FINALIZATION_FAILED
+                    for mi in relevant_mis:
+                        MigrationHelper.set_database_migration_info(curs, mi, state)

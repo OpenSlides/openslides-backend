@@ -10,11 +10,25 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from openslides_backend.migrations.core.exceptions import MigrationException
+from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 
 from ..shared.exceptions import ActionException
+
+OLD_TABLES = (
+    "models",
+    "events",
+    "positions",
+    "id_sequences",
+    "collectionfields",
+    "events_to_collectionfields",
+    "migration_keyframes",
+    "migration_keyframe_models",
+    "migration_events",
+    "migration_positions",
+)
 
 
 class MigrationState(StrEnum):
@@ -112,6 +126,20 @@ class MigrationHelper:
                         )
 
     @staticmethod
+    def get_unfinalized_indices(curs: Cursor[DictRow]) -> list[int]:
+        """
+        Gets all indices stored in the version table.
+        """
+        if tmp := curs.execute(
+            "SELECT migration_index FROM version WHERE migration_state != %s;",
+            (MigrationState.FINALIZED,),
+        ).fetchall():
+            return [elem.get("migration_index", 0) for elem in tmp]
+        raise MigrationException(
+            "No migration index could not be acquired from database."
+        )
+
+    @staticmethod
     def get_indices_from_database(curs: Cursor[DictRow]) -> list[int]:
         """
         Gets all indices stored in the version table.
@@ -188,7 +216,7 @@ class MigrationHelper:
         curs: Cursor[DictRow],
         migration_index: int,
         state: str,
-        replace_tables: dict[str, dict[str, str]] | None = None,
+        replace_tables: dict[str, dict[str, str | list[str]]] | None = None,
     ) -> None:
         """
         Overwrites the databases migration info in the version table at the given migration index and commits the transaction.
@@ -284,16 +312,37 @@ class MigrationHelper:
         raise MigrationException("No such State implemented.")
 
     @staticmethod
-    def get_replace_tables(migration_number: int) -> dict[str, dict[str, str]]:
+    def get_public_tables(curs: Cursor[DictRow]) -> list[str]:
+        """Returns all tables of the schema 'public' except for version and notify table"""
+        curs.execute(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
+        ).fetchone()
+        return [
+            name
+            for row in curs.fetchall()
+            if (name := row["tablename"])
+            not in ("version", "os_notify_log_t", "truncate_tables")
+        ]
+
+    @staticmethod
+    def get_replace_tables(
+        migration_number: int,
+    ) -> dict[str, dict[str, str | list[str]]]:
         """
-        Returns the replace tables mapping origin table to its shadow copy.
+        Returns the replace tables mapping origin table to its migration copy.
         """
-        if migration_number == 100:
-            return {}
         module_name = MigrationHelper.migrations[migration_number]
         migration_module = import_module(f"{MODULE_PATH}{module_name}")
         return {
-            col: {"table": col + "_m", "view": col + "vm"}
+            col: {
+                "table": col + "_m",
+                "view": col + "vm",
+                "im_tables": [
+                    field.write_fields[0]
+                    for field in model_registry[col]().get_relation_fields()
+                    if field.write_fields
+                ],
+            }
             for col in migration_module.ORIGIN_COLLECTIONS
         }
 
@@ -303,7 +352,7 @@ class MigrationHelper:
     ) -> dict[str, Any]:
         """
         Returns the migration indexes replace tables, mapping the collection to its
-        shadow copies, stored in the database.
+        migration copies, stored in the database.
         """
         if replace_tables := curs.execute(
             f"SELECT replace_tables FROM version WHERE migration_index = {migration_number};"
@@ -316,7 +365,7 @@ class MigrationHelper:
         curs: Cursor[DictRow],
     ) -> tuple[dict[str, Any], list[int]]:
         """
-        Returns the replace tables, mapping the collection to its shadow copies,
+        Returns the replace tables, mapping the collection to its migration copies,
         stored in the database unified for all -non- migrated indices.
         Returns the list of used (unmigrated) migration indices as a side product.
         """
@@ -328,9 +377,9 @@ class MigrationHelper:
         ]
         return (
             {
-                collection: shadows
+                collection: r_tables
                 for migration_number in relevant_mis
-                for collection, shadows in MigrationHelper.get_replace_tables_from_database(
+                for collection, r_tables in MigrationHelper.get_replace_tables_from_database(
                     curs, migration_number
                 ).items()
             },

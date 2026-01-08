@@ -371,16 +371,21 @@ class Attribute(Node):
                 else:
                     write_fields = (table_name, field1, field2, [])
             elif "generic-relation-list" in (field_type, foreign_type):
-                write_fields = self.get_write_fields_for_generic(own, foreign_fields)
+                write_fields = self.get_write_fields_for_generic(
+                    own, foreign_fields, primary
+                )
 
         assert error == "", error
 
         return is_view_field, primary, write_fields
 
     def get_write_fields_for_generic(
-        self, own: TableFieldType, foreign_fields: list[TableFieldType]
+        self, own: TableFieldType, foreign_fields: list[TableFieldType], primary: bool
     ) -> tuple[str, str, str, list[str]] | None:
-        table_name = HelperGetNames.get_gm_table_name(own)
+        if primary:
+            table_name = HelperGetNames.get_gm_table_name(own)
+        else:
+            table_name = HelperGetNames.get_gm_table_name(foreign_fields[0])
         field1 = f"{own.table}_{own.ref_column}"
         field2 = own.intermediate_column
         return (

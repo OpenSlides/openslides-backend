@@ -1,18 +1,18 @@
 # BUILTIN IMPORTS
 import json
 import os
+from collections.abc import Callable
 from copy import deepcopy
 from datetime import datetime, timedelta
 from importlib import import_module
 from io import StringIO
+from threading import Lock
 from time import sleep
-from typing import cast
+from typing import Any, cast
 from unittest import TestCase
-from unittest.mock import _patch
+from unittest.mock import Mock, _patch, patch
 
-import pytest
-from psycopg.errors import UndefinedTable
-
+from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
@@ -66,6 +66,42 @@ class BaseMigrationTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
     auth_mockers: dict[str, _patch]
+
+    def wait_for_lock(
+        self,
+        wait_lock: Lock,
+        indicator_lock: Lock,
+        method_mock: Callable[
+            [],
+            tuple[
+                str,
+                str,
+                str,
+                str,
+                str,
+                list[str],
+                str,
+                str,
+                str,
+                str,
+                str,
+                str,
+                list[str],
+            ],
+        ],
+    ) -> Callable[[], None]:
+        """
+        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
+        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
+        be in locked state.
+        """
+
+        def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
+            indicator_lock.release()
+            wait_lock.acquire()
+            return method_mock._mock_wraps(*args, **kwargs)
+
+        return _wait_for_lock
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -231,12 +267,36 @@ class BaseMigrationTestCase(TestCase):
                 )
                 assert cur.fetchone() is not None
 
-        # 6.5) Deleted old table schema
-        for table_name in OLD_TABLES:
-            with os_conn_pool.connection() as conn:
-                with conn.cursor() as cur:
-                    with pytest.raises(UndefinedTable):
-                        cur.execute(f"SELECT * FROM {table_name};")
+                # 6.4) Set id sequences correctly
+                assert (
+                    cur.execute("SELECT last_value FROM gender_t_id_seq;").fetchone()[
+                        "last_value"
+                    ]
+                    == 4
+                )
+
+                # 6.4.1) Set sequential_number sequences correctly
+                assert (
+                    cur.execute(
+                        "SELECT last_value FROM projector_t_meeting_id1_sequential_number_seq;"
+                    ).fetchone()["last_value"]
+                    == 2
+                )
+
+                # 6.5) Deleted old table schema
+                for table_name in OLD_TABLES:
+                    cur.execute(
+                        f"SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{table_name}';"
+                    )
+                    assert cur.fetchone() is None
+
+                # 6.6) Recreated constraints
+                assert (
+                    cur.execute(
+                        "SELECT 1 FROM information_schema.constraint_column_usage where constraint_name = 'personal_note_t_meeting_user_id_fkey';"
+                    ).fetchone()
+                    is None
+                )
         # END TEST CASES
 
     def assert_index_migrated(self) -> None:
@@ -327,7 +387,7 @@ class BaseMigrationTestCase(TestCase):
                     MigrationHelper.get_migration_state(curs)
                     != MigrationState.FINALIZATION_REQUIRED
                 ):
-                    sleep(1)
+                    sleep(0.1)
                     curs.connection.commit()
         self.assert_index_migrated()
 
@@ -339,13 +399,17 @@ class BaseMigrationTestCase(TestCase):
                     MigrationHelper.get_migration_state(curs)
                     != MigrationState.FINALIZED
                 ):
-                    sleep(1)
+                    sleep(0.1)
                     curs.connection.commit()
 
         self.assert_index_finalized()
         self.check_data()
 
-    def test_migration_route_0(self) -> None:
+    @patch(
+        "meta.dev.src.generate_sql_schema.GenerateCodeBlocks.generate_the_code",
+        wraps=GenerateCodeBlocks.generate_the_code,
+    )
+    def test_migration_route_0(self, method_mock: Mock) -> None:
         """
         Purpose:
             Default method used for the test framework.(?)
@@ -362,9 +426,16 @@ class BaseMigrationTestCase(TestCase):
             Also it is tested that the new tables are created on top of an old basis and the old tables are deleted.
             It should be only used like this in this migration test since it leads to a performance problem
             once the actual connection context is entered the first time after the database was dropped and recreated.
-            # TODO store a recent copy of example_json before this gets merged.
+            # TODO store a recent copy of example_json before this gets merged into main.
         """
 
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        method_mock.side_effect = self.wait_for_lock(
+            wait_lock, indicator_lock, method_mock
+        )
         # 5) Call data_manipulation of module
         # Future migrations do not need to test all commands. Finalize should be sufficient. Or call MigrationHelper().run_migrations() directly.
 
@@ -420,10 +491,11 @@ class BaseMigrationTestCase(TestCase):
             },
         }
         response = self.request("migrate")
+        indicator_lock.acquire()
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\n",
+            "output": "started\n",
         }
 
         response = self.request("stats")
@@ -431,7 +503,7 @@ class BaseMigrationTestCase(TestCase):
             "success": True,
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
-                "output": "161 of 161 models written to tables.\n",
+                "output": "started\n",
                 "current_migration_index": LAST_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -446,7 +518,8 @@ class BaseMigrationTestCase(TestCase):
             "status": MigrationState.FINALIZATION_REQUIRED,
             "output": "finished\n",
         }:
-            sleep(1)
+            wait_lock.release()
+            sleep(0.1)
             if datetime.now() - start > max_time:
                 raise Exception(
                     f"The migration doesn't finish in {max_time}. {response}"
@@ -454,20 +527,23 @@ class BaseMigrationTestCase(TestCase):
         self.assert_index_migrated()
 
         response = self.request("finalize")
+        indicator_lock.acquire()
         assert response.json == {
             "success": True,
-            "status": MigrationState.FINALIZATION_REQUIRED,
+            "status": MigrationState.FINALIZATION_RUNNING,
+            "output": "finalization started\n",
         }
 
         start = datetime.now()
         while (response := self.request("migrate").json) == {
             "success": False,
-            "message": "Migration is running, only 'stats' command is allowed",
+            "message": "Finalization is running, only 'stats' command is allowed.",
         }:
-            sleep(1)
+            wait_lock.release()
+            sleep(0.1)
             if datetime.now() - start > max_time:
                 raise Exception(
-                    f"The migration doesn't finish in {max_time}. {response}"
+                    f"The finalization doesn't finish in {max_time}. {response}"
                 )
         assert response == {
             "success": True,
@@ -503,7 +579,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\n",
+            "output": "started\n",
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
@@ -513,7 +589,7 @@ class BaseMigrationTestCase(TestCase):
             "success": True,
             "status": MigrationState.FINALIZED,
         }:
-            sleep(1)
+            sleep(0.1)
             if datetime.now() - start > max_time:
                 raise Exception(
                     f"The migration doesn't finish in {max_time}. {response}"

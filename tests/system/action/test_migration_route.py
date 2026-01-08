@@ -57,6 +57,7 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
 
 
 class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
+    # TODO test all migration states
     def test_stats(self) -> None:
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
@@ -112,7 +113,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         """
 
         def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
-            MigrationHelper.write_line("start")
+            MigrationHelper.write_line("started")
             with self.connection.cursor() as curs:
                 MigrationHelper.set_database_migration_info(
                     curs, self.backend_migration_index, MigrationState.MIGRATION_RUNNING
@@ -127,7 +128,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
                     self.backend_migration_index,
                     MigrationState.FINALIZED,
                 )
-            MigrationHelper.write_line("finish")
+            MigrationHelper.write_line("finished")
 
         return _wait_for_lock
 
@@ -143,18 +144,18 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         indicator_lock.acquire()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "start\n"
+        assert response.json["output"] == "started\n"
 
         wait_lock.release()
         self.wait_for_migration_thread()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "finish\n"
+        assert response.json["output"] == "finished\n"
 
         # check that the output is preserved for future progress requests
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "finish\n"
+        assert response.json["output"] == "finished\n"
 
     def test_stats_during_migration(self, execute_command: Mock) -> None:
         # TODO this test is very hard wired and prone to break with the next migration.
@@ -185,7 +186,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "start\n",
+            "output": "started\n",
             "current_migration_index": LAST_NON_REL_MIGRATION,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {"organization": {"count": 1, "migrated": 1}},
@@ -197,7 +198,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finish\n",
+            "output": "finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -209,7 +210,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finish\n",
+            "output": "finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -247,14 +248,14 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["output"] == "start\n"
+        assert response.json["output"] == "started\n"
 
         wait_lock.release()
         self.wait_for_migration_thread(True)
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["output"] == "start\n"
+        assert response.json["output"] == "started\n"
         assert response.json["exception"] == "test"
 
 
