@@ -4699,6 +4699,36 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
+    def test_lock_out_then_remove_from_meeting_then_set_superadmin(self) -> None:
+        self.create_meeting(10)
+        bob_id = self.create_user("bob", group_ids=[10])
+        response = self.request(
+            "user.update",
+            {"id": bob_id, "meeting_id": 10, "locked_out": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/1", {"locked_out": True, "user_id": bob_id, "meeting_id": 10}
+        )
+        response = self.request(
+            "user.update",
+            {"id": bob_id, "meeting_id": 10, "group_ids": []},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting_user/1")
+        response = self.request(
+            "user.update",
+            {
+                "id": bob_id,
+                "organization_management_level": "superadmin",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"user/{bob_id}",
+            {"username": "bob", "organization_management_level": "superadmin"},
+        )
+
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
     committeePerms: set[int] = set()
