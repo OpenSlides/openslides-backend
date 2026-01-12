@@ -63,6 +63,7 @@ class PollCreateAction(
             "global_no",
             "global_abstain",
             "onehundred_percent_base",
+            "required_majority",
             "votesvalid",
             "votesinvalid",
             "votescast",
