@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - 'feature/**'
-      - 'staging/**'
+      - 'staging**'
   merge_group:
     types: [checks_requested]
 
