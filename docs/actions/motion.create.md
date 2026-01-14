@@ -26,7 +26,7 @@
 
 // Optional special fields, see notes below
     workflow_id: Id;
-    submitter_ids: Id[];
+    submitter_meeting_user_ids: Id[];
 
 // Non-model fields for customizing the agenda item creation, optional
     agenda_create: boolean;

@@ -559,7 +559,7 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_no_user_can_see_submitter(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA, User.CAN_SEE when sending submitter_ids.
+        Motion.CAN_MANAGE_METADATA, User.CAN_SEE when sending submitter_meeting_user_ids.
         """
         self.set_user_groups(1, [3])
         user_id = self.setup_permission_test(
@@ -590,7 +590,7 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_no_motion_can_manage_metadata_submitter(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE,
-        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_ids.
+        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_meeting_user_ids.
         """
         self.set_user_groups(1, [3])
         user_id = self.setup_permission_test(
@@ -651,8 +651,8 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_no_permission_additional_submitter_enabled(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
-        Also additionally for submitter_ids User.CAN_SEE.
+        Motion.CAN_MANAGE_METADATA when sending submitter_meeting_user_ids and additional_submitter.
+        Also additionally for submitter_meeting_user_ids User.CAN_SEE.
         """
         self.set_user_groups(1, [3])
         user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
