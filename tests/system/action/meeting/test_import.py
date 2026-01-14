@@ -2011,6 +2011,7 @@ class MeetingImport(BaseActionTestCase):
         assert "last_login" not in user
 
     def test_merge_meeting_users_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/14": {
@@ -2027,7 +2028,9 @@ class MeetingImport(BaseActionTestCase):
                     "personal_note_ids": [1],
                     "motion_submitter_ids": [],
                     "vote_delegated_to_id": 1,
+                    "group_ids": [1],
                 },
+                "group/1": {"meeting_user_ids": [14]},
                 "personal_note/1": {
                     "meeting_id": 1,
                     "content_object_id": None,
@@ -2089,6 +2092,7 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [1],
                         "motion_submitter_ids": [],
                         "vote_delegated_to_id": 13,
+                        "group_ids": [2],
                     },
                     "13": {
                         "id": 13,
@@ -2097,12 +2101,14 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [2],
                         "motion_submitter_ids": [],
                         "vote_delegations_from_ids": [12],
+                        "group_ids": [2],
                     },
                 },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12, 13]
+        request_data["meeting"]["group"]["2"]["meeting_user_ids"] = [12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(

@@ -198,7 +198,7 @@ class MeetingUser(Model):
         to={"chat_message": "meeting_user_id"}, equal_fields="meeting_id"
     )
     group_ids = fields.RelationListField(
-        to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
+        to={"group": "meeting_user_ids"}, required=True, equal_fields="meeting_id"
     )
     structure_level_ids = fields.RelationListField(
         to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"

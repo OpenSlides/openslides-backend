@@ -2178,7 +2178,11 @@ class MeetingClone(BaseActionTestCase):
             ]
         )
         self.set_models(
-            {"meeting_user/1": {"group_ids": []}, "group/2": {"meeting_user_ids": []}}
+            {
+                "meeting_user/1": {"group_ids": [1]},
+                "group/1": {"meeting_user_ids": [1, 2, 3]},
+                "group/2": {"meeting_user_ids": []},
+            }
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
@@ -2229,7 +2233,8 @@ class MeetingClone(BaseActionTestCase):
         )
         self.set_models(
             {
-                "meeting_user/1": {"group_ids": None},
+                "meeting_user/1": {"group_ids": [1]},
+                "group/1": {"meeting_user_ids": [1, 2, 3]},
                 "group/2": {"meeting_user_ids": None},
             }
         )
@@ -2400,6 +2405,7 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_create": False,
                 "agenda_type": AgendaItem.INTERNAL_ITEM,
                 "agenda_duration": 60,
+                "submitter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
