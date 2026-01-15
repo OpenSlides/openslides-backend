@@ -3,19 +3,22 @@ version: "3"
 services:
     backend:
         build:
+            context: ..
             args:
-                - REQUIREMENTS_FILE=requirements_development_local.txt
+                REQUIREMENTS_FILE_OVERWRITE: "requirements_development_local.txt"
+                CONTEXT: "dev"
         volumes:
             - ../../openslides-datastore-service/:/datastore-service
-            - ../../openslides-auth-service/auth/libraries/pip-auth/:/authlib
+            - ../../openslides-auth-service/auth/libraries/pip-auth/:/osauthlib
         environment:
-            - PYTHONPATH=/app:/datastore-service:/authlib
-            - MYPYPATH=/app:/datastore-service:/authlib
+            - PYTHONPATH=/app:/datastore-service:/osauthlib
+            - MYPYPATH=/app:/datastore-service:/osauthlib
     datastore-writer:
         build:
             context: ../../openslides-datastore-service/
-            dockerfile: Dockerfile.dev
+            target: "dev"
             args:
+                CONTEXT: "dev"
                 MODULE: "writer"
                 PORT: "9011"
         image: openslides-datastore-writer-dev
@@ -34,6 +37,10 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
+            args:
+                CONTEXT: "prod"
     auth:
         build:
             context: ../../openslides-auth-service
+            args:
+                CONTEXT: "prod"

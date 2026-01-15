@@ -15,6 +15,7 @@
     email: string;
     member_number: string;
     default_vote_weight: decimal(6);
+    external: boolean;
 
 // Group B
     number: string;
@@ -48,13 +49,19 @@
 // Group H
     saml_id: boolean;
 
+// Group I
+    home_committee_id: Id;
+
+// Group J
+    external: boolean;
+
 // Only internal
     forwarding_committee_ids
 }
 ```
 
 ## Action
-Creates a user. 
+Creates a user.
 * The field `organization_management_level` can only be set as high as the request users `organization_management_level` and defaults to `null`.
 * If no `default_password` is given a random one is generated. The default password is hashed via the auth service and the hash is saved within `password`. A given `default_password`is also stored as hashed password.
 * If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error is returned. If the `username` is not given, 1. the saml_id is used or 2. it has to be generated (see [user.create#generate-a-username](user.create.md#generate-a-username) below). Also the username may not contain spaces.
@@ -65,6 +72,7 @@ Creates a user.
 * The `member_number` must be unique within all users.
 * Throws an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * Checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
+* `external` can't be true if `home_committee_id` is set.
 
 ### Generate a username
 If no username is given, it is set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Joins all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.
@@ -122,3 +130,11 @@ The request user needs the OML superadmin.
 Group H:
 
 Group H fields are only allowed in internal requests or, exclusive for user.create, with OML permission `can_manage_users`
+
+Group I:
+
+CML `can_manage` for the `home_committee_id`. If there is none in the payload, no permission is required.
+
+Group J:
+
+Group I permissions and if there is no home committee Group A Permissions

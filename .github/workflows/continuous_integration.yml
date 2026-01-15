@@ -1,11 +1,11 @@
-name: Continuous Integration
+name: CI - Build and Test Service
 
 on:
   pull_request:
     branches:
       - main
       - 'feature/**'
-      - 'staging/**'
+      - 'staging**'
   merge_group:
     types: [checks_requested]
 
@@ -23,7 +23,7 @@ jobs:
         working-directory: .github/docker-compose
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -51,19 +51,19 @@ jobs:
     name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-    - name: Run tests
-      run: dev/run-tests.sh
+      - name: Run tests
+        run: dev/run-tests.sh
 
   test-local-setup:
     name: Build and test local dev setup
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         path: openslides-backend
-    
+
     - name: Set env vars
       working-directory: openslides-backend/requirements
       run: |
@@ -72,21 +72,21 @@ jobs:
         echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
 
     - name: Clone datastore
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-datastore-service
         ref: ${{ env.DATASTORE_COMMIT_HASH }}
         path: openslides-datastore-service
 
     - name: Clone auth service
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-auth-service
         ref: ${{ env.AUTH_COMMIT_HASH }}
         path: openslides-auth-service
 
     - name: Clone vote service
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-vote-service
         ref: main
@@ -100,12 +100,12 @@ jobs:
     name: Check coding style
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -139,12 +139,12 @@ jobs:
       PYTHONPATH: .
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 

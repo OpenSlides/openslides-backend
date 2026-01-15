@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -18,6 +19,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         }
 
     def test_delete_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -26,7 +28,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "group_ids": [2],
                 },
-                "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
+                "meeting/1": {"admin_group_id": 2},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
                 "group/3": {"meeting_id": 1},
                 "motion/1": {"meeting_id": 1, "comment_ids": [111]},
@@ -121,6 +123,45 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             }
         )
 
+        response = self.request(
+            "motion_comment.delete",
+            {"id": 111},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion_comment/111")
+
+    def test_delete_permission_non_meeting_committee_admin(self) -> None:
+        self.set_committee_management_level([60])
+        self.base_delete_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.set_committee_management_level([59])
+        self.permission_test_models.update(
+            {
+                "committee/59": {"child_ids": [60], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 59, "all_parent_ids": [59]},
+            }
+        )
+        self.base_delete_permission_non_meeting_admin()
+
+    def test_delete_permission_non_meeting_orga_admin(self) -> None:
+        self.base_delete_permission_non_meeting_admin(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+    def test_delete_permission_non_meeting_superadmin(self) -> None:
+        self.base_delete_permission_non_meeting_admin(
+            OrganizationManagementLevel.SUPERADMIN
+        )
+
+    def base_delete_permission_non_meeting_admin(
+        self,
+        permission: OrganizationManagementLevel | None = None,
+    ) -> None:
+        self.create_meeting()
+        self.set_organization_management_level(permission)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "motion_comment.delete",
             {"id": 111},

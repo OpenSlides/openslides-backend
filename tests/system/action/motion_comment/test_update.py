@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -23,6 +24,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         }
 
     def test_update_correct(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -31,7 +33,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "group_ids": [2],
                 },
-                "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
+                "meeting/1": {"admin_group_id": 2},
                 "group/2": {
                     "meeting_id": 1,
                     "admin_group_for_meeting_id": 1,
@@ -89,6 +91,15 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "motion_comment.update",
+            {"id": 111, "comment": "comment_Xcdfgee"},
+        )
+
     def test_update_no_permission_cause_write_group(self) -> None:
         self.test_models["motion_comment_section/78"]["write_group_ids"] = [2]
         self.create_meeting()
@@ -137,6 +148,45 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
             "user_id": self.user_id,
             "motion_submitter_ids": [777],
         }
+        self.set_models(self.test_models)
+        response = self.request(
+            "motion_comment.update",
+            {"comment": "test_Xcdfgee", "id": 111},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_comment/111", {"comment": "test_Xcdfgee"})
+
+    def test_update_permission_non_meeting_committee_admin(self) -> None:
+        self.set_committee_management_level([60])
+        self.base_update_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.set_committee_management_level([59])
+        self.test_models.update(
+            {
+                "committee/59": {"child_ids": [60], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 59, "all_parent_ids": [59]},
+            }
+        )
+        self.base_update_permission_non_meeting_admin()
+
+    def test_update_permission_non_meeting_orga_admin(self) -> None:
+        self.base_update_permission_non_meeting_admin(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+    def test_update_permission_non_meeting_superadmin(self) -> None:
+        self.base_update_permission_non_meeting_admin(
+            OrganizationManagementLevel.SUPERADMIN
+        )
+
+    def base_update_permission_non_meeting_admin(
+        self,
+        permission: OrganizationManagementLevel | None = None,
+    ) -> None:
+        self.create_meeting()
+        self.set_organization_management_level(permission)
         self.set_models(self.test_models)
         response = self.request(
             "motion_comment.update",

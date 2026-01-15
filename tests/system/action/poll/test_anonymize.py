@@ -7,11 +7,9 @@ from .base_poll_test import BasePollTestCase
 class PollAnonymize(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                },
                 "poll/1": {
                     "option_ids": [1],
                     "global_option_id": 2,
@@ -58,7 +56,22 @@ class PollAnonymize(BasePollTestCase):
         response = self.request("poll.anonymize", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_anonymize()
-        self.assert_history_information("topic/1", ["Voting anonymized"])
+        self.assert_history_information("topic/1", None)
+
+    def test_anonymize_motion_poll(self) -> None:
+        self.set_models(
+            {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                },
+            }
+        )
+        response = self.request("poll.anonymize", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/1", ["Voting anonymized"])
 
     def test_anonymize_assignment_poll(self) -> None:
         self.set_models(

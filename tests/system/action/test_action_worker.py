@@ -18,12 +18,9 @@ class ActionWorkerTest(BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(222)
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,
@@ -39,6 +36,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
     def test_action_worker_ready_before_timeout_okay(self) -> None:
         """action thread used, but ended in time"""
+        self.set_user_groups(1, [223])
         response = self.request(
             "motion.create",
             {
@@ -73,6 +71,7 @@ class ActionWorkerTest(BaseActionTestCase):
         """action thread used, main process ends before action_worker is ready,
         but the final result will be okay.
         """
+        self.set_user_groups(1, [223])
         self.set_thread_watch_timeout(0)
         count_motions: int = 2
         response = self.request_multi(

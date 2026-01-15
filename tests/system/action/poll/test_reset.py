@@ -31,7 +31,8 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
             "vote/1": {"option_id": 1, "meeting_id": 1},
             "vote/2": {"option_id": 1, "meeting_id": 1},
             "vote/3": {"option_id": 2, "meeting_id": 1},
-            "meeting/1": {"is_active_in_organization_id": 1},
+            "committee/1": {"meeting_ids": [1]},
+            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
         }
 
     def test_reset_correct(self) -> None:
@@ -81,7 +82,17 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         assert option_2.get("abstain") == "0.000000"
 
         # test history
-        self.assert_history_information("topic/1", ["Voting reset"])
+        self.assert_history_information("topic/1", None)
+
+    def test_reset_motion(self) -> None:
+        self.test_models["poll/1"]["content_object_id"] = "motion/1"
+        self.test_models["motion/1"] = {
+            "meeting_id": 1,
+        }
+        self.set_models(self.test_models)
+        response = self.request("poll.reset", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/1", ["Voting reset"])
 
     def test_reset_assignment(self) -> None:
         self.test_models["poll/1"]["content_object_id"] = "assignment/1"
@@ -156,7 +167,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
         )
-        assert counter.calls == 5
+        assert counter.calls == 6
 
     @performance
     def test_reset_performance(self) -> None:

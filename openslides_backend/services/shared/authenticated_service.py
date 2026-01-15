@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
+from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 
 class AuthenticatedServiceInterface(Protocol):

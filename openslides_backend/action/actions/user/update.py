@@ -15,9 +15,11 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.base_delete import MeetingUserBaseDelete
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .user_mixins import (
@@ -27,6 +29,14 @@ from .user_mixins import (
     UserMixin,
     check_gender_exists,
 )
+
+
+class MeetingUserDeleteInternal(MeetingUserBaseDelete):
+    """
+    Action to delete a meeting user.
+    """
+
+    name = "meeting_user.delete_internal_helper"
 
 
 @register_action("user.update")
@@ -52,6 +62,8 @@ class UserUpdate(
         "poll_voted_ids",
         "vote_ids",
         "delegated_vote_ids",
+        "history_entry_ids",
+        "history_position_ids",
     ]
 
     model = User()
@@ -74,6 +86,8 @@ class UserUpdate(
             "is_demo_user",
             "saml_id",
             "member_number",
+            "external",
+            "home_committee_id",
             *internal_id_fields,
         ],
         additional_optional_fields={
@@ -83,6 +97,19 @@ class UserUpdate(
     )
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+        if instance.get("external"):
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]),
+                mapped_fields=[
+                    "home_committee_id",
+                ],
+                lock_result=False,
+            )
+            if user.get("home_committee_id"):
+                self.check_group_I(["home_committee_id"], user)
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -99,7 +126,18 @@ class UserUpdate(
         self.check_locking_status(
             instance.get("meeting_id"), instance, instance["id"], None
         )
+        removed_meeting_id = self.get_removed_meeting_id(instance)
         instance = super().update_instance(instance)
+        if removed_meeting_id:
+            meeting_users = self.datastore.filter(
+                "meeting_user",
+                get_meeting_user_filter(removed_meeting_id, instance["id"]),
+                [],
+            )
+            self.execute_other_action(
+                MeetingUserDeleteInternal, [{"id": id_} for id_ in meeting_users]
+            )
+        home_committee_id = instance.get("home_committee_id")
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
@@ -107,8 +145,17 @@ class UserUpdate(
                 "organization_management_level",
                 "saml_id",
                 "password",
+                "home_committee_id",
             ],
         )
+        if instance.get("external"):
+            if home_committee_id:
+                raise ActionException(
+                    "Cannot set external to true and set a home committee at the same time."
+                )
+            instance["home_committee_id"] = None
+        elif home_committee_id:
+            instance["external"] = False
         if user.get("saml_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):

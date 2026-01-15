@@ -25,6 +25,7 @@ from openslides_backend.models.fields import (
     NumberArrayField,
     RelationField,
     RelationListField,
+    TextArrayField,
     TextField,
     TimestampField,
 )
@@ -41,7 +42,12 @@ from openslides_backend.shared.schema import (
     number_string_json_schema,
     schema_version,
 )
-from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
+from openslides_backend.shared.util import (
+    ALLOWED_HTML_TAGS_STRICT,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    validate_html,
+)
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -136,6 +142,7 @@ checker_map: dict[type[Field], Callable[..., bool]] = {
     FloatField: check_float,
     BooleanField: check_boolean,
     CharArrayField: check_string_list,
+    TextArrayField: check_string_list,
     GenericRelationListField: check_string_list,
     NumberArrayField: check_number_list,
     RelationListField: check_number_list,
@@ -553,16 +560,15 @@ class Checker:
             return
 
         source_model = self.find_model("mediafile", model["mediafile_id"])
-
         access_group_ids = model.get("access_group_ids")
         parent_is_public = None
         parent_inherited_access_group_ids = None
+        meeting = self.find_model("meeting", model["meeting_id"])
+        assert meeting
         if source_model and source_model.get("parent_id"):
             source_parent = self.find_model("mediafile", source_model["parent_id"])
-            meeting = self.find_model("meeting", model["meeting_id"])
             # relations are checked beforehand, so parent always exists
             assert source_parent
-            assert meeting
             parent_ids = set(meeting.get("meeting_mediafile_ids", [])).intersection(
                 source_parent.get("meeting_mediafile_ids", [])
             )
@@ -579,6 +585,18 @@ class Checker:
                 # must be assumed to have inherited_access_group admin
                 parent_is_public = False
                 parent_inherited_access_group_ids = [meeting["admin_group_id"]]
+        else:
+            # If published organization mediafile assigned to the meeting doesn't have
+            # a parent its access_group_ids is equal to meetings admin group
+            meeting_admin_group = [meeting.get("admin_group_id")]
+            if (
+                source_model.get("owner_id") == ONE_ORGANIZATION_FQID
+                and source_model.get("published_to_meetings_in_organization_id")
+                == ONE_ORGANIZATION_ID
+                and model.get("inherited_access_group_ids", []) == meeting_admin_group
+            ):
+                access_group_ids = meeting_admin_group
+
         is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
             access_group_ids, parent_is_public, parent_inherited_access_group_ids
         )
@@ -593,8 +611,8 @@ class Checker:
                 f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
             )
 
-    def find_model(self, collection: str, id: int) -> dict[str, Any] | None:
-        return self.data.get(collection, {}).get(str(id))
+    def find_model(self, collection: str, id: int) -> dict[str, Any]:
+        return self.data.get(collection, {}).get(str(id), {})
 
     def check_reverse_relation(
         self,

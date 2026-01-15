@@ -1,10 +1,12 @@
 import base64
 import time
+from copy import deepcopy
 from typing import Any
 
 import pytest
 
 from openslides_backend.action.action_worker import ActionWorkerState
+from openslides_backend.http.views.presenter_view import PresenterView
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import (
@@ -13,7 +15,14 @@ from openslides_backend.shared.util import (
     get_initial_data_file,
 )
 from tests.system.action.base import BaseActionTestCase
-from tests.system.util import CountDatastoreCalls, Profiler, performance
+from tests.system.util import (
+    CountDatastoreCalls,
+    Profiler,
+    create_presenter_test_application,
+    get_route_path,
+    performance,
+)
+from tests.util import Client
 
 current_migration_index = get_backend_migration_index()
 
@@ -191,6 +200,7 @@ class MeetingImport(BaseActionTestCase):
                         "poll_default_onehundred_percent_base": "valid",
                         "poll_default_group_ids": [],
                         "poll_default_backend": "fast",
+                        "poll_default_live_voting_enabled": False,
                         "poll_couple_countdown": True,
                         "projector_ids": [1],
                         "all_projection_ids": [],
@@ -239,6 +249,7 @@ class MeetingImport(BaseActionTestCase):
                         {
                             "meeting_user_ids": [11],
                             "is_active": True,
+                            "home_committee_id": 5,
                         },
                     ),
                 },
@@ -2000,6 +2011,7 @@ class MeetingImport(BaseActionTestCase):
         assert "last_login" not in user
 
     def test_merge_meeting_users_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "user/14": {
@@ -2016,7 +2028,9 @@ class MeetingImport(BaseActionTestCase):
                     "personal_note_ids": [1],
                     "motion_submitter_ids": [],
                     "vote_delegated_to_id": 1,
+                    "group_ids": [1],
                 },
+                "group/1": {"meeting_user_ids": [14]},
                 "personal_note/1": {
                     "meeting_id": 1,
                     "content_object_id": None,
@@ -2078,6 +2092,7 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [1],
                         "motion_submitter_ids": [],
                         "vote_delegated_to_id": 13,
+                        "group_ids": [2],
                     },
                     "13": {
                         "id": 13,
@@ -2086,12 +2101,14 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [2],
                         "motion_submitter_ids": [],
                         "vote_delegations_from_ids": [12],
+                        "group_ids": [2],
                     },
                 },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12, 13]
+        request_data["meeting"]["group"]["2"]["meeting_user_ids"] = [12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -2685,3 +2702,513 @@ class MeetingImport(BaseActionTestCase):
         data = {"committee_id": 1, "meeting": data_raw}
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
+
+    def test_import_export_with_orga_mediafiles(self) -> None:
+        self.create_meeting()
+        self.set_user_groups(1, [1])
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "organization_tag_ids": [1],
+                    "mediafile_ids": [1, 2, 3, 4, 5],
+                    "published_mediafile_ids": [1, 2, 3, 4, 5],
+                },
+                "organization_tag/1": {
+                    "name": "TEST",
+                    "color": "#eeeeee",
+                    "organization_id": 1,
+                },
+                "meeting/1": {
+                    "name": "Test",
+                    "description": "blablabla",
+                    "motions_default_amendment_workflow_id": 1,
+                    "reference_projector_id": 1,
+                    "projector_countdown_default_time": 60,
+                    "projector_countdown_warning_time": 5,
+                    "projector_ids": [1],
+                    "motions_export_title": "Motions",
+                    "motions_preamble": "blablabla",
+                    "welcome_title": "Welcome to OpenSlides",
+                    "welcome_text": "Space for your welcome text.",
+                    "enable_anonymous": False,
+                    "conference_show": False,
+                    "conference_auto_connect": False,
+                    "conference_los_restriction": False,
+                    "conference_open_microphone": False,
+                    "conference_open_video": False,
+                    "conference_auto_connect_next_speakers": 0,
+                    "conference_enable_helpdesk": False,
+                    "applause_enable": False,
+                    "applause_type": "applause-type-bar",
+                    "applause_show_level": False,
+                    "applause_min_amount": 1,
+                    "applause_max_amount": 0,
+                    "applause_timeout": 5,
+                    "export_csv_encoding": "utf-8",
+                    "export_csv_separator": ";",
+                    "export_pdf_pagenumber_alignment": "center",
+                    "export_pdf_fontsize": 10,
+                    "export_pdf_line_height": 1.25,
+                    "export_pdf_page_margin_left": 20,
+                    "export_pdf_page_margin_top": 25,
+                    "export_pdf_page_margin_right": 20,
+                    "export_pdf_page_margin_bottom": 20,
+                    "export_pdf_pagesize": "A4",
+                    "agenda_show_subtitles": False,
+                    "agenda_enable_numbering": False,
+                    "agenda_numeral_system": "arabic",
+                    "agenda_item_creation": "default_no",
+                    "agenda_new_items_default_visibility": "internal",
+                    "agenda_show_internal_items_on_projector": False,
+                    "list_of_speakers_amount_next_on_projector": -1,
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_show_amount_of_speakers_on_slide": True,
+                    "list_of_speakers_present_users_only": True,
+                    "list_of_speakers_show_first_contribution": True,
+                    "list_of_speakers_hide_contribution_count": True,
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_enable_pro_contra_speech": False,
+                    "list_of_speakers_can_set_contribution_self": False,
+                    "list_of_speakers_speaker_note_for_everyone": True,
+                    "list_of_speakers_initially_closed": False,
+                    "list_of_speakers_amount_last_on_projector": 0,
+                    "motions_default_line_numbering": "outside",
+                    "motions_line_length": 85,
+                    "motions_reason_required": False,
+                    "motions_origin_motion_toggle_default": False,
+                    "motions_enable_origin_motion_display": False,
+                    "motions_enable_text_on_projector": False,
+                    "motions_enable_reason_on_projector": False,
+                    "motions_enable_sidebox_on_projector": False,
+                    "motions_enable_recommendation_on_projector": True,
+                    "motions_show_referring_motions": True,
+                    "motions_show_sequential_number": True,
+                    "motions_recommendation_text_mode": "diff",
+                    "motions_default_sorting": "number",
+                    "motions_number_type": "per_category",
+                    "motions_number_min_digits": 2,
+                    "motions_number_with_blank": False,
+                    "motions_amendments_enabled": True,
+                    "motions_amendments_in_main_list": True,
+                    "motions_amendments_of_amendments": False,
+                    "motions_amendments_prefix": "A",
+                    "motions_amendments_text_mode": "paragraph",
+                    "motions_amendments_multiple_paragraphs": True,
+                    "motions_supporters_min_amount": 0,
+                    "motions_export_submitter_recommendation": True,
+                    "motions_export_follow_recommendation": False,
+                    "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
+                    "motion_poll_ballot_paper_number": 8,
+                    "motion_poll_default_type": "pseudoanonymous",
+                    "motion_poll_default_method": "YNA",
+                    "motion_poll_default_onehundred_percent_base": "YNA",
+                    "motion_poll_default_backend": "fast",
+                    "motion_poll_projection_name_order_first": "last_name",
+                    "motion_poll_projection_max_columns": 6,
+                    "users_enable_presence_view": False,
+                    "users_enable_vote_weight": False,
+                    "users_enable_vote_delegations": True,
+                    "users_allow_self_set_present": True,
+                    "users_pdf_welcometitle": "Welcome to OpenSlides",
+                    "users_pdf_welcometext": "blablabla",
+                    "users_email_sender": "OpenSlides",
+                    "users_email_subject": "OpenSlides access data",
+                    "users_email_body": "blablabla",
+                    "assignments_export_title": "Elections",
+                    "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
+                    "assignment_poll_ballot_paper_number": 8,
+                    "assignment_poll_add_candidates_to_list_of_speakers": False,
+                    "assignment_poll_enable_max_votes_per_option": False,
+                    "assignment_poll_sort_poll_result_by_votes": True,
+                    "assignment_poll_default_type": "pseudoanonymous",
+                    "assignment_poll_default_method": "Y",
+                    "assignment_poll_default_onehundred_percent_base": "valid",
+                    "assignment_poll_default_backend": "fast",
+                    "poll_default_type": "analog",
+                    "poll_default_onehundred_percent_base": "YNA",
+                    "poll_default_backend": "fast",
+                    "poll_default_live_voting_enabled": False,
+                    "poll_couple_countdown": True,
+                    **{field: [1] for field in Meeting.all_default_projectors()},
+                    "meeting_mediafile_ids": [10, 20, 30, 40, 50],
+                    "logo_projector_main_id": 20,
+                    "list_of_speakers_ids": [1, 9, 11, 12],
+                    "all_projection_ids": [2, 8],
+                    "motion_ids": [3],
+                    "topic_ids": [4],
+                    "assignment_ids": [5],
+                    "speaker_ids": [6],
+                    "structure_level_list_of_speakers_ids": [7],
+                    "agenda_item_ids": [10],
+                    "point_of_order_category_ids": [13],
+                    "structure_level_ids": [14],
+                },
+                "group/1": {
+                    "meeting_mediafile_access_group_ids": [10, 40],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30, 40],
+                },
+                "group/2": {
+                    "meeting_mediafile_access_group_ids": [10],
+                    "meeting_mediafile_inherited_access_group_ids": [10, 20, 30],
+                },
+                "group/3": {
+                    "meeting_mediafile_access_group_ids": [50],
+                },
+                "meeting_user/1": {"speaker_ids": [6]},
+                "motion_workflow/1": {
+                    "name": "blup",
+                    "default_amendment_workflow_meeting_id": 1,
+                    "sequential_number": 1,
+                },
+                "motion_state/1": {
+                    "css_class": "lightblue",
+                    "workflow_id": 1,
+                    "name": "test",
+                    "weight": 1,
+                    "restrictions": [],
+                    "allow_support": False,
+                    "allow_create_poll": False,
+                    "allow_submitter_edit": False,
+                    "set_number": True,
+                    "show_state_extension_field": False,
+                    "merge_amendment_into_final": "undefined",
+                    "show_recommendation_extension_field": False,
+                    "motion_ids": [3],
+                },
+                "projector/1": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "name": "Default projector",
+                    "scale": 0,
+                    "scroll": 0,
+                    "width": 1200,
+                    "aspect_ratio_numerator": 16,
+                    "aspect_ratio_denominator": 9,
+                    "color": "#000000",
+                    "background_color": "#ffffff",
+                    "header_background_color": "#317796",
+                    "header_font_color": "#ffffff",
+                    "header_h1_color": "#ffffff",
+                    "chyron_background_color": "#ffffff",
+                    "chyron_font_color": "#ffffff",
+                    "show_header_footer": True,
+                    "show_title": True,
+                    "show_logo": True,
+                    "show_clock": True,
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
+                    "current_projection_ids": [8],
+                    "history_projection_ids": [2],
+                },
+                "mediafile/1": {
+                    "title": "Mother of all directories (MOAD)",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "child_ids": [2, 3, 4, 5],
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [10],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/10": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "access_group_ids": [1, 2],
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "mediafile/2": {
+                    "title": "Child_of_mother_of_all_directories.xlsx",
+                    "filename": "COMOAD.xlsx",
+                    "filesize": 10000,
+                    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "meeting_mediafile_ids": [20],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/20": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "inherited_access_group_ids": [1, 2],
+                    "list_of_speakers_id": 1,
+                    "projection_ids": [2],
+                    "attachment_ids": ["motion/3", "topic/4", "assignment/5"],
+                    "used_as_logo_projector_main_in_meeting_id": 1,
+                },
+                "list_of_speakers/1": {
+                    "sequential_number": 1,
+                    "content_object_id": "meeting_mediafile/20",
+                    "speaker_ids": [6],
+                    "structure_level_list_of_speakers_ids": [7],
+                    "projection_ids": [8],
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/9": {
+                    "sequential_number": 2,
+                    "content_object_id": "motion/3",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/11": {
+                    "sequential_number": 3,
+                    "content_object_id": "topic/4",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/12": {
+                    "sequential_number": 4,
+                    "content_object_id": "assignment/5",
+                    "meeting_id": 1,
+                },
+                "projection/2": {
+                    "content_object_id": "meeting_mediafile/20",
+                    "history_projector_id": 1,
+                    "meeting_id": 1,
+                },
+                "projection/8": {
+                    "content_object_id": "list_of_speakers/1",
+                    "current_projector_id": 1,
+                    "meeting_id": 1,
+                },
+                "motion/3": {
+                    "sequential_number": 1,
+                    "title": "A motion",
+                    "text": "like no other",
+                    "state_id": 1,
+                    "list_of_speakers_id": 9,
+                    "attachment_meeting_mediafile_ids": [20],
+                    "meeting_id": 1,
+                },
+                "topic/4": {
+                    "title": "Stupid topic",
+                    "sequential_number": 1,
+                    "attachment_meeting_mediafile_ids": [20],
+                    "agenda_item_id": 10,
+                    "list_of_speakers_id": 11,
+                    "meeting_id": 1,
+                },
+                "assignment/5": {
+                    "title": "We're electing someone, idk",
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 12,
+                    "attachment_meeting_mediafile_ids": [20],
+                    "meeting_id": 1,
+                },
+                "speaker/6": {
+                    "list_of_speakers_id": 1,
+                    "structure_level_list_of_speakers_id": 7,
+                    "meeting_user_id": 1,
+                    "point_of_order": True,
+                    "point_of_order_category_id": 13,
+                    "meeting_id": 1,
+                },
+                "structure_level_list_of_speakers/7": {
+                    "structure_level_id": 14,
+                    "list_of_speakers_id": 1,
+                    "speaker_ids": [6],
+                    "initial_time": 100,
+                    "remaining_time": 5,
+                    "meeting_id": 1,
+                },
+                "agenda_item/10": {"content_object_id": "topic/4", "meeting_id": 1},
+                "point_of_order_category/13": {
+                    "text": "Pointless point of order",
+                    "rank": 1,
+                    "meeting_id": 1,
+                    "speaker_ids": [6],
+                },
+                "structure_level/14": {
+                    "name": "Eeeeueuuurrrggghhhh",
+                    "structure_level_list_of_speakers_ids": [7],
+                    "meeting_id": 1,
+                },
+                "mediafile/3": {
+                    "title": "Child_of_mother_of_all_directories.pdf",
+                    "filename": "COMOAD.pdf",
+                    "filesize": 750000,
+                    "mimetype": "application/pdf",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "pdf_information": {"pages": 1},
+                    "meeting_mediafile_ids": [30],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/30": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 3,
+                    "inherited_access_group_ids": [1, 2],
+                },
+                "mediafile/4": {
+                    "title": "Child_of_mother_of_all_directories_with_limited_access.txt",
+                    "filename": "COMOADWLA.txt",
+                    "filesize": 100,
+                    "mimetype": "text/plain",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "meeting_mediafile_ids": [40],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/40": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 4,
+                    "access_group_ids": [1],
+                    "inherited_access_group_ids": [1],
+                },
+                "mediafile/5": {
+                    "title": "Hidden_child_of_mother_of_all_directories.csv",
+                    "filename": "HCOMOAD.csv",
+                    "filesize": 420,
+                    "mimetype": "text/csv",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "parent_id": 1,
+                    "meeting_mediafile_ids": [50],
+                    "published_to_meetings_in_organization_id": 1,
+                },
+                "meeting_mediafile/50": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 5,
+                    "access_group_ids": [3],
+                    "inherited_access_group_ids": [],
+                },
+            }
+        )
+        presenterapp = create_presenter_test_application()
+        presenterclient = Client(presenterapp, self.update_vote_service_auth_data)
+        presenterclient.login("admin", "admin")
+        self.auth_data = deepcopy(presenterclient.auth_data)
+        response = presenterclient.post(
+            get_route_path(PresenterView.presenter_route),
+            json=[{"presenter": "export_meeting", "data": {"meeting_id": 1}}],
+        )
+        status_code, export = (response.status_code, response.json[0])
+        assert status_code == 200
+        self.auth_data = deepcopy(self.client.auth_data)
+        self.set_models(
+            {"meeting/1": {"external_id": "NewExternalIdToStopReimportDetection"}}
+        )
+        import_response = self.request(
+            "meeting.import", {"committee_id": 60, "meeting": export}
+        )
+        self.assert_status_code(import_response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "committee_id": 60,
+                "group_ids": [4, 5, 6],
+                "projector_ids": [2],
+                "meeting_mediafile_ids": [],
+                "logo_projector_main_id": None,
+                "list_of_speakers_ids": [13, 14, 15],
+                "all_projection_ids": [],
+                "motion_ids": [4],
+                "topic_ids": [5],
+                "assignment_ids": [6],
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [],
+                "agenda_item_ids": [11],
+                "point_of_order_category_ids": [14],
+                "structure_level_ids": [15],
+            },
+        )
+        for id_ in [4, 5]:
+            self.assert_model_exists(
+                f"group/{id_}",
+                {
+                    "meeting_id": 2,
+                    "meeting_mediafile_access_group_ids": [],
+                    "meeting_mediafile_inherited_access_group_ids": [],
+                },
+            )
+        self.assert_model_exists(
+            "group/6",
+            {
+                "meeting_mediafile_access_group_ids": [],
+                "meeting_mediafile_inherited_access_group_ids": None,
+                "meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"user_id": 1, "meeting_id": 2, "speaker_ids": []}
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "meeting_id": 2,
+                "current_projection_ids": [],
+                "history_projection_ids": [],
+            },
+        )
+        self.assert_model_not_exists("mediafile/6")
+        self.assert_model_not_exists("meeting_mediafile/51")
+        for id_ in range(1, 6):
+            self.assert_model_exists(
+                f"mediafile/{id_}",
+                {
+                    "meeting_mediafile_ids": [id_ * 10],
+                },
+            )
+        for id_, co_id in {13: "motion/4", 14: "topic/5", 15: "assignment/6"}.items():
+            self.assert_model_exists(
+                f"list_of_speakers/{id_}",
+                {
+                    "sequential_number": id_ - 11,
+                    "meeting_id": 2,
+                    "content_object_id": co_id,
+                },
+            )
+        self.assert_model_not_exists("projection/9")
+        self.assert_model_exists(
+            "motion/4",
+            {
+                "sequential_number": 1,
+                "title": "A motion",
+                "text": "like no other",
+                "state_id": 2,
+                "list_of_speakers_id": 13,
+                "attachment_meeting_mediafile_ids": [],
+                "meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "topic/5",
+            {
+                "title": "Stupid topic",
+                "sequential_number": 1,
+                "attachment_meeting_mediafile_ids": [],
+                "agenda_item_id": 11,
+                "list_of_speakers_id": 14,
+                "meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "assignment/6",
+            {
+                "title": "We're electing someone, idk",
+                "sequential_number": 1,
+                "list_of_speakers_id": 15,
+                "attachment_meeting_mediafile_ids": [],
+                "meeting_id": 2,
+            },
+        )
+        self.assert_model_not_exists("speaker/7")
+        self.assert_model_exists(
+            "agenda_item/11", {"content_object_id": "topic/5", "meeting_id": 2}
+        )
+        self.assert_model_exists(
+            "point_of_order_category/14",
+            {
+                "text": "Pointless point of order",
+                "rank": 1,
+                "meeting_id": 2,
+                "speaker_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "structure_level/15",
+            {
+                "name": "Eeeeueuuurrrggghhhh",
+                "meeting_id": 2,
+                "structure_level_list_of_speakers_ids": [],
+            },
+        )

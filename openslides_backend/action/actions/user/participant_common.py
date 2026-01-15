@@ -12,7 +12,6 @@ from openslides_backend.permissions.management_levels import (
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import MissingPermission
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
-    CreateUpdatePermissionsFailingFields,
     PermissionVarStore,
 )
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -49,18 +48,6 @@ class ParticipantCommon(BaseImportJsonUploadAction, CheckLockOutPermissionMixin)
                         CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                     }
                 )
-
-        self.permission_check = CreateUpdatePermissionsFailingFields(
-            self.user_id,
-            permstore,
-            self.services,
-            self.datastore,
-            self.relation_manager,
-            self.logging,
-            self.env,
-            self.skip_archived_meeting_check,
-            self.use_meeting_ids_for_archived_meeting_check,
-        )
 
     def check_meeting_admin_integrity(
         self, meeting_id: int, rows: list[dict[str, Any]] | list[ImportRow] = []

@@ -137,6 +137,7 @@ class Assignment(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_ids"}, required=True, constant=True
     )
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
 
 
 class AssignmentCandidate(Model):
@@ -220,6 +221,11 @@ class Committee(Model):
         constraints={"description": "Calculated field."},
     )
     manager_ids = fields.RelationListField(to={"user": "committee_management_ids"})
+    parent_id = fields.RelationField(to={"committee": "child_ids"})
+    child_ids = fields.RelationListField(to={"committee": "parent_id"})
+    all_parent_ids = fields.RelationListField(to={"committee": "all_child_ids"})
+    all_child_ids = fields.RelationListField(to={"committee": "all_parent_ids"})
+    native_user_ids = fields.RelationListField(to={"user": "home_committee_id"})
     forward_to_committee_ids = fields.RelationListField(
         to={"committee": "receive_forwardings_from_committee_ids"}
     )
@@ -260,6 +266,7 @@ class Group(Model):
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
                 "assignment.can_manage",
+                "assignment.can_manage_polls",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
                 "assignment.can_see",
@@ -351,6 +358,39 @@ class Group(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "group_ids"}, required=True, constant=True
+    )
+
+
+class HistoryEntry(Model):
+    collection = "history_entry"
+    verbose_name = "history entry"
+
+    id = fields.IntegerField(required=True, constant=True)
+    entries = fields.TextArrayField()
+    original_model_id = fields.CharField(constant=True)
+    model_id = fields.GenericRelationField(
+        to={
+            "user": "history_entry_ids",
+            "motion": "history_entry_ids",
+            "assignment": "history_entry_ids",
+        }
+    )
+    position_id = fields.RelationField(
+        to={"history_position": "entry_ids"}, required=True, constant=True
+    )
+    meeting_id = fields.RelationField(to={"meeting": "relevant_history_entry_ids"})
+
+
+class HistoryPosition(Model):
+    collection = "history_position"
+    verbose_name = "history position"
+
+    id = fields.IntegerField(required=True, constant=True)
+    timestamp = fields.TimestampField(read_only=True)
+    original_user_id = fields.IntegerField(constant=True)
+    user_id = fields.RelationField(to={"user": "history_position_ids"})
+    entry_ids = fields.RelationListField(
+        to={"history_entry": "position_id"}, on_delete=fields.OnDelete.CASCADE
     )
 
 
@@ -479,9 +519,7 @@ class Meeting(Model, MeetingModelMixin):
         to={"organization": "archived_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
-    description = fields.CharField(
-        default="Presentation and assembly system", constraints={"maxLength": 100}
-    )
+    description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
@@ -658,6 +696,8 @@ class Meeting(Model, MeetingModelMixin):
     motions_export_preamble = fields.TextField()
     motions_export_submitter_recommendation = fields.BooleanField(default=True)
     motions_export_follow_recommendation = fields.BooleanField(default=False)
+    motions_enable_restricted_editor_for_manager = fields.BooleanField()
+    motions_enable_restricted_editor_for_non_manager = fields.BooleanField()
     motion_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",
         constraints={
@@ -806,6 +846,12 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    poll_default_live_voting_enabled = fields.BooleanField(
+        default=False,
+        constraints={
+            "description": "Defines default 'poll.live_voting_enabled' option suggested to user. Is not used in the validations."
+        },
+    )
     poll_couple_countdown = fields.BooleanField(default=True)
     topic_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_topic_poll_default_id"}
@@ -876,6 +922,9 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    motion_supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_editor_ids = fields.RelationListField(
         to={"motion_editor": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
@@ -1063,6 +1112,9 @@ class Meeting(Model, MeetingModelMixin):
     anonymous_group_id = fields.RelationField(
         to={"group": "anonymous_group_for_meeting_id"}
     )
+    relevant_history_entry_ids = fields.RelationListField(
+        to={"history_entry": "meeting_id"}
+    )
 
 
 class MeetingMediafile(Model):
@@ -1178,23 +1230,18 @@ class MeetingUser(Model):
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_user_id"}, equal_fields="meeting_id"
     )
-    supported_motion_ids = fields.RelationListField(
-        to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
+    motion_supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "meeting_user_id"}, equal_fields="meeting_id"
     )
     motion_editor_ids = fields.RelationListField(
-        to={"motion_editor": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
+        to={"motion_editor": "meeting_user_id"}, equal_fields="meeting_id"
     )
     motion_working_group_speaker_ids = fields.RelationListField(
         to={"motion_working_group_speaker": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     motion_submitter_ids = fields.RelationListField(
-        to={"motion_submitter": "meeting_user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
+        to={"motion_submitter": "meeting_user_id"}, equal_fields="meeting_id"
     )
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}, equal_fields="meeting_id"
@@ -1209,7 +1256,7 @@ class MeetingUser(Model):
         to={"chat_message": "meeting_user_id"}, equal_fields="meeting_id"
     )
     group_ids = fields.RelationListField(
-        to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
+        to={"group": "meeting_user_ids"}, required=True, equal_fields="meeting_id"
     )
     structure_level_ids = fields.RelationListField(
         to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"
@@ -1252,6 +1299,11 @@ class Motion(Model):
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     additional_submitter = fields.CharField()
+    marked_forwarded = fields.BooleanField(
+        constraints={
+            "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
+        }
+    )
     lead_motion_id = fields.RelationField(
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
@@ -1306,8 +1358,10 @@ class Motion(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    supporter_meeting_user_ids = fields.RelationListField(
-        to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
+    supporter_ids = fields.RelationListField(
+        to={"motion_supporter": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     editor_ids = fields.RelationListField(
         to={"motion_editor": "motion_id"},
@@ -1370,11 +1424,7 @@ class Motion(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "motion_ids"}, required=True, constant=True
     )
-    marked_forwarded = fields.BooleanField(
-        constraints={
-            "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
-        }
-    )
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
 
 
 class MotionBlock(Model):
@@ -1537,9 +1587,7 @@ class MotionEditor(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_editor_ids"}, required=True
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_editor_ids"})
     motion_id = fields.RelationField(
         to={"motion": "editor_ids"},
         required=True,
@@ -1589,6 +1637,7 @@ class MotionState(Model):
     allow_motion_forwarding = fields.BooleanField(default=False)
     allow_amendment_forwarding = fields.BooleanField()
     set_workflow_timestamp = fields.BooleanField(default=False)
+    state_button_label = fields.CharField()
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
@@ -1632,9 +1681,7 @@ class MotionSubmitter(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_submitter_ids"}, required=True
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_submitter_ids"})
     motion_id = fields.RelationField(
         to={"motion": "submitter_ids"},
         required=True,
@@ -1643,6 +1690,23 @@ class MotionSubmitter(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_submitter_ids"}, required=True, constant=True
+    )
+
+
+class MotionSupporter(Model):
+    collection = "motion_supporter"
+    verbose_name = "motion supporter"
+
+    id = fields.IntegerField(required=True, constant=True)
+    meeting_user_id = fields.RelationField(to={"meeting_user": "motion_supporter_ids"})
+    motion_id = fields.RelationField(
+        to={"motion": "supporter_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_supporter_ids"}, required=True, constant=True
     )
 
 
@@ -1688,7 +1752,7 @@ class MotionWorkingGroupSpeaker(Model):
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "motion_working_group_speaker_ids"}, required=True
+        to={"meeting_user": "motion_working_group_speaker_ids"}
     )
     motion_id = fields.RelationField(
         to={"motion": "working_group_speaker_ids"},
@@ -1748,6 +1812,8 @@ class Organization(Model):
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
     gender_ids = fields.RelationListField(to={"gender": "organization_id"})
+    disable_forward_with_attachments = fields.BooleanField()
+    restrict_edit_forward_committees = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -1769,6 +1835,7 @@ class Organization(Model):
     )
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
+    restrict_editing_same_level_committee_admins = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
@@ -1908,6 +1975,12 @@ class Poll(Model, PollModelMixin):
     votesinvalid = fields.DecimalField()
     votescast = fields.DecimalField()
     entitled_users_at_stop = fields.JSONField()
+    live_voting_enabled = fields.BooleanField(
+        default=False,
+        constraints={
+            "description": "If true, the vote service sends the votes of the users to the autoupdate service."
+        },
+    )
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
@@ -2206,6 +2279,7 @@ class Speaker(Model):
             ]
         }
     )
+    answer = fields.BooleanField()
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField(constant=True)
     list_of_speakers_id = fields.RelationField(
@@ -2444,6 +2518,7 @@ class User(Model):
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
+    external = fields.BooleanField()
     gender_id = fields.RelationField(to={"gender": "user_ids"})
     organization_management_level = fields.CharField(
         constraints={
@@ -2468,6 +2543,9 @@ class User(Model):
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
     delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
     poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
+    home_committee_id = fields.RelationField(to={"committee": "native_user_ids"})
+    history_position_ids = fields.RelationListField(to={"history_position": "user_id"})
+    history_entry_ids = fields.RelationListField(to={"history_entry": "model_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={

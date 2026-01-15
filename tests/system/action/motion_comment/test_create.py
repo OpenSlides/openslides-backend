@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -17,6 +18,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         }
 
     def test_create(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -26,9 +28,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                     "group_ids": [3],
                 },
                 "meeting/111": {
-                    "name": "name_m123etrd",
                     "admin_group_id": 3,
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
                 "group/3": {},
@@ -50,6 +50,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_not_unique_error(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
                 "user/1": {"meeting_user_ids": [1]},
@@ -59,9 +60,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                     "group_ids": [3],
                 },
                 "meeting/111": {
-                    "name": "name_m123etrd",
                     "admin_group_id": 3,
-                    "is_active_in_organization_id": 1,
                 },
                 "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
@@ -93,12 +92,9 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_meeting(111)
         self.set_models(
             {
-                "meeting/111": {
-                    "name": "name_m123etrd",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "motion_comment_section/78": {},
             }
@@ -200,3 +196,41 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                 "user_id": 2,
             },
         )
+
+    def test_create_permission_non_meeting_committee_admin(self) -> None:
+        self.set_committee_management_level([60])
+        self.base_create_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.set_committee_management_level([59])
+        self.permission_test_models.update(
+            {
+                "committee/59": {"child_ids": [60], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 59, "all_parent_ids": [59]},
+            }
+        )
+        self.base_create_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_orga_admin(self) -> None:
+        self.base_create_permission_non_meeting_admin(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+    def test_create_permission_non_meeting_superadmin(self) -> None:
+        self.base_create_permission_non_meeting_admin(
+            OrganizationManagementLevel.SUPERADMIN
+        )
+
+    def base_create_permission_non_meeting_admin(
+        self, permission: OrganizationManagementLevel | None = None
+    ) -> None:
+        self.create_meeting()
+        self.set_organization_management_level(permission)
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion_comment.create",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_comment/1", {"comment": "test_Xcdfgee"})

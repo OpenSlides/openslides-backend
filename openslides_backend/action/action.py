@@ -8,7 +8,8 @@ import fastjsonschema
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
-from ..models.fields import BaseRelationField
+from ..models.fields import BaseRelationField, GenericRelationField
+from ..models.models import HistoryEntry
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -25,6 +26,7 @@ from ..shared.exceptions import (
     PermissionDenied,
     RequiredFieldsException,
 )
+from ..shared.history_events import calculate_history_event_payloads
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
@@ -36,6 +38,7 @@ from ..shared.patterns import (
     collection_from_fqid,
     fqid_and_field_from_fqfield,
     fqid_from_collection_and_id,
+    id_from_fqid,
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
@@ -44,6 +47,10 @@ from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
+
+HISTORY_MODELS = list(
+    cast(GenericRelationField, HistoryEntry().get_field("model_id")).to.keys()
+)
 
 
 class SchemaProvider(type):
@@ -129,7 +136,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.cascaded_actions_history = {}
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Entrypoint to perform the action.
@@ -137,6 +148,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.user_id = user_id
         self.index = 0
         self.internal = internal
+        self.is_sub_call = is_sub_call
 
         # prefetch as much data as possible
         self.prefetch(action_data)
@@ -410,7 +422,83 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
-            write_request.information = self.get_full_history_information()
+            information = self.get_full_history_information()
+            if self.is_sub_call:
+                write_request.information = information
+            elif information:
+                information = {
+                    fqid: info
+                    for fqid, info in information.items()
+                    if fqid.split("/")[0] in HISTORY_MODELS
+                }
+                if len(information):
+                    position_id = self.datastore.reserve_id("history_position")
+                    entry_ids = self.datastore.reserve_ids(
+                        "history_entry", len(information)
+                    )
+                    deleted_fqids: set[str] = {
+                        event["fqid"] for event in events_by_type[EventType.Delete]
+                    }
+                    touched_fqids: set[str] = {
+                        event["fqid"]
+                        for event in [
+                            *events_by_type[EventType.Create],
+                            *events_by_type[EventType.Update],
+                        ]
+                    }
+                    if self.user_id and self.user_id > 0:
+                        touched_fqids.add(
+                            fqid_from_collection_and_id("user", self.user_id)
+                        )
+                    collection_to_ids: dict[str, list[int]] = defaultdict(list)
+                    for fqid in information:
+                        collection_to_ids[collection_from_fqid(fqid)].append(
+                            id_from_fqid(fqid)
+                        )
+                    data = self.datastore.get_many(
+                        [
+                            GetManyRequest(collection, ids, ["meeting_id"])
+                            for collection, ids in collection_to_ids.items()
+                            if model_registry[collection]().try_get_field("meeting_id")
+                        ]
+                    )
+                    create_events, update_events = calculate_history_event_payloads(
+                        self.user_id,
+                        information,
+                        position_id,
+                        {m_fqid: e_id for m_fqid, e_id in zip(information, entry_ids)},
+                        {
+                            fqid_from_collection_and_id(collection, id_): meeting_id
+                            for collection, models in data.items()
+                            for id_, date in models.items()
+                            if (meeting_id := date.get("meeting_id"))
+                            and not any(
+                                f"meeting/{meeting_id}" == event["fqid"]
+                                for event in events_by_type[EventType.Delete]
+                            )
+                        },
+                        touched_fqids - deleted_fqids,
+                    )
+                    events_by_type[EventType.Create].extend(
+                        [
+                            Event(
+                                type=EventType.Create,
+                                fqid=fqid,
+                                fields=cast(dict[str, Any], fields),
+                            )
+                            for fqid, fields in create_events
+                        ]
+                    )
+                    events_by_type[EventType.Update].extend(
+                        [
+                            Event(
+                                type=EventType.Update,
+                                fqid=fqid,
+                                list_fields=cast(ListFields, fields),
+                            )
+                            for fqid, fields in update_events
+                        ]
+                    )
             write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
@@ -686,7 +774,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 skip_archived_meeting_check,
             )
             write_request, action_results = action.perform(
-                action_data, self.user_id, internal=True
+                action_data, self.user_id, internal=True, is_sub_call=True
             )
             if write_request:
                 self.events.extend(write_request.events)

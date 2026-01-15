@@ -375,27 +375,21 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_vote_weight(self) -> None:
-        self.set_models(
-            {
-                "user/111": {"username": "username_srtgb123"},
-                "meeting/1": {
-                    "name": "test_meeting_1",
-                    "is_active_in_organization_id": 1,
-                },
-            }
-        )
+        self.create_meeting()
+        id_ = self.create_user("username_srtgb123")
         response = self.request(
-            "user.update", {"id": 111, "vote_weight": "2.000000", "meeting_id": 1}
+            "user.update",
+            {"id": id_, "vote_weight": "2.000000", "meeting_id": 1, "group_ids": [1]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/111", {"username": "username_srtgb123", "meeting_user_ids": [1]}
+            f"user/{id_}", {"username": "username_srtgb123", "meeting_user_ids": [1]}
         )
         self.assert_model_exists(
             "meeting_user/1",
             {
                 "meeting_id": 1,
-                "user_id": 111,
+                "user_id": id_,
                 "vote_weight": "2.000000",
             },
         )
@@ -505,19 +499,19 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "meeting_ids": [],
-                "meeting_user_ids": [1111],
+                "meeting_user_ids": [],
                 "committee_management_ids": [60, 61],
                 "committee_ids": [60, 61],
             },
         )
-        self.assert_model_exists(
-            "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
-        )
+        self.assert_model_deleted("meeting_user/1111", {"group_ids": []})
         self.assert_history_information(
             "user/111",
             [
                 "Participant removed from group {} in meeting {}",
                 "group/600",
+                "meeting/60",
+                "Participant removed from meeting {}",
                 "meeting/60",
                 "Personal data changed",
                 "Committee management changed",
@@ -638,9 +632,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_management_ids": [4],
                 "meeting_ids": [22, 33],
                 "committee_ids": [2, 3, 4],
-                "meeting_user_ids": [111, 112, 113],
+                "meeting_user_ids": [112, 113],
             },
         )
+        self.assert_model_deleted("meeting_user/111")
         self.assert_model_exists("committee/1", {"user_ids": []})
         self.assert_model_exists("committee/2", {"user_ids": [123]})
         self.assert_model_exists("committee/3", {"user_ids": [123]})
@@ -2954,15 +2949,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information("user/111", None)
 
     def test_update_participant_data_with_existing_meetings(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        bob_id = self.create_user("bob")
+        bob_muser_ids = self.set_user_groups(bob_id, [1])
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "user/222": {"meeting_user_ids": [42]},
-                "meeting_user/42": {
-                    "user_id": 222,
-                    "meeting_id": 1,
+                f"meeting_user/{bob_muser_ids[0]}": {
                     "vote_weight": "1.000000",
                 },
             }
@@ -2970,33 +2963,35 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "user.update",
             {
-                "id": 222,
-                "meeting_id": 2,
+                "id": bob_id,
+                "meeting_id": 4,
                 "vote_weight": "1.500000",
+                "group_ids": [4],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
-            "user/222",
+            f"user/{bob_id}",
             [
                 "Participant added to meeting {}.",
-                "meeting/2",
+                "meeting/4",
+                "Participant added to group {} in meeting {}.",
+                "group/4",
+                "meeting/4",
             ],
         )
 
     def test_update_participant_data_in_multiple_meetings_with_existing_meetings(
         self,
     ) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        bob_id = self.create_user("bob")
+        bob_muser_id = self.set_user_groups(bob_id, [1])[0]
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "meeting/3": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "user/222": {"meeting_user_ids": [42]},
-                "meeting_user/42": {
-                    "user_id": 222,
-                    "meeting_id": 1,
+                f"meeting_user/{bob_muser_id}": {
                     "vote_weight": "1.000000",
                 },
             }
@@ -3005,25 +3000,33 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             [
                 {
-                    "id": 222,
-                    "meeting_id": 2,
+                    "id": bob_id,
+                    "meeting_id": 4,
                     "vote_weight": "1.000000",
+                    "group_ids": [4],
                 },
                 {
-                    "id": 222,
-                    "meeting_id": 3,
+                    "id": bob_id,
+                    "meeting_id": 7,
                     "vote_weight": "1.000000",
+                    "group_ids": [7],
                 },
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
-            "user/222",
+            f"user/{bob_id}",
             [
                 "Participant added to meeting {}.",
-                "meeting/2",
+                "meeting/4",
+                "Participant added to group {} in meeting {}.",
+                "group/4",
+                "meeting/4",
                 "Participant added to meeting {}.",
-                "meeting/3",
+                "meeting/7",
+                "Participant added to group {} in meeting {}.",
+                "group/7",
+                "meeting/7",
             ],
         )
 
@@ -3108,7 +3111,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/1234",
             {
                 "username": "username_abcdefgh123",
-                "meeting_user_ids": [4444, 5555],
+                "meeting_user_ids": [5555],
                 "is_present_in_meeting_ids": [5],
             },
         )
@@ -3124,16 +3127,16 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "present_user_ids": [1234],
             },
         )
-        self.assert_model_exists(
+        self.assert_model_deleted(
             "meeting_user/4444",
-            {"group_ids": [], "speaker_ids": [24], "meta_deleted": False},
+            {"group_ids": [], "speaker_ids": [24]},
         )
         self.assert_model_exists(
             "meeting_user/5555",
             {"group_ids": [53], "speaker_ids": [25], "meta_deleted": False},
         )
         self.assert_model_exists(
-            "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
+            "speaker/24", {"meeting_user_id": None, "meeting_id": 4}
         )
         self.assert_model_exists(
             "speaker/25", {"meeting_user_id": 5555, "meeting_id": 5}
@@ -3526,7 +3529,35 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_locked_out_foreign_cml_allowed(self) -> None:
         self.assert_lock_out_user(
-            "account", 1, other_data={"committee_management_ids": [63]}
+            "account",
+            1,
+            other_data={"committee_management_ids": [63], "group_ids": [1]},
+        )
+
+    def test_update_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"committee_management_ids": [63], "group_ids": [1]},
+        )
+
+    def test_update_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(
+            "account", 1, other_data={"home_committee_id": 60, "group_ids": [1]}
+        )
+
+    def test_update_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(
+            "account", 1, other_data={"home_committee_id": 63, "group_ids": [1]}
+        )
+
+    def test_update_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(
+            "account", 1, other_data={"home_committee_id": 63, "group_ids": [1]}
         )
 
     def test_update_locked_out_superadmin_error(self) -> None:
@@ -3551,6 +3582,16 @@ class UserUpdateActionTest(BaseActionTestCase):
             1,
             other_data={"committee_management_ids": [60]},
             errormsg="Cannot set user 10 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"committee_management_ids": [59]},
+            errormsg="Cannot set user 10 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
         )
 
     def test_update_locked_out_meeting_admin_error(self) -> None:
@@ -3640,6 +3681,29 @@ class UserUpdateActionTest(BaseActionTestCase):
             errormsg="Cannot set user 9 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
         )
 
+    def test_update_parent_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [59]},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Cannot set user 9 as manager for committee(s) 59 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_child_cml_on_locked_out_user_error(self) -> None:
+        self.create_committee(60)
+        self.create_committee(61, parent_id=60)
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [61]},
+            lock_out=None,
+            lock_before=True,
+        )
+
     def test_update_meeting_admin_on_locked_out_user_error(self) -> None:
         self.assert_lock_out_user(
             "participant1",
@@ -3652,12 +3716,16 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_locked_out_remove_superadmin(self) -> None:
         self.assert_lock_out_user(
-            "superad", 1, other_data={"organization_management_level": None}
+            "superad",
+            1,
+            other_data={"organization_management_level": None, "group_ids": [1]},
         )
 
     def test_update_locked_out_remove_cml(self) -> None:
         self.assert_lock_out_user(
-            "committeead60", 1, other_data={"committee_management_ids": None}
+            "committeead60",
+            1,
+            other_data={"committee_management_ids": None, "group_ids": [1]},
         )
 
     def test_update_locked_out_remove_meeting_admin(self) -> None:
@@ -3710,7 +3778,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             lock_out=False,
         )
 
-    def test_create_permission_as_locked_out(self) -> None:
+    def test_update_permission_as_locked_out(self) -> None:
         self.permission_setup()
         self.create_meeting(base=4)
         meeting_user_ids = self.set_user_groups(self.user_id, [3, 6])  # Admin-groups
@@ -3765,3 +3833,1536 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [3]}
         )
+
+    def test_update_with_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_user("dracula")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "dracula", "home_committee_id": 3}
+        )
+
+    def test_update_with_home_committee_cml(self) -> None:
+        self.create_committee(3)
+        self.create_user("mina")
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+
+    def test_update_with_external_true(self) -> None:
+        self.create_user("jonathan")
+        response = self.request(
+            "user.update",
+            {"id": 2, "external": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jonathan", "external": True})
+
+    def test_update_with_external_true_unsets_home_committee(self) -> None:
+        self.create_committee()
+        self.create_user("jonathan", home_committee_id=1)
+        response = self.request(
+            "user.update",
+            {"id": 2, "external": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"username": "jonathan", "external": True, "home_committee_id": None},
+        )
+
+    def test_update_with_external_false(self) -> None:
+        self.create_user("jack")
+        response = self.request(
+            "user.update",
+            {"id": 2, "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jack", "external": False})
+
+    def test_update_with_external_false_doesnt_unset_home_committee(self) -> None:
+        self.create_committee()
+        self.create_user("jack", home_committee_id=1)
+        response = self.request(
+            "user.update",
+            {"id": 2, "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "jack", "external": False, "home_committee_id": 1}
+        )
+
+    def test_update_with_with_home_committee_and_external_true(self) -> None:
+        self.create_committee(3)
+        self.create_user("renfield")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "external": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set external to true and set a home committee at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_and_external_false(self) -> None:
+        """Also tests for parent CML"""
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.create_user("vanHelsing")
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"username": "vanHelsing", "home_committee_id": 3, "external": False},
+        )
+
+    def test_update_with_home_committee_wrong_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy")
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_no_perm(self) -> None:
+        self.create_committee(3)
+        self.create_user("arthur")
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_user("dracula")
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "dracula", "home_committee_id": 3}
+        )
+
+    def test_update_overwrite_home_committee_both_cml(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("mina", home_committee_id=2)
+        self.set_committee_management_level([2, 3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_both_parent_cml(self) -> None:
+        self.create_committee(1)
+        self.create_committee(2, parent_id=1)
+        self.create_committee(3, parent_id=1)
+        self.create_user("mina", home_committee_id=2)
+        self.set_committee_management_level([1])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "mina", "home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_wrong_CML(self) -> None:
+        self.create_committee(1)
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=1)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {1, 3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_old_home_committee_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=2)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_new_home_committee_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("quincy", home_committee_id=2)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee {2}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_no_perm(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {2, 3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_OML_orga(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"home_committee_id": 3})
+
+    def test_update_overwrite_home_committee_OML_users(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.create_user("arthur", home_committee_id=2)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {2, 3}",
+            response.json["message"],
+        )
+
+    def test_update_overwrite_home_committee_as_meeting_admin(self) -> None:
+        self.create_committee(3)
+        self.create_meeting()
+        self.create_user("arthur", group_ids=[1], home_committee_id=60)
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committees {3, 60}",
+            response.json["message"],
+        )
+
+    def test_update_add_user_to_meeting_and_home_committee(self) -> None:
+        self.create_committee(3)
+        self.create_meeting()
+        self.create_user("arthur")
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [2])
+        self.set_committee_management_level([3])
+        response = self.request(
+            "user.update",
+            {"id": 2, "home_committee_id": 3, "meeting_id": 1, "group_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        meeting_user_ids = self.assert_model_exists("user/2", {"home_committee_id": 3})[
+            "meeting_user_ids"
+        ]
+        assert len(meeting_user_ids) == 1
+        self.assert_model_exists(
+            f"meeting_user/{meeting_user_ids[0]}", {"meeting_id": 1, "group_ids": [1]}
+        )
+
+    def test_update_committee_membership_calculation_with_home_committee(
+        self,
+    ) -> None:
+        self.create_meeting()  # and committee 60
+        self.create_committee(61)
+        self.create_committee(62)
+        self.create_meeting(4)  # and committee 63
+        self.create_committee(64)
+        self.create_committee(65)
+        self.create_meeting(7)  # and committee 66
+        testcases: list[dict[str, Any]] = [
+            {
+                "name": "acctJoinMeeting",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinCommittee",
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctBecomeAdmin",
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinMeetingNCommittee",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinCommitteeNBecomeAdmin",
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctJoinMeetingNBecomeAdmin",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctAll",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "acctAllDifferent",
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 64],
+                "expected_committees": [60, 61, 62, 64],
+            },
+            {
+                "name": "ptcpJoinMeeting",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinCommittee",
+                "meeting_ids": [7],
+                "payload_hc_id": 60,
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinMeetingNCommittee",
+                "meeting_ids": [4, 7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "expected_committees": [60, 63, 66],
+            },
+            {
+                "name": "ptcpJoinCommitteeNBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpJoinMeetingNBecomeAdmin",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpAll",
+                "meeting_ids": [7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60, 66],
+            },
+            {
+                "name": "ptcpAllDifferent",
+                "meeting_ids": [4, 7],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 63, 64],
+                "expected_committees": [60, 61, 62, 63, 64, 66],
+            },
+            {
+                "name": "ptcpLeave",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "expected_committees": [],
+            },
+            {
+                "name": "ptcpLeaveJoinSameCommittee",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "payload_hc_id": 66,
+                "expected_committees": [66],
+            },
+            {
+                "name": "ptcpLeaveJoinOtherCommittee",
+                "meeting_ids": [7],
+                "payload_m_id": 7,
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "ptcpLeaveBecomeAdmin",
+                "meeting_ids": [1],
+                "payload_m_id": 1,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeeting",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinCommittee",
+                "home_committee_id": 60,
+                "payload_hc_id": 62,
+                "expected_committees": [62],
+            },
+            {
+                "name": "ntusBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeetingNCommittee",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 62,
+                "expected_committees": [60, 62],
+            },
+            {
+                "name": "ntusJoinCommitteeNBecomeAdmin",
+                "home_committee_id": 64,
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusJoinMeetingNBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusAll",
+                "home_committee_id": 66,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusAllDifferent",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [62, 63, 64],
+                "expected_committees": [60, 61, 62, 63, 64],
+            },
+            {
+                "name": "ntusSwitch",
+                "home_committee_id": 60,
+                "payload_hc_id": 61,
+                "expected_committees": [61],
+            },
+            {
+                "name": "ntusLeave",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "expected_committees": [],
+            },
+            {
+                "name": "ntusLeaveJoinSameCommitteeMeeting",
+                "home_committee_id": 60,
+                "payload_m_id": 1,
+                "payload_group_ids": [2],
+                "payload_hc_id": 0,
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusLeaveBecomeAdmin",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "payload_cm_ids": [60],
+                "expected_committees": [60],
+            },
+            {
+                "name": "ntusLeaveBecomeOtherAdmin",
+                "home_committee_id": 60,
+                "payload_hc_id": 0,
+                "payload_cm_ids": [65],
+                "expected_committees": [65],
+            },
+            {
+                "name": "cmadJoinMeeting",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "expected_committees": [60, 63],
+            },
+            {
+                "name": "cmadJoinCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 60,
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_cm_ids": [60, 63],
+                "expected_committees": [60, 63],
+            },
+            {
+                "name": "cmadJoinMeetingNCommittee",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [5],
+                "payload_hc_id": 62,
+                "expected_committees": [60, 62, 63],
+            },
+            {
+                "name": "cmadJoinCommitteeNBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [60, 66],
+                "expected_committees": [60, 61, 66],
+            },
+            {
+                "name": "cmadJoinMeetingNBecomeAdmin",
+                "committee_management_ids": [60],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "payload_cm_ids": [60, 61, 62, 63],
+                "expected_committees": [60, 61, 62, 63],
+            },
+            {
+                "name": "cmadAll",
+                "committee_management_ids": [60],
+                "payload_m_id": 1,
+                "payload_group_ids": [1],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [60, 61],
+                "expected_committees": [60, 61],
+            },
+            {
+                "name": "cmadAllDifferent",
+                "committee_management_ids": [66],
+                "payload_m_id": 4,
+                "payload_group_ids": [4],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [60, 62],
+                "expected_committees": [60, 61, 62, 63],
+            },
+            {
+                "name": "cmadSwitch",
+                "committee_management_ids": [60],
+                "payload_cm_ids": [65],
+                "expected_committees": [65],
+            },
+            {
+                "name": "cmadRmOne",
+                "committee_management_ids": [60, 61],
+                "payload_cm_ids": [61],
+                "expected_committees": [61],
+            },
+            {
+                "name": "cmadRmAll",
+                "committee_management_ids": [60, 61],
+                "payload_cm_ids": [],
+                "expected_committees": [],
+            },
+            {
+                "name": "cmadRmJoinSameCommitteeMeeting",
+                "committee_management_ids": [60],
+                "payload_m_id": 1,
+                "payload_group_ids": [2],
+                "payload_cm_ids": [],
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadRmJoinSameCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 60,
+                "payload_cm_ids": [],
+                "expected_committees": [60],
+            },
+            {
+                "name": "cmadRmJoinOtherCommittee",
+                "committee_management_ids": [60],
+                "payload_hc_id": 61,
+                "payload_cm_ids": [],
+                "expected_committees": [61],
+            },
+            {
+                "name": "all",
+                "meeting_ids": [1],
+                "home_committee_id": 61,
+                "committee_management_ids": [62],
+                "payload_m_id": 4,
+                "payload_group_ids": [6],
+                "payload_hc_id": 64,
+                "payload_cm_ids": [65, 66],
+                "expected_committees": [60, 63, 64, 65, 66],
+            },
+        ]
+        payloads: list[dict[str, Any]] = []
+        meeting_to_user_ids: dict[int, list[int]] = {i: [] for i in range(1, 8, 3)}
+        committee_to_native_user_ids: dict[int, list[int]] = {
+            i: [] for i in range(60, 67)
+        }
+        committee_to_manager_ids: dict[int, list[int]] = {i: [] for i in range(60, 67)}
+        committee_to_user_ids: dict[int, set[int]] = {i: set() for i in range(60, 67)}
+        committee_to_expected_user_ids: dict[int, list[int]] = {
+            i: [] for i in range(60, 67)
+        }
+        data: dict[str, dict[str, Any]] = {}
+        for testcase in testcases:
+            i = self.create_user(testcase["name"])
+            committee_ids: set[int] = set()
+            date: dict[str, Any] = {}
+            if meeting_ids := testcase.get("meeting_ids"):
+                date["meeting_ids"] = meeting_ids
+                date["meeting_user_ids"] = [m_id * 100 + i for m_id in meeting_ids]
+                for m_id in meeting_ids:
+                    data[f"meeting_user/{m_id* 100 + i}"] = {
+                        "user_id": i,
+                        "meeting_id": m_id,
+                        "group_ids": [m_id],
+                    }
+                    meeting_to_user_ids[m_id].append(i)
+                    committee_ids.add(m_id + 59)
+                    committee_to_user_ids[m_id + 59].add(i)
+            if home_committee_id := testcase.get("home_committee_id"):
+                date["home_committee_id"] = home_committee_id
+                committee_ids.add(home_committee_id)
+                committee_to_native_user_ids[home_committee_id].append(i)
+                committee_to_user_ids[home_committee_id].add(i)
+            if committee_management_ids := testcase.get("committee_management_ids"):
+                date["committee_management_ids"] = committee_management_ids
+                committee_ids.update(committee_management_ids)
+                for c_id in committee_management_ids:
+                    committee_to_manager_ids[c_id].append(i)
+                    committee_to_user_ids[c_id].add(i)
+            date["committee_ids"] = sorted(list(committee_ids))
+            data[f"user/{i}"] = date
+            payload: dict[str, Any] = {"id": i}
+            if meeting_id := testcase.get("payload_m_id"):
+                payload["meeting_id"] = meeting_id
+                payload["group_ids"] = testcase.get("payload_group_ids", [])
+            if home_committee_id := testcase.get("payload_hc_id"):
+                payload["home_committee_id"] = home_committee_id
+            elif home_committee_id == 0:
+                payload["home_committee_id"] = None
+            if (committee_management_ids := testcase.get("payload_cm_ids")) is not None:
+                payload["committee_management_ids"] = committee_management_ids
+            payloads.append(payload)
+            for c_id in testcase["expected_committees"]:
+                committee_to_expected_user_ids[c_id].append(i)
+        data.update(
+            {
+                **{
+                    f"meeting/{id_}": {
+                        "user_ids": user_ids,
+                        "meeting_user_ids": [id_ * 100 + u_id for u_id in user_ids],
+                    }
+                    for id_, user_ids in meeting_to_user_ids.items()
+                },
+                **{
+                    f"group/{id_}": {
+                        "meeting_user_ids": [id_ * 100 + u_id for u_id in user_ids],
+                    }
+                    for id_, user_ids in meeting_to_user_ids.items()
+                },
+                **{
+                    f"committee/{id_}": {
+                        "user_ids": sorted(list(user_ids)),
+                        "native_user_ids": committee_to_native_user_ids[id_],
+                        "manager_ids": committee_to_manager_ids[id_],
+                    }
+                    for id_, user_ids in committee_to_user_ids.items()
+                },
+            }
+        )
+        self.set_models(data)
+
+        response = self.request_multi("user.update", payloads)
+
+        self.assert_status_code(response, 200)
+        for i, ids in committee_to_expected_user_ids.items():
+            comm = sorted(self.get_model(f"committee/{i}").get("user_ids", []))
+            assert comm == ids
+        for i, testcase in enumerate(testcases, 2):
+            user = sorted(self.get_model(f"user/{i}").get("committee_ids", []))
+            assert user == testcase["expected_committees"]
+
+    def test_update_with_home_committee_as_multi_meeting_admin_group_A(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_user_groups(1, [2, 5, 8])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "first_name": "Alice",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_committee_admin_group_A(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_committee_management_level([60, 63, 66])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "first_name": "Alice",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_meeting_admin_group_F(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_user_groups(1, [2, 5, 8])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "default_password": "defP",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_update_with_home_committee_as_multi_committee_admin_group_F(self) -> None:
+        self.create_committee(8)
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_meeting(7)
+        alice_id = self.create_user("alice", [1, 4, 7], home_committee_id=8)
+        self.set_committee_management_level([60, 63, 66])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.update",
+            {
+                "id": alice_id,
+                "default_password": "defP",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
+            response.json["message"],
+        )
+
+    def test_multi_delegation_doesnt_break_history(self) -> None:
+        self.create_meeting(1)
+        self.set_user_groups(1, [2])
+        for i in range(2, 68):
+            self.create_user(f"user{i}", group_ids=[3])
+        response = self.request(
+            "user.update",
+            {"id": 1, "meeting_id": 1, "vote_delegations_from_ids": list(range(2, 68))},
+        )
+        self.assert_status_code(response, 200)
+
+    def test_lock_out_then_remove_from_meeting_then_set_superadmin(self) -> None:
+        self.create_meeting(10)
+        bob_id = self.create_user("bob", group_ids=[10])
+        response = self.request(
+            "user.update",
+            {"id": bob_id, "meeting_id": 10, "locked_out": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/1", {"locked_out": True, "user_id": bob_id, "meeting_id": 10}
+        )
+        response = self.request(
+            "user.update",
+            {"id": bob_id, "meeting_id": 10, "group_ids": []},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting_user/1")
+        response = self.request(
+            "user.update",
+            {
+                "id": bob_id,
+                "organization_management_level": "superadmin",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"user/{bob_id}",
+            {"username": "bob", "organization_management_level": "superadmin"},
+        )
+
+
+class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
+    committeePerms: set[int] = set()
+    baseCommitteePerms: set[int] = set()
+    meetingPerms: set[int] = set()
+    ownOml: OrganizationManagementLevel | None = None
+    userOml: OrganizationManagementLevel | None = None
+    lock_meeting_1: bool = False
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.lowerOml = self.userOml and (not self.ownOml or self.ownOml < self.userOml)
+        if not self.baseCommitteePerms:
+            self.baseCommitteePerms = self.committeePerms
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_user(
+            "Bob", organization_management_level=self.userOml, home_committee_id=60
+        )
+        self.set_organization_management_level(self.ownOml)
+        if self.baseCommitteePerms:
+            self.set_committee_management_level(
+                committee_ids=list(self.baseCommitteePerms)
+            )
+        if self.meetingPerms:
+            self.set_user_groups(1, [id_ + 1 for id_ in self.meetingPerms])
+        if self.lock_meeting_1:
+            self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+    def update_with_home_committee_group_A(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "username": "BobTheBuilder",
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"username": "BobTheBuilder"})
+
+    def update_with_home_committee_group_B(self) -> None:
+        m_user_ids = self.set_user_groups(2, [1])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "meeting_id": 1,
+                "number": "No.1",
+            },
+        )
+        no_low_level_perms = (
+            1 not in self.meetingPerms and 60 not in self.committeePerms
+        )
+        if self.lock_meeting_1 and 1 not in self.meetingPerms:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif no_low_level_perms and not self.ownOml:
+            # Fails in group C check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif (
+            no_low_level_perms
+            and self.ownOml == OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            # Fails in group B check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: Permission user.can_update in meeting 1",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"meeting_user/{m_user_ids[0]}", {"number": "No.1"}
+            )
+
+    def update_with_home_committee_group_B_other_committee_meeting(self) -> None:
+        m_user_ids = self.set_user_groups(2, [4])
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "meeting_id": 4,
+                "number": "No.1",
+            },
+        )
+        no_low_level_perms = (
+            4 not in self.meetingPerms and 63 not in self.committeePerms
+        )
+        if no_low_level_perms and not self.ownOml:
+            # Fails in group C check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
+                response.json["message"],
+            )
+        elif (
+            no_low_level_perms
+            and self.ownOml == OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            # Fails in group B check
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: Permission user.can_update in meeting 4",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"meeting_user/{m_user_ids[0]}", {"number": "No.1"}
+            )
+
+    def update_with_home_committee_group_C(self) -> None:
+        self.set_user_groups(2, [1])
+        response = self.request(
+            "user.update",
+            {"id": 2, "meeting_id": 1, "group_ids": [1]},
+        )
+        if self.lock_meeting_1 and 1 not in self.meetingPerms:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        elif (
+            1 not in self.meetingPerms
+            and 60 not in self.committeePerms
+            and not self.ownOml
+        ):
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            meeting_users = [
+                self.get_model(f"meeting_user/{id_}")
+                for id_ in self.get_model("user/2")["meeting_user_ids"]
+            ]
+            assert (
+                meeting_user := meeting_users[
+                    [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
+                ]
+            )
+            assert meeting_user.get("meeting_id") == 1
+            assert meeting_user.get("group_ids") == [1]
+
+    def update_with_home_committee_group_D(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "committee_management_ids": [60],
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"committee_management_ids": [60]})
+
+    def update_with_home_committee_group_D_other_committee(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "committee_management_ids": [63],
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 63 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 63",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"committee_management_ids": [63]})
+
+    def update_with_home_committee_group_E(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "Your organization management level is not high enough to set a Level of can_manage_users",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                "user/2",
+                {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+            )
+
+    def update_with_home_committee_group_F(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "default_password": "defP",
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif 60 not in self.committeePerms and not self.ownOml:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 60",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"default_password": "defP"})
+
+    def update_with_home_committee_group_G(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 2,
+                "is_demo_user": True,
+            },
+        )
+        if self.lowerOml:
+            self.assertIn(
+                "Your organization management level is not high enough to change a user with a Level of superadmin!",
+                response.json["message"],
+            )
+        elif not self.ownOml or self.ownOml < OrganizationManagementLevel.SUPERADMIN:
+            self.assert_status_code(response, 403)
+            self.assertIn(
+                "You are not allowed to perform action user.update. Missing OrganizationManagementLevel: superadmin",
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists("user/2", {"is_demo_user": True})
+
+
+class UserUpdateHomeCommitteePermissionTestNoPermissions(
+    UserUpdateHomeCommitteePermissionTest
+):
+    def test_update_with_home_committee_group_A_no_perm(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_no_perm(self) -> None:
+        self.update_with_home_committee_group_B()
+
+
+class UserUpdateHomeCommitteePermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+
+    def test_update_with_home_committee_group_A_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_F_as_meeting_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteePermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+
+    def test_update_with_home_committee_group_A_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_B_other_committee_meeting_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_group_C_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+    def test_update_with_home_committee_group_E_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_committee_admin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsForeignCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {63}
+
+    def test_update_with_home_committee_group_A_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_C_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_D_other_committee_as_foreign_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D_other_committee()
+
+
+class UserUpdateHomeCommitteePermissionTestAsUserAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+    )
+
+    def test_update_with_home_committee_group_A_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_C_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_E_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_user_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteePermissionTestAsOrgaAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+
+    def test_update_with_home_committee_group_E_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_orga_admin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsSuperadmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = OrganizationManagementLevel.SUPERADMIN
+
+    def test_update_with_home_committee_group_F_as_superadmin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_superadmin(self) -> None:
+        self.update_with_home_committee_group_G()
+
+
+class UserUpdateHomeCommitteePermissionTestAsLowerOml(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+    userOml: OrganizationManagementLevel | None = OrganizationManagementLevel.SUPERADMIN
+
+    def test_update_with_home_committee_group_A_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_E_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_lower_oml(self) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_user_groups(2, [4])
+
+    def test_update_with_home_committee_old_orga_scope_group_B_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_other_committee_meeting_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_old_orga_scope_group_C_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_old_orga_scope_group_F_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteeTraditionalOrgaScopePermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_user_groups(2, [4])
+
+    def test_update_with_home_committee_old_orga_scope_group_A_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_old_orga_scope_group_B_other_committee_meeting_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B_other_committee_meeting()
+
+    def test_update_with_home_committee_old_orga_scope_group_C_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_old_orga_scope_group_D_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_old_orga_scope_group_F_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_F()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsMeetingAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    meetingPerms: set[int] = {1}
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_meeting_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    committeePerms: set[int] = {60}
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_committee_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsUserManager(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+    )
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_user_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteeLockedMeetingPermissionTestAsOrgaAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    ownOml: OrganizationManagementLevel | None = (
+        OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    )
+    lock_meeting_1 = True
+
+    def test_update_with_home_committee_locked_meeting_group_B_as_orga_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_locked_meeting_group_C_as_orga_admin(
+        self,
+    ) -> None:
+        self.update_with_home_committee_group_C()
+
+
+class UserUpdateHomeCommitteePermissionTestAsParentCommitteeAdmin(
+    UserUpdateHomeCommitteePermissionTest
+):
+    baseCommitteePerms: set[int] = {50}
+    committeePerms: set[int] = {50, 60}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_committee(50)
+        self.create_committee(60, parent_id=50)
+
+    def test_update_with_home_committee_group_A_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_A()
+
+    def test_update_with_home_committee_group_B_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_B()
+
+    def test_update_with_home_committee_group_C_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_C()
+
+    def test_update_with_home_committee_group_D_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_D()
+
+    def test_update_with_home_committee_group_E_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_E()
+
+    def test_update_with_home_committee_group_F_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_F()
+
+    def test_update_with_home_committee_group_G_as_parent_committee_admin(self) -> None:
+        self.update_with_home_committee_group_G()

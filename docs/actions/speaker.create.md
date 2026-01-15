@@ -3,7 +3,7 @@
 {
 // Required
     list_of_speakers_id: Id;
-    meeting_user_id: Id;  // except if speech_state == interposed_question, see below
+    meeting_user_id: Id;  // except if speech_state == interposed_question, intervention or intervention_answer, see below
 
 // Optional
     speech_state: string;
@@ -11,6 +11,7 @@
     note: string;
     point_of_order_category_id: Id;
     structure_level_id: Id;
+    answer_to_id: Id; // may only be set to the ids of speakers who have speech_state == intervention or interposed_question, and only if there is already a started/finished speech
 }
 ```
 
@@ -38,7 +39,7 @@ Two types of operation:
   conditions see under **Permissions**. If `point_of_order` is also `true`, it is only allowed if
   `meeting.list_of_speakers_can_create_point_of_order_for_others` is `true` as well.
 
-`meeting_user_id` is _not_ required if `speech_state == "interposed_question"`.
+`meeting_user_id` is _not_ required if `speech_state == "interposed_question"` or  `speech_state == "intervention"`.
 
 There are many things to watch out for:
 - Point of order speakers are only allowed if `meeting/list_of_speakers_enable_point_of_order_speakers` is true.
@@ -46,7 +47,7 @@ There are many things to watch out for:
 - `point_of_order_category_id` is only allowed and in this case required, if `point_of_order` is true and `meeting.list_of_speakers_enable_point_of_order_categories` is also true. This opens an alternative way to get the point-of-order-speakers sorted, see [Point of order](https://github.com/OpenSlides/OpenSlides/wiki/List-of-speakers#point-of-order).
 - If `meeting/list_of_speakers_present_users_only` is true, the user must be present (`user/present_in_meeting_ids`).
 - The `weight` must be calculated as described in [Point of order](https://github.com/OpenSlides/OpenSlides/wiki/List-of-speakers#point-of-order) with an eye to detail regarding point of order speakers.
-- If `meeting.list_of_speakers_allow_multiple_speakers` is `False`, the given user must not be already waiting. It is allowed to have the user once as a normal speaker and once as a point of order speaker, but not two speakers of the same type.
+- If `meeting.list_of_speakers_allow_multiple_speakers` is `False`, the given user must not be already waiting. It is allowed to have the user once as a normal speaker and once as a point of order speaker, but not two speakers of the same type. Answers are excluded from this.
 - The user must belong to the meeting.
 - `speech_state` can only be set to `pro` or `contra` if `meeting/list_of_speakers_enable_pro_contra_speech` is true
 - `speech_state` can only be set to `contribution` if `list_of_speakers.can_manage` or
@@ -56,7 +57,9 @@ There are many things to watch out for:
   `meeting/list_of_speakers_enable_interposed_question` is true
 - If `speech_state == "interposed_question"`, the speaker has to be sorted after all other
   interposed questions, but before all other speakers (including point of order speakers)
-- The speech states `intervention` and `interposed_question` cannot be combined with `point_of_order == True`
+- The speech states `intervention`, `intervention_answer` and `interposed_question` cannot be combined with `point_of_order == True`
+- If `speech_state == "intervention"`, the speaker has to be sorted after all other intervention and interposed questions, but before all other speakers (including point of order speakers, excluding intervention answers)
+- If `answer_to_id` is set to the id of an intervention or interposed question (other states/point_of_order are not allowed), the speaker will then be sorted directly under that intervention/question (or, if there are already answers for it, right above the first non-answer), the speech state is automatically set to the linked speeches state
 
 If the optional `structure_level_id` is given, it is checked whether a
 `structure_level_list_of_speakers` for this LOS and structure level exists. If it doesn't, it is

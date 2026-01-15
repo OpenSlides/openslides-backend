@@ -5,7 +5,12 @@ from tests.system.action.base import BaseActionTestCase
 class GroupCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "group.create", {"name": "test_Xcdfgee", "meeting_id": 22}
@@ -24,6 +29,7 @@ class GroupCreateActionTest(BaseActionTestCase):
                     "name": "name_vJxebUwo",
                     "is_active_in_organization_id": 1,
                     "group_ids": [3],
+                    "committee_id": 1,
                 },
                 "group/3": {"meeting_id": 22, "weight": 3},
             }
@@ -51,11 +57,13 @@ class GroupCreateActionTest(BaseActionTestCase):
                     "name": "name_vJxebUwo",
                     "is_active_in_organization_id": 1,
                     "group_ids": [3],
+                    "committee_id": 1,
                 },
                 "meeting/23": {
                     "name": "name_uhufngoo",
                     "is_active_in_organization_id": 1,
                     "group_ids": [],
+                    "committee_id": 1,
                 },
                 "group/3": {"meeting_id": 22, "weight": 3},
             }
@@ -80,7 +88,12 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_permissions(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "group.create",
@@ -99,7 +112,12 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_redundant_permissions(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "group.create",
@@ -118,7 +136,12 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_redundant_permissions_2(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "group.create",
@@ -141,7 +164,12 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_empty_data(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request("group.create", {"meeting_id": 22})
         self.assert_status_code(response, 400)
@@ -152,7 +180,12 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_wrong_field(self) -> None:
         self.create_model(
-            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+            "meeting/22",
+            {
+                "name": "name_vJxebUwo",
+                "is_active_in_organization_id": 1,
+                "committee_id": 1,
+            },
         )
         response = self.request(
             "group.create",
@@ -193,10 +226,12 @@ class GroupCreateActionTest(BaseActionTestCase):
     def test_create_external_id_forbidden(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [22]},
                 "meeting/22": {
                     "name": "name_vJxebUwo",
                     "is_active_in_organization_id": 1,
                     "admin_group_id": 2,
+                    "committee_id": 1,
                 },
                 "group/2": {"meeting_id": 22, "admin_group_for_meeting_id": 22},
                 "group/3": {"name": "test", "meeting_id": 22},
@@ -214,10 +249,12 @@ class GroupCreateActionTest(BaseActionTestCase):
     def test_create_external_id_allowed(self) -> None:
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [22]},
                 "meeting/22": {
                     "name": "name_vJxebUwo",
                     "admin_group_id": 3,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "group/3": {
                     "name": "test",
@@ -245,6 +282,7 @@ class GroupCreateActionTest(BaseActionTestCase):
                     "name": "name_vJxebUwo",
                     "admin_group_id": 3,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "group/3": {
                     "name": "test",
@@ -272,6 +310,7 @@ class GroupCreateActionTest(BaseActionTestCase):
                     "name": "name_vJxebUwo",
                     "admin_group_id": 3,
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "group/3": {
                     "name": "test",
@@ -293,4 +332,18 @@ class GroupCreateActionTest(BaseActionTestCase):
                 "meeting_id": 22,
                 "external_id": external_id,
             },
+        )
+
+    def test_create_as_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.create_meeting()
+        self.set_committee_management_level([59])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "group.create", {"name": "T-T", "external_id": "T-T", "meeting_id": 1}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/4", {"name": "T-T", "external_id": "T-T", "meeting_id": 1}
         )

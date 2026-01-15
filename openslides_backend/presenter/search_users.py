@@ -134,7 +134,6 @@ class SearchUsers(BasePresenter):
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
                 permission_id,
             ):
                 return
@@ -155,15 +154,10 @@ class SearchUsers(BasePresenter):
                 ["committee_id"],
                 lock_result=False,
             )
-            if (committee_id := meeting.get("committee_id", 0)) < 1:
-                raise PresenterException(
-                    f"Error in database: Meeting {permission_id} has no valid committee_id!"
-                )
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                committee_id,
+                meeting["committee_id"],
             ):
                 return
             raise MissingPermission({Permissions.User.CAN_MANAGE: permission_id})

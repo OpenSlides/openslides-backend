@@ -4,10 +4,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class StructureLevelUpdateTest(BaseActionTestCase):
     def test_update_all_fields(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
                 },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
@@ -34,10 +34,10 @@ class StructureLevelUpdateTest(BaseActionTestCase):
         )
 
     def test_update_duplicate_name(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1, 2],
                 },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
@@ -59,15 +59,16 @@ class StructureLevelUpdateTest(BaseActionTestCase):
         self.assert_model_exists("structure_level/1", {"name": "test"})
 
     def test_update_duplicate_name_in_other_meeting(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
                 },
                 "meeting/2": {
                     "is_active_in_organization_id": 1,
                     "structure_level_ids": [2],
+                    "committee_id": 1,
                 },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
                 "structure_level/2": {"meeting_id": 2, "name": "test2"},

@@ -14,7 +14,7 @@ ROOT = os.path.join(
 )
 
 META_PATH = "./meta"
-SOURCE_META = f"{META_PATH}/models.yml"
+SOURCE_META = f"{META_PATH}/collection-meta.yml"
 SOURCE_COLLECTIONS = f"{META_PATH}/collections"
 
 
@@ -44,15 +44,13 @@ def get_file_content_text(file: str) -> str:
 
 
 def get_merged_models_yml() -> dict[str, dict[str, Any]]:
-    with open(SOURCE_META) as file:
-        models_file_content: str = file.read()
+    models_file_content = ""
     filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
     for filename in filenames:
         path = f"{SOURCE_COLLECTIONS}/{filename}"
-        content = "\n  ".join(get_file_content_text(path).split("\n"))
-        collection = filename[:-4]
+        content = "".join(get_file_content_text(path).split("---\n"))
         if content:
-            models_file_content = f"{models_file_content}\n{collection}:\n  {content}"
+            models_file_content = f"{models_file_content}\n{content}"
     return yaml.safe_load(models_file_content)
 
 

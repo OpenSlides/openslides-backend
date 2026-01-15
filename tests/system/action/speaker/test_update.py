@@ -9,10 +9,10 @@ from tests.system.action.base import BaseActionTestCase
 class SpeakerUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_enable_pro_contra_speech": True,
-                "is_active_in_organization_id": 1,
                 "meeting_user_ids": [7],
                 "speaker_ids": [890],
             },
@@ -327,6 +327,36 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 "speaker/890": {
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_user_id": None,
+                    "begin_time": 100,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_meeting_user_on_started_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                    "meeting_user_id": None,
+                    "begin_time": 100,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_meeting_user_on_started_intervention_answer(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "begin_time": 100,
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                    "meeting_user_id": None,
                 },
             }
         )
@@ -392,7 +422,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": SpeechState.INTERVENTION,
+                    "speech_state": SpeechState.PRO,
                     "meeting_user_id": None,
                 },
             }
@@ -721,7 +751,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 }
             }
         )
-        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        response = self.request(
+            "speaker.update", {"id": 890, "point_of_order": True, "speech_state": None}
+        )
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
@@ -898,3 +930,166 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "'weight'",
         ]:
             self.assertIn(field, message)
+
+    def test_update_set_meeting_user_for_empty_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION,
+                }
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_set_meeting_user_for_non_empty_intervention(self) -> None:
+        alice_id = self.create_user("alice", [3])
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
+        response = self.request(
+            "speaker.update", {"id": 890, "meeting_user_id": alice_id}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You cannot set the meeting_user_id."
+
+    def test_update_set_meeting_user_for_empty_intervention_answer(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                }
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "meeting_user_id": 7})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_set_meeting_user_for_non_empty_intervention_answer(self) -> None:
+        self.create_meeting(1)
+        alice_id = self.create_user("alice", [3])
+        self.set_models(
+            {"speaker/890": {"answer": True, "speech_state": SpeechState.INTERVENTION}}
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "meeting_user_id": alice_id}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You cannot set the meeting_user_id."
+
+    def test_update_speech_state_without_meeting_user_error(self) -> None:
+        self.create_meeting(1)
+        self.set_models(
+            {
+                "speaker/890": {
+                    "meeting_user_id": None,
+                    "speech_state": SpeechState.INTERVENTION,
+                }
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot set interventions to other speech states without meeting_user_id."
+        )
+
+    def test_update_set_answer_on_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": True})
+
+    def test_update_set_answer_on_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": True})
+
+    def test_update_set_answer_on_any_other_state(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.PRO,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Answer can only be set for interventions and interposed questions."
+        )
+
+    def test_update_set_answer_on_no_state(self) -> None:
+        response = self.request("speaker.update", {"id": 890, "answer": True})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Answer can only be set for interventions and interposed questions."
+        )
+
+    def test_update_unset_answer_on_intervention_and_change_state(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "answer": False, "speech_state": SpeechState.CONTRA},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"answer": False, "speech_state": SpeechState.CONTRA}
+        )
+
+    def test_update_unset_answer_on_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "answer": False})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"answer": False})
+
+    def test_update_change_state_on_answer_intervention(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                    "answer": True,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRA}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot set speech_state to anything except interventions and interposed questions for answers."
+        )

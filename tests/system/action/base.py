@@ -1,6 +1,6 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, cast
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,8 +22,10 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.patterns import FullQualifiedId
-from openslides_backend.shared.typing import HistoryInformation
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
@@ -137,7 +139,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def execute_action_internally(
-        self, action_name: str, data: dict[str, Any], user_id: int = 0
+        self, action_name: str, data: dict[str, Any], user_id: int = -1
     ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
@@ -160,6 +162,58 @@ class BaseActionTestCase(BaseSystemTestCase):
             self.datastore.write(write_request)
         self.datastore.reset()
         return result
+
+    @with_database_context
+    def create_committee(
+        self,
+        committee_id: int = 1,
+        parent_id: int | None = None,
+        name: str | None = None,
+    ) -> None:
+        if not name:
+            name = f"Committee{committee_id}"
+        committee_fqid = f"committee/{committee_id}"
+        data: dict[str, dict[str, Any]] = {
+            committee_fqid: {
+                "organization_id": 1,
+                "name": name,
+            }
+        }
+        if parent_id:
+            parent_fqid = f"committee/{parent_id}"
+            parent = self.datastore.get(
+                parent_fqid,
+                ["all_parent_ids", "all_child_ids", "child_ids"],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            data[parent_fqid] = {
+                "child_ids": [*parent.get("child_ids", []), committee_id],
+                "all_child_ids": [*parent.get("all_child_ids", []), committee_id],
+            }
+            data[committee_fqid]["parent_id"] = parent_id
+            data[committee_fqid]["all_parent_ids"] = [
+                *parent.get("all_parent_ids", []),
+                parent_id,
+            ]
+            if grandparent_ids := parent.get("all_parent_ids", []):
+                grandparents = self.datastore.get_many(
+                    [GetManyRequest("committee", grandparent_ids, ["all_child_ids"])],
+                    lock_result=False,
+                    use_changed_models=False,
+                ).get("committee", {})
+                data.update(
+                    {
+                        f"committee/{id_}": {
+                            "all_child_ids": [
+                                *grandparents.get(id_, {}).get("all_child_ids", []),
+                                committee_id,
+                            ]
+                        }
+                        for id_ in grandparent_ids
+                    }
+                )
+        self.set_models(data)
 
     def create_meeting(self, base: int = 1) -> None:
         """
@@ -283,6 +337,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         username: str,
         group_ids: list[int] = [],
         organization_management_level: OrganizationManagementLevel | None = None,
+        home_committee_id: int | None = None,
     ) -> int:
         """
         Create a user with the given username, groups and organization management level.
@@ -298,8 +353,25 @@ class BaseActionTestCase(BaseSystemTestCase):
                 ),
             }
         )
+        if home_committee_id:
+            self.set_home_committee(id, home_committee_id)
         self.set_user_groups(id, group_ids)
         return id
+
+    @with_database_context
+    def set_home_committee(self, user_id: int, home_committee_id: int) -> None:
+        home_fqid = f"committee/{home_committee_id}"
+        committee = self.datastore.get(
+            home_fqid, ["native_user_ids"], lock_result=False
+        )
+        self.set_models(
+            {
+                f"user/{user_id}": {"home_committee_id": home_committee_id},
+                home_fqid: {
+                    "native_user_ids": [*committee.get("native_user_ids", []), user_id]
+                },
+            }
+        )
 
     def _get_user_data(
         self,
@@ -344,7 +416,8 @@ class BaseActionTestCase(BaseSystemTestCase):
     @with_database_context
     def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
         """
-        Sets the users groups, returns the meeting_user_ids
+        Sets the users groups and corresponding meeting_users and meeting_ids.
+        Returns the meeting_user_ids.
         """
         assert isinstance(group_ids, list)
         groups = self.datastore.get_many(
@@ -514,39 +587,43 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
 
     @with_database_context
+    def get_last_history_information(self, fqid: FullQualifiedId) -> list[str] | None:
+        entry_id = self.datastore.max(
+            "history_entry",
+            FilterOperator("original_model_id", "=", fqid),
+            "id",
+            lock_result=False,
+        )
+        if entry_id:
+            history_entry = self.datastore.get(
+                fqid_from_collection_and_id("history_entry", entry_id), ["entries"]
+            )
+            return history_entry.get("entries")
+        else:
+            return None
+
     def assert_history_information(
         self, fqid: FullQualifiedId, information: list[str] | None
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
-        informations = self.datastore.history_information([fqid]).get(fqid)
-        last_information = (
-            cast(HistoryInformation, informations[-1]["information"])
-            if informations
-            else {}
-        )
+        last_information = self.get_last_history_information(fqid)
         if information is None:
-            assert not informations or fqid not in last_information, informations
+            assert not last_information
         else:
-            assert informations
-            self.assertEqual(last_information[fqid], information)
+            assert last_information
+            self.assertEqual(last_information, information)
 
-    @with_database_context
     def assert_history_information_contains(
         self, fqid: FullQualifiedId, information: str
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
-        informations = self.datastore.history_information([fqid]).get(fqid)
-        last_information = (
-            cast(HistoryInformation, informations[-1]["information"])
-            if informations
-            else {}
-        )
-        assert informations
-        assert information in last_information[fqid]
+        last_information = self.get_last_history_information(fqid)
+        assert last_information
+        assert information in last_information
 
     def assert_logged_in(self) -> None:
         self.auth.authenticate()  # assert that no exception is thrown

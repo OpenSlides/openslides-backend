@@ -2,7 +2,7 @@ import re
 import time
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
@@ -14,6 +14,7 @@ from openslides_backend.models.fields import (
     BaseRelationField,
     GenericRelationField,
     GenericRelationListField,
+    OnDelete,
     RelationField,
     RelationListField,
 )
@@ -30,7 +31,9 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     collection_and_id_from_fqid,
+    collection_from_fqid,
     fqid_from_collection_and_id,
+    id_from_fqid,
 )
 from openslides_backend.shared.schema import models_map_object
 
@@ -43,6 +46,7 @@ from ....shared.util import (
 )
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
+from ...relations.typing import ListUpdateElement
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -78,13 +82,18 @@ class MeetingImport(
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
 
         # prefetch as much data as possible
         self.prefetch(action_data)
@@ -143,7 +152,7 @@ class MeetingImport(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["committee_ids", "committee_management_ids"],
+                    ["committee_ids", "committee_management_ids", "home_committee_id"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -190,6 +199,7 @@ class MeetingImport(
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
+            user.pop("home_committee_id", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)
@@ -224,6 +234,19 @@ class MeetingImport(
                         continue
                     res[key] = validate_html(html, ALLOWED_HTML_TAGS_STRICT)
                 entry["amendment_paragraphs"] = res
+
+        models_to_remove: set[tuple[str, int]] = set()
+        for mm_id, mmediafile in meeting_json.get("meeting_mediafile", {}).items():
+            if str(mmediafile["mediafile_id"]) not in meeting_json.get("mediafile", {}):
+                self.prepare_model_removal(
+                    "meeting_mediafile",
+                    mm_id,
+                    mmediafile,
+                    meeting_json,
+                    models_to_remove,
+                )
+        for collection, id_ in models_to_remove:
+            del meeting_json[collection][str(id_)]
 
         # check datavalidation
         checker = Checker(
@@ -565,7 +588,13 @@ class MeetingImport(
             meeting["meeting_user_ids"].append(new_meeting_user_id)
             request_user = self.datastore.get(
                 fqid_user := fqid_from_collection_and_id("user", self.user_id),
-                ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"],
+                [
+                    "id",
+                    "meeting_user_ids",
+                    "committee_management_ids",
+                    "committee_ids",
+                    "home_committee_id",
+                ],
             )
             request_user.pop("meta_position", None)
             request_user["meeting_user_ids"] = (
@@ -623,7 +652,10 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection in ["user", "gender"]:
+                elif collection in ["user", "gender"] or (
+                    collection == "mediafile"
+                    and getattr(self, "action_name", None) == "clone"
+                ):
                     list_fields: ListFields = {"add": {}, "remove": {}}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
@@ -731,8 +763,8 @@ class MeetingImport(
         entries_to_remove: list[str] = []
         for field, entry in relations.items():
             if regex.search(field):
-                if entry["add"]:
-                    entry["remove"] = []
+                if cast(ListUpdateElement, entry)["add"]:
+                    cast(ListUpdateElement, entry)["remove"] = []
                 else:
                     entries_to_remove.append(field)
         for field in entries_to_remove:
@@ -820,3 +852,84 @@ class MeetingImport(
 
         instance["meeting"]["_migration_index"] = backend_migration_index
         return instance
+
+    def prepare_model_removal(
+        self,
+        collection: str,
+        model_id: int,
+        content: dict[str, Any],
+        meeting_json: Any,
+        models_to_remove: set[tuple[str, int]] = set(),
+    ) -> None:
+        models_to_remove.add((collection, model_id))
+        for field_name in content:
+            if isinstance(
+                (relation_field := model_registry[collection]().get_field(field_name)),
+                BaseRelationField,
+            ) and (to_remove := content.get(field_name)):
+                if isinstance(to_remove, list):
+                    for target in to_remove:
+                        self.remove_back_relation(
+                            int(model_id),
+                            collection,
+                            relation_field,
+                            target,
+                            meeting_json,
+                            models_to_remove,
+                        )
+                else:
+                    self.remove_back_relation(
+                        int(model_id),
+                        collection,
+                        relation_field,
+                        to_remove,
+                        meeting_json,
+                        models_to_remove,
+                    )
+
+    def remove_back_relation(
+        self,
+        model_id: int,
+        model_collection: str,
+        relation_field: BaseRelationField,
+        to_remove: str | int,
+        meeting_json: Any,
+        models_to_remove: set[tuple[str, int]],
+    ) -> None:
+        if isinstance(relation_field, BaseGenericRelationField):
+            assert isinstance(to_remove, str)
+            coll = collection_from_fqid(to_remove)
+            id_ = str(id_from_fqid(to_remove))
+        else:
+            assert isinstance(to_remove, int)
+            coll = list(relation_field.to.keys())[0]
+            id_ = str(to_remove)
+        if (coll, id_) not in models_to_remove and id_ in meeting_json.get(coll, {}):
+            if relation_field.on_delete == OnDelete.CASCADE:
+                self.prepare_model_removal(
+                    coll,
+                    int(id_),
+                    meeting_json[coll][id_],
+                    meeting_json,
+                    models_to_remove,
+                )
+            elif meeting_json[coll][id_].get(relation_field.to[coll]):
+                if isinstance(meeting_json[coll][id_][relation_field.to[coll]], list):
+                    meeting_json[coll][id_][relation_field.to[coll]] = [
+                        other_mm_id
+                        for other_mm_id in meeting_json[coll][id_][
+                            relation_field.to[coll]
+                        ]
+                        if other_mm_id != model_id
+                        and other_mm_id
+                        != fqid_from_collection_and_id(model_collection, model_id)
+                    ]
+                else:
+                    assert meeting_json[coll][id_][
+                        relation_field.to[coll]
+                    ] == model_id or meeting_json[coll][id_][
+                        relation_field.to[coll]
+                    ] == fqid_from_collection_and_id(
+                        model_collection, model_id
+                    )
+                    del meeting_json[coll][id_][relation_field.to[coll]]

@@ -382,6 +382,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_poll_default_live_voting_enabled(self) -> None:
+        self.basic_test({"poll_default_live_voting_enabled": True})
+        self.assert_model_exists(
+            "meeting/1",
+            {"poll_default_live_voting_enabled": True},
+        )
+
     def test_update_motions_block_slide_columns(self) -> None:
         self.basic_test(
             {
@@ -415,14 +422,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_only_one_time_one_removal_from_db(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "test_name",
-                    "is_active_in_organization_id": 1,
                     "start_time": 160000,
                     "end_time": 170000,
-                    "language": "en",
                 },
             }
         )
@@ -445,11 +450,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "agenda_show_topic_navigation_on_detail_view": True,
                 "motions_hide_metadata_background": True,
                 "motions_create_enable_additional_submitter_text": True,
+                "motions_enable_restricted_editor_for_manager": True,
+                "motions_enable_restricted_editor_for_non_manager": True,
             }
         )
         assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
         assert meeting.get("motions_hide_metadata_background") is True
         assert meeting.get("motions_create_enable_additional_submitter_text") is True
+        assert meeting.get("motions_enable_restricted_editor_for_manager") is True
+        assert meeting.get("motions_enable_restricted_editor_for_non_manager") is True
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
@@ -564,6 +573,29 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [1])
         self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+
+    def test_update_group_d_committee_parent_permissions(self) -> None:
+        self.create_meeting()
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([59], 1)
         response = self.request(
             "meeting.update",
             {

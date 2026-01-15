@@ -24,11 +24,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         }
 
     def test_set_logo_correct(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
@@ -47,11 +46,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/222", {"logo_web_header_id": 7})
 
     def test_set_logo_svg_xml(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
@@ -70,11 +68,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/222", {"logo_web_header_id": 7})
 
     def test_set_logo_wrong_place(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
@@ -96,11 +93,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         )
 
     def test_set_logo_wrong_directory(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {
@@ -119,11 +115,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         assert "Cannot set a directory." in response.json["message"]
 
     def test_set_logo_wrong_no_image(self) -> None:
+        self.create_meeting(222)
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_meeting222",
-                    "is_active_in_organization_id": 1,
                     "meeting_mediafile_ids": [7],
                 },
                 "mediafile/17": {

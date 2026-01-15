@@ -3,12 +3,14 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategorySystemTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(222)
+
     def test_create_good_case_full_fields(self) -> None:
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
                     "motion_category_ids": [123],
                 },
                 "motion_category/123": {
@@ -42,9 +44,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.assert_model_exists("meeting/222", {"motion_category_ids": [123, 124]})
 
     def test_create_good_case_only_required_fields(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
-        )
         response = self.request(
             "motion_category.create",
             {
@@ -61,10 +60,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_create_increment_weight(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_category/123": {
                     "name": "name_bWdKLQxL",
                     "meeting_id": 222,
@@ -131,9 +126,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
-        )
         response = self.request(
             "motion_category.create",
             {
@@ -153,17 +145,16 @@ class MotionCategorySystemTest(BaseActionTestCase):
             "motion_category.create",
             {
                 "name": "test_Xcdfgee",
-                "meeting_id": 222,
+                "meeting_id": 223,
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Model 'meeting/222' does not exist",
+            "Model 'meeting/223' does not exist",
             response.json["message"],
         )
 
     def test_create_prefix_none(self) -> None:
-        self.create_model("meeting/222", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion_category.create",
             {
@@ -180,8 +171,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
                     "motion_category_ids": [1],
                 },
                 "motion_category/1": {"meeting_id": 222, "prefix": "test"},

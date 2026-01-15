@@ -8,6 +8,7 @@ from .base_poll_test import BasePollTestCase
 class CreatePoll(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.set_models(
             {
                 "assignment/1": {
@@ -15,7 +16,6 @@ class CreatePoll(BasePollTestCase):
                     "open_posts": 1,
                     "meeting_id": 1,
                 },
-                "meeting/1": {"is_active_in_organization_id": 1},
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
@@ -702,10 +702,10 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists("poll/1", {"state": "created"})
 
     def test_create_user_option_valid(self) -> None:
+        self.create_meeting(42)
         self.set_models(
             {
                 "meeting/42": {
-                    "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
                 "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
@@ -751,10 +751,11 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_create_user_option_invalid(self) -> None:
+        self.create_meeting(7)
+        self.create_meeting(42)
         self.set_models(
             {
                 "meeting/42": {"meeting_user_ids": [1]},
-                "meeting/7": {"is_active_in_organization_id": 1},
                 "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
                 "user/1": {
                     "meeting_user_ids": [1],
@@ -836,7 +837,29 @@ class CreatePoll(BasePollTestCase):
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
             },
+            Permissions.Assignment.CAN_MANAGE_POLLS,
+        )
+
+    def test_create_permissions_assignment_not_working_with_just_can_manage(
+        self,
+    ) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+            },
             Permissions.Assignment.CAN_MANAGE,
+            fail=True,
         )
 
     def test_create_permissions_assignment_locked_meeting(self) -> None:
@@ -1138,3 +1161,66 @@ class CreatePoll(BasePollTestCase):
             "Anonymous group is not allowed in entitled_group_ids.",
             response.json["message"],
         )
+
+    def test_live_voting_named_motion_poll(self) -> None:
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "state_id": 444},
+                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+            }
+        )
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "content_object_id": "motion/3",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "live_voting_enabled": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1", {"type": Poll.TYPE_NAMED, "live_voting_enabled": True}
+        )
+
+    def test_live_voting_not_allowed_type_analog(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_ANALOG, True)
+
+    def test_live_voting_not_allowed_type_pseudoanonymous(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_PSEUDOANONYMOUS, True)
+
+    def test_live_voting_not_allowed_is_motion_poll_false(self) -> None:
+        self.base_live_voting_not_allowed(Poll.TYPE_NAMED, False)
+
+    def base_live_voting_not_allowed(
+        self, poll_type: str, is_motion_poll: bool
+    ) -> None:
+        request_data = {
+            "title": "test_title_yaiyeighoh0Iraet3Ahc",
+            "pollmethod": "YNA",
+            "type": poll_type,
+            "content_object_id": "assignment/1",
+            "onehundred_percent_base": "YN",
+            "meeting_id": 1,
+            "options": [{"text": "test"}],
+            "live_voting_enabled": True,
+        }
+        if is_motion_poll:
+            self.set_models(
+                {
+                    "motion/3": {"meeting_id": 1, "state_id": 444},
+                    "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+                }
+            )
+            request_data["content_object_id"] = "motion/3"
+
+        response = self.request("poll.create", request_data)
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+        assert (
+            "live_voting_enabled only allowed for named motion polls."
+        ) in response.json["message"]

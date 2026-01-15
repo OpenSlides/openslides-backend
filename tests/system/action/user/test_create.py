@@ -151,15 +151,14 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_comment(self) -> None:
-        self.set_models(
-            {"meeting/1": {"name": "test meeting 1", "is_active_in_organization_id": 1}}
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
                 "username": "test_Xcdfgee",
                 "comment": "blablabla",
                 "meeting_id": 1,
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -380,16 +379,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/2", {"member_number": None})
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.create_meeting()
         response = self.request(
             "user.create",
             {
                 "username": "testname",
                 "meeting_id": 1,
+                "group_ids": [3],
                 "vote_delegations_from_ids": [],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
@@ -1014,6 +1010,29 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_permission_group_C_parent_cml_locked_meeting(self) -> None:
+        """May not create group C group_ids in locked meetings as a committee manager of a parent committee"""
+        self.permission_setup()
+        self.create_meeting(4)
+        self.create_committee()
+        self.create_committee(63, parent_id=1)
+        self.set_committee_management_level([1], self.user_id)
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "meeting_id": 4,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs Permission user.can_manage for meeting 4",
+            response.json["message"],
+        )
+
     def test_create_permission_group_D_permission_with_OML(self) -> None:
         """May create Group D committee fields with OML level permission for more than one committee"""
         self.permission_setup()
@@ -1451,6 +1470,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test",
                 "meeting_id": meeting_id,
                 "locked_out": True,
+                "group_ids": [1],
                 **other_payload_data,
             },
         )
@@ -1465,6 +1485,22 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_locked_out_user_foreign_cml_allowed(self) -> None:
         self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_child_cml_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 60})
+
+    def test_create_locked_out_user_child_home_committee_allowed(self) -> None:
+        self.create_committee(60)
+        self.create_committee(63, parent_id=60)
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
+
+    def test_create_locked_out_user_foreign_home_committee_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"home_committee_id": 63})
 
     def test_create_locked_out_user_superadmin_error(self) -> None:
         self.assert_lock_out_user(
@@ -1484,7 +1520,16 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             1,
             {"committee_management_ids": [60]},
-            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
+        )
+
+    def test_create_locked_out_user_parent_cml_error(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.assert_lock_out_user(
+            1,
+            {"committee_management_ids": [59]},
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee or one of its parents",
         )
 
     def test_create_locked_out_user_meeting_admin_error(self) -> None:
@@ -1505,6 +1550,150 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             4,
             {"group_ids": [6]},
+        )
+
+    def test_create_with_home_committee(self) -> None:
+        self.create_committee(3)
+        response = self.request(
+            "user.create",
+            {"username": "dracula", "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {"username": "dracula", "home_committee_id": 3, "committee_ids": [3]},
+        )
+
+    def test_create_with_all_committee_fields(self) -> None:
+        self.create_committee(3)
+        self.create_committee(4)
+        self.create_committee(5)
+        self.create_committee(6, parent_id=5)
+        self.create_meeting()
+        response = self.request(
+            "user.create",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "dracula",
+                "home_committee_id": 3,
+                "committee_management_ids": [4, 6],
+                "meeting_user_ids": [1],
+                "committee_ids": [3, 4, 6, 60],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+
+    def test_create_with_home_committee_cml(self) -> None:
+        self.create_committee(3)
+        self.set_committee_management_level([3])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {"username": "mina", "home_committee_id": 3},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "mina", "home_committee_id": 3, "committee_ids": [3]}
+        )
+
+    def test_create_with_external_true(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "jonathan", "external": True},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jonathan", "external": True})
+
+    def test_create_with_external_false(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "jack", "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "jack", "external": False})
+
+    def test_create_with_with_home_committee_and_external_true(self) -> None:
+        self.create_committee(3)
+        response = self.request(
+            "user.create",
+            {"username": "renfield", "home_committee_id": 3, "external": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set external to true and set a home committee at the same time.",
+            response.json["message"],
+        )
+
+    def test_create_with_home_committee_and_external_false(self) -> None:
+        """Also tests for parent CML"""
+        self.create_committee(2)
+        self.create_committee(3, parent_id=2)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {"username": "vanHelsing", "home_committee_id": 3, "external": False},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "vanHelsing",
+                "home_committee_id": 3,
+                "external": False,
+                "committee_ids": [3],
+            },
+        )
+
+    def test_create_with_home_committee_wrong_CML(self) -> None:
+        self.create_committee(2)
+        self.create_committee(3)
+        self.set_committee_management_level([2])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {
+                "username": "quincy",
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
+        )
+
+    def test_create_with_home_committee_no_perm(self) -> None:
+        self.create_committee(3)
+        self.set_organization_management_level(None)
+        response = self.request(
+            "user.create",
+            {
+                "username": "arthur",
+                "home_committee_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 3",
+            response.json["message"],
         )
 
 

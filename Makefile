@@ -1,46 +1,49 @@
-# Development and testing inside docker container or without docker (only unit and integration tests)
+override SERVICE=backend
+override paths = openslides_backend/ tests/ cli/ meta/dev/src/
 
-paths = openslides_backend/ tests/ cli/ meta/dev/src/
+# Build images for different contexts
 
-all: pyupgrade black autoflake isort flake8 mypy
+build-prod:
+	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)" --build-arg CONTEXT="prod" --target "prod"
 
-pyupgrade:
-	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+build-dev:
+	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)-dev" --build-arg CONTEXT="dev" --target "dev"
 
-check-pyupgrade:
-	pyupgrade --py310-plus $$(find . -name '*.py')
+build-tests:
+	docker build ./ $(ARGS) --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
 
-black:
-	black $(paths)
+# Development redirects
 
-check-black:
-	black --check --diff $(paths)
+.PHONY: dev
 
-autoflake:
-	autoflake $(paths)
+dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter dev-clean dev-build dev-log:
+	@@$(MAKE) -C .. $@ backend
 
-isort:
-	isort $(paths)
+# Tests
 
-check-isort:
-	isort --check-only --diff $(paths)
+run-tests:
+	bash dev/run-tests.sh
 
-flake8:
-	flake8 $(paths)
-
-mypy:
-	mypy $(paths)
+lint:
+	bash dev/run-lint.sh -l
 
 test:
 	pytest
 
-test-unit-integration:
-	pytest tests/unit tests/integration
+coverage:
+	pytest --cov --cov-report html
+
+test-file:
+# f= to pass the file name
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+# cov=1 to run coverage report
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
-validate-models-yml:
-	make -C meta/dev validate-models
+# Models
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -48,6 +51,11 @@ generate-models:
 
 check-models:
 	python cli/generate_models.py --check
+
+validate-models-yml:
+	make -C meta/dev validate-models
+
+# Permissions
 
 generate-permissions:
 	python cli/generate_permissions.py $(MODELS_PATH)
@@ -62,87 +70,128 @@ check-initial-data-json:
 check-example-data-json:
 	python cli/check_json.py data/example-data.json
 
-run-debug:
+
+
+########################## Deprecation List ##########################
+
+deprecation-warning:
+	@echo "\033[1;33m DEPRECATION WARNING: This make command is deprecated and will be removed soon! \033[0m"
+
+deprecation-warning-alternative: | deprecation-warning
+	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
+
+stop-dev:
+	@make deprecation-warning-alternative ALTERNATIVE="dev and derivative maketargets are now only available in main repository. (use 'make dev-help' in main repository for more information)"
+
+all: | pyupgrade black autoflake isort flake8 mypy
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+
+pyupgrade:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	pyupgrade --py310-plus $$(find . -name '*.py')
+
+black:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	black $(paths)
+
+check-black:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	black --check --diff $(paths)
+
+autoflake:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	autoflake $(paths)
+
+isort:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	isort $(paths)
+
+check-isort:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	isort --check-only --diff $(paths)
+
+flake8:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	flake8 $(paths)
+
+mypy:
+	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
+	mypy $(paths)
+
+run-bash:
+	@make deprecation-warning-alternative ALTERNATIVE="dev"
+	make start-dev
+	make run-dev-attach
+
+run-dev-attach:
+	@make deprecation-warning-alternative ALTERNATIVE="dev-attached"
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+
+test-unit-integration: | deprecation-warning
+	pytest tests/unit tests/integration
+
+run-debug: | deprecation-warning
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
 
-pip-check:
+pip-check: | deprecation-warning
 	pip-check -H
 
-coverage:
-	pytest --cov --cov-report html
 
-extract-translations:
+extract-translations: | deprecation-warning
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
 
 # Build and run production docker container (not usable inside the docker container)
 
-build-prod:
-	docker build . --tag=openslides-backend
-
-run-prod: | build-prod
+run-prod: | deprecation-warning build-prod
 	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
 
 # Build and run development docker container setup with docker compose (not usable inside docker container)
 
-start-dev:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build --detach
+start-dev: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build --detach
 
-start-dev-attach start-dev-interactive:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build
-
-stop-dev:
-	docker compose -f dev/docker-compose.dev.yml down --volumes
-
-run-dev-attach:
-	docker compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
-
-run-dev run-bash: | start-dev run-dev-attach
-
-run-tests:
-	dev/run-tests.sh
-
+start-dev-attach start-dev-interactive: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build
 
 # Build and run development container with local datastore in use
 
-start-dev-local:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
+start-dev-local: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
 
-start-dev-attach-local start-dev-interactive-local:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
+start-dev-attach-local start-dev-interactive-local: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
 
-stop-dev-local:
-	docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
+stop-dev-local: | deprecation-warning
+	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
 
-run-dev-attach-local:
-	docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+run-dev-attach-local: | deprecation-warning
+	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-local run-bash-local: | start-dev-local run-dev-attach-local
+run-dev-local run-bash-local: | deprecation-warning start-dev-local dev-attach-local
 
 
 # Build and run development container. Additionally run OpenTelemetry services
 
-start-dev-otel:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build --detach
+start-dev-otel: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build --detach
 
-start-dev-attach-otel start-dev-interactive-otel:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build
+start-dev-attach-otel start-dev-interactive-otel: | deprecation-warning
+	CONTEXT="dev" USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build
 
-stop-dev-otel:
-	docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml down --volumes
+stop-dev-otel: | deprecation-warning
+	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml down --volumes
 
-run-dev-attach-otel:
-	docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+run-dev-attach-otel: | deprecation-warning
+	CONTEXT="dev" docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
+run-dev-otel run-bash-otel: | deprecation-warning start-dev-otel dev-attach-otel
 
-
-# Build standalone development container (not usable inside the docker container)
-
-build-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
-
-rebuild-dev:
-	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
+rebuild-dev: | deprecation-warning
+	docker build . --tag=openslides-backend-dev --no-cache --build-arg CONTEXT=dev

@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
 import fastjsonschema
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from fastjsonschema import JsonSchemaException
+from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from ..http.request import Request
 from ..shared.exceptions import PresenterException

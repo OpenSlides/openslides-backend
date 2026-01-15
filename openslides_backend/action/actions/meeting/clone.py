@@ -14,7 +14,7 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
-from openslides_backend.shared.util import ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....shared.export_helper import export_meeting
 from ...util.default_schema import DefaultSchema
@@ -93,7 +93,9 @@ class MeetingClone(MeetingImport):
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        meeting_json = export_meeting(self.datastore, instance["meeting_id"], True)
+        meeting_json = export_meeting(
+            self.datastore, instance["meeting_id"], True, True
+        )
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
         additional_admin_ids = instance.pop("admin_ids", None) or []
@@ -183,10 +185,46 @@ class MeetingClone(MeetingImport):
         # set imported_at
         meeting["imported_at"] = round(time.time())
 
+        # Don't forward orga-wide mediafiles but create new meeting_mediafiles for them
+        meeting_wide_mediafiles_mediafiles: dict[int, dict[str, Any]] = {}
+        orga_mediafiles_replace_map: dict[int, int] = {}
+        for mediafile_id, mediafile in meeting_json.get("mediafile", {}).items():
+            if mediafile.get("owner_id") == ONE_ORGANIZATION_FQID:
+                old_id = mediafile["id"]
+                orga_mediafiles_replace_map[old_id] = old_id
+            else:
+                meeting_wide_mediafiles_mediafiles[mediafile_id] = mediafile
+        meeting_json["mediafile"] = meeting_wide_mediafiles_mediafiles
+
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
-        self.duplicate_mediafiles(meeting_json)
+        if orga_mediafiles_replace_map:
+            self.replace_map["mediafile"].update(orga_mediafiles_replace_map)
+
+        self.duplicate_mediafiles(meeting_json["mediafile"])
+        orga_wide_mediafiles = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "mediafile",
+                    list(orga_mediafiles_replace_map),
+                    ["meeting_mediafile_ids"],
+                )
+            ],
+            use_changed_models=False,
+        )["mediafile"]
+        updated_orga_wide_mediafiles = {
+            str(mediafile_id): {
+                "id": mediafile_id,
+                "meeting_mediafile_ids": orga_wide_mediafiles[mediafile_id][
+                    "meeting_mediafile_ids"
+                ]
+                + [self.replace_map["meeting_mediafile"][mm_data["id"]]],
+            }
+            for mm_data in meeting_json["meeting_mediafile"].values()
+            if (mediafile_id := mm_data["mediafile_id"]) in orga_mediafiles_replace_map
+        }
         self.replace_fields(instance)
+        instance["meeting"]["mediafile"].update(updated_orga_wide_mediafiles)
 
         meeting_id = meeting["id"]
         meeting_users_in_instance = instance["meeting"]["meeting_user"]
@@ -257,9 +295,8 @@ class MeetingClone(MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
-    def duplicate_mediafiles(self, json_data: dict[str, Any]) -> None:
-        for mediafile_id in json_data["mediafile"]:
-            mediafile = json_data["mediafile"][mediafile_id]
+    def duplicate_mediafiles(self, mediafiles: dict[str, Any]) -> None:
+        for mediafile in mediafiles.values():
             if not mediafile.get("is_directory"):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]

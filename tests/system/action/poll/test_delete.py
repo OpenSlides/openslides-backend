@@ -19,6 +19,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             clear_called_on.append(id_)
 
         clear.side_effect = add_to_list
+        self.create_meeting()
         self.set_models(
             {
                 "poll/111": {
@@ -27,7 +28,6 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                     "state": "started",
                 },
                 "motion/1": {"meeting_id": 1, "poll_ids": [111]},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.delete", {"id": 111})
@@ -37,10 +37,10 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         assert clear_called_on == [111]
 
     def test_delete_wrong_id(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "poll/112": {"meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.delete", {"id": 111})
@@ -58,6 +58,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             clear_called_on.append(id_)
 
         clear.side_effect = add_to_list
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"poll_ids": [111], "meeting_id": 1},
@@ -69,7 +70,6 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                 },
                 "option/42": {"poll_id": 111, "meeting_id": 1},
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "all_projection_ids": [1],
                     "topic_ids": [1],
                 },
@@ -93,6 +93,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         assert clear_called_on == []
 
     def test_delete_cascading_poll_candidate_list(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "topic/1": {"poll_ids": [111], "meeting_id": 1},
@@ -107,7 +108,6 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
                     "content_object_id": "poll_candidate_list/12",
                 },
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
                     "poll_candidate_list_ids": [12],
                     "poll_candidate_ids": [13],
                     "topic_ids": [1],
@@ -158,6 +158,12 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
         assert clear_called_on == []
 
     def test_delete_permissions(self) -> None:
+        self.set_models(
+            {
+                "topic/1": {"title": "The topic", "meeting_id": 1},
+                "meeting/1": {"topic_ids": [1]},
+            }
+        )
         self.base_permission_test(
             {"poll/111": {"meeting_id": 1, "content_object_id": "topic/1"}},
             "poll.delete",
@@ -180,7 +186,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/1")
-        assert counter.calls == 7
+        assert counter.calls == 8
 
     @performance
     def test_delete_performance(self) -> None:
