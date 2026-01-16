@@ -2961,7 +2961,7 @@ class MeetingImport(BaseActionTestCase):
         )
         presenterapp = create_presenter_test_application()
         presenterclient = Client(presenterapp, self.update_vote_service_auth_data)
-        presenterclient.login("admin", "admin", 1)
+        presenterclient.login("admin", "admin")
         self.auth_data = deepcopy(presenterclient.auth_data)
         response = presenterclient.post(
             get_route_path(PresenterView.presenter_route),

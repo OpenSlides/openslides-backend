@@ -117,7 +117,7 @@ class BaseSystemTestCase(TestCase):
                 self.client.update_auth_data(self.auth_data)
             else:
                 # Login and save copy of auth data for all following tests
-                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
+                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
                 BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
         self.anon_client.auth = self.auth  # type: ignore
@@ -200,7 +200,7 @@ class BaseSystemTestCase(TestCase):
         """
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"], user_id)
+        self.client.login(user["username"], user["default_password"])
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
