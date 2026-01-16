@@ -3,7 +3,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase, TestResult
-from unittest.mock import MagicMock, _patch
+from unittest.mock import MagicMock
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -69,7 +69,6 @@ class BaseSystemTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
 
-    auth_mockers: dict[str, _patch]
     # Save all created fqids
     created_fqids: set[str]
 
@@ -262,9 +261,6 @@ class BaseSystemTestCase(TestCase):
 
     def perform_write_request(self, events: list[Event]) -> None:
         write_request = WriteRequest(events, user_id=0)
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
         self.connection.commit()
 
@@ -297,14 +293,6 @@ class BaseSystemTestCase(TestCase):
                     )
                 )
             self.connection.commit()
-
-    def check_auth_mockers_started(self) -> bool:
-        if (
-            hasattr(self, "auth_mockers")
-            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
-        ):
-            return False
-        return True
 
     def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()

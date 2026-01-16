@@ -3,7 +3,6 @@ from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.interfaces.event import Event, EventType
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -46,9 +45,6 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.assert_model_exists("organization/1", {"name": "[Your organization]"})
         user = self.assert_model_exists("user/1", {"username": "superadmin"})
         assert self.auth.is_equal("password123", user["password"])
-        self.auth.create_update_user_session(  # type: ignore
-            Event(type=EventType.Create, fqid="user/1", fields=user)
-        )
         self.client.login(user["username"], user["password"], 1)
         response = self.request(
             "user.set_password",
