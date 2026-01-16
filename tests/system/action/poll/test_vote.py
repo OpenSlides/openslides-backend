@@ -907,6 +907,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
+        self.assert_status_code(response, 200)
         response = self.request(
             "poll.vote",
             {"value": {"1": "N"}, "id": 1, "user_id": 1},
@@ -1070,6 +1071,7 @@ class VotePollNamedY(VotePollBaseTestClass):
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
+        self.assert_status_code(response, 200)
         response = self.request(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},

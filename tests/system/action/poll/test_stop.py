@@ -168,16 +168,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": True,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": True,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
@@ -200,16 +198,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
@@ -233,16 +229,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": 3,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": 3,
+                    },
+                ]
             },
         )
 
@@ -266,16 +260,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
