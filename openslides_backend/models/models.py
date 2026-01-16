@@ -1284,6 +1284,7 @@ class Motion(Model):
         },
     )
     title = fields.CharField(required=True)
+    diff_version = fields.CharField()
     text = fields.HTMLStrictField()
     text_hash = fields.CharField()
     amendment_paragraphs = fields.JSONField()

@@ -21,6 +21,7 @@ class MotionErrorType(str, Enum):
     REASON = "reason"
     WORKFLOW = "workflow"
     TITLE = "title"
+    DIFF_VERSION = "diff_version"
 
 
 class MotionActionErrorData(TypedDict):
@@ -86,6 +87,18 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
                         )
         return errors
 
+    def _check_diff_version(
+        self, instance: dict[str, Any], datastore_instance: dict[str, Any] = {}
+    ) -> list[MotionActionErrorData]:
+        if instance.get("lead_motion_id") or datastore_instance.get("lead_motion_id"):
+            return [
+                {
+                    "type": (MotionErrorType.DIFF_VERSION),
+                    "message": "You can define a diff_version only for the lead motion",
+                }
+            ]
+        return []
+
 
 class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
     """
@@ -137,6 +150,8 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
                         "message": "You can't give amendment_paragraphs in this context",
                     }
                 )
+        if instance.get("diff_version"):
+            errors += self._check_diff_version(instance)
         if (not instance.get("reason")) and self.check_reason_required(meeting_id):
             errors.append(
                 {"type": MotionErrorType.REASON, "message": "Reason is required"}
@@ -196,10 +211,14 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         self, instance: dict[str, Any], meeting_id: int
     ) -> list[MotionActionErrorData]:
         errors: list[MotionActionErrorData] = []
-        if instance.get("text") or instance.get("amendment_paragraphs"):
+        if (
+            instance.get("text")
+            or instance.get("amendment_paragraphs")
+            or instance.get("diff_version")
+        ):
             motion = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["id"]),
-                ["text", "amendment_paragraphs"],
+                ["text", "amendment_paragraphs", "lead_motion_id"],
             )
         if instance.get("text"):
             if not motion.get("text"):
@@ -224,4 +243,6 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
                     "message": "Reason is required to update.",
                 }
             )
+        if instance.get("diff_version"):
+            errors += self._check_diff_version(instance, motion)
         return errors

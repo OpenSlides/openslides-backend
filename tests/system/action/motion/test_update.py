@@ -892,3 +892,63 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "is_public": None,
             },
         )
+
+    def test_add_diff_version_to_normal_motion(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "motion/111": {
+                    "title": "Motion 111",
+                    "sequential_number": 111,
+                    "state_id": 1,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 111, "diff_version": "0.1.2"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111", {"diff_version": "0.1.2"})
+
+    def test_add_diff_version_to_amendment_not_allowed(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "motion/111": {
+                    "title": "lead motion",
+                    "sequential_number": 111,
+                    "state_id": 1,
+                    "meeting_id": 1,
+                    "amendment_ids": [112],
+                },
+                "motion/112": {
+                    "title": "amendment",
+                    "sequential_number": 112,
+                    "state_id": 1,
+                    "meeting_id": 1,
+                    "lead_motion_id": 111,
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 112, "diff_version": "0.1.2"})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "You can define a diff_version only for the lead motion",
+            response.json["message"],
+        )
+
+    def test_remove_diff_version_from_normal_motion(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "motion/111": {
+                    "title": "Motion 111",
+                    "sequential_number": 111,
+                    "state_id": 1,
+                    "meeting_id": 1,
+                    "diff_version": "0.1.2",
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 111, "diff_version": None})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111", {"diff_version": None})
