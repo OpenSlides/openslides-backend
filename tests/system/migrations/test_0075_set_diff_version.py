@@ -16,7 +16,7 @@ def test_migration(write, finalize, assert_model):
         {"type": "delete", "fqid": "motion/2", "fields": {}},
     )
 
-    finalize("0070_set_diff_version")
+    finalize("0075_set_diff_version")
 
     assert_model(
         "motion/1",

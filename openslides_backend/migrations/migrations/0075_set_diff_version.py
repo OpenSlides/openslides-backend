@@ -8,7 +8,7 @@ class Migration(BaseModelMigration):
     This migration adds current diff_version numbers to motions
     """
 
-    target_migration_index = 71
+    target_migration_index = 76
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         db_models = self.reader.get_all("motion", ["id", "lead_motion_id"])

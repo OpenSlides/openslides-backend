@@ -62,7 +62,6 @@ class MotionUpdate(
             "start_line_number",
             "category_id",
             "block_id",
-            "supporter_meeting_user_ids",
             "tag_ids",
             "created",
             "workflow_timestamp",
@@ -93,7 +92,6 @@ class MotionUpdate(
                         "identical_motion_ids",
                         "category_id",
                         "block_id",
-                        "supporter_meeting_user_ids",
                         "tag_ids",
                         "attachment_meeting_mediafile_ids",
                         "recommendation_extension_reference_ids",
@@ -188,7 +186,6 @@ class MotionUpdate(
             allowed_fields += [
                 "category_id",
                 "block_id",
-                "supporter_meeting_user_ids",
                 "additional_submitter",
                 "recommendation_extension",
                 "start_line_number",
@@ -220,12 +217,7 @@ class MotionUpdate(
         for instance in deepcopy(self.instances):
             instance_information = []
 
-            # supporters changed
-            if "supporter_meeting_user_ids" in instance:
-                instance.pop("supporter_meeting_user_ids")
-                instance_information.append("Supporters changed")
-
-            # supporters changed
+            # workflow timestamp changed
             if "workflow_timestamp" in instance:
                 timestamp = instance.pop("workflow_timestamp")
                 instance_information.extend(

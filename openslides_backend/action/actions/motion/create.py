@@ -45,7 +45,6 @@ class MotionCreate(
             "sort_parent_id",
             "category_id",
             "block_id",
-            "supporter_meeting_user_ids",
             "tag_ids",
             "text",
             "lead_motion_id",
@@ -55,9 +54,10 @@ class MotionCreate(
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "submitter_ids": id_list_schema,
+            "submitter_meeting_user_ids": id_list_schema,
             "amendment_paragraphs": number_string_json_schema,
             "attachment_mediafile_ids": id_list_schema,
+            "supporter_meeting_user_ids": id_list_schema,
             **agenda_creation_properties,
         },
     )
@@ -129,6 +129,7 @@ class MotionCreate(
 
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
+        self.create_supporters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
@@ -148,6 +149,41 @@ class MotionCreate(
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
+        extra_submitter_perms: list[Permission] = [
+            Permissions.User.CAN_SEE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        ]
+        if (
+            (submitter_mu_ids := instance.get("submitter_meeting_user_ids"))
+            and (
+                len(submitter_mu_ids) > 1
+                or (
+                    submitter_mu_ids[0]
+                    != (
+                        self.get_meeting_user(
+                            instance["meeting_id"], self.user_id, ["id"]
+                        )
+                        or {}
+                    ).get("id")
+                )
+            )
+            and len(
+                missing_perms := {
+                    perm: instance["meeting_id"]
+                    for perm in extra_submitter_perms
+                    if not has_perm(
+                        self.datastore,
+                        self.user_id,
+                        perm,
+                        instance["meeting_id"],
+                    )
+                }
+            )
+        ):
+            raise MissingPermission(
+                {key: val for key, val in missing_perms.items()}, use_and=True
+            )
+
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
         can_manage_whitelist = set()
         forbidden_fields = defaultdict(set)
@@ -156,9 +192,7 @@ class MotionCreate(
             Permissions.Mediafile.CAN_SEE: ["attachment_mediafile_ids"],
             Permissions.Motion.CAN_MANAGE_METADATA: [
                 "additional_submitter",
-                "submitter_ids",
             ],
-            Permissions.User.CAN_SEE: ["submitter_ids"],
         }
         for perm, fields in permission_to_fields.items():
             has_permission = has_perm(
@@ -191,6 +225,7 @@ class MotionCreate(
                     "workflow_id",
                     "id",
                     "meeting_id",
+                    "submitter_meeting_user_ids",
                 ]
             )
             if instance.get("lead_motion_id"):

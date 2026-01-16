@@ -179,7 +179,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         # Admin groups of meeting/1 for requesting user
         # 111 into both meetings
-        self.move_user_to_group({12: 2, 42: None, 1111: 1, 4111: 4})
+        self.move_user_to_group({12: 2, 1111: 1, 4111: 4})
         status_code, data = self.request("get_user_related_models", {"user_ids": [111]})
         self.assertEqual(status_code, 403)
         self.assertEqual(

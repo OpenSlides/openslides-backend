@@ -22,7 +22,7 @@
     assignment_candidate_ids: Id[];
     motion_working_group_speaker_ids: Id[];
     motion_editor_ids: Id[];
-    supported_motion_ids: Id[];
+    motion_supporter_ids: Id[];
     chat_message_ids: Id[];
 }
 
