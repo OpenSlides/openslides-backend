@@ -18,6 +18,7 @@ class Organization(Model):
     reset_password_verbose_errors = fields.BooleanField()
     gender_ids = fields.RelationListField(to={"gender": "organization_id"})
     disable_forward_with_attachments = fields.BooleanField()
+    restrict_edit_forward_committees = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -39,6 +40,7 @@ class Organization(Model):
     )
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
+    restrict_editing_same_level_committee_admins = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
@@ -2561,7 +2563,7 @@ class HistoryEntry(Model):
     verbose_name = "history entry"
 
     id = fields.IntegerField(required=True, constant=True)
-    entries = fields.CharArrayField()
+    entries = fields.TextArrayField()
     original_model_id = fields.CharField(constant=True)
     model_id = fields.GenericRelationField(
         to={

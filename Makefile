@@ -34,7 +34,12 @@ coverage:
 	pytest --cov --cov-report html
 
 test-file:
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
+# f= to pass the file name
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+# cov=1 to run coverage report
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
