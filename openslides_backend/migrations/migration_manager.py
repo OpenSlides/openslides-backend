@@ -109,10 +109,7 @@ class MigrationManager:
             response = self.cursor.execute(
                 sql.SQL("SELECT COUNT(*) FROM ") + statement_part
             ).fetchone()
-            if response:
-                return response.get("count", 0)
-            else:
-                return 0
+            return (response or {}).get("count", 0)
 
         current_migration_index = MigrationHelper.get_database_migration_index(
             self.cursor

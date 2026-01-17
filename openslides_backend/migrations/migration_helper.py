@@ -81,7 +81,7 @@ class MigrationHelper:
     @staticmethod
     def load_migrations() -> None:
         """
-        Checks wether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
+        Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
         accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the LAST_NON_REL_MIGRATION
         and stores them in MigrationHelper.migrations for future reference.
 

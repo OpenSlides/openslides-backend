@@ -79,7 +79,7 @@ def create_schema() -> None:
                 else:
                     type_ = "fresh"
                     db_migration_index = MigrationHelper.get_backend_migration_index()
-                print(f"Assuming {type_} database for migration_state.")
+                print(f"Assuming {type_} database.")
                 MigrationHelper.set_database_migration_info(
                     cursor,
                     db_migration_index,
