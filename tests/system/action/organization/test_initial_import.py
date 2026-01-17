@@ -4,8 +4,6 @@ from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
-import pytest
-
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.migrations.migration_manager import MigrationManager
@@ -244,7 +242,6 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_greater_backend_MI(self) -> None:
         backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
@@ -259,7 +256,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
-    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_lower_backend_MI(self) -> None:
         backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
@@ -270,7 +266,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(" is higher than the backend ", response.json["message"])
 
-    # TODO: check again once migration_index usage is fixed
     def test_play_with_migrations(self) -> None:
         """
         - Loads the initial_data.json into memory

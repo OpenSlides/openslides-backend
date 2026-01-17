@@ -35,6 +35,7 @@ class MigrationHandler(BaseHandler):
         self.replace_tables: dict[str, Any]
 
     def copy_table(self, table_name: str) -> None:
+        """Copies the table with its definition and rows. Does not copy trigger."""
         table_m = sql.Identifier(HelperGetNames.get_table_name(table_name, True))
         table_t = sql.Identifier(table_name)
         self.cursor.execute(
@@ -42,10 +43,13 @@ class MigrationHandler(BaseHandler):
                 table_m=table_m, table_t=table_t
             )
         )
+
+        # TODO we might need finalization tables for future migrations to have active triggers on the table.
+
         fields = self.cursor.execute(
             sql.SQL(
                 """
-                SELECT column_name, is_generated
+                SELECT *
                 FROM information_schema.columns
                 WHERE table_schema = 'public'
                 AND table_name = {table};
@@ -82,7 +86,9 @@ class MigrationHandler(BaseHandler):
             self.copy_table(table_name)
 
         # COPY fkey constraints
-        for table_name in im_tables | unified_replace_tables.keys():
+        for table_name in im_tables | {
+            r_tables["table"] for r_tables in unified_replace_tables.values()
+        }:
             self.cursor.execute(
                 sql.SQL(
                     """SELECT
@@ -140,8 +146,8 @@ class MigrationHandler(BaseHandler):
 
         # COPY views for migration reads
         for collection, r_tables in unified_replace_tables.items():
-            # TODO create regex specifically for the replace tables to not change what should stay as origin table. Needed for further migrations.
-            table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t|_T)\b")
+            # TODO create regex specifically for the replace tables to not change what should stay as origin table. Needed for future migrations.
+            table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t)\b")
 
             self.cursor.execute(
                 """
@@ -171,6 +177,8 @@ class MigrationHandler(BaseHandler):
 
         # RECREATE some relevant triggers
         # May be error prone due to changing constraints
+        if HelperGetNames.trigger_unique_list:
+            HelperGetNames.trigger_unique_list = []
         (
             pre_code,
             table_name_code,
@@ -196,11 +204,20 @@ class MigrationHandler(BaseHandler):
         trigger_re = re.compile(
             r"(CREATE\s+(?:CONSTRAINT\s+)?TRIGGER\b.*?;)", re.IGNORECASE | re.DOTALL
         )
+        view_re = re.compile(r"\B'([A-Za-z0-9_.]+)'\B")
+
+        def add_suffix(m: re.Match) -> str:
+            base = m.group(1)
+            if base in unified_replace_tables:
+                return f"'{base}vm'"
+            else:
+                return f"'{base}'"
+
         for match in trigger_re.finditer(sql_text):
             block = match.group(0)
             if table_re.search(block):
                 modified_block = table_re.sub(replace_suffix, block)
-                replaced_blocks.append(modified_block)
+                replaced_blocks.append(view_re.sub(add_suffix, modified_block))
         sql_text = "".join(replaced_blocks)
         self.cursor.execute(sql_text)
 
@@ -237,21 +254,16 @@ class MigrationHandler(BaseHandler):
         """
         Executes the data_definition and data_manipulation methods of the migrations
         stored in MigrationHelper.migrations.
-
-        Returns:
-        - None
         """
         module_name: str
 
         for index, migration in MigrationHelper.migrations.items():
             module_name = migration
             migration_module = import_module(f"{MODULE_PATH}{module_name}")
-            self.set_tables_read_only()
             self.logger.info("Executing migration: " + module_name)
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.MIGRATION_RUNNING
             )
-            self.setup_migration_relations()
 
             # checks wether the methods are available and executes them.
             if callable(getattr(migration_module, "data_definition", None)):
@@ -273,7 +285,21 @@ class MigrationHandler(BaseHandler):
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.MIGRATION_REQUIRED:
+                # Block other migration requests by setting state to running.
+                if minimum_required_index := self.cursor.execute(
+                    sql.SQL(
+                        "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
+                    ),
+                    (MigrationState.MIGRATION_REQUIRED,),
+                ).fetchone():
+                    MigrationHelper.set_database_migration_info(
+                        self.cursor,
+                        minimum_required_index["min"],
+                        MigrationState.MIGRATION_RUNNING,
+                    )
                 MigrationHelper.write_line("started")
+                self.set_public_tables_read_only()
+                self.setup_migration_relations()
                 self.execute_migrations()
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
                 MigrationHelper.write_line("finished")
@@ -304,17 +330,26 @@ class MigrationHandler(BaseHandler):
         else:
             raise InvalidMigrationCommand(command)
 
-    def set_tables_read_only(self) -> None:
-        """Sets all origin_collections tables to read only by creating a trigger that fails hard."""
+    def set_public_tables_read_only(self) -> None:
+        """
+        Sets all origin_collections tables to read only by creating a trigger that fails hard.
+        In the case of the initial rel-db migration this also includes the old schema.
+        """
         for table in MigrationHelper.get_public_tables(self.cursor):
-            self.cursor.execute(
+            trigger_name = f"tr_lock_{table}"
+            if self.cursor.execute(
                 sql.SQL(
-                    "CREATE TRIGGER {trigger_name} BEFORE INSERT OR UPDATE OR DELETE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();"
-                ).format(
-                    trigger_name=sql.SQL(f"tr_lock_{table}"),
-                    table=sql.Identifier(table),
+                    "SELECT 1 FROM pg_trigger WHERE tgname = {trigger_name};"
+                ).format(trigger_name=trigger_name)
+            ).fetchone():
+                self.cursor.execute(
+                    sql.SQL(
+                        "CREATE TRIGGER IF NOT EXISTS {trigger_name} BEFORE INSERT OR UPDATE OR DELETE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();"
+                    ).format(
+                        trigger_name=sql.SQL(trigger_name),
+                        table=sql.Identifier(table),
+                    )
                 )
-            )
 
     def unset_tables_read_only(self) -> None:
         """Sets all origin_collections tables to readable by dropping the read-only trigger."""
@@ -426,7 +461,10 @@ class MigrationHandler(BaseHandler):
                     ),
                 )
             )
+
         # RECREATE triggers
+        if HelperGetNames.trigger_unique_list:
+            HelperGetNames.trigger_unique_list = []
         (
             pre_code,
             table_name_code,
@@ -444,12 +482,33 @@ class MigrationHandler(BaseHandler):
         ) = GenerateCodeBlocks.generate_the_code()
         sql_text = (
             view_name_code
+            + alter_table_code
             + create_trigger_partitioned_sequences_code
             + create_trigger_1_1_relation_not_null_code
             + create_trigger_relationlistnotnull_code
             + create_trigger_unique_ids_pair_code
             + create_trigger_notify_code
         )
+        for collection in unified_replace_tables:
+            to_drop_triggers = self.cursor.execute(
+                sql.SQL(
+                    """SELECT
+                        tgname AS trigger_name,
+                        tgrelid::regclass AS table_name
+                    FROM
+                        pg_trigger
+                    WHERE
+                        tgrelid = {table_name}::regclass AND
+                        tgname NOT LIKE 'RI_ConstraintTrigger_%';"""
+                ).format(table_name=HelperGetNames.get_table_name(collection))
+            ).fetchall()
+            for trigger_dict in to_drop_triggers:
+                self.cursor.execute(
+                    sql.SQL("DROP TRIGGER {trigger} ON {table};").format(
+                        trigger=sql.SQL(trigger_dict["trigger_name"]),
+                        table=sql.Identifier(trigger_dict["table_name"]),
+                    )
+                )
         self.cursor.execute(sql_text)
         MigrationHelper.write_line("finalization finished")
         for mi in relevant_mis:
@@ -466,6 +525,7 @@ class MigrationHandler(BaseHandler):
         self.close_migrate_thread_stream()
         self._clean_migration_data()
         indices = MigrationHelper.get_indices_from_database(self.cursor)
+        # Remove unfinalized migration indices from version table
         to_delete_indices = [
             idx
             for idx, state in MigrationHelper.get_database_migration_states(
@@ -479,9 +539,13 @@ class MigrationHandler(BaseHandler):
             + sql.SQL(");"),
             (to_delete_indices,),
         )
+
         self.unset_tables_read_only()
 
     def _clean_migration_data(self) -> None:
+        """
+        Removes migration tables and views
+        """
         self.logger.info("Clean up migration data...")
         assert self.cursor, "Handlers cursor must be initialized."
         indices = MigrationHelper.get_indices_from_database(self.cursor)

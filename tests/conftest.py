@@ -43,7 +43,9 @@ def get_rel_db_table_names(curs: Cursor[DictRow]) -> list[str]:
         "SELECT schemaname, tablename from pg_tables where schemaname in ('public', 'vote');"
     ).fetchall()
     return [
-        f"{row.get('schemaname', '')}.{row.get('tablename', '')}" for row in rows if row not in OLD_TABLES  # type: ignore
+        f"{row.get('schemaname', '')}.{row.get('tablename', '')}"
+        for row in rows
+        if row not in OLD_TABLES
     ]
 
 

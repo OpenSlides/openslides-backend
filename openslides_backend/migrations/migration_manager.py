@@ -44,7 +44,7 @@ class MigrationManager:
         verbose: bool = False,
         print_fn: PrintFunction = print,
     ) -> None:
-        """init"""
+        """Also updates the version table with new migrations"""
         self.verbose = verbose
         self.env = env
         self.services = services
@@ -191,7 +191,7 @@ class MigrationManager:
                         | MigrationState.FINALIZATION_FAILED
                     ):
                         raise MigrationException(
-                            f"Migration in a failed state. Reset before trying {command} again."
+                            f"Migration in a failed state. Reset before trying to {command} again. Failed on: {MigrationHelper.migrate_thread_exception}"
                         )
                     case _:
                         process = ""

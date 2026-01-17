@@ -136,7 +136,7 @@ class MigrationHelper:
         ).fetchall():
             return [elem.get("migration_index", 0) for elem in tmp]
         raise MigrationException(
-            "No migration index could not be acquired from database."
+            "No unfinalized migration index could be acquired from database."
         )
 
     @staticmethod
@@ -146,9 +146,7 @@ class MigrationHelper:
         """
         if tmp := curs.execute("SELECT migration_index FROM version;").fetchall():
             return [elem.get("migration_index", 0) for elem in tmp]
-        raise MigrationException(
-            "No migration index could not be acquired from database."
-        )
+        raise MigrationException("No migration index could be acquired from database.")
 
     @staticmethod
     def get_database_migration_states(

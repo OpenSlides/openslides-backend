@@ -33,7 +33,58 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.typing import Collection
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
-ORIGIN_COLLECTIONS = [col for col in model_registry]
+# TODO update before merging into main.
+ORIGIN_COLLECTIONS = [
+    "organization",
+    "user",
+    "meeting_user",
+    "gender",
+    "organization_tag",
+    "theme",
+    "committee",
+    "meeting",
+    "structure_level",
+    "group",
+    "personal_note",
+    "tag",
+    "agenda_item",
+    "list_of_speakers",
+    "structure_level_list_of_speakers",
+    "point_of_order_category",
+    "speaker",
+    "topic",
+    "motion",
+    "motion_submitter",
+    "motion_supporter",
+    "motion_editor",
+    "motion_working_group_speaker",
+    "motion_comment",
+    "motion_comment_section",
+    "motion_category",
+    "motion_block",
+    "motion_change_recommendation",
+    "motion_state",
+    "motion_workflow",
+    "poll",
+    "option",
+    "vote",
+    "assignment",
+    "assignment_candidate",
+    "poll_candidate_list",
+    "poll_candidate",
+    "mediafile",
+    "meeting_mediafile",
+    "projector",
+    "projection",
+    "projector_message",
+    "projector_countdown",
+    "chat_group",
+    "chat_message",
+    "action_worker",
+    "import_preview",
+    "history_position",
+    "history_entry",
+]
 
 
 class Sql_helper:
@@ -51,17 +102,12 @@ class Sql_helper:
         """
         Purpose:
             Returns the number of rows in the DB table models.
-        Input:
-            n/a
         Returns:
         - integer : number of fqid in sql models table
         """
         Sql_helper.cursor.execute("SELECT COUNT(fqid) FROM models;")
         result = Sql_helper.cursor.fetchone()
-        if result is not None:
-            if len(result) > 0:
-                return int(result.get("count", "0"))
-        return 0
+        return (result.get("count", 0)) if result else 0
 
     # END OF FUNCTION
 
@@ -70,10 +116,6 @@ class Sql_helper:
         """
         Purpose:
             Raises Sql_helper.offset by LIMIT
-        Input:
-            n/a
-        Returns:
-            n/a
         """
         Sql_helper.offset += Sql_helper.LIMIT
 
@@ -85,8 +127,6 @@ class Sql_helper:
         Purpose:
             Fetches the next data chunk from sql models table depending on Sql_helper.limit and Sql_helper.offset.
             Also raises the offset after getting the chunk.
-        Input:
-            n/a
         Returns:
             - data_rows: fetched sql table data rows as tuple
         """
@@ -133,31 +173,18 @@ class Sql_helper:
     # END OF FUNCTION
 
     @staticmethod
-    def is_non_writable_sql_field(collection: str, field: str) -> bool:
+    def is_non_writable_sql_field(field: Field) -> bool:
         """
         Purpose:
             Checks wether the field needs to be skipped or not.
         Input:
-            - collection: collection to get the necessary model
-            - field: name of the field that will be checked
+            - field: field type that will be checked
         Returns:
             - True / False: Boolean value dictating if field will be skipped.
         """
-        model: Model
-        field_class: Field
-
-        model = model_registry[collection]()
-        field_class = model.get_field(field)
-
-        # 1.1) OrganizationFields are always generated on DB side
-        if isinstance(field_class, OrganizationField):
-            return True
-
-        # 1.2) ViewFields are solely for the DB table view
-        elif field_class.is_view_field:
-            return True
-
-        return False
+        # 1) OrganizationFields are always generated on DB side
+        # ViewFields are solely for the DB table view
+        return isinstance(field, OrganizationField) or field.is_view_field
 
     # END OF FUNCTION
 
@@ -254,10 +281,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     """
     Purpose:
         Iterates over chunks of the DB table models and writes the data into the respective DB tables
-    Input:
-        n/a
-    Returns:
-        n/a
     """
     Sql_helper.cursor = curs
 
@@ -271,14 +294,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     sql_values: list
 
     insert_intermediate_t_commands = []
-
-    for table in OLD_TABLES:
-        sql.SQL(
-            "CREATE TRIGGER {trigger_name} BEFORE INSERT OR UPDATE OR DELETE ON {table} FOR EACH STATEMENT EXECUTE FUNCTION prevent_writes();"
-        ).format(
-            trigger_name=sql.SQL(f"tr_lock_table_{table}"),
-            table=sql.Identifier(table),
-        )
 
     result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
     assert result
@@ -306,40 +321,32 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             sql_values = []
 
             # 2) Iterate over any field found in the data_row
-            for field in data.keys():
+            for field_name in data.keys():
                 # 3) Check wether field exists in models.py too
-                if model.has_field(field):
+                if field := model.try_get_field(field_name):
 
                     # 3.1) If field is RelationListField write the other tables
-                    if isinstance(
-                        model.get_field(field),
-                        tuple(RELATION_LIST_FIELD_CLASSES),
+                    if (
+                        isinstance(field, tuple(RELATION_LIST_FIELD_CLASSES))
+                        and field.is_primary
+                        and field.write_fields is not None
                     ):
-                        model_field = model.get_field(field)
-                        if (
-                            model_field.is_primary
-                            and model_field.write_fields is not None
-                        ):
-                            insert_intermediate_t_commands.extend(
-                                Sql_helper.get_insert_intermediate_t_commands(
-                                    model.get_field(field), data
-                                )
-                            )
+                        insert_intermediate_t_commands.extend(
+                            Sql_helper.get_insert_intermediate_t_commands(field, data)
+                        )
 
                     # 3.2) If field is non writable skip
-                    if Sql_helper.is_non_writable_sql_field(collection, field):
+                    if Sql_helper.is_non_writable_sql_field(field):
                         continue
 
                     # 3.3) If field is non relational simply write
-                    value = Sql_helper.transform_data(
-                        data[field], model.get_field(field)
-                    )
+                    value = Sql_helper.transform_data(data[field_name], field)
                     if len(sql_fields) == 0:
-                        sql_fields = field
+                        sql_fields = field_name
                         sql_placeholder = "%s"
                         sql_values = [value]
                     else:
-                        sql_fields += f", {field}"
+                        sql_fields += f", {field_name}"
                         sql_placeholder += ", %s"
                         sql_values.append(value)
             # END LOOP data.keys()

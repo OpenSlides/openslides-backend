@@ -4,13 +4,7 @@ from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
-from cli.util.util import (
-    ROOT,
-    assert_equal,
-    open_output,
-    open_yml_file,
-    parse_arguments,
-)
+from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
 from meta.dev.src.helper_get_names import (
     FieldSqlErrorType,
     HelperGetNames,
@@ -75,8 +69,6 @@ FILE_TEMPLATE = dedent(
     """
 )
 
-MODELS: dict[str, dict[str, Any]] = {}
-
 
 def main() -> None:
     """
@@ -100,10 +92,8 @@ def main() -> None:
             to: some_model/some_attribute_id
     """
     args = parse_arguments(SOURCE)
-    global MODELS
-    MODELS = open_yml_file(args.filename)
 
-    InternalHelper.MODELS = MODELS
+    InternalHelper.read_models_yml(SOURCE)
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -113,7 +103,7 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in MODELS.items():
+        for collection, fields in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
             model = Model(collection, fields)
@@ -131,7 +121,7 @@ def get_model_field(collection: str, field_name: str) -> str | dict:
     Helper function the get a specific model field. Used to create generic relations.
     """
 
-    model = MODELS.get(collection)
+    model = InternalHelper.MODELS.get(collection)
     if model is None:
         raise ValueError(f"Collection {collection} does not exist.")
     value = model.get(field_name)
