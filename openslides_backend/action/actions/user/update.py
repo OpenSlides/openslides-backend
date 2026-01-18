@@ -20,6 +20,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
+from .keycloak_sync_mixin import KeycloakSyncMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
     LimitOfUserMixin,
@@ -31,6 +32,7 @@ from .user_mixins import (
 
 @register_action("user.update")
 class UserUpdate(
+    KeycloakSyncMixin,
     UserMixin,
     EmailCheckMixin,
     CreateUpdatePermissionsMixin,
