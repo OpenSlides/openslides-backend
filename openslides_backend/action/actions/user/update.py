@@ -75,6 +75,7 @@ class UserUpdate(
             "committee_management_ids",
             "is_demo_user",
             "saml_id",
+            "keycloak_id",
             "member_number",
             "external",
             "home_committee_id",
@@ -124,6 +125,7 @@ class UserUpdate(
                 "is_active",
                 "organization_management_level",
                 "saml_id",
+                "keycloak_id",
                 "password",
                 "home_committee_id",
             ],
@@ -136,13 +138,24 @@ class UserUpdate(
             instance["home_committee_id"] = None
         elif home_committee_id:
             instance["external"] = False
-        if user.get("saml_id") and (
+
+        # Check if user is SSO user (SAML or Keycloak)
+        sso_id = user.get("saml_id") or user.get("keycloak_id")
+        if sso_id and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+                f"user {sso_id} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
+
+        # Clear password when setting SAML ID on existing user with password
         if instance.get("saml_id") and user.get("password"):
+            instance["can_change_own_password"] = False
+            instance["default_password"] = ""
+            instance["password"] = ""
+
+        # Clear password when setting Keycloak ID on existing user with password
+        if instance.get("keycloak_id") and user.get("password"):
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""

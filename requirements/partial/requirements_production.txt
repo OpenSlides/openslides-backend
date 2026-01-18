@@ -14,6 +14,8 @@ requests==2.32.5
 roman==5.2
 simplejson==3.20.2
 Werkzeug==3.1.4
+PyJWT==2.10.1
+cryptography==44.0.3
 python-magic==0.4.27
 python-sql==1.5.1
 pygments==2.19.2

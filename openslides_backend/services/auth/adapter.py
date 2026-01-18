@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib import parse
 
 from osauthlib import (
@@ -18,12 +19,37 @@ from .interface import AuthenticationService
 class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
     """
     Adapter to connect to authentication service.
+
+    Supports both OpenSlides tokens (HS256) and OIDC/Keycloak tokens (RS256).
     """
 
     def __init__(self, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
+        self._oidc_configured = False
+
+    def configure_oidc(
+        self, oidc_enabled: bool, provider_url: Optional[str], client_id: Optional[str]
+    ) -> None:
+        """
+        Configure OIDC authentication from organization settings.
+
+        Args:
+            oidc_enabled: Whether OIDC is enabled
+            provider_url: Keycloak realm URL
+            client_id: OIDC client ID
+        """
+        if oidc_enabled and provider_url and client_id:
+            self.logger.debug(
+                f"Configuring OIDC authentication: issuer={provider_url}, audience={client_id}"
+            )
+            self.auth_handler.configure_oidc(
+                issuer=provider_url, audience=client_id
+            )
+            self._oidc_configured = True
+        else:
+            self._oidc_configured = False
 
     def authenticate(self) -> tuple[int, str | None]:
         """

@@ -1,4 +1,4 @@
-from typing import Any, Protocol
+from typing import Any, Optional, Protocol
 
 from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
 
@@ -11,6 +11,18 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
     """
 
     auth_handler: Any
+
+    def configure_oidc(
+        self, oidc_enabled: bool, provider_url: Optional[str], client_id: Optional[str]
+    ) -> None:
+        """
+        Configure OIDC authentication from organization settings.
+
+        Args:
+            oidc_enabled: Whether OIDC is enabled
+            provider_url: Keycloak realm URL
+            client_id: OIDC client ID
+        """
 
     def authenticate(self) -> tuple[int, str | None]:
         """
