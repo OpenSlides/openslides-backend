@@ -8,34 +8,15 @@ ARG REQUIREMENTS_FILE_OVERWRITE=""
 WORKDIR /app
 ENV APP_CONTEXT=${CONTEXT}
 
-### Query based on context value
-RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
-    tests)  echo "make vim bash-completion";; \
-    dev)    echo "make vim bash-completion";; \
-    *)      echo "libc-dev" ;; esac) && \
-    IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
-    apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
-    curl \
-    git \
-    gcc \
-    libpq-dev \
-    libmagic1 \
-    mime-support \
-    ncat \
-    ${CONTEXT_INSTALLS} && \
-    rm -rf /var/lib/apt/lists/*
-
-### Requirements file will be autoselected, unless an overwrite is given via ARG REQUIEREMENTS_FILE_OVERWRITE
+### Apt-get and pip requirements installs handled by dev/dockerfile-installs.sh
 COPY requirements/ requirements/
-RUN REQUIREMENTS_FILE=$(case "$APP_CONTEXT" in \
-    tests) echo "requirements_development.txt";; \
-    dev)   echo "requirements_development.txt";; \
-    *)     echo "requirements_production.txt" ;; esac) && \
-    REQUIREMENTS_FILE=${REQUIEREMENTS_FILE_OVERWRITE:-$REQUIREMENTS_FILE} && \
-    . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/${REQUIREMENTS_FILE}
+COPY ./dev/dockerfile-installs.sh ./dockerfile-installs.sh
+RUN chmod +x ./dockerfile-installs.sh && \
+    bash ./dockerfile-installs.sh "${APP_CONTEXT}" "${REQUIREMENTS_FILE_OVERWRITE}" && \
+    rm ./dockerfile-installs.sh
 
+# Environment
 ENV PYTHONPATH=/app
-
 ENV EMAIL_HOST=postfix
 ENV EMAIL_PORT=25
 ENV EMAIL_CONNECTION_SECURITY=NONE
