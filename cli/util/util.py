@@ -48,9 +48,10 @@ def get_merged_models_yml() -> dict[str, dict[str, Any]]:
     filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
     for filename in filenames:
         path = f"{SOURCE_COLLECTIONS}/{filename}"
-        content = "".join(get_file_content_text(path).split("---\n"))
+        content = "\n  ".join(get_file_content_text(path).split("\n"))
+        collection = filename[:-4]
         if content:
-            models_file_content = f"{models_file_content}\n{content}"
+            models_file_content = f"{models_file_content}\n{collection}:\n  {content}"
     return yaml.safe_load(models_file_content)
 
 
