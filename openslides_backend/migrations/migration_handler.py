@@ -485,7 +485,7 @@ class MigrationHandler(BaseHandler):
             + create_trigger_unique_ids_pair_code
             + create_trigger_notify_code
         )
-        for collection in unified_replace_tables:
+        for collection_or_imt in im_tables | set(unified_replace_tables):
             to_drop_triggers = self.cursor.execute(
                 sql.SQL(
                     """SELECT
@@ -496,7 +496,7 @@ class MigrationHandler(BaseHandler):
                     WHERE
                         tgrelid = {table_name}::regclass AND
                         tgname NOT LIKE 'RI_ConstraintTrigger_%';"""
-                ).format(table_name=HelperGetNames.get_table_name(collection))
+                ).format(table_name=HelperGetNames.get_table_name(collection_or_imt))
             ).fetchall()
             for trigger_dict in to_drop_triggers:
                 self.cursor.execute(
