@@ -1,3 +1,9 @@
+from typing import Any
+
+from datastore.shared.util import is_reserved_field
+
+from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.models import Projector
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -146,3 +152,42 @@ class ProjectorCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
+
+    def test_create_with_is_internal_none(self) -> None:
+        """Test what happens if None is sent for 'is_internal'"""
+        response = self.request(
+            "projector.create",
+            {"name": "test projector", "meeting_id": 222, "is_internal": None},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "name": "test projector",
+                "meeting_id": 222,
+                "sequential_number": 1,
+                "is_internal": None,
+            },
+        )
+
+        result = self.datastore.get_everything()
+        data: dict[str, Any] = {
+            collection: {
+                str(id): {
+                    field: value
+                    for field, value in model.items()
+                    if not is_reserved_field(field)
+                }
+                for id, model in models.items()
+            }
+            for collection, models in result.items()
+            if collection not in ["action_worker", "import_preview"]
+        }
+        data["_migration_index"] = get_backend_migration_index()
+        try:
+            Checker(
+                data=data,
+                mode="all",
+            ).run_check()
+        except CheckException as e:
+            assert "projector/1: Missing fields is_internal" not in str(e)
