@@ -19,8 +19,10 @@ from tests.system.util import (
 )
 from tests.util import Client
 
+MIG_INDEX = 100
 
-@pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
+
+# @pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -39,6 +41,7 @@ class MeetingImport(BaseActionTestCase):
         data: dict[str, Any] = {
             "committee_id": 60,
             "meeting": {
+                "_migration_index": MIG_INDEX,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -58,8 +61,8 @@ class MeetingImport(BaseActionTestCase):
                         "template_for_organization_id": None,
                         "enable_anonymous": False,
                         "location": "",
-                        "start_time": 10,
-                        "end_time": 10,
+                        "start_time": "1989-11-09T19:00:00+01:00",
+                        "end_time": "1990-10-03T00:00:00+01:00",
                         "welcome_title": "Welcome to OpenSlides",
                         "welcome_text": "[Space for your welcome text.]",
                         "conference_show": False,
@@ -410,7 +413,7 @@ class MeetingImport(BaseActionTestCase):
             "filename": "A.txt",
             "mimetype": "text/plain",
             "pdf_information": {},
-            "create_timestamp": 1584513771,
+            "create_timestamp": "1990-07-22T12:00:00+01:00",
             "parent_id": None,
             "child_ids": [],
             "meeting_mediafile_ids": [obj_id],
@@ -449,6 +452,7 @@ class MeetingImport(BaseActionTestCase):
             {
                 "committee_id": 1,
                 "meeting": {
+                    "_migration_index": MIG_INDEX,
                     "meeting": {},
                 },
             },
@@ -465,6 +469,7 @@ class MeetingImport(BaseActionTestCase):
             {
                 "committee_id": 1,
                 "meeting": {
+                    "_migration_index": MIG_INDEX,
                     "meeting": {"1": {"id": 1}, "2": {"id": 2}},
                 },
             },
@@ -2530,6 +2535,7 @@ class MeetingImport(BaseActionTestCase):
         data = self.create_request_data()
         meeting_data = data["meeting"]
         del meeting_data["meeting"]["1"]["meeting_user_ids"]
+        del meeting_data["meeting"]["1"]["user_ids"]
         del meeting_data["group"]["1"]["meeting_user_ids"]
         del meeting_data["user"]
         del meeting_data["meeting_user"]
