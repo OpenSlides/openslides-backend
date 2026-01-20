@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
 
@@ -16,9 +17,27 @@ class TestExportMeeting(BasePresenterTestCase):
         self.create_meeting(1, {"name": "exported_meeting"})
 
     def test_correct(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "start_time": datetime.fromtimestamp(
+                        626637600, tz=ZoneInfo("Europe/Berlin")
+                    ),
+                    "end_time": datetime.fromtimestamp(
+                        654908400, tz=ZoneInfo("Europe/Berlin")
+                    ),
+                }
+            }
+        )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         self.assertEqual(status_code, 200)
-        assert data["meeting"]["1"]["name"] == "exported_meeting"
+        meeting = data["meeting"]["1"]
+        assert meeting["name"] == "exported_meeting"
+        # TODO: Backend is currently automatically transforming all timestamps to UTC
+        # When that is changed, these checks will need to be changed to something like
+        # "1989-11-09T19:00:00+01:00" and "1990-10-03T00:00:00+01:00" respectively
+        assert meeting["start_time"] == "1989-11-09T18:00:00+00:00"
+        assert meeting["end_time"] == "1990-10-02T23:00:00+00:00"
         for collection in (
             "group",
             "projector",
