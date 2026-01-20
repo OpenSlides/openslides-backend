@@ -1346,11 +1346,14 @@ class BaseMotionForwardTestCaseWithAttachments(CreateForwardedBaseTestCase):
                     "meeting_id": meeting_id,
                     "mediafile_id": mediafile_id,
                     "is_public": True,
-                    "attachment_ids": (
-                        [f"motion/{motion_id}" for motion_id in motion_ids]
-                        if motion_ids
-                        else None
-                    ),
+                    **({"attachment_ids": 
+                        [f"motion/{motion_id}" for motion_id in motion_ids]}if motion_ids
+                        else {})
+                    # "attachment_ids": (
+                    #     [f"motion/{motion_id}" for motion_id in motion_ids]
+                    #     if motion_ids
+                    #     else []
+                    # ),
                 }
             }
         )
