@@ -11,7 +11,7 @@ from openslides_backend.migrations.core.exceptions import (
     MismatchingMigrationIndicesException,
 )
 from openslides_backend.migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
+    MIN_NON_REL_MIGRATION,
     MigrationCommand,
     MigrationHelper,
     MigrationState,
@@ -92,7 +92,7 @@ class MigrationManager:
         """
 
         def count(table: str, curs: Cursor[DictRow]) -> int:
-            if current_migration_index == LAST_NON_REL_MIGRATION:
+            if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
                 if table.endswith("_m"):
                     # initial migration uses the original table_t instead of migration table_m
                     # to count migrated models.

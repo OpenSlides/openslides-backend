@@ -18,7 +18,7 @@ from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView
 from openslides_backend.migrations.migration_handler import MigrationHandler
 from openslides_backend.migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
+    MIN_NON_REL_MIGRATION,
     MigrationHelper,
     MigrationState,
 )
@@ -205,7 +205,7 @@ class BaseMigrationTestCase(TestCase):
 
                 # 4.2) Write Migration Index like Docker setup would expect
                 curs.execute(
-                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2020-05-20', 1, {LAST_NON_REL_MIGRATION + 1})"
+                    f"INSERT INTO positions (timestamp, user_id, migration_index) VALUES ('2020-05-20', 1, {MIN_NON_REL_MIGRATION + 1})"
                 )
 
     def check_data(self) -> None:
@@ -333,7 +333,7 @@ class BaseMigrationTestCase(TestCase):
         # END TEST CASES
 
     def assert_indices_state(self, state: MigrationState) -> None:
-        """Asserts that all migration indices after the LAST_NON_REL_MIGRATION are set to given state."""
+        """Asserts that all migration indices after the MIN_NON_REL_MIGRATION are set to given state."""
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 curs.execute("SELECT migration_index, migration_state FROM version;")
@@ -415,7 +415,7 @@ class BaseMigrationTestCase(TestCase):
             "stats": {
                 # TODO only migrate one index? Would require altering the test-visible migration files.
                 "status": MigrationState.MIGRATION_REQUIRED,
-                "current_migration_index": LAST_NON_REL_MIGRATION,
+                "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": {
                     "agenda_item": {"count": 15, "migrated": 0},
@@ -474,7 +474,7 @@ class BaseMigrationTestCase(TestCase):
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
                 "output": "started\n",
-                "current_migration_index": LAST_NON_REL_MIGRATION,
+                "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
             },

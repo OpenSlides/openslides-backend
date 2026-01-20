@@ -60,9 +60,12 @@ def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
             tablenames = get_rel_db_table_names(curs)
-            curs.execute(
-                f"TRUNCATE TABLE {','.join(tablenames)} RESTART IDENTITY CASCADE"
-            )
+            if tablenames:
+                curs.execute(
+                    f"TRUNCATE TABLE {','.join(tablenames)} RESTART IDENTITY CASCADE"
+                )
+            else:
+                raise Exception("Schema doesn't contain tables.")
             conn.commit()
             curs.execute(generate_sql_for_test_initiation(tuple(tablenames)))
 

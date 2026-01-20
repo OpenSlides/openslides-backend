@@ -57,7 +57,7 @@ class MigrationCommand(StrEnum):
 # relative path to the migrations
 MIGRATIONS_PATH = "openslides_backend/migrations/migrations/"
 MODULE_PATH = MIGRATIONS_PATH.replace("/", ".")
-LAST_NON_REL_MIGRATION = 73
+MIN_NON_REL_MIGRATION = 73
 
 
 class MigrationHelper:
@@ -82,7 +82,7 @@ class MigrationHelper:
     def load_migrations() -> None:
         """
         Checks whether current migration_index is equal to or above the FIRST_REL_DB_MIGRATION and
-        accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the LAST_NON_REL_MIGRATION
+        accesses MIGRATION_DIRECTORY_PATH. Lists every migration file above the MIN_NON_REL_MIGRATION
         and stores them in MigrationHelper.migrations for future reference.
 
         Returns:
@@ -101,7 +101,7 @@ class MigrationHelper:
             if reMatch is not None:
                 migration_file = reMatch.groupdict()["migration"]
                 migration_number = int(migration_file[:4])
-                if migration_number > LAST_NON_REL_MIGRATION:
+                if migration_number >= 100:
                     MigrationHelper.migrations[migration_number] = migration[:-3]
         MigrationHelper.migrations = dict(sorted(MigrationHelper.migrations.items()))
 
@@ -181,7 +181,7 @@ class MigrationHelper:
             "SELECT MAX(migration_index) FROM version WHERE migration_state = %s;",
             (MigrationState.FINALIZED,),
         ).fetchone():
-            return tmp.get("max") or LAST_NON_REL_MIGRATION
+            return tmp.get("max", MIN_NON_REL_MIGRATION)
         raise MigrationException(
             "Requested migration indices are not available in version table."
         )

@@ -9,7 +9,6 @@ from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
     MODULE_PATH,
     OLD_TABLES,
     MigrationHelper,
@@ -360,10 +359,7 @@ class MigrationHandler(BaseHandler):
                 )
             )
         # Support reset on initial migration.
-        if (
-            MigrationHelper.get_database_migration_index(self.cursor)
-            == LAST_NON_REL_MIGRATION
-        ):
+        if MigrationHelper.get_database_migration_index(self.cursor) < 100:
             for table in OLD_TABLES:
                 self.cursor.execute(
                     sql.SQL("DROP TRIGGER IF EXISTS tr_lock_{table}").format(
@@ -560,10 +556,7 @@ class MigrationHandler(BaseHandler):
                 self.cursor, idx
             ).items()
         }
-        if (
-            MigrationHelper.get_database_migration_index(self.cursor)
-            == LAST_NON_REL_MIGRATION
-        ):
+        if MigrationHelper.get_database_migration_index(self.cursor) < 100:
             for collection in replace_tables:
                 self.cursor.execute(f"DROP TABLE {collection}_t;")
         if any(mi > 100 for mi in indices):

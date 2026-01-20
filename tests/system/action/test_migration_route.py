@@ -11,7 +11,7 @@ from openslides_backend.migrations.migration_handler import (
     MigrationState,
 )
 from openslides_backend.migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
+    MIN_NON_REL_MIGRATION,
     MigrationHelper,
 )
 from openslides_backend.shared.env import DEV_PASSWORD
@@ -169,7 +169,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
             )
             MigrationHelper.set_database_migration_info(
                 curs,
-                LAST_NON_REL_MIGRATION,
+                MIN_NON_REL_MIGRATION,
                 MigrationState.FINALIZED,
             )
         wait_lock = Lock()
@@ -187,7 +187,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_RUNNING,
             "output": "started\n",
-            "current_migration_index": LAST_NON_REL_MIGRATION,
+            "current_migration_index": MIN_NON_REL_MIGRATION,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {"organization": {"count": 1, "migrated": 1}},
         }

@@ -6,7 +6,7 @@ from openslides_backend.migrations.core.exceptions import (
     MismatchingMigrationIndicesException,
 )
 from openslides_backend.migrations.migration_helper import (
-    LAST_NON_REL_MIGRATION,
+    MIN_NON_REL_MIGRATION,
     MigrationHelper,
     MigrationState,
 )
@@ -57,23 +57,25 @@ def create_schema() -> None:
                 )
                 return
             # We have a migration index if this is a legacy instance.
-            # A migration index higher than LAST_NON_REL_MIGRATION is not possible
-            # for an unmigrated instance because a version table would exist.
+            # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not
+            # possible for an unmigrated instance because a version table would exist.
             try:
                 db_migration_index = MigrationHelper.pull_migration_index_from_db(
                     cursor
                 )
-                if 0 < db_migration_index < LAST_NON_REL_MIGRATION:
+                # index 0 means the database is uninitialized
+                if 0 < db_migration_index < MIN_NON_REL_MIGRATION:
                     raise MismatchingMigrationIndicesException(
-                        f"Migration index cannot be lower than {LAST_NON_REL_MIGRATION}. Please downgrade your backend to a version that runs that migration. Then upgrade again."
+                        f"Migration index ({db_migration_index}) cannot be lower than {MIN_NON_REL_MIGRATION}. Please have a look at the migration documentation checkout the migration backend to a version that runs that migration. Then upgrade again."
                     )
                 path = os.path.realpath(
                     os.path.join("meta", "dev", "sql", "schema_relational.sql")
                 )
                 cursor.execute(open(path).read())
                 print("Relational schema applied.\n", flush=True)
-                if db_migration_index == LAST_NON_REL_MIGRATION + 1:
-                    # migration states for indices higher than last non-relational migration will be set by the migration manager.
+                if MIN_NON_REL_MIGRATION < db_migration_index < 100:
+                    # migration states for non-rel-db indices (migration 99 impossible) are aggregated into one (index: max - 1) of version table.
+                    # migration states for rel-db indices (>= 100) will be set by the migration manager.
                     type_ = "legacy"
                     db_migration_index -= 1
                 else:
