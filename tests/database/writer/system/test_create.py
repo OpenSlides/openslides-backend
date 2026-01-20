@@ -8,7 +8,11 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import ModelExists, RelationException
+from openslides_backend.shared.exceptions import (
+    BadCodingException,
+    ModelExists,
+    RelationException,
+)
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.patterns import (
     collection_from_fqid,
@@ -213,6 +217,30 @@ def test_create_11_field_as_1n() -> None:
     assert_model("motion/1", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 1})
     assert_no_model("agenda_item/1")
     assert_no_model("agenda_item/2")
+
+
+def test_create_error_not_null(db_connection: Connection[rows.DictRow]) -> None:
+    with get_new_os_conn() as conn:
+        with pytest.raises(BadCodingException) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Create,
+                                    "fqid": "user/1",
+                                    "fields": {"first_name": "Alice"},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+    assert (
+        "Missing fields 'username' in 'user/1'. Ooopsy Daisy!" in e_info.value.message
+    )
 
 
 def test_create_nm_field_simple() -> None:

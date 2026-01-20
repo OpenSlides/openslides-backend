@@ -23,6 +23,7 @@ from openslides_backend.models.fields import (
     IntegerField,
     RelationField,
     RelationListField,
+    TextArrayField,
     TextField,
     TimestampField,
 )
@@ -467,6 +468,12 @@ class TestCheckerCheckData(TestCase):
                 "collection": "group",
                 "field_name": "permissions",
                 "value": ["1", "2"],
+            },
+            {
+                "field_type": TextArrayField,
+                "collection": "group",
+                "field_name": "permissions",
+                "value": ["1" * 257, "2" * 420],
             },
             {
                 "field_type": GenericRelationListField,

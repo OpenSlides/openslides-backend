@@ -490,7 +490,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             [
                 "Participant removed from group {} in meeting {}",
                 "group/600",
-                "meeting/60",
+                "meeting/1",
                 "Personal data changed",
                 "Committee management changed",
             ],
@@ -4587,6 +4587,17 @@ class UserUpdateActionTest(BaseActionTestCase):
             "You are not allowed to perform action user.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 8",
             response.json["message"],
         )
+
+    def test_multi_delegation_doesnt_break_history(self) -> None:
+        self.create_meeting(1)
+        self.set_user_groups(1, [2])
+        for i in range(2, 68):
+            self.create_user(f"user{i}", group_ids=[3])
+        response = self.request(
+            "user.update",
+            {"id": 1, "meeting_id": 1, "vote_delegations_from_ids": list(range(2, 68))},
+        )
+        self.assert_status_code(response, 200)
 
 
 class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):

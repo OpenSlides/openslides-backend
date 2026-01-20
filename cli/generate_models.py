@@ -45,6 +45,7 @@ COMMON_FIELD_CLASSES = {
     "string[]": "CharArrayField",
     "number[]": "NumberArrayField",
     "text": "TextField",
+    "text[]": "TextArrayField",
 }
 
 RELATION_FIELD_CLASSES = {
@@ -250,7 +251,7 @@ class Attribute(Node):
                     "unique",
                 ):
                     self.constraints[k] = v
-                elif self.type in ("string[]", "number[]") and k == "items":
+                elif self.type in ("string[]", "number[]", "text[]") and k == "items":
                     self.in_array_constraints.update(v)
 
     def get_code(self, field_name: str) -> str:
@@ -282,7 +283,11 @@ class Attribute(Node):
             properties += f"constraints={repr(self.constraints)}, "
         if self.write_fields is not None:
             properties += f"write_fields={repr(self.write_fields)}, "
-        if self.in_array_constraints and self.type in ("string[]", "number[]"):
+        if self.in_array_constraints and self.type in (
+            "string[]",
+            "number[]",
+            "text[]",
+        ):
             properties += f"in_array_constraints={repr(self.in_array_constraints)}"
 
         return self.FIELD_TEMPLATE.substitute(

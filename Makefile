@@ -34,7 +34,7 @@ coverage:
 	pytest --cov --cov-report html
 
 test-file:
-# f= to pass the filename
+# f= to pass the file name
 # k= to pass a test name
 # v=1 to run verbose test output
 # cap=1 to capture print to system out
