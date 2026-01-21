@@ -152,19 +152,15 @@ class MigrationHandler(BaseHandler):
 
             self.cursor.execute(
                 """
-                SELECT pg_class.relkind,
-                    pg_get_viewdef(%s::regclass, true) AS viewdef
+                SELECT pg_get_viewdef(%s::regclass, true) AS viewdef
                 FROM pg_class
-                WHERE relname = %s
+                WHERE relname = %s AND relkind = 'v';
                 """,
                 (collection, collection),
             )
             row = self.cursor.fetchone()
-            if row is None:
+            if not row:
                 raise ValueError(f"Source view not found: {collection}")
-            assert (
-                row["relkind"] == "v"
-            ), f"Relation kind must be a normal view to create a view copy of {collection}. Has relkind '{row['relkind']}'."
             viewdef = table_re.sub(replace_suffix, row["viewdef"])
             self.cursor.execute(
                 sql.SQL("CREATE VIEW {view_m} AS {viewdef};").format(
