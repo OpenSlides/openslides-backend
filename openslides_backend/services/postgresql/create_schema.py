@@ -61,6 +61,11 @@ def create_schema() -> None:
                 print(
                     "Assuming relational schema is applied, because table version exists.\n"
                 )
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
+                )
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not
@@ -96,6 +101,16 @@ def create_schema() -> None:
                 print(
                     f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
                 )
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
+                )
             except Exception as e:
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
+                )
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return
