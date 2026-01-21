@@ -164,7 +164,7 @@ class MigrationHandler(BaseHandler):
                 raise ValueError(f"Source view not found: {collection}")
             assert (
                 row["relkind"] == "v"
-            ), "Relation kind must be a normal view to create a view copy."
+            ), f"Relation kind must be a normal view to create a view copy of {collection}. Has relkind '{row['relkind']}'."
             viewdef = table_re.sub(replace_suffix, row["viewdef"])
             self.cursor.execute(
                 sql.SQL("CREATE VIEW {view_m} AS {viewdef};").format(
