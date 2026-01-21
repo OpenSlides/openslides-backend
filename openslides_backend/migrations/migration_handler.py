@@ -9,7 +9,7 @@ from psycopg.rows import DictRow
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
 
-from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
+from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
     MODULE_PATH,
     OLD_TABLES,

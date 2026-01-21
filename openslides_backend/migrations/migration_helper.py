@@ -9,7 +9,7 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
-from openslides_backend.migrations.core.exceptions import MigrationException
+from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,

@@ -5,7 +5,7 @@ from typing import Any
 from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.migrations.core.exceptions import MigrationException
+from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.migrations.migration_handler import (
     MigrationHandler,
     MigrationState,

@@ -6,7 +6,7 @@ from typing import Any, cast
 from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
-from openslides_backend.migrations.core.exceptions import (
+from openslides_backend.migrations.exceptions import (
     MigrationException,
     MismatchingMigrationIndicesException,
 )

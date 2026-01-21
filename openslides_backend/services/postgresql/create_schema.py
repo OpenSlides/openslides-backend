@@ -2,7 +2,7 @@ import os
 
 from psycopg import Connection, rows, sql
 
-from openslides_backend.migrations.core.exceptions import (
+from openslides_backend.migrations.exceptions import (
     MismatchingMigrationIndicesException,
 )
 from openslides_backend.migrations.migration_helper import (
