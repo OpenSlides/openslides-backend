@@ -3,7 +3,6 @@ import time
 from copy import deepcopy
 from typing import Any
 
-import pytest
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.action_worker import ActionWorkerState
@@ -1163,15 +1162,14 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
-    # TODO: Edit this
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
         # User/1 is in user_ids, because calling user is added
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        # XXX meeting2 = self.assert_model_exists("meeting/2")
-        # XXX self.assertCountEqual(meeting2["user_ids"], [1, 2])
-        # self.assert_model_exists("user/2", {"username": "test", "meeting_ids": [2]})
+        meeting2 = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting2["user_ids"], [1, 2])
+        self.assert_model_exists("user/2", {"username": "test", "meeting_ids": [2]})
         organization = self.assert_model_exists("organization/1")
         self.assertCountEqual(organization.get("user_ids", []), [1, 2])
 
@@ -2598,14 +2596,6 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
         assert "Please, use a more recent file!" in response.json["message"]
-
-    # TODO: Defo not doing this anymore
-    @pytest.mark.skip()
-    def test_import_os3_data(self) -> None:
-        data_raw = get_initial_data_file("data/export-OS3-demo.json")
-        data = {"committee_id": 1, "meeting": data_raw}
-        response = self.request("meeting.import", data)
-        self.assert_status_code(response, 200)
 
     # TODO: Fix this test
     def test_import_export_with_orga_mediafiles(self) -> None:
