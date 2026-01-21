@@ -346,13 +346,13 @@ class BaseMigrationTestCase(TestCase):
                     } == row
 
     def test_migration_handler(self) -> None:
+        # Prepare what manager would.
+        MigrationHelper.load_migrations()
+        MigrationHelper.add_new_migrations_to_version()
+        MigrationHelper.migrate_thread_stream = StringIO()
         # 5) Call data_manipulation of module
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                # Prepare what manager would.
-                MigrationHelper.load_migrations()
-                MigrationHelper.add_new_migrations_to_version()
-                MigrationHelper.migrate_thread_stream = StringIO()
                 handler = MigrationHandler(
                     curs, self.env, self.services, self.app.logging
                 )
