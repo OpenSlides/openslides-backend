@@ -50,10 +50,21 @@ def create_schema() -> None:
         connection = get_unpooled_db_connection(env.DATABASE_NAME, False)
     with connection:
         with connection.cursor() as cursor:
+            lock_int = 13371234564223
+            cursor.execute(
+                sql.SQL("SELECT pg_advisory_lock({lock_int});").format(
+                    lock_int=lock_int
+                )
+            )
             # programmatic migrations of schema necessary, only apply if not exists
             if MigrationHelper.table_exists(cursor, "version"):
                 print(
                     "Assuming relational schema is applied, because table version exists.\n"
+                )
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
                 )
                 return
             # We have a migration index if this is a legacy instance.
@@ -90,6 +101,16 @@ def create_schema() -> None:
                 print(
                     f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
                 )
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
+                )
             except Exception as e:
+                cursor.execute(
+                    sql.SQL("SELECT pg_advisory_unlock({lock_int});").format(
+                        lock_int=lock_int
+                    )
+                )
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return
