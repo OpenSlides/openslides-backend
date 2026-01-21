@@ -1,11 +1,10 @@
-import string
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
 
-from psycopg import Cursor, sql
+from psycopg import Cursor
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
@@ -363,33 +362,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     # 4) INSERT intermediate tables
     for command, values in insert_intermediate_t_commands:
         curs.execute(command, values)
-
-    # 5) UPDATE sequences
-    for collection in found_collections:
-        table = HelperGetNames.get_table_name(collection)
-        curs.execute(f"SELECT setval('{table}_id_seq', (SELECT MAX(id) FROM {table}));")
-        if model_registry[collection]().try_get_field("sequential_number"):
-            results = curs.execute(
-                sql.SQL(
-                    "SELECT MAX(sequential_number), meeting_id FROM {table} GROUP BY meeting_id;"
-                ).format(
-                    table=sql.Identifier(
-                        HelperGetNames.get_table_name(collection, True)
-                    )
-                )
-            ).fetchall()
-            SEQ_NAME = string.Template(
-                table + "_meeting_id${meeting_id}_sequential_number_seq"
-            )
-            for result in results:
-                seq_name = SEQ_NAME.substitute({"meeting_id": result["meeting_id"]})
-                curs.execute(sql.SQL(f"CREATE SEQUENCE IF NOT EXISTS {seq_name};"))
-                curs.execute(
-                    sql.SQL("SELECT setval('{sequence_name}', {maximum});").format(
-                        sequence_name=sql.SQL(seq_name),
-                        maximum=result["max"],
-                    )
-                )
 
     # clear replace tables as this migration writes the tables directly
     MigrationHelper.set_database_migration_info(

@@ -1,4 +1,5 @@
 import re
+import string
 from importlib import import_module
 from typing import Any
 
@@ -6,6 +7,7 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
+from openslides_backend.models.base import model_registry
 
 from ..migrations.core.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
@@ -230,24 +232,39 @@ class MigrationHandler(BaseHandler):
 
     def update_sequences(self) -> None:
         """
-        Updates all primary keys of migration tables.
-        sequential_number sequences are left untouched. If they are altered by adding
-        or deleting the owner column, the migration needs to care for its sequence.
+        Updates all primary keys and sequential_number fields.
         """
         unified_repl_tables, _ = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
         )
-        for collection, r_tables in unified_repl_tables.items():
-            # Use origin table to account for possibly deleted models during migration.
-            table = sql.Identifier(r_tables["table"])
+        for collection in unified_repl_tables:
+            table_name = HelperGetNames.get_table_name(collection)
+            table = sql.Identifier(table_name)
+            # update primary keys.
             result = self.cursor.execute(
                 sql.SQL("SELECT MAX(id) FROM {table_name};").format(table_name=table)
             ).fetchone()
             if result:
                 self.update_sequence(
-                    HelperGetNames.get_table_name(collection, True) + "_id_seq",
+                    table_name + "_id_seq",
                     result["max"],
                 )
+            # update sequential_numbers.
+            if model_registry[collection]().try_get_field("sequential_number"):
+                results = self.cursor.execute(
+                    sql.SQL(
+                        "SELECT MAX(sequential_number), meeting_id FROM {table} GROUP BY meeting_id;"
+                    ).format(table=table)
+                ).fetchall()
+                SEQ_NAME = string.Template(
+                    table_name + "_meeting_id${meeting_id}_sequential_number_seq"
+                )
+                for result in results:
+                    seq_name = SEQ_NAME.substitute({"meeting_id": result["meeting_id"]})
+                    self.cursor.execute(
+                        sql.SQL(f"CREATE SEQUENCE IF NOT EXISTS {seq_name};")
+                    )
+                    self.update_sequence(seq_name, result["max"])
 
     def execute_migrations(self) -> None:
         """
@@ -269,8 +286,6 @@ class MigrationHandler(BaseHandler):
                 migration_module.data_definition(self.cursor)
             if callable(getattr(migration_module, "data_manipulation", None)):
                 migration_module.data_manipulation(self.cursor)
-
-            self.update_sequences()
 
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.FINALIZATION_REQUIRED
@@ -506,6 +521,9 @@ class MigrationHandler(BaseHandler):
                     )
                 )
         self.cursor.execute(sql_text)
+
+        self.update_sequences()
+
         MigrationHelper.write_line("finalization finished")
         for mi in relevant_mis:
             MigrationHelper.set_database_migration_info(
