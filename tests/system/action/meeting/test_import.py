@@ -22,7 +22,6 @@ from tests.util import Client
 MIG_INDEX = 100
 
 
-# @pytest.mark.skip(reason="Requires initial migration. TODO: unskip once it is added.")
 class MeetingImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -1164,6 +1163,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
+    # TODO: Edit this
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
         # User/1 is in user_ids, because calling user is added
@@ -2599,6 +2599,7 @@ class MeetingImport(BaseActionTestCase):
         )
         assert "Please, use a more recent file!" in response.json["message"]
 
+    # TODO: Defo not doing this anymore
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:
         data_raw = get_initial_data_file("data/export-OS3-demo.json")
@@ -2606,6 +2607,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
 
+    # TODO: Fix this test
     def test_import_export_with_orga_mediafiles(self) -> None:
         self.create_meeting()
         self.set_user_groups(1, [1])
