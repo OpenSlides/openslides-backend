@@ -12,7 +12,7 @@ if [ ! $ANONYMOUS_ONLY ]; then
   printf "DBMS is started.\n"
 fi
 
-if [ "$ACTION_HOST" = "backendManage" || "$APP_CONTEXT" = "dev" ]; then
+if [[ "$ACTION_HOST" = "backendManage" || "$APP_CONTEXT" = "dev" ]]; then
   printf "Create schema.\n"
   python cli/create_schema.py
   printf "\n"
