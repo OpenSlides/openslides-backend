@@ -40,7 +40,7 @@ def get_file_content_text(file: str) -> str:
         with open(file) as x:
             return x.read()
     else:
-        return requests.get(file).content.decode("utf-8")
+        raise Exception(f"{file} is not a file.")
 
 
 def get_merged_models_yml() -> dict[str, dict[str, Any]]:
