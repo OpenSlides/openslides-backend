@@ -41,7 +41,7 @@ class Export(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         export_data = export_meeting(
-            self.datastore, self.data["meeting_id"], datetime_to_string=True
+            self.datastore, self.data["meeting_id"], datetime_decimal_to_string=True
         )
         if id_ := next(
             (

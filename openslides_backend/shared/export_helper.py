@@ -1,5 +1,6 @@
 import datetime
 from collections.abc import Iterable
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.migrations.migration_helper import MigrationHelper
@@ -35,7 +36,7 @@ def export_meeting(
     meeting_id: int,
     internal_target: bool = False,
     update_mediafiles: bool = False,
-    datetime_to_string: bool = False,
+    datetime_decimal_to_string: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -214,11 +215,13 @@ def export_meeting(
         export[collection] = dict(
             sorted(instances.items(), key=lambda item: int(item[0]))
         )
-        if datetime_to_string and isinstance(instances, dict):
+        if datetime_decimal_to_string and isinstance(instances, dict):
             for data in instances.values():
                 for field, value in data.items():
                     if isinstance(value, datetime.datetime):
                         data[field] = value.isoformat()
+                    if isinstance(value, Decimal):
+                        data[field] = str(value)
 
     return export
 
