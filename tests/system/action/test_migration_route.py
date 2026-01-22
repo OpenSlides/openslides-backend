@@ -116,6 +116,9 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
             MigrationHelper.write_line("started")
             with self.connection.cursor() as curs:
                 MigrationHelper.set_database_migration_info(
+                    curs, MIN_NON_REL_MIGRATION, MigrationState.FINALIZED
+                )
+                MigrationHelper.set_database_migration_info(
                     curs, self.backend_migration_index, MigrationState.MIGRATION_RUNNING
                 )
             indicator_lock.release()
@@ -229,13 +232,13 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
 
         response = self.migration_request("migrate")
+        lock.release()
         self.assert_status_code(response, 400)
         assert response.json["success"] is False
         assert (
             response.json["message"]
             == "Migration is running, only 'stats' command is allowed."
         )
-        lock.release()
 
     def test_migration_with_error(self, execute_command: Mock) -> None:
         wait_lock = Lock()
