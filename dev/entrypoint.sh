@@ -10,7 +10,7 @@ source scripts/export_database_variables.sh
 meta/dev/scripts/wait-for-database.sh
 printf "DBMS is started.\n"
 
-printf "Create schema.\n"
+printf "Calling cli/create_schema.py ...\n"
 python cli/create_schema.py
 printf "\n"
 

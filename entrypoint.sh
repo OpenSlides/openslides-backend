@@ -12,7 +12,7 @@ if [ ! $ANONYMOUS_ONLY ]; then
   printf "DBMS is started.\n"
 fi
 
-printf "Create schema.\n"
+printf "Creating schema ...\n"
 python cli/create_schema.py
 printf "\n"
 
