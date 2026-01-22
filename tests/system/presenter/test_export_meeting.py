@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
@@ -127,14 +128,15 @@ class TestExportMeeting(BasePresenterTestCase):
         assert "import_preview" not in data
 
     def test_add_users(self) -> None:
+        self.set_user_groups(1, [1])
         self.set_models(
             {
                 "meeting/1": {"present_user_ids": [1]},
                 "gender/1": {"name": "male"},
-                "user/1": {"gender_id": 1},
+                "user/1": {"gender_id": 1, "default_vote_weight": "2.000000"},
+                "meeting_user/1": {"vote_weight": Decimal("3.000001")},
             }
         )
-        self.set_user_groups(1, [1])
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
 
@@ -144,8 +146,10 @@ class TestExportMeeting(BasePresenterTestCase):
         assert user["is_active"] is True
         assert user["is_present_in_meeting_ids"] == [1]
         assert user["gender"] == "male"
+        assert user["default_vote_weight"] == "2.000000"
 
         assert data["meeting_user"]["1"]["group_ids"] == [1]
+        assert data["meeting_user"]["1"]["vote_weight"] == "3.000001"
 
     def test_add_users_in_2_meetings(self) -> None:
         self.create_meeting(

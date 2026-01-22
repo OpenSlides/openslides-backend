@@ -2133,3 +2133,22 @@ class MeetingClone(BaseActionTestCase):
         for fqid, model in models.items():
             self.assert_model_exists(fqid, model)
         self.media.duplicate_mediafile.assert_not_called()
+
+    def test_clone_require_duplicate_from_allowed(self) -> None:
+        self.set_test_data_with_admin()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1, "name": "m1"},
+                "organization/1": {
+                    "template_meeting_ids": [1],
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+                "committee/60": {"user_ids": [1], "manager_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
