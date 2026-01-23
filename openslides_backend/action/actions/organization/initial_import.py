@@ -1,6 +1,8 @@
 from collections.abc import Iterable
 from typing import Any
 
+from openslides_backend.migrations.migration_helper import MigrationHelper
+
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
 from ....models.base import json_dict_to_non_json_data_types
@@ -142,10 +144,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
-        backend_migration_index = 1
-        # TODO set to fixed value because of lacking migrations
-        # needs to be readded in some shape or form
-        # backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
             "backend_migration_index": backend_migration_index,

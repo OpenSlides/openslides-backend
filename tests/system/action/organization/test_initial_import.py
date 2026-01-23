@@ -1,18 +1,17 @@
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
-import pytest
-
 from openslides_backend.i18n.translator import Translator
-from openslides_backend.migrations import (
-    assert_migration_index,
-    get_backend_migration_index,
-)
-from openslides_backend.migrations.migrate import MigrationWrapper
+from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_manager import MigrationManager
 from openslides_backend.models import fields
 from openslides_backend.models.base import model_registry
+from openslides_backend.services.postgresql.db_connection_handling import (
+    get_new_os_conn,
+)
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     INITIAL_DATA_FILE,
@@ -243,9 +242,8 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_greater_backend_MI(self) -> None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["_migration_index"] = backend_migration_index - 1
         response = self.request(
@@ -258,9 +256,8 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
-    @pytest.mark.skip("TODO: unskip once migration_index usage is fixed.")
     def test_initial_import_MI_lower_backend_MI(self) -> None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["_migration_index"] = backend_migration_index + 1
         response = self.request(
@@ -269,7 +266,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(" is higher than the backend ", response.json["message"])
 
-    # TODO: check again once migration_index usage is fixed
     def test_play_with_migrations(self) -> None:
         """
         - Loads the initial_data.json into memory
@@ -290,8 +286,13 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["results"][0][0]["message"],
         )
         self.assertFalse(response.json["results"][0][0]["migration_needed"])
-        assert_migration_index()
 
-        handler = MigrationWrapper(verbose=True)
-        handler.execute_command("finalize")
-        assert_migration_index()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
+        manager = MigrationManager(self.env, self.services, logging)
+        manager.execute_migrate_command("finalize", verbose=True)
+
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
