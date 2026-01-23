@@ -1596,6 +1596,7 @@ class MeetingUser(Model):
     group_ids = fields.RelationListField(
         to={"group": "meeting_user_ids"},
         is_view_field=True,
+        required=True,
         equal_fields="meeting_id",
         write_fields=(
             "nm_group_meeting_user_ids_meeting_user_t",
