@@ -58,7 +58,7 @@ class BaseGenericTestCase(BaseActionTestCase):
 
     @classmethod
     def create_table_view(cls, yml: str) -> None:
-        GenerateCodeBlocks.models = InternalHelper.MODELS = yaml.safe_load(yml)
+        InternalHelper.MODELS = yaml.safe_load(yml)
 
         (
             pre_code,
