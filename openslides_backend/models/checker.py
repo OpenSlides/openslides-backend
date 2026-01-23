@@ -7,7 +7,7 @@ from typing import Any, cast
 import fastjsonschema
 from psycopg.types.json import Jsonb
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     BaseRelationField,
@@ -251,7 +251,7 @@ class Checker:
         # Unfortunately, TypedDict does not support any kind of generic or pattern property to
         # distinguish between the MI and the collections, so we have to cast the field here
         migration_index = cast(int, self.data["_migration_index"])
-        backend_mi = get_backend_migration_index()
+        backend_mi = MigrationHelper.get_backend_migration_index()
         if migration_index > backend_mi:
             self.errors.append(
                 f"The given migration index ({migration_index}) is higher than the backend ({backend_mi})."
