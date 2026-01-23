@@ -696,7 +696,7 @@ class Meeting(Model, MeetingModelMixin):
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
-        required=True, default="OpenSlides", constraints={"maxLength": 100}
+        required=True, default="OpenSlides", constraints={"maxLength": 200}
     )
     is_active_in_organization_id = fields.RelationField(
         to={"organization": "active_meeting_ids"},
@@ -2307,6 +2307,7 @@ class Organization(Model):
         to={"gender": "organization_id"}, is_view_field=True, is_primary=True
     )
     disable_forward_with_attachments = fields.BooleanField()
+    restrict_edit_forward_committees = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -2328,6 +2329,7 @@ class Organization(Model):
     )
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
+    restrict_editing_same_level_committee_admins = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
