@@ -236,21 +236,21 @@ class BaseSystemTestCase(TestCase):
     ) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
-        self.validate_fields(fqid, data)  # TODO reactivate
+        self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
         if deleted:
             events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
-        self.validate_fields(fqid, data)  # TODO reactivate
+        self.validate_fields(fqid, data)
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_update_list_events(
         self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
     ) -> list[Event]:
-        self.validate_fields(fqid, add)  # TODO reactivate
-        self.validate_fields(fqid, remove)  # TODO reactivate
+        self.validate_fields(fqid, add)
+        self.validate_fields(fqid, remove)
         if not (add or remove):
             return []
         return [
