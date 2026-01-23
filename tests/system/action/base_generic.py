@@ -71,6 +71,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
             create_trigger_1_n_relation_not_null_code,
+            create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_notify_code,
             errors,
@@ -83,6 +84,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             + alter_table_code
             + create_trigger_1_1_relation_not_null_code
             + create_trigger_1_n_relation_not_null_code
+            + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
         )
         with get_new_os_conn() as conn:
