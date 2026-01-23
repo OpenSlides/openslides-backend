@@ -6,14 +6,14 @@ dacite==1.7.0
 fastjsonschema==2.21.2
 Flask==3.0.3
 gunicorn==23.0.0
-pypdf[crypto]==6.4.2
+pypdf[crypto]==6.6.0
 lxml==5.1.0
 psycopg[c]==3.2.10
 psycopg-pool==3.2.6
 requests==2.32.5
 roman==5.2
 simplejson==3.20.2
-Werkzeug==3.1.4
+Werkzeug==3.1.5
 python-magic==0.4.27
 python-sql==1.5.1
 pygments==2.19.2

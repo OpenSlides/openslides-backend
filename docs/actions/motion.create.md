@@ -26,7 +26,7 @@
 
 // Optional special fields, see notes below
     workflow_id: Id;
-    submitter_ids: Id[];
+    submitter_meeting_user_ids: Id[];
 
 // Non-model fields for customizing the agenda item creation, optional
     agenda_create: boolean;
@@ -58,7 +58,7 @@ This is the logic for other fields depending on the motion type:
 There are some fields that need special attention:
 - `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id` or `meeting/motions_default_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
 - `additional_submitter` a text field where text-based submitter information may be entered. Cannot be set unless `meeting/motions_create_enable_additional_submitter_text` is `true`. Requires permissions `Motion.CAN_CREATE` and `Motion.CAN_MANAGE_METADATA`.
-- `submitter_ids`: These are **user ids** and not ids of the `motion_submitter` model. If nothing is given (`[]`) and the field `additional_submitter` isn't filled, the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list. Requires permissions `Motion.CAN_CREATE`, `Motion.CAN_MANAGE_METADATA` and `User.CAN_SEE`.
+- `submitter_meeting_user_ids`: These are ids of the meeting users that should get a `motion_submitter` model. Can be left empty. The weight of the new submitters is set to the order of the given list. Requires permissions `Motion.CAN_CREATE`, `Motion.CAN_MANAGE_METADATA` and `User.CAN_SEE` (the latter two only if not setting oneself).
 - `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
 Other things to do when creating motions:
