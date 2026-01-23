@@ -72,7 +72,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_agenda_item_tag_ids_t",
+            "gm_tag_tagged_ids_t",
             "agenda_item_id",
             "tag_id",
             ["tag_id_tag_id"],
@@ -142,7 +142,7 @@ class Assignment(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_assignment_tag_ids_t",
+            "gm_tag_tagged_ids_t",
             "assignment_id",
             "tag_id",
             ["tag_id_tag_id"],
@@ -153,7 +153,7 @@ class Assignment(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_assignment_attachment_meeting_mediafile_ids_t",
+            "gm_meeting_mediafile_attachment_ids_t",
             "assignment_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
@@ -336,7 +336,7 @@ class Committee(Model):
         to={"organization_tag": "tagged_ids"},
         is_view_field=True,
         write_fields=(
-            "gm_committee_organization_tag_ids_t",
+            "gm_organization_tag_tagged_ids_t",
             "committee_id",
             "organization_tag_id",
             ["organization_tag_id_organization_tag_id"],
@@ -1286,7 +1286,7 @@ class Meeting(Model, MeetingModelMixin):
         to={"organization_tag": "tagged_ids"},
         is_view_field=True,
         write_fields=(
-            "gm_meeting_organization_tag_ids_t",
+            "gm_organization_tag_tagged_ids_t",
             "meeting_id",
             "organization_tag_id",
             ["organization_tag_id_organization_tag_id"],
@@ -1736,7 +1736,7 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_referenced_in_motion_state_extension_ids_t",
+            "gm_motion_state_extension_reference_ids_t",
             "motion_id",
             "referenced_in_motion_state_extension_id",
             ["referenced_in_motion_state_extension_id_motion_id"],
@@ -1759,7 +1759,7 @@ class Motion(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_referenced_in_motion_recommendation_extension_ids_t",
+            "gm_motion_recommendation_extension_reference_ids_t",
             "motion_id",
             "referenced_in_motion_recommendation_extension_id",
             ["referenced_in_motion_recommendation_extension_id_motion_id"],
@@ -1838,14 +1838,14 @@ class Motion(Model):
         to={"tag": "tagged_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
-        write_fields=("gm_motion_tag_ids_t", "motion_id", "tag_id", ["tag_id_tag_id"]),
+        write_fields=("gm_tag_tagged_ids_t", "motion_id", "tag_id", ["tag_id_tag_id"]),
     )
     attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_motion_attachment_meeting_mediafile_ids_t",
+            "gm_meeting_mediafile_attachment_ids_t",
             "motion_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],
@@ -3007,7 +3007,7 @@ class Topic(Model):
         is_view_field=True,
         equal_fields="meeting_id",
         write_fields=(
-            "gm_topic_attachment_meeting_mediafile_ids_t",
+            "gm_meeting_mediafile_attachment_ids_t",
             "topic_id",
             "attachment_meeting_mediafile_id",
             ["attachment_meeting_mediafile_id_meeting_mediafile_id"],

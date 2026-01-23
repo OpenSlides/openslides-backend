@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from psycopg.types.json import Jsonb
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -29,7 +29,7 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-BACKEND_MIGRATION_INDEX = get_backend_migration_index()
+BACKEND_MIGRATION_INDEX = MigrationHelper.get_backend_migration_index()
 
 
 class TestCheckerCheckMigrationIndex(TestCase):
