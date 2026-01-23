@@ -186,14 +186,16 @@ class MigrationHandler(BaseHandler):
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
-            create_trigger_relationlistnotnull_code,
+            create_trigger_1_n_relation_not_null_code,
+            create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
         sql_text = (
             create_trigger_1_1_relation_not_null_code
-            + create_trigger_relationlistnotnull_code
+            + create_trigger_1_n_relation_not_null_code
+            + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
         )
         # replace with the migration names before execute
@@ -482,7 +484,8 @@ class MigrationHandler(BaseHandler):
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
-            create_trigger_relationlistnotnull_code,
+            create_trigger_1_n_relation_not_null_code,
+            create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_notify_code,
             errors,
@@ -492,7 +495,8 @@ class MigrationHandler(BaseHandler):
             + alter_table_code
             + create_trigger_partitioned_sequences_code
             + create_trigger_1_1_relation_not_null_code
-            + create_trigger_relationlistnotnull_code
+            + create_trigger_1_n_relation_not_null_code
+            + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
             + create_trigger_notify_code
         )
