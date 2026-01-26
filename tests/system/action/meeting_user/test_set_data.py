@@ -101,6 +101,7 @@ class MeetingUserSetData(BaseActionTestCase):
             "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
+            "group_ids": [12],
         }
         response = self.request("meeting_user.set_data", test_dict)
         self.assert_status_code(response, 200)
