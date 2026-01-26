@@ -1,14 +1,17 @@
 import os
 import string
+from argparse import Namespace
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
 from cli.util.util import (
     ROOT,
+    SOURCE_META,
     assert_equal,
+    get_collection_names_and_filenames,
+    load_fields,
     open_output,
-    open_yml_file,
     parse_arguments,
 )
 from openslides_backend.models.base import Model as BaseModel
@@ -19,8 +22,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -70,8 +71,6 @@ FILE_TEMPLATE = dedent(
     """
 )
 
-MODELS: dict[str, dict[str, Any]] = {}
-
 
 def main() -> None:
     """
@@ -94,9 +93,8 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    args = parse_arguments(SOURCE)
-    global MODELS
-    MODELS = open_yml_file(args.filename)
+    collection_to_filename = get_collection_names_and_filenames()
+    args: Namespace = parse_arguments(SOURCE_META)
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -106,9 +104,10 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in MODELS.items():
+        for collection, filename in collection_to_filename.items():
             if collection.startswith("_"):
                 continue
+            fields = load_fields(filename)
             model = Model(collection, fields)
             dest.write(model.get_code())
 
@@ -117,20 +116,6 @@ def main() -> None:
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")
-
-
-def get_model_field(collection: str, field_name: str) -> str | dict:
-    """
-    Helper function the get a specific model field. Used to create generic relations.
-    """
-
-    model = MODELS.get(collection)
-    if model is None:
-        raise ValueError(f"Collection {collection} does not exist.")
-    value = model.get(field_name)
-    if value is None:
-        raise ValueError(f"Field {field_name} does not exist.")
-    return value
 
 
 class Node:
