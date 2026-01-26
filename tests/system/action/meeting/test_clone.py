@@ -1483,6 +1483,7 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_create": False,
                 "agenda_type": AgendaItem.INTERNAL_ITEM,
                 "agenda_duration": 60,
+                "submitter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
