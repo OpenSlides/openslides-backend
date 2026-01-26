@@ -35,24 +35,23 @@ def open_yml_file(file: str) -> Any:
     return yaml.safe_load(models_yml)
 
 
+def get_collection_names_and_filenames() -> dict[str, str]:
+    filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
+    return {os.path.splitext(filename)[0]: filename for filename in filenames}
+
+
+def load_fields(filename: str) -> dict[str, Any]:
+    path = f"{SOURCE_COLLECTIONS}/{filename}"
+    content = get_file_content_text(path)
+    return yaml.safe_load(content)
+
+
 def get_file_content_text(file: str) -> str:
     if os.path.isfile(file):
         with open(file) as x:
             return x.read()
     else:
         raise Exception(f"{file} is not a file.")
-
-
-def get_merged_models_yml() -> dict[str, dict[str, Any]]:
-    models_file_content = ""
-    filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
-    for filename in filenames:
-        path = f"{SOURCE_COLLECTIONS}/{filename}"
-        content = "\n  ".join(get_file_content_text(path).split("\n"))
-        collection = filename[:-4]
-        if content:
-            models_file_content = f"{models_file_content}\n{collection}:\n  {content}"
-    return yaml.safe_load(models_file_content)
 
 
 def open_output(destination: str, check: bool) -> TextIOBase:

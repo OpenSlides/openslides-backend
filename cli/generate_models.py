@@ -9,7 +9,8 @@ from cli.util.util import (
     ROOT,
     SOURCE_META,
     assert_equal,
-    get_merged_models_yml,
+    get_collection_names_and_filenames,
+    load_fields,
     open_output,
     parse_arguments,
 )
@@ -70,8 +71,6 @@ FILE_TEMPLATE = dedent(
     """
 )
 
-MODELS: dict[str, dict[str, Any]] = {}
-
 
 def main() -> None:
     """
@@ -94,8 +93,7 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    global MODELS
-    MODELS = get_merged_models_yml()
+    collection_to_filename = get_collection_names_and_filenames()
     args: Namespace = parse_arguments(SOURCE_META)
 
     # Load and parse models.yml
@@ -106,9 +104,10 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in MODELS.items():
+        for collection, filename in collection_to_filename.items():
             if collection.startswith("_"):
                 continue
+            fields = load_fields(filename)
             model = Model(collection, fields)
             dest.write(model.get_code())
 
@@ -117,20 +116,6 @@ def main() -> None:
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")
-
-
-def get_model_field(collection: str, field_name: str) -> str | dict:
-    """
-    Helper function the get a specific model field. Used to create generic relations.
-    """
-
-    model = MODELS.get(collection)
-    if model is None:
-        raise ValueError(f"Collection {collection} does not exist.")
-    value = model.get(field_name)
-    if value is None:
-        raise ValueError(f"Field {field_name} does not exist.")
-    return value
 
 
 class Node:

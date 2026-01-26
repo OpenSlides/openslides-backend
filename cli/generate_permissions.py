@@ -6,7 +6,8 @@ from typing import Any
 
 from cli.util.util import (
     assert_equal,
-    get_merged_models_yml,
+    get_collection_names_and_filenames,
+    load_fields,
     open_output,
     open_yml_file,
     parse_arguments,
@@ -81,8 +82,9 @@ def main() -> None:
             print("Permissions file up-to-date.")
 
             # check group.permissions enum in models.yml, if possible
-            models = get_merged_models_yml()
-            enum = set(models["group"]["permissions"]["items"]["enum"])
+            collection_to_filename = get_collection_names_and_filenames()
+            group_fields = load_fields(collection_to_filename["group"])
+            enum = set(group_fields["permissions"]["items"]["enum"])
             permissions = {
                 str(permission)
                 for permissions in all_permissions.values()
