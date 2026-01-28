@@ -72,7 +72,7 @@ class ProjectorUpdate(BaseActionTestCase):
         response = self.request("projector.update", {"id": 1, "color": "#aaaXbb"})
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "Action projector.update: data.color must match pattern ^#[0-9a-f]{6}$",
+            "Action projector.update: data.color must match pattern ^#[0-9a-fA-F]{6}$",
             response.json["message"],
         )
 
