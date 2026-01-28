@@ -80,13 +80,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_next_speaker(self) -> None:
         self.set_models(
             {
-                "meeting_user/7": {
-                    "speaker_ids": [890, 891],
-                },
-                "list_of_speakers/23": {"speaker_ids": [890, 891]},
-                "speaker/890": {
-                    "begin_time": datetime.fromtimestamp(100000),
-                },
+                "speaker/890": {"begin_time": datetime.fromtimestamp(100000)},
                 "speaker/891": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -174,13 +168,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
-                "meeting_user/7": {
-                    "speaker_ids": [890, 891, 892],
-                },
-                "list_of_speakers/23": {"speaker_ids": [890, 891, 892]},
-                "speaker/890": {
-                    "begin_time": start - timedelta(seconds=100),
-                },
+                "speaker/890": {"begin_time": start - timedelta(seconds=100)},
                 "speaker/891": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -201,10 +189,6 @@ class SpeakerSpeakTester(BaseActionTestCase):
         start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
-                "meeting_user/7": {
-                    "speaker_ids": [890, 891],
-                },
-                "list_of_speakers/23": {"speaker_ids": [890, 891]},
                 "speaker/890": {
                     "begin_time": start - timedelta(seconds=200),
                     "pause_time": start - timedelta(seconds=100),
@@ -278,27 +262,14 @@ class SpeakerSpeakTester(BaseActionTestCase):
         start = datetime.now(ZoneInfo("UTC"))
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [2],
-                },
-                "meeting_user/7": {
-                    "speaker_ids": [889, 890],
-                },
-                "list_of_speakers/23": {
-                    "speaker_ids": [889, 890],
-                    "structure_level_list_of_speakers_ids": [2],
-                },
                 "structure_level/1": {
                     "meeting_id": 1,
                     "name": "torries",
-                    "structure_level_list_of_speakers_ids": [2],
                 },
                 "structure_level_list_of_speakers/2": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
-                    "speaker_ids": [889, 890],
                     "initial_time": 700,
                     "remaining_time": 500,
                 },
@@ -411,25 +382,15 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_with_structure_level_and_point_of_order(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [2],
-                    "list_of_speakers_intervention_time": 100,
-                },
-                "structure_level/1": {
-                    "name": "SDP",
-                    "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [2],
-                },
+                "meeting/1": {"list_of_speakers_intervention_time": 100},
+                "structure_level/1": {"name": "SDP", "meeting_id": 1},
                 "structure_level_list_of_speakers/2": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
-                    "speaker_ids": [890],
                     "initial_time": 200,
                     "remaining_time": 100,
                 },
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 2,
                     "point_of_order": True,

@@ -79,7 +79,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 },
                 "group/1": {"meeting_user_ids": [1111]},
                 "speaker/15": {
-                    # "begin_time": 12345678,
                     "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 1111,

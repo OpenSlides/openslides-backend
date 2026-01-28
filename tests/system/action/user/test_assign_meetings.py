@@ -28,53 +28,24 @@ class UserAssignMeetings(BaseActionTestCase):
                     "meeting_id": 13,
                     "meeting_user_ids": [5],
                 },
-                "meeting/1": {
-                    "name": "success(existing)",
-                    "group_ids": [11],
-                    "meeting_user_ids": [1],
-                },
-                "meeting/4": {
-                    "name": "nothing",
-                    "group_ids": [22],
-                    "committee_id": 66,
-                    "meeting_user_ids": [2],
-                },
+                "meeting/1": {"name": "success(existing)"},
+                "meeting/4": {"name": "nothing", "committee_id": 66},
                 "meeting/7": {
                     "name": "success(added)",
-                    "group_ids": [31],
                     "committee_id": 66,
                 },
                 "meeting/10": {
                     "name": "standard",
-                    "group_ids": [43],
                     "default_group_id": 43,
                     "committee_id": 66,
                 },
                 "meeting/13": {
                     "name": "success(added)",
-                    "group_ids": [51, 52],
                     "committee_id": 66,
-                    "meeting_user_ids": [5],
                 },
-                "user/1": {
-                    "meeting_user_ids": [1, 2, 5],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "group_ids": [11],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 4,
-                    "user_id": 1,
-                    "group_ids": [22],
-                },
-                "meeting_user/5": {
-                    "meeting_id": 13,
-                    "user_id": 1,
-                    "group_ids": [52],
-                },
-                "committee/66": {"meeting_ids": [1, 4, 7, 10, 13]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
+                "meeting_user/2": {"meeting_id": 4, "user_id": 1},
+                "meeting_user/5": {"meeting_id": 13, "user_id": 1},
             }
         )
         response = self.request(
@@ -121,65 +92,38 @@ class UserAssignMeetings(BaseActionTestCase):
                     "meeting_id": 4,
                     "meeting_user_ids": [2],
                 },
-                "group/31": {
-                    "name": "Anonymous",
-                    "meeting_id": 7,
-                },
-                "group/32": {
-                    "name": "standard",
-                    "meeting_id": 7,
-                },
+                "group/31": {"name": "Anonymous", "meeting_id": 7},
+                "group/32": {"name": "standard", "meeting_id": 7},
                 "group/43": {"name": "standard", "meeting_id": 10},
                 "group/51": {"name": "Anonymous", "meeting_id": 13},
-                "group/52": {
-                    "name": "Anonymous",
-                    "meeting_id": 13,
-                },
+                "group/52": {"name": "Anonymous", "meeting_id": 13},
                 "meeting/1": {
                     "name": "success(existing)",
                     "group_ids": [11],
                     "committee_id": 66,
-                    "meeting_user_ids": [1],
                 },
                 "meeting/4": {
                     "name": "nothing",
-                    "group_ids": [22],
                     "committee_id": 66,
-                    "meeting_user_ids": [2],
                 },
                 "meeting/7": {
                     "name": "success(added)",
-                    "group_ids": [30, 31],
                     "anonymous_group_id": 31,
                     "committee_id": 66,
                     "default_group_id": 32,
                 },
                 "meeting/10": {
                     "name": "standard",
-                    "group_ids": [43],
                     "default_group_id": 43,
                     "committee_id": 66,
                 },
                 "meeting/13": {
                     "name": "success(added)",
-                    "group_ids": [51, 52],
                     "anonymous_group_id": 52,
                     "committee_id": 66,
                 },
-                "user/1": {
-                    "meeting_user_ids": [1, 2],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "group_ids": [11],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 4,
-                    "user_id": 1,
-                    "group_ids": [22],
-                },
-                "committee/66": {"meeting_ids": [1, 4, 7, 10, 13]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
+                "meeting_user/2": {"meeting_id": 4, "user_id": 1},
             }
         )
         response = self.request(
@@ -213,26 +157,10 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_multiple_committees(self) -> None:
         self.set_models(
             {
-                "group/11": {
-                    "name": "to_find",
-                    "meeting_id": 1,
-                },
-                "group/22": {
-                    "name": "to_find",
-                    "meeting_id": 4,
-                },
-                "meeting/1": {
-                    "name": "m1",
-                    "group_ids": [11],
-                    "committee_id": 66,
-                },
-                "meeting/4": {
-                    "name": "m2",
-                    "group_ids": [22],
-                    "committee_id": 69,
-                },
-                "committee/66": {"meeting_ids": [1]},
-                "committee/69": {"meeting_ids": [4]},
+                "group/11": {"name": "to_find", "meeting_id": 1},
+                "group/22": {"name": "to_find", "meeting_id": 4},
+                "meeting/1": {"name": "m1", "committee_id": 66},
+                "meeting/4": {"name": "m2", "committee_id": 69},
             }
         )
         response = self.request(
@@ -250,11 +178,9 @@ class UserAssignMeetings(BaseActionTestCase):
         self.set_models(
             {
                 "group/3": {"name": "Test", "meeting_user_ids": [2]},
-                "meeting/1": {
-                    "name": "Find Test",
-                },
-                "user/2": {"meeting_user_ids": [2], "username": "winnie"},
-                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [3]},
+                "meeting/1": {"name": "Find Test"},
+                "user/2": {"username": "winnie"},
+                "meeting_user/2": {"meeting_id": 1, "user_id": 2},
             }
         )
         self.set_user_groups(2, [3])
@@ -273,12 +199,7 @@ class UserAssignMeetings(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
         )
-        self.assert_model_exists(
-            "user/2",
-            {
-                "meeting_ids": [1],
-            },
-        )
+        self.assert_model_exists("user/2", {"meeting_ids": [1]})
         self.assert_model_exists("group/3", {"meeting_user_ids": [2, 3]})
 
     def test_assign_meetings_group_not_found(self) -> None:
@@ -310,7 +231,7 @@ class UserAssignMeetings(BaseActionTestCase):
             {
                 "group/3": {"meeting_user_ids": [2]},
                 "user/2": {"username": "winnie"},
-                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
+                "meeting_user/2": {"meeting_id": 1, "user_id": 2},
             }
         )
         response = self.request(
@@ -329,8 +250,6 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_no_permissions(self) -> None:
         self.set_models(
             {
-                "committee/60": {"meeting_ids": [1, 4]},
-                "committee/66": {"meeting_ids": [7]},
                 "group/3": {"name": "Test", "meeting_id": 1},
                 "meeting/1": {
                     "name": "Find Test",
@@ -510,55 +429,31 @@ class UserAssignMeetings(BaseActionTestCase):
                 },
                 "meeting/1": {
                     "name": "success(existing)",
-                    "group_ids": [11],
                     "committee_id": 66,
-                    "meeting_user_ids": [1],
                 },
                 "meeting/4": {
                     "name": "nothing",
-                    "group_ids": [22],
                     "committee_id": 66,
-                    "meeting_user_ids": [2],
                     "locked_from_inside": True,
                 },
                 "meeting/7": {
                     "name": "success(added)",
-                    "group_ids": [31],
                     "committee_id": 66,
                     "locked_from_inside": False,
                 },
                 "meeting/10": {
                     "name": "standard",
-                    "group_ids": [43],
                     "default_group_id": 43,
                     "committee_id": 66,
                     "locked_from_inside": True,
                 },
                 "meeting/13": {
                     "name": "success(added)",
-                    "group_ids": [51, 52],
                     "committee_id": 66,
-                    "meeting_user_ids": [5],
                 },
-                "user/1": {
-                    "meeting_user_ids": [1, 2, 5],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "group_ids": [11],
-                },
-                "meeting_user/2": {
-                    "meeting_id": 4,
-                    "user_id": 1,
-                    "group_ids": [22],
-                },
-                "meeting_user/5": {
-                    "meeting_id": 13,
-                    "user_id": 1,
-                    "group_ids": [52],
-                },
-                "committee/66": {"meeting_ids": [1, 4, 7, 10, 13]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
+                "meeting_user/2": {"meeting_id": 4, "user_id": 1},
+                "meeting_user/5": {"meeting_id": 13, "user_id": 1},
             }
         )
         response = self.request(

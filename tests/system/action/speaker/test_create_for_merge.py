@@ -19,11 +19,7 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
                     "title": "title_YIDYXmKj",
                     "meeting_id": 1,
                 },
-                "user/78": {
-                    "username": "username_loetzbfg",
-                    "meeting_ids": [1],
-                    "meeting_user_ids": [78],
-                },
+                "user/78": {"username": "username_loetzbfg"},
                 "meeting_user/78": {"meeting_id": 1, "user_id": 78},
                 "group/1": {"meeting_user_ids": [78]},
                 "list_of_speakers/1": {

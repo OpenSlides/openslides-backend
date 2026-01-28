@@ -828,7 +828,6 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "begin_time": datetime.fromtimestamp(1234),
                     "structure_level_list_of_speakers_id": 1,
                 },
-                "meeting_user/7": {"structure_level_ids": [1]},
             }
         )
 

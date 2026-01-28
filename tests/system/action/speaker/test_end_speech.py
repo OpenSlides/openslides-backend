@@ -165,7 +165,6 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                     "remaining_time": 500,
                     "current_start_time": start - timedelta(seconds=100),
                 },
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
                     "begin_time": start - timedelta(seconds=200),
                     "unpause_time": start - timedelta(seconds=100),

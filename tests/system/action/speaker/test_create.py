@@ -20,11 +20,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.los_23_data: dict[str, dict[str, Any]] = {
             "topic/1337": {"title": "leet", "meeting_id": 1},
             "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
-            "list_of_speakers/23": {
-                "content_object_id": "topic/1337",
-                "speaker_ids": [],
-                "meeting_id": 1,
-            },
+            "list_of_speakers/23": {"content_object_id": "topic/1337", "meeting_id": 1},
         }
 
         self.test_models: dict[str, dict[str, Any]] = {
@@ -81,13 +77,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_oneself_in_closed_los(self) -> None:
         self.test_models["list_of_speakers/23"]["closed"] = True
-        self.test_models["group/1"] = {
-            "meeting_id": 1,
-            "name": "g1",
-            "permissions": [
-                Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
-            ],
-        }
+        self.test_models["group/1"].update(
+            {
+                "permissions": [
+                    Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+                ],
+            }
+        )
         self.set_models(self.test_models)
         self.set_user_groups(7, [1])
         self.user_id = 7
@@ -100,14 +96,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_oneself_in_closed_los_with_los_CAN_MANAGE(self) -> None:
         self.test_models["list_of_speakers/23"]["closed"] = True
-        self.test_models["group/1"] = {
-            "meeting_id": 1,
-            "name": "g1",
-            "permissions": [
-                Permissions.ListOfSpeakers.CAN_MANAGE,
-                Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
-            ],
-        }
+        self.test_models["group/1"].update(
+            {
+                "permissions": [
+                    Permissions.ListOfSpeakers.CAN_MANAGE,
+                    Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+                ],
+            }
+        )
         self.set_models(self.test_models)
         self.set_user_groups(7, [1])
         self.user_id = 7
@@ -122,7 +118,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.test_models["meeting/1"][
             "list_of_speakers_enable_point_of_order_speakers"
         ] = True
-        self.test_models["meeting/1"]["group_ids"] = [3]
         self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
         self.test_models["point_of_order_category/1"] = {
             "text": "raised late",
@@ -298,7 +293,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [1],
                     "meeting_id": 7844,
                 },
             }
@@ -354,7 +348,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [],
                     "meeting_id": 7844,
                 },
             }
@@ -384,7 +377,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user/19": {
                     "meeting_id": 7844,
                     "user_id": 9,
-                    "speaker_ids": [3],
                 },
                 "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
@@ -394,7 +386,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [],
                     "meeting_id": 7844,
                 },
             }
@@ -441,7 +432,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [1],
                     "meeting_id": 7844,
                 },
             }
@@ -466,31 +456,19 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "is_active_in_organization_id": 1,
                 },
-                "user/7": {
-                    "username": "talking",
-                    "meeting_user_ids": [17],
-                },
-                "user/8": {
-                    "username": "waiting",
-                    "meeting_user_ids": [18],
-                },
-                "user/1": {
-                    "meeting_user_ids": [11],
-                },
+                "user/7": {"username": "talking"},
+                "user/8": {"username": "waiting"},
                 "meeting_user/11": {
                     "meeting_id": 7844,
                     "user_id": 1,
-                    "speaker_ids": [3],
                 },
                 "meeting_user/17": {
                     "meeting_id": 7844,
                     "user_id": 7,
-                    "speaker_ids": [1],
                 },
                 "meeting_user/18": {
                     "meeting_id": 7844,
                     "user_id": 8,
-                    "speaker_ids": [2],
                 },
                 "group/7844": {"meeting_user_ids": [11, 17, 18]},
                 "speaker/1": {
@@ -520,7 +498,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [1, 2, 3],
                     "meeting_id": 7844,
                 },
             }
@@ -557,7 +534,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [],
                     "meeting_id": 4,
                 },
             }
@@ -689,7 +665,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "list_of_speakers_enable_point_of_order_speakers"
         ] = True
         self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
-        self.test_models["meeting/1"]["group_ids"] = [3]
         self.set_models(self.test_models)
         self.login(7)
         self.set_user_groups(7, [3])
@@ -708,8 +683,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.test_models["meeting/1"][
             "list_of_speakers_enable_point_of_order_speakers"
         ] = True
-        self.test_models["meeting/1"]["point_of_order_category_ids"] = [1]
-        self.test_models["meeting/1"]["group_ids"] = [3]
         self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
         self.test_models["point_of_order_category/1"] = {
             "text": "exclude from meeting",
@@ -742,8 +715,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.test_models["meeting/1"][
             "list_of_speakers_enable_point_of_order_speakers"
         ] = True
-        self.test_models["meeting/1"]["point_of_order_category_ids"] = [1]
-        self.test_models["meeting/1"]["group_ids"] = [3]
         self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
         self.test_models["point_of_order_category/1"] = {
             "text": "not seconded",
@@ -774,11 +745,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "list_of_speakers_enable_point_of_order_categories": True,
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "point_of_order_category_ids": [2, 3, 5],
-                    "meeting_user_ids": [11],
-                },
-                "user/1": {
-                    "meeting_ids": [1],
                 },
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1},
                 "group/3": {"meeting_user_ids": [11]},
@@ -839,7 +805,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [1, 2, 3, 4, 5],
                     "meeting_id": 1,
                 },
             }
@@ -876,11 +841,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "list_of_speakers_enable_point_of_order_categories": True,
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "point_of_order_category_ids": [2, 3, 5],
-                },
-                "user/1": {
-                    "meeting_ids": [1],
-                    "meeting_user_ids": [11],
                 },
                 "meeting_user/11": {
                     "user_id": 1,
@@ -915,7 +875,6 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
-                    "speaker_ids": [1],
                     "meeting_id": 1,
                 },
             }
@@ -943,15 +902,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("speaker/1", {"weight": 2})
 
     def test_create_with_existing_structure_level(self) -> None:
-        self.test_models["meeting/1"]["structure_level_ids"] = [1]
-        self.test_models["meeting/1"]["structure_level_list_of_speakers_ids"] = [42]
-        self.test_models["list_of_speakers/23"][
-            "structure_level_list_of_speakers_ids"
-        ] = [42]
         self.test_models["structure_level/1"] = {
             "meeting_id": 1,
             "name": "city_office",
-            "structure_level_list_of_speakers_ids": [42],
         }
         self.test_models["structure_level_list_of_speakers/42"] = {
             "meeting_id": 1,
@@ -1498,12 +1451,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             meeting_user_ids: list[int] = []
             self.create_user("delegatee", [1], meeting_user_ids=meeting_user_ids)
             self.set_models(
-                {
-                    "meeting_user/1": {"vote_delegated_to_id": meeting_user_ids[0]},
-                    f"meeting_user/{meeting_user_ids[0]}": {
-                        "vote_delegations_from_ids": [1]
-                    },
-                }
+                {"meeting_user/1": {"vote_delegated_to_id": meeting_user_ids[0]}}
             )
         self.set_organization_management_level(None)
         self.set_group_permissions(1, [perm])
@@ -2146,12 +2094,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "begin_time": datetime.fromtimestamp(100),
                     "speech_state": SpeechState.INTERVENTION,
                 },
-                f"meeting_user/{alice_id-1}": {"speaker_ids": [1]},
-                "meeting/4": {
-                    "list_of_speakers_ids": [26],
-                    "list_of_speakers_intervention_time": 100,
-                    "speaker_ids": [2],
-                },
+                "meeting/4": {"list_of_speakers_intervention_time": 100},
                 "topic/8015": {"title": "almost average", "meeting_id": 4},
                 "agenda_item/2": {"content_object_id": "topic/8015", "meeting_id": 4},
                 "list_of_speakers/26": {
