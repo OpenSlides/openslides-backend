@@ -1,3 +1,5 @@
+import typing
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -1186,6 +1188,53 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists(
             "poll/1", {"type": Poll.TYPE_NAMED, "live_voting_enabled": True}
         )
+
+    def test_live_voting_named_assignment_poll(self) -> None:
+        self.base_live_voting_assigment()
+
+    def test_live_votng_named_assignment_poll_wrong_pollmethod(self) -> None:
+        self.base_live_voting_assigment({"pollmethod": "YN"})
+
+    def test_live_votng_named_assignment_poll_wrong_globalyes(self) -> None:
+        self.base_live_voting_assigment({"global_yes": True})
+
+    def test_live_votng_named_assignment_poll_wrong_max_votes(self) -> None:
+        self.base_live_voting_assigment({"max_votes_amount": 2})
+
+    def base_live_voting_assigment(
+        self, error_dict: dict[str, typing.Any] | None = None
+    ) -> None:
+        self.set_models(
+            {
+                "assignment/3": {"meeting_id": 1},
+            }
+        )
+
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "Y",
+                "type": Poll.TYPE_NAMED,
+                "content_object_id": "assignment/3",
+                "onehundred_percent_base": "Y",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "live_voting_enabled": True,
+                **(error_dict if error_dict else {}),
+            },
+        )
+        if not error_dict:
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                "poll/1", {"type": Poll.TYPE_NAMED, "live_voting_enabled": True}
+            )
+        else:
+            self.assert_status_code(response, 400)
+            self.assert_model_not_exists("poll/1")
+            assert (
+                "live_voting_enabled only allowed for named motion polls."
+            ) in response.json["message"]
 
     def test_live_voting_not_allowed_type_analog(self) -> None:
         self.base_live_voting_not_allowed(Poll.TYPE_ANALOG, True)
