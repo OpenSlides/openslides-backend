@@ -321,8 +321,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_name_too_long(self) -> None:
         self.basic_test(
-            {"name": "A" * 101},
-            set_400_str="Action meeting.create: data.name must be shorter than or equal to 100 characters",
+            {"name": "A" * 201},
+            set_400_str="Action meeting.create: data.name must be shorter than or equal to 200 characters",
         )
 
     def test_create_no_permissions(self) -> None:

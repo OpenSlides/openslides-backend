@@ -905,7 +905,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -927,7 +927,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -969,7 +969,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -995,7 +995,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -1019,6 +1019,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
