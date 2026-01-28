@@ -94,15 +94,20 @@ class MigrationHandler(BaseHandler):
                 sql.SQL(
                     """SELECT
                         tc.constraint_name,
+                        tc.is_deferrable,
+                        tc.initially_deferred,
                         kcu.column_name,
                         ccu.table_name AS foreign_table_name,
-                        ccu.column_name AS foreign_column_name
+                        ccu.column_name AS foreign_column_name,
+                        rc.delete_rule
                     FROM information_schema.table_constraints AS tc
                     JOIN information_schema.key_column_usage AS kcu
                         ON tc.constraint_name = kcu.constraint_name
                         AND tc.table_schema = kcu.table_schema
                     JOIN information_schema.constraint_column_usage AS ccu
                         ON ccu.constraint_name = tc.constraint_name
+                    JOIN information_schema.referential_constraints AS rc
+                        ON rc.constraint_name = tc.constraint_name
                     WHERE tc.constraint_type = 'FOREIGN KEY'
                         AND tc.table_schema='public'
                         AND tc.table_name='{table_name}';"""
@@ -129,7 +134,7 @@ class MigrationHandler(BaseHandler):
                     #     t_name=table_name,
                     #     c_name=sql.SQL(result["constraint_name"])
                     sql.SQL(
-                        "ALTER TABLE {o_table} ADD CONSTRAINT {c_name} FOREIGN KEY ({o_column}) REFERENCES {f_table}({f_column});"
+                        "ALTER TABLE {o_table} ADD CONSTRAINT {c_name} FOREIGN KEY ({o_column}) REFERENCES {f_table}({f_column}) ON DELETE {on_delete}{deferable}{initially_deferred};"
                     ).format(
                         o_table=sql.Identifier(
                             HelperGetNames.get_table_name(table_name, migration=True)
@@ -138,6 +143,15 @@ class MigrationHandler(BaseHandler):
                         c_name=sql.SQL(result["constraint_name"].replace("_t_", "_m_")),
                         o_column=sql.SQL(result["column_name"]),
                         f_column=sql.SQL(result["foreign_column_name"]),
+                        on_delete=sql.SQL(result["delete_rule"]),
+                        deferable=sql.SQL(
+                            " DEFERRABLE" if result["is_deferrable"] == "YES" else ""
+                        ),
+                        initially_deferred=sql.SQL(
+                            " INITIALLY DEFERRED"
+                            if result["initially_deferred"] == "YES"
+                            else ""
+                        ),
                     )
                 )
 
