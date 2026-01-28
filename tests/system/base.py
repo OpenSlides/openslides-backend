@@ -246,6 +246,9 @@ class BaseSystemTestCase(TestCase):
         self.validate_fields(fqid, data)
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
+    def get_delete_events(self, fqid: str) -> list[Event]:
+        return [Event(type=EventType.Delete, fqid=fqid)]
+
     def get_update_list_events(
         self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
     ) -> list[Event]:
@@ -611,48 +614,64 @@ class BaseSystemTestCase(TestCase):
             }
         )
 
-    def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
+    def set_user_groups(self, user_id: int, target_group_ids: list[int]) -> list[int]:
         """
         Sets the groups in corresponding meeting_users and creates new ones if not existent.
         Returns the meeting_user_ids.
         """
-        assert isinstance(group_ids, list)
+        assert isinstance(target_group_ids, list)
         current_meeting_users = self.datastore.filter(
             "meeting_user",
             FilterOperator("user_id", "=", user_id),
             ["id", "user_id", "meeting_id", "group_ids"],
             lock_result=False,
         )
-        request_group_ids = set(group_ids)
-        for mu in current_meeting_users.values():
-            if mu_group_ids := mu.get("group_ids"):
-                request_group_ids.update(mu_group_ids)
+        current_group_ids: set[int] = {
+            group_id
+            for mu in current_meeting_users.values()
+            for group_id in mu.get("group_ids", [])
+        }
         all_users_groups = self.datastore.get_many(
             [
                 GetManyRequest(
                     "group",
-                    list(request_group_ids),
+                    list(set(target_group_ids) | current_group_ids),
                     ["id", "meeting_id", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
         )["group"]
-        meeting_ids: list[int] = list(
-            {v["meeting_id"] for v in all_users_groups.values() if v["id"] in group_ids}
-        )
-        meeting_users: dict[int, dict[str, Any]] = {
-            data["meeting_id"]: data
-            for data in current_meeting_users.values()
-            if data["meeting_id"] in meeting_ids
+
+        # Calculate the changes
+        target_meeting_ids: set[int] = {
+            v["meeting_id"]
+            for v in all_users_groups.values()
+            if v["id"] in target_group_ids
         }
-        # remove from all_users_groups in difference with requested group_ids
-        groups_remove_from = set(all_users_groups) - set(group_ids)
-        for group_id in groups_remove_from:
-            if meeting_user_ids := all_users_groups[group_id].get("meeting_user_ids"):
-                # remove intersection with user
+
+        remaining_and_new_meeting_users: dict[int, dict[str, Any]] = {}
+        events_data_meeting_users_to_delete: set[int] = set()
+        for mu in current_meeting_users.values():
+            if mu["meeting_id"] in target_meeting_ids:
+                remaining_and_new_meeting_users[mu["meeting_id"]] = mu
+            else:
+                events_data_meeting_users_to_delete.add(mu["id"])
+
+        events_data_groups: dict[int, dict[str, list[int]]] = {}
+        for group_id, group in all_users_groups.items():
+            if group_id not in target_group_ids and (
+                meeting_user_ids := group.get("meeting_user_ids")
+            ):
                 for meeting_user_id in meeting_user_ids:
-                    if meeting_user_id in current_meeting_users:
-                        meeting_user_ids.remove(meeting_user_id)
+                    # Skip groups of meeting_users marked for deletion: they will be deleted recursively
+                    if (
+                        meeting_user_id in current_meeting_users
+                        and meeting_user_id not in events_data_meeting_users_to_delete
+                    ):
+                        events_data_groups.setdefault(group_id, {}).setdefault(
+                            "remove", []
+                        ).append(meeting_user_id)
+
         last_meeting_user_id = max(
             [
                 int(k[1])
@@ -661,41 +680,48 @@ class BaseSystemTestCase(TestCase):
             ]
             or [0]
         )
-        if meeting_users_new := {
-            meeting_id: {
-                "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
-                "user_id": user_id,
-                "meeting_id": meeting_id,
-            }
-            for meeting_id in meeting_ids
-            if meeting_id not in meeting_users
-        }:
-            meeting_users.update(meeting_users_new)
 
-        # fill relevant meeting_user relations
-        for group_id in group_ids:
-            group = all_users_groups[group_id]
-            meeting_id = group["meeting_id"]
-            meeting_user_id = meeting_users[meeting_id]["id"]
-            if meeting_user_ids := group.get("meeting_user_ids"):
-                if meeting_user_id not in meeting_user_ids:
-                    meeting_user_ids.append(meeting_user_id)
-            else:
-                group["meeting_user_ids"] = [meeting_user_id]
-        if meeting_users_new or all_users_groups:
-            self.set_models(
-                {
-                    **{
-                        f"meeting_user/{mu['id']}": mu
-                        for mu in meeting_users_new.values()
-                    },
-                    **{
-                        f"group/{group['id']}": group
-                        for group in all_users_groups.values()
-                    },
+        events_data_meeting_users_to_add = {}
+        for meeting_id in target_meeting_ids:
+            if meeting_id not in remaining_and_new_meeting_users:
+                last_meeting_user_id += 1
+                events_data_meeting_users_to_add[meeting_id] = {
+                    "id": last_meeting_user_id,
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
                 }
+        remaining_and_new_meeting_users.update(events_data_meeting_users_to_add)
+
+        for group_id in target_group_ids:
+            if group_id not in current_group_ids:
+                meeting_id = all_users_groups[group_id]["meeting_id"]
+                meeting_user_id = remaining_and_new_meeting_users[meeting_id]["id"]
+                events_data_groups.setdefault(group_id, {}).setdefault(
+                    "add", []
+                ).append(meeting_user_id)
+
+        # Build and execute events
+        events = []
+
+        for id_ in events_data_meeting_users_to_delete:
+            events += self.get_delete_events(f"meeting_user/{id_}")
+
+        for mu in events_data_meeting_users_to_add.values():
+            id_ = mu.pop("id")
+            events += self.get_create_events(f"meeting_user/{id_}", mu)
+
+        for group_id, list_events_data in events_data_groups.items():
+            events += self.get_update_list_events(
+                f"group/{group_id}",
+                add={"meeting_user_ids": list_events_data.get("add", {})},
+                remove={"meeting_user_ids": list_events_data.get("remove", {})},
             )
-        return [mu["id"] for mu in meeting_users.values()]
+
+        if events:
+            self.perform_write_request(events)
+            self.adjust_id_sequences()
+
+        return [mu["id"] for mu in remaining_and_new_meeting_users.values()]
 
     def set_group_permissions(
         self, group_id: int, permissions: list[Permission]
