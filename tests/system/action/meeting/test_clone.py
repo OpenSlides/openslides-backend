@@ -1841,6 +1841,37 @@ class MeetingClone(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_clone_amendment_paragraphs_regular(self) -> None:
+        self.set_test_data()
+        self.set_user_groups(1, [1])
+        self.set_models(
+            {
+                "motion/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "title": "dummy",
+                    "amendment_paragraphs": Jsonb(
+                        {
+                            "1": "<p>test</p>",
+                        }
+                    ),
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "admin_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_permissions_oml_locked_meeting(self) -> None:
         self.create_meeting(
             meeting_data={"locked_from_inside": True, "template_for_organization_id": 1}
