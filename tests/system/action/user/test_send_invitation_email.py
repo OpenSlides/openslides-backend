@@ -4,7 +4,10 @@ from zoneinfo import ZoneInfo
 from openslides_backend.action.actions.user.send_invitation_email import EmailErrorType
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
 from openslides_backend.permissions.permissions import Permission, Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.util import (
+    ONE_ORGANIZATION_FQID,
+    fqid_from_collection_and_id,
+)
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.mail_base import (
     AIOHandler,
@@ -524,6 +527,16 @@ class SendInvitationMail(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting_id = response.json["results"][0][0]["id"]
+        # models created by the request aren't registered for set_models and need to be explicitly updated
+        self.created_fqids.update(
+            [
+                fqid
+                for collection, data in self.datastore.get_everything().items()
+                for id_ in data.keys()
+                if (fqid := fqid_from_collection_and_id(collection, id_))
+                not in self.created_fqids
+            ]
+        )
         self.set_models(
             {
                 "user/2": {
@@ -533,10 +546,9 @@ class SendInvitationMail(BaseActionTestCase):
                     "meeting_id": meeting_id,
                     "user_id": 2,
                 },
+                "group/4": {"meeting_user_ids": [12]},
             }
         )
-        # models created by the request aren't registered for set_models and need to be explicitly updated
-        self.update_model("group/4", {"meeting_user_ids": [12]})
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(

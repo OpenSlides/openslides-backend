@@ -25,6 +25,7 @@ class SpeakerCreateForMergeTest(BaseActionTestCase):
                     "meeting_user_ids": [78],
                 },
                 "meeting_user/78": {"meeting_id": 1, "user_id": 78},
+                "group/1": {"meeting_user_ids": [78]},
                 "list_of_speakers/1": {
                     "content_object_id": "motion/357",
                     "meeting_id": 1,

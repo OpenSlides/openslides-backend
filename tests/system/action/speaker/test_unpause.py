@@ -16,6 +16,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         self.models: dict[str, dict[str, Any]] = {
             "user/7": {"username": "test_username1"},
             "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
+            "group/1": {"meeting_user_ids": [7]},
             "topic/1337": {
                 "title": "introduction leet gathering",
                 "meeting_id": 1,

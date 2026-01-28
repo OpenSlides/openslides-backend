@@ -167,7 +167,7 @@ class UserAssignMeetings(BaseActionTestCase):
                     "committee_id": 66,
                 },
                 "user/1": {
-                    "meeting_user_ids": [1, 2, 3],
+                    "meeting_user_ids": [1, 2],
                 },
                 "meeting_user/1": {
                     "meeting_id": 1,
@@ -178,11 +178,6 @@ class UserAssignMeetings(BaseActionTestCase):
                     "meeting_id": 4,
                     "user_id": 1,
                     "group_ids": [22],
-                },
-                "meeting_user/3": {
-                    "meeting_id": 13,
-                    "user_id": 1,
-                    "group_ids": [],
                 },
                 "committee/66": {"meeting_ids": [1, 4, 7, 10, 13]},
             }

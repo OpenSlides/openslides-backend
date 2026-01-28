@@ -36,6 +36,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "password": self.auth.hash(DEFAULT_PASSWORD),
             },
             "meeting_user/17": {"meeting_id": 1, "user_id": 7},
+            "group/1": {"meeting_user_ids": [17]},
             **self.los_23_data,
         }
 
@@ -253,6 +254,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/2": {"username": "another user"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 1},
                 "meeting_user/12": {"meeting_id": 1, "user_id": 2},
+                "group/1": {"meeting_user_ids": [11, 12]},
             }
         )
         response = self.request_multi(
@@ -279,6 +281,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "meeting_user/18": {"meeting_id": 7844, "user_id": 8},
                 "meeting_user/19": {"meeting_id": 7844, "user_id": 9},
+                "group/7844": {"meeting_user_ids": [17, 18, 19]},
                 "speaker/1": {
                     "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
@@ -343,6 +346,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "user_id": 9,
                     "speaker_ids": [3],
                 },
+                "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
                     "meeting_id": 1,
@@ -382,6 +386,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "user_id": 9,
                     "speaker_ids": [3],
                 },
+                "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
                     "meeting_id": 1,
@@ -420,6 +425,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                     "user_id": 1,
                 },
+                "group/7844": {"meeting_user_ids": [11]},
                 "user/7": {"username": "talking"},
                 "speaker/1": {
                     "meeting_user_id": 11,
@@ -486,6 +492,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "user_id": 8,
                     "speaker_ids": [2],
                 },
+                "group/7844": {"meeting_user_ids": [11, 17, 18]},
                 "speaker/1": {
                     "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
@@ -541,6 +548,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting/4": {"committee_id": 60},
                 "meeting_user/17": {"meeting_id": 1, "user_id": 7},
+                "group/1": {"meeting_user_ids": [17]},
                 "user/7": {"username": "Helgard"},
                 "topic/1337": {
                     "title": "leet",
@@ -655,8 +663,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
-        self.set_models(self.test_models)
-        self.set_models({"meeting_user/1": {"meeting_id": 1, "user_id": self.user_id}})
+        self.set_models(
+            {
+                **self.test_models,
+                "meeting_user/1": {"meeting_id": 1, "user_id": self.user_id},
+                "group/1": {"meeting_user_ids": [1, 17]},
+            }
+        )
         response = self.request(
             "speaker.create",
             {
@@ -768,6 +781,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "meeting_ids": [1],
                 },
                 "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/3": {"meeting_user_ids": [11]},
                 "point_of_order_category/2": {
                     "text": "ueeh",
                     "rank": 2,
@@ -872,6 +886,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "meeting_id": 1,
                 },
+                "group/3": {"meeting_user_ids": [11]},
                 "point_of_order_category/2": {
                     "text": "seconded",
                     "rank": 2,
@@ -1135,6 +1150,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     }
                     for id_ in speaker_ids
                 },
+                "group/3": {"meeting_user_ids": [100 + id_ for id_ in speaker_ids]},
                 **{
                     f"speaker/{id_}": {
                         "meeting_id": 1,
@@ -1463,13 +1479,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
         disable_delegations: bool = False,
     ) -> None:
-        self.set_models(self.test_models)
         self.set_models(
             {
-                "user/1": {"meeting_user_ids": [1]},
+                **self.test_models,
                 "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [1, 17]},
                 "meeting/1": {
-                    "meeting_user_ids": [1, 17],
                     **(
                         {}
                         if disable_delegations

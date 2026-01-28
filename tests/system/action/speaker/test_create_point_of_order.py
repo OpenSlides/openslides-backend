@@ -16,6 +16,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "user_id": 7,
                     "speaker_ids": [1],
                 },
+                "group/7844": {"meeting_user_ids": [1, 7]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -95,6 +96,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "user_id": 8,
                     "speaker_ids": [2],
                 },
+                "group/7844": {"meeting_user_ids": [1, 7, 8]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -197,6 +199,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "user_id": 8,
                     "speaker_ids": [2, 4],
                 },
+                "group/7844": {"meeting_user_ids": [1, 7, 8]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -315,6 +318,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "user_id": 7,
                     "speaker_ids": [1],
                 },
+                "group/7844": {"meeting_user_ids": [1, 7]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -373,6 +377,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "speaker_ids": [42],
                 },
+                "group/7844": {"meeting_user_ids": [1]},
                 "topic/1337": {
                     "title": "leet improvement discussion",
                     "meeting_id": 7844,
@@ -493,6 +498,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                     "user_id": 8,
                 },
+                "group/7844": {"meeting_user_ids": [8]},
                 "topic/1337": {
                     "title": "leet improvement discussion",
                     "meeting_id": 7844,
