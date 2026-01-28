@@ -1167,11 +1167,9 @@ class MeetingImport(BaseActionTestCase):
         # User/1 is in user_ids, because calling user is added
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        meeting2 = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting2["user_ids"], [1, 2])
+        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists("user/2", {"username": "test", "meeting_ids": [2]})
-        organization = self.assert_model_exists("organization/1")
-        self.assertCountEqual(organization.get("user_ids", []), [1, 2])
+        self.assert_model_exists("organization/1", {"user_ids": [1, 2]})
 
     def test_motion_recommendation_extension(self) -> None:
         # Special field
@@ -1860,17 +1858,23 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_user_ids": [17],
             },
         )
-        committee1 = self.assert_model_exists("committee/60", {"meeting_ids": [1]})
-        assert sorted(committee1.get("user_ids", [])) == [1, 14]
-        meeting1 = self.assert_model_exists("meeting/1", {"committee_id": 60})
-        assert sorted(meeting1.get("user_ids", [])) == [1, 14]
-        assert sorted(meeting1.get("meeting_user_ids", [])) == [1, 14]
+        self.assert_model_exists(
+            "committee/60", {"meeting_ids": [1], "user_ids": [1, 14]}
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {"committee_id": 60, "user_ids": [1, 14], "meeting_user_ids": [1, 14]},
+        )
         self.assert_model_exists("committee/61", {"meeting_ids": [2]})
         self.assert_model_exists("meeting/2", {"committee_id": 61})
-        organization = self.assert_model_exists(
-            "organization/1", {"committee_ids": [60, 61], "active_meeting_ids": [1, 2]}
+        self.assert_model_exists(
+            "organization/1",
+            {
+                "committee_ids": [60, 61],
+                "active_meeting_ids": [1, 2],
+                "user_ids": [1, 14, 15, 16],
+            },
         )
-        assert sorted(organization.get("user_ids", [])) == [1, 14, 15, 16]
 
     def test_merge_users_check_user_meeting_ids(self) -> None:
         self.set_models(
@@ -3084,7 +3088,7 @@ class MeetingImport(BaseActionTestCase):
                 "content_object_id": "motion/4",
             },
         )
-        # list_of_speakers/2 not copied bc it belongs to a meeting_mediafile
+        # list_of_speakers/2 not copied bc it belongs to a orga-related meeting_mediafile
         for id_, co_id in {14: "motion/5", 15: "topic/5", 16: "assignment/6"}.items():
             self.assert_model_exists(
                 f"list_of_speakers/{id_}",
