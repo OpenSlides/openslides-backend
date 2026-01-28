@@ -66,7 +66,7 @@ def assert_db_entries(db_cur: Cursor[rows.DictRow], amount: int) -> None:
     table_names = db_cur.execute("SELECT tablename FROM truncate_tables").fetchall()
     sum_ = 0
     for table_name in table_names:
-        if table := table_name.get("tablename"):
+        if (table := table_name.get("tablename")) and table != "public.version":
             if count := db_cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone():
                 sum_ += count.get("count", 0)
     assert sum_ == amount
