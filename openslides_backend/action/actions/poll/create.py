@@ -101,12 +101,14 @@ class PollCreateAction(
         # check named and live_voting_enabled
         if instance.get("live_voting_enabled") and not (
             instance["type"] == Poll.TYPE_NAMED
-            and (is_motion_poll)
-            or (
-                is_assignment_poll
-                and not instance.get("global_yes")
-                and instance["pollmethod"] == "Y"
-                and instance.get("max_votes_amount") == 1
+            and (
+                is_motion_poll
+                or (
+                    is_assignment_poll
+                    and not instance.get("global_yes")
+                    and instance["pollmethod"] == "Y"
+                    and instance.get("max_votes_amount") == 1
+                )
             )
         ):
             raise ActionException(

@@ -70,7 +70,15 @@ class PollUpdateAction(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["state", "type", "entitled_users_at_stop", "content_object_id"],
+            [
+                "state",
+                "type",
+                "entitled_users_at_stop",
+                "content_object_id",
+                "pollmethod",
+                "max_votes_amount",
+                "global_yes",
+            ],
         )
 
         self.check_entitled_users_at_stop(instance, poll)
@@ -118,9 +126,32 @@ class PollUpdateAction(
             )
 
         # check named and live_voting_enabled
+        global_yes_for_check = (
+            instance["global_yes"]
+            if instance.get("global_yes")
+            else poll.get("global_yes")
+        )
+        pollmethod_for_check = (
+            instance["pollmethod"]
+            if instance.get("pollmethod")
+            else poll.get("pollmethod")
+        )
+        max_votes_amount_for_check = (
+            instance["max_votes_amount"]
+            if instance.get("max_votes_amount")
+            else poll.get("max_votes_amount")
+        )
         if instance.get("live_voting_enabled") and not (
             poll["type"] == Poll.TYPE_NAMED
-            and collection_from_fqid(poll["content_object_id"]) == "motion"
+            and (
+                collection_from_fqid(poll["content_object_id"]) == "motion"
+                or (
+                    collection_from_fqid(poll["content_object_id"]) == "assignment"
+                    and not global_yes_for_check
+                    and pollmethod_for_check == "Y"
+                    and max_votes_amount_for_check == 1
+                )
+            )
         ):
             raise ActionException(
                 "live_voting_enabled only allowed for named motion polls."
