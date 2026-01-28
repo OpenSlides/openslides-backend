@@ -40,12 +40,10 @@ class PermissionMixin(Action):
         )
         if meeting_user_id in (user.get("meeting_user_ids") or []):
             permission = Permissions.Assignment.CAN_NOMINATE_SELF
-            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                missing_permission = permission
         else:
             permission = Permissions.Assignment.CAN_NOMINATE_OTHER
-            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                missing_permission = permission
+        if not has_perm(self.datastore, self.user_id, permission, meeting_id):
+            missing_permission = permission
 
         if missing_permission:
             raise MissingPermission(missing_permission)

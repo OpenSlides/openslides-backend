@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -52,10 +53,6 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             fqid_from_collection_and_id("motion_workflow", old_state["workflow_id"]),
             ["first_state_id"],
         )
-        if not workflow.get("first_state_id"):
-            raise ActionException(
-                f"State {old_state['workflow_id']} has no first_state_id."
-            )
         instance["state_id"] = workflow.get("first_state_id")
         self.set_number(
             instance,
@@ -66,7 +63,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             motion.get("number"),
             motion.get("number_value"),
         )
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         instance["workflow_timestamp"] = None
         set_workflow_timestamp_helper(self.datastore, instance, timestamp)

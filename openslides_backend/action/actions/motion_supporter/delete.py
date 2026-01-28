@@ -1,7 +1,7 @@
 from typing import Any
 
 from ....models.models import MotionSupporter
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.motion_meeting_user_delete import build_motion_meeting_user_delete_action
 from ...util.register import register_action

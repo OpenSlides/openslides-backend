@@ -1,9 +1,9 @@
 from typing import Any, TypedDict, cast
 
-from openslides_backend.services.datastore.interface import PartialModel
+from openslides_backend.services.database.interface import PartialModel
 
 from ....models.base import Model
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.interfaces.event import EventType
 from ....shared.patterns import (

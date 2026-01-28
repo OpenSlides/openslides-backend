@@ -1,6 +1,7 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
+from openslides_backend.shared.exceptions import ModelDoesNotExist
 
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....action.util.typing import ActionData, ActionResults
@@ -27,7 +28,7 @@ class MeetingUserGroupMixin(Action):
             "group",
             And(
                 FilterOperator("anonymous_group_for_meeting_id", "!=", None),
-                Or(FilterOperator("id", "=", id_) for id_ in group_ids),
+                FilterOperator("id", "in", group_ids),
             ),
         ):
             raise ActionException(
@@ -103,11 +104,9 @@ class CheckLockOutPermissionMixin(Action):
                         fqid_from_collection_and_id("user", cast(int, user_id)),
                         ["organization_management_level", "committee_management_ids"],
                     )
-                except Exception as err:
-                    if (
-                        len(err.args)
-                        and isinstance(err.args[0], str)
-                        and "does not exist" in err.args[0]
+                except ModelDoesNotExist as err:
+                    if err.fqid == fqid_from_collection_and_id(
+                        "user", cast(int, user_id)
                     ):
                         return result
                     else:

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 import fastjsonschema
@@ -76,8 +77,12 @@ class GetForwardingMeetings(BasePresenter):
                         {
                             "id": meeting_id2,
                             "name": meeting2.get("name", ""),
-                            "start_time": meeting2.get("start_time"),
-                            "end_time": meeting2.get("end_time"),
+                            "start_time": self._get_formatted_datetime_value(
+                                meeting2.get("start_time")
+                            ),
+                            "end_time": self._get_formatted_datetime_value(
+                                meeting2.get("end_time")
+                            ),
                         }
                     )
             if meeting_result:
@@ -92,3 +97,11 @@ class GetForwardingMeetings(BasePresenter):
                     }
                 )
         return result
+
+    @staticmethod
+    def _get_formatted_datetime_value(value: Any) -> str | None:
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)

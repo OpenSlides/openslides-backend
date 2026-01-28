@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.10.18-slim-bookworm AS base
+FROM python:3.12.9-slim-bookworm AS base
 
 ## Setup
 ARG CONTEXT
@@ -22,6 +22,7 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     libmagic1 \
     mime-support \
     ncat \
+    postgresql-client \
     ${CONTEXT_INSTALLS} && \
     rm -rf /var/lib/apt/lists/*
 
@@ -98,17 +99,18 @@ FROM base AS prod
 RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts
+COPY cli/create_schema.py cli/create_schema.py
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
-COPY meta meta
 COPY data data
+COPY meta meta
 
 RUN chown appuser ./scripts/ && \
  chown appuser ./entrypoint.sh && \
  chown appuser ./openslides_backend && \
+ chown appuser ./data && \
  chown appuser ./meta && \
- chown appuser ./command.sh && \
- chown appuser ./data
+ chown appuser ./command.sh
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt

@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.mixins.user_create_update_permissions_mixin import (
     CreateUpdatePermissionsFailingFields,
     PermissionVarStore,

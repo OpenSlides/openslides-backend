@@ -5,17 +5,17 @@ from fastjsonschema import validate
 
 from openslides_backend.action.util.default_schema import DefaultSchema
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
 from openslides_backend.shared.exceptions import ActionException
+from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
 
-class FakeModel(Model):
+class FakeModel1(FakeModel):
     """
     Fake Model for testing purposes.
     """
 
-    collection = "fake_model"
-    verbose_name = "fake_model"
+    collection = "fake_model_1"
+    verbose_name = "fake_model_1"
 
     id = fields.IntegerField(required=True)
     read_only = fields.IntegerField(read_only=True)
@@ -29,7 +29,7 @@ class FakeModel(Model):
     )
 
 
-class FakeModel2(Model):
+class FakeModel2(FakeModel):
     """
     Fake model for testing purposes. With relation field.
     """
@@ -39,14 +39,14 @@ class FakeModel2(Model):
 
     id = fields.IntegerField(required=True)
     relation_field = fields.RelationField(
-        to={"fake_model": "fake_model_2_ids"},
+        to={"fake_model_1": "fake_model_2_ids"},
     )
     generic_relation_field = fields.RelationField(
-        to={"fake_model": "fake_model_2_generic_ids"},
+        to={"fake_model_1": "fake_model_2_generic_ids"},
     )
 
 
-class ModelBaseTester(TestCase):
+class ModelBaseTester(PatchModelRegistryMixin, TestCase):
     """
     Tests methods of base Action class and also some helper functions.
     """
@@ -61,14 +61,14 @@ class ModelBaseTester(TestCase):
                 "maxLength": 256,
             },
         }
-        self.assertEqual(FakeModel().get_properties("id", "text"), expected)
+        self.assertEqual(FakeModel1().get_properties("id", "text"), expected)
 
     def test_get_properties_invalid(self) -> None:
         with self.assertRaises(ValueError) as context_manager:
-            FakeModel().get_properties("unknown_property")
+            FakeModel1().get_properties("unknown_property")
         self.assertEqual(
             context_manager.exception.args[0],
-            "Model fake_model has no field unknown_property.",
+            "Model fake_model_1 has no field unknown_property.",
         )
 
     def test_get_fields_fake_model(self) -> None:
@@ -81,28 +81,28 @@ class ModelBaseTester(TestCase):
                 "read_only",
                 "text",
             ],
-            [field.own_field_name for field in FakeModel().get_fields()],
+            [field.own_field_name for field in FakeModel1().get_fields()],
         )
 
     def test_own_collection_attr(self) -> None:
         rels = [
-            FakeModel().get_field("fake_model_2_ids"),
-            FakeModel().get_field("fake_model_2_generic_ids"),
+            FakeModel1().get_field("fake_model_2_ids"),
+            FakeModel1().get_field("fake_model_2_generic_ids"),
         ]
         for rel in rels:
             field = cast(fields.BaseRelationField, rel)
-            self.assertEqual(str(field.own_collection), "fake_model")
+            self.assertEqual(str(field.own_collection), "fake_model_1")
 
     def test_get_field_unknown_field(self) -> None:
         with self.assertRaises(ValueError):
-            FakeModel().get_field("Unknown field")
+            FakeModel1().get_field("Unknown field")
 
     def test_get_read_only_field(self) -> None:
         with self.assertRaises(ActionException):
-            FakeModel().get_property("read_only")
+            FakeModel1().get_property("read_only")
 
     def test_json_field_array(self) -> None:
-        schema = DefaultSchema(FakeModel()).get_default_schema(
+        schema = DefaultSchema(FakeModel1()).get_default_schema(
             optional_properties=["json"]
         )
         validate(schema, {"json": [1, 2]})

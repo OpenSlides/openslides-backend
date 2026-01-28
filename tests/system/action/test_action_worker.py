@@ -19,20 +19,7 @@ class ActionWorkerTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(222)
-        self.set_models(
-            {
-                "motion_workflow/12": {
-                    "name": "name_workflow1",
-                    "first_state_id": 34,
-                    "state_ids": [34],
-                },
-                "motion_state/34": {
-                    "name": "name_state34",
-                    "meeting_id": 222,
-                    "set_workflow_timestamp": True,
-                },
-            }
-        )
+        self.set_models({"motion_state/222": {"set_workflow_timestamp": True}})
 
     def test_action_worker_ready_before_timeout_okay(self) -> None:
         """action thread used, but ended in time"""
@@ -42,7 +29,7 @@ class ActionWorkerTest(BaseActionTestCase):
             {
                 "title": "test_title",
                 "meeting_id": 222,
-                "workflow_id": 12,
+                "workflow_id": 222,
                 "text": "test_text",
             },
         )
@@ -52,13 +39,13 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_not_exists("action_worker/1")
 
     def test_action_worker_ready_before_timeout_exception(self) -> None:
-        """action thread used, but ended in time with exeception"""
+        """action thread used, but ended in time with exception"""
         response = self.request(
             "motion.create",
             {
                 "title": "test_title",
                 "meeting_id": 222,
-                "workflow_id": 12,
+                "workflow_id": 222,
             },
         )
         self.assert_status_code(response, 400)
@@ -80,7 +67,7 @@ class ActionWorkerTest(BaseActionTestCase):
                 {
                     "title": f"test_title {i+1}",
                     "meeting_id": 222,
-                    "workflow_id": 12,
+                    "workflow_id": 222,
                     "text": "test_text",
                 }
                 for i in range(count_motions)
@@ -119,14 +106,8 @@ class ActionWorkerTest(BaseActionTestCase):
         chat_message_ids = [i + 1 for i in range(50)]
         self.set_models(
             {
-                "meeting/222": {
-                    "chat_group_ids": [22],
-                    "chat_message_ids": chat_message_ids,
-                },
-                "meeting_user/1": {"chat_message_ids": chat_message_ids},
                 "chat_group/22": {
                     "name": "blob",
-                    "chat_message_ids": chat_message_ids,
                     "read_group_ids": [222, 223, 224],
                     "write_group_ids": [222],
                     "meeting_id": 222,
@@ -134,7 +115,7 @@ class ActionWorkerTest(BaseActionTestCase):
                 **{
                     fqid_from_collection_and_id("chat_message", id_): {
                         "content": f"Message {id_}",
-                        "created": 1600000000 + id_,
+                        "created": datetime.fromtimestamp(1600000000 + id_),
                         "meeting_user_id": 1,
                         "chat_group_id": 22,
                         "meeting_id": 222,
@@ -161,9 +142,11 @@ class ActionWorkerTest(BaseActionTestCase):
         )
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
-        self.assert_model_exists("chat_group/22", {"chat_message_ids": []})
+        self.assert_model_exists("chat_group/22", {"chat_message_ids": None})
         for id_ in chat_message_ids:
-            self.assert_model_deleted(fqid_from_collection_and_id("chat_message", id_))
+            self.assert_model_not_exists(
+                fqid_from_collection_and_id("chat_message", id_)
+            )
         self.assert_model_exists(
             "action_worker/1", {"state": ActionWorkerState.END, "user_id": -1}
         )
@@ -176,7 +159,7 @@ class ActionWorkerTest(BaseActionTestCase):
             {
                 "title": f"test_title {i+1}",
                 "meeting_id": 222,
-                "workflow_id": 12,
+                "workflow_id": 222,
                 "text": "test_text",
             }
             for i in range(count_motions)
@@ -185,7 +168,7 @@ class ActionWorkerTest(BaseActionTestCase):
             {
                 "title": f"test_title {count_motions+1}",
                 "meeting_id": 222,
-                "workflow_id": 12,
+                "workflow_id": 222,
             }
         )
 
@@ -304,7 +287,7 @@ class ActionWorkerTest(BaseActionTestCase):
             start2 = datetime.now()
             self.new_id = self.datastore.reserve_id("action_worker")
             self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
-            self.datastore.write_without_events(
+            self.datastore.write(
                 WriteRequest(
                     events=[
                         Event(
@@ -315,6 +298,8 @@ class ActionWorkerTest(BaseActionTestCase):
                                 "name": "test",
                                 "state": ActionWorkerState.RUNNING,
                                 "user_id": 1,
+                                "created": datetime.now(),
+                                "timestamp": datetime.now(),
                             },
                         )
                     ],
@@ -336,7 +321,7 @@ class ActionWorkerTest(BaseActionTestCase):
         self.user_id = 1
         new_ids = self.datastore.reserve_ids("action_worker", amount=3)
         for new_id in new_ids:
-            self.datastore.write_without_events(
+            self.datastore.write(
                 WriteRequest(
                     events=[
                         Event(
@@ -347,6 +332,8 @@ class ActionWorkerTest(BaseActionTestCase):
                                 "name": "test",
                                 "state": ActionWorkerState.RUNNING,
                                 "user_id": 1,
+                                "created": datetime.now(),
+                                "timestamp": datetime.now(),
                             },
                         )
                     ],
@@ -359,7 +346,7 @@ class ActionWorkerTest(BaseActionTestCase):
                 {"name": "test", "state": ActionWorkerState.RUNNING, "user_id": 1},
             )
 
-        self.datastore.write_without_events(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(type=EventType.Delete, fqid=f"action_worker/{new_id}")

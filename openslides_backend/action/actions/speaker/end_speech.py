@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.actions.speaker.delete import SpeakerDeleteAction
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
@@ -32,7 +33,7 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.end_time = round(time())
+        self.end_time = datetime.now(ZoneInfo("UTC"))
         instance = next(iter(action_data))
         yield instance
         # additionally yield all child interposed questions
@@ -84,10 +85,8 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
         instance["end_time"] = self.end_time
 
         if speaker.get("pause_time"):
-            instance["total_pause"] = (
-                speaker.get("total_pause", 0)
-                + instance["end_time"]
-                - speaker["pause_time"]
+            instance["total_pause"] = speaker.get("total_pause", 0) + int(
+                (instance["end_time"] - speaker["pause_time"]).total_seconds()
             )
             instance["pause_time"] = None
         else:
