@@ -1,6 +1,9 @@
-import time
 from collections import defaultdict
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.shared.typing import HistoryInformation
@@ -9,7 +12,7 @@ from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.write_request import WriteRequest
@@ -224,11 +227,10 @@ class BaseMotionCreateForwarded(
             name = committee.get("name", f"Committee {committee['id']}")
             instance["additional_submitter"] = name
 
-        self.set_sequential_number(instance)
         self.handle_number(instance)
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
-        instance["forwarded"] = round(time.time())
+        instance["forwarded"] = datetime.now(ZoneInfo("UTC"))
         with_change_recommendations = instance.pop("with_change_recommendations", False)
         self.datastore.apply_changed_model(
             fqid_from_collection_and_id("motion", instance["id"]), instance
@@ -305,6 +307,8 @@ class BaseMotionCreateForwarded(
                     (state_id := amendment.pop("state_id", None)) and state_id in states
                 ):
                     new_amendments.pop(amendment["id"])
+                if paragraphs := amendment.get("amendment_paragraphs"):
+                    amendment["amendment_paragraphs"] = Jsonb(paragraphs)
             amendment_data = new_amendments.values()
             for amendment in amendment_data:
                 amendment.update(
@@ -568,7 +572,6 @@ class BaseMotionCreateForwarded(
                         "is_public",
                         "access_group_ids",
                         "inherited_access_group_ids",
-                        "parent_id",
                     ],
                 )
             ],

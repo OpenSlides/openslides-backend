@@ -8,7 +8,7 @@ from openslides_backend.action.mixins.meeting_user_helper import (
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
 from ..shared.schema import schema_version

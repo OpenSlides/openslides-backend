@@ -11,27 +11,10 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSupporterCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(meeting_data={"motions_supporters_min_amount": 1})
+        self.create_motion(1, 1)
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion/1": {
-                "title": "motion_1",
-                "meeting_id": 1,
-                "state_id": 1,
-                "supporter_ids": [],
-            },
-            "meeting/1": {
-                "name": "name_meeting_1",
-                "motion_ids": [1],
-                "motions_supporters_min_amount": 1,
-                "is_active_in_organization_id": 1,
-                "committee_id": 60,
-            },
-            "motion_state/1": {
-                "name": "state_1",
-                "allow_support": True,
-                "motion_ids": [1],
-                "meeting_id": 1,
-            },
-            "committee/60": {"meeting_ids": [1]},
+            "motion_state/1": {"allow_support": True}
         }
 
     def create_delegator_test_data(
@@ -41,29 +24,12 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_supporter",
         disable_delegations: bool = False,
     ) -> None:
-        self.create_meeting(1)
+        self.set_user_groups(1, [1])
         self.set_models(
             {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [],
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-                "user/1": {"meeting_user_ids": [1]},
-                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "motion_state/1": {"allow_support": True},
                 "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [1],
                     **(
                         {}
                         if disable_delegations
@@ -75,38 +41,17 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
         if is_delegator:
             self.create_user("delegatee", [1])
-            self.set_models(
-                {
-                    "meeting_user/1": {"vote_delegated_to_id": 2},
-                    "meeting_user/2": {"vote_delegations_from_ids": [1]},
-                }
-            )
+            self.set_models({"meeting_user/1": {"vote_delegated_to_id": 2}})
         self.set_organization_management_level(None)
         self.set_group_permissions(1, [perm])
-        self.set_user_groups(1, [1])
 
     def test_create_meeting_support_system_deactivated(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_models(
             {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 0,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "meeting/1": {"motions_supporters_min_amount": 0},
+                "motion_state/1": {"allow_support": False},
             }
         )
         response = self.request(
@@ -118,30 +63,10 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_state_doesnt_allow_support(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": False}})
         response = self.request(
             "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 1}
         )
@@ -149,31 +74,11 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         assert "The state does not allow support." in response.json["message"]
 
     def test_create_state_doesnt_allow_support_meta_perm(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_organization_management_level(None)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": False}})
         response = self.request_multi(
             "motion_supporter.create",
             [
@@ -192,37 +97,15 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_support(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": True}})
         response = self.request(
             "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 1}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/1")
-        assert model.get("supporter_ids") == [1]
+        self.assert_model_exists("motion/1", {"supporter_ids": [1]})
         self.assert_model_exists(
             "meeting_user/1",
             {"meeting_id": 1, "user_id": 1, "motion_supporter_ids": [1]},
@@ -255,32 +138,16 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_delegator_setting(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
         self.set_models(
             {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [],
-                },
                 "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                    "is_active_in_organization_id": 1,
                     "users_forbid_delegator_as_submitter": True,
                     "users_enable_vote_delegations": True,
                 },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": True},
             }
         )
         response = self.request(
@@ -336,28 +203,13 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_create_meeting_support_system_deactivated_on_other(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.create_user("bob", [3])
         self.set_models(
             {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 0,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "meeting/1": {"motions_supporters_min_amount": 0},
+                "motion_state/1": {"allow_support": False},
             }
         )
         response = self.request(
@@ -369,32 +221,11 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_support_on_other_support_perm_error(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": True}})
         response = self.request(
             "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 2}
         )
@@ -405,32 +236,11 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_support_on_other(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_organization_management_level(None)
         self.create_user("bob", [3])
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": True}})
         response = self.request(
             "motion_supporter.create", {"motion_id": 1, "meeting_user_id": 2}
         )
@@ -471,36 +281,15 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_create_duplicate_supporter(self) -> None:
-        self.create_meeting(1)
         self.create_user("bob", [1])
         self.set_models(
             {
-                "meeting_user/1": {
-                    "motion_supporter_ids": [1],
-                },
                 "motion_supporter/1": {
                     "meeting_id": 1,
                     "motion_id": 1,
                     "meeting_user_id": 1,
                 },
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [1],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                    "motion_supporter_ids": [1],
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": True},
             }
         )
         response = self.request(
@@ -512,28 +301,8 @@ class MotionSupporterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_duplicate_supporters(self) -> None:
-        self.create_meeting(1)
         self.create_user("bob", [1])
-        self.set_models(
-            {
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models({"motion_state/1": {"allow_support": True}})
         response = self.request_multi(
             "motion_supporter.create",
             [

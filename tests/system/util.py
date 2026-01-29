@@ -3,7 +3,7 @@ import cProfile
 import os
 from abc import abstractmethod
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Self
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -13,7 +13,7 @@ from requests.models import Response as RequestsResponse
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
-from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
@@ -114,17 +114,17 @@ def get_route_path(route_function: RouteFunction, name: str = "") -> str:
 
 def mock_datastore_method(method: str, verbose: bool = False) -> tuple[Mock, Any]:
     """
-    Patches the given method of the DatastoreAdapter and returns the created mock as well as the
+    Patches the given method of the ExtendedDatabase and returns the created mock as well as the
     patcher.
     """
-    orig_method = getattr(DatastoreAdapter, method)
+    orig_method = getattr(ExtendedDatabase, method)
 
-    def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
+    def mock_method(inner_self: ExtendedDatabase, *args: Any, **kwargs: Any) -> Any:
         if verbose:
             print(orig_method.__name__, args, kwargs)
         return orig_method(inner_self, *args, **kwargs)
 
-    patcher = patch.object(DatastoreAdapter, method, autospec=True)
+    patcher = patch.object(ExtendedDatabase, method, autospec=True)
     mock = patcher.start()
     mock.side_effect = mock_method
     return mock, patcher
@@ -171,7 +171,7 @@ class CountDatastoreCalls:
     def __init__(self, verbose: bool = False) -> None:
         self.verbose = verbose
 
-    def __enter__(self) -> "CountDatastoreCalls":
+    def __enter__(self) -> Self:
         self.patcher: list[Any] = []
         self.mocks: list[Mock] = []
         for method in ("get", "get_many"):

@@ -1,8 +1,10 @@
-from decimal import Decimal
-from enum import Enum
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from enum import StrEnum
 from typing import Any, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.exceptions import ActionException
 
@@ -27,7 +29,7 @@ TRUE_VALUES = ("1", "true", "yes", "t", "y")
 FALSE_VALUES = ("0", "false", "no", "f", "n")
 
 
-class OnDelete(str, Enum):
+class OnDelete(StrEnum):
     PROTECT = "PROTECT"
     CASCADE = "CASCADE"
     SET_NULL = "SET_NULL"
@@ -47,6 +49,7 @@ class Field:
     constant: bool
     default: str | None
     constraints: dict[str, Any]
+    is_view_field: bool
 
     def __init__(
         self,
@@ -55,6 +58,9 @@ class Field:
         constant: bool = False,
         default: Any | None = None,
         constraints: dict[str, Any] | None = None,
+        is_view_field: bool = False,
+        is_primary: bool = False,
+        write_fields: tuple[str, str, str, list[str]] | None = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
@@ -63,6 +69,9 @@ class Field:
         if not self.required and constraints and "enum" in constraints:
             constraints["enum"].append(None)
         self.constraints = constraints or {}
+        self.is_view_field = is_view_field
+        self.is_primary = is_primary
+        self.write_fields = write_fields
         self.schema_validator = fastjsonschema.compile(self.get_schema())
 
     def get_schema(self) -> Schema:
@@ -112,6 +121,8 @@ class IntegerField(Field):
     def check_required_not_fulfilled(
         self, instance: dict[str, Any], is_create: bool
     ) -> bool:
+        if self.constraints.get("sequence_scope"):
+            return False
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None
@@ -174,6 +185,17 @@ class JSONField(Field):
             types.append("null")
         return self.extend_schema(super().get_schema(), type=types)
 
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: list | dict | Jsonb
+    ) -> None:
+        if isinstance(value, Jsonb):
+            value = value.obj
+        elif not isinstance(value, list | dict | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
+
 
 class HTMLStrictField(TextField):
     """
@@ -229,22 +251,50 @@ class DecimalField(Field):
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
-            if (min := self.constraints.get("minimum")) is not None:
+            if (min_ := self.constraints.get("minimum")) is not None:
                 if isinstance(value, str):
-                    assert Decimal(value) >= Decimal(
-                        min
-                    ), f"{self.own_field_name} must be bigger than or equal to {min}."
-                else:
+                    try:
+                        value = Decimal(value)
+                    except InvalidOperation:
+                        raise ActionException(
+                            f"{self.own_field_name}: value '{value}' couldn't be converted to decimal."
+                        )
+                elif not isinstance(value, Decimal | None):
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
                     )
+                assert value >= Decimal(
+                    min_
+                ), f"{self.own_field_name} must be bigger than or equal to {min_}."
         return value
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: str | Decimal
+    ) -> None:
+        if isinstance(value, Decimal):
+            value = str(value)
+        elif not isinstance(value, str | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
 
 
 class TimestampField(IntegerField):
     """
     Used to represent a UNIX timestamp.
     """
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: datetime | int
+    ) -> None:
+        if isinstance(value, datetime):
+            value = int(value.timestamp())
+        elif not isinstance(value, int | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
 
 
 class ColorField(TextField):

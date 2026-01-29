@@ -1,12 +1,14 @@
 from typing import Any, cast
 
-from openslides_backend.services.datastore.interface import PartialModel
+from psycopg.types.json import Jsonb
+
+from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
@@ -85,6 +87,7 @@ class UserMergeTogether(
                     "last_email_sent",
                     "last_login",
                     "meeting_ids",
+                    "committee_ids",
                     "username",
                     "is_active",
                     "is_physical_person",
@@ -102,7 +105,6 @@ class UserMergeTogether(
                     "is_demo_user",
                 ],
                 "merge": [
-                    "committee_ids",
                     "committee_management_ids",
                     "history_entry_ids",
                     "history_position_ids",
@@ -179,7 +181,7 @@ class UserMergeTogether(
             "poll",
             And(
                 FilterOperator("entitled_users_at_stop", "!=", None),
-                FilterOperator("entitled_users_at_stop", "!=", []),
+                FilterOperator("entitled_users_at_stop", "!=", Jsonb([])),
             ),
             ["entitled_users_at_stop"],
         )
@@ -239,13 +241,10 @@ class UserMergeTogether(
         update_operations["user"]["update"].append(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
         )
-        committee_ids = update_operations["user"]["update"][0].pop(
-            "committee_ids", None
-        )
 
         self.call_other_actions(update_operations)
 
-        result = {"id": into["id"], "committee_ids": committee_ids}
+        result = {"id": into["id"]}
         self._history_replacement_groups["user"].append(
             (result, [into["id"], *instance["user_ids"]], False)
         )
@@ -257,7 +256,7 @@ class UserMergeTogether(
         if len(update_operations["user"]["update"]) != 1:
             raise BadCodingException("Calculated wrong amount of user payloads")
         main_user_payload = update_operations["user"]["update"][0]
-        user_id = main_user_payload["id"]
+        main_user_id = main_user_payload["id"]
         meeting_user_create_payloads = update_operations["meeting_user"]["create"]
         if len(
             update_payloads := [
@@ -268,11 +267,9 @@ class UserMergeTogether(
             meeting_user_via_user_payloads = []
             for payload_index in range(len(update_payloads)):
                 current = update_payloads[payload_index]
-                if current.get("vote_weight") == "0.000000":
-                    current["vote_weight"] = "0.000001"
                 meeting_user_via_user_payloads.append(
                     {
-                        "id": user_id,
+                        "id": main_user_id,
                         "meeting_id": current["meeting_id"],
                         **{
                             field: current.pop(field)
@@ -289,14 +286,13 @@ class UserMergeTogether(
                 if len(payload) > 1
             ]
             new_meeting_ids = [
-                m_user["meeting_id"]
-                for m_user in update_operations["meeting_user"]["create"]
+                m_user["meeting_id"] for m_user in meeting_user_create_payloads
             ]
             if len(new_meeting_ids):
                 new_meeting_users = self.datastore.filter(
                     "meeting_user",
                     And(
-                        FilterOperator("user_id", "=", user_id),
+                        FilterOperator("user_id", "=", main_user_id),
                         Or(
                             FilterOperator("meeting_id", "=", meeting_id)
                             for meeting_id in new_meeting_ids
@@ -309,7 +305,7 @@ class UserMergeTogether(
             meeting_user_ids_by_meeting_ids = {
                 m_user["meeting_id"]: id_ for id_, m_user in new_meeting_users.items()
             }
-            for payload in update_operations["meeting_user"]["create"]:
+            for payload in meeting_user_create_payloads:
                 if len(payload):
                     payload["id"] = meeting_user_ids_by_meeting_ids[
                         payload["meeting_id"]
@@ -332,7 +328,7 @@ class UserMergeTogether(
                 model["meeting_id"]: id_
                 for id_, model in self.datastore.filter(
                     "meeting_user",
-                    FilterOperator("user_id", "=", user_id),
+                    FilterOperator("user_id", "=", main_user_id),
                     ["meeting_id"],
                 ).items()
             }
@@ -401,8 +397,6 @@ class UserMergeTogether(
                         [{"id": id_} for id_ in to_delete],
                     )
 
-        if main_user_payload.get("default_vote_weight") == "0.000000":
-            main_user_payload["default_vote_weight"] = "0.000001"
         self.execute_other_action(UserUpdate, [main_user_payload])
         if len(to_delete := update_operations["user"]["delete"]):
             self.execute_other_action(

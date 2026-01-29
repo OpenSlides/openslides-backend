@@ -1,9 +1,8 @@
 from typing import Any
 
-from datastore.shared.util import fqid_from_collection_and_id
-
 from openslides_backend.action.action import Action
 from openslides_backend.shared.exceptions import ActionException, PermissionException
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 

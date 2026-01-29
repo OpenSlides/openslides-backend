@@ -32,13 +32,13 @@ class TreeSortMixin(Action):
 
         This function traverses this tree in preorder to assign the weight.
         """
-        # TODO: Check if instances exist in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
+        # TODO: Check if instances exist in DB and is not deleted.
 
         # Get all item ids to verify, that the user send all ids.
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.datastore.filter(
             collection=self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id"],
         )
         all_model_ids = set(db_instances.keys())

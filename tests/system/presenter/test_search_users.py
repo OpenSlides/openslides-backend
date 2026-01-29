@@ -58,21 +58,11 @@ class TestSearchUsers(BasePresenterTestCase):
 
         self.set_models(
             {
-                "user/2": {
-                    **self.user2,
-                },
-                "user/3": {
-                    **self.user3,
-                },
-                "user/4": {
-                    **self.user4,
-                },
-                "user/5": {
-                    **self.user5,
-                },
-                "user/6": {
-                    **self.user6,
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
+                "user/5": self.user5,
+                "user/6": self.user6,
             }
         )
 
@@ -383,11 +373,8 @@ class TestSearchUsers(BasePresenterTestCase):
         )
 
     def test_permission_organization_ok(self) -> None:
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-            },
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         status_code, _ = self.request(
             "search_users",
@@ -402,7 +389,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
 
     def test_permission_organization_error(self) -> None:
-        self.update_model("user/1", {"organization_management_level": None})
+        self.set_organization_management_level(None)
         status_code, data = self.request(
             "search_users",
             {
@@ -419,13 +406,8 @@ class TestSearchUsers(BasePresenterTestCase):
         )
 
     def test_permission_committee_ok(self) -> None:
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": None,
-                "committee_management_ids": [1],
-            },
-        )
+        self.set_organization_management_level(None)
+        self.set_models({"committee/1": {"name": "Committee1", "manager_ids": [1]}})
         status_code, _ = self.request(
             "search_users",
             {
@@ -439,7 +421,7 @@ class TestSearchUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
 
     def test_permission_committee_error(self) -> None:
-        self.update_model("user/1", {"organization_management_level": None})
+        self.set_organization_management_level(None)
         self.set_models({"committee/1": {"name": "committee 1"}})
         status_code, data = self.request(
             "search_users",
@@ -458,28 +440,10 @@ class TestSearchUsers(BasePresenterTestCase):
         )
 
     def test_permission_meeting_ok(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "group/1": {
-                    "meeting_user_ids": [1],
-                    "meeting_id": 1,
-                    "permissions": [Permissions.User.CAN_MANAGE],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "group_ids": [1],
-                },
-            }
-        )
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": None,
-            },
-        )
+        self.set_organization_management_level(None)
+        self.create_meeting()
+        self.set_user_groups(1, [1])
+        self.set_group_permissions(1, [Permissions.User.CAN_MANAGE])
         status_code, _ = self.request(
             "search_users",
             {
@@ -493,13 +457,8 @@ class TestSearchUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
 
     def test_permission_meeting_error(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-            }
-        )
-        self.update_model("user/1", {"organization_management_level": None})
+        self.set_organization_management_level(None)
+        self.create_meeting()
         status_code, data = self.request(
             "search_users",
             {
@@ -517,19 +476,9 @@ class TestSearchUsers(BasePresenterTestCase):
         )
 
     def test_permission_meeting_via_committee_ok(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-            }
-        )
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": None,
-                "committee_management_ids": [1],
-            },
-        )
+        self.create_meeting()
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([60])
         status_code, data = self.request(
             "search_users",
             {
@@ -582,19 +531,9 @@ class TestSearchUsers(BasePresenterTestCase):
         assert len(data[f"uSer{4+quantity}/userX6@Test.de"]) == 2
 
     def test_special_error(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-            }
-        )
-        self.update_model(
-            "user/1",
-            {
-                "organization_management_level": None,
-                "committee_management_ids": [1],
-            },
-        )
+        self.create_meeting()
+        self.set_organization_management_level(None)
+        self.set_committee_management_level([60])
         status_code, data = self.request(
             "search_users",
             {

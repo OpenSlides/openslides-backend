@@ -1,4 +1,6 @@
+from datetime import datetime
 from time import time
+from zoneinfo import ZoneInfo
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -14,12 +16,24 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                     "list_of_speakers_ids": [2, 4],
                     "structure_level_list_of_speakers_ids": [3, 5],
                 },
+                "topic/1337": {
+                    "title": "leet improvement discussion",
+                    "meeting_id": 1,
+                },
+                "topic/42": {
+                    "title": "leet improvement discussion",
+                    "meeting_id": 1,
+                },
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/2": {"content_object_id": "topic/42", "meeting_id": 1},
                 "structure_level/1": {
+                    "name": "cake party",
                     "meeting_id": 1,
                     "structure_level_list_of_speakers_ids": [3],
                 },
                 "list_of_speakers/2": {
                     "meeting_id": 1,
+                    "content_object_id": "topic/1337",
                     "structure_level_list_of_speakers_ids": [3],
                 },
                 "structure_level_list_of_speakers/3": {
@@ -31,6 +45,7 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                 },
                 "list_of_speakers/4": {
                     "meeting_id": 1,
+                    "content_object_id": "topic/42",
                     "structure_level_list_of_speakers_ids": [5],
                 },
                 "structure_level_list_of_speakers/5": {
@@ -56,7 +71,7 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
             {
                 "initial_time": 600,
                 "remaining_time": 500,
-                "current_start_time": now,
+                "current_start_time": datetime.fromtimestamp(now, ZoneInfo("UTC")),
             },
         )
 
@@ -64,7 +79,7 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
         self.set_models(
             {
                 "structure_level_list_of_speakers/3": {
-                    "current_start_time": round(time())
+                    "current_start_time": datetime.now(ZoneInfo("UTC"))
                 }
             }
         )
@@ -112,7 +127,7 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "list_of_speakers_id": 2,
                     "structure_level_list_of_speakers_id": 3,
-                    "begin_time": round(time()),
+                    "begin_time": datetime.now(ZoneInfo("UTC")),
                 }
             }
         )
