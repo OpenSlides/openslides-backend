@@ -174,13 +174,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 f"user/{additional_admin_id}": {"username": "additional_admin"},
-                "meeting_user/666": {"meeting_id": 1, "user_id": additional_admin_id},
             }
         )
         self.login(logged_in_user_id)
-        # Admin groups of meeting/1 for requesting user meeting/2 as normal user
+        # Admin groups of meeting/1 for requesting user meeting/4 as normal user
         # 111 into both meetings
-        # 777 additional admin for meeting/2 doesn't affect outcome
+        # 777 additional admin for meeting/4 doesn't affect outcome
         self.move_users_to_groups(
             {
                 logged_in_user_id: [2, 4],
@@ -301,45 +300,6 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             },
         }
 
-    def test_get_user_related_models_meetings_more_users_ignore_one_meeting_user(
-        self,
-    ) -> None:
-        self.create_meeting()
-        self.set_user_groups(1, [1])
-        self.create_user_for_meeting(1)
-        self.create_motion(1, 1)
-        self.create_assignment(1, 1)
-        self.set_models(self.get_models_for_meeting_users({1: 1, 2: 1}))
-        self.set_user_groups(2, [])
-        status_code, data = self.request(
-            "get_user_related_models", {"user_ids": [1, 2]}
-        )
-        self.assertEqual(status_code, 200)
-        assert data == {
-            "1": {
-                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "committees": [
-                    {
-                        "cml": "",
-                        "id": 60,
-                        "name": "Committee60",
-                    },
-                ],
-                "meetings": [
-                    {
-                        "id": 1,
-                        "name": "OpenSlides",
-                        "is_active_in_organization_id": 1,
-                        "is_locked": False,
-                        "motion_submitter_ids": [2],
-                        "assignment_candidate_ids": [3],
-                        "speaker_ids": [4],
-                    }
-                ],
-            },
-            "2": {},
-        }
-
     def test_get_user_related_models_missing_payload(self) -> None:
         status_code, data = self.request("get_user_related_models", {})
         self.assertEqual(status_code, 400)
@@ -387,22 +347,6 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     }
                 ],
             },
-        }
-
-    def test_get_user_related_models_meeting_but_no_groups(
-        self,
-    ) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/2": {"username": "na"},
-                "meeting_user/1": {"meeting_id": 1, "user_id": 2},
-            }
-        )
-        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
-        self.assertEqual(status_code, 200)
-        assert data == {
-            "2": {},
         }
 
     def test_get_user_related_models_archived_meeting(

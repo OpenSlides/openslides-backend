@@ -14,6 +14,7 @@ class MeetingUserSetData(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "group/10": {"meeting_user_ids": [5]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -36,6 +37,7 @@ class MeetingUserSetData(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "group/10": {"meeting_user_ids": [5]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -63,6 +65,7 @@ class MeetingUserSetData(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "group/10": {"meeting_user_ids": [5]},
             }
         )
         test_dict = {
@@ -77,6 +80,7 @@ class MeetingUserSetData(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "group/10": {"meeting_user_ids": [5]},
             }
         )
         test_dict = {
@@ -113,6 +117,7 @@ class MeetingUserSetData(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "group/10": {"meeting_user_ids": [5]},
             }
         )
         test_dict = {
@@ -133,6 +138,7 @@ class MeetingUserSetData(BaseActionTestCase):
                     "meeting_id": 10,
                     "vote_weight": "1.000000",
                 },
+                "group/10": {"meeting_user_ids": [5]},
             }
         )
         response = self.request("meeting_user.set_data", {"vote_weight": "0.000000"})
