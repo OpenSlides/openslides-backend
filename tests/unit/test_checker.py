@@ -682,7 +682,7 @@ class TestCheckerCheckData(TestCase):
         self.check_data(
             data=self.meeting_data,
             mode="external",
-            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.\n\tmediafile/1/owner_id error: Fqid organization/1 has an invalid collection.",
+            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.\n\tmediafile/1/owner_id: Relation Error: points to organization/1, which is not allowed in an external import.",
         )
 
     def test_external_mode_forbidden_field_repair_false_error(self) -> None:
