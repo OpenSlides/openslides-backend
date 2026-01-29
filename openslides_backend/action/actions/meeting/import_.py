@@ -4,6 +4,8 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
@@ -13,9 +15,11 @@ from openslides_backend.models.fields import (
     BaseRelationField,
     GenericRelationField,
     GenericRelationListField,
+    JSONField,
     OnDelete,
     RelationField,
     RelationListField,
+    TimestampField,
 )
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -161,7 +165,40 @@ class MeetingImport(
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         self.check_data_migration_index(instance)
+        self.transform_timestamps(instance)
         self.unset_committee_and_orga_relation(instance)
+        return instance
+
+    def transform_timestamps(self, instance: dict[str, Any]) -> dict[str, Any]:
+        for collection, collection_data in instance["meeting"].items():
+            if model := model_registry.get(collection):
+                fields = list(model().get_fields())
+                timestamp_field_names = [
+                    field.own_field_name
+                    for field in fields
+                    if isinstance(field, TimestampField)
+                ]
+                if timestamp_field_names:
+                    for mod in collection_data.values():
+                        for field in timestamp_field_names:
+                            if (iso := mod.get(field)) and isinstance(iso, str):
+                                mod[field] = datetime.fromisoformat(iso)
+        return instance
+
+    def transform_json_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
+        for collection, collection_data in instance["meeting"].items():
+            if model := model_registry.get(collection):
+                fields = list(model().get_fields())
+                json_field_names = [
+                    field.own_field_name
+                    for field in fields
+                    if isinstance(field, JSONField)
+                ]
+                if json_field_names:
+                    for mod in collection_data.values():
+                        for field in json_field_names:
+                            if field in mod:
+                                mod[field] = Jsonb(mod[field])
         return instance
 
     def check_one_meeting(self, instance: dict[str, Any]) -> None:
@@ -276,6 +313,7 @@ class MeetingImport(
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
 
+        self.transform_json_fields(instance)
         self.check_limit_of_meetings()
         self.update_meeting_and_users(instance)
 
@@ -752,7 +790,7 @@ class MeetingImport(
         """
         Check for valid migration index.
         """
-        start_migration_index = instance["meeting"].pop("_migration_index")
+        start_migration_index = instance["meeting"].get("_migration_index")
         backend_migration_index = MigrationHelper.get_backend_migration_index()
         if backend_migration_index < start_migration_index:
             raise ActionException(

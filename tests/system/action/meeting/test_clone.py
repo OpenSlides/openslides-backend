@@ -1372,11 +1372,11 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/2", {"name": long_name + " - Copy"})
 
     def test_meeting_name_too_long(self) -> None:
-        self.meeting_data["name"] = "A" * 100
+        self.meeting_data["name"] = "A" * 200
         self.set_test_data_with_admin()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"name": "A" * 90 + "... - Copy"})
+        self.assert_model_exists("meeting/2", {"name": "A" * 190 + "... - Copy"})
 
     def test_permissions_explicit_source_committee_permission(self) -> None:
         self.set_test_data()
@@ -1841,6 +1841,21 @@ class MeetingClone(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_clone_amendment_paragraphs_regular(self) -> None:
+        self.set_test_data()
+        self.set_user_groups(1, [1])
+        self.create_motion(
+            1, 1, motion_data={"amendment_paragraphs": Jsonb({"1": "<p>test</p>"})}
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "admin_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_permissions_oml_locked_meeting(self) -> None:
         self.create_meeting(
             meeting_data={"locked_from_inside": True, "template_for_organization_id": 1}
@@ -2134,3 +2149,15 @@ class MeetingClone(BaseActionTestCase):
         for fqid, model in models.items():
             self.assert_model_exists(fqid, model)
         self.media.duplicate_mediafile.assert_not_called()
+
+    def test_clone_require_duplicate_from_allowed(self) -> None:
+        self.set_test_data_with_admin()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1, "name": "m1"},
+            }
+        )
+        self.set_committee_management_level([60])
+        self.set_organization_management_level(None)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)

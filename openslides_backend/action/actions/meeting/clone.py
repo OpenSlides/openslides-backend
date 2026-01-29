@@ -268,6 +268,7 @@ class MeetingClone(MeetingImport):
             raise ActionException(
                 "Cannot create a non-template meeting without administrators"
             )
+        self.transform_json_fields(instance)
         return instance
 
     def _create_or_get_meeting_user(self, meeting_id: int, user_id: int) -> int:
