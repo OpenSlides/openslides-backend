@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any, cast
 
@@ -253,7 +253,12 @@ class DecimalField(Field):
         if value is not None or self.required:
             if (min_ := self.constraints.get("minimum")) is not None:
                 if isinstance(value, str):
-                    value = Decimal(value)
+                    try:
+                        value = Decimal(value)
+                    except InvalidOperation:
+                        raise ActionException(
+                            f"{self.own_field_name}: value '{value}' couldn't be converted to decimal."
+                        )
                 elif not isinstance(value, Decimal | None):
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"

@@ -400,7 +400,7 @@ class UpdatePollTestCase(BasePollTestCase):
             {"id": 1, "title": "test"},
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/1", ["Voting updated"])
+        self.assert_history_information("motion/2", ["Voting updated"])
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
