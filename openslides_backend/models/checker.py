@@ -515,7 +515,6 @@ class Checker:
                     foreign_field,
                     basemsg,
                 )
-            # TODO: cleanup. Unreachable code (mode and collection are checked in split_fqid), but error message there is not too useful
             elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
@@ -660,8 +659,6 @@ class Checker:
         try:
             collection, _id = collection_and_id_from_fqid(fqid)
             assert collection
-            if self.mode == "external" and collection not in self.allowed_collections:
-                raise CheckException(f"Fqid {fqid} has an invalid collection.")
             return collection, _id
         except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")
