@@ -13,12 +13,49 @@ def test_simple(write, finalize, assert_model):
         {"type": "create", "fqid": "meeting_user/4", "fields": {"group_ids": [2]}},
         {"type": "create", "fqid": "meeting_user/5", "fields": {"group_ids": [3]}},
         {"type": "create", "fqid": "meeting_user/6", "fields": {"group_ids": []}},
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"present_user_ids": [1, 2, 3, 6]},
+        },
+        {"type": "create", "fqid": "meeting/2", "fields": {"present_user_ids": [2, 4]}},
+        {"type": "create", "fqid": "meeting/3", "fields": {"present_user_ids": [5]}},
+        {"type": "create", "fqid": "meeting/4", "fields": {"present_user_ids": [1, 3]}},
+        {
+            "type": "create",
+            "fqid": "user/1",
+            "fields": {"is_present_in_meeting_ids": [1, 4]},
+        },
+        {
+            "type": "create",
+            "fqid": "user/2",
+            "fields": {"is_present_in_meeting_ids": [1, 2]},
+        },
+        {
+            "type": "create",
+            "fqid": "user/4",
+            "fields": {"is_present_in_meeting_ids": [2]},
+        },
+        {
+            "type": "create",
+            "fqid": "user/5",
+            "fields": {"is_present_in_meeting_ids": [3]},
+        },
+        {
+            "type": "create",
+            "fqid": "user/6",
+            "fields": {"is_present_in_meeting_ids": []},
+        },
     )
     write(
         {"type": "delete", "fqid": "group/3"},
         {"type": "delete", "fqid": "meeting_user/2"},
         {"type": "delete", "fqid": "meeting_user/5"},
         {"type": "delete", "fqid": "meeting_user/6"},
+        {"type": "delete", "fqid": "meeting/3"},
+        {"type": "delete", "fqid": "user/2"},
+        {"type": "delete", "fqid": "user/5"},
+        {"type": "delete", "fqid": "user/6"},
     )
 
     finalize("0077_remove_deleted_musers_from_groups")
@@ -26,3 +63,7 @@ def test_simple(write, finalize, assert_model):
     assert_model("group/1", {"meeting_user_ids": [1]})
     assert_model("group/2", {"meeting_user_ids": [4]})
     assert_model("group/4", {"meeting_user_ids": [1]})
+
+    assert_model("meeting/1", {"present_user_ids": [1]})
+    assert_model("meeting/2", {"present_user_ids": [4]})
+    assert_model("meeting/4", {"present_user_ids": [1]})
