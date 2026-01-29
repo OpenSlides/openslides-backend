@@ -126,20 +126,10 @@ class PollUpdateAction(
             )
 
         # check named and live_voting_enabled
-        global_yes_for_check = (
-            instance["global_yes"]
-            if instance.get("global_yes")
-            else poll.get("global_yes")
-        )
-        pollmethod_for_check = (
-            instance["pollmethod"]
-            if instance.get("pollmethod")
-            else poll.get("pollmethod")
-        )
-        max_votes_amount_for_check = (
-            instance["max_votes_amount"]
-            if instance.get("max_votes_amount")
-            else poll.get("max_votes_amount")
+        global_yes_for_check = instance.get("global_yes") or poll.get("global_yes")
+        pollmethod_for_check = instance.get("pollmethod") or poll.get("pollmethod")
+        max_votes_amount_for_check = instance.get("max_votes_amount") or poll.get(
+            "max_votes_amount"
         )
         if instance.get("live_voting_enabled") and not (
             poll["type"] == Poll.TYPE_NAMED
@@ -154,7 +144,7 @@ class PollUpdateAction(
             )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls."
+                "live_voting_enabled only allowed for named motion polls and certain assignment polls."
             )
 
         if poll["type"] == Poll.TYPE_ANALOG and (

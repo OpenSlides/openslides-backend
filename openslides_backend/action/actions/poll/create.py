@@ -112,7 +112,7 @@ class PollCreateAction(
             )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls."
+                "live_voting_enabled only allowed for named motion polls and certain assignment polls."
             )
 
         # check entitled_group_ids and analog

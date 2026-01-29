@@ -692,5 +692,5 @@ class UpdatePollTestCase(BasePollTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("poll/1", {"live_voting_enabled": None})
         assert (
-            "live_voting_enabled only allowed for named motion polls."
+            "live_voting_enabled only allowed for named motion polls and certain assignment polls."
         ) in response.json["message"]
