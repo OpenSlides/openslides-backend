@@ -13,6 +13,10 @@ ROOT = os.path.join(
     "..",
 )
 
+META_PATH = "./meta"
+SOURCE_META = f"{META_PATH}/collection-meta.yml"
+SOURCE_COLLECTIONS = f"{META_PATH}/collections"
+
 
 def parse_arguments(default: str) -> Namespace:
     parser = ArgumentParser()
@@ -29,6 +33,25 @@ def open_yml_file(file: str) -> Any:
     else:
         models_yml = requests.get(file).content
     return yaml.safe_load(models_yml)
+
+
+def get_collection_names_and_filenames() -> dict[str, str]:
+    filenames = sorted(os.listdir(SOURCE_COLLECTIONS))
+    return {os.path.splitext(filename)[0]: filename for filename in filenames}
+
+
+def load_fields(filename: str) -> dict[str, Any]:
+    path = f"{SOURCE_COLLECTIONS}/{filename}"
+    content = get_file_content_text(path)
+    return yaml.safe_load(content)
+
+
+def get_file_content_text(file: str) -> str:
+    if os.path.isfile(file):
+        with open(file) as x:
+            return x.read()
+    else:
+        raise Exception(f"{file} is not a file.")
 
 
 def open_output(destination: str, check: bool) -> TextIOBase:
