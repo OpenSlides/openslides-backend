@@ -144,7 +144,7 @@ class PollUpdateAction(
             )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls and certain assignment polls."
+                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
             )
 
         if poll["type"] == Poll.TYPE_ANALOG and (

@@ -1233,7 +1233,7 @@ class CreatePoll(BasePollTestCase):
             self.assert_status_code(response, 400)
             self.assert_model_not_exists("poll/1")
             assert (
-                "live_voting_enabled only allowed for named motion polls and certain assignment polls."
+                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
             ) in response.json["message"]
 
     def test_live_voting_not_allowed_type_analog(self) -> None:
@@ -1271,5 +1271,5 @@ class CreatePoll(BasePollTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
         assert (
-            "live_voting_enabled only allowed for named motion polls and certain assignment polls."
+            "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
         ) in response.json["message"]
