@@ -2162,7 +2162,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
-    def test_clone_bleh(self) -> None:
+    def test_clone_with_very_complex_mediafiles(self) -> None:
         self.create_meeting(1101)
         self.set_models(
             {
