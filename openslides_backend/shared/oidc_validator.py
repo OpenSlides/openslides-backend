@@ -63,14 +63,35 @@ class OidcTokenValidator:
         """
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            # Disable PyJWT's audience check because Keycloak access tokens
+            # may not include an `aud` claim (they use `azp` instead).
+            # We verify the audience/azp manually below.
             payload = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
-                audience=self.audience,
+                options={"verify_aud": False},
                 issuer=self.issuer,
             )
+
+            # Manual audience verification: check `azp` first, then `aud`.
+            # Keycloak access tokens set `azp` (authorized party) to the
+            # requesting client and may set `aud` to other clients (e.g.
+            # "account") that have role mappings, so `azp` is the reliable
+            # indicator of the intended audience.
+            token_azp = payload.get("azp")
+            token_aud = payload.get("aud")
+            if token_azp:
+                if token_azp != self.audience:
+                    raise PresenterException("Invalid token audience")
+            elif token_aud:
+                aud_list = [token_aud] if isinstance(token_aud, str) else token_aud
+                if self.audience not in aud_list:
+                    raise PresenterException("Invalid token audience")
+
             return payload
+        except PresenterException:
+            raise
         except jwt.exceptions.InvalidSignatureError:
             raise PresenterException("Invalid token signature")
         except jwt.exceptions.ExpiredSignatureError:

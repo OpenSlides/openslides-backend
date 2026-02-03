@@ -137,30 +137,17 @@ class OidcWhoAmI(BasePresenter):
         # 5. User doesn't exist - provision via internal action
         user_id = self._provision_user(keycloak_id, user_info)
 
-        # Fetch the created user's info
-        users = self.datastore.filter(
-            "user",
-            FilterOperator("keycloak_id", "=", keycloak_id),
-            ["id", "username", "first_name", "last_name", "email"],
-        )
-
-        if users:
-            user = next(iter(users.values()))
-            return {
-                "user_id": user["id"],
-                "keycloak_id": keycloak_id,
-                "username": user.get("username"),
-                "first_name": user.get("first_name"),
-                "last_name": user.get("last_name"),
-                "email": user.get("email"),
-                "provisioned": True,
-            }
-        else:
-            return {
-                "user_id": user_id,
-                "keycloak_id": keycloak_id,
-                "provisioned": True,
-            }
+        # Return user info from the Keycloak userinfo response directly,
+        # since the datastore may not yet reflect the newly created user.
+        return {
+            "user_id": user_id,
+            "keycloak_id": keycloak_id,
+            "username": user_info.get("preferred_username"),
+            "first_name": user_info.get("given_name"),
+            "last_name": user_info.get("family_name"),
+            "email": user_info.get("email"),
+            "provisioned": True,
+        }
 
     def _provision_user(
         self, keycloak_id: str, user_info: dict[str, Any]
@@ -188,7 +175,7 @@ class OidcWhoAmI(BasePresenter):
         try:
             # Get the action port from environment
             action_port = os.environ.get("ACTION_PORT", "9002")
-            action_url = f"http://localhost:{action_port}/internal/action/handle_request"
+            action_url = f"http://localhost:{action_port}/internal/handle_request"
 
             response = requests.post(
                 action_url,

@@ -97,3 +97,12 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
 
     def clear_sessions_by_user_id(self, user_id: int) -> None:
         self.auth_handler.clear_sessions_by_user_id(user_id)
+
+    def sso_login(self, user_id: int) -> tuple[str, str]:
+        """
+        Create a session for a user via SSO (OIDC/SAML) login.
+        """
+        try:
+            return self.auth_handler.sso_login(user_id)
+        except AuthenticateException as e:
+            raise AuthenticationException(e.message)

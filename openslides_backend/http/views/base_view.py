@@ -26,6 +26,7 @@ def route(
     internal: bool = False,
     method: str = "POST",
     json: bool = True,
+    prefix: str | None = None,
 ) -> Callable[[RouteFunction], RouteFunction]:
     route_options_list = []
     if isinstance(name, str):
@@ -34,13 +35,16 @@ def route(
         route_parts: list[str] = [""]
         if internal:
             route_parts.append("internal")
+        elif prefix is not None:
+            # Use explicit prefix override
+            route_parts.extend(["system", prefix])
         else:
             # extract the callers name to deduce the path's prefix
             frame = inspect.currentframe()
             assert frame and frame.f_back
             caller = inspect.getframeinfo(frame.f_back)[2]
-            prefix = caller.replace("View", "").lower()
-            route_parts.extend(["system", prefix])
+            caller_prefix = caller.replace("View", "").lower()
+            route_parts.extend(["system", caller_prefix])
         route_parts.append(_name.strip("/"))
         path = "/".join(route_parts)
         regex = re.compile("^" + path + "/?$")

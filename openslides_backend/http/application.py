@@ -11,7 +11,7 @@ from openslides_backend.shared.interfaces.env import Env
 from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
 
-from ..services.auth.interface import AUTHENTICATION_HEADER
+from ..services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ..shared.env import is_truthy
 from ..shared.exceptions import ActionException, ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
@@ -137,7 +137,20 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             content_type="application/json",
         )
         if access_token is not None:
-            response.headers[AUTHENTICATION_HEADER] = access_token
+            if isinstance(access_token, tuple):
+                # (access_token, refresh_cookie) tuple from OIDC who-am-i
+                token, refresh_cookie = access_token
+                response.headers[AUTHENTICATION_HEADER] = token
+                if refresh_cookie:
+                    response.set_cookie(
+                        COOKIE_NAME,
+                        refresh_cookie,
+                        httponly=True,
+                        secure=True,
+                        samesite="Strict",
+                    )
+            else:
+                response.headers[AUTHENTICATION_HEADER] = access_token
         return response
 
     def wsgi_application(

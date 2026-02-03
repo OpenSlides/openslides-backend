@@ -149,14 +149,15 @@ class UserSaveKeycloakAccount(
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # Look up user by keycloak_id
+        # Build field list for DB query. The allowed_user_fields keys are
+        # logical field names; "gender" maps to the "gender_id" DB column.
+        db_fields = [
+            "gender_id" if f == "gender" else f for f in allowed_user_fields.keys()
+        ]
         users = self.datastore.filter(
             "user",
             FilterOperator("keycloak_id", "=", instance["keycloak_id"]),
-            [
-                "id",
-                "gender_id",
-                *allowed_user_fields.keys(),
-            ],
+            ["id", *db_fields],
         )
 
         # Handle gender if provided

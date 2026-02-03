@@ -77,3 +77,14 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Clears all sessions of the given user.
         Use with caution as the auth-service uses its internal route for this.
         """
+
+    def sso_login(self, user_id: int) -> tuple[str, str]:
+        """
+        Create a session for a user via SSO (OIDC/SAML) login.
+
+        Args:
+            user_id: The OpenSlides user ID to create a session for.
+
+        Returns:
+            Tuple of (access_token, refresh_cookie)
+        """

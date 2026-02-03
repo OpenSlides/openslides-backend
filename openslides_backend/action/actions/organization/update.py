@@ -56,6 +56,14 @@ class OrganizationUpdate(
         "saml_metadata_idp",
         "saml_metadata_sp",
         "saml_private_key",
+        "oidc_enabled",
+        "oidc_provider_url",
+        "oidc_client_id",
+        "oidc_client_secret",
+        "oidc_login_button_text",
+        "oidc_attr_mapping",
+        "oidc_admin_api_enabled",
+        "oidc_admin_api_url",
     )
 
     model = Organization()
