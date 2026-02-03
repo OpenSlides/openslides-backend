@@ -1,10 +1,13 @@
+import logging
+import os
 import sys
 from argparse import ArgumentParser
 
-from openslides_backend.migrations.migration_wrapper import (
-    InvalidMigrationCommand,
-    MigrationWrapper,
-)
+from dependency_injector import providers
+
+from openslides_backend.migrations.migration_handler import InvalidMigrationCommand
+from openslides_backend.migrations.migration_manager import MigrationManager
+from openslides_backend.shared.env import Environment
 
 
 def get_parser() -> ArgumentParser:
@@ -39,12 +42,6 @@ def get_parser() -> ArgumentParser:
         help="Reset all ongoing (not finalized) migrations.",
     )
     subparsers.add_parser(
-        "clear-collectionfield-tables",
-        add_help=False,
-        description="The clear-collectionfield-tables parser",
-        help="Clear all data from these auxiliary tables. Can be done to clean up diskspace, but only when the datastore is offline.",
-    )
-    subparsers.add_parser(
         "stats",
         add_help=False,
         description="The stats parser",
@@ -57,7 +54,12 @@ def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
 
-    handler = MigrationWrapper(args.verbose)
+    manager = MigrationManager(
+        Environment(os.environ),
+        providers.DependenciesContainer(),
+        logging,
+        args.verbose,
+    )
 
     if not args.command:
         print("No command provided.\n")
@@ -65,7 +67,7 @@ def main() -> int:
         return 1
     else:
         try:
-            handler.execute_command(args.command)
+            manager.handle_request({"cmd": args.command})
         except InvalidMigrationCommand:
             print(f"Unknown command {args.command}\n")
             parser.print_help()

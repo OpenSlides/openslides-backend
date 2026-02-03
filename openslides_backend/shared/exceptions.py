@@ -96,6 +96,10 @@ class InvalidFormat(DatabaseException):
     pass
 
 
+class InvalidData(DatabaseException):
+    pass
+
+
 class RelationException(DatabaseException):
     pass
 
@@ -166,6 +170,7 @@ class MissingPermission(PermissionDenied):
     def __init__(
         self,
         permissions: AnyPermission | dict[AnyPermission, int | set[int]],
+        use_and: bool = False,
     ) -> None:
         if isinstance(permissions, dict):
             to_remove = []
@@ -175,7 +180,7 @@ class MissingPermission(PermissionDenied):
             for permission in to_remove:
                 del permissions[permission]
             self.message = "Missing permission" + self._plural_s(permissions) + ": "
-            self.message += " or ".join(
+            self.message += (" and " if use_and else " or ").join(
                 f"{permission.get_verbose_type()} {permission} in {permission.get_base_model()}{self._plural_s(id_or_ids)} {id_or_ids}"
                 for permission, id_or_ids in permissions.items()
             )

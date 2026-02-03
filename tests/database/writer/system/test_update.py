@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from psycopg import Connection, rows
+from psycopg.errors import DatabaseError
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -136,6 +137,53 @@ def test_update_nm_field_null() -> None:
         {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": None},
     )
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+
+
+def test_update_nm_nt_ntR_not_null_error(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_group_base_data()
+    data[0]["events"] += [
+        {
+            "type": EventType.Create,
+            "fqid": "user/2",
+            "fields": {"username": "2", "first_name": "2"},
+        },
+        {
+            "type": EventType.Create,
+            "fqid": "group/4",
+            "fields": {"name": "4", "meeting_id": 1, "meeting_user_ids": [3]},
+        },
+        {
+            "type": EventType.Create,
+            "fqid": "meeting_user/3",
+            "fields": {"meeting_id": 1, "user_id": 2, "group_ids": [4]},
+        },
+    ]
+    create_models(data)
+    with get_new_os_conn() as conn:
+        with pytest.raises(DatabaseError) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "group/4",
+                                    "fields": {"meeting_user_ids": []},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+        assert (
+            "Trigger tr_d_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids from relationship before group/4/meeting_user_ids"
+            in e_info.value.args[0]
+        )
 
 
 def test_update_nm_field_remove() -> None:

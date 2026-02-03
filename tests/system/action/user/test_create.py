@@ -159,6 +159,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test_Xcdfgee",
                 "comment": "blablabla",
                 "meeting_id": 1,
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -364,6 +365,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "testname",
                 "meeting_id": 1,
+                "group_ids": [3],
                 "vote_delegations_from_ids": [],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
@@ -1440,6 +1442,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test",
                 "meeting_id": meeting_id,
                 "locked_out": True,
+                "group_ids": [1],
                 **other_payload_data,
             },
         )

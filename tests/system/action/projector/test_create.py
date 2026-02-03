@@ -52,7 +52,7 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "Action projector.create: data.color must match pattern ^#[0-9a-f]{6}$",
+            "Action projector.create: data.color must match pattern ^#[0-9a-fA-F]{6}$",
             response.json["message"],
         )
 

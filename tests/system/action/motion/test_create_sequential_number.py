@@ -63,6 +63,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
 
     def test_create_sequential_numbers_2meetings(self) -> None:
         self.create_meeting(225)
+        self.set_user_groups(1, [223, 225])
         response = self.request(
             "motion.create",
             {

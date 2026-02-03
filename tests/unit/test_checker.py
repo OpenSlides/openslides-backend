@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from psycopg.types.json import Jsonb
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -29,7 +29,7 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-BACKEND_MIGRATION_INDEX = get_backend_migration_index()
+BACKEND_MIGRATION_INDEX = MigrationHelper.get_backend_migration_index()
 
 
 class TestCheckerCheckMigrationIndex(TestCase):
@@ -682,7 +682,7 @@ class TestCheckerCheckData(TestCase):
         self.check_data(
             data=self.meeting_data,
             mode="external",
-            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.\n\tmediafile/1/owner_id error: Fqid organization/1 has an invalid collection.",
+            expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1, which is not allowed in an external import.\n\tmeeting/1/is_active_in_organization_id: Relation Error: points to organization/1, which is not allowed in an external import.\n\tmediafile/1/owner_id: Relation Error: points to organization/1, which is not allowed in an external import.",
         )
 
     def test_external_mode_forbidden_field_repair_false_error(self) -> None:
