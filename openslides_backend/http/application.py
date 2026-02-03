@@ -22,6 +22,7 @@ from .http_exceptions import (
     InternalServerError,
     Unauthorized,
 )
+from .redirect_response import RedirectResponse
 from .request import Request
 
 
@@ -121,6 +122,28 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 raise
         except HTTPException as exception:
             return exception
+
+        # Handle RedirectResponse for OIDC provisioning flow
+        if isinstance(response_body, RedirectResponse):
+            self.logger.debug(
+                f"Redirecting to {response_body.location} with status {response_body.status_code}"
+            )
+            response = Response(
+                status=response_body.status_code,
+                headers={"Location": response_body.location},
+            )
+            if response_body.access_token:
+                response.headers[AUTHENTICATION_HEADER] = response_body.access_token
+            if response_body.refresh_cookie:
+                response.set_cookie(
+                    COOKIE_NAME,
+                    response_body.refresh_cookie,
+                    httponly=True,
+                    secure=True,
+                    samesite="Strict",
+                )
+            return response
+
         if isinstance(response_body, dict):
             status_code = response_body.get("status_code", 200)
         elif request.path == "/system/presenter/handle_request":

@@ -99,6 +99,7 @@
             "gender_id": 1,
             "default_vote_weight": "1.000000",
             "organization_management_level": "superadmin",
+            "keycloak_id": "00000000-0000-0000-0000-000000000001",
             "is_present_in_meeting_ids": [
                 1
             ],
@@ -127,6 +128,7 @@
             "can_change_own_password": true,
             "gender_id": 2,
             "default_vote_weight": "1.000000",
+            "keycloak_id": "00000000-0000-0000-0000-000000000002",
             "committee_ids": [
                 1
             ],
@@ -144,10 +146,11 @@
             "is_active": true,
             "is_physical_person": true,
             "password": "316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg==",
-            "default_password": "jKwSLGCk",
+            "default_password": "b",
             "can_change_own_password": true,
             "gender_id": 3,
             "default_vote_weight": "1.000000",
+            "keycloak_id": "00000000-0000-0000-0000-000000000003",
             "option_ids": [8, 11],
             "meeting_user_ids": [3],
             "meeting_ids": [

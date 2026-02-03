@@ -21,6 +21,7 @@ from ...shared.interfaces.wsgi import RouteResponse
 from ...shared.oidc_validator import OidcTokenValidator
 from ...shared.util import ONE_ORGANIZATION_FQID
 from ..http_exceptions import Unauthorized
+from ..redirect_response import RedirectResponse
 from ..request import Request
 from .base_view import BaseView, route
 
@@ -102,38 +103,43 @@ class ActionView(BaseView):
             version = file.read().strip()
             return {"version": version}, None
 
-    @route("who-am-i", prefix="auth", method="POST", json=False)
-    def oidc_who_am_i(self, request: Request) -> RouteResponse:
+    @route("oidc-provision", prefix="auth", method="GET", json=False)
+    def oidc_provision_route(self, request: Request) -> RouteResponse:
         """
-        Handle OIDC who-am-i request (API-compatible with auth service).
+        Handle OIDC user provisioning and session creation after Keycloak login.
 
-        This endpoint validates OIDC tokens, looks up or provisions users,
-        and returns an OpenSlides access token for authenticated users.
+        This endpoint is called by Traefik after successful OIDC authentication.
+        It validates the Keycloak token, provisions the user if needed,
+        creates an OpenSlides session, and redirects to the original destination.
 
-        Expected headers:
+        Expected headers (set by Traefik OIDC middleware):
         - Authorization: Bearer <keycloak_access_token>
 
-        Response format (API-compatible with auth service):
-        - Success: {"success": true, "message": "Action handled successfully"}
-          + authentication header with access token
-        - Anonymous: {"success": true, "message": "anonymous"}
-        - Error: {"success": false, "message": "<error_message>"}
-        """
-        self.logger.debug("Start OIDC who-am-i request.")
+        Query parameters:
+        - redirect_uri: Original URL to redirect to after provisioning (default: "/")
 
-        # 1. Extract Bearer token from Authorization header
+        Response:
+        - HTTP 302 Redirect to redirect_uri with session cookies set
+        - On error: HTTP 302 Redirect to /login?error=<message>
+        """
+        self.logger.debug("Start OIDC provisioning request.")
+
+        # 1. Read redirect_uri from query parameter (fallback: "/")
+        redirect_uri = request.args.get("redirect_uri", "/")
+
+        # 2. Extract Bearer token from Authorization header
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.lower().startswith("bearer "):
-            self.logger.debug("No Bearer token in Authorization header, returning anonymous.")
-            return {"success": True, "message": "anonymous"}, None
+            self.logger.error("No Bearer token in Authorization header.")
+            return RedirectResponse(location="/login?error=no_token"), None
 
-        access_token = auth_header[7:]  # Remove "Bearer " prefix
+        keycloak_token = auth_header[7:]  # Remove "Bearer " prefix
 
         # Use database connection context for datastore access
         with get_new_os_conn() as conn:
             datastore = ExtendedDatabase(conn, self.logging, self.env)
 
-            # 2. Load OIDC config from organization
+            # 3. Load OIDC config from organization
             try:
                 organization = datastore.get(
                     ONE_ORGANIZATION_FQID,
@@ -147,44 +153,44 @@ class ActionView(BaseView):
                 )
             except Exception as e:
                 self.logger.error(f"Failed to get organization settings: {e}")
-                return {"success": False, "message": "Failed to load OIDC configuration"}, None
+                return RedirectResponse(location="/login?error=config_error"), None
 
             if not organization.get("oidc_enabled"):
                 self.logger.debug("OIDC not enabled in organization settings.")
-                return {"success": False, "message": "OIDC not enabled"}, None
+                return RedirectResponse(location="/login?error=oidc_disabled"), None
 
             provider_url = organization.get("oidc_provider_url")
             client_id = organization.get("oidc_client_id")
 
             if not provider_url or not client_id:
                 self.logger.error("OIDC provider URL or client ID not configured.")
-                return {"success": False, "message": "OIDC not properly configured"}, None
+                return RedirectResponse(location="/login?error=oidc_not_configured"), None
 
-            # 3. Validate token and extract keycloak_id (sub claim)
+            # 4. Validate token and extract keycloak_id (sub claim)
             try:
                 validator = OidcTokenValidator(
                     provider_url=provider_url,
                     client_id=client_id,
                     client_secret=organization.get("oidc_client_secret"),
                 )
-                token_payload = validator.validate_token(access_token)
+                token_payload = validator.validate_token(keycloak_token)
                 keycloak_id = token_payload.get("sub")
             except Exception as e:
                 self.logger.error(f"Token validation failed: {e}")
-                return {"success": False, "message": f"Token validation failed: {e}"}, None
+                return RedirectResponse(location="/login?error=token_invalid"), None
 
             if not keycloak_id:
                 self.logger.error("Missing 'sub' claim in token.")
-                return {"success": False, "message": "Missing 'sub' claim in token"}, None
+                return RedirectResponse(location="/login?error=missing_sub"), None
 
-            # 4. Get user info from Keycloak userinfo endpoint
+            # 5. Get user info from Keycloak userinfo endpoint
             try:
-                user_info = validator.get_user_info(access_token)
+                user_info = validator.get_user_info(keycloak_token)
             except Exception as e:
                 self.logger.error(f"Failed to fetch user info: {e}")
-                return {"success": False, "message": f"Failed to fetch user info: {e}"}, None
+                return RedirectResponse(location="/login?error=userinfo_failed"), None
 
-            # 5. Look up user by keycloak_id in datastore
+            # 6. Look up user by keycloak_id in datastore
             try:
                 users = datastore.filter(
                     "user",
@@ -194,7 +200,7 @@ class ActionView(BaseView):
                 )
             except Exception as e:
                 self.logger.error(f"Failed to look up user: {e}")
-                return {"success": False, "message": "Failed to look up user"}, None
+                return RedirectResponse(location="/login?error=user_lookup_failed"), None
 
             user: dict[str, Any] | None = None
 
@@ -203,35 +209,78 @@ class ActionView(BaseView):
                 self.logger.debug(f"Found existing user with keycloak_id: {keycloak_id}")
             elif len(users) > 1:
                 self.logger.error(f"Multiple users found with keycloak_id: {keycloak_id}")
-                return {"success": False, "message": "Multiple users found with keycloak_id"}, None
+                return RedirectResponse(location="/login?error=multiple_users"), None
             else:
-                # 6. User not found - provision via user.save_keycloak_account action
+                # 7. User not found - provision via user.save_keycloak_account action
                 self.logger.debug(f"User not found, provisioning new user for keycloak_id: {keycloak_id}")
                 try:
                     user_id = self._provision_oidc_user(keycloak_id, user_info)
                     if user_id:
                         user = {"id": user_id, "is_active": True}
                     else:
-                        return {"success": False, "message": "Failed to provision user"}, None
+                        return RedirectResponse(location="/login?error=provision_failed"), None
                 except Exception as e:
                     self.logger.error(f"Failed to provision user: {e}")
-                    return {"success": False, "message": f"Failed to provision user: {e}"}, None
+                    return RedirectResponse(location="/login?error=provision_failed"), None
 
-            # 7. Check if user is active
+            # 8. Check if user is active
             if not user.get("is_active", True):
                 self.logger.debug(f"User account is deactivated: {user.get('id')}")
-                return {"success": False, "message": "User account is deactivated"}, None
+                return RedirectResponse(location="/login?error=user_deactivated"), None
 
-        # 8. Create SSO session via auth service and get access token (outside db context)
+        # 9. Create SSO session via auth service (outside db context)
         try:
             user_id = user["id"]
             access_token, refresh_cookie = self.services.authentication().sso_login(user_id)
-            self.logger.debug(f"SSO login successful for user_id: {user_id}")
-            # Return tuple of (access_token, refresh_cookie) for application to set both
-            return {"success": True, "message": "Action handled successfully"}, (access_token, refresh_cookie)
+            self.logger.debug(f"SSO login successful for user_id: {user_id}, redirecting to: {redirect_uri}")
+
+            # 10. Return redirect response with session cookies
+            return RedirectResponse(
+                location=redirect_uri,
+                access_token=access_token,
+                refresh_cookie=refresh_cookie,
+            ), None
         except Exception as e:
             self.logger.error(f"Failed to create SSO session: {e}")
-            return {"success": False, "message": f"Failed to create session: {e}"}, None
+            return RedirectResponse(location="/login?error=session_failed"), None
+
+    @route("who-am-i", prefix="auth", method="POST", json=False)
+    def oidc_who_am_i(self, request: Request) -> RouteResponse:
+        """
+        Handle who-am-i request - returns user info for existing session.
+
+        This endpoint checks the existing OpenSlides session and returns user info.
+        It does NOT perform user provisioning - that's handled by oidc-provision.
+
+        Expected headers/cookies:
+        - authentication header with OpenSlides access token, OR
+        - refreshId cookie with OpenSlides refresh token
+
+        Response format (API-compatible with auth service):
+        - Success: {"success": true, "message": "Action handled successfully"}
+          + authentication header with access token
+        - Anonymous: {"success": true, "message": "anonymous"}
+        - Error: {"success": false, "message": "<error_message>"}
+        """
+        self.logger.debug("Start who-am-i request.")
+
+        # Check for existing OpenSlides session via auth service
+        try:
+            user_id, access_token = self.get_user_id_from_headers(
+                request.headers, request.cookies
+            )
+
+            if user_id and user_id > 0:
+                self.logger.debug(f"User authenticated via session: user_id={user_id}")
+                return {"success": True, "message": "Action handled successfully"}, access_token
+
+            # No valid session found
+            self.logger.debug("No valid session found, returning anonymous.")
+            return {"success": True, "message": "anonymous"}, None
+
+        except Exception as e:
+            self.logger.error(f"Session check failed: {e}")
+            return {"success": True, "message": "anonymous"}, None
 
     def _provision_oidc_user(
         self, keycloak_id: str, user_info: dict[str, Any]
