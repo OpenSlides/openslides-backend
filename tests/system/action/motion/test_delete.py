@@ -102,17 +102,12 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
         all_origin_ids: list[int] = [111],
     ) -> None:
         self.create_motion(meeting_id, base, motion_data={"origin_id": origin_id})
-        events = [
-            event[0]
-            for id_ in all_origin_ids
-            for event in [
-                self.get_update_list_events(
-                    fqid_from_collection_and_id("motion", id_),
-                    add={"all_derived_motion_ids": [base]},
-                )
-            ]
-        ]
-        self.perform_write_request(events)
+        for id_ in all_origin_ids:
+            self.update_model(
+                fqid_from_collection_and_id("motion", id_),
+                {},
+                {"add": {"all_derived_motion_ids": [base]}},
+            )
 
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
         self.create_meeting(4)
