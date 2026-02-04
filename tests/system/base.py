@@ -1,4 +1,5 @@
 import threading
+from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
@@ -220,10 +221,8 @@ class BaseSystemTestCase(TestCase):
             print(response.json)
         self.assertEqual(response.status_code, code)
 
-    def create_model(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> None:
-        create_events = self.get_create_events(fqid, data, deleted)
+    def create_model(self, fqid: str, data: dict[str, Any] = {}) -> None:
+        create_events = self.get_create_events(fqid, data)
         self.perform_write_request(create_events)
         self.adjust_id_sequences()
 
@@ -231,15 +230,11 @@ class BaseSystemTestCase(TestCase):
         update_events = self.get_update_events(fqid, data)
         self.perform_write_request(update_events)
 
-    def get_create_events(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> list[Event]:
+    def get_create_events(self, fqid: str, data: dict[str, Any] = {}) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
-        if deleted:
-            events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
@@ -301,6 +296,21 @@ class BaseSystemTestCase(TestCase):
                     )
                 )
             self.connection.commit()
+
+    def update_created_fqids(self) -> None:
+        """
+        Helper method for explicit update of self.created_fqids.
+        Ensures correct behaviour of set_models after creating models by the request.
+        """
+        self.created_fqids.update(
+            [
+                fqid
+                for collection, data in self.datastore.get_everything().items()
+                for id_ in data.keys()
+                if (fqid := fqid_from_collection_and_id(collection, id_))
+                not in self.created_fqids
+            ]
+        )
 
     def check_auth_mockers_started(self) -> bool:
         if (
@@ -657,7 +667,9 @@ class BaseSystemTestCase(TestCase):
             else:
                 events_data_meeting_users_to_delete.add(mu["id"])
 
-        events_data_groups: dict[int, dict[str, list[int]]] = {}
+        events_data_groups: dict[int, dict[str, list[int]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         for group_id, group in all_users_groups.items():
             if group_id not in target_group_ids and (
                 meeting_user_ids := group.get("meeting_user_ids")
@@ -668,9 +680,7 @@ class BaseSystemTestCase(TestCase):
                         meeting_user_id in current_meeting_users
                         and meeting_user_id not in events_data_meeting_users_to_delete
                     ):
-                        events_data_groups.setdefault(group_id, {}).setdefault(
-                            "remove", []
-                        ).append(meeting_user_id)
+                        events_data_groups[group_id]["remove"].append(meeting_user_id)
 
         last_meeting_user_id = max(
             [
@@ -696,9 +706,7 @@ class BaseSystemTestCase(TestCase):
             if group_id not in current_group_ids:
                 meeting_id = all_users_groups[group_id]["meeting_id"]
                 meeting_user_id = remaining_and_new_meeting_users[meeting_id]["id"]
-                events_data_groups.setdefault(group_id, {}).setdefault(
-                    "add", []
-                ).append(meeting_user_id)
+                events_data_groups[group_id]["add"].append(meeting_user_id)
 
         # Build and execute events
         events = []
@@ -713,13 +721,12 @@ class BaseSystemTestCase(TestCase):
         for group_id, list_events_data in events_data_groups.items():
             events += self.get_update_list_events(
                 f"group/{group_id}",
-                add={"meeting_user_ids": list_events_data.get("add", {})},
-                remove={"meeting_user_ids": list_events_data.get("remove", {})},
+                add={"meeting_user_ids": list_events_data.get("add", [])},
+                remove={"meeting_user_ids": list_events_data.get("remove", [])},
             )
 
         if events:
             self.perform_write_request(events)
-            self.adjust_id_sequences()
 
         return [mu["id"] for mu in remaining_and_new_meeting_users.values()]
 
