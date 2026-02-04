@@ -585,7 +585,9 @@ class Checker:
                 parent = self.find_model(collection, parent_ids.pop())
                 assert parent
                 parent_is_public = parent["is_public"]
-                parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+                parent_inherited_access_group_ids = parent.get(
+                    "inherited_access_group_ids", []
+                )
             else:
                 # If the parent has no meeting_mediafiles, but the child does,
                 # that means that both are published and that the parent just

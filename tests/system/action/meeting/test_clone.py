@@ -2161,3 +2161,42 @@ class MeetingClone(BaseActionTestCase):
         self.set_organization_management_level(None)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_clone_with_folder_structure_but_no_access_groups(self) -> None:
+        self.create_meeting(1101)
+        self.set_models(
+            {
+                "meeting/1101": {
+                    "mediafile_ids": [39060, 39065],
+                    "meeting_mediafile_ids": [39060, 39065],
+                },
+                "mediafile/39060": {
+                    "filename": "File.pdf",
+                    "filesize": 137433,
+                    "mimetype": "application/pdf",
+                    "owner_id": "meeting/1101",
+                    "parent_id": 39065,
+                    "pdf_information": Jsonb({"pages": 12}),
+                    "title": "File.pdf",
+                },
+                "mediafile/39065": {
+                    "child_ids": [39060],
+                    "is_directory": True,
+                    "owner_id": "meeting/1101",
+                    "title": "Ordner",
+                },
+                "meeting_mediafile/39060": {
+                    "is_public": True,
+                    "mediafile_id": 39060,
+                    "meeting_id": 1101,
+                },
+                "meeting_mediafile/39065": {
+                    "is_public": True,
+                    "mediafile_id": 39065,
+                    "meeting_id": 1101,
+                },
+            }
+        )
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1101, "admin_ids": [1]})
+        self.assert_status_code(response, 200)
