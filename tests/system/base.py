@@ -32,7 +32,7 @@ from openslides_backend.shared.exceptions import (
     ModelDoesNotExist,
 )
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.event import Event, EventType, ListFields
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
@@ -227,8 +227,16 @@ class BaseSystemTestCase(TestCase):
         self.perform_write_request(create_events)
         self.adjust_id_sequences()
 
-    def update_model(self, fqid: str, data: dict[str, Any]) -> None:
-        update_events = self.get_update_events(fqid, data)
+    def update_model(
+        self, fqid: str, fields: dict[str, Any], list_fields: ListFields = {}
+    ) -> None:
+        update_events = self.get_update_events(fqid, fields)
+        if list_fields:
+            update_events.extend(
+                self.get_update_list_events(
+                    fqid, list_fields.get("add", {}), list_fields.get("remove", {})
+                )
+            )
         self.perform_write_request(update_events)
 
     def get_create_events(
@@ -244,7 +252,10 @@ class BaseSystemTestCase(TestCase):
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
         self.validate_fields(fqid, data)
-        return [Event(type=EventType.Update, fqid=fqid, fields=data)]
+        if data:
+            return [Event(type=EventType.Update, fqid=fqid, fields=data)]
+        else:
+            return []
 
     def get_update_list_events(
         self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
@@ -705,17 +716,17 @@ class BaseSystemTestCase(TestCase):
     def add_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        events = self.get_update_list_events(
+        self.update_model(
             fqid_from_collection_and_id("group", group_id),
-            add={"permissions": [str(p) for p in permissions]},
+            {},
+            {"add": {"permissions": [str(p) for p in permissions]}},
         )
-        self.perform_write_request(events)
 
     def remove_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        events = self.get_update_list_events(
+        self.update_model(
             fqid_from_collection_and_id("group", group_id),
-            remove={"permissions": [str(p) for p in permissions]},
+            {},
+            {"remove": {"permissions": [str(p) for p in permissions]}},
         )
-        self.perform_write_request(events)
