@@ -15,9 +15,9 @@ import requests
 from ..shared.env import DEV_PASSWORD
 from ..shared.exceptions import PresenterException
 from ..shared.filters import FilterOperator
+from ..shared.oidc_config import get_oidc_config
 from ..shared.oidc_validator import OidcTokenValidator
 from ..shared.schema import schema_version
-from ..shared.util import ONE_ORGANIZATION_FQID
 from .base import BasePresenter
 from .presenter import register_presenter
 
@@ -57,34 +57,23 @@ class OidcWhoAmI(BasePresenter):
     def get_result(self) -> dict[str, Any]:
         access_token = self.data["access_token"]
 
-        # 1. Load OIDC config from organization
-        organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID,
-            [
-                "oidc_enabled",
-                "oidc_provider_url",
-                "oidc_client_id",
-                "oidc_client_secret",
-            ],
-            lock_result=False,
-        )
+        # 1. Load OIDC config from environment variables
+        oidc_config = get_oidc_config()
 
-        if not organization.get("oidc_enabled"):
+        if not oidc_config.enabled:
             raise PresenterException(
-                "OIDC authentication is not enabled in OpenSlides configuration"
+                "OIDC authentication is not enabled via environment variables"
             )
 
-        provider_url = organization.get("oidc_provider_url")
-        client_id = organization.get("oidc_client_id")
-
-        if not provider_url or not client_id:
+        if not oidc_config.provider_url or not oidc_config.client_id:
             raise PresenterException("OIDC provider URL or client ID not configured")
 
         # 2. Validate token and extract keycloak_id (sub claim)
         validator = OidcTokenValidator(
-            provider_url=provider_url,
-            client_id=client_id,
-            client_secret=organization.get("oidc_client_secret"),
+            provider_url=oidc_config.provider_url,
+            client_id=oidc_config.client_id,
+            client_secret=oidc_config.client_secret,
+            internal_provider_url=oidc_config.internal_provider_url,
         )
 
         try:

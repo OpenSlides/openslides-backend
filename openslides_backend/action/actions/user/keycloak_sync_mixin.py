@@ -1,8 +1,8 @@
 from typing import Any, Optional
 
 from ....shared.keycloak_admin_client import KeycloakAdminClient
+from ....shared.oidc_config import get_oidc_config
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.util import ONE_ORGANIZATION_FQID
 from ...action import Action
 
 # Fields that are synchronized to Keycloak (Keycloak-leading)
@@ -31,17 +31,12 @@ class KeycloakSyncMixin(Action):
             KeycloakAdminClient if Keycloak sync is enabled and configured,
             None otherwise.
         """
-        org = self.datastore.get(
-            ONE_ORGANIZATION_FQID,
-            ["oidc_enabled", "oidc_admin_api_enabled", "oidc_admin_api_url"],
-            lock_result=False,
-        )
+        oidc_config = get_oidc_config()
 
-        if not org.get("oidc_enabled") or not org.get("oidc_admin_api_enabled"):
+        if not oidc_config.enabled or not oidc_config.admin_api_enabled:
             return None
 
-        admin_api_url = org.get("oidc_admin_api_url")
-        if not admin_api_url:
+        if not oidc_config.admin_api_url:
             return None
 
         access_token = self.services.authentication().access_token
@@ -49,7 +44,7 @@ class KeycloakSyncMixin(Action):
             return None
 
         return KeycloakAdminClient(
-            admin_api_url=admin_api_url,
+            admin_api_url=oidc_config.admin_api_url,
             access_token=access_token,
             logger=self.logger,
         )
@@ -117,17 +112,12 @@ class KeycloakDeleteSyncMixin(Action):
             KeycloakAdminClient if Keycloak sync is enabled and configured,
             None otherwise.
         """
-        org = self.datastore.get(
-            ONE_ORGANIZATION_FQID,
-            ["oidc_enabled", "oidc_admin_api_enabled", "oidc_admin_api_url"],
-            lock_result=False,
-        )
+        oidc_config = get_oidc_config()
 
-        if not org.get("oidc_enabled") or not org.get("oidc_admin_api_enabled"):
+        if not oidc_config.enabled or not oidc_config.admin_api_enabled:
             return None
 
-        admin_api_url = org.get("oidc_admin_api_url")
-        if not admin_api_url:
+        if not oidc_config.admin_api_url:
             return None
 
         access_token = self.services.authentication().access_token
@@ -135,7 +125,7 @@ class KeycloakDeleteSyncMixin(Action):
             return None
 
         return KeycloakAdminClient(
-            admin_api_url=admin_api_url,
+            admin_api_url=oidc_config.admin_api_url,
             access_token=access_token,
             logger=self.logger,
         )

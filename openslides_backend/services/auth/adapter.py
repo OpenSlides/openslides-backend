@@ -102,7 +102,10 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         """
         Create a session for a user via SSO (OIDC/SAML) login.
         """
+        self.logger.debug(f"SSO login for user_id: {user_id}")
         try:
-            return self.auth_handler.sso_login(user_id)
+            access_token, refresh_cookie = self.auth_handler.sso_login(user_id)
+            self.logger.debug(f"SSO login successful: access_token={access_token[:30]}..., refresh_cookie={refresh_cookie[:30] if refresh_cookie else 'None'}...")
+            return access_token, refresh_cookie
         except AuthenticateException as e:
             raise AuthenticationException(e.message)

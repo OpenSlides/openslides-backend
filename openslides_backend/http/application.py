@@ -12,6 +12,9 @@ from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
 
 from ..services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
+
+# OIDC session cookie name (used instead of auth service cookie in OIDC mode)
+OIDC_SESSION_COOKIE = "openslides_session"
 from ..shared.env import is_truthy
 from ..shared.exceptions import ActionException, ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
@@ -135,12 +138,13 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             if response_body.access_token:
                 response.headers[AUTHENTICATION_HEADER] = response_body.access_token
             if response_body.refresh_cookie:
+                # Use OIDC session cookie for OIDC redirects
                 response.set_cookie(
-                    COOKIE_NAME,
+                    OIDC_SESSION_COOKIE,
                     response_body.refresh_cookie,
                     httponly=True,
                     secure=True,
-                    samesite="Strict",
+                    samesite="Lax",  # Lax to allow redirect from Keycloak
                 )
             return response
 

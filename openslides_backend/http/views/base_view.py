@@ -1,9 +1,14 @@
 import inspect
+import os
 import re
+import threading
+import time
+from base64 import b64encode
 from collections.abc import Callable
 from re import Pattern
 from typing import Any, Optional
 
+import requests
 from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
@@ -17,6 +22,33 @@ from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
 
 ROUTE_OPTIONS_ATTR = "__route_options"
+
+# Session invalidation cache for OIDC backchannel logout
+# Stores invalidated session IDs with timestamps: {sid: timestamp}
+_invalidated_sessions: dict[str, float] = {}
+_sessions_lock = threading.Lock()
+_SESSION_MAX_AGE = 900  # 15 minutes - sessions older than this are pruned
+
+
+def invalidate_session(session_id: str) -> None:
+    """Add a session ID to the invalidated sessions cache."""
+    with _sessions_lock:
+        _invalidated_sessions[session_id] = time.time()
+
+
+def is_session_invalidated(session_id: str) -> bool:
+    """
+    Check if a session has been invalidated via backchannel logout.
+
+    Also prunes expired entries from the cache.
+    """
+    cutoff = time.time() - _SESSION_MAX_AGE
+    with _sessions_lock:
+        # Prune old entries
+        to_remove = [k for k, v in _invalidated_sessions.items() if v < cutoff]
+        for k in to_remove:
+            del _invalidated_sessions[k]
+        return session_id in _invalidated_sessions
 
 RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
 
@@ -84,13 +116,153 @@ class BaseView(View):
     ) -> tuple[int, str | None]:
         """
         Returns user id from authentication service using HTTP headers.
+
+        In OIDC mode, checks for Bearer token in Authorization or Authentication header
+        and validates it via JWKS. Falls back to auth-service otherwise.
         """
+        # Check for OIDC Bearer token (Authorization or Authentication header)
+        # Traefik OIDC middleware may send either header
+        auth_header = headers.get("Authorization", "") or headers.get("Authentication", "")
+        if auth_header.lower().startswith("bearer "):
+            from ...shared.oidc_validator import get_oidc_validator
+
+            validator = get_oidc_validator()
+            if validator:
+                return self._authenticate_oidc(auth_header[7:], validator)
+
+        # Fallback: Auth-Service
         self.services.authentication().set_authentication(
             headers.get(AUTHENTICATION_HEADER, ""), cookies.get(COOKIE_NAME, "")
         )
         user_id, access_token = self.services.authentication().authenticate()
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
+
+    def _authenticate_oidc(
+        self, token: str, validator: Any
+    ) -> tuple[int, str | None]:
+        """
+        Validate OIDC token and return user_id.
+
+        Looks up user by keycloak_id, provisioning if necessary.
+        """
+        from ...services.postgresql.db_connection_handling import get_new_os_conn
+        from ...services.database.extended_database import ExtendedDatabase
+        from ...shared.filters import FilterOperator
+
+        # 1. Token validieren
+        payload = validator.validate_token(token)
+        keycloak_id = payload.get("sub")
+        if not keycloak_id:
+            self.logger.error("Missing 'sub' claim in token")
+            return 0, None
+
+        # 1b. Check if session was invalidated via backchannel logout
+        session_id = payload.get("sid")
+        if session_id and is_session_invalidated(session_id):
+            self.logger.debug(f"Session {session_id} invalidated via backchannel logout")
+            return 0, None
+
+        # 2. User lookup via keycloak_id
+        with get_new_os_conn() as conn:
+            datastore = ExtendedDatabase(conn, self.logging, self.env)
+            users = datastore.filter(
+                "user",
+                FilterOperator("keycloak_id", "=", keycloak_id),
+                ["id", "is_active"],
+                lock_result=False,
+            )
+
+            if len(users) == 1:
+                user = next(iter(users.values()))
+                if not user.get("is_active", True):
+                    self.logger.debug(f"User account is deactivated: {user.get('id')}")
+                    return 0, None
+                user_id = user["id"]
+                self.logger.debug(f"OIDC user authenticated: {user_id}")
+                return user_id, None
+            elif len(users) > 1:
+                self.logger.error(f"Multiple users found with keycloak_id: {keycloak_id}")
+                return 0, None
+
+        # 3. User not found - provision via userinfo endpoint
+        self.logger.debug(f"User not found, provisioning for keycloak_id: {keycloak_id}")
+        try:
+            user_info = validator.get_user_info(token)
+            user_id = self._provision_oidc_user(keycloak_id, user_info)
+            if user_id:
+                self.logger.debug(f"Provisioned new OIDC user: {user_id}")
+                return user_id, None
+        except Exception as e:
+            self.logger.error(f"Failed to provision user: {e}")
+
+        return 0, None
+
+    def _provision_oidc_user(
+        self, keycloak_id: str, user_info: dict[str, Any]
+    ) -> int | None:
+        """
+        Provision a new user via the internal save_keycloak_account action.
+        """
+        from ...shared.env import DEV_PASSWORD
+        from ...shared.exceptions import ServerError
+
+        # Prepare the action data from user_info
+        action_data = {
+            "keycloak_id": keycloak_id,
+            "email": user_info.get("email"),
+            "given_name": user_info.get("given_name"),
+            "family_name": user_info.get("family_name"),
+            "preferred_username": user_info.get("preferred_username"),
+            "name": user_info.get("name"),
+        }
+
+        # Remove None values
+        action_data = {k: v for k, v in action_data.items() if v is not None}
+
+        # Get internal auth password
+        if self.env.is_dev_mode():
+            internal_password = DEV_PASSWORD
+        else:
+            filename = self.env.INTERNAL_AUTH_PASSWORD_FILE
+            if filename:
+                with open(filename) as f:
+                    internal_password = f.read().strip()
+            else:
+                raise ServerError("Internal authentication not configured")
+
+        # Make internal HTTP request to the action endpoint
+        action_port = os.environ.get("ACTION_PORT", "9002")
+        action_url = f"http://localhost:{action_port}/internal/handle_request"
+
+        response = requests.post(
+            action_url,
+            json=[
+                {
+                    "action": "user.save_keycloak_account",
+                    "data": [action_data],
+                }
+            ],
+            headers={
+                "Authorization": b64encode(internal_password.encode()).decode(),
+                "Content-Type": "application/json",
+            },
+            timeout=10,
+        )
+
+        if response.status_code != 200:
+            self.logger.error(
+                f"Failed to provision user: HTTP {response.status_code} - {response.text}"
+            )
+            raise Exception(f"Failed to provision user: HTTP {response.status_code}")
+
+        result = response.json()
+        if result.get("success") and result.get("results"):
+            action_results = result["results"]
+            if action_results and action_results[0]:
+                return action_results[0][0].get("user_id")
+
+        return None
 
     def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(

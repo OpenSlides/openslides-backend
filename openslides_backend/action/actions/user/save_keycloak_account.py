@@ -9,12 +9,11 @@ from typing import Any
 
 import fastjsonschema
 
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import Event
+from ....shared.oidc_config import get_oidc_config
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
 from ...mixins.send_email_mixin import EmailCheckMixin
@@ -72,18 +71,16 @@ class UserSaveKeycloakAccount(
     skip_archived_meeting_check = True
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
-        organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID,
-            ["oidc_enabled", "oidc_attr_mapping"],
-            lock_result=False,
-        )
-        if not organization.get("oidc_enabled"):
+        # Load OIDC config from environment variables
+        oidc_config = get_oidc_config()
+
+        if not oidc_config.enabled:
             raise ActionException(
-                "OIDC authentication is not enabled in OpenSlides configuration"
+                "OIDC authentication is not enabled via environment variables"
             )
 
-        # Use custom mapping from organization, or default OIDC claim mapping
-        self.oidc_attr_mapping = organization.get("oidc_attr_mapping") or {}
+        # Use custom mapping from environment, or default OIDC claim mapping
+        self.oidc_attr_mapping = oidc_config.attr_mapping
         if not isinstance(self.oidc_attr_mapping, dict):
             self.oidc_attr_mapping = {}
 

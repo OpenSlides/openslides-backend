@@ -25,27 +25,31 @@ class OidcTokenValidator:
         provider_url: str,
         client_id: str,
         client_secret: str | None = None,
+        internal_provider_url: str | None = None,
     ):
         """
         Initialize the OIDC validator.
 
         Args:
-            provider_url: Keycloak realm URL (e.g. https://keycloak/realms/openslides)
+            provider_url: Keycloak realm URL for issuer validation (external URL)
             client_id: OIDC client ID
             client_secret: OIDC client secret (optional, for confidential clients)
+            internal_provider_url: Internal URL for JWKS/userinfo (optional, uses provider_url if not set)
         """
         self.issuer = provider_url
         self.audience = client_id
         self.client_secret = client_secret
-        self.jwks_uri = f"{provider_url}/protocol/openid-connect/certs"
-        self.userinfo_uri = f"{provider_url}/protocol/openid-connect/userinfo"
+        # Use internal URL for JWKS/userinfo if provided (for Docker networking)
+        base_url = internal_provider_url or provider_url
+        self.jwks_uri = f"{base_url}/protocol/openid-connect/certs"
+        self.userinfo_uri = f"{base_url}/protocol/openid-connect/userinfo"
         self._jwks_client: PyJWKClient | None = None
 
     @property
     def jwks_client(self) -> PyJWKClient:
         """Lazy-load JWKS client."""
         if self._jwks_client is None:
-            self._jwks_client = PyJWKClient(self.jwks_uri)
+            self._jwks_client = PyJWKClient(self.jwks_uri, cache_keys=True, lifespan=300)
         return self._jwks_client
 
     def validate_token(self, token: str) -> dict[str, Any]:
@@ -153,3 +157,81 @@ class OidcTokenValidator:
                 f"'sub' claim must be a string, got {type(keycloak_id).__name__}"
             )
         return keycloak_id
+
+    def validate_logout_token(self, token: str) -> dict[str, Any]:
+        """
+        Validate OIDC logout token from Keycloak backchannel logout.
+
+        Args:
+            token: The JWT logout token string
+
+        Returns:
+            Decoded token payload containing 'sid' claim
+
+        Raises:
+            PresenterException: If token validation fails or required claims are missing
+        """
+        try:
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            # Logout tokens use 'aud' claim properly, so we can verify it
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=self.audience,
+                issuer=self.issuer,
+            )
+
+            # Validate backchannel-logout event claim
+            events = payload.get("events", {})
+            if "http://schemas.openid.net/event/backchannel-logout" not in events:
+                raise PresenterException(
+                    "Invalid logout token: missing backchannel-logout event"
+                )
+
+            # Validate sid claim
+            if "sid" not in payload:
+                raise PresenterException("Missing 'sid' claim in logout token")
+
+            return payload
+        except PresenterException:
+            raise
+        except jwt.exceptions.InvalidSignatureError:
+            raise PresenterException("Invalid logout token signature")
+        except jwt.exceptions.ExpiredSignatureError:
+            raise PresenterException("Logout token has expired")
+        except jwt.exceptions.InvalidIssuerError:
+            raise PresenterException("Invalid logout token issuer")
+        except jwt.exceptions.InvalidAudienceError:
+            raise PresenterException("Invalid logout token audience")
+        except jwt.exceptions.DecodeError as e:
+            raise PresenterException(f"Logout token decode error: {e}")
+        except jwt.exceptions.PyJWKClientError as e:
+            raise PresenterException(f"JWKS fetch error: {e}")
+        except Exception as e:
+            raise PresenterException(f"Logout token validation failed: {e}")
+
+
+# Singleton instance for reuse across requests
+_validator_instance: OidcTokenValidator | None = None
+
+
+def get_oidc_validator() -> OidcTokenValidator | None:
+    """
+    Get singleton OidcTokenValidator instance.
+
+    Returns None if OIDC is not enabled or not properly configured.
+    """
+    global _validator_instance
+    if _validator_instance is None:
+        from .oidc_config import get_oidc_config
+
+        config = get_oidc_config()
+        if config.enabled and config.provider_url and config.client_id:
+            _validator_instance = OidcTokenValidator(
+                provider_url=config.provider_url,
+                client_id=config.client_id,
+                client_secret=config.client_secret,
+                internal_provider_url=config.internal_provider_url,
+            )
+    return _validator_instance
