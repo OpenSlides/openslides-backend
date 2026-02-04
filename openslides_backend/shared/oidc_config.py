@@ -24,6 +24,8 @@ class OidcConfig:
     login_button_text: str
     admin_api_enabled: bool
     admin_api_url: str
+    admin_client_id: str  # Client ID for admin API (needs service account)
+    admin_client_secret: str  # Client secret for admin API
     attr_mapping: dict
 
     @classmethod
@@ -35,17 +37,24 @@ class OidcConfig:
         except json.JSONDecodeError:
             attr_mapping = {}
 
+        # For admin API, use dedicated admin credentials if provided,
+        # otherwise fall back to the regular client credentials
+        client_id = os.environ.get("OIDC_CLIENT_ID", "")
+        client_secret = os.environ.get("OIDC_CLIENT_SECRET", "")
+
         return cls(
             enabled=is_truthy(os.environ.get("OIDC_ENABLED", "false")),
             provider_url=os.environ.get("OIDC_PROVIDER_URL", ""),
             internal_provider_url=os.environ.get("OIDC_INTERNAL_PROVIDER_URL", ""),
-            client_id=os.environ.get("OIDC_CLIENT_ID", ""),
-            client_secret=os.environ.get("OIDC_CLIENT_SECRET", ""),
+            client_id=client_id,
+            client_secret=client_secret,
             login_button_text=os.environ.get("OIDC_LOGIN_BUTTON_TEXT", "OIDC login"),
             admin_api_enabled=is_truthy(
                 os.environ.get("OIDC_ADMIN_API_ENABLED", "false")
             ),
             admin_api_url=os.environ.get("OIDC_ADMIN_API_URL", ""),
+            admin_client_id=os.environ.get("OIDC_ADMIN_CLIENT_ID", client_id),
+            admin_client_secret=os.environ.get("OIDC_ADMIN_CLIENT_SECRET", client_secret),
             attr_mapping=attr_mapping,
         )
 

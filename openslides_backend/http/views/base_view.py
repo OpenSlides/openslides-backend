@@ -150,6 +150,10 @@ class BaseView(View):
         from ...services.database.extended_database import ExtendedDatabase
         from ...shared.filters import FilterOperator
 
+        # Store the Bearer token in authentication service so it's available
+        # for downstream code (e.g., Keycloak Admin API calls)
+        self.services.authentication().set_authentication(token, "")
+
         # 1. Token validieren
         payload = validator.validate_token(token)
         keycloak_id = payload.get("sub")

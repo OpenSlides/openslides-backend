@@ -18,12 +18,14 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
+from .keycloak_sync_mixin import KeycloakCreateSyncMixin
 from .password_mixins import SetPasswordMixin
 from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_exists
 
 
 @register_action("user.create")
 class UserCreate(
+    KeycloakCreateSyncMixin,
     UserMixin,
     EmailCheckMixin,
     CreateAction,

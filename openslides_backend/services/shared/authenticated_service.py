@@ -14,6 +14,10 @@ class AuthenticatedServiceInterface(Protocol):
 
 
 class AuthenticatedService(AuthenticatedServiceInterface):
+    # Initialize with empty strings to avoid AttributeError if accessed before set
+    access_token: str = ""
+    refresh_id: str = ""
+
     def set_authentication(self, access_token: str, refresh_id: str) -> None:
         self.access_token = access_token
         self.refresh_id = refresh_id
