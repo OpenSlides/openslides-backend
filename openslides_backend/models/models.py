@@ -3140,7 +3140,7 @@ class User(Model):
         is_view_field=True,
         read_only=True,
         constraints={
-            "description": "Calculated. All ids from meetings calculated via meeting_user and group_ids as integers."
+            "description": "Calculated. All ids from meetings calculated via meeting_user."
         },
     )
     organization_id = fields.OrganizationField(

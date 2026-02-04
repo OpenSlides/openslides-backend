@@ -36,12 +36,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         collection: str,
         should_be_translated: bool,
     ) -> Any:
-        # TODO: remove when empty back relations are removed from initial data files
-        if value == [] and not (
-            collection == "motion_state" and field_name == "restrictions"
-        ):
-            return None
-
         # Update translatable values
         translatable_fields = {
             "organization": [

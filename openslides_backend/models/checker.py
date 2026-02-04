@@ -376,6 +376,13 @@ class Checker:
                 )
 
             # TODO: move the validation logic to `field.validate` methods. Merge with the check from check_normal_fields().
+            # There's a bit of a problem with this, among others:
+            # - The fqid checking cannot be exactly brought over bc circular import on model_registry.
+            #   It may be possible to read the possible collections from the Field object, I haven't looked into how to do it.
+            # - Some of the validate methods already in existence seem to have been written with other functionalities in mind.
+            #   F.e. the BooleanField.validate allows values like "1", "true", "yes", "t" and "y" and equates them to True.
+            #   This seems to be for the imports. Moving all checking functionality from here to there may very well cause problems with those.
+            #   Keeping the functionality as-is means widening the amount of values allowed here. We'll have to make a decision there.
             if not checker(model[field]):
                 error = f"{collection}/{model['id']}/{field}: Type error: Type is not {field_type}"
                 self.errors.append(error)
@@ -515,7 +522,6 @@ class Checker:
                     foreign_field,
                     basemsg,
                 )
-            # TODO: cleanup. Unreachable code (mode and collection are checked in split_fqid), but error message there is not too useful
             elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
@@ -579,7 +585,9 @@ class Checker:
                 parent = self.find_model(collection, parent_ids.pop())
                 assert parent
                 parent_is_public = parent["is_public"]
-                parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+                parent_inherited_access_group_ids = parent.get(
+                    "inherited_access_group_ids", []
+                )
             else:
                 # If the parent has no meeting_mediafiles, but the child does,
                 # that means that both are published and that the parent just
@@ -660,8 +668,6 @@ class Checker:
         try:
             collection, _id = collection_and_id_from_fqid(fqid)
             assert collection
-            if self.mode == "external" and collection not in self.allowed_collections:
-                raise CheckException(f"Fqid {fqid} has an invalid collection.")
             return collection, _id
         except (ValueError, AttributeError, AssertionError, IndexError):
             raise CheckException(f"Fqid {fqid} is malformed")
