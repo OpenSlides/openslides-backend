@@ -303,13 +303,9 @@ class BaseSystemTestCase(TestCase):
         Ensures correct behaviour of set_models after creating models by the request.
         """
         self.created_fqids.update(
-            [
-                fqid
-                for collection, data in self.datastore.get_everything().items()
-                for id_ in data.keys()
-                if (fqid := fqid_from_collection_and_id(collection, id_))
-                not in self.created_fqids
-            ]
+            fqid_from_collection_and_id(collection, id_)
+            for collection, data in self.datastore.get_everything().items()
+            for id_ in data.keys()
         )
 
     def check_auth_mockers_started(self) -> bool:
