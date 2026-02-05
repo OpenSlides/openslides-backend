@@ -232,6 +232,8 @@ class BaseSystemTestCase(TestCase):
     ) -> None:
         if fields:
             update_events = self.get_update_events(fqid, fields)
+        else:
+            update_events = []
         if list_fields:
             update_events.extend(
                 self.get_update_list_events(
