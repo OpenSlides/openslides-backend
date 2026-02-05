@@ -24,7 +24,8 @@ def main() -> int:
 
     everything = datastore.get_everything()
 
-    print(dumps(everything))
+    #print(dumps(everything))
+    print(dumps(everything, indent=4, sort_keys=True, default=str))
 
     return 0
 
