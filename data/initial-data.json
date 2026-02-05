@@ -54,15 +54,6 @@
                 "is_active": "is_active",
                 "is_physical_person": "is_person",
                 "member_number": "member_number"
-              },
-            "oidc_enabled": false,
-            "oidc_login_button_text": "OIDC Login",
-            "oidc_attr_mapping": {
-                "keycloak_id": "sub",
-                "title": "title",
-                "first_name": "given_name",
-                "last_name": "family_name",
-                "email": "email"
               }
         }
     },

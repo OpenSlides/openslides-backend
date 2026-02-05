@@ -2337,14 +2337,6 @@ class Organization(Model):
     saml_metadata_idp = fields.TextField()
     saml_metadata_sp = fields.TextField()
     saml_private_key = fields.TextField()
-    oidc_enabled = fields.BooleanField()
-    oidc_provider_url = fields.CharField()
-    oidc_client_id = fields.CharField()
-    oidc_client_secret = fields.CharField()
-    oidc_login_button_text = fields.CharField(default="OIDC login")
-    oidc_attr_mapping = fields.JSONField()
-    oidc_admin_api_enabled = fields.BooleanField()
-    oidc_admin_api_url = fields.CharField()
     committee_ids = fields.RelationListField(
         to={"committee": "organization_id"}, is_view_field=True, is_primary=True
     )
