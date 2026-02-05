@@ -94,6 +94,9 @@ class UserCreate(
         elif re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
         self.check_locking_status(instance.get("meeting_id"), instance, None, None)
+        # Generate default_password BEFORE super() so KeycloakCreateSyncMixin can use it
+        if not is_sso_user and not instance.get("default_password"):
+            instance["default_password"] = get_random_password()
         instance = super().update_instance(instance)
         if is_sso_user:
             instance["can_change_own_password"] = False
@@ -104,8 +107,6 @@ class UserCreate(
                     f"user {sso_id} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
                 )
         else:
-            if not instance.get("default_password"):
-                instance["default_password"] = get_random_password()
             self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
