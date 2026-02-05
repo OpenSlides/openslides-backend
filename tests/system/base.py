@@ -230,7 +230,8 @@ class BaseSystemTestCase(TestCase):
     def update_model(
         self, fqid: str, fields: dict[str, Any], list_fields: ListFields = {}
     ) -> None:
-        update_events = self.get_update_events(fqid, fields)
+        if fields:
+            update_events = self.get_update_events(fqid, fields)
         if list_fields:
             update_events.extend(
                 self.get_update_list_events(
@@ -252,10 +253,7 @@ class BaseSystemTestCase(TestCase):
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
         self.validate_fields(fqid, data)
-        if data:
-            return [Event(type=EventType.Update, fqid=fqid, fields=data)]
-        else:
-            return []
+        return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_update_list_events(
         self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
