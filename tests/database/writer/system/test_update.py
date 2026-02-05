@@ -139,6 +139,129 @@ def test_update_nm_field_null() -> None:
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
 
 
+def test_update_1_1_not_null_error(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_group_base_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "motion/2",
+                "fields": {
+                    "title": "2",
+                    "meeting_id": 1,
+                    "state_id": 1,
+                },
+            },
+            {
+                "type": EventType.Create,
+                "fqid": "list_of_speakers/3",
+                "fields": {
+                    "content_object_id": "motion/2",
+                    "meeting_id": 1,
+                },
+            },
+        ]
+    )
+    create_models(data)
+    with get_new_os_conn() as conn:
+        with pytest.raises(DatabaseError) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Create,
+                                    "fqid": "motion/3",
+                                    "fields": {
+                                        "title": "3",
+                                        "meeting_id": 1,
+                                        "state_id": 1,
+                                    },
+                                },
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "list_of_speakers/3",
+                                    "fields": {"content_object_id": "motion/3"},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+    assert (
+        "Trigger tr_ud_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id from relationship before list_of_speakers/3/content_object_id"
+        in e_info.value.args[0]
+    )
+
+
+def test_update_1_n_not_null_error_remove_relation(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    create_models(get_group_base_data())
+    with get_new_os_conn() as conn:
+        with pytest.raises(DatabaseError) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "projector/1",
+                                    "fields": {
+                                        "used_as_default_projector_for_topic_in_meeting_id": None
+                                    },
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+    assert (
+        "Trigger tr_ud_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
+        in e_info.value.args[0]
+    )
+
+
+def test_update_1_n_not_null_error_change_relation(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    create_models(get_group_base_data())
+    create_models(get_group_base_data(2))
+    with get_new_os_conn() as conn:
+        with pytest.raises(DatabaseError) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "projector/1",
+                                    "fields": {
+                                        "used_as_default_projector_for_topic_in_meeting_id": 2
+                                    },
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+    assert (
+        "Trigger tr_ud_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
+        in e_info.value.args[0]
+    )
+
+
 def test_update_nm_nt_ntR_not_null_error(
     db_connection: Connection[rows.DictRow],
 ) -> None:
