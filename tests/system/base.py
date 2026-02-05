@@ -727,6 +727,7 @@ class BaseSystemTestCase(TestCase):
 
         if events:
             self.perform_write_request(events)
+            self.adjust_id_sequences()
 
         return [mu["id"] for mu in remaining_and_new_meeting_users.values()]
 
