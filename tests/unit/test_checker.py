@@ -710,7 +710,6 @@ class TestCheckerCheckData(TestCase):
             expected_error="\tmeeting/1/committee_id: Relation Error: points to committee/1/meeting_ids, but the reverse relation for it is corrupt.",
         )
 
-    # check_calculated_fields()
     def test_calculated_fields(self) -> None:
         """
         Check that no errors are raised for:
