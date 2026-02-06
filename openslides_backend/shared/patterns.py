@@ -19,8 +19,8 @@ FQFIELD_REGEX = f"^{FQID_REGEX_PART}{KEYSEPARATOR}{_field_regex}$"
 COLLECTIONFIELD_REGEX = f"^({_collection_regex}){KEYSEPARATOR}({_field_regex})$"
 
 # Specific regexes for fields etc.
-DECIMAL_REGEX = r"^-?(\d|[1-9]\d+)\.\d{6}$"
-COLOR_REGEX = r"^#[0-9a-f]{6}$"
+DECIMAL_REGEX = r"^-?(\d|[1-9]\d+)(\.\d{1,6})?$"
+COLOR_REGEX = r"^#[0-9a-fA-F]{6}$"
 POSITIVE_NUMBER_REGEX = rf"^(0|{_id_regex})$"
 EXTENSION_REFERENCE_IDS_REGEX = rf"\[(?P<fqid>{FQID_REGEX_PART})\]"
 

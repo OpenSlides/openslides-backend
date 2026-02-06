@@ -6,6 +6,7 @@ from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, InternalHelper
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.shared.typing import Model
 
 from .base import BaseActionTestCase
 
@@ -24,6 +25,7 @@ class BaseGenericTestCase(BaseActionTestCase):
 
     tables_to_reset: list[str]
     yml: str
+    real_models: dict[str, Model]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -34,6 +36,7 @@ class BaseGenericTestCase(BaseActionTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         super().tearDownClass()
+        InternalHelper.MODELS = cls.real_models
         if not cls.yml:
             return
 
@@ -58,7 +61,8 @@ class BaseGenericTestCase(BaseActionTestCase):
 
     @classmethod
     def create_table_view(cls, yml: str) -> None:
-        GenerateCodeBlocks.models = InternalHelper.MODELS = yaml.safe_load(yml)
+        cls.real_models = InternalHelper.MODELS
+        InternalHelper.MODELS = yaml.safe_load(yml)
 
         (
             pre_code,
@@ -70,7 +74,8 @@ class BaseGenericTestCase(BaseActionTestCase):
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
-            create_trigger_relationlistnotnull_code,
+            create_trigger_1_n_relation_not_null_code,
+            create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_notify_code,
             errors,
@@ -82,7 +87,8 @@ class BaseGenericTestCase(BaseActionTestCase):
             + view_name_code
             + alter_table_code
             + create_trigger_1_1_relation_not_null_code
-            + create_trigger_relationlistnotnull_code
+            + create_trigger_1_n_relation_not_null_code
+            + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
         )
         with get_new_os_conn() as conn:

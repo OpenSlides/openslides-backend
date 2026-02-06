@@ -45,6 +45,11 @@ check-all: validate-models-yml check-models check-initial-data-json check-exampl
 
 # Models
 
+generate-schema:
+	make -C meta/dev generate-relational-schema
+
+generate-db: | generate-schema create-database-with-schema
+
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py

@@ -1,7 +1,9 @@
+import datetime
 from collections.abc import Iterable
+from decimal import Decimal
 from typing import Any
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.shared.patterns import is_reserved_field
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
@@ -34,6 +36,7 @@ def export_meeting(
     meeting_id: int,
     internal_target: bool = False,
     update_mediafiles: bool = False,
+    datetime_decimal_to_string: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -48,7 +51,7 @@ def export_meeting(
         meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
-    export["_migration_index"] = get_backend_migration_index()
+    export["_migration_index"] = MigrationHelper.get_backend_migration_index()
 
     # initialize user_ids
     user_ids = set(meeting.get("user_ids", []))
@@ -212,6 +215,14 @@ def export_meeting(
         export[collection] = dict(
             sorted(instances.items(), key=lambda item: int(item[0]))
         )
+        if datetime_decimal_to_string and isinstance(instances, dict):
+            for data in instances.values():
+                for field, value in data.items():
+                    if isinstance(value, datetime.datetime):
+                        data[field] = value.isoformat()
+                    if isinstance(value, Decimal):
+                        data[field] = str(value)
+
     return export
 
 

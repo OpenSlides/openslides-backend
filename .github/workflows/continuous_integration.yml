@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - 'feature/**'
-      - 'staging/**'
+      - 'staging**'
   merge_group:
     types: [checks_requested]
 
@@ -23,6 +23,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        submodules: recursive
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -64,6 +66,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         path: openslides-backend
+        submodules: recursive
 
     - name: Set env vars
       working-directory: openslides-backend/requirements
