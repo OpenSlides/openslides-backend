@@ -231,3 +231,76 @@ class KeycloakAdminClient:
             raise ActionException(
                 f"Keycloak session clear failed: {response.status_code} - {response.text}"
             )
+
+    def get_user_by_username(self, username: str) -> Optional[dict[str, Any]]:
+        """
+        Find a Keycloak user by username.
+
+        Args:
+            username: Username to search for (exact match)
+
+        Returns:
+            User data dict or None if not found
+        """
+        response = requests.get(
+            f"{self.admin_api_url}/users",
+            params={"username": username, "exact": "true"},
+            headers={
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=10,
+        )
+
+        if response.status_code == 200:
+            users = response.json()
+            return users[0] if users else None
+        return None
+
+    def try_create_user(self, user_data: dict[str, Any]) -> Optional[str]:
+        """
+        Try to create user in Keycloak, returning None on conflict.
+
+        Unlike create_user(), this method returns None instead of raising
+        an exception when the user already exists (409 Conflict).
+
+        Args:
+            user_data: Dictionary with Keycloak user fields
+
+        Returns:
+            The Keycloak user ID (UUID) or None if user already exists or creation failed
+        """
+        url = f"{self.admin_api_url}/users"
+        if self.logger:
+            self.logger.debug(f"Keycloak Admin API POST request to: {url}")
+
+        user_data_with_defaults = {
+            "requiredActions": [],
+            **user_data,
+        }
+
+        response = requests.post(
+            url,
+            json=user_data_with_defaults,
+            headers={
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=30,
+        )
+
+        if self.logger:
+            self.logger.debug(f"Keycloak Admin API response: {response.status_code}")
+
+        if response.status_code == 201:
+            location = response.headers.get("Location", "")
+            return location.split("/")[-1] if location else None
+        elif response.status_code == 409:
+            # User already exists
+            return None
+        else:
+            if self.logger:
+                self.logger.debug(
+                    f"Failed to create user: {response.status_code} - {response.text}"
+                )
+            return None

@@ -50,11 +50,11 @@ class OidcConfig:
             client_secret=client_secret,
             login_button_text=os.environ.get("OIDC_LOGIN_BUTTON_TEXT", "OIDC login"),
             admin_api_enabled=is_truthy(
-                os.environ.get("OIDC_ADMIN_API_ENABLED", "false")
+                os.environ.get("KEYCLOAK_ADMIN_API_ENABLED", "false")
             ),
-            admin_api_url=os.environ.get("OIDC_ADMIN_API_URL", ""),
-            admin_client_id=os.environ.get("OIDC_ADMIN_CLIENT_ID", client_id),
-            admin_client_secret=os.environ.get("OIDC_ADMIN_CLIENT_SECRET", client_secret),
+            admin_api_url=os.environ.get("KEYCLOAK_ADMIN_API_URL", ""),
+            admin_client_id=os.environ.get("KEYCLOAK_ADMIN_CLIENT_ID", client_id),
+            admin_client_secret=os.environ.get("KEYCLOAK_ADMIN_CLIENT_SECRET", client_secret),
             attr_mapping=attr_mapping,
         )
 

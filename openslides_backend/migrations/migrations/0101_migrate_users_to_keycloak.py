@@ -2,12 +2,12 @@
 Migration: Migrate existing local users to Keycloak.
 
 This migration creates corresponding Keycloak users for all local users
-(those without keycloak_id and saml_id) when KEYCLOAK_ADMIN_API_URL is configured.
+(those without there d and saml_id) when KEYCLOAK_ADMIN_API_URL is configured.
 
 Environment variables:
 - KEYCLOAK_ADMIN_API_URL: Required. Keycloak Admin API URL (e.g., http://keycloak:8080/auth/admin/realms/openslides)
-- KEYCLOAK_ADMIN_USERNAME: Admin username (default: "admin")
-- KEYCLOAK_ADMIN_PASSWORD: Admin password (default: "admin")
+- KEYCLOAK_ADMIN_CLIENT_ID: Service account client ID (default: "openslides-admin")
+- KEYCLOAK_ADMIN_CLIENT_SECRET: Service account client secret (default: "openslides-admin-secret")
 
 The migration:
 1. Acquires an admin token from Keycloak
@@ -20,9 +20,8 @@ The migration:
 
 import json
 import os
-from typing import Any, Optional
+from typing import Any
 
-import requests
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
@@ -30,140 +29,94 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.keycloak_admin_client import KeycloakAdminClient
 
 # Collections affected by this migration (empty since we don't use replace tables)
 ORIGIN_COLLECTIONS: list[str] = []
 
 
-def _get_admin_token(base_url: str, username: str, password: str) -> str:
+def _parse_argon2_hash(password_hash: str) -> dict[str, Any] | None:
     """
-    Get admin access token from Keycloak master realm.
+    Parse an Argon2 encoded hash string into its components.
 
-    Args:
-        base_url: Keycloak admin API URL (e.g., http://keycloak:8080/auth/admin/realms/openslides)
-        username: Admin username
-        password: Admin password
+    Format: $argon2id$v=19$m=65536,t=3,p=4$<salt_base64>$<hash_base64>
 
     Returns:
-        Access token string
-
-    Raises:
-        RuntimeError: If token acquisition fails
+        Dict with type, version, memory, iterations, parallelism, salt, hash
+        or None if parsing fails
     """
-    # Derive token URL from admin URL
-    # admin_url: http://keycloak:8080/auth/admin/realms/openslides
-    # token_url: http://keycloak:8080/auth/realms/master/protocol/openid-connect/token
-    parts = base_url.split("/admin/")
-    if len(parts) != 2:
-        raise RuntimeError(
-            f"Invalid KEYCLOAK_ADMIN_API_URL format: {base_url}. "
-            "Expected format: http://host/auth/admin/realms/realmname"
-        )
-    token_url = f"{parts[0]}/realms/master/protocol/openid-connect/token"
+    try:
+        parts = password_hash.split("$")
+        # parts[0] = "" (empty before first $)
+        # parts[1] = "argon2id" (type)
+        # parts[2] = "v=19" (version)
+        # parts[3] = "m=65536,t=3,p=4" (parameters)
+        # parts[4] = salt (base64)
+        # parts[5] = hash (base64)
+        if len(parts) != 6:
+            return None
 
-    response = requests.post(
-        token_url,
-        data={
-            "grant_type": "password",
-            "client_id": "admin-cli",
-            "username": username,
-            "password": password,
-        },
-        timeout=30,
-    )
+        argon_type = parts[1]  # "argon2id", "argon2i", or "argon2d"
+        version = parts[2].split("=")[1]  # "19"
 
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to get Keycloak admin token: {response.status_code} - {response.text}"
-        )
+        # Parse parameters
+        params = {}
+        for param in parts[3].split(","):
+            key, value = param.split("=")
+            params[key] = int(value)
 
-    return response.json()["access_token"]
-
-
-def _create_keycloak_user(
-    admin_url: str, token: str, user_data: dict[str, Any]
-) -> Optional[str]:
-    """
-    Create a user in Keycloak.
-
-    Args:
-        admin_url: Keycloak admin API URL
-        token: Admin access token
-        user_data: User data including credentials
-
-    Returns:
-        Keycloak user ID (UUID) or None on failure
-    """
-    response = requests.post(
-        f"{admin_url}/users",
-        json=user_data,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-        timeout=30,
-    )
-
-    if response.status_code == 201:
-        # Extract keycloak_id from Location header
-        location = response.headers.get("Location", "")
-        return location.split("/")[-1] if location else None
-    elif response.status_code == 409:
-        # Conflict - user already exists
-        return None
-    else:
-        MigrationHelper.write_line(
-            f"  Failed to create user: {response.status_code} - {response.text}"
-        )
+        return {
+            "type": argon_type,
+            "version": version,
+            "memory": params.get("m", 65536),
+            "iterations": params.get("t", 3),
+            "parallelism": params.get("p", 4),
+            "salt": parts[4],
+            "hash": parts[5],
+        }
+    except (IndexError, ValueError, KeyError):
         return None
 
 
-def _get_keycloak_user_by_username(
-    admin_url: str, token: str, username: str
-) -> Optional[dict[str, Any]]:
-    """
-    Find a Keycloak user by username.
-
-    Args:
-        admin_url: Keycloak admin API URL
-        token: Admin access token
-        username: Username to search for
-
-    Returns:
-        User data dict or None if not found
-    """
-    response = requests.get(
-        f"{admin_url}/users",
-        params={"username": username, "exact": "true"},
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-        timeout=30,
-    )
-
-    if response.status_code == 200:
-        users = response.json()
-        return users[0] if users else None
-    return None
-
-
-def _build_argon2_credential(password_hash: str) -> dict[str, Any]:
+def _build_argon2_credential(password_hash: str) -> dict[str, Any] | None:
     """
     Build Keycloak credential data for an Argon2 password hash.
 
-    Keycloak 21+ supports importing Argon2 hashes via the credential API.
+    Keycloak expects the hash components to be separated, not in the
+    standard Argon2 encoded format.
 
     Args:
         password_hash: Argon2 password hash (e.g., $argon2id$v=19$m=65536,t=3,p=4$...)
 
     Returns:
-        Keycloak credential object
+        Keycloak credential object or None if parsing fails
     """
+    parsed = _parse_argon2_hash(password_hash)
+    if not parsed:
+        return None
+
+    # Keycloak's Argon2 credential format
+    credential_data = {
+        "hashIterations": parsed["iterations"],
+        "algorithm": "argon2",
+        "additionalParameters": {
+            "type": parsed["type"].replace("argon2", ""),  # "id", "i", or "d"
+            "version": parsed["version"],
+            "memory": parsed["memory"],
+            "parallelism": parsed["parallelism"],
+        },
+    }
+
+    secret_data = {
+        "value": parsed["hash"],
+        "salt": parsed["salt"],
+    }
+
     return {
         "type": "password",
-        "credentialData": json.dumps({"algorithm": "argon2", "hashIterations": 1}),
-        "secretData": json.dumps({"value": password_hash, "salt": ""}),
+        "credentialData": json.dumps(credential_data),
+        "secretData": json.dumps(secret_data),
     }
 
 
@@ -207,7 +160,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
 
     This migration:
     1. Checks if Keycloak admin API is configured via KEYCLOAK_ADMIN_API_URL
-    2. Acquires admin token via password grant to master realm
+    2. Acquires admin token via client credentials flow
     3. Queries users without keycloak_id AND without saml_id
     4. For each user:
        - Creates in Keycloak with username, email, firstName, lastName, enabled
@@ -229,14 +182,18 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
 
     MigrationHelper.write_line(f"Keycloak Admin API URL: {admin_api_url}")
 
-    admin_username = os.environ.get("KEYCLOAK_ADMIN_USERNAME", "admin")
-    admin_password = os.environ.get("KEYCLOAK_ADMIN_PASSWORD", "admin")
+    admin_client_id = os.environ.get("KEYCLOAK_ADMIN_CLIENT_ID", "openslides-admin")
+    admin_client_secret = os.environ.get("KEYCLOAK_ADMIN_CLIENT_SECRET", "openslides-admin-secret")
 
-    # Get admin token
+    # Initialize Keycloak admin client
     try:
-        token = _get_admin_token(admin_api_url, admin_username, admin_password)
+        kc_client = KeycloakAdminClient(
+            admin_api_url=admin_api_url,
+            client_id=admin_client_id,
+            client_secret=admin_client_secret,
+        )
         MigrationHelper.write_line("Successfully acquired Keycloak admin token")
-    except RuntimeError as e:
+    except ActionException as e:
         MigrationHelper.write_line(f"ERROR: {e}")
         MigrationHelper.write_line("Skipping Keycloak user migration due to auth failure")
         MigrationHelper.set_database_migration_info(
@@ -286,7 +243,6 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         kc_user_data: dict[str, Any] = {
             "username": username,
             "enabled": is_active if is_active is not None else True,
-            "requiredActions": [],
         }
 
         if email:
@@ -297,18 +253,19 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             kc_user_data["lastName"] = last_name
 
         # Handle password/credentials
+        # Strategy: Prefer default_password (user knows it) over hash import
+        # Keycloak's Argon2 hash import via REST API is unreliable
         credentials: list[dict[str, Any]] = []
 
-        if password_hash and _is_argon2_hash(password_hash):
-            # Argon2 hash - import directly
-            credentials.append(_build_argon2_credential(password_hash))
-            MigrationHelper.write_line(f"  Using Argon2 hash for {username}")
-        elif default_password:
-            # Use default_password as plaintext (Keycloak hashes it)
-            # Set as non-temporary since user knows this password
+        if default_password:
+            # Use default_password - user knows this password
             credentials.append(_build_plaintext_credential(default_password, temporary=False))
+            MigrationHelper.write_line(f"  Using default_password for {username}")
+        elif password_hash and _is_argon2_hash(password_hash):
+            # Argon2 hash without default_password - cannot import via REST API
+            # User will need to use "forgot password" flow
             MigrationHelper.write_line(
-                f"  Using default_password for {username}"
+                f"  WARNING: Argon2 hash for {username} cannot be imported (no default_password). User will need password reset."
             )
         elif password_hash and _is_sha512_hash(password_hash):
             # SHA512 legacy hash - cannot import, skip credential
@@ -326,7 +283,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             kc_user_data["credentials"] = credentials
 
         # Create user in Keycloak
-        keycloak_id = _create_keycloak_user(admin_api_url, token, kc_user_data)
+        keycloak_id = kc_client.try_create_user(kc_user_data)
 
         if keycloak_id:
             # Successfully created - update OpenSlides user
@@ -344,7 +301,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             migrated += 1
         else:
             # Failed or conflict - try to find existing user and link
-            existing_user = _get_keycloak_user_by_username(admin_api_url, token, username)
+            existing_user = kc_client.get_user_by_username(username)
             if existing_user:
                 keycloak_id = existing_user.get("id")
                 if keycloak_id:

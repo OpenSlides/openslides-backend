@@ -94,6 +94,75 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 except ActionException as e:
                     self.logger.error(f"Setting superadmin password failed: {e}")
 
+            # If OIDC is enabled, sync users to Keycloak
+            import os
+            if is_truthy(os.environ.get("OIDC_ENABLED", "false")):
+                self._sync_users_to_keycloak()
+
+    def _sync_users_to_keycloak(self) -> None:
+        """
+        Sync local users to Keycloak after initial data import.
+        Uses the migration 0101 data_manipulation function.
+        Retries up to 30 times with 2 second delays if Keycloak isn't ready.
+        """
+        import io
+        import time
+        from importlib import import_module
+
+        from openslides_backend.migrations.migration_helper import MigrationHelper
+        from openslides_backend.services.postgresql.db_connection_handling import (
+            get_new_os_conn,
+        )
+
+        max_retries = 30
+        retry_delay = 2
+
+        try:
+            # Import the migration module (name starts with digit, need importlib)
+            migration_module = import_module(
+                "openslides_backend.migrations.migrations.0101_migrate_users_to_keycloak"
+            )
+            data_manipulation = migration_module.data_manipulation
+
+            for attempt in range(max_retries):
+                try:
+                    self.logger.info(f"Syncing users to Keycloak (attempt {attempt + 1}/{max_retries})...")
+
+                    # Set up a dummy stream for MigrationHelper.write_line()
+                    stream = io.StringIO()
+                    MigrationHelper.migrate_thread_stream = stream
+
+                    with get_new_os_conn() as conn:
+                        with conn.cursor() as curs:
+                            data_manipulation(curs)
+                            conn.commit()
+
+                    # Log the migration output
+                    output = stream.getvalue()
+                    if output:
+                        for line in output.strip().split("\n"):
+                            self.logger.info(f"[Migration 0101] {line}")
+
+                    MigrationHelper.migrate_thread_stream = None
+                    self.logger.info("User sync to Keycloak completed")
+                    return
+                except Exception as e:
+                    MigrationHelper.migrate_thread_stream = None
+                    if "Connection refused" in str(e) or "Failed to establish" in str(e):
+                        if attempt < max_retries - 1:
+                            self.logger.info(f"Keycloak not ready, retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            continue
+                    raise
+        except ImportError as e:
+            self.logger.warning(
+                f"Migration 0101 not found, skipping Keycloak user sync: {e}"
+            )
+        except Exception as e:
+            import traceback
+            self.logger.error(f"Failed to sync users to Keycloak: {e}")
+            self.logger.error(traceback.format_exc())
+
     def dispatch_request(self, request: Request) -> Response | HTTPException:
         """
         Dispatches request to route according to URL rules. Returns a Response
