@@ -136,18 +136,8 @@ class BaseMigrationTestCase(TestCase):
             # Reuse old login data to avoid a new login request
             self.client.update_auth_data(self.auth_data)
         else:
-            self.auth.create_update_user_session(
-                {
-                    "type": "create",
-                    "fqid": "user/1",
-                    "fields": {
-                        "username": ADMIN_USERNAME,
-                        "password": self.auth.hash(ADMIN_PASSWORD),
-                    },
-                }
-            )
             # Login and save copy of auth data for all following tests
-            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
+            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
             BaseMigrationTestCase.auth_data = deepcopy(self.client.auth_data)
 
         self.setup_data()
