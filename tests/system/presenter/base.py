@@ -39,8 +39,8 @@ class BasePresenterTestCase(BaseSystemTestCase):
         Uses usernumber to create meeting users with the concatenation of base and usernumber.
         """
         self.create_meeting(base, meeting_data=meeting_data)
-        mu1 = f"{base}{user1}"
-        mu2 = f"{base}{user2}"
+        mu1 = int(f"{base}{user1}")
+        mu2 = int(f"{base}{user2}")
         self.set_models(
             {
                 f"meeting_user/{mu1}": {"user_id": user1, "meeting_id": base},

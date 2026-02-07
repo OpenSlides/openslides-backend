@@ -2761,14 +2761,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
         self.create_meeting()
         user_id = self.create_user(username="test")
-        self.set_models(
-            {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": user_id,
-                },
-            }
-        )
+        self.set_user_groups(user_id, [1])
 
         response = self.request(
             "user.update",
