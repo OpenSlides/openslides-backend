@@ -29,7 +29,7 @@ class BaseVoteTestCase(BasePollTestCase):
                 self.vote_service.start(data["id"])
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
-                self.execute_action_internally("poll.stop", {"id": data["id"]})
+                self.request("poll.stop", {"id": data["id"]})
             return response
         else:
             return super().request(action, data, anonymous, lang, internal)
@@ -110,11 +110,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
+        self.login(user_id)
         response = self.request(
             "poll.vote", {"id": 1, "value": {"11": 1}}, stop_poll_after_vote=False
         )
         self.assert_status_code(response, 200)
-        self.login(user_id)
+        self.login(1)
         response = self.request(
             "poll.vote", {"id": 1, "value": {"11": 1}}, start_poll_before_vote=False
         )
@@ -145,7 +146,12 @@ class PollVoteTest(BaseVoteTestCase):
         )
 
     def test_value_check(self) -> None:
-        self.create_poll_with_3_options()
+        self.create_poll_with_3_options(
+            {
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
+            }
+        )
         response = self.request(
             "poll.vote",
             {
@@ -299,7 +305,9 @@ class PollVoteTest(BaseVoteTestCase):
         assert "You have to select between 1 and 1 options" in response.json["message"]
 
     def test_vote_no_votes_total_check_by_YN(self) -> None:
-        self.create_poll_with_3_options({"max_votes_per_option": 1})
+        self.create_poll_with_3_options(
+            {"max_votes_amount": 10, "max_votes_per_option": 1}
+        )
         response = self.request(
             "poll.vote",
             {
@@ -557,13 +565,9 @@ class PollVoteTest(BaseVoteTestCase):
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
             {
+                "meeting/113": {"present_user_ids": [1]},
                 "group/113": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "meeting_user_ids": [11],
-                    "meeting_ids": [113],
-                },
                 "meeting_user/11": {"user_id": 1, "meeting_id": 113},
                 "poll/1": {
                     "content_object_id": "motion/1",
@@ -588,7 +592,6 @@ class PollVoteTest(BaseVoteTestCase):
     def test_check_user_present_in_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/113": {"present_user_ids": [1]},
                 "group/113": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "meeting_user/11": {"user_id": 1, "meeting_id": 113},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
@@ -768,7 +771,8 @@ class VotePollBaseTestClass(BaseVoteTestCase):
                     "abstain": Decimal("0.000000"),
                 },
                 "meeting_user/11": {"user_id": 1, "meeting_id": 113},
-                "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
+                "option/11": {"meeting_id": 113},
+                "poll/1": {"global_option_id": 11},
             }
         )
 
@@ -944,7 +948,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -1200,7 +1204,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1582,7 +1586,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1764,7 +1768,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -1933,7 +1937,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -2093,7 +2097,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", {"is_present_in_meeting_ids": []})
+        self.update_model("meeting/113", {"present_user_ids": None})
 
         response = self.request(
             "poll.vote",

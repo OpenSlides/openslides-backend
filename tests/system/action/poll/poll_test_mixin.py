@@ -20,7 +20,6 @@ class PollTestMixin(BaseActionTestCase):
                     "backend": "fast",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
-                    "entitled_group_ids": [3],
                     "onehundred_percent_base": "YNA",
                     "title": "Poll 1",
                 },
@@ -30,7 +29,10 @@ class PollTestMixin(BaseActionTestCase):
                     f"meeting_user/{i+10}": {"meeting_id": 1, "user_id": i}
                     for i in user_ids
                 },
-                "group/3": {"meeting_user_ids": [id_ + 10 for id_ in user_ids]},
+                "group/3": {
+                    "meeting_user_ids": [id_ + 10 for id_ in user_ids],
+                    "poll_ids": [1],
+                },
                 "meeting/1": {"present_user_ids": user_ids},
             }
         )
