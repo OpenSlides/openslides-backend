@@ -109,7 +109,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
         import time
         from importlib import import_module
 
-        from openslides_backend.migrations.migration_helper import MigrationHelper
+        from openslides_backend.migrations.migration_helper import MigrationHelper, MigrationState
         from openslides_backend.services.postgresql.db_connection_handling import (
             get_new_os_conn,
         )
@@ -135,6 +135,13 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                     with get_new_os_conn() as conn:
                         with conn.cursor() as curs:
                             data_manipulation(curs)
+                            # Override: startup sync is not the migration framework.
+                            # On fresh install, create_schema.py marks all migrations
+                            # as FINALIZED. data_manipulation() downgrades migration
+                            # 101 to FINALIZATION_REQUIRED, creating an inconsistency.
+                            MigrationHelper.set_database_migration_info(
+                                curs, 101, MigrationState.FINALIZED
+                            )
                             conn.commit()
 
                     # Log the migration output

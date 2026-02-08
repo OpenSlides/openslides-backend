@@ -160,9 +160,9 @@ class MigrationHandler(BaseHandler):
             return base + ("_m")
 
         # COPY views for migration reads
+        table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t)\b")
         for collection, r_tables in unified_replace_tables.items():
             # TODO create regex specifically for the replace tables to not change what should stay as origin table. Needed for future migrations.
-            table_re = re.compile(r"\b([A-Za-z0-9_.]+)(_t)\b")
 
             self.cursor.execute(
                 """
