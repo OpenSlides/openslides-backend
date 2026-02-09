@@ -1125,14 +1125,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_sufficient_field_permission_create(self) -> None:
         self.json_upload_sufficient_field_permission_create()
-        self.set_models(
-            {
-                "meeting_user/1": {"group_ids": []},
-                "group/3": {"meeting_user_ids": []},
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-                },
-            }
+        self.set_user_groups(1, [])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)

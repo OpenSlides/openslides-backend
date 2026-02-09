@@ -18,6 +18,7 @@ class MotionSupporterDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "user_id": 2,
             },
+            "group/1": {"meeting_user_ids": [1]},
             "motion_supporter/2": {
                 "meeting_user_id": 1,
                 "motion_id": 1,

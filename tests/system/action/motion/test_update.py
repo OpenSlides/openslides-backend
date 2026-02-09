@@ -526,6 +526,7 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "motion_id": 111,
                 "meeting_user_id": 1,
             },
+            "group/3": {"meeting_user_ids": [1]},
         }
 
     def test_update_no_permissions(self) -> None:
