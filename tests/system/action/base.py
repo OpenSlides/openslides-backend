@@ -243,7 +243,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         lock_out_calling_user: bool = False,
         anonymous: bool = False,
         user_groups: list[int] = [3],
-        custom_error_message: str = None,
+        custom_error_message: str | None = None,
     ) -> None:
         meeting_data = {"locked_from_inside": True} if lock_meeting else {}
         self.create_meeting(meeting_data=meeting_data)
@@ -264,7 +264,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.login(self.user_id)
         response = self.request(action, action_data, anonymous)
         if fail is None:
-            fail = not permission or custom_error_message
+            fail = not permission or bool(custom_error_message)
         if fail:
             self.assert_status_code(response, 403)
             error_message = (
