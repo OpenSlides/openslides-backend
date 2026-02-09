@@ -122,9 +122,9 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_management_ids": [78],
                 "meeting_user_ids": [1],
                 "member_number": "abcdefg1234567",
+                "committee_ids": [78, 79],
             },
         )
-        self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
         assert self.auth.is_equal(
             user2.get("default_password", ""), user2.get("password", "")
         )
@@ -391,9 +391,13 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user = self.get_model("user/2")
-        self.assertCountEqual((60, 63), user["committee_ids"])
-        self.assertCountEqual((60, 63), user["committee_management_ids"])
+        self.assert_model_exists(
+            "user/2",
+            {
+                "committee_ids": [60, 63],
+                "committee_management_ids": [60, 63],
+            },
+        )
         self.assert_model_exists("committee/60", {"manager_ids": [2], "user_ids": [2]})
         self.assert_model_exists("committee/63", {"manager_ids": [2], "user_ids": [2]})
 
@@ -974,7 +978,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
             OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
-        user3 = self.assert_model_exists(
+        self.assert_model_exists(
             "user/3",
             {
                 "committee_ids": [60, 63],
@@ -983,7 +987,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "usersname",
             },
         )
-        self.assertCountEqual(user3.get("committee_management_ids", []), [60, 63])
 
     def test_create_permission_group_D_permission_with_CML(self) -> None:
         """
