@@ -135,14 +135,6 @@ class BaseMigrationTestCase(TestCase):
         self.setup_data()
         self.apply_test_relational_schema()
 
-        if self.auth_data:
-            # Reuse old login data to avoid a new login request
-            self.client.update_auth_data(self.auth_data)
-        else:
-            # Login and save copy of auth data for all following tests
-            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
-            BaseMigrationTestCase.auth_data = deepcopy(self.client.auth_data)
-
     def request(
         self,
         command: str,
