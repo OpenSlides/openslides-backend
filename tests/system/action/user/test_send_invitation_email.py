@@ -524,6 +524,7 @@ class SendInvitationMail(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting_id = response.json["results"][0][0]["id"]
+        self.update_created_fqids()
         self.set_models(
             {
                 "user/2": {
@@ -533,10 +534,9 @@ class SendInvitationMail(BaseActionTestCase):
                     "meeting_id": meeting_id,
                     "user_id": 2,
                 },
+                "group/4": {"meeting_user_ids": [12]},
             }
         )
-        # models created by the request aren't registered for set_models and need to be explicitly updated
-        self.update_model("group/4", {"meeting_user_ids": [12]})
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(

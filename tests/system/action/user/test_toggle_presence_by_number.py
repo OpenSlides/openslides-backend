@@ -11,10 +11,9 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_add_correct(self) -> None:
         self.set_models(
             {
-                "user/111": {
-                    "username": "username_srtgb123",
-                },
+                "user/111": {"username": "username_srtgb123"},
                 "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": "1"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -38,6 +37,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                     "is_present_in_meeting_ids": [1],
                 },
                 "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": "1"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -51,14 +51,11 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_too_many_numbers(self) -> None:
         self.set_models(
             {
-                "user/111": {
-                    "username": "username_srtgb123",
-                },
-                "user/112": {
-                    "username": "username_srtgb235",
-                },
+                "user/111": {"username": "username_srtgb123"},
+                "user/112": {"username": "username_srtgb235"},
                 "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": "1"},
                 "meeting_user/35": {"user_id": 112, "meeting_id": 1, "number": "1"},
+                "group/1": {"meeting_user_ids": [34, 35]},
             }
         )
         response = self.request(
@@ -92,6 +89,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 },
                 "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -103,10 +101,9 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "committee/60": {"manager_ids": [1]},
-                "user/1": {
-                    "organization_management_level": None,
-                },
+                "user/1": {"organization_management_level": None},
                 "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -168,6 +165,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 },
                 "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -182,14 +180,11 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_cml_locked_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "locked_from_inside": True,
-                },
+                "meeting/1": {"locked_from_inside": True},
                 "committee/60": {"manager_ids": [1]},
-                "user/1": {
-                    "organization_management_level": None,
-                },
+                "user/1": {"organization_management_level": None},
                 "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+                "group/1": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(

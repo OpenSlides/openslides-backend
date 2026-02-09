@@ -202,6 +202,7 @@ class DatabaseReader(SqlQueryHelper):
             else:
                 collection_result_part[id_] = row
 
+    # TODO: Fix or delete
     def get_current_migration_index(self) -> int:
         #        result = self.connection.query(
         #            "select min(migration_index), max(migration_index) from positions", []

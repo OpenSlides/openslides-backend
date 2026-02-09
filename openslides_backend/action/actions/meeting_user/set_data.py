@@ -61,8 +61,6 @@ class MeetingUserSetData(
                 ), "Not permitted to change user_id."
         elif meeting_id and user_id:
             instance["id"] = self.create_or_get_meeting_user(meeting_id, user_id)
-            # instance["meta_new"] = True
-            # TODO see helper mixin
         # MeetingUserMixin needs the meeting_id in "create" case
         instance = super().update_instance(instance)
         instance.pop("meeting_id", None)

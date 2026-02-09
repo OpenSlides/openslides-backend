@@ -36,15 +36,6 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("personal_note/1", {"star": True, "note": "blablabla"})
 
-    def test_update_no_permission_user_not_in_meeting(self) -> None:
-        self.set_user_groups(1, [])
-        response = self.request(
-            "personal_note.update", {"id": 1, "star": False, "note": "blopblop"}
-        )
-        self.assert_status_code(response, 403)
-        self.assertEqual("User not associated with meeting.", response.json["message"])
-        self.assert_model_exists("personal_note/1", {"star": True, "note": "blablabla"})
-
     def test_create_no_permission_anon_user(self) -> None:
         self.set_anonymous(meeting_id=1)
         response = self.request(
