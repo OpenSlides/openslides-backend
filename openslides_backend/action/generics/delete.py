@@ -49,7 +49,7 @@ class DeleteAction(Action):
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
         delete_actions: list[tuple[FullQualifiedId, type[Action], ActionData]] = []
-        for field_name, value in db_instance.items():
+        for field_name, value in dict(sorted(db_instance.items())).items():
             if field_name == "id":
                 continue
             field = cast(BaseRelationField, self.model.get_field(field_name))
