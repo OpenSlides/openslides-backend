@@ -66,8 +66,7 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
+        self.set_organization_management_level(None)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -116,16 +115,14 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
         )
 
     def test_superadmin(self) -> None:
-        self.set_organization_management_level(
-            OrganizationManagementLevel.SUPERADMIN, self.user_id
-        )
+        self.set_organization_management_level(OrganizationManagementLevel.SUPERADMIN)
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_orgaadmin(self) -> None:
         self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
@@ -133,27 +130,27 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
 
     def test_user_in_admin_group(self) -> None:
         # 2 is admin group
-        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(1, [2])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_in_some_group(self) -> None:
-        self.set_user_groups(self.user_id, [3])
+        self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_parent_perm(self) -> None:
-        self.set_user_groups(self.user_id, [3])
+        self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_child_perm(self) -> None:
-        self.set_user_groups(self.user_id, [3])
+        self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 403)

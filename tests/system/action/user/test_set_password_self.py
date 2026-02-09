@@ -1,4 +1,5 @@
 from tests.system.action.base import BaseActionTestCase
+from tests.system.base import DEFAULT_PASSWORD
 
 
 class UserSetPasswordSelfActionTest(BaseActionTestCase):
@@ -9,18 +10,16 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
     def test_set_password_correct_permission(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
+        self.update_model(f"user/{self.user_id}", {"can_change_own_password": True})
         self.login(self.user_id)
-        old_hash = self.auth.hash("old")
-        self.update_model(
-            "user/2", {"password": old_hash, "can_change_own_password": True}
-        )
         response = self.request(
-            "user.set_password_self", {"old_password": "old", "new_password": "new"}
+            "user.set_password_self",
+            {"old_password": DEFAULT_PASSWORD, "new_password": "new"},
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/2")
-        assert model.get("old_password") is None
-        assert model.get("new_password") is None
+        model = self.assert_model_exists(
+            "user/2", {"old_password": None, "new_password": None}
+        )
         assert self.auth.is_equal("new", model.get("password", ""))
         self.assert_logged_out()
 
@@ -34,8 +33,7 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             "user.set_password_self", {"old_password": "wrong", "new_password": "new"}
         )
         self.assert_status_code(response, 400)
-        model = self.get_model("user/1")
-        assert model.get("password") == old_hash
+        self.assert_model_exists("user/1", {"password": old_hash})
 
     def test_set_password_self_anonymus(self) -> None:
         response = self.request(
@@ -52,17 +50,11 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
     def test_set_password_self_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
+        self.update_model(f"user/{self.user_id}", {"can_change_own_password": False})
         self.login(self.user_id)
-        old_hash = self.auth.hash("old")
-        self.update_model(
-            "user/2",
-            {
-                "password": old_hash,
-                "can_change_own_password": False,
-            },
-        )
         response = self.request(
-            "user.set_password_self", {"old_password": "old", "new_password": "new"}
+            "user.set_password_self",
+            {"old_password": DEFAULT_PASSWORD, "new_password": "new"},
         )
         self.assert_status_code(response, 403)
         self.assertIn(
