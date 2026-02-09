@@ -66,7 +66,7 @@ def assert_db_entries(db_cur: Cursor[rows.DictRow], amount: int) -> None:
     table_names = db_cur.execute("SELECT tablename FROM truncate_tables").fetchall()
     sum_ = 0
     for table_name in table_names:
-        if table := table_name.get("tablename"):
+        if (table := table_name.get("tablename")) and table != "public.version":
             if count := db_cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone():
                 sum_ += count.get("count", 0)
     assert sum_ == amount
@@ -118,60 +118,63 @@ def get_two_users_with_committee(
     ]
 
 
-def get_group_base_data() -> list[dict[str, Any]]:
+def get_group_base_data(base: int = 1) -> list[dict[str, Any]]:
     return [
         {
             "events": [
                 {
                     "type": EventType.Create,
-                    "fqid": "group/1",
-                    "fields": {"name": "1", "meeting_id": 1},
+                    "fqid": f"group/{base}",
+                    "fields": {"name": str(base), "meeting_id": base},
                 },
                 {
                     "type": EventType.Create,
-                    "fqid": "committee/1",
-                    "fields": {"name": "1"},
+                    "fqid": f"committee/{base}",
+                    "fields": {"name": str(base)},
                 },
                 {
                     "type": EventType.Create,
-                    "fqid": "projector/1",
+                    "fqid": f"projector/{base}",
                     "fields": {
-                        "name": "1",
-                        "meeting_id": 1,
-                        **{field: 1 for field in Meeting.reverse_default_projectors()},
+                        "name": str(base),
+                        "meeting_id": base,
+                        **{
+                            field: base
+                            for field in Meeting.reverse_default_projectors()
+                        },
                     },
                 },
                 {
                     "type": EventType.Create,
-                    "fqid": "motion_state/1",
+                    "fqid": f"motion_state/{base}",
                     "fields": {
                         "weight": 1,
-                        "name": "1",
-                        "meeting_id": 1,
-                        "workflow_id": 1,
+                        "name": str(base),
+                        "meeting_id": base,
+                        "workflow_id": base,
                     },
                 },
                 {
                     "type": EventType.Create,
-                    "fqid": "motion_workflow/1",
+                    "fqid": f"motion_workflow/{base}",
                     "fields": {
-                        "name": "1",
-                        "meeting_id": 1,
-                        "first_state_id": 1,
+                        "name": str(base),
+                        "meeting_id": base,
+                        "first_state_id": base,
                     },
                 },
                 {
                     "type": EventType.Create,
-                    "fqid": "meeting/1",
+                    "fqid": f"meeting/{base}",
                     "fields": {
-                        "name": "1",
+                        "name": str(base),
                         "language": "it",
-                        "motions_default_workflow_id": 1,
-                        "motions_default_amendment_workflow_id": 1,
-                        "committee_id": 1,
-                        "reference_projector_id": 1,
-                        "default_group_id": 1,
-                        "admin_group_id": 1,
+                        "motions_default_workflow_id": base,
+                        "motions_default_amendment_workflow_id": base,
+                        "committee_id": base,
+                        "reference_projector_id": base,
+                        "default_group_id": base,
+                        "admin_group_id": base,
                     },
                 },
             ]

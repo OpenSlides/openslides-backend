@@ -21,11 +21,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
-        self.set_models(
-            {
-                "user/111": {"username": "User111"},
-            }
-        )
+        self.set_models({"user/111": {"username": "User111"}})
 
     def two_meetings_test_fail_ADEFGH(
         self, committee_id: None | int = None, group_B_success: bool = False
@@ -409,6 +405,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/111": {"username": "username_srtgb123"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 111},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         response = self.request(
@@ -425,6 +422,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/111": {"username": "username_srtgb123"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 111},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         response = self.request(
@@ -1949,7 +1947,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/4": {"committee_id": 60},
                 "meeting_user/2": {"meeting_id": 1, "user_id": 111, "group_ids": [1]},
-                "group/1": {"meeting_user_ids": [2]},
+                "group/1": {"meeting_user_ids": [1, 2]},
             }
         )
 
@@ -1979,11 +1977,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_committee_management_level([60], self.user_id)
-        self.set_models(
-            {
-                "meeting_user/2": {"meeting_id": 1, "user_id": 111, "group_ids": [1]},
-            }
-        )
+        self.set_user_groups(111, [1])
 
         response = self.request(
             "user.update",
@@ -2698,6 +2692,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "user_id": 111,
                     "meeting_id": 1,
                 },
+                "group/1": {"meeting_user_ids": [10]},
             }
         )
         response = self.request(
@@ -2776,14 +2771,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
         self.create_meeting()
         user_id = self.create_user(username="test")
-        self.set_models(
-            {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": user_id,
-                },
-            }
-        )
+        self.set_user_groups(user_id, [1])
 
         response = self.request(
             "user.update",

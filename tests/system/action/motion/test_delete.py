@@ -189,6 +189,7 @@ class MotionDeletePermissionTest(BaseMotionDeleteActionTest):
                 "meeting_id": 1,
             },
             "meeting_user/5": {"user_id": 2, "meeting_id": 1},
+            "group/1": {"meeting_user_ids": [5]},
             "motion_state/1": {"allow_submitter_edit": True},
         }
 
