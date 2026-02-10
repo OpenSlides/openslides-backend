@@ -82,6 +82,8 @@ def original_instances(method: Callable) -> Callable:
 
 T = TypeVar("T", bound=WriteRequest)
 
+EditFunction = Callable[[dict, dict[FullQualifiedId, dict[str, Any]]], None]
+
 
 class Action(BaseServiceProvider, metaclass=SchemaProvider):
     """
@@ -816,6 +818,13 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         )
         presenter_instance.validate()
         return presenter_instance.get_result()
+
+    def get_edit_function(self) -> EditFunction | None:
+        """
+        Returns a function that allows post-editing the action result
+        with the return data from the database writer.
+        """
+        return None
 
 
 def merge_history_informations(
