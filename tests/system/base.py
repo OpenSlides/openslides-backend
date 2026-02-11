@@ -88,6 +88,7 @@ class BaseSystemTestCase(TestCase):
         self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()
+        self.logged_in_user_ids: set[int] = set()
         if self.init_with_login:
             self.set_models(
                 {
@@ -147,10 +148,8 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-
-        # TODO: Does something equivalent to this old code
-        #  need to be done here?
-        # injector.get(ShutdownService).shutdown()
+        for user_id in self.logged_in_user_ids:
+            self.auth.clear_sessions_by_user_id(user_id)
 
         super().tearDown()
 
@@ -202,6 +201,7 @@ class BaseSystemTestCase(TestCase):
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
         self.client.login(user["username"], user["default_password"])
+        self.logged_in_user_ids.add(user_id)
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
