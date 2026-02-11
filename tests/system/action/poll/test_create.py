@@ -35,6 +35,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 1, "sequential_number": 1}
         poll = self.assert_model_exists(
             "poll/1",
             {

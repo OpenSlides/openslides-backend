@@ -59,6 +59,12 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {
+            "id": 13,
+            "sequential_number": 1,
+            "amendment_result_data": [],
+            "non_forwarded_amendment_amount": 0,
+        }
         model = self.assert_model_exists(
             "motion/13",
             {
@@ -322,6 +328,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 14,
+                "sequential_number": 2,
                 "non_forwarded_amendment_amount": 0,
                 "amendment_result_data": [
                     {
@@ -471,6 +478,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 18,
+                "sequential_number": 4,
                 "non_forwarded_amendment_amount": 1,
                 "amendment_result_data": [
                     {
@@ -1272,6 +1280,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 4,
+                "sequential_number": 2,
                 "non_forwarded_amendment_amount": 1,
                 "amendment_result_data": [
                     {

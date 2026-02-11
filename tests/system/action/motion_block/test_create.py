@@ -10,6 +10,7 @@ class MotionBlockActionTest(BaseActionTestCase):
             "motion_block.create", {"title": "test_Xcdfgee", "meeting_id": 42}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 1, "sequential_number": 1}
         self.assert_model_exists(
             "motion_block/1", {"title": "test_Xcdfgee", "sequential_number": 1}
         )
