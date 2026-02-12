@@ -145,6 +145,22 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_initial_import_example_data(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "start_time": datetime.fromtimestamp(
+                    1234567890, tz=ZoneInfo("Etc/UTC")
+                ),
+                "end_time": datetime.fromtimestamp(1234567899, tz=ZoneInfo("Etc/UTC")),
+            },
+        )
+
     def test_initial_import_missing_default_language(self) -> None:
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         del request_data["data"]["organization"]["1"]["default_language"]
