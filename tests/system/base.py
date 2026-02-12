@@ -148,10 +148,6 @@ class BaseSystemTestCase(TestCase):
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
 
-        # TODO: Does something equivalent to this old code
-        #  need to be done here?
-        # injector.get(ShutdownService).shutdown()
-
         super().tearDown()
 
     @staticmethod

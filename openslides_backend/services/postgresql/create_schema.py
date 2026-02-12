@@ -3,7 +3,6 @@ from typing import Any
 
 from psycopg import Connection, Cursor, rows, sql
 
-from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.exceptions import (
     MismatchingMigrationIndicesException,
 )
@@ -117,7 +116,7 @@ def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
                     WHERE
                         tgrelid = {table_name}::regclass AND
                         tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
-                ).format(table_name=HelperGetNames.get_table_name(table))
+                ).format(table_name=table)
             ).fetchall()
             for trigger_dict in to_disable_triggers:
                 cursor.execute(

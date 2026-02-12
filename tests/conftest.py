@@ -14,7 +14,6 @@ from tests.conftest_helper import (
     generate_remove_all_test_functions,
     generate_sql_for_test_initiation,
 )
-from tests.system.base import BaseSystemTestCase
 
 openslides_db = env.DATABASE_NAME
 database_user = env.DATABASE_USER
