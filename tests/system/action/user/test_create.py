@@ -700,7 +700,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user/5": {"username": "user5"},
                 "user/6": {"username": "user6"},
-                "meeting/1": {"structure_level_ids": [31]},
                 "structure_level/31": {"name": "user 4 alone", "meeting_id": 1},
             }
         )
