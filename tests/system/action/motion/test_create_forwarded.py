@@ -334,6 +334,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                     {
                         "amendment_result_data": [],
                         "id": 15,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                     }
                 ],
@@ -483,15 +484,18 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_result_data": [
                     {
                         "id": 19,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                         "amendment_result_data": [],
                     },
                     {
                         "id": 20,
+                        "sequential_number": 3,
                         "non_forwarded_amendment_amount": 1,
                         "amendment_result_data": [
                             {
                                 "id": 21,
+                                "sequential_number": 2,
                                 "non_forwarded_amendment_amount": 0,
                                 "amendment_result_data": [],
                             },
@@ -1285,6 +1289,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 "amendment_result_data": [
                     {
                         "id": 5,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                         "amendment_result_data": [],
                     },

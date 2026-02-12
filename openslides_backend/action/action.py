@@ -819,7 +819,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         presenter_instance.validate()
         return presenter_instance.get_result()
 
-    def get_edit_function(self) -> EditFunction | None:
+    def get_post_edit_function(self) -> EditFunction | None:
         """
         Returns a function that allows post-editing the action result
         with the return data from the database writer.

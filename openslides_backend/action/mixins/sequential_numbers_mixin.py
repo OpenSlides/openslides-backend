@@ -17,9 +17,9 @@ class SequentialNumbersMixin(CreateAction):
             event["return_fields"] = ["sequential_number"]
         yield from events
 
-    def get_edit_function(self) -> EditFunction | None:
-        def edit_fn(data: dict, results: dict[str, dict[str, Any]]) -> None:
-            fqid = fqid_from_collection_and_id(self.model.collection, data.get("id", 0))
-            data.update(results.get(fqid, {}))
+    def get_post_edit_function(self) -> EditFunction | None:
+        return self.post_edit_fn
 
-        return edit_fn
+    def post_edit_fn(self, data: dict, results: dict[str, dict[str, Any]]) -> None:
+        fqid = fqid_from_collection_and_id(self.model.collection, data.get("id", 0))
+        data.update(results.get(fqid, {}))

@@ -68,7 +68,7 @@ payload_schema = fastjsonschema.compile(
     }
 )
 
-EDIT_FN_KEY = "_EDIT_FN_GHETZHSRHSRGG"
+META_POST_EDIT_FN_KEY = "META_EDIT_FN_GHETZHSRHSRGG"
 
 
 class ActionHandler(BaseHandler):
@@ -124,6 +124,7 @@ class ActionHandler(BaseHandler):
 
             try:
                 with get_new_os_conn() as conn:
+                    self.post_edit_necessary = False
                     self.datastore = ExtendedDatabase(conn, self.logging, self.env)
                     results: ActionsResponseResults = []
                     if atomic:
@@ -205,14 +206,15 @@ class ActionHandler(BaseHandler):
     def update_action_data_with_write_results(
         self, data: T, results: dict[str, dict[str, Any]]
     ) -> T:
-        if isinstance(data, list):
-            for element in data:
-                if element:
-                    self.update_action_data_with_write_results(element, results)
-        elif isinstance(data, dict):
-            edit_fn = data.pop(EDIT_FN_KEY, None)
-            if edit_fn:
-                return edit_fn(data, results)
+        if self.post_edit_necessary:
+            if isinstance(data, list):
+                for element in data:
+                    if element:
+                        self.update_action_data_with_write_results(element, results)
+            elif isinstance(data, dict):
+                edit_fn = data.pop(META_POST_EDIT_FN_KEY, None)
+                if edit_fn:
+                    return edit_fn(data, results)
         return data
 
     def parse_actions(
@@ -291,10 +293,11 @@ class ActionHandler(BaseHandler):
                 write_request, results = action.perform(
                     action_data, self.user_id, internal=self.internal
                 )
-                if results and (edit_fn := action.get_edit_function()):
+                if results and (edit_fn := action.get_post_edit_function()):
                     for element in results:
                         if element and isinstance(element, dict):
-                            element[EDIT_FN_KEY] = edit_fn
+                            element[META_POST_EDIT_FN_KEY] = edit_fn
+                            self.post_edit_necessary = True
 
             if write_request:
                 action.validate_write_request(write_request)
