@@ -12,15 +12,14 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         self.user_id = self.create_user("test", group_ids=[1])
         self.update_model(f"user/{self.user_id}", {"can_change_own_password": True})
         self.login(self.user_id)
+        new_password = "new"
         response = self.request(
             "user.set_password_self",
-            {"old_password": DEFAULT_PASSWORD, "new_password": "new"},
+            {"old_password": DEFAULT_PASSWORD, "new_password": new_password},
         )
         self.assert_status_code(response, 200)
-        model = self.assert_model_exists(
-            "user/2", {"old_password": None, "new_password": None}
-        )
-        assert self.auth.is_equal("new", model.get("password", ""))
+        model = self.get_model("user/2", {"password": self.auth.hash(new_password)})
+        assert self.auth.is_equal(new_password, model.get("password", ""))
         self.assert_logged_out()
 
     def test_set_password_wrong_password(self) -> None:

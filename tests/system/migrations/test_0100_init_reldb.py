@@ -77,7 +77,6 @@ class BaseMigrationTestCase(TestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
-    auth_mockers: dict[str, _patch]
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """

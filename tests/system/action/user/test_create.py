@@ -694,7 +694,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """create group B fields with simple user.can_manage permissions"""
         self.create_meeting()
         self.set_organization_management_level(None)
-        self.set_user_groups(1, [2])  # Admin groups of meeting/1
+        self.set_user_groups(self.user_id, [2])  # Admin groups of meeting/1
 
         self.set_models(
             {
@@ -1061,7 +1061,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_group_H_internal_saml_id(self) -> None:
         self.create_meeting()
         self.set_organization_management_level(None)
-        self.set_user_groups(1, [2])  # Admin-group
+        self.set_user_groups(self.user_id, [2])  # Admin-group
 
         response = self.request(
             "user.create",

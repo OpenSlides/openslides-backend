@@ -87,6 +87,7 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.set_thread_watch_timeout(-1)
 
+        self.user_id = 1
         self.created_fqids = set()
         if self.init_with_login:
             self.set_models(
@@ -100,7 +101,7 @@ class BaseSystemTestCase(TestCase):
                     "theme/1": {
                         "name": "OpenSlides Organization",
                     },
-                    "user/1": {
+                    f"user/{self.user_id}": {
                         "username": ADMIN_USERNAME,
                         "password": self.auth.hash(ADMIN_PASSWORD),
                         "default_password": ADMIN_PASSWORD,
