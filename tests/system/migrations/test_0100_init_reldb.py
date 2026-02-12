@@ -10,7 +10,7 @@ from time import sleep
 from typing import Any, cast
 from unittest import TestCase
 from unittest.mock import DEFAULT as mockdefault
-from unittest.mock import Mock, _patch, patch
+from unittest.mock import Mock, patch
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication

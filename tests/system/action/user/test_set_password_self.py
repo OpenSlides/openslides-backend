@@ -18,7 +18,7 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             {"old_password": DEFAULT_PASSWORD, "new_password": new_password},
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/2", {"password": self.auth.hash(new_password)})
+        model = self.get_model(f"user/{self.user_id}")
         assert self.auth.is_equal(new_password, model.get("password", ""))
         self.assert_logged_out()
 
