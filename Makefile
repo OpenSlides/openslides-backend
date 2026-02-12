@@ -53,7 +53,7 @@ check-models:
 	python cli/generate_models.py --check
 
 validate-models-yml:
-	make -C meta/dev validate-models
+	make -C meta validate-models
 
 # Permissions
 
