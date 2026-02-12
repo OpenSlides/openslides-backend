@@ -77,8 +77,6 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
         with conn.cursor() as curs:
             curs.execute("SELECT init_table_contents();")
         conn.commit()
-        # TODO this is a hacky workaround to get this connection in system testcases
-        BaseSystemTestCase.connection = conn
         yield conn
         with conn.cursor() as curs, suppress(AdminShutdown):
             # AdminShutdown will happen when the database is dropped during first rel-db migration tests
