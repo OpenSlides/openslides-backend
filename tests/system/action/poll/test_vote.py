@@ -26,7 +26,7 @@ class BaseVoteTestCase(BasePollTestCase):
         """Overwrite request method to reroute voting requests to the vote service."""
         if action == "poll.vote":
             if start_poll_before_vote:
-                self.vote_service.start(data["id"])
+                self.execute_action_internally("poll.start", {"id": data["id"]})
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
                 self.request("poll.stop", {"id": data["id"]})
@@ -66,7 +66,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "title": "my test poll",
                     "pollmethod": "YN",
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "onehundred_percent_base": "YNA",
@@ -96,7 +96,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "title": "my test poll",
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                     "max_votes_per_option": 1,
@@ -360,7 +360,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "pollmethod": "YNA",
                     "backend": "fast",
                     "type": "named",
@@ -416,7 +416,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "title": "my test poll",
                     "meeting_id": 113,
                     "pollmethod": "YNA",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "onehundred_percent_base": "YNA",
@@ -439,7 +439,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "option_ids": [11],
                     "pollmethod": "YNA",
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "meeting_id": 113,
                     "backend": "fast",
                     "type": "named",
@@ -474,7 +474,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "pollmethod": "YNA",
                     "global_yes": True,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "title": "Poll 1",
@@ -525,7 +525,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_abstain": False,
                     "meeting_id": 113,
                     "pollmethod": "YN",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "onehundred_percent_base": "Y",
@@ -577,7 +577,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "title": "Poll 1",
@@ -603,7 +603,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": False,
                     "global_abstain": False,
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "type": "named",
                     "pollmethod": "YNA",
@@ -626,7 +626,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "type": "named",
                     "meeting_id": 113,
                     "pollmethod": "Y",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "backend": "fast",
                     "onehundred_percent_base": "Y",
                 },
@@ -649,7 +649,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "title": "my test poll",
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
@@ -705,7 +705,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "title": "my test poll",
                     "pollmethod": "Y",
                     "meeting_id": 113,
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "max_votes_per_option": 1,
                     "backend": "fast",
                     "type": "named",
@@ -781,7 +781,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         raise NotImplementedError()
 
     def start_poll(self) -> None:
-        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        self.update_model("poll/1", {"state": Poll.STATE_CREATED})
 
     def add_option(self) -> None:
         self.set_models(
