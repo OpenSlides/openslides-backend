@@ -154,10 +154,8 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1",
             {
-                "start_time": datetime.fromtimestamp(
-                    1234567890, tz=ZoneInfo("Etc/UTC")
-                ),
-                "end_time": datetime.fromtimestamp(1234567899, tz=ZoneInfo("Etc/UTC")),
+                "start_time": datetime.fromisoformat("2011-11-11T11:11:11+01:00"),
+                "end_time": datetime.fromisoformat("2011-03-09T12:00:00+01:00"),
             },
         )
 
