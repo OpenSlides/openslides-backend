@@ -31,7 +31,6 @@ from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDelet
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
-from ..poll.update import PollUpdateAction
 from ..speaker.create_for_merge import SpeakerCreateForMerge
 from ..speaker.delete import SpeakerDeleteAction
 from ..speaker.update import SpeakerUpdate
@@ -207,8 +206,6 @@ class UserMergeTogether(
                     changed = True
             if changed:
                 poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
-        if len(poll_payloads):
-            self.execute_other_action(PollUpdateAction, poll_payloads)
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

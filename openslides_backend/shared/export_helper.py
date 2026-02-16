@@ -22,7 +22,7 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
-NON_CASCADING_MEETING_RELATION_LISTS = ["poll_candidate_list_ids", "poll_candidate_ids"]
+NON_CASCADING_MEETING_RELATION_LISTS = []
 
 HISTORY_FIELDS_PER_COLLECTION = {
     "meeting": ["relevant_history_entry_ids"],
@@ -286,11 +286,6 @@ def add_users(
         # limit user fields to exported objects
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),
-            ("poll", "poll_voted_ids"),
-            ("option", "option_ids"),
-            ("vote", "vote_ids"),
-            ("poll_candidate", "poll_candidate_ids"),
-            ("vote", "delegated_vote_ids"),
         ]
         for collection, fname in collection_field_tupels:
             user[fname] = [

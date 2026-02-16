@@ -171,7 +171,6 @@ meeting_settings_keys = [
     "assignment_poll_default_group_ids",
     "assignment_poll_default_backend",
     "topic_poll_default_group_ids",
-    "poll_default_backend",
     "poll_default_live_voting_enabled",
 ]
 
