@@ -84,7 +84,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },
@@ -111,7 +110,6 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "config_id": f"poll_config_approval/{base}",
                     "visibility": Poll.VISIBILITY_NAMED,
                     "meeting_id": 1,
-                    "sequential_number": base,
                     "content_object_id": "motion/1",
                     "state": state,
                     "published": published,
@@ -135,7 +133,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },
@@ -166,7 +163,6 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "motion/1",
                 },

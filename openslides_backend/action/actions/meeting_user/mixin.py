@@ -42,10 +42,14 @@ LockingStatusCheckResult = tuple[str, list[int] | None]  # message to broken gro
 
 class CheckLockOutPermissionMixin(Action):
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.meeting_id_to_can_manage_group_ids: dict[int, set[int]] = {}
-        return super().perform(action_data, user_id, internal)
+        return super().perform(action_data, user_id, internal, is_sub_call)
 
     def check_locking_status(
         self,

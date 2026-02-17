@@ -8,6 +8,8 @@ from psycopg.types.json import Jsonb
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.shared.typing import HistoryInformation
 
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.database.commands import GetManyRequest
@@ -15,6 +17,7 @@ from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...mixins.forward_mediafiles_mixin import ForwardMediafilesMixin
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion_change_recommendation.create import MotionChangeRecommendationCreateAction
@@ -81,11 +84,17 @@ class BaseMotionCreateForwarded(
             lock_result=False,
         )
 
-    def get_user_verbose_names(self, meeting_user_ids: list[int]) -> str | None:
+    def get_user_verbose_names(
+        self, meeting_user_ids: list[int | None], language: str | None
+    ) -> str | None:
+        Translator.set_translation_language(language or self.default_language)
+        deleted_string = _("Deleted user")
         meeting_users = self.datastore.get_many(
             [
                 GetManyRequest(
-                    "meeting_user", meeting_user_ids, ["user_id", "structure_level_ids"]
+                    "meeting_user",
+                    [id_ for id_ in meeting_user_ids if id_],
+                    ["user_id", "structure_level_ids"],
                 )
             ],
             lock_result=False,
@@ -96,12 +105,15 @@ class BaseMotionCreateForwarded(
             if (user_id := meeting_user.get("user_id"))
         ]
         if not len(user_ids):
-            return None
-        requests = [
-            GetManyRequest(
-                "user", user_ids, ["id", "first_name", "last_name", "title", "pronoun"]
-            )
-        ]
+            requests = []
+        else:
+            requests = [
+                GetManyRequest(
+                    "user",
+                    user_ids,
+                    ["id", "first_name", "last_name", "title", "pronoun"],
+                )
+            ]
         if structure_level_ids := list(
             {
                 structure_level_id
@@ -112,44 +124,59 @@ class BaseMotionCreateForwarded(
             requests.append(
                 GetManyRequest("structure_level", structure_level_ids, ["name"])
             )
-        user_data = self.datastore.get_many(requests, lock_result=False)
-        users = user_data["user"]
-        structure_levels = user_data["structure_level"]
+        if requests:
+            user_data = self.datastore.get_many(requests, lock_result=False)
+        else:
+            user_data = {}
+        users = user_data.get("user", {})
+        structure_levels = user_data.get("structure_level", {})
         names = []
         for meeting_user_id in meeting_user_ids:
-            meeting_user = meeting_users[meeting_user_id]
-            user = users.get(meeting_user.get("user_id", 0))
-            if user:
-                additional_info: list[str] = []
-                if pronoun := user.get("pronoun"):
-                    additional_info = [pronoun]
-                if sl_ids := meeting_user.get("structure_level_ids"):
-                    if slnames := ", ".join(
-                        name
-                        for structure_level_id in sl_ids
-                        if (
-                            name := structure_levels.get(structure_level_id, {}).get(
-                                "name"
+            if meeting_user_id:
+                meeting_user = meeting_users[meeting_user_id]
+                user = users.get(meeting_user.get("user_id", 0))
+                if user:
+                    additional_info: list[str] = []
+                    if pronoun := user.get("pronoun"):
+                        additional_info = [pronoun]
+                    if sl_ids := meeting_user.get("structure_level_ids"):
+                        if slnames := ", ".join(
+                            name
+                            for structure_level_id in sl_ids
+                            if (
+                                name := structure_levels.get(
+                                    structure_level_id, {}
+                                ).get("name")
                             )
-                        )
+                        ):
+                            additional_info.append(slnames)
+                    suffix = " · ".join(additional_info)
+                    if suffix:
+                        suffix = f"({suffix})"
+                    if not any(
+                        user.get(field) for field in ["first_name", "last_name"]
                     ):
-                        additional_info.append(slnames)
-                suffix = " · ".join(additional_info)
-                if suffix:
-                    suffix = f"({suffix})"
-                if not any(user.get(field) for field in ["first_name", "last_name"]):
-                    short_name = f"User {user['id']}"
-                else:
-                    short_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
-                long_name = f"{user.get('title', '')} {short_name} {suffix}".strip()
-                names.append(long_name)
+                        short_name = f"User {user['id']}"
+                    else:
+                        short_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+                    long_name = f"{user.get('title', '')} {short_name} {suffix}".strip()
+                    names.append(long_name)
+            else:
+                names.append(deleted_string)
         return ", ".join(names)
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.id_to_result_extra_data: dict[int, dict[str, Any]] = {}
-        return super().perform(action_data, user_id, internal)
+        self.default_language = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["default_language"], raise_exception=False
+        ).get("default_language", "en")
+        return super().perform(action_data, user_id, internal, is_sub_call)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.with_attachments = instance.pop("with_attachments", False)
@@ -158,7 +185,11 @@ class BaseMotionCreateForwarded(
         ) or instance.get("marked_forwarded", False)
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            ["motions_default_workflow_id", "motions_default_amendment_workflow_id"],
+            [
+                "motions_default_workflow_id",
+                "motions_default_amendment_workflow_id",
+                "language",
+            ],
             lock_result=False,
         )
         self.set_state_from_workflow(instance, meeting)
@@ -170,19 +201,17 @@ class BaseMotionCreateForwarded(
                 self.datastore.filter(
                     "motion_submitter",
                     FilterOperator("motion_id", "=", instance["origin_id"]),
-                    ["meeting_user_id"],
+                    ["meeting_user_id", "weight"],
                     lock_result=False,
                 ).values()
             )
-            submitters = sorted(submitters, key=lambda x: x.get("weight", 10000))
+            submitters = sorted(submitters, key=lambda x: x.get("weight") or 10000)
             meeting_user_ids = [
-                meeting_user_id
-                for submitter in submitters
-                if (meeting_user_id := submitter.get("meeting_user_id"))
+                submitter.get("meeting_user_id") for submitter in submitters
             ]
             if len(meeting_user_ids):
                 instance["additional_submitter"] = self.get_user_verbose_names(
-                    meeting_user_ids
+                    meeting_user_ids, meeting.get("language")
                 )
             text_submitter = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
@@ -198,7 +227,6 @@ class BaseMotionCreateForwarded(
             name = committee.get("name", f"Committee {committee['id']}")
             instance["additional_submitter"] = name
 
-        self.set_sequential_number(instance)
         self.handle_number(instance)
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
@@ -308,6 +336,7 @@ class BaseMotionCreateForwarded(
                 "amendment_result_data": [],
             }
         if self.with_attachments:
+            self.check_can_forward_with_attachments()
             self.forward_mediafiles(
                 instance, getattr(self, "meeting_mediafile_replace_map", {})
             )
@@ -606,3 +635,10 @@ class BaseMotionCreateForwarded(
             ]
             for instance in self.instances
         }
+
+    def check_can_forward_with_attachments(self) -> None:
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["disable_forward_with_attachments"]
+        )
+        if organization.get("disable_forward_with_attachments"):
+            raise ActionException("Forward with attachments is disabled")

@@ -54,10 +54,7 @@ class DatabaseReader(SqlQueryHelper):
             for id_ in ids:
                 if not id_ > 0:
                     raise InvalidFormat("Id must be positive.")
-            if get_many_request.mapped_fields is None:
-                mapped_fields = MappedFields()
-            else:
-                mapped_fields = MappedFields(list(get_many_request.mapped_fields))
+            mapped_fields = MappedFields(list(get_many_request.mapped_fields))
             if "id" not in mapped_fields.unique_fields:
                 mapped_fields.unique_fields.append("id")
 
@@ -205,6 +202,7 @@ class DatabaseReader(SqlQueryHelper):
             else:
                 collection_result_part[id_] = row
 
+    # TODO: Fix or delete
     def get_current_migration_index(self) -> int:
         #        result = self.connection.query(
         #            "select min(migration_index), max(migration_index) from positions", []

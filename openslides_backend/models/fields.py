@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any, cast
 
@@ -121,6 +121,8 @@ class IntegerField(Field):
     def check_required_not_fulfilled(
         self, instance: dict[str, Any], is_create: bool
     ) -> bool:
+        if self.constraints.get("sequence_scope"):
+            return False
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None
@@ -184,11 +186,11 @@ class JSONField(Field):
         return self.extend_schema(super().get_schema(), type=types)
 
     def validate_with_schema(
-        self, fqid: FullQualifiedId, field_name: str, value: dict | Jsonb
+        self, fqid: FullQualifiedId, field_name: str, value: list | dict | Jsonb
     ) -> None:
         if isinstance(value, Jsonb):
             value = value.obj
-        elif not isinstance(value, dict | None):
+        elif not isinstance(value, list | dict | None):
             raise NotImplementedError(
                 f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
             )
@@ -251,7 +253,12 @@ class DecimalField(Field):
         if value is not None or self.required:
             if (min_ := self.constraints.get("minimum")) is not None:
                 if isinstance(value, str):
-                    value = Decimal(value)
+                    try:
+                        value = Decimal(value)
+                    except InvalidOperation:
+                        raise ActionException(
+                            f"{self.own_field_name}: value '{value}' couldn't be converted to decimal."
+                        )
                 elif not isinstance(value, Decimal | None):
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
@@ -308,6 +315,14 @@ class ArrayField(Field):
         if self.required:
             return self.extend_schema(super().get_schema(), type="array", default=[])
         return self.extend_schema(super().get_schema(), type=["array", "null"])
+
+
+class TextArrayField(ArrayField):
+    def get_schema(self) -> Schema:
+        items = dict(type="string")
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
 
 
 class CharArrayField(ArrayField):

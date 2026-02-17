@@ -1,32 +1,21 @@
-# Migrations for the Datastore
+# TODO revise this file
+# Migrations for the Database
 
-The `migrate.py` script is the main entrypoint to execute migrations. The migrations itself are in the `migrations` folder. Each file can be arbitrarily named but must include a class called `Migration` that can be found by the loader. Note that all docker related files in this folder are only for **developing** migrations, not execute them. For execution in the dev mode, see the actual backend target for the dockerfile (`target dev`) and `dev/entrypoint.sh`.
+The migrations will create shadow copies with `{name}_mig` of all tables to be migrated and rereference all triggers and references to those. Migration will be done on the `_mig`-tables. In the finalization step the original tables are deleted and the shadow copies put into place.
+Collections in READ_MODELS will prevent writing on corresponding tables for all parrallel processes.
+Collections in WRITE_MODELS will additionally prevent reading on corresponding tables for all parrallel processes.
+
+The migrations themselves are in the `migrations` folder. Each file must start with a four digit number and can include certain functions that can be found by the loader. A psycopg cursor object will be passed as function parameter.
+ * data_definition: should do necessary schema changes
+ * data_manipulation: should pass the altered original data from the table to table_mig
+ * cleanup: should do all cleanups that aren't done automatically like deleting additional temporary tables. This step happens during finalization before all automatic changes.
+
+#### Scripts for setting initial data
 
 There are three ways to execute migrations:
 
-## 1) Developing migrations
-This is done within the dockersetup in this folder. Note that the datastore needs to be checked out with the name `openslides-datastore-service` next to the backend repository.
-
-- checkout the current datastore (in ../../openslides-datastore-service) and the current backend.
-- `make run-dev`: Starts the compose setup -> A shell opens with the ability to run `migrate.py` and auxillary scripts.
-- You can exit from it with `exit` and shut down the docker setup with `make stop-dev`
-- You can write migrations in the backend and also adjust the Datastore at the same time since both are mounted into the container.
-
-The following scripts can be used to make snapshots and trying out new migrations
-
-#### Scripts for setting initial data
-Only the current dataset is exported, so after a (re-)import, only one position exists in the datastore. Also note that importing clears the old content
-
-- `export-data-only.sh` [to:export.json]
-- `import-data-only.sh` [from:export.json]
-
-#### Scripts for the full backup (Does a DB dump)
-- `export-events.sh` [to:export.sql]
-- `import-events.sh` [from:export.sql]
-
-#### Downloading example data
-- `fetch-example-data.sh` [to:example-data.json]
-
+## 1) The `migrate.py` script is the cli entrypoint to execute migrations.
+Use python `migrate.py -h` to see all available commands.
 
 ## 2) Migrations in dev mode
 

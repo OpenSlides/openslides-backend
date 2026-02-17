@@ -15,15 +15,14 @@ class TestSpeakerUnpause(BaseActionTestCase):
         self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "user/7": {"username": "test_username1"},
-            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+            "group/1": {"meeting_user_ids": [7]},
             "topic/1337": {
                 "title": "introduction leet gathering",
-                "sequential_number": 1337,
                 "meeting_id": 1,
             },
             "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
             "list_of_speakers/23": {
-                "sequential_number": 23,
                 "content_object_id": "topic/1337",
                 "meeting_id": 1,
             },

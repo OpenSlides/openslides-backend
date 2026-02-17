@@ -10,13 +10,11 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.create_meeting()
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "topic/111": {
-                "sequential_number": 1,
                 "title": "title_srtgb123",
                 "meeting_id": 1,
             },
             "list_of_speakers/23": {
                 "content_object_id": "topic/111",
-                "sequential_number": 11,
                 "meeting_id": 1,
             },
             "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/111"},
@@ -26,13 +24,11 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/111",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/111"},
@@ -47,12 +43,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
             {
                 "topic/112": {
                     "meeting_id": 1,
-                    "sequential_number": 12,
                     "title": "title_srtgb123",
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/112",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/9": {"meeting_id": 1, "content_object_id": "topic/112"},
@@ -66,12 +60,10 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/111": {
-                    "sequential_number": 1,
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/222": {
-                    "sequential_number": 22,
                     "closed": False,
                     "content_object_id": "topic/111",
                     "meeting_id": 1,
@@ -110,18 +102,18 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("list_of_speakers/1")
 
     def test_delete_with_agenda_item_and_filled_los(self) -> None:
+        self.set_user_groups(1, [1])
+        self.create_user_for_meeting(1)
         self.set_models(
             {
                 "topic/1": {
                     "title": "tipuc",
-                    "sequential_number": 1,
                     "agenda_item_id": 3,
                     "list_of_speakers_id": 3,
                     "meeting_id": 1,
                 },
                 "agenda_item/3": {"content_object_id": "topic/1", "meeting_id": 1},
                 "list_of_speakers/3": {
-                    "sequential_number": 1,
                     "content_object_id": "topic/1",
                     "meeting_id": 1,
                 },
@@ -135,9 +127,6 @@ class TopicDeleteActionTest(BaseActionTestCase):
                     "meeting_user_id": 2,
                     "meeting_id": 1,
                 },
-                "user/2": {"username": "user2"},
-                "meeting_user/1": {"user_id": 1, "meeting_id": 1, "speaker_ids": [1]},
-                "meeting_user/2": {"user_id": 2, "meeting_id": 1, "speaker_ids": [2]},
             }
         )
         response = self.request("topic.delete", {"id": 1})

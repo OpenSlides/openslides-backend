@@ -21,6 +21,7 @@
     show_state_extension_field: boolean;
     show_recommendation_extension_field: boolean;
     merge_amendment_into_final: number;
+    state_button_label: string;
 
     submitter_withdraw_state_id: Id;
     next_state_ids: Id[];

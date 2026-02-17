@@ -1623,6 +1623,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "number": "old number",
                     "comment": "old comment",
                 },
+                "group/1": {"meeting_user_ids": [110]},
             }
         )
         fix_fields = {
@@ -2679,7 +2680,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         self.add_group_permissions(4, [Permissions.User.CAN_UPDATE])
         self.add_group_permissions(7, [Permissions.User.CAN_MANAGE])
         participant1 = self.create_user("participant1", [1])  # 1
-        foreign_cml = self.create_user("foreign_cml")
+        foreign_cml = self.create_user("foreign_cml", committee_management_ids=[64])
         can_update = self.create_user("can_update", [4])  # 2
         foreign_meeting_admin = self.create_user("foreign_meeting_admin", [6])  # 3
         foreign_can_manage = self.create_user("foreign_can_manage", [7])  # 4
@@ -2689,8 +2690,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         locked_out2 = self.create_user("locked_out2", [1])  # 8
         self.set_models(
             {
-                f"committee/{64}": {"manager_ids": [foreign_cml]},
-                f"user/{foreign_cml}": {"committee_management_ids": [64]},
                 "meeting_user/7": {"locked_out": True},
                 "meeting_user/8": {"locked_out": True},
             }

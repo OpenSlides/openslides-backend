@@ -12,7 +12,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
                     "meeting_id": 1,
-                    "sequential_number": 111,
                 }
             }
         )
@@ -24,11 +23,9 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "title": "motion 89",
                     "meeting_id": 1,
                     "state_id": 1,
-                    "sequential_number": 89,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion/89",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -60,7 +57,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
                     "meeting_id": 1,
-                    "sequential_number": 111,
                 }
             }
         )
@@ -77,7 +73,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "name": "name_already",
                     "prefix": "test",
                     "meeting_id": 1,
-                    "sequential_number": 110,
                 },
             }
         )

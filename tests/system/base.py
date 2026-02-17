@@ -1,4 +1,5 @@
 import threading
+from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
@@ -9,28 +10,39 @@ import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 from psycopg import sql
 
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import (
     Model,
     json_dict_to_non_json_data_types,
     model_registry,
 )
+from openslides_backend.models.models import Meeting
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.auth.interface import AuthenticationService
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.env import Environment
-from openslides_backend.shared.exceptions import ActionException, ModelDoesNotExist
+from openslides_backend.shared.exceptions import (
+    ActionException,
+    BadCodingException,
+    ModelDoesNotExist,
+)
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.event import Event, EventType, ListFields
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
+    fqid_from_collection_and_id,
     id_from_fqid,
     is_reserved_field,
 )
+from openslides_backend.shared.typing import PartialModel
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     ONE_ORGANIZATION_FQID,
@@ -40,6 +52,8 @@ from openslides_backend.shared.util import (
 from tests.util import AuthData, Client, Response
 
 from .util import TestVoteService
+
+DEFAULT_PASSWORD = "password"
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -207,44 +221,62 @@ class BaseSystemTestCase(TestCase):
             print(response.json)
         self.assertEqual(response.status_code, code)
 
-    def create_model(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> None:
-        write_request = self.get_write_request(
-            self.get_create_events(fqid, data, deleted)
-        )
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+    def create_model(self, fqid: str, data: dict[str, Any] = {}) -> None:
+        create_events = self.get_create_events(fqid, data)
+        self.perform_write_request(create_events)
         self.adjust_id_sequences()
 
-    def update_model(self, fqid: str, data: dict[str, Any]) -> None:
-        write_request = self.get_write_request(self.get_update_events(fqid, data))
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+    def update_model(
+        self, fqid: str, fields: dict[str, Any], list_fields: ListFields = {}
+    ) -> None:
+        if fields:
+            update_events = self.get_update_events(fqid, fields)
+        else:
+            update_events = []
+        if list_fields:
+            update_events.extend(
+                self.get_update_list_events(
+                    fqid, list_fields.get("add", {}), list_fields.get("remove", {})
+                )
+            )
+        self.perform_write_request(update_events)
 
-    def get_create_events(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> list[Event]:
+    def get_create_events(self, fqid: str, data: dict[str, Any] = {}) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
-        # self.validate_fields(fqid, data)# TODO reactivate
+        self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
-        if deleted:
-            events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
-        # self.validate_fields(fqid, data) #TODO reactivate
+        self.validate_fields(fqid, data)
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
-    def get_write_request(self, events: list[Event]) -> WriteRequest:
-        return WriteRequest(events, user_id=0)
+    def get_delete_events(self, fqid: str) -> list[Event]:
+        return [Event(type=EventType.Delete, fqid=fqid)]
+
+    def get_update_list_events(
+        self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
+    ) -> list[Event]:
+        self.validate_fields(fqid, add)
+        self.validate_fields(fqid, remove)
+        if not (add or remove):
+            return []
+        return [
+            Event(
+                type=EventType.Update,
+                fqid=fqid,
+                list_fields={"add": add, "remove": remove},
+            )
+        ]
+
+    def perform_write_request(self, events: list[Event]) -> None:
+        write_request = WriteRequest(events, user_id=0)
+        if self.check_auth_mockers_started():
+            for event in write_request.events:
+                self.auth.create_update_user_session(event)  # type: ignore
+        self.datastore.write(write_request)
+        self.connection.commit()
 
     def set_models(self, models: dict[FullQualifiedId, dict[str, Any]]) -> None:
         """
@@ -259,12 +291,7 @@ class BaseSystemTestCase(TestCase):
                 events.extend(self.get_update_events(fqid, model))
             else:
                 events.extend(self.get_create_events(fqid, model))
-        write_request = self.get_write_request(events)
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
-        self.datastore.write(write_request)
-        self.connection.commit()
+        self.perform_write_request(events)
         self.adjust_id_sequences()
 
     def adjust_id_sequences(self) -> None:
@@ -280,6 +307,17 @@ class BaseSystemTestCase(TestCase):
                     )
                 )
             self.connection.commit()
+
+    def update_created_fqids(self) -> None:
+        """
+        Helper method for explicit update of self.created_fqids.
+        Ensures correct behaviour of set_models after creating models by the request.
+        """
+        self.created_fqids.update(
+            fqid_from_collection_and_id(collection, id_)
+            for collection, data in self.datastore.get_everything().items()
+            for id_ in data.keys()
+        )
 
     def check_auth_mockers_started(self) -> bool:
         if (
@@ -299,17 +337,17 @@ class BaseSystemTestCase(TestCase):
             except ActionException as e:
                 raise JsonSchemaException(e.message)
 
-    def get_model(self, fqid: str) -> dict[str, Any]:
-        self.connection.commit()
+    def get_model(self, fqid: str, raise_exception: bool = True) -> dict[str, Any]:
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
             lock_result=False,
             use_changed_models=False,
+            raise_exception=raise_exception,
         )
-        self.assertTrue(model)
-        assert model
-        self.assertEqual(model.get("id"), id_from_fqid(fqid))
+        if raise_exception:
+            self.assertTrue(model)
+            self.assertEqual(model.get("id"), id_from_fqid(fqid))
         return model
 
     def assert_model_exists(
@@ -355,3 +393,370 @@ class BaseSystemTestCase(TestCase):
             lock_result=False,
         )
         self.assertEqual(db_count, count)
+
+    def create_meeting(self, base: int = 1, meeting_data: PartialModel = {}) -> None:
+        """
+        Creates meeting with id 1, committee 60 and groups with ids 1(Default), 2(Admin), 3 by default.
+        With base you can setup other meetings, but be cautious because of group-ids
+        The groups have no permissions and no users by default.
+        """
+        committee_id = base + 59
+        self.set_models(
+            {
+                f"meeting/{base}": {
+                    "default_group_id": base,
+                    "admin_group_id": base + 1,
+                    "motions_default_workflow_id": base,
+                    "motions_default_amendment_workflow_id": base,
+                    "reference_projector_id": base,
+                    "committee_id": committee_id,
+                    "is_active_in_organization_id": 1,
+                    "language": "en",
+                    **meeting_data,
+                },
+                f"projector/{base}": {
+                    "meeting_id": base,
+                    **{field: base for field in Meeting.reverse_default_projectors()},
+                },
+                f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
+                f"group/{base+1}": {"meeting_id": base, "name": f"group{base+1}"},
+                f"group/{base+2}": {"meeting_id": base, "name": f"group{base+2}"},
+                f"motion_workflow/{base}": {
+                    "name": "flo",
+                    "meeting_id": base,
+                    "first_state_id": base,
+                },
+                f"motion_state/{base}": {
+                    "name": "stasis",
+                    "weight": 36,
+                    "meeting_id": base,
+                    "workflow_id": base,
+                },
+                f"committee/{committee_id}": {"name": f"Committee{committee_id}"},
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+            }
+        )
+
+    def create_motion(
+        self,
+        meeting_id: int,
+        base: int = 1,
+        state_id: int = 0,
+        motion_data: PartialModel = {},
+    ) -> None:
+        """
+        The meeting and motion_state must already exist.
+        Creates a motion with id 1 by default.
+        You can specify another id by setting base.
+        If no state_id is passed, meeting must have `state_id` equal to `id`.
+        """
+        self.set_models(
+            {
+                f"motion/{base}": {
+                    "title": f"motion{base}",
+                    "state_id": state_id or meeting_id,
+                    "meeting_id": meeting_id,
+                    **motion_data,
+                },
+                f"list_of_speakers/{base}": {
+                    "content_object_id": f"motion/{base}",
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
+    def create_mediafile(
+        self,
+        base: int = 1,
+        owner_meeting_id: int = 0,
+        is_directory: bool = False,
+        parent_id: int = 0,
+        file_type: str = "text",
+    ) -> None:
+        """
+        If `owner_meeting_id` is specified, creates meeting-wide mediafile
+        belonging to this meeting. Otherwise, creates published
+        organization-wide mediafile.
+
+        If parent_id is provided, parent must have `is_directory=True`
+        and belong to the same `owner_id`.
+
+        If file is not directory, it has mimetype and filename of the text file
+        by default. Set `file_type` to `image` or `font` to change these values.
+        """
+        model_data: dict[str, str | int | bool | None] = {
+            "title": f"folder_{base}" if is_directory else f"file_{base}",
+            "is_directory": is_directory,
+            "parent_id": parent_id or None,
+            "owner_id": (
+                f"meeting/{owner_meeting_id}"
+                if owner_meeting_id
+                else ONE_ORGANIZATION_FQID
+            ),
+            "published_to_meetings_in_organization_id": (
+                ONE_ORGANIZATION_ID if not owner_meeting_id else None
+            ),
+        }
+
+        if not is_directory:
+            match file_type:
+                case "text":
+                    mimetype = "text/plain"
+                    filename = f"text-{base}.txt"
+                case "font":
+                    mimetype = "font/woff"
+                    filename = f"font-{base}.woff"
+                case "image":
+                    mimetype = "image/png"
+                    filename = f"image-{base}.png"
+            model_data.update({"mimetype": mimetype, "filename": filename})
+
+        self.set_models({f"mediafile/{base}": model_data})
+
+    def create_topic(
+        self, base: int, meeting_id: int, topic_data: PartialModel = {}
+    ) -> None:
+        self.set_models(
+            {
+                f"topic/{base}": {
+                    "title": "test",
+                    "meeting_id": meeting_id,
+                    **topic_data,
+                },
+                f"agenda_item/{base}": {
+                    "meeting_id": meeting_id,
+                    "content_object_id": f"topic/{base}",
+                },
+                f"list_of_speakers/{base}": {
+                    "content_object_id": f"topic/{base}",
+                    "meeting_id": meeting_id,
+                },
+            }
+        )
+
+    def _get_user_data(
+        self,
+        username: str,
+        organization_management_level: OrganizationManagementLevel | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "username": username,
+            "organization_management_level": organization_management_level,
+            "is_active": True,
+            "default_password": DEFAULT_PASSWORD,
+            "password": self.auth.hash(DEFAULT_PASSWORD),
+        }
+
+    def create_user(
+        self,
+        username: str,
+        group_ids: list[int] = [],
+        organization_management_level: OrganizationManagementLevel | None = None,
+        home_committee_id: int | None = None,
+        committee_management_ids: list[int] = [],
+        meeting_user_ids: list[int] = [],
+    ) -> int:
+        """
+        Create a user with the given username, groups and organization management level.
+        Returns the users id and stores meeting user ids in meeting_user_ids.
+        """
+        id = 1
+        while f"user/{id}" in self.created_fqids:
+            id += 1
+        self.set_models(
+            {
+                f"user/{id}": self._get_user_data(
+                    username, organization_management_level
+                )
+                | {"home_committee_id": home_committee_id},
+            }
+        )
+        if committee_management_ids:
+            self.set_committee_management_level(committee_management_ids, id)
+        meeting_user_ids.extend(self.set_user_groups(id, group_ids))
+        return id
+
+    def create_user_for_meeting(self, meeting_id: int) -> int:
+        """adds created user to default group, returns user_id"""
+        meeting = self.get_model(f"meeting/{meeting_id}")
+        user_id = self.create_user("user_" + get_random_string(6))
+        self.set_user_groups(user_id, [meeting["default_group_id"]])
+        return user_id
+
+    def set_organization_management_level(
+        self, level: OrganizationManagementLevel | None, user_id: int = 1
+    ) -> None:
+        self.update_model(f"user/{user_id}", {"organization_management_level": level})
+
+    def set_committee_management_level(
+        self, committee_ids: list[int], user_id: int = 1
+    ) -> None:
+        """
+        Sets the user as the only committee manager of the given committees.
+        Removes all other committee managements of this user.
+        """
+        user = self.datastore.get(f"user/{user_id}", ["committee_management_ids"])
+        # TODO Use list add and remove fields instead of obtaining and recalculating the manager_ids here
+        db_committees = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "committee",
+                    user.get("committee_management_ids", []) + committee_ids,
+                    ["manager_ids"],
+                )
+            ]
+        ).get("committee", dict())
+
+        # remove removed ones
+        for db_committee_id, db_committee in db_committees.items():
+            if db_committee_id not in committee_ids and "manager_ids" in db_committee:
+                db_committee["manager_ids"].remove(user_id)
+        # add new relation
+        for committee_id in committee_ids:
+            if not (db_committee := db_committees.get(committee_id, {})):
+                raise BadCodingException(
+                    "Committee does not exist. This test should create the committee first before changing its managers."
+                )
+            if "manager_ids" not in db_committee:
+                db_committee["manager_ids"] = []
+            if user_id not in db_committee["manager_ids"]:
+                db_committee["manager_ids"].append(user_id)
+
+        self.set_models(
+            {
+                f"committee/{committee_id}": {
+                    "manager_ids": committee.get("manager_ids", [])
+                }
+                for committee_id, committee in db_committees.items()
+            }
+        )
+
+    def set_user_groups(self, user_id: int, target_group_ids: list[int]) -> list[int]:
+        """
+        Sets the groups in corresponding meeting_users and creates new ones if not existent.
+        Returns the meeting_user_ids.
+        """
+        assert isinstance(target_group_ids, list)
+        current_meeting_users = self.datastore.filter(
+            "meeting_user",
+            FilterOperator("user_id", "=", user_id),
+            ["id", "user_id", "meeting_id", "group_ids"],
+            lock_result=False,
+        )
+        current_group_ids: set[int] = {
+            group_id
+            for mu in current_meeting_users.values()
+            for group_id in mu.get("group_ids", [])
+        }
+        all_users_groups = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "group",
+                    list(set(target_group_ids) | current_group_ids),
+                    ["id", "meeting_id", "meeting_user_ids"],
+                )
+            ],
+            lock_result=False,
+        )["group"]
+
+        # Calculate the changes
+        target_meeting_ids: set[int] = {
+            v["meeting_id"]
+            for v in all_users_groups.values()
+            if v["id"] in target_group_ids
+        }
+
+        remaining_and_new_meeting_users: dict[int, dict[str, Any]] = {}
+        events_data_meeting_users_to_delete: set[int] = set()
+        for mu in current_meeting_users.values():
+            if mu["meeting_id"] in target_meeting_ids:
+                remaining_and_new_meeting_users[mu["meeting_id"]] = mu
+            else:
+                events_data_meeting_users_to_delete.add(mu["id"])
+
+        events_data_groups: dict[int, dict[str, list[int]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        for group_id, group in all_users_groups.items():
+            if group_id not in target_group_ids and (
+                meeting_user_ids := group.get("meeting_user_ids")
+            ):
+                for meeting_user_id in meeting_user_ids:
+                    # Skip groups of meeting_users marked for deletion: they will be deleted recursively
+                    if (
+                        meeting_user_id in current_meeting_users
+                        and meeting_user_id not in events_data_meeting_users_to_delete
+                    ):
+                        events_data_groups[group_id]["remove"].append(meeting_user_id)
+
+        last_meeting_user_id = max(
+            [
+                int(k[1])
+                for key in self.created_fqids
+                if (k := key.split("/"))[0] == "meeting_user"
+            ]
+            or [0]
+        )
+
+        events_data_meeting_users_to_add = {}
+        for meeting_id in target_meeting_ids:
+            if meeting_id not in remaining_and_new_meeting_users:
+                last_meeting_user_id += 1
+                events_data_meeting_users_to_add[meeting_id] = {
+                    "id": last_meeting_user_id,
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
+                }
+        remaining_and_new_meeting_users.update(events_data_meeting_users_to_add)
+
+        for group_id in target_group_ids:
+            if group_id not in current_group_ids:
+                meeting_id = all_users_groups[group_id]["meeting_id"]
+                meeting_user_id = remaining_and_new_meeting_users[meeting_id]["id"]
+                events_data_groups[group_id]["add"].append(meeting_user_id)
+
+        # Build and execute events
+        events = []
+
+        for id_ in events_data_meeting_users_to_delete:
+            events += self.get_delete_events(f"meeting_user/{id_}")
+
+        for mu in events_data_meeting_users_to_add.values():
+            id_ = mu.pop("id")
+            events += self.get_create_events(f"meeting_user/{id_}", mu)
+
+        for group_id, list_events_data in events_data_groups.items():
+            events += self.get_update_list_events(
+                f"group/{group_id}",
+                add={"meeting_user_ids": list_events_data.get("add", [])},
+                remove={"meeting_user_ids": list_events_data.get("remove", [])},
+            )
+
+        if events:
+            self.perform_write_request(events)
+            self.adjust_id_sequences()
+
+        return [mu["id"] for mu in remaining_and_new_meeting_users.values()]
+
+    def set_group_permissions(
+        self, group_id: int, permissions: list[Permission]
+    ) -> None:
+        self.update_model(f"group/{group_id}", {"permissions": permissions})
+
+    def add_group_permissions(
+        self, group_id: int, permissions: list[Permission]
+    ) -> None:
+        self.update_model(
+            fqid_from_collection_and_id("group", group_id),
+            {},
+            {"add": {"permissions": [str(p) for p in permissions]}},
+        )
+
+    def remove_group_permissions(
+        self, group_id: int, permissions: list[Permission]
+    ) -> None:
+        self.update_model(
+            fqid_from_collection_and_id("group", group_id),
+            {},
+            {"remove": {"permissions": [str(p) for p in permissions]}},
+        )

@@ -1,11 +1,13 @@
 import re
-import time
 from collections import defaultdict
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -13,8 +15,11 @@ from openslides_backend.models.fields import (
     BaseRelationField,
     GenericRelationField,
     GenericRelationListField,
+    JSONField,
+    OnDelete,
     RelationField,
     RelationListField,
+    TimestampField,
 )
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -29,7 +34,9 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     collection_and_id_from_fqid,
+    collection_from_fqid,
     fqid_from_collection_and_id,
+    id_from_fqid,
 )
 from openslides_backend.shared.schema import models_map_object
 
@@ -76,13 +83,18 @@ class MeetingImport(
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
 
         # prefetch as much data as possible
         self.prefetch(action_data)
@@ -153,7 +165,40 @@ class MeetingImport(
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         self.check_data_migration_index(instance)
+        self.transform_timestamps(instance)
         self.unset_committee_and_orga_relation(instance)
+        return instance
+
+    def transform_timestamps(self, instance: dict[str, Any]) -> dict[str, Any]:
+        for collection, collection_data in instance["meeting"].items():
+            if model := model_registry.get(collection):
+                fields = list(model().get_fields())
+                timestamp_field_names = [
+                    field.own_field_name
+                    for field in fields
+                    if isinstance(field, TimestampField)
+                ]
+                if timestamp_field_names:
+                    for mod in collection_data.values():
+                        for field in timestamp_field_names:
+                            if (iso := mod.get(field)) and isinstance(iso, str):
+                                mod[field] = datetime.fromisoformat(iso)
+        return instance
+
+    def transform_json_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
+        for collection, collection_data in instance["meeting"].items():
+            if model := model_registry.get(collection):
+                fields = list(model().get_fields())
+                json_field_names = [
+                    field.own_field_name
+                    for field in fields
+                    if isinstance(field, JSONField)
+                ]
+                if json_field_names:
+                    for mod in collection_data.values():
+                        for field in json_field_names:
+                            if field in mod:
+                                mod[field] = Jsonb(mod[field])
         return instance
 
     def check_one_meeting(self, instance: dict[str, Any]) -> None:
@@ -224,6 +269,19 @@ class MeetingImport(
                     res[key] = validate_html(html, ALLOWED_HTML_TAGS_STRICT)
                 entry["amendment_paragraphs"] = res
 
+        models_to_remove: set[tuple[str, int]] = set()
+        for mm_id, mmediafile in meeting_json.get("meeting_mediafile", {}).items():
+            if str(mmediafile["mediafile_id"]) not in meeting_json.get("mediafile", {}):
+                self.prepare_model_removal(
+                    "meeting_mediafile",
+                    mm_id,
+                    mmediafile,
+                    meeting_json,
+                    models_to_remove,
+                )
+        for collection, id_ in models_to_remove:
+            del meeting_json[collection][str(id_)]
+
         # check datavalidation
         checker = Checker(
             data=meeting_json,
@@ -255,6 +313,7 @@ class MeetingImport(
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
 
+        self.transform_json_fields(instance)
         self.check_limit_of_meetings()
         self.update_meeting_and_users(instance)
 
@@ -407,7 +466,7 @@ class MeetingImport(
         meeting["enable_anonymous"] = False
 
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
     def get_meeting_from_json(self, json_data: Any) -> Any:
         """
@@ -628,7 +687,10 @@ class MeetingImport(
                             entry,
                         )
                     )
-                elif collection in ["user", "gender"]:
+                elif collection in ["user", "gender"] or (
+                    collection == "mediafile"
+                    and getattr(self, "action_name", None) == "clone"
+                ):
                     list_fields: ListFields = {"add": {}, "remove": {}}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
@@ -728,8 +790,8 @@ class MeetingImport(
         """
         Check for valid migration index.
         """
-        start_migration_index = instance["meeting"].pop("_migration_index")
-        backend_migration_index = get_backend_migration_index()
+        start_migration_index = instance["meeting"].get("_migration_index")
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         if backend_migration_index < start_migration_index:
             raise ActionException(
                 f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"
@@ -738,3 +800,84 @@ class MeetingImport(
             raise ActionException(
                 f"Your data migration index '{start_migration_index}' is lower than the migration index of this backend '{backend_migration_index}'! Please, use a more recent file!"
             )
+
+    def prepare_model_removal(
+        self,
+        collection: str,
+        model_id: int,
+        content: dict[str, Any],
+        meeting_json: Any,
+        models_to_remove: set[tuple[str, int]] = set(),
+    ) -> None:
+        models_to_remove.add((collection, model_id))
+        for field_name in content:
+            if isinstance(
+                (relation_field := model_registry[collection]().get_field(field_name)),
+                BaseRelationField,
+            ) and (to_remove := content.get(field_name)):
+                if isinstance(to_remove, list):
+                    for target in to_remove:
+                        self.remove_back_relation(
+                            int(model_id),
+                            collection,
+                            relation_field,
+                            target,
+                            meeting_json,
+                            models_to_remove,
+                        )
+                else:
+                    self.remove_back_relation(
+                        int(model_id),
+                        collection,
+                        relation_field,
+                        to_remove,
+                        meeting_json,
+                        models_to_remove,
+                    )
+
+    def remove_back_relation(
+        self,
+        model_id: int,
+        model_collection: str,
+        relation_field: BaseRelationField,
+        to_remove: str | int,
+        meeting_json: Any,
+        models_to_remove: set[tuple[str, int]],
+    ) -> None:
+        if isinstance(relation_field, BaseGenericRelationField):
+            assert isinstance(to_remove, str)
+            coll = collection_from_fqid(to_remove)
+            id_ = str(id_from_fqid(to_remove))
+        else:
+            assert isinstance(to_remove, int)
+            coll = list(relation_field.to.keys())[0]
+            id_ = str(to_remove)
+        if (coll, id_) not in models_to_remove and id_ in meeting_json.get(coll, {}):
+            if relation_field.on_delete == OnDelete.CASCADE:
+                self.prepare_model_removal(
+                    coll,
+                    int(id_),
+                    meeting_json[coll][id_],
+                    meeting_json,
+                    models_to_remove,
+                )
+            elif meeting_json[coll][id_].get(relation_field.to[coll]):
+                if isinstance(meeting_json[coll][id_][relation_field.to[coll]], list):
+                    meeting_json[coll][id_][relation_field.to[coll]] = [
+                        other_mm_id
+                        for other_mm_id in meeting_json[coll][id_][
+                            relation_field.to[coll]
+                        ]
+                        if other_mm_id != model_id
+                        and other_mm_id
+                        != fqid_from_collection_and_id(model_collection, model_id)
+                    ]
+                else:
+                    assert meeting_json[coll][id_][
+                        relation_field.to[coll]
+                    ] == model_id or meeting_json[coll][id_][
+                        relation_field.to[coll]
+                    ] == fqid_from_collection_and_id(
+                        model_collection, model_id
+                    )
+                    del meeting_json[coll][id_][relation_field.to[coll]]

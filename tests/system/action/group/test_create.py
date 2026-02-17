@@ -219,3 +219,17 @@ class GroupCreateActionTest(BaseActionTestCase):
                 "external_id": external_id,
             },
         )
+
+    def test_create_as_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.create_committee(60, parent_id=59)
+        self.create_meeting()
+        self.set_committee_management_level([59])
+        self.set_organization_management_level(None)
+        response = self.request(
+            "group.create", {"name": "T-T", "external_id": "T-T", "meeting_id": 1}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/25", {"name": "T-T", "external_id": "T-T", "meeting_id": 1}
+        )

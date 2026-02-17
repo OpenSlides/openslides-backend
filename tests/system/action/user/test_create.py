@@ -146,7 +146,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "Participant added to meeting {}.",
                 "meeting/114",
                 "Participant added to group {} in meeting {}.",
-                "group/111",
+                "group/114",
                 "meeting/114",
             ],
         )
@@ -159,6 +159,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test_Xcdfgee",
                 "comment": "blablabla",
                 "meeting_id": 1,
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -194,7 +195,8 @@ class UserCreateActionTest(BaseActionTestCase):
                 "user/222": {
                     "username": "timtari",
                 },
-                "meeting_user/1": {"meeting_id": 1, "user_id": 222, "group_ids": []},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 222},
+                "group/1": {"meeting_user_ids": [1]},
                 "structure_level/31": {"name": "Gondor", "meeting_id": 1},
             }
         )
@@ -240,7 +242,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting_user/1", {"vote_delegated_to_id": 2})
         self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
-        self.assert_model_exists("meeting/1", {"user_ids": [223]})
+        self.assert_model_exists("meeting/1", {"user_ids": [222, 223]})
 
     def test_invalid_committee_management_ids(self) -> None:
         self.create_committee()
@@ -364,6 +366,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "testname",
                 "meeting_id": 1,
+                "group_ids": [3],
                 "vote_delegations_from_ids": [],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
@@ -1440,6 +1443,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test",
                 "meeting_id": meeting_id,
                 "locked_out": True,
+                "group_ids": [1],
                 **other_payload_data,
             },
         )

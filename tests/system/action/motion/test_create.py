@@ -6,7 +6,6 @@ from openslides_backend.action.mixins.delegation_based_restriction_mixin import 
 )
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.base_classes import Permission
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -17,6 +16,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.create_meeting()
 
     def test_create_good_case_required_fields(self) -> None:
+        self.set_user_groups(1, [1])
         self.set_models({"motion_state/1": {"set_workflow_timestamp": True}})
         response = self.request(
             "motion.create",
@@ -35,7 +35,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
                 "state_id": 1,
             },
         )
@@ -43,13 +43,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert (
             motion["workflow_timestamp"] == motion["last_modified"] == motion["created"]
         )
-        self.assert_model_exists(
-            "motion_submitter/1",
-            {"meeting_user_id": 1, "meeting_id": 1, "motion_id": 1},
-        )
+        self.assert_model_not_exists("motion_submitter/1")
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": [1]},
+            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": None},
         )
         self.assert_model_exists(
             "agenda_item/1", {"meeting_id": 1, "content_object_id": "motion/1"}
@@ -65,16 +62,13 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_category/124": {
                     "name": "name_wbtlHQro",
                     "meeting_id": 1,
-                    "sequential_number": 124,
                 },
                 "motion_block/78": {
                     "title": "title_kXTvKvjc",
                     "meeting_id": 1,
-                    "sequential_number": 78,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "motion_block/78",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "tag/56": {"name": "name_56", "meeting_id": 1},
@@ -83,7 +77,10 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "mediafile_id": 8,
                     "is_public": False,
                 },
-                "meeting/1": {"motions_create_enable_additional_submitter_text": True},
+                "meeting/1": {
+                    "motions_create_enable_additional_submitter_text": True,
+                    "motions_supporters_min_amount": 1,
+                },
                 "motion_state/1": {"set_workflow_timestamp": True},
             }
         )
@@ -94,7 +91,6 @@ class MotionCreateActionTest(BaseActionTestCase):
             "sort_parent_id": 1,
             "category_id": 124,
             "block_id": 78,
-            "supporter_meeting_user_ids": [1],
             "tag_ids": [56],
             "text": "test",
             "reason": "test",
@@ -103,7 +99,12 @@ class MotionCreateActionTest(BaseActionTestCase):
 
         response = self.request(
             "motion.create",
-            motion | {"workflow_id": 1, "attachment_mediafile_ids": [8]},
+            motion
+            | {
+                "workflow_id": 1,
+                "attachment_mediafile_ids": [8],
+                "supporter_meeting_user_ids": [1],
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -113,7 +114,14 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "attachment_meeting_mediafile_ids": [80],
                 "submitter_ids": None,
                 "additional_submitter": "test",
+                "supporter_ids": [1],
+                "submitter_ids": None,
+                "supporter_meeting_user_ids": None,
             },
+        )
+        self.assert_model_exists(
+            "motion_supporter/1",
+            {"motion_id": 2, "meeting_id": 1, "meeting_user_id": 1},
         )
 
     def test_create_normal_and_additional_submitter(self) -> None:
@@ -136,7 +144,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "test",
                 "reason": "test",
                 "additional_submitter": "test",
-                "submitter_ids": [bob_id],
+                "submitter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -210,6 +218,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         motion = self.assert_model_exists("motion/1", {"state_id": 1, "number": "1"})
         assert motion.get("workflow_timestamp")
         self.assertEqual(motion.get("workflow_timestamp"), motion.get("created"))
+        self.assert_model_not_exists("meeting_user/1")
 
     def test_create_workflow_id_from_meeting(self) -> None:
         response = self.request(
@@ -260,6 +269,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "user/57": {"username": "user_57", "meeting_ids": [1]},
                 "meeting_user/13": {"meeting_id": 1, "user_id": 56},
                 "meeting_user/14": {"meeting_id": 1, "user_id": 57},
+                "group/1": {"meeting_user_ids": [13, 14]},
             }
         )
         response = self.request(
@@ -268,7 +278,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "text",
-                "submitter_ids": [56, 57],
+                "submitter_meeting_user_ids": [13, 14],
             },
         )
         self.assert_status_code(response, 200)
@@ -437,12 +447,12 @@ class MotionCreateActionTest(BaseActionTestCase):
             self.set_models(additional_data)
         return user_id
 
-    def test_create_no_permission_submitter(self) -> None:
+    def test_create_no_permission_additional_submitter(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
-        Also additionally for submitter_ids User.CAN_SEE.
+        Motion.CAN_MANAGE_METADATA when sending additional_submitter.
         """
+        self.set_user_groups(1, [3])
         user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
         response = self.request(
             "motion.create",
@@ -452,26 +462,55 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "test",
                 "reason": "test",
                 "additional_submitter": "test",
-                "submitter_ids": [1, user_id],
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, submitter_ids with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, user.can_see"
+            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
         self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_permission_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE,
+        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_meeting_user_ids aside from himself.
+        """
+        self.set_user_groups(1, [3])
+        user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "submitter_meeting_user_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Missing permissions: Permission user.can_see in meeting 1 and Permission motion.can_manage_metadata in meeting 1"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
         )
 
     def test_create_no_user_can_see_submitter(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA, User.CAN_SEE when sending submitter_ids.
-        Also asserts that the error message contains Motion.CAN_MANAGE as possible permission.
+        Motion.CAN_MANAGE_METADATA, User.CAN_SEE when sending submitter_meeting_user_ids.
         """
+        self.set_user_groups(1, [3])
         user_id = self.setup_permission_test(
             [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE_METADATA]
         )
@@ -482,26 +521,89 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "text": "test",
                 "reason": "test",
-                "submitter_ids": [1, user_id],
+                "submitter_meeting_user_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Forbidden fields: submitter_ids with possibly needed permission(s): motion.can_manage, user.can_see"
+            "You are not allowed to perform action motion.create. Missing permission: Permission user.can_see in meeting 1"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
         self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_motion_can_manage_metadata_submitter(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE,
+        Motion.CAN_MANAGE_METADATA and User.CAN_SEE when sending submitter_meeting_user_ids.
+        """
+        self.set_user_groups(1, [3])
+        user_id = self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.User.CAN_SEE]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "submitter_meeting_user_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action motion.create. Missing permission: Permission motion.can_manage_metadata in meeting 1"
+            == response.json["message"]
+        )
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
+        )
+
+    def test_create_no_user_can_see_submitter_self(self) -> None:
+        """
+        Asserts that the requesting user needs at least Motion.CAN_CREATE and
+        Motion.CAN_MANAGE_METADATA, but not User.CAN_SEE when setting himself as submitter.
+        """
+        self.set_user_groups(1, [3])
+        user_id = self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE_METADATA]
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "submitter_meeting_user_ids": [user_id],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/1")
+        self.assert_model_exists(
+            "motion_submitter/1", {"motion_id": 1, "meeting_user_id": 2, "weight": 1}
+        )
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
+        self.assert_model_exists(
+            "meeting_user/2",
+            {"meeting_id": 1, "user_id": user_id, "motion_submitter_ids": [1]},
         )
 
     def test_create_no_permission_additional_submitter_enabled(self) -> None:
         """
         Asserts that the requesting user needs at least Motion.CAN_CREATE and
-        Motion.CAN_MANAGE_METADATA when sending submitter_ids and additional_submitter.
-        Also additionally for submitter_ids User.CAN_SEE.
+        Motion.CAN_MANAGE_METADATA when sending submitter_meeting_user_ids and additional_submitter.
+        Also additionally for submitter_meeting_user_ids User.CAN_SEE.
         """
+        self.set_user_groups(1, [3])
         user_id = self.setup_permission_test([Permissions.Motion.CAN_CREATE])
         self.update_model(
             "meeting/1", {"motions_create_enable_additional_submitter_text": True}
@@ -514,18 +616,19 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "test",
                 "reason": "test",
                 "additional_submitter": "test",
-                "submitter_ids": [1, user_id],
+                "submitter_meeting_user_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action motion.create. Forbidden fields: additional_submitter with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, submitter_ids with possibly needed permission(s): motion.can_manage, motion.can_manage_metadata, user.can_see"
+            "You are not allowed to perform action motion.create. Missing permissions: Permission user.can_see in meeting 1 and Permission motion.can_manage_metadata in meeting 1"
             == response.json["message"]
         )
         self.assert_model_not_exists("motion/1")
         self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 1})
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": user_id}
+            "meeting_user/2", {"meeting_id": 1, "user_id": user_id}
         )
 
     def test_create_permission_agenda_allowed(self) -> None:
@@ -751,9 +854,11 @@ class MotionCreateActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
         disable_delegations: bool = False,
     ) -> None:
+        self.set_user_groups(1, [1])
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
         self.set_models(
             {
-                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
                 "meeting/1": {
                     delegator_setting: True,
                     **(
@@ -773,9 +878,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "meeting_user/2": {"vote_delegations_from_ids": [1]},
                 }
             )
-        self.set_organization_management_level(None)
-        self.set_group_permissions(1, [perm])
-        self.set_user_groups(1, [1])
 
     def test_create_delegator_setting(self) -> None:
         self.set_models(
@@ -803,7 +905,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -825,7 +927,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -867,7 +969,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -893,7 +995,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -917,62 +1019,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
-        )
-
-    def base_assign_external_self_test(self, oml: OrganizationManagementLevel) -> None:
-        bob_id = self.create_user("bob", organization_management_level=oml)
-        self.login(bob_id)
-        response = self.request_multi(
-            "motion.create",
-            [
-                {
-                    "title": "Submitter is me",
-                    "meeting_id": 1,
-                    "text": "test",
-                },
-                {
-                    "title": "Submitter is me 2",
-                    "meeting_id": 1,
-                    "text": "test 2",
-                    "submitter_ids": [bob_id],
-                },
-            ],
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting_user/1", {"user_id": bob_id, "motion_submitter_ids": [1, 2]}
-        )
-        self.assert_model_exists(
-            "motion_submitter/1", {"meeting_user_id": 1, "motion_id": 1}
-        )
-        self.assert_model_exists(
-            "motion_submitter/2", {"meeting_user_id": 1, "motion_id": 2}
-        )
-        self.assert_model_exists(
-            "motion/1",
-            {
-                "title": "Submitter is me",
-                "meeting_id": 1,
-                "text": "test",
-                "submitter_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "motion/2",
-            {
-                "title": "Submitter is me 2",
-                "meeting_id": 1,
-                "text": "test 2",
-                "submitter_ids": [2],
-            },
-        )
-
-    def test_create_assign_self_with_external_superadmin(self) -> None:
-        self.base_assign_external_self_test(OrganizationManagementLevel.SUPERADMIN)
-
-    def test_create_assign_self_with_external_orga_admin(self) -> None:
-        self.base_assign_external_self_test(
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )

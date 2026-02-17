@@ -4,19 +4,17 @@ TEST_USER_PW = "test"
 
 
 class TestGetForwardingCommittees(BasePresenterTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(5)
+
     def test_correct_single(self) -> None:
         self.set_models(
             {
-                "meeting/5": {
-                    "committee_id": 1,
-                },
-                "committee/1": {
-                    "name": "committee_1",
-                    "receive_forwardings_from_committee_ids": [2],
-                },
                 "committee/2": {
                     "name": "com2",
-                },
+                    "forward_to_committee_ids": [64],
+                }
             }
         )
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})
@@ -26,22 +24,11 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
     def test_correct_multiple(self) -> None:
         self.set_models(
             {
-                "meeting/5": {
-                    "committee_id": 1,
-                },
-                "committee/1": {
-                    "name": "committee_1",
-                    "receive_forwardings_from_committee_ids": [2, 3, 4],
-                },
-                "committee/2": {
-                    "name": "com2",
-                },
-                "committee/3": {
-                    "name": "com3",
-                },
-                "committee/4": {
-                    "name": "com4",
-                },
+                f"committee/{id_}": {
+                    "name": f"com{id_}",
+                    "forward_to_committee_ids": [64],
+                }
+                for id_ in range(2, 5)
             }
         )
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})
@@ -49,16 +36,6 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
         assert data == ["com2", "com3", "com4"]
 
     def test_correct_empty(self) -> None:
-        self.set_models(
-            {
-                "meeting/5": {
-                    "committee_id": 1,
-                },
-                "committee/1": {
-                    "name": "committee_1",
-                },
-            }
-        )
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})
         assert status_code == 200
         assert data == []
@@ -69,42 +46,14 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
         assert "data must contain ['meeting_id'] properties" == data["message"]
 
     def test_no_permissions(self) -> None:
-        self.set_models(
-            {
-                "user/3": {
-                    "username": "test",
-                    "is_active": True,
-                    "default_password": TEST_USER_PW,
-                    "password": self.auth.hash(TEST_USER_PW),
-                    "meeting_user_ids": [3],
-                },
-                "meeting_user/3": {
-                    "meeting_id": 3,
-                    "user_id": 3,
-                    "group_ids": [3],
-                },
-                "meeting/3": {"group_ids": [3], "committee_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "group/3": {"meeting_id": 3},
-            }
-        )
-        self.client.login("test", TEST_USER_PW, 3)
-        status_code, data = self.request("get_forwarding_committees", {"meeting_id": 3})
+        self.set_user_groups(1, [5])
+        self.set_organization_management_level(None)
+        status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})
         assert status_code == 403
         assert "Missing permission" in data["message"]
 
     def test_with_locked_meeting(self) -> None:
-        self.set_models(
-            {
-                "meeting/3": {
-                    "group_ids": [3],
-                    "locked_from_inside": True,
-                    "committee_id": 1,
-                },
-                "committee/1": {"meeting_ids": [1]},
-                "group/3": {"meeting_id": 3},
-            }
-        )
-        status_code, data = self.request("get_forwarding_committees", {"meeting_id": 3})
+        self.set_models({"meeting/5": {"locked_from_inside": True}})
+        status_code, data = self.request("get_forwarding_committees", {"meeting_id": 5})
         assert status_code == 403
         assert "Missing permission: motion.can_manage_metadata" in data["message"]

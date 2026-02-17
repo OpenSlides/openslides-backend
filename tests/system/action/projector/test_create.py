@@ -15,7 +15,7 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.assert_model_exists(
             "projector/223",
-            {"name": "test projector", "meeting_id": 222, "sequential_number": 223},
+            {"name": "test projector", "meeting_id": 222, "sequential_number": 2},
         )
         self.assert_defaults(Projector, model)
 
@@ -52,7 +52,7 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "Action projector.create: data.color must match pattern ^#[0-9a-f]{6}$",
+            "Action projector.create: data.color must match pattern ^#[0-9a-fA-F]{6}$",
             response.json["message"],
         )
 
@@ -81,7 +81,9 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             "projector/223",
             {"used_as_default_projector_for_topic_in_meeting_id": 222},
         )
-        self.assert_model_exists("meeting/222", {"default_projector_topic_ids": [223]})
+        self.assert_model_exists(
+            "meeting/222", {"default_projector_topic_ids": [222, 223]}
+        )
 
     def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:
         response = self.request(

@@ -114,6 +114,8 @@
     motions_export_preamble: string;
     motions_export_submitter_recommendation: boolean;
     motions_export_follow_recommendation: boolean;
+    motions_enable_restricted_editor_for_manager: boolean;
+    motions_enable_restricted_editor_for_non_manager: boolean;
 
     motion_poll_ballot_paper_selection: string;
     motion_poll_ballot_paper_number: number;

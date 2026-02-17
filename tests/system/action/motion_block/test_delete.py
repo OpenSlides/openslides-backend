@@ -10,13 +10,11 @@ class MotionBlockActionTest(BaseActionTestCase):
             {
                 "motion_block/111": {
                     "title": "title_srtgb123",
-                    "sequential_number": 111,
                     "list_of_speakers_id": 222,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/222": {
                     "closed": False,
-                    "sequential_number": 15,
                     "content_object_id": "motion_block/111",
                     "meeting_id": 1,
                 },

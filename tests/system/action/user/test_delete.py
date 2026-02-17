@@ -77,8 +77,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_id": 111,
                     "speaker_ids": [15, 16],
                 },
+                "group/1": {"meeting_user_ids": [1111]},
                 "speaker/15": {
-                    # "begin_time": 12345678,
                     "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 1111,
@@ -90,13 +90,11 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "list_of_speakers/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "content_object_id": "topic/1",
                 },
                 "topic/1": {
                     "title": "tropic",
-                    "sequential_number": 1,
                     "meeting_id": 1,
                 },
                 "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/1"},
@@ -132,6 +130,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "assignment_candidate_ids": [34],
                 },
                 "meeting/1": {"meeting_user_ids": [1111]},
+                "group/1": {"meeting_user_ids": [1111]},
                 "assignment_candidate/34": {
                     "meeting_user_id": 1111,
                     "meeting_id": 1,
@@ -140,12 +139,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "assignment/123": {
                     "title": "test_assignment",
                     "candidate_ids": [34],
-                    "sequential_number": 123,
                     "meeting_id": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/123",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
             }
@@ -179,6 +176,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_id": 111,
                     "motion_submitter_ids": [34],
                 },
+                "group/1": {"meeting_user_ids": [1111]},
                 "motion/50": {"submitter_ids": [34]},
             }
         )
@@ -187,8 +185,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/111")
         self.assert_model_not_exists("meeting_user/1111")
-        self.assert_model_not_exists("motion_submitter/34")
-        self.assert_model_exists("motion/50", {"submitter_ids": None})
+        self.assert_model_exists(
+            "motion_submitter/34", {"meeting_user_id": None, "motion_id": 50}
+        )
+        self.assert_model_exists("motion/50", {"submitter_ids": [34]})
 
     def test_delete_with_poll_candidate(self) -> None:
         self.create_meeting()
@@ -283,6 +283,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "motion/1": {"submitter_ids": [1]},
+                "group/1": {"meeting_user_ids": [12]},
             }
         )
         response = self.request("user.delete", {"id": 2})
@@ -291,8 +292,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_not_exists("user/2")
         self.assert_model_not_exists("meeting_user/12")
         self.assert_model_exists("group/1", {"meeting_user_ids": None})
-        self.assert_model_not_exists("motion_submitter/1")
-        self.assert_model_exists("motion/1", {"submitter_ids": None})
+        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": None})
+        self.assert_model_exists("motion/1", {"submitter_ids": [1]})
 
     def test_delete_with_delegation_to(self) -> None:
         self.create_meeting()
@@ -317,6 +318,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "vote_delegations_from_ids": [1111],
                 },
                 "meeting/1": {"meeting_user_ids": [1111, 1112]},
+                "group/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 111})
@@ -350,6 +352,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "vote_delegations_from_ids": [1111],
                 },
                 "meeting/1": {"meeting_user_ids": [1111, 1112]},
+                "group/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 112})

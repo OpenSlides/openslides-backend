@@ -7,13 +7,11 @@ class AgendaItemSystemTest(BaseActionTestCase):
     PERMISSION_TEST_MODELS = {
         "motion/1": {
             "title": "motion1",
-            "sequential_number": 1,
             "state_id": 1,
             "meeting_id": 1,
         },
         "list_of_speakers/1": {
             "content_object_id": "motion/1",
-            "sequential_number": 1,
             "meeting_id": 1,
         },
     }
@@ -41,10 +39,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(1)
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/42": {
@@ -102,10 +99,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(1, 2)
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/42": {
@@ -167,10 +163,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(4)
         self.set_models(
             {
-                "topic/1": {"meeting_id": 1, "title": "tropic", "sequential_number": 1},
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {
@@ -237,10 +232,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(2)
         self.set_models(
             {
-                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
+                "topic/2": {"meeting_id": 2, "title": "jungle"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 2,
                 },
                 "agenda_item/3": {
@@ -272,10 +266,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(2)
         self.set_models(
             {
-                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
+                "topic/2": {"meeting_id": 2, "title": "jungle"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 2,
                 },
                 "agenda_item/3": {
@@ -306,10 +299,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.create_motion(2)
         self.set_models(
             {
-                "topic/2": {"meeting_id": 2, "title": "jungle", "sequential_number": 2},
+                "topic/2": {"meeting_id": 2, "title": "jungle"},
                 "list_of_speakers/42": {
                     "content_object_id": "topic/2",
-                    "sequential_number": 12,
                     "meeting_id": 2,
                 },
                 "agenda_item/3": {
@@ -368,11 +360,9 @@ class AgendaItemSystemTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "agenda_item_id": 1,
                     "title": "just do it",
-                    "sequential_number": 1,
                 },
                 "list_of_speakers/42": {
                     "content_object_id": "assignment/1",
-                    "sequential_number": 12,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"meeting_id": 1, "content_object_id": "assignment/1"},

@@ -7,7 +7,7 @@ from openslides_backend.services.database.extended_database import ExtendedDatab
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.exceptions import ModelLocked
+from openslides_backend.shared.exceptions import BadCodingException, ModelLocked
 from openslides_backend.shared.interfaces.event import EventType
 from tests.database.writer.system.util import (
     assert_model,
@@ -65,6 +65,14 @@ def test_two_write_requests_with_locked_fields(db_connection: Connection) -> Non
     # assert_model("a/1", {"f": 1}, 1)
     # assert_error_response(response, ERROR_CODES.MODEL_LOCKED)
     # assert_no_modified_fields(redis_connection)
+
+
+def test_no_events(db_connection: Connection) -> None:
+    with pytest.raises(BadCodingException) as e_info:
+        with get_new_os_conn() as conn:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(create_write_requests([{"events": []}]))
+    assert "Events are needed." == e_info.value.message
 
 
 # def test_otel(json_client, data, redis_connection):

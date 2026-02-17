@@ -12,15 +12,13 @@ class ProjectorAddToPreview(BaseActionTestCase):
                 "assignment/1": {
                     "meeting_id": 1,
                     "title": "test assignment",
-                    "sequential_number": 1,
                 },
                 "list_of_speakers/23": {
                     "content_object_id": "assignment/1",
-                    "sequential_number": 11,
                     "meeting_id": 1,
                 },
-                "projector/2": {"meeting_id": 1, "sequential_number": 2},
-                "projector/3": {"meeting_id": 1, "sequential_number": 3},
+                "projector/2": {"meeting_id": 1},
+                "projector/3": {"meeting_id": 1},
                 "projection/10": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",

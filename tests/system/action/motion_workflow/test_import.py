@@ -53,7 +53,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
                 "first_state_id": 43,
-                "sequential_number": 43,
+                "sequential_number": 2,
             },
         )
         self.assert_model_exists(

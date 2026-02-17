@@ -16,13 +16,11 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
             {
                 "topic/42": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 42,
                     "meeting_id": 78,
                 },
                 "agenda_item/23": {"content_object_id": "topic/42", "meeting_id": 78},
                 "list_of_speakers/111": {
                     "content_object_id": "topic/42",
-                    "sequential_number": 10,
                     "closed": True,
                     "meeting_id": 78,
                 },
@@ -32,7 +30,6 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 78,
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 78,
                 },
             }
@@ -51,7 +48,7 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: Trigger tr_ud_topic_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for topic/42/list_of_speakers_id from relationship before 111/content_object_id_topic_id",
+            "Relation violates required constraint: Trigger tr_ud_topic_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for topic/42/list_of_speakers_id from relationship before list_of_speakers/111/content_object_id_topic_id",
             response.json["message"],
         )
         self.assert_model_exists("list_of_speakers/111")

@@ -7,6 +7,7 @@ from ...generics.update import UpdateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionResultElement
 from .helper_mixin import MeetingUserHelperMixin
 from .history_mixin import MeetingUserHistoryMixin
 from .mixin import MeetingUserGroupMixin, MeetingUserMixin
@@ -60,8 +61,6 @@ class MeetingUserSetData(
                 ), "Not permitted to change user_id."
         elif meeting_id and user_id:
             instance["id"] = self.create_or_get_meeting_user(meeting_id, user_id)
-            # instance["meta_new"] = True
-            # TODO see helper mixin
         # MeetingUserMixin needs the meeting_id in "create" case
         instance = super().update_instance(instance)
         instance.pop("meeting_id", None)
@@ -75,3 +74,9 @@ class MeetingUserSetData(
                 "Identifier for meeting_user instance required, but neither id nor meeting_id/user_id is given."
             )
         return super().get_meeting_id(instance)
+
+    def create_action_result_element(
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
+        """Returns the (sometimes newly created) id."""
+        return {"id": instance["id"]}

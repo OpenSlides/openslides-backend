@@ -5,12 +5,12 @@ from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
 from .base_generic import BaseGenericTestCase
 
 
-class FakeModelEFA(Model):
+class FakeModelEFA(FakeModel):
     collection = "fake_model_ef_a"
     verbose_name = "fake model for equal field check a"
     id = fields.IntegerField()
@@ -23,7 +23,7 @@ class FakeModelEFA(Model):
     )
 
 
-class FakeModelEFB(Model):
+class FakeModelEFB(FakeModel):
     collection = "fake_model_ef_b"
     verbose_name = "fake model for equal field check b"
     id = fields.IntegerField()
@@ -48,7 +48,7 @@ class FakeModelEFB(Model):
     )
 
 
-class FakeModelEFC(Model):
+class FakeModelEFC(FakeModel):
     collection = "fake_model_ef_c"
     verbose_name = "fake model for equal field check c"
     id = fields.IntegerField()
@@ -81,16 +81,10 @@ class FakeModelEFBUpdateAction(UpdateAction):
     skip_archived_meeting_check = True
 
 
-class TestEqualFieldsCheck(BaseGenericTestCase):
+class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     collection_a = "fake_model_ef_a"
     collection_b = "fake_model_ef_b"
     collection_c = "fake_model_ef_c"
-    tables_to_reset = [
-        f"{collection_a}_t",
-        f"{collection_b}_t",
-        f"{collection_c}_t",
-        "nm_fake_model_ef_b_c_ids_fake_model_ef_c_t",
-    ]
     yml = f"""
     _meta:
         id_field: &id_field

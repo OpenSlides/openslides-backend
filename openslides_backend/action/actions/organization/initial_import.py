@@ -1,6 +1,8 @@
 from collections.abc import Iterable
 from typing import Any
 
+from openslides_backend.migrations.migration_helper import MigrationHelper
+
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
 from ....models.base import json_dict_to_non_json_data_types
@@ -38,13 +40,18 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     )
 
     def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
+        self,
+        action_data: ActionData,
+        user_id: int,
+        internal: bool = False,
+        is_sub_call: bool = False,
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.is_sub_call = is_sub_call
         instance = next(iter(action_data))
         self.validate_instance(instance)
         instance = self.update_instance(instance)
@@ -72,6 +79,11 @@ class OrganizationInitialImport(SingularActionMixin, Action):
 
         self.translate_organization_and_theme(data)
         self.data_migration_index = data["_migration_index"]
+
+        for collection, models in data.items():
+            if collection == "_migration_index":
+                continue
+            self.datastore.reserve_ids(collection, len(models))
 
         return instance
 
@@ -132,10 +144,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
-        backend_migration_index = 1
-        # TODO set to fixed value because of lacking migrations
-        # needs to be readded in some shape or form
-        # backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
             "backend_migration_index": backend_migration_index,

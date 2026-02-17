@@ -1,5 +1,7 @@
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
@@ -37,6 +39,9 @@ class OrganizationUpdate(
         "users_email_subject",
         "users_email_body",
         "require_duplicate_from",
+        "disable_forward_with_attachments",
+        "restrict_editing_same_level_committee_admins",
+        "restrict_edit_forward_committees",
     )
 
     group_B_fields = (
@@ -162,6 +167,8 @@ class OrganizationUpdate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
+        if "saml_attr_mapping" in instance:
+            instance["saml_attr_mapping"] = Jsonb(instance["saml_attr_mapping"])
         if limit_of_meetings := instance.get("limit_of_meetings"):
             organization = self.datastore.get(
                 ONE_ORGANIZATION_FQID,

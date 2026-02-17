@@ -52,6 +52,26 @@ def test_simple(db_connection: Connection) -> None:
     assert response == standard_responses
 
 
+def test_no_ids(db_connection: Connection) -> None:
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(
+            [GetManyRequest("committee", [], ["name"])], use_changed_models=False
+        )
+    assert response == {"committee": {}}
+
+
+def test_no_mapped_fields(db_connection: Connection) -> None:
+    setup_data(db_connection, standard_data)
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.get_many(
+            [GetManyRequest("committee", [1, 2], None)], use_changed_models=False
+        )
+    assert response == {"committee": standard_responses["committee"]}
+
+
 def test_invalid_fqids(db_connection: Connection) -> None:
     setup_data(db_connection, standard_data)
     request = [

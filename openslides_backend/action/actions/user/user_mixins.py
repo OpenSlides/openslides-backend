@@ -185,7 +185,10 @@ class UpdateHistoryMixin(Action):
             # Compare db version with payload
             for field in list(instance.keys()):
                 # Remove fields if equal
-                if field != "id" and instance[field] == db_instance.get(field):
+                if field != "id" and (
+                    instance[field] == db_instance.get(field)
+                    or (not instance[field] and field not in db_instance)
+                ):
                     del instance[field]
 
             # personal data

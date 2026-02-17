@@ -23,7 +23,6 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             {
                 f"motion_workflow/{workflow_id}": {
                     "name": f"motion_workflow{workflow_id}",
-                    "sequential_number": workflow_id,
                     "first_state_id": state_id,
                     "meeting_id": meeting_id,
                 },
@@ -64,6 +63,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
 
     def test_create_sequential_numbers_2meetings(self) -> None:
         self.create_meeting(225)
+        self.set_user_groups(1, [223, 225])
         response = self.request(
             "motion.create",
             {
@@ -115,7 +115,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/2", {"sequential_number": 1})
+        self.assert_model_exists("motion/2", {"sequential_number": 2})
 
     @pytest.mark.skip(
         "Seems to run into an infinite loop, probably since the database is broken. TODO: unskip once this is fixed"

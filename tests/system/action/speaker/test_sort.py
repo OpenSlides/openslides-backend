@@ -10,12 +10,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "topic/1337": {
                 "title": "introduction leek gathering",
-                "sequential_number": 1337,
                 "meeting_id": 1,
             },
             "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
             "list_of_speakers/222": {
-                "sequential_number": 222,
                 "content_object_id": "topic/1337",
                 "meeting_id": 1,
             },
@@ -29,12 +27,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
             {
                 "topic/1337": {
                     "title": "introduction leek gathering",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/222": {
-                    "sequential_number": 222,
                     "content_object_id": "topic/1337",
                     "meeting_id": 1,
                 },
@@ -57,12 +53,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
             {
                 "topic/1337": {
                     "title": "introduction leek gathering",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/222": {
-                    "sequential_number": 222,
                     "content_object_id": "topic/1337",
                     "meeting_id": 1,
                 },
@@ -84,12 +78,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
             {
                 "topic/1337": {
                     "title": "introduction leek gathering",
-                    "sequential_number": 1337,
                     "meeting_id": 1,
                 },
                 "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
                 "list_of_speakers/222": {
-                    "sequential_number": 222,
                     "content_object_id": "topic/1337",
                     "meeting_id": 1,
                 },

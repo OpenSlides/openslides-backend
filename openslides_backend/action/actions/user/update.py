@@ -15,9 +15,11 @@ from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.base_delete import MeetingUserBaseDelete
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .user_mixins import (
@@ -27,6 +29,14 @@ from .user_mixins import (
     UserMixin,
     check_gender_exists,
 )
+
+
+class MeetingUserDeleteInternal(MeetingUserBaseDelete):
+    """
+    Action to delete a meeting user.
+    """
+
+    name = "meeting_user.delete_internal_helper"
 
 
 @register_action("user.update")
@@ -45,7 +55,11 @@ class UserUpdate(
     Action to update a user.
     """
 
-    internal_id_fields = ["is_present_in_meeting_ids"]
+    internal_id_fields = [
+        "is_present_in_meeting_ids",
+        "history_entry_ids",
+        "history_position_ids",
+    ]
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
@@ -107,7 +121,17 @@ class UserUpdate(
         self.check_locking_status(
             instance.get("meeting_id"), instance, instance["id"], None
         )
+        removed_meeting_id = self.get_removed_meeting_id(instance)
         instance = super().update_instance(instance)
+        if removed_meeting_id:
+            meeting_users = self.datastore.filter(
+                "meeting_user",
+                get_meeting_user_filter(removed_meeting_id, instance["id"]),
+                [],
+            )
+            self.execute_other_action(
+                MeetingUserDeleteInternal, [{"id": id_} for id_ in meeting_users]
+            )
         home_committee_id = instance.get("home_committee_id")
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),

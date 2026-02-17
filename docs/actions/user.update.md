@@ -80,6 +80,7 @@ Updates a user.
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
+His meeting_user for that meeting will also be deleted.
 
 If the user was the last member of the meetings admin group and he happens to be removed from the latter through this action, as long as the meeting is not a template, there will be an error.
 

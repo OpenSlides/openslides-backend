@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -17,7 +18,6 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                 "motion_comment_section/78": {
                     "meeting_id": 1,
                     "name": "test",
-                    "sequential_number": 78,
                 },
                 "group/3": {"write_comment_section_ids": [78]},
             }
@@ -81,5 +81,42 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         )
 
         response = self.request("motion_comment.delete", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion_comment/111")
+
+    def test_delete_permission_non_meeting_committee_admin(self) -> None:
+        self.set_committee_management_level([60])
+        self.base_delete_permission_non_meeting_admin()
+
+    def test_create_permission_non_meeting_parent_committee_admin(self) -> None:
+        self.create_committee(59)
+        self.set_committee_management_level([59])
+        self.set_models(
+            {
+                "committee/59": {"child_ids": [60], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 59, "all_parent_ids": [59]},
+            }
+        )
+        self.base_delete_permission_non_meeting_admin()
+
+    def test_delete_permission_non_meeting_orga_admin(self) -> None:
+        self.base_delete_permission_non_meeting_admin(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+
+    def test_delete_permission_non_meeting_superadmin(self) -> None:
+        self.base_delete_permission_non_meeting_admin(
+            OrganizationManagementLevel.SUPERADMIN
+        )
+
+    def base_delete_permission_non_meeting_admin(
+        self,
+        permission: OrganizationManagementLevel | None = None,
+    ) -> None:
+        self.set_organization_management_level(permission)
+        response = self.request(
+            "motion_comment.delete",
+            {"id": 111},
+        )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("motion_comment/111")

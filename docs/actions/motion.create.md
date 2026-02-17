@@ -26,7 +26,7 @@
 
 // Optional special fields, see notes below
     workflow_id: Id;
-    submitter_ids: Id[];
+    submitter_meeting_user_ids: Id[];
 
 // Non-model fields for customizing the agenda item creation, optional
     agenda_create: boolean;
@@ -58,11 +58,10 @@ This is the logic for other fields depending on the motion type:
 There are some fields that need special attention:
 - `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id` or `meeting/motions_default_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
 - `additional_submitter` a text field where text-based submitter information may be entered. Cannot be set unless `meeting/motions_create_enable_additional_submitter_text` is `true`. Requires permissions `Motion.CAN_CREATE` and `Motion.CAN_MANAGE_METADATA`.
-- `submitter_ids`: These are **user ids** and not ids of the `motion_submitter` model. If nothing is given (`[]`) and the field `additional_submitter` isn't filled, the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list. Requires permissions `Motion.CAN_CREATE`, `Motion.CAN_MANAGE_METADATA` and `User.CAN_SEE`.
+- `submitter_meeting_user_ids`: These are ids of the meeting users that should get a `motion_submitter` model. Can be left empty. The weight of the new submitters is set to the order of the given list. Requires permissions `Motion.CAN_CREATE`, `Motion.CAN_MANAGE_METADATA` and `User.CAN_SEE` (the latter two only if not setting oneself).
 - `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
 Other things to do when creating motions:
-- Set the field `sequential_number`: It is the `max+1` of `sequential_number` of all motions in the same meeting. If there are no other motions in this meeting (e.g. this is the first one), it gets 1.
 - Set timestamps:
   - always set `last_modified` and `created` to the current timestamp
   - if the state pointed to by `first_state_id` of the given workflow has the flag `set_workflow_timestamp` set, also set `workflow_timestamp`to the current timestamp.
@@ -98,7 +97,7 @@ This is the procedure to determine what to set for the field `number`:
   * Remember: `number` must be unique. If a motion with this number already exists, increment `number_value` by one and go to the last step (the prefix is the same, the number incremented - try again).
   * If there is a unique `number`, save it into the motion. Done!
   * Note: The complete calculation is restricted to motions and other objects from the same meeting.
- 
+
 ### Some examples for determinating the number. First comes the general setup and the test cases are numbered:
 
 `meeting/motions_number_type="manually"`

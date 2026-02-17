@@ -1,8 +1,11 @@
+import datetime
 from collections.abc import Iterable
+from decimal import Decimal
 from typing import Any
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.shared.patterns import is_reserved_field
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ..models.base import model_registry
 from ..models.fields import (
@@ -19,9 +22,19 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
+HISTORY_FIELDS_PER_COLLECTION = {
+    "meeting": ["relevant_history_entry_ids"],
+    "user": ["history_entry_ids", "history_position_ids"],
+    **{collection: ["history_entry_ids"] for collection in ["motion", "assignment"]},
+}
+
 
 def export_meeting(
-    datastore: Database, meeting_id: int, internal_target: bool = False
+    datastore: Database,
+    meeting_id: int,
+    internal_target: bool = False,
+    update_mediafiles: bool = False,
+    datetime_decimal_to_string: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -32,9 +45,11 @@ def export_meeting(
         lock_result=False,
         use_changed_models=False,
     )
+    for forbidden_field in FORBIDDEN_FIELDS + HISTORY_FIELDS_PER_COLLECTION["meeting"]:
+        meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
-    export["_migration_index"] = get_backend_migration_index()
+    export["_migration_index"] = MigrationHelper.get_backend_migration_index()
 
     # initialize user_ids
     user_ids = set(meeting.get("user_ids", []))
@@ -54,14 +69,71 @@ def export_meeting(
         results = datastore.get_many(
             get_many_requests, lock_result=False, use_changed_models=False
         )
+        # update_mediafiles_for_internal_calls
+        if update_mediafiles and len(
+            mediafile_ids := results.get("mediafile", {}).keys()
+        ) != len(meeting_mediafiles := results.get("meeting_mediafile", {})):
+            mm_with_unknown_mediafiles = {
+                mm_id: mm_data
+                for mm_id, mm_data in meeting_mediafiles.items()
+                if mm_data["mediafile_id"] not in mediafile_ids
+            }
+            unknown_mediafiles: dict[int, dict[str, Any]] = {}
+            next_file_ids = [
+                mm["mediafile_id"] for mm in mm_with_unknown_mediafiles.values()
+            ]
+            while next_file_ids:
+                unknown_mediafiles.update(
+                    datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "mediafile",
+                                next_file_ids,
+                                [
+                                    "id",
+                                    "owner_id",
+                                    "published_to_meetings_in_organization_id",
+                                    "parent_id",
+                                    "child_ids",
+                                ],
+                            ),
+                        ],
+                        use_changed_models=False,
+                    )["mediafile"]
+                )
+                next_file_ids = list(
+                    {
+                        parent_id
+                        for m in unknown_mediafiles.values()
+                        if (parent_id := m.get("parent_id"))
+                    }
+                    - set(unknown_mediafiles)
+                )
+            for mm_id, mm_data in mm_with_unknown_mediafiles.items():
+                mediafile_id = mm_data["mediafile_id"]
+                mediafile = unknown_mediafiles.get(mediafile_id)
+                if (
+                    mediafile
+                    and mediafile["owner_id"] == ONE_ORGANIZATION_FQID
+                    and mediafile["published_to_meetings_in_organization_id"]
+                    == ONE_ORGANIZATION_ID
+                ):
+                    mediafile["meeting_mediafile_ids"] = [mm_id]
+                    results.setdefault("mediafile", {})[mediafile_id] = mediafile
+                    while (
+                        parent_id := mediafile.get("parent_id")
+                    ) and parent_id not in results["mediafile"]:
+                        mediafile = unknown_mediafiles[parent_id]
+                        results["mediafile"][parent_id] = mediafile
+
     else:
         results = {}
 
     for field in relation_fields:
         collection = field.get_target_collection()
         if collection in results:
-            export[str(collection)] = remove_meta_fields(
-                transfer_keys(results[collection])
+            export[str(collection)] = remove_history_fields(
+                collection, remove_meta_fields(transfer_keys(results[collection]))
             )
         else:
             export[str(collection)] = {}
@@ -194,6 +266,14 @@ def export_meeting(
         export[collection] = dict(
             sorted(instances.items(), key=lambda item: int(item[0]))
         )
+        if datetime_decimal_to_string and isinstance(instances, dict):
+            for data in instances.values():
+                for field, value in data.items():
+                    if isinstance(value, datetime.datetime):
+                        data[field] = value.isoformat()
+                    if isinstance(value, Decimal):
+                        data[field] = str(value)
+
     return export
 
 
@@ -235,12 +315,15 @@ def add_users(
         user_ids,
         get_fields_for_export("user"),
     )
-    users = remove_meta_fields(
-        transfer_keys(
-            datastore.get_many([gmr], lock_result=False, use_changed_models=False)[
-                "user"
-            ]
-        )
+    users = remove_history_fields(
+        "user",
+        remove_meta_fields(
+            transfer_keys(
+                datastore.get_many([gmr], lock_result=False, use_changed_models=False)[
+                    "user"
+                ]
+            )
+        ),
     )
 
     for user in users.values():
@@ -275,12 +358,23 @@ def remove_meta_fields(res: dict[str, Any]) -> dict[str, Any]:
     return dict_without_meta_fields
 
 
+def remove_history_fields(collection: str, res: dict[str, Any]) -> dict[str, Any]:
+    for field in HISTORY_FIELDS_PER_COLLECTION.get(collection, []):
+        for key in res:
+            res[key].pop(field, None)
+    return res
+
+
 def get_relation_fields() -> Iterable[RelationListField]:
     for field in Meeting().get_relation_fields():
-        if isinstance(field, RelationListField) and (
-            (
-                field.on_delete == OnDelete.CASCADE
-                and field.get_own_field_name().endswith("_ids")
+        if (
+            isinstance(field, RelationListField)
+            and field not in HISTORY_FIELDS_PER_COLLECTION["meeting"]
+            and (
+                (
+                    field.on_delete == OnDelete.CASCADE
+                    and field.get_own_field_name().endswith("_ids")
+                )
             )
         ):
             yield field

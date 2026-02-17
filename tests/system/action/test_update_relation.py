@@ -2,10 +2,10 @@ from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
 from .base import BaseActionTestCase
 
@@ -39,7 +39,7 @@ def create_table_view() -> None:
             curs.execute(sql)
 
 
-class FakeModelURA(Model):
+class FakeModelURA(FakeModel):
     collection = "fake_model_ur_a"
     verbose_name = "fake model for cascade update a"
     id = fields.IntegerField()
@@ -54,7 +54,7 @@ class FakeModelURA(Model):
     )
 
 
-class FakeModelURB(Model):
+class FakeModelURB(FakeModel):
     collection = "fake_model_ur_b"
     verbose_name = "fake model for cascade update b"
     id = fields.IntegerField()
@@ -75,7 +75,7 @@ class FakeModelURAUpdateAction(UpdateAction):
     skip_archived_meeting_check = True
 
 
-class TestUpdateRelation(BaseActionTestCase):
+class TestUpdateRelation(PatchModelRegistryMixin, BaseActionTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()

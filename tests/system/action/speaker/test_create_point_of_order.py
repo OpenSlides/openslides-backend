@@ -8,14 +8,13 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.create_meeting(7844)
         self.set_models(
             {
-                "user/1": {"meeting_ids": [7844]},
-                "user/7": {"username": "talking", "meeting_ids": [7844]},
+                "user/7": {"username": "talking"},
                 "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
                 "meeting_user/7": {
                     "meeting_id": 7844,
                     "user_id": 7,
-                    "speaker_ids": [1],
                 },
+                "group/7844": {"meeting_user_ids": [1, 7]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -25,7 +24,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -33,8 +31,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [1],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -62,41 +58,17 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
     def test_create_poo_after_existing_poo_before_standard(self) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844, meeting_data={"list_of_speakers_enable_point_of_order_speakers": True}
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                },
-                "user/7": {
-                    "username": "talking with poo",
-                    "meeting_ids": [7844],
-                    "meeting_user_ids": [7],
-                },
-                "user/8": {
-                    "username": "waiting with poo",
-                    "meeting_ids": [7844],
-                    "meeting_user_ids": [8],
-                },
-                "user/1": {
-                    "meeting_user_ids": [1],
-                    "meeting_ids": [7844],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 7844,
-                    "user_id": 1,
-                    "speaker_ids": [3],
-                },
-                "meeting_user/7": {
-                    "meeting_id": 7844,
-                    "user_id": 7,
-                    "speaker_ids": [1],
-                },
-                "meeting_user/8": {
-                    "meeting_id": 7844,
-                    "user_id": 8,
-                    "speaker_ids": [2],
-                },
+                "user/7": {"username": "talking with poo"},
+                "user/8": {"username": "waiting with poo"},
+                "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
+                "meeting_user/7": {"meeting_id": 7844, "user_id": 7},
+                "meeting_user/8": {"meeting_id": 7844, "user_id": 8},
+                "group/7844": {"meeting_user_ids": [1, 7, 8]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -120,7 +92,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -128,8 +99,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [1, 2, 3],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -174,33 +143,17 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_after_existing_poo_before_standard_and_more(self) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844, meeting_data={"list_of_speakers_enable_point_of_order_speakers": True}
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                },
-                "user/7": {"username": "waiting with poo1", "meeting_ids": [7844]},
-                "user/8": {"username": "waiting with poo2", "meeting_ids": [7844]},
-                "user/1": {
-                    "meeting_user_ids": [1],
-                    "meeting_ids": [7844],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 7844,
-                    "user_id": 1,
-                    "speaker_ids": [3],
-                },
-                "meeting_user/7": {
-                    "meeting_id": 7844,
-                    "user_id": 7,
-                    "speaker_ids": [1],
-                },
-                "meeting_user/8": {
-                    "meeting_id": 7844,
-                    "user_id": 8,
-                    "speaker_ids": [2, 4],
-                },
+                "user/7": {"username": "waiting with poo1"},
+                "user/8": {"username": "waiting with poo2"},
+                "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
+                "meeting_user/7": {"meeting_id": 7844, "user_id": 7},
+                "meeting_user/8": {"meeting_id": 7844, "user_id": 8},
+                "group/7844": {"meeting_user_ids": [1, 7, 8]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -230,7 +183,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -238,8 +190,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [1, 2, 3, 4],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -300,27 +250,15 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_after_existing_poo_at_the_end(self) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844, meeting_data={"list_of_speakers_enable_point_of_order_speakers": True}
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                },
                 "user/7": {"username": "waiting with poo", "meeting_ids": [7844]},
-                "user/1": {
-                    "meeting_ids": [7844],
-                    "meeting_user_ids": [1],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 7844,
-                    "user_id": 1,
-                    "speaker_ids": [3],
-                },
-                "meeting_user/7": {
-                    "meeting_id": 7844,
-                    "user_id": 7,
-                    "speaker_ids": [1],
-                },
+                "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
+                "meeting_user/7": {"meeting_id": 7844, "user_id": 7},
+                "group/7844": {"meeting_user_ids": [1, 7]},
                 "speaker/1": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
@@ -330,7 +268,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -338,8 +275,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [1],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -365,25 +300,16 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
     def test_create_poo_already_exist(self) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844, meeting_data={"list_of_speakers_enable_point_of_order_speakers": True}
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                },
-                "user/1": {
-                    "username": "test_username1",
-                    "meeting_user_ids": [1],
-                    "meeting_ids": [7844],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 7844,
-                    "user_id": 1,
-                    "speaker_ids": [42],
-                },
+                "user/1": {"username": "test_username1"},
+                "meeting_user/1": {"meeting_id": 7844, "user_id": 1},
+                "group/7844": {"meeting_user_ids": [1]},
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -391,8 +317,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [42],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -427,7 +351,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
             {
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -435,8 +358,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
-                    "speaker_ids": [],
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -459,15 +380,13 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def test_create_poo_without_user_id(self) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844, meeting_data={"list_of_speakers_enable_point_of_order_speakers": True}
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                },
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -475,7 +394,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
@@ -495,21 +413,23 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
 
     def setup_create_poo_for_other_user(self, allow: bool = False) -> None:
-        self.create_meeting(7844)
+        self.create_meeting(
+            7844,
+            meeting_data={
+                "list_of_speakers_enable_point_of_order_speakers": True,
+                "list_of_speakers_can_create_point_of_order_for_others": allow,
+            },
+        )
         self.set_models(
             {
-                "meeting/7844": {
-                    "list_of_speakers_enable_point_of_order_speakers": True,
-                    "list_of_speakers_can_create_point_of_order_for_others": allow,
-                },
                 "user/8": {"username": "hatschi"},
                 "meeting_user/8": {
                     "meeting_id": 7844,
                     "user_id": 8,
                 },
+                "group/7844": {"meeting_user_ids": [8]},
                 "topic/1337": {
                     "title": "leet improvement discussion",
-                    "sequential_number": 1337,
                     "meeting_id": 7844,
                 },
                 "agenda_item/1": {
@@ -517,7 +437,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {
-                    "sequential_number": 23,
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
                 },
