@@ -75,7 +75,8 @@ class PollStopAction(
                 ["meeting_user_ids"],
             ),
         ]
-        result = self.datastore.get_many(requests,
+        result = self.datastore.get_many(
+            requests,
             use_changed_models=False,
             lock_result=False,
         )
