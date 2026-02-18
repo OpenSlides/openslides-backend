@@ -1,7 +1,6 @@
 from decimal import Decimal
 from typing import Any
 
-import pytest
 import requests
 import simplejson as json
 
@@ -345,9 +344,6 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_model_not_exists("vote/1")
 
-    @pytest.mark.skip(
-        "Vote service raises `Poll does not exist` if on attempt to stop poll if previous vote request failed."
-    )
     def test_vote_global(self) -> None:
         self.create_user("test2")
         self.set_models(
@@ -379,7 +375,11 @@ class PollVoteTest(BaseVoteTestCase):
             stop_poll_after_vote=False,
         )
         self.assert_status_code(response, 200)
-        response = self.request("poll.vote", {"id": 1, "user_id": 2, "value": "Y"})
+        response = self.request(
+            "poll.vote",
+            {"id": 1, "user_id": 2, "value": "Y"},
+            start_poll_before_vote=False,
+        )
         self.assert_status_code(response, 400)
 
         self.assert_model_exists(
