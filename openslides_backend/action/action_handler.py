@@ -137,11 +137,16 @@ class ActionHandler(BaseHandler):
                             )
 
                         for element in payload:
-                            for list_element in element["data"]:
+                            for data_element in element["data"]:
                                 try:
                                     result = self.execute_write_requests(
-                                        lambda e: transform_to_list(self.perform_action(e)),
-                                        element,
+                                        lambda e: transform_to_list(
+                                            self.perform_action(e)
+                                        ),
+                                        {
+                                            "action": element["action"],
+                                            "data": [data_element],
+                                        },
                                     )
                                     self.datastore.connection.commit()
                                     results.append(result)

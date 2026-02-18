@@ -1,9 +1,6 @@
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.database.interface import Database
 from openslides_backend.services.media.interface import MediaService
-from openslides_backend.services.postgresql.db_connection_handling import (
-    get_current_os_conn_pool,
-)
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.interfaces.logging import Logger, LoggingModule
 from openslides_backend.shared.interfaces.services import Services
