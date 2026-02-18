@@ -435,7 +435,7 @@ class DatabaseWriter(SqlQueryHelper):
                 table_name=sql.Identifier(intermediate_table),
                 own_column=sql.Identifier(own_column),
                 other_column=sql.Identifier(other_column),
-                negation=sql.SQL("") if directly else sql.SQL("NOT "),
+                negation=sql.SQL("" if directly else "NOT "),
                 id=id_,
             )
             self.execute_sql(
