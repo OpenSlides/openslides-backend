@@ -37,5 +37,3 @@ class BaseServiceProvider:
         self.vote_service = services.vote()
         self.datastore = datastore
         self.logging = logging
-        os_conn_pool = get_current_os_conn_pool()
-        self.db_connection = os_conn_pool.connection()
