@@ -30,9 +30,9 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
         """
         Handle deletion of polls and all the related instances in the vote service.
         """
-        poll_ids = self.datastore.get(f"meeting/{instance['id']}", ["poll_ids"])[
-            "poll_ids"
-        ]
+        poll_ids = self.datastore.get(f"meeting/{instance['id']}", ["poll_ids"]).get(
+            "poll_ids", []
+        )
         for poll_id in poll_ids:
             self.vote_service.delete(poll_id)
             self.datastore.apply_to_be_deleted(f"poll/{poll_id}")
