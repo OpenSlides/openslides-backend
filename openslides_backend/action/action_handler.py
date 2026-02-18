@@ -153,9 +153,12 @@ class ActionHandler(BaseHandler):
                                     try:
                                         result = self.execute_write_requests(
                                             lambda e: transform_to_list(
-                                            self.perform_action(e)
-                                        ),
-                                            element,
+                                                self.perform_action(e)
+                                            ),
+                                            {
+                                                "action": element["action"],
+                                                "data": [data_element],
+                                            },
                                         )
                                         self.datastore.connection.commit()
                                         results.append(result)
