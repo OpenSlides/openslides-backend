@@ -295,7 +295,9 @@ class DatabaseWriter(SqlQueryHelper):
 
         # to prevent missing exceptions and a malformed statement we construct a noop
         if not arguments:
-            statement += sql.SQL("id = id")
+            return fqid_from_collection_and_id(
+                collection, id_
+            )
 
         statement += sql.SQL(
             """

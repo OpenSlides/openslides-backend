@@ -75,7 +75,10 @@ class PollStopAction(
                 ["meeting_user_ids"],
             ),
         ]
-        result = self.datastore.get_many(requests, use_changed_models=False)
+        result = self.datastore.get_many(requests,
+            use_changed_models=False,
+            lock_result=False,
+        )
         groups = result["group"].values()
         result = self.datastore.get_many(
             [
@@ -92,6 +95,7 @@ class PollStopAction(
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )
         meeting_users = result["meeting_user"].values()
         self.datastore.get_many(
@@ -107,6 +111,7 @@ class PollStopAction(
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
