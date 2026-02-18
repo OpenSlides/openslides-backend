@@ -110,15 +110,13 @@ class ActionHandler(BaseHandler):
         parsing all actions. In the end it sends everything to the event store.
         """
         with make_span(self.env, "handle request"):
-            with get_new_os_conn() as db_connection:
-                self.db_connection = db_connection
-                self.user_id = user_id
-                self.internal = internal
+            self.user_id = user_id
+            self.internal = internal
 
-                try:
-                    payload_schema(payload)
-                except fastjsonschema.JsonSchemaException as exception:
-                    raise ActionException(exception.message)
+            try:
+                payload_schema(payload)
+            except fastjsonschema.JsonSchemaException as exception:
+                raise ActionException(exception.message)
 
             try:
                 with get_new_os_conn() as conn:
