@@ -9,6 +9,7 @@ from psycopg.types.json import Jsonb
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.migrations.migration_helper import MigrationHelper
 from openslides_backend.models.checker import Checker, CheckException
+from openslides_backend.models.mixins import MeetingModelMixin
 from openslides_backend.models.models import AgendaItem, Meeting, Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions

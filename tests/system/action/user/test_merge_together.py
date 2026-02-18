@@ -5,7 +5,6 @@ from decimal import Decimal
 from typing import Any, Literal, cast
 from zoneinfo import ZoneInfo
 
-import pytest
 from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
@@ -856,9 +855,8 @@ class UserMergeTogether(BaseActionTestCase):
                 },
             }
         )
-        polls_data = [
-            {
-                "id": 1,
+        polls_data = {
+            "poll/1": {
                 "title": "Assignment poll 1",
                 "content_object_id": "assignment/1",
                 "visibility": Poll.VISIBILITY_NAMED,
@@ -867,8 +865,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 1,
                 "entitled_group_ids": [1, 2, 3],
             },
-            {
-                "id": 2,
+            "poll/2": {
                 "title": "Assignment poll 2",
                 "content_object_id": "assignment/1",
                 "visibility": Poll.VISIBILITY_NAMED,
@@ -877,8 +874,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 1,
                 "entitled_group_ids": [1, 2, 3],
             },
-            {
-                "id": 3,
+            "poll/3": {
                 "title": "Assignment poll 3",
                 "content_object_id": "assignment/1",
                 "visibility": Poll.VISIBILITY_NAMED,
@@ -887,8 +883,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 1,
                 "entitled_group_ids": [1, 2, 3],
             },
-            {
-                "id": 4,
+            "poll/4": {
                 "title": "Assignment poll 4",
                 "content_object_id": "assignment/1",
                 "visibility": Poll.VISIBILITY_SECRET,
@@ -897,8 +892,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 1,
                 "entitled_group_ids": [1, 2, 3],
             },
-            {
-                "id": 5,
+            "poll/5": {
                 "title": "Motion poll",
                 "content_object_id": "motion/1",
                 "visibility": Poll.VISIBILITY_NAMED,
@@ -907,8 +901,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 4,
                 "entitled_group_ids": [4, 5, 6],
             },
-            {
-                "id": 6,
+            "poll/6": {
                 "title": "Topic poll",
                 "content_object_id": "topic/7",
                 "visibility": Poll.VISIBILITY_SECRET,
@@ -917,7 +910,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting_id": 7,
                 "entitled_group_ids": [7, 8, 9],
             },
-        ]
+        }
         # add entitled groups
         configs_data = {
             **{
@@ -989,9 +982,8 @@ class UserMergeTogether(BaseActionTestCase):
                 "vote_weight": Decimal("1"),
             },
         }
-        self.set_models(
-            {**{f"poll/{poll['id']}": poll for poll in polls_data}, **configs_data}
-        )
+        self.set_models(polls_data)
+        self.set_models(configs_data)
 
     # def vote(self, poll_id: int, payload: dict[str, Any]) -> None:
     #     self.vote_service.vote(poll_id, payload)
@@ -999,9 +991,9 @@ class UserMergeTogether(BaseActionTestCase):
         self,
         base: int,
         poll_id: int,
-        value,
-        acting_meeting_user_id: int = None,
-        represented_meeting_user_id: int = None,
+        value: Any,  # TODO: narrow down
+        acting_meeting_user_id: int | None = None,
+        represented_meeting_user_id: int | None = None,
         is_secret: bool = False,
     ) -> None:
         mu_data = (

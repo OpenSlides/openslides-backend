@@ -1,8 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
+
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
-from typing import Any
 
 
 class MeetingUserUpdate(BaseActionTestCase):

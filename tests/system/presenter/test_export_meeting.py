@@ -404,7 +404,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "assignment_poll_default_backend": "fast",
                     "poll_default_type": "analog",
                     "poll_default_onehundred_percent_base": "YNA",
-                    "poll_default_backend": "fast",
                     "poll_default_live_voting_enabled": False,
                     "poll_couple_countdown": True,
                 },

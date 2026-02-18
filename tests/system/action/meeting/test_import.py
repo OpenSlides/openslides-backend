@@ -8,7 +8,7 @@ from psycopg.types.json import Jsonb
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.http.views.presenter_view import PresenterView
 from openslides_backend.migrations.migration_helper import MigrationHelper
-from openslides_backend.models.models import Meeting
+from openslides_backend.models.models import Meeting, Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import (
@@ -2724,7 +2724,6 @@ class MeetingImport(BaseActionTestCase):
                     "assignment_poll_default_backend": "fast",
                     "poll_default_type": "analog",
                     "poll_default_onehundred_percent_base": "YNA",
-                    "poll_default_backend": "fast",
                     "poll_default_live_voting_enabled": False,
                     "poll_couple_countdown": True,
                     **{field: [1] for field in Meeting.all_default_projectors()},

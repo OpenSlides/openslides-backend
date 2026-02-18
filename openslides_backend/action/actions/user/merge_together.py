@@ -1,7 +1,7 @@
 from typing import Any, cast
 
-from openslides_backend.services.database.interface import PartialModel
 from openslides_backend.models.models import Poll
+from openslides_backend.services.database.interface import PartialModel
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User

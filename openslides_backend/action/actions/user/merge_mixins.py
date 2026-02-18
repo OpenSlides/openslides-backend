@@ -4,16 +4,16 @@ from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import (
     AssignmentCandidate,
+    Ballot,
     MeetingUser,
     MotionEditor,
     MotionSubmitter,
     MotionSupporter,
     MotionWorkingGroupSpeaker,
     PersonalNote,
-    Speaker,
     Poll,
-    Ballot,
     PollConfigOption,
+    Speaker,
 )
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
@@ -315,7 +315,7 @@ class MeetingUserMergeMixin(
             case _:
                 return super().get_merge_comparison_hash(collection, model)
 
-    def check_polls_helper(self, meeting_users: list[int]) -> list[str]:
+    def check_polls_helper(self, meeting_users: dict[str, dict[str, Any]]) -> list[str]:
         messages: list[str] = []
         group_ids: set[int] = set()
         meeting_ids: set[int] = set()

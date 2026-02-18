@@ -15,7 +15,7 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Meeting, Ballot
+from ..models.models import Ballot, Meeting
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
@@ -239,7 +239,7 @@ def export_meeting(
             collection, id_ = config_fqid.split("/")
             instance = datastore.get(
                 config_fqid,
-                get_fields_for_export(collection),
+                list(get_fields_for_export(collection)),
                 lock_result=False,
                 use_changed_models=False,
             )
@@ -371,10 +371,8 @@ def get_relation_fields() -> Iterable[RelationListField]:
             isinstance(field, RelationListField)
             and field not in HISTORY_FIELDS_PER_COLLECTION["meeting"]
             and (
-                (
-                    field.on_delete == OnDelete.CASCADE
-                    and field.get_own_field_name().endswith("_ids")
-                )
+                field.on_delete == OnDelete.CASCADE
+                and field.get_own_field_name().endswith("_ids")
             )
         ):
             yield field

@@ -4,8 +4,8 @@ from zoneinfo import ZoneInfo
 
 from psycopg.types.json import Jsonb
 
-from openslides_backend.models.models import Poll
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
