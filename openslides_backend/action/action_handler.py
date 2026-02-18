@@ -139,16 +139,18 @@ class ActionHandler(BaseHandler):
                             )
 
                         for element in payload:
-                            try:
-                                result = self.execute_write_requests(
-                                    lambda e: transform_to_list(self.perform_action(e)),
-                                    element,
-                                )
-                                results.append(result)
-                            except ActionException as exception:
-                                error = cast(ActionError, exception.get_json())
-                                results.append(error)
-                            self.datastore.reset()
+                            for list_element in element["data"]:
+                                try:
+                                    result = self.execute_write_requests(
+                                        lambda e: transform_to_list(self.perform_action(e)),
+                                        element,
+                                    )
+                                    self.datastore.connection.commit()
+                                    results.append(result)
+                                except ActionException as exception:
+                                    error = cast(ActionError, exception.get_json())
+                                    results.append(error)
+                                self.datastore.reset()
 
                     # execute cleanup methods
                     for on_success in self.on_success:
