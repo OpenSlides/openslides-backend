@@ -245,6 +245,13 @@ class BaseActionTestCase(BaseSystemTestCase):
         user_groups: list[int] = [3],
         custom_error_message: str | None = None,
     ) -> None:
+        """
+        Checks that response.status_code == 403 when any of the conditions is true:
+            - `permission` is not provided
+            - `custom_error_message` is provided
+            - `fail` is set to True
+        In other cases asserts response.status_code to be 200.
+        """
         meeting_data = {"locked_from_inside": True} if lock_meeting else {}
         self.create_meeting(meeting_data=meeting_data)
         self.user_id = self.create_user("user")

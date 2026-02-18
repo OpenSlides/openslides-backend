@@ -676,8 +676,6 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
 
     def test_update_permission_metadata_and_submitter(self) -> None:
         self.setup_can_manage_metadata()
-        self.permission_test_models["meeting_user/1"] = {"motion_submitter_ids": [1]}
-        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion_submitter/1": {
