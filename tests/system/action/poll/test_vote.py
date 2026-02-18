@@ -29,7 +29,7 @@ class BaseVoteTestCase(BasePollTestCase):
                 self.execute_action_internally("poll.start", {"id": data["id"]})
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
-                self.request("poll.stop", {"id": data["id"]})
+                self.execute_action_internally("poll.stop", {"id": data["id"]})
             return response
         else:
             return super().request(action, data, anonymous, lang, internal)
@@ -110,12 +110,11 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        self.login(user_id)
         response = self.request(
             "poll.vote", {"id": 1, "value": {"11": 1}}, stop_poll_after_vote=False
         )
         self.assert_status_code(response, 200)
-        self.login(1)
+        self.login(user_id)
         response = self.request(
             "poll.vote", {"id": 1, "value": {"11": 1}}, start_poll_before_vote=False
         )

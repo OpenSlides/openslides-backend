@@ -955,30 +955,21 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def create_polls_with_correct_votes(self) -> None:
         self.set_up_polls_for_merge()
-        self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
+        self.request_multi("poll.start", [{"id": i} for i in [3, 4]])
         self.login(4)
-        self.request("poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False)
+        self.request("poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False)  # type: ignore
         self.request(
             "poll.vote",
             {"id": 1, "value": "N", "user_id": 5},
             start_poll_before_vote=False,
-            stop_poll_after_vote=False,
         )
         self.login(2)
-        self.request(
-            "poll.vote", {"id": 2, "value": {"4": "Y"}}, stop_poll_after_vote=False
-        )
+        self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
         self.login(3)
-        self.request(
-            "poll.vote", {"id": 5, "value": {"11": "A"}}, stop_poll_after_vote=False
-        )
-        self.request(
-            "poll.vote",
-            {"id": 6, "value": {"13": 1, "14": 1, "15": 0}},
-            stop_poll_after_vote=False,
-        )
+        self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
+        self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
         self.login(1)
-        self.request_multi("poll.stop", [{"id": i} for i in range(1, 7)])
+        self.request_multi("poll.stop", [{"id": i} for i in [3, 4]])
 
     def assert_merge_with_polls_correct(
         self, password: str, add_to_creatable_ids: int = 0
@@ -1133,59 +1124,36 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_with_polls_all_errors(self) -> None:
         self.set_up_polls_for_merge()
-        self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
+        self.request_multi("poll.start", [{"id": i} for i in [3, 4]])
         self.login(4)
+        self.request("poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False)
         self.request(
             "poll.vote",
-            {"id": 1, "value": "N"},
+            {"id": 1, "value": "N", "user_id": 5},
             start_poll_before_vote=False,
-            stop_poll_after_vote=False,
-        )
-        self.request(
-            "poll.vote",
-            {"id": 2, "value": {"4": "N"}, "user_id": 5},
-            start_poll_before_vote=False,
-            stop_poll_after_vote=False,
         )
         self.login(2)
-        self.request(
-            "poll.vote",
-            {"id": 2, "value": {"4": "Y"}},
-            start_poll_before_vote=False,
-            stop_poll_after_vote=False,
-        )
+        self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
         self.login(3)
-        self.request(
-            "poll.vote",
-            {"id": 5, "value": {"11": "A"}},
-            start_poll_before_vote=False,
-            stop_poll_after_vote=False,
-        )
-        self.request(
-            "poll.vote",
-            {"id": 6, "value": {"13": 1, "14": 1, "15": 0}},
-            start_poll_before_vote=False,
-            stop_poll_after_vote=False,
-        )
+        self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
+        self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
         self.login(1)
-        self.request_multi("poll.stop", [{"id": i} for i in range(2, 7)])
+        self.request("poll.stop", {"id": 3})
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
-
         self.assert_status_code(response, 400)
-        self.maxDiff = None
-        self.assertEqual(
+        assert (
             "Cannot carry out merge into user/2, because "
             + " and ".join(
                 [
                     "some of the users are entitled to vote in currently running polls in meeting(s) 1",
                     "some of the selected users have different delegations roles in meeting(s) 1",
                     "some of the selected users are delegating votes to each other in meeting(s) 1",
-                    "among the selected users multiple voted in poll(s) 2",
+                    "among the selected users multiple voted in poll(s) 1",
                     "multiple of the selected users are among the options in poll(s) 1, 4",
                     "multiple of the selected users are in the same candidate list in poll(s) 2, 3",
                 ]
-            ),
-            response.json["message"],
+            )
+            in response.json["message"]
         )
 
     def create_assignment_or_motion_models_for_meetings(
