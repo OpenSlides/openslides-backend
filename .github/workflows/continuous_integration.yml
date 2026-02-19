@@ -28,8 +28,16 @@ jobs:
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        version: latest
+
+    - name: Build docker production image
+      run: docker compose -f docker-compose.prod.yml build --parallel
+
     - name: Run docker production image
-      run: docker compose -f docker-compose.prod.yml up --build -d
+      run: docker compose -f docker-compose.prod.yml up -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
