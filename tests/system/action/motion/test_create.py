@@ -855,11 +855,9 @@ class MotionCreateActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
         disable_delegations: bool = False,
     ) -> None:
-        self.set_user_groups(1, [1])
-        self.set_organization_management_level(None)
-        self.set_group_permissions(1, [perm])
         self.set_models(
             {
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
                 "meeting/1": {
                     delegator_setting: True,
                     **(
@@ -879,6 +877,9 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "meeting_user/2": {"vote_delegations_from_ids": [1]},
                 }
             )
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
+        self.set_user_groups(1, [1])
 
     def test_create_delegator_setting(self) -> None:
         self.set_models(
@@ -906,7 +907,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [1],
             },
         )
 
@@ -928,7 +929,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [1],
             },
         )
 
@@ -970,7 +971,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [1],
             },
         )
 
@@ -996,7 +997,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [1],
             },
         )
 
@@ -1020,6 +1021,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": None,
+                "submitter_ids": [1],
             },
         )

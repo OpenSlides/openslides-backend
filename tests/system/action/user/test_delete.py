@@ -77,8 +77,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_id": 111,
                     "speaker_ids": [15, 16],
                 },
-                "group/1": {"meeting_user_ids": [1111]},
                 "speaker/15": {
+                    # "begin_time": 12345678,
                     "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                     "list_of_speakers_id": 1,
                     "meeting_user_id": 1111,
@@ -130,7 +130,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "assignment_candidate_ids": [34],
                 },
                 "meeting/1": {"meeting_user_ids": [1111]},
-                "group/1": {"meeting_user_ids": [1111]},
                 "assignment_candidate/34": {
                     "meeting_user_id": 1111,
                     "meeting_id": 1,
@@ -176,7 +175,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_id": 111,
                     "motion_submitter_ids": [34],
                 },
-                "group/1": {"meeting_user_ids": [1111]},
                 "motion/50": {"submitter_ids": [34]},
             }
         )
@@ -275,7 +273,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "motion/1": {"submitter_ids": [1]},
-                "group/1": {"meeting_user_ids": [12]},
             }
         )
         response = self.request("user.delete", {"id": 2})
@@ -310,7 +307,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "vote_delegations_from_ids": [1111],
                 },
                 "meeting/1": {"meeting_user_ids": [1111, 1112]},
-                "group/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 111})
@@ -344,7 +340,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "vote_delegations_from_ids": [1111],
                 },
                 "meeting/1": {"meeting_user_ids": [1111, 1112]},
-                "group/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 112})

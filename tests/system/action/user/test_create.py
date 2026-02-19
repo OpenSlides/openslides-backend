@@ -236,7 +236,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting_user/1", {"vote_delegated_to_id": 2})
         self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
-        self.assert_model_exists("meeting/1", {"user_ids": [222, 223]})
+        self.assert_model_exists("meeting/1", {"user_ids": [223]})
 
     def test_invalid_committee_management_ids(self) -> None:
         self.create_committee()

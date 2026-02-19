@@ -96,8 +96,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -130,8 +132,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -163,8 +167,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -194,8 +200,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -226,8 +234,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -256,8 +266,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -278,8 +290,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -300,8 +314,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])
@@ -320,8 +336,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
-                "group/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
+                "meeting/1": {
+                    "meeting_user_ids": [11],
+                },
             }
         )
         self.set_user_groups(1, [3])

@@ -14,7 +14,11 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.export_helper import get_fields_for_export
 from openslides_backend.shared.patterns import is_reserved_field
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import (
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    fqid_from_collection_and_id,
+)
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -67,7 +71,13 @@ class MeetingClone(BaseActionTestCase):
                 "language": "en",
             },
         )
-        self.update_created_fqids()
+        self.created_fqids.update(
+            [
+                fqid_from_collection_and_id(collection, id_)
+                for collection, data in self.datastore.get_everything().items()
+                for id_ in data.keys()
+            ]
+        )
 
     def test_clone_without_users(self) -> None:
         self.set_test_data()

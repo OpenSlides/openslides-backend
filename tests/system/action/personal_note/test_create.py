@@ -121,7 +121,11 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
 
     def test_create_not_in_meeting(self) -> None:
         self.create_meeting()
-        self.create_motion(1, 23)
+        self.set_models(
+            {
+                "motion/23": {"meeting_id": 1},
+            }
+        )
         response = self.request(
             "personal_note.create", {"content_object_id": "motion/23", "star": True}
         )
