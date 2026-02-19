@@ -22,7 +22,7 @@
         "4":{
             "id": 4,
             "name": "non-binary",
-            "organization_id": 1,
+            "organization_id": 1
         }
     },
     "organization": {
