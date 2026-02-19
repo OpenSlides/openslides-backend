@@ -1,5 +1,6 @@
 import os
 import string
+from argparse import Namespace
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
@@ -11,6 +12,7 @@ from meta.dev.src.helper_get_names import (
     InternalHelper,
     TableFieldType,
 )
+from meta.dev.src.validate import DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
@@ -19,8 +21,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -92,9 +92,9 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    args = parse_arguments(SOURCE)
+    args: Namespace = parse_arguments(DEFAULT_COLLECTION_META)
 
-    InternalHelper.read_models_yml(SOURCE)
+    InternalHelper.read_models_yml(DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR)
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -115,20 +115,6 @@ def main() -> None:
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")
-
-
-def get_model_field(collection: str, field_name: str) -> str | dict:
-    """
-    Helper function the get a specific model field. Used to create generic relations.
-    """
-
-    model = InternalHelper.MODELS.get(collection)
-    if model is None:
-        raise ValueError(f"Collection {collection} does not exist.")
-    value = model.get(field_name)
-    if value is None:
-        raise ValueError(f"Field {field_name} does not exist.")
-    return value
 
 
 class Node:
