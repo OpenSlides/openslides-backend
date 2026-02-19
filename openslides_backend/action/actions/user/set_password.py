@@ -8,11 +8,13 @@ from ....permissions.permissions import Permissions
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .keycloak_sync_mixin import KeycloakPasswordSyncMixin
 from .password_mixins import ClearSessionsMixin, SetPasswordMixin
 
 
 @register_action("user.set_password")
 class UserSetPasswordAction(
+    KeycloakPasswordSyncMixin,
     SetPasswordMixin,
     UserScopeMixin,
     CheckForArchivedMeetingMixin,

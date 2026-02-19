@@ -11,11 +11,12 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .keycloak_sync_mixin import KeycloakDeleteSyncMixin
 from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
+class UserDelete(KeycloakDeleteSyncMixin, UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
     """
     Action to delete a user.
     """
