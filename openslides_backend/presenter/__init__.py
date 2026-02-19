@@ -11,6 +11,7 @@ from . import (  # noqa
     get_user_scope,
     get_users,
     number_of_users,
+    oidc_who_am_i,
     search_for_id_by_external_id,
     search_users,
 )

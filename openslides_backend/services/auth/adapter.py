@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib import parse
 
 from osauthlib import (
@@ -18,12 +19,37 @@ from .interface import AuthenticationService
 class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
     """
     Adapter to connect to authentication service.
+
+    Supports both OpenSlides tokens (HS256) and OIDC/Keycloak tokens (RS256).
     """
 
     def __init__(self, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
+        self._oidc_configured = False
+
+    def configure_oidc(
+        self, oidc_enabled: bool, provider_url: Optional[str], client_id: Optional[str]
+    ) -> None:
+        """
+        Configure OIDC authentication from organization settings.
+
+        Args:
+            oidc_enabled: Whether OIDC is enabled
+            provider_url: Keycloak realm URL
+            client_id: OIDC client ID
+        """
+        if oidc_enabled and provider_url and client_id:
+            self.logger.debug(
+                f"Configuring OIDC authentication: issuer={provider_url}, audience={client_id}"
+            )
+            self.auth_handler.configure_oidc(
+                issuer=provider_url, audience=client_id
+            )
+            self._oidc_configured = True
+        else:
+            self._oidc_configured = False
 
     def authenticate(self) -> tuple[int, str | None]:
         """
@@ -71,3 +97,15 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
 
     def clear_sessions_by_user_id(self, user_id: int) -> None:
         self.auth_handler.clear_sessions_by_user_id(user_id)
+
+    def sso_login(self, user_id: int) -> tuple[str, str]:
+        """
+        Create a session for a user via SSO (OIDC/SAML) login.
+        """
+        self.logger.debug(f"SSO login for user_id: {user_id}")
+        try:
+            access_token, refresh_cookie = self.auth_handler.sso_login(user_id)
+            self.logger.debug(f"SSO login successful: access_token={access_token[:30]}..., refresh_cookie={refresh_cookie[:30] if refresh_cookie else 'None'}...")
+            return access_token, refresh_cookie
+        except AuthenticateException as e:
+            raise AuthenticationException(e.message)

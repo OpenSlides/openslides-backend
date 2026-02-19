@@ -22,13 +22,18 @@ class PresenterView(BaseView):
             with conn.cursor() as curs:
                 MigrationHelper.assert_migration_index(curs)
 
+        # Get user id.
+        user_id, access_token = self.get_user_id_from_headers(
+            request.headers, request.cookies
+        )
+
         # Handle request.
         handler = PresenterHandler(
             env=self.env,
             logging=self.logging,
             services=self.services,
         )
-        presenter_response, access_token = handler.handle_request(request)
+        presenter_response = handler.handle_request(request, user_id)
 
         # Finish request.
         self.logger.debug("Presenter request finished successfully. Send response now.")
