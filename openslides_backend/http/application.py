@@ -1,3 +1,5 @@
+import os
+import threading
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -11,7 +13,10 @@ from openslides_backend.shared.interfaces.env import Env
 from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
 
-from ..services.auth.interface import AUTHENTICATION_HEADER
+from ..services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
+
+# OIDC session cookie name (used instead of auth service cookie in OIDC mode)
+OIDC_SESSION_COOKIE = "openslides_session"
 from ..shared.env import is_truthy
 from ..shared.exceptions import ActionException, ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
@@ -22,6 +27,7 @@ from .http_exceptions import (
     InternalServerError,
     Unauthorized,
 )
+from .redirect_response import RedirectResponse
 from .request import Request
 
 
@@ -90,6 +96,99 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 except ActionException as e:
                     self.logger.error(f"Setting superadmin password failed: {e}")
 
+            # If OIDC is enabled, sync users to Keycloak in background
+            if is_truthy(os.environ.get("OIDC_ENABLED", "false")):
+                thread = threading.Thread(
+                    target=self._sync_users_to_keycloak, daemon=True
+                )
+                thread.start()
+
+    def _sync_users_to_keycloak(self) -> None:
+        """
+        Sync local users to Keycloak after initial data import.
+        Runs in a background daemon thread so it doesn't block startup.
+        Uses the migration 0101 data_manipulation function.
+        Retries up to 30 times with 2 second delays if Keycloak isn't ready.
+        """
+        import io
+        import time
+        from importlib import import_module
+
+        from openslides_backend.migrations.migration_helper import MigrationHelper, MigrationState
+        from openslides_backend.services.postgresql.db_connection_handling import (
+            get_new_os_conn,
+        )
+
+        # Early exit: skip if no users need migration
+        try:
+            with get_new_os_conn() as conn:
+                with conn.cursor() as curs:
+                    curs.execute(
+                        "SELECT EXISTS(SELECT 1 FROM user_t WHERE keycloak_id IS NULL AND saml_id IS NULL)"
+                    )
+                    row = curs.fetchone()
+                    if row and not row[0]:
+                        self.logger.info("All users already synced to Keycloak, skipping")
+                        return
+        except Exception:
+            pass  # If check fails, proceed with sync attempt
+
+        max_retries = 30
+        retry_delay = 2
+
+        try:
+            # Import the migration module (name starts with digit, need importlib)
+            migration_module = import_module(
+                "openslides_backend.migrations.migrations.0101_migrate_users_to_keycloak"
+            )
+            data_manipulation = migration_module.data_manipulation
+
+            for attempt in range(max_retries):
+                try:
+                    self.logger.info(f"Syncing users to Keycloak (attempt {attempt + 1}/{max_retries})...")
+
+                    # Set up a dummy stream for MigrationHelper.write_line()
+                    stream = io.StringIO()
+                    MigrationHelper.migrate_thread_stream = stream
+
+                    with get_new_os_conn() as conn:
+                        with conn.cursor() as curs:
+                            data_manipulation(curs)
+                            # Override: startup sync is not the migration framework.
+                            # On fresh install, create_schema.py marks all migrations
+                            # as FINALIZED. data_manipulation() downgrades migration
+                            # 101 to FINALIZATION_REQUIRED, creating an inconsistency.
+                            MigrationHelper.set_database_migration_info(
+                                curs, 101, MigrationState.FINALIZED
+                            )
+                            conn.commit()
+
+                    # Log the migration output
+                    output = stream.getvalue()
+                    if output:
+                        for line in output.strip().split("\n"):
+                            self.logger.info(f"[Migration 0101] {line}")
+
+                    MigrationHelper.migrate_thread_stream = None
+                    self.logger.info("User sync to Keycloak completed")
+                    return
+                except Exception as e:
+                    MigrationHelper.migrate_thread_stream = None
+                    if "Connection refused" in str(e) or "Failed to establish" in str(e):
+                        if attempt < max_retries - 1:
+                            self.logger.info(f"Keycloak not ready, retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            continue
+                    raise
+        except ImportError as e:
+            self.logger.warning(
+                f"Migration 0101 not found, skipping Keycloak user sync: {e}"
+            )
+        except Exception as e:
+            import traceback
+            self.logger.error(f"Failed to sync users to Keycloak: {e}")
+            self.logger.error(traceback.format_exc())
+
     def dispatch_request(self, request: Request) -> Response | HTTPException:
         """
         Dispatches request to route according to URL rules. Returns a Response
@@ -121,6 +220,29 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 raise
         except HTTPException as exception:
             return exception
+
+        # Handle RedirectResponse for OIDC provisioning flow
+        if isinstance(response_body, RedirectResponse):
+            self.logger.debug(
+                f"Redirecting to {response_body.location} with status {response_body.status_code}"
+            )
+            response = Response(
+                status=response_body.status_code,
+                headers={"Location": response_body.location},
+            )
+            if response_body.access_token:
+                response.headers[AUTHENTICATION_HEADER] = response_body.access_token
+            if response_body.refresh_cookie:
+                # Use OIDC session cookie for OIDC redirects
+                response.set_cookie(
+                    OIDC_SESSION_COOKIE,
+                    response_body.refresh_cookie,
+                    httponly=True,
+                    secure=True,
+                    samesite="Lax",  # Lax to allow redirect from Keycloak
+                )
+            return response
+
         if isinstance(response_body, dict):
             status_code = response_body.get("status_code", 200)
         elif request.path == "/system/presenter/handle_request":
@@ -137,7 +259,20 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             content_type="application/json",
         )
         if access_token is not None:
-            response.headers[AUTHENTICATION_HEADER] = access_token
+            if isinstance(access_token, tuple):
+                # (access_token, refresh_cookie) tuple from OIDC who-am-i
+                token, refresh_cookie = access_token
+                response.headers[AUTHENTICATION_HEADER] = token
+                if refresh_cookie:
+                    response.set_cookie(
+                        COOKIE_NAME,
+                        refresh_cookie,
+                        httponly=True,
+                        secure=True,
+                        samesite="Strict",
+                    )
+            else:
+                response.headers[AUTHENTICATION_HEADER] = access_token
         return response
 
     def wsgi_application(

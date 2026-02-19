@@ -3059,6 +3059,12 @@ class User(Model):
             "description": "unique-key from IdP for SAML login",
         }
     )
+    keycloak_id = fields.CharField(
+        constraints={
+            "minLength": 1,
+            "description": "unique-key from Keycloak for OIDC login (sub claim)",
+        }
+    )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()
