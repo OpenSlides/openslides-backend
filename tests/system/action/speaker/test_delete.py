@@ -24,7 +24,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "password": self.auth.hash(DEFAULT_PASSWORD),
             },
             "meeting_user/7": {"meeting_id": 1, "user_id": 7},
-            "group/1": {"meeting_user_ids": [7]},
             "topic/1337": {
                 "title": "introduction leet gathering",
                 "meeting_id": 1,
@@ -52,7 +51,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 111,
                     "user_id": 7,
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "introduction leet gathering",
                     "meeting_id": 111,
@@ -85,7 +83,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 111,
                     "user_id": 7,
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "introduction leet gathering",
                     "meeting_id": 111,
@@ -146,7 +143,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 111,
                     "user_id": 7,
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "introduction leet gathering",
                     "meeting_id": 111,
@@ -179,7 +175,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 111,
                     "user_id": 7,
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "introduction leet gathering",
                     "meeting_id": 111,
@@ -317,7 +312,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "user_id": 7,
                     "structure_level_ids": [5],
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "introduction leet gathering",
                     "meeting_id": 111,
@@ -381,7 +375,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "user_id": 7,
                     "structure_level_ids": [5],
                 },
-                "group/111": {"meeting_user_ids": [7]},
                 "topic/1337": {
                     "title": "leet",
                     "meeting_id": 111,
@@ -476,7 +469,6 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 8,
                 },
-                "group/3": {"meeting_user_ids": [8]},
                 "speaker/891": {
                     "meeting_user_id": 8,
                     "list_of_speakers_id": 23,

@@ -10,7 +10,6 @@ class MeetingUserUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "group/10": {"meeting_user_ids": [5]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }
         )
@@ -133,7 +132,6 @@ class MeetingUserUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "group/10": {"meeting_user_ids": [5]},
                 "group/12": {"permissions": ["user.can_manage"]},
                 "structure_level/31": {"name": "structy", "meeting_id": 10},
             }

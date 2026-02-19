@@ -195,8 +195,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "user/222": {
                     "username": "timtari",
                 },
-                "meeting_user/1": {"meeting_id": 1, "user_id": 222},
-                "group/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 222, "group_ids": []},
                 "structure_level/31": {"name": "Gondor", "meeting_id": 1},
             }
         )
@@ -242,7 +241,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting_user/1", {"vote_delegated_to_id": 2})
         self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
-        self.assert_model_exists("meeting/1", {"user_ids": [222, 223]})
+        self.assert_model_exists("meeting/1", {"user_ids": [223]})
 
     def test_invalid_committee_management_ids(self) -> None:
         self.create_committee()
