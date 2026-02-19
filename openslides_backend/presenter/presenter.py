@@ -2,7 +2,6 @@ from collections.abc import Callable
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaException
-from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -64,7 +63,7 @@ class PresenterHandler(BaseHandler):
     Presenter handler. It is the concret implementation of Presenter interface.
     """
 
-    def handle_request(self, request: Request) -> tuple[PresenterResponse, str | None]:
+    def handle_request(self, request: Request, user_id: int) -> PresenterResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing the presentations.
@@ -78,9 +77,9 @@ class PresenterHandler(BaseHandler):
         # Parse presentations and creates response
         with get_new_os_conn() as conn:
             self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-            response, access_token = self.parse_presenters(request)
+            response = self.parse_presenters(request, user_id)
         self.logger.debug("Request was successful. Send response now.")
-        return response, access_token
+        return response
 
     def validate(self, payload: Payload) -> None:
         """
@@ -91,8 +90,8 @@ class PresenterHandler(BaseHandler):
         payload_schema(payload)
 
     def parse_presenters(
-        self, request: Request
-    ) -> tuple[PresenterResponse, str | None]:
+        self, request: Request, user_id: int
+    ) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
@@ -109,13 +108,6 @@ class PresenterHandler(BaseHandler):
                 )
             presenters.append(presenter)
 
-        self.services.authentication().set_authentication(
-            request.headers.get(AUTHENTICATION_HEADER, ""),
-            request.cookies.get(COOKIE_NAME, ""),
-        )
-        access_token: str | None = None
-        user_id, access_token = self.services.authentication().authenticate()
-
         response = []
         for PresenterClass in presenters:
             presenter_instance = PresenterClass(
@@ -130,4 +122,4 @@ class PresenterHandler(BaseHandler):
             result = presenter_instance.get_result()
             response.append(result)
         self.logger.debug("Presenter data ready.")
-        return response, access_token
+        return response
