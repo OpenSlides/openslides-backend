@@ -949,10 +949,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "new_username",
                 "committee_ids": [60, 63],
+                "meeting_ids": [1, 4],
             },
         )
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_meeting_manage_user_with_only_archived_meeting_no_permission(
         self,
@@ -1296,10 +1295,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "new_username",
                 "committee_ids": [60, 63],
+                "meeting_ids": [1, 4],
             },
         )
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
         self,
@@ -1343,9 +1341,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"username": "new_username"})
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "meeting_ids": [1, 4],
+            },
+        )
 
     def test_perm_group_A_no_permission(self) -> None:
         """May not update group A fields on organization scope, although having both committee permissions"""
@@ -2065,9 +2067,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists("user/111")
-        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
-        self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "committee_management_ids": [60, 63],
+                "committee_ids": [60, 63],
+            },
+        )
 
     def test_perm_group_D_no_permission(self) -> None:
         """May not update Group D committee fields, because of missing CML permission for one committee"""
@@ -2130,9 +2136,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists("user/111")
-        self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
-        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "committee_ids": [60, 63],
+                "committee_management_ids": [60, 63],
+            },
+        )
 
     def test_perm_group_D_permission_with_CML_missing_permission(
         self,
