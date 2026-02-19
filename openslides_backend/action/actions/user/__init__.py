@@ -11,6 +11,7 @@ from . import (  # noqa
     participant_import,
     participant_json_upload,
     reset_password_to_default,
+    save_keycloak_account,
     save_saml_account,
     send_invitation_email,
     set_password,
