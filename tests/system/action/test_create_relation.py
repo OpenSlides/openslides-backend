@@ -8,13 +8,18 @@ from openslides_backend.action.mixins.create_action_with_dependencies import (
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from openslides_backend.models.base import model_registry
 from openslides_backend.shared.patterns import Collection
+from tests.patch_model_registry_helper import (
+    FakeModel,
+    PatchModelRegistryMixin,
+    fake_registry,
+)
 
-from .base import BaseActionTestCase
+from .base_generic import BaseGenericTestCase
 
 
-class FakeModelCRA(Model):
+class FakeModelCRA(FakeModel):
     collection: Collection = "fake_model_cr_a"
     verbose_name = "fake model for simple field creation"
     id = fields.IntegerField()
@@ -23,18 +28,18 @@ class FakeModelCRA(Model):
     not_req_field = fields.IntegerField()
 
 
-class FakeModelCRB(Model):
+class FakeModelCRB(FakeModel):
     collection: Collection = "fake_model_cr_b"
     verbose_name = "fake model for create relation b"
     id = fields.IntegerField()
 
     name = fields.CharField()
     fake_model_cr_c_id = fields.RelationField(
-        to={"fake_model_cr_c": "fake_model_cr_b_id"}, required=True
+        to={"fake_model_cr_c": "fake_model_cr_b_id"}, required=True, is_view_field=True
     )
 
 
-class FakeModelCRC(Model):
+class FakeModelCRC(FakeModel):
     collection: Collection = "fake_model_cr_c"
     verbose_name = "fake model for create relation c"
     id = fields.IntegerField()
@@ -44,11 +49,11 @@ class FakeModelCRC(Model):
         to={"fake_model_cr_b": "fake_model_cr_c_id"}, required=True
     )
     fake_model_cr_d_id = fields.RelationField(
-        to={"fake_model_cr_d": "fake_model_cr_c_ids"},
+        to={"fake_model_cr_d": "fake_model_cr_c_ids"}, is_view_field=True
     )
 
 
-class FakeModelCRD(Model):
+class FakeModelCRD(FakeModel):
     collection: Collection = "fake_model_cr_d"
     verbose_name = "fake model for create relation d"
     id = fields.IntegerField()
@@ -99,7 +104,57 @@ class FakeModelCRDCreateAction(CreateAction):
     skip_archived_meeting_check = True
 
 
-class TestCreateRelation(BaseActionTestCase):
+class TestCreateRelation(PatchModelRegistryMixin, BaseGenericTestCase):
+    collection_a = "fake_model_cr_a"
+    collection_b = "fake_model_cr_b"
+    collection_c = "fake_model_cr_c"
+    collection_d = "fake_model_cr_d"
+    fake_model_registry = model_registry | fake_registry
+    yml = f"""
+    _meta:
+        id_field: &id_field
+            type: number
+            restriction_mode: A
+            constant: true
+            required: true
+    {collection_a}:
+        id: *id_field
+        req_field:
+            type: number
+            required: true
+        not_req_field:
+            type: number
+    {collection_b}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_c_id:
+            type: relation
+            to: {collection_c}/fake_model_cr_b_id
+            required: true
+    {collection_c}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_b_id:
+            type: relation
+            to: {collection_b}/fake_model_cr_c_id
+            reference: {collection_b}
+            required: true
+        fake_model_cr_d_id:
+            type: relation
+            to: {collection_d}/fake_model_cr_c_ids
+            reference: {collection_d}
+    {collection_d}:
+        id: *id_field
+        name:
+            type: text
+        fake_model_cr_c_ids:
+            type: relation
+            to: {collection_c}/fake_model_cr_d_id
+            required: true
+    """
+
     def test_simple_create(self) -> None:
         response = self.request(
             "fake_model_cr_a.create", {"req_field": 1, "not_req_field": 2}
@@ -148,7 +203,7 @@ class TestCreateRelation(BaseActionTestCase):
         response = self.request("fake_model_cr_c.create", {"fake_model_cr_b_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'fake_model_cr_b/1' does not exist.",
+            "Model 'fake_model_cr_b/1' does not exist.",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_cr_c/1")

@@ -13,27 +13,16 @@ class ProjectorDelete(BaseActionTestCase):
                     "meeting_id": 1,
                     "used_as_default_projector_for_motion_in_meeting_id": 1,
                 },
-                "projector/113": {
-                    "name": "name_test1",
-                    "used_as_reference_projector_meeting_id": 1,
-                    "meeting_id": 1,
-                },
-                "meeting/1": {
-                    "reference_projector_id": 113,
-                    "default_projector_motion_ids": [111],
-                    "projector_ids": [111, 113],
-                },
             }
         )
 
     def test_delete_correct(self) -> None:
         response = self.request("projector.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector/111")
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("default_projector_motion_ids") == [113]
+        self.assert_model_not_exists("projector/111")
+        self.assert_model_exists("meeting/1", {"default_projector_motion_ids": [1]})
         self.assert_model_exists(
-            "projector/113",
+            "projector/1",
             {
                 "used_as_default_projector_for_motion_in_meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
@@ -43,11 +32,6 @@ class ProjectorDelete(BaseActionTestCase):
     def test_delete_with_projections(self) -> None:
         self.set_models(
             {
-                "projector/111": {
-                    "preview_projection_ids": [1],
-                    "current_projection_ids": [2],
-                    "history_projection_ids": [3],
-                },
                 "projection/1": {
                     "preview_projector_id": 111,
                     "content_object_id": "meeting/1",
@@ -67,20 +51,19 @@ class ProjectorDelete(BaseActionTestCase):
         )
         response = self.request("projector.delete", {"id": 111})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("projector/111")
-        self.assert_model_deleted("projection/1")
-        self.assert_model_deleted("projection/2")
-        self.assert_model_deleted("projection/3")
+        self.assert_model_not_exists("projector/111")
+        self.assert_model_not_exists("projection/1")
+        self.assert_model_not_exists("projection/2")
+        self.assert_model_not_exists("projection/3")
 
     def test_delete_prevent_if_used_as_reference(self) -> None:
-        response = self.request("projector.delete", {"id": 113})
+        response = self.request("projector.delete", {"id": 1})
         self.assert_status_code(response, 400)
-        assert (
-            "A used as reference projector is not allowed to delete."
-            in response.data.decode()
+        self.assertEqual(
+            "A used as reference projector is not allowed to delete.",
+            response.json["message"],
         )
-        model = self.get_model("projector/113")
-        assert model.get("name") == "name_test1"
+        self.assert_model_exists("projector/1")
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test({}, "projector.delete", {"id": 111})

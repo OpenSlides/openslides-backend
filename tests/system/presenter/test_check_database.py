@@ -1,5 +1,7 @@
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
@@ -8,35 +10,6 @@ from .base import BasePresenterTestCase
 
 
 class TestCheckDatabase(BasePresenterTestCase):
-    def test_found_errors(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"name": "test_foo"},
-                "meeting/2": {"name": "test_bar"},
-            }
-        )
-        status_code, data = self.request("check_database", {})
-        assert status_code == 200
-        assert data["ok"] is False
-        assert "Meeting 1" in data["errors"]
-        assert "meeting/1: Missing fields" in data["errors"]
-        assert "Meeting 2" in data["errors"]
-        assert "meeting/2: Missing fields" in data["errors"]
-
-    def test_found_errors_one_meeting(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"name": "test_foo"},
-                "meeting/2": {"name": "test_bar"},
-            }
-        )
-        status_code, data = self.request("check_database", {"meeting_id": 2})
-        assert status_code == 200
-        assert data["ok"] is False
-        assert "Meeting 1" not in data["errors"]
-        assert "Meeting 2" in data["errors"]
-        assert "meeting/2: Missing fields" in data["errors"]
-
     def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
@@ -156,7 +129,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -196,7 +169,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -216,7 +188,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_recommendation_extension_field": False,
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -289,7 +260,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_id": 1,
                     "tagged_ids": ["meeting/1"],
                 },
-                "committee/1": {"organization_id": 1, "default_meeting_id": 1},
+                "committee/1": {
+                    "name": "!",
+                    "organization_id": 1,
+                    "default_meeting_id": 1,
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -344,6 +319,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "meeting_mediafile_inherited_access_group_ids": [4],
                 },
                 "user/1": {
+                    "username": "no",
                     "meeting_user_ids": [11],
                     "can_change_own_password": False,
                     "is_physical_person": True,
@@ -384,6 +360,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                         "meeting_user_ids": [16],
                     },
                 ),
+                "gender/2": {
+                    "id": 1,
+                    "organization_id": 1,
+                    "name": "male",
+                },
                 "meeting_user/11": {
                     "user_id": 1,
                     "meeting_id": 1,
@@ -423,7 +404,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -444,7 +424,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -502,7 +481,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "motion/1": {
                     "submitter_ids": [5],
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -517,7 +495,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "list_of_speakers/6": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
@@ -543,14 +520,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "title": "test",
                     "open_posts": 0,
                     "phase": "search",
-                    "sequential_number": 1,
                     "candidate_ids": [9],
                     "meeting_id": 1,
                     "list_of_speakers_id": 11,
                 },
                 "list_of_speakers/11": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "assignment/10",
                     "meeting_id": 1,
                 },
@@ -575,7 +550,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {"name": "!", "organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
                     "language": "en",
@@ -617,7 +592,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 1,
                     "default_workflow_meeting_id": 1,
                     "state_ids": [1],
-                    "sequential_number": 1,
                 },
                 "motion_state/1": {
                     "css_class": "lightblue",
@@ -638,7 +612,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                 },
                 "projector/1": {
-                    "sequential_number": 1,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -701,7 +674,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "default_amendment_workflow_meeting_id": 2,
                     "default_workflow_meeting_id": 2,
                     "state_ids": [2],
-                    "sequential_number": 2,
                 },
                 "motion_state/2": {
                     "css_class": "lightblue",
@@ -721,7 +693,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [2],
                 },
                 "projector/2": {
-                    "sequential_number": 1,
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",
@@ -745,7 +716,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "motion/1": {
                     "meeting_id": 1,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -756,7 +726,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "motion/2": {
                     "meeting_id": 2,
-                    "sequential_number": 1,
                     "title": "test Motion",
                     "category_weight": 10000,
                     "sort_weight": 10000,
@@ -767,13 +736,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "list_of_speakers/3": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/1",
                     "meeting_id": 1,
                 },
                 "list_of_speakers/4": {
                     "closed": True,
-                    "sequential_number": 1,
                     "content_object_id": "motion/2",
                     "meeting_id": 2,
                 },
@@ -786,13 +753,9 @@ class TestCheckDatabase(BasePresenterTestCase):
         assert not data["errors"]
 
     def test_no_permissions(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"name": "test_foo"},
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
-                },
-            }
+        self.create_meeting()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
         status_code, data = self.request("check_database", {})
         assert status_code == 403
@@ -807,6 +770,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "mediafile_ids": [1, 2, 3, 4, 5],
                     "published_mediafile_ids": [1, 2, 3, 4, 5],
                 },
+                "committee/1": {"name": "!", "organization_id": 1},
                 "organization_tag/1": {
                     "name": "TEST",
                     "color": "#eeeeee",
@@ -942,7 +906,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "mimetype": "application/pdf",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "parent_id": 1,
-                    "pdf_information": {"pages": 1},
+                    "pdf_information": Jsonb({"pages": 1}),
                     "meeting_mediafile_ids": [30],
                     "published_to_meetings_in_organization_id": 1,
                 },

@@ -88,15 +88,53 @@ class ServiceException(View400Exception):
     pass
 
 
-class DatastoreException(ServiceException):
+class DatabaseException(ServiceException):
     pass
 
 
-class DatastoreConnectionException(DatastoreException):
+class InvalidFormat(DatabaseException):
     pass
 
 
-class DatastoreLockedException(DatastoreException):
+class InvalidData(DatabaseException):
+    pass
+
+
+class RelationException(DatabaseException):
+    pass
+
+
+class ModelDoesNotExist(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        super().__init__(f"Model '{fqid}' does not exist.")
+        self.fqid = fqid
+
+
+class ModelExists(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        super().__init__(f"Model '{fqid}' exists.")
+        self.fqid = fqid
+
+
+class ModelLocked(DatabaseException):
+    def __init__(self, keys: str) -> None:
+        super().__init__("")
+        self.keys = keys
+
+
+class InvalidDatastoreState(DatabaseException):
+    pass
+
+
+class DatastoreNotEmpty(DatabaseException):
+    pass
+
+
+class DatastoreConnectionException(DatabaseException):
+    pass
+
+
+class DatastoreLockedException(DatabaseException):
     pass
 
 

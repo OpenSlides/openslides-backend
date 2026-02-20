@@ -17,7 +17,7 @@ class LinearSortMixin(Action):
     ) -> ActionData:
         db_instances = self.datastore.filter(
             collection=self.model.collection,
-            filter=filter,
+            filter_=filter,
             mapped_fields=["id"],
         )
         valid_instance_ids = []

@@ -3,18 +3,39 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemSortActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "topic/1": {"meeting_id": 1, "title": "tropic"},
+        "list_of_speakers/42": {
+            "content_object_id": "topic/1",
+            "meeting_id": 1,
+        },
+        "agenda_item/22": {
+            "meeting_id": 1,
+            "comment": "test1",
+            "content_object_id": "topic/1",
+        },
+    }
+
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(222)
 
-    def test_sort_singe_node_correct(self) -> None:
+    def test_sort_single_node_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "jungle",
                 },
-                "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "agenda_item/22": {
+                    "meeting_id": 222,
+                    "content_object_id": "topic/2",
+                    "comment": "test1",
+                },
             }
         )
         response = self.request(
@@ -25,18 +46,38 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         model_22 = self.get_model("agenda_item/22")
         assert model_22.get("weight") == 1
         assert model_22.get("parent_id") is None
-        assert model_22.get("child_ids") == []
+        assert model_22.get("child_ids") is None
         assert model_22.get("level") == 0
 
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
-                "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
-                "agenda_item/23": {"meeting_id": 222, "comment": "test"},
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "jungle",
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "agenda_item/22": {
+                    "meeting_id": 222,
+                    "content_object_id": "topic/1",
+                    "comment": "test1",
+                },
+                "agenda_item/23": {
+                    "meeting_id": 222,
+                    "content_object_id": "topic/2",
+                    "comment": "test",
+                },
             }
         )
         response = self.request(
@@ -48,16 +89,50 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_complex_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                **{
+                    f"topic/{id_}": {
+                        "meeting_id": 222,
+                        "title": "tropic jungle",
+                    }
+                    for id_ in range(1, 7)
                 },
-                "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
-                "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
-                "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
-                "agenda_item/21": {"meeting_id": 222, "comment": "test_2_1"},
-                "agenda_item/22": {"meeting_id": 222, "comment": "test_2_2"},
-                "agenda_item/23": {"meeting_id": 222, "comment": "test_2_3"},
+                **{
+                    f"list_of_speakers/{10 + id_}": {
+                        "content_object_id": f"topic/{id_}",
+                        "meeting_id": 222,
+                    }
+                    for id_ in range(1, 7)
+                },
+                "agenda_item/1": {
+                    "meeting_id": 222,
+                    "comment": "test_root",
+                    "content_object_id": "topic/1",
+                },
+                "agenda_item/11": {
+                    "meeting_id": 222,
+                    "comment": "test_1_1",
+                    "content_object_id": "topic/2",
+                },
+                "agenda_item/12": {
+                    "meeting_id": 222,
+                    "comment": "test_1_2",
+                    "content_object_id": "topic/3",
+                },
+                "agenda_item/21": {
+                    "meeting_id": 222,
+                    "comment": "test_2_1",
+                    "content_object_id": "topic/4",
+                },
+                "agenda_item/22": {
+                    "meeting_id": 222,
+                    "comment": "test_2_2",
+                    "content_object_id": "topic/5",
+                },
+                "agenda_item/23": {
+                    "meeting_id": 222,
+                    "comment": "test_2_3",
+                    "content_object_id": "topic/6",
+                },
             }
         )
 
@@ -86,13 +161,45 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_not_a_tree(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
-                "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
-                "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
-                "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "jungle",
+                },
+                "topic/3": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 222,
+                },
+                "agenda_item/1": {
+                    "meeting_id": 222,
+                    "comment": "test_root",
+                    "content_object_id": "topic/1",
+                },
+                "agenda_item/11": {
+                    "meeting_id": 222,
+                    "comment": "test_1_1",
+                    "content_object_id": "topic/2",
+                },
+                "agenda_item/12": {
+                    "meeting_id": 222,
+                    "comment": "test_1_2",
+                    "content_object_id": "topic/3",
+                },
             }
         )
 
@@ -112,13 +219,45 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_circle_fail(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
-                "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
-                "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
-                "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "jungle",
+                },
+                "topic/3": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 222,
+                },
+                "agenda_item/1": {
+                    "meeting_id": 222,
+                    "comment": "test_root",
+                    "content_object_id": "topic/1",
+                },
+                "agenda_item/11": {
+                    "meeting_id": 222,
+                    "comment": "test_1_1",
+                    "content_object_id": "topic/2",
+                },
+                "agenda_item/12": {
+                    "meeting_id": 222,
+                    "comment": "test_1_2",
+                    "content_object_id": "topic/3",
+                },
             }
         )
 
@@ -140,13 +279,45 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_small_tree_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
-                "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
-                "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
-                "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "jungle",
+                },
+                "topic/3": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 222,
+                },
+                "agenda_item/1": {
+                    "meeting_id": 222,
+                    "comment": "test_root",
+                    "content_object_id": "topic/1",
+                },
+                "agenda_item/11": {
+                    "meeting_id": 222,
+                    "comment": "test_1_1",
+                    "content_object_id": "topic/2",
+                },
+                "agenda_item/12": {
+                    "meeting_id": 222,
+                    "comment": "test_1_2",
+                    "content_object_id": "topic/3",
+                },
             }
         )
 
@@ -164,28 +335,24 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         model_11 = self.get_model("agenda_item/11")
         assert model_11.get("weight") == 1
         assert model_11.get("parent_id") == 1
-        assert model_11.get("child_ids") == []
+        assert model_11.get("child_ids") is None
         assert model_11.get("level") == 1
         model_12 = self.get_model("agenda_item/12")
         assert model_12.get("weight") == 2
         assert model_12.get("parent_id") == 1
-        assert model_12.get("child_ids") == []
+        assert model_12.get("child_ids") is None
         assert model_12.get("level") == 1
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )
 
     def test_sort_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -193,9 +360,7 @@ class AgendaItemSortActionTest(BaseActionTestCase):
 
     def test_sort_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {
-                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.sort",
             {"meeting_id": 1, "tree": [{"id": 22}]},
         )

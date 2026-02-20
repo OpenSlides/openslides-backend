@@ -1,7 +1,8 @@
 from collections import defaultdict
-from time import time
+from datetime import datetime
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -90,7 +91,10 @@ The link will be valid for 10 minutes."""
                             html=False,
                         )
                         if ok:
-                            yield {"id": user["id"], "last_email_sent": round(time())}
+                            yield {
+                                "id": user["id"],
+                                "last_email_sent": datetime.now(ZoneInfo("UTC")),
+                            }
             except ActionException as e:
                 self.logger.error(f"send mail action exception: {str(e)}")
                 raise

@@ -1,4 +1,4 @@
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions

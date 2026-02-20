@@ -5,7 +5,7 @@ from openslides_backend.shared.filters import And, FilterOperator, Or
 
 from ...permissions.base_classes import Permission
 from ...permissions.permission_helper import has_perm
-from ...services.datastore.commands import GetManyRequest
+from ...services.database.commands import GetManyRequest
 from ...shared.exceptions import MissingPermission
 
 DelegationBasedRestriction = Literal[

@@ -1,6 +1,6 @@
 from typing import Any
 
-from ...services.datastore.interface import DatastoreService, PartialModel
+from ...services.database.interface import Database, PartialModel
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.patterns import fqid_from_collection_and_id
@@ -14,7 +14,7 @@ def get_meeting_mediafile_filter(meeting_id: int, mediafile_id: int) -> Filter:
 
 
 def find_meeting_mediafile(
-    datastore: DatastoreService,
+    datastore: Database,
     meeting_id: int,
     mediafile_id: int,
     mapped_fields: list[str] = [],
@@ -34,7 +34,7 @@ def find_meeting_mediafile(
 
 
 def get_meeting_mediafile_id_or_create_payload(
-    datastore: DatastoreService,
+    datastore: Database,
     meeting_id: int,
     mediafile_id: int,
     lock_result: bool = True,
@@ -63,7 +63,7 @@ def get_meeting_mediafile_id_or_create_payload(
 
 
 def find_meeting_mediafile_generate_implicit(
-    datastore: DatastoreService,
+    datastore: Database,
     meeting_id: int,
     mediafile_id: int,
     mapped_fields: list[str] = [],

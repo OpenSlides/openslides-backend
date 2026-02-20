@@ -1,4 +1,8 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -11,50 +15,53 @@ from .test_participant_json_upload import ParticipantJsonUploadForUseInImport
 class ParticipantImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.preview_result: dict[str, Any] = {
+            "meeting_id": 1,
+            "rows": [
+                {
+                    "state": ImportState.NEW,
+                    "messages": [],
+                    "data": {
+                        "username": {
+                            "value": "jonny",
+                            "info": ImportState.DONE,
+                        },
+                        "first_name": {
+                            "value": "Testy",
+                            "info": ImportState.DONE,
+                        },
+                        "last_name": {
+                            "value": "Tester",
+                            "info": ImportState.DONE,
+                        },
+                        "email": {
+                            "value": "email@test.com",
+                            "info": ImportState.DONE,
+                        },
+                        "gender": {
+                            "id": 1,
+                            "value": "male",
+                            "info": ImportState.DONE,
+                        },
+                        "groups": [
+                            {
+                                "id": 1,
+                                "value": "group1",
+                                "info": ImportState.DONE,
+                            }
+                        ],
+                    },
+                },
+            ],
+        }
         self.import_preview1_data: dict[str, Any] = {
             "state": ImportState.DONE,
             "name": "participant",
-            "result": {
-                "meeting_id": 1,
-                "rows": [
-                    {
-                        "state": ImportState.NEW,
-                        "messages": [],
-                        "data": {
-                            "username": {
-                                "value": "jonny",
-                                "info": ImportState.DONE,
-                            },
-                            "first_name": {
-                                "value": "Testy",
-                                "info": ImportState.DONE,
-                            },
-                            "last_name": {
-                                "value": "Tester",
-                                "info": ImportState.DONE,
-                            },
-                            "email": {
-                                "value": "email@test.com",
-                                "info": ImportState.DONE,
-                            },
-                            "gender": {
-                                "id": 1,
-                                "value": "male",
-                                "info": ImportState.DONE,
-                            },
-                            "groups": [
-                                {
-                                    "id": 1,
-                                    "value": "group1",
-                                    "info": ImportState.DONE,
-                                }
-                            ],
-                        },
-                    },
-                ],
-            },
+            "created": datetime.now(),
+            "result": Jsonb(self.preview_result),
         }
 
+        self.create_meeting()
         self.set_models(
             {
                 "organization/1": {"gender_ids": [1, 2, 3, 4]},
@@ -64,25 +71,19 @@ class ParticipantImport(BaseActionTestCase):
                 "gender/4": {"name": "non-binary"},
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                    "group_ids": [1],
                     "structure_level_ids": [1],
-                    "committee_id": 1,
-                    "admin_group_id": 2,
                 },
-                "committee/1": {"meeting_ids": [1], "organization_id": 1},
-                "group/1": {"name": "group1", "meeting_id": 1},
+                "group/1": {"name": "group1"},
                 "group/2": {
                     "name": "group2",
-                    "meeting_id": 1,
-                    "admin_group_for_meeting_id": 1,
                 },
                 "structure_level/1": {"name": "level", "meeting_id": 1},
             }
         )
 
     def test_import_without_any_group_in_import_data(self) -> None:
-        del self.import_preview1_data["result"]["rows"][0]["data"]["groups"]
+        del self.preview_result["rows"][0]["data"]["groups"]
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 400)
@@ -146,24 +147,30 @@ class ParticipantImport(BaseActionTestCase):
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "participant",
-                    "result": {
-                        "meeting_id": 1,
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "friend",
-                                        "info": ImportState.DONE,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "meeting_id": 1,
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "username": {
+                                            "value": "friend",
+                                            "info": ImportState.DONE,
+                                        },
+                                        "groups": [
+                                            {
+                                                "info": ImportState.NEW,
+                                                "value": "2Bcreated",
+                                            }
+                                        ],
                                     },
-                                    "groups": [
-                                        {"info": ImportState.NEW, "value": "2Bcreated"}
-                                    ],
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -188,14 +195,15 @@ class ParticipantImport(BaseActionTestCase):
     def test_import_saml_id_error_new_and_saml_id_exists(self) -> None:
         """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
-        self.import_preview1_data["result"]["rows"][0]["data"]["username"] = {
+        self.preview_result["rows"][0]["data"]["username"] = {
             "value": "testuser",
             "info": ImportState.NEW,
         }
-        self.import_preview1_data["result"]["rows"][0]["data"]["saml_id"] = {
+        self.preview_result["rows"][0]["data"]["saml_id"] = {
             "value": "testsaml",
             "info": ImportState.NEW,
         }
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.set_models(
             {
                 "user/1": {"saml_id": "testsaml"},
@@ -213,13 +221,14 @@ class ParticipantImport(BaseActionTestCase):
     def test_import_gender_warning(self) -> None:
         """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
-        self.import_preview1_data["result"]["rows"][0]["data"]["gender"] = {
+        self.preview_result["rows"][0]["data"]["gender"] = {
             "value": "notAGender",
             "info": ImportState.WARNING,
         }
-        self.import_preview1_data["result"]["rows"][0]["messages"] = [
+        self.preview_result["rows"][0]["messages"] = [
             "Gender 'notAGender' is not in the allowed gender list."
         ]
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.set_models({"import_preview/1": self.import_preview1_data})
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -234,7 +243,8 @@ class ParticipantImport(BaseActionTestCase):
         assert user.get("gender_id") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
+        self.preview_result["rows"][0]["data"].pop("username")
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 400)
@@ -244,12 +254,13 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["username"] = {
+        self.preview_result["rows"][0]["data"]["username"] = {
             "value": "fred",
             "info": ImportState.DONE,
             "id": 111,
         }
-        self.import_preview1_data["result"]["rows"][0]["data"]["id"] = 111
+        self.preview_result["rows"][0]["data"]["id"] = 111
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -287,11 +298,10 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_permission_meeting_admin(self) -> None:
-        self.import_preview1_data["result"]["rows"][0]["data"]["id"] = 1
-        self.import_preview1_data["result"]["rows"][0]["state"] = ImportState.DONE
-        self.import_preview1_data["result"]["rows"][0]["data"]["gender"][
-            "info"
-        ] = ImportState.REMOVE
+        self.preview_result["rows"][0]["data"]["id"] = 1
+        self.preview_result["rows"][0]["state"] = ImportState.DONE
+        self.preview_result["rows"][0]["data"]["gender"]["info"] = ImportState.REMOVE
+        self.import_preview1_data["result"] = Jsonb(self.preview_result)
         self.update_model("import_preview/1", self.import_preview1_data)
 
         self.create_meeting()
@@ -300,7 +310,7 @@ class ParticipantImport(BaseActionTestCase):
         other_user_id = 3
         self.set_models(
             {
-                f"user/{other_user_id}": self._get_user_data("jonny", {1: [], 4: []}),
+                f"user/{other_user_id}": self._get_user_data("jonny"),
             }
         )
         self.set_user_groups(user_id, [2])
@@ -371,7 +381,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "saml_id": "test_saml_id",
                 "default_password": "",
                 "can_change_own_password": False,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "organization_id": 1,
                 "is_physical_person": True,
             },
@@ -382,7 +392,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "test_saml_id1",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user36["default_password"]
@@ -394,7 +404,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "test_saml_id21",
                 "saml_id": None,
                 "can_change_own_password": True,
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
             },
         )
         assert user37["default_password"]
@@ -444,7 +454,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_password": "",
                 "can_change_own_password": False,
                 "password": "",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_not_exists("import_preview/1")
@@ -500,7 +510,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "username": "user10",
                 "default_password": "",
                 "meeting_user_ids": [110],
-                "is_present_in_meeting_ids": [],
+                "is_present_in_meeting_ids": None,
             },
         )
         self.assert_model_exists(
@@ -509,14 +519,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "number": "new number",
                 "comment": "new comment",
                 "group_ids": [1],
-                "vote_weight": "2.800000",
+                "vote_weight": Decimal("2.8"),
                 "structure_level_ids": [2],
             },
         )
 
     def test_json_upload_error_set_saml_id(self) -> None:
         self.json_upload_username_set_saml_id_remove_presence()
-        self.set_models({"user/11": {"saml_id": "saml_id10"}})
+        self.set_models({"user/11": {"username": "daisy", "saml_id": "saml_id10"}})
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
@@ -543,7 +553,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
-        assert self.assert_model_deleted("user/11")
+        self.assert_model_not_exists("user/11")
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
@@ -582,10 +592,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         )
         level_up = self.assert_model_exists("structure_level/1")
         if level_up["name"] == "level up":
-            no_5 = self.assert_model_exists("structure_level/2", {"name": "no. 5"})
+            self.assert_model_exists("structure_level/2", {"name": "no. 5"})
         else:
             assert level_up["name"] == "no. 5"
-            no_5 = level_up
             level_up = self.assert_model_exists(
                 "structure_level/2", {"name": "level up"}
             )
@@ -608,7 +617,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "can_change_own_password": False,
                 "password": "",
                 "meeting_user_ids": [31, 34],
-                "default_vote_weight": "3.300000",
+                "default_vote_weight": Decimal("3.3"),
             },
         )
         self.assert_model_exists(
@@ -617,7 +626,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "user_id": 3,
                 "group_ids": [3],
                 "meeting_id": 1,
-                "vote_weight": "3.345678",
+                "vote_weight": Decimal("3.345678"),
             },
         )
 
@@ -629,7 +638,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "first_name": "Martin",
                 "last_name": "Luther King",
                 "default_password": "secret",
-                "default_vote_weight": "4.300000",
+                "default_vote_weight": Decimal("4.3"),
                 "can_change_own_password": True,
                 "meeting_ids": [1],
                 "meeting_user_ids": [39],
@@ -664,7 +673,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "user_id": 5,
                 "group_ids": [1],
                 "meeting_id": 1,
-                "structure_level_ids": [level_up["id"], no_5["id"]],
+                "structure_level_ids": [1, 2],
             },
         )
 
@@ -675,7 +684,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "saml_id": "new_saml6",
                 "username": "new_saml6",
                 "default_password": "",
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": Decimal("1"),
                 "can_change_own_password": False,
                 "meeting_user_ids": [36],
                 "is_physical_person": True,
@@ -709,13 +718,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/37",
             {
                 "user_id": 7,
-                "group_ids": [
-                    2,
-                    created_groups["group4"],
-                    created_groups["Anonymous"],
-                    created_groups["unknown"],
-                    7,
-                ],
+                "group_ids": [2, 7, 9, 10, 11],
                 "meeting_id": 1,
             },
         )
@@ -817,9 +820,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         self.set_models(
             {
-                "group/1": {"admin_group_for_meeting_id": 1},
+                "meeting/1": {"admin_group_id": 1},
                 "group/2": {
-                    "admin_group_for_meeting_id": None,
                     "meeting_user_ids": None,
                 },
                 "group/7": {"name": "changed"},
@@ -827,8 +829,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             }
         )
         self.request_multi("group.delete", [{"id": 2}, {"id": 3}])
-        self.assert_model_deleted("group/2")
-        self.assert_model_deleted("group/3")
+        self.assert_model_not_exists("group/2")
+        self.assert_model_not_exists("group/3")
         self.set_models(
             {
                 "user/4": {"username": "user4_married"},
@@ -1009,7 +1011,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         )
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_weight": "1.234560", "group_ids": [1, 2, 3, 7]},
+            {"vote_weight": Decimal("1.234560"), "group_ids": [1, 2, 3, 7]},
         )
 
     def test_json_upload_less_fields_field_permission_update(self) -> None:
@@ -1065,7 +1067,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/11",
             {
                 "user_id": 2,
-                "vote_weight": "1.234560",
+                "vote_weight": Decimal("1.234560"),
                 "group_ids": [1, 2, 3, 7],
             },
         )
@@ -1116,21 +1118,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/11",
             {
                 "user_id": 2,
-                "vote_weight": "1.234560",
+                "vote_weight": Decimal("1.234560"),
                 "group_ids": [1, 2, 3, 7],
             },
         )
 
     def test_json_upload_sufficient_field_permission_create(self) -> None:
         self.json_upload_sufficient_field_permission_create()
-        self.set_models(
-            {
-                "meeting_user/1": {"group_ids": []},
-                "group/3": {"meeting_user_ids": []},
-                "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
-                },
-            }
+        self.set_user_groups(1, [])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
         )
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
@@ -1287,14 +1284,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "id": 2,
                 "username": "test",
                 "member_number": "old_one",
-                "default_vote_weight": "2.300000",
+                "default_vote_weight": Decimal("2.3"),
             },
         )
         self.assert_model_exists(
             "meeting_user/1",
             {
                 "user_id": 2,
-                "vote_weight": "4.345678",
+                "vote_weight": Decimal("4.345678"),
             },
         )
 
@@ -1765,7 +1762,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/11",
             {
                 "user_id": 2,
-                "vote_weight": "1.234560",
+                "vote_weight": Decimal("1.23456"),
                 "group_ids": [1, 2, 3, 7],
             },
         )
