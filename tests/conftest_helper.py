@@ -47,16 +47,19 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
         {generate_trigger_sql_code(tablenames)}
 
         CREATE OR REPLACE FUNCTION truncate_testdata_tables() RETURNS void AS $$
+        DECLARE
+            t_names CURSOR FOR
+                SELECT tablename FROM truncate_tables;
+            s_names CURSOR FOR
+                SELECT relname FROM pg_class WHERE relkind = 'S' AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
         BEGIN
-            IF (SELECT EXISTS (SELECT * FROM truncate_tables))
-            THEN
-                EXECUTE
-                    (SELECT 'TRUNCATE TABLE '
-                    || string_agg(tablename, ', ')
-                    || ' RESTART IDENTITY CASCADE'
-                    FROM truncate_tables);
-            END IF;
-            TRUNCATE TABLE truncate_tables RESTART IDENTITY CASCADE;
+            FOR t_name in t_names LOOP
+                EXECUTE 'DELETE FROM ' || t_name.tablename || ' CASCADE';
+            END LOOP;
+            FOR s_name in s_names LOOP
+                PERFORM setval(s_name.relname::regclass, 1, false);
+            END LOOP;
+            DELETE FROM truncate_tables;
         END;
         $$ LANGUAGE plpgsql;
 
