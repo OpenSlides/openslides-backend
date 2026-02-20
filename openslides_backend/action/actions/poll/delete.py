@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from ....models.models import Poll
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ....shared.exceptions import VoteServiceException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -34,8 +34,6 @@ class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
                         "option_ids",
                         "global_option_id",
                         "projection_ids",
-                        "meta_deleted",
-                        "meta_position",
                         "state",
                     ],
                 ),
@@ -83,8 +81,6 @@ class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
                     "poll_id",
                     "used_as_global_option_in_poll_id",
                     "vote_ids",
-                    "meta_deleted",
-                    "meta_position",
                 ],
             ),
             GetManyRequest(

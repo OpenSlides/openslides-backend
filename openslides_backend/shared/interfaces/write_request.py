@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
+from typing import TypedDict
 
-from openslides_backend.shared.typing import HistoryInformation
+from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.typing import JSON, HistoryInformation
 
 from .collection_field_lock import CollectionFieldLock
 from .event import Event
@@ -25,3 +27,35 @@ class WriteRequestWithMigrationIndex(WriteRequest):
     """
 
     migration_index: int | None = None
+
+
+ListUpdatesDict = dict[Field, list[str] | list[int]]
+
+
+class ListFieldsData(TypedDict, total=False):
+    add: ListUpdatesDict
+    remove: ListUpdatesDict
+
+
+@dataclass
+class BaseRequestEvent:
+    fqid: str
+
+
+@dataclass
+class RequestCreateEvent(BaseRequestEvent):
+    fields: dict[str, JSON]
+
+
+def emptyListFieldsDataFactory() -> ListFieldsData:
+    return {}
+
+
+@dataclass
+class RequestUpdateEvent(BaseRequestEvent):
+    fields: dict[str, JSON]
+    list_fields: ListFieldsData = field(default_factory=emptyListFieldsDataFactory)
+
+
+class RequestDeleteEvent(BaseRequestEvent):
+    pass

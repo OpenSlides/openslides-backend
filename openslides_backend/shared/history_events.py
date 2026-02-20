@@ -1,10 +1,10 @@
-import time
-from collections import defaultdict
-from typing import Any, cast
+from datetime import datetime
+from typing import Any
+from zoneinfo import ZoneInfo
 
 from .interfaces.event import ListFields
-from .patterns import fqid_from_collection_and_id, id_from_fqid
-from .typing import FullQualifiedId, HistoryInformation
+from .patterns import FullQualifiedId, fqid_from_collection_and_id
+from .typing import HistoryInformation
 
 EventPayload = tuple[FullQualifiedId, dict[str, Any] | ListFields]
 
@@ -17,7 +17,7 @@ def calculate_history_event_payloads(
     model_fqid_to_meeting_id: dict[str, int | None],
     existing_fqids: set[str],
     timestamp: int | None = None,
-) -> tuple[list[EventPayload], list[EventPayload]]:
+) -> list[EventPayload]:
     transformed_information = [
         (model_fqid_to_entry_id[fqid], fqid, entries)
         for fqid, entries in information.items()
@@ -36,48 +36,28 @@ def calculate_history_event_payloads(
         )
         for id_, fqid, entries in transformed_information
     ]
-    update_events: list[EventPayload] = [
-        (
-            fqid,
-            {"add": {"history_entry_ids": [id_]}},
-        )
-        for id_, fqid, entries in transformed_information
-        if fqid in existing_fqids
-    ]
-    meeting_to_entry_ids: dict[int, list[int]] = defaultdict(list)
-    for entry in create_events:
-        if meeting_id := cast(dict[str, Any], entry[1]).get("meeting_id"):
-            meeting_to_entry_ids[meeting_id].append(id_from_fqid(entry[0]))
-    update_events.extend(
-        [
-            (
-                fqid_from_collection_and_id("meeting", meeting_id),
-                {"add": {"relevant_history_entry_ids": ids}},
-            )
-            for meeting_id, ids in meeting_to_entry_ids.items()
-        ]
-    )
-    if set_user := (
-        user_id
-        and user_id > 0
-        and fqid_from_collection_and_id("user", user_id) in existing_fqids
-    ):
-        update_events.append(
-            (
-                fqid_from_collection_and_id("user", user_id),
-                {"add": {"history_position_ids": [position_id]}},
-            )
-        )
     create_events.append(
         (
             fqid_from_collection_and_id("history_position", position_id),
             {
                 "id": position_id,
-                "timestamp": timestamp if timestamp is not None else round(time.time()),
-                "entry_ids": list(model_fqid_to_entry_id.values()),
+                "timestamp": (
+                    timestamp
+                    if timestamp is not None
+                    else datetime.now(ZoneInfo("UTC"))
+                ),
                 "original_user_id": user_id,
-                "user_id": user_id if set_user else None,
+                "user_id": (
+                    user_id
+                    if (
+                        user_id
+                        and user_id > 0
+                        and fqid_from_collection_and_id("user", user_id)
+                        in existing_fqids
+                    )
+                    else None
+                ),
             },
         )
     )
-    return create_events, update_events
+    return create_events

@@ -5,7 +5,6 @@ from ....permissions.permissions import Permissions
 from ....shared.schema import id_list_schema
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
-from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import (
@@ -23,7 +22,6 @@ from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 @register_action("topic.create")
 class TopicCreate(
     AttachmentMixin,
-    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,

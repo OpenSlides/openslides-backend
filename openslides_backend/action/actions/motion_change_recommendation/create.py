@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import MotionChangeRecommendation
 from ....permissions.permissions import Permissions
@@ -56,5 +57,5 @@ class MotionChangeRecommendationCreateAction(
                 f"The recommendation collides with an existing one (line {line_from} - {line_to})."
             )
 
-        instance["creation_time"] = int(time())
+        instance["creation_time"] = datetime.now(ZoneInfo("UTC"))
         return instance

@@ -27,18 +27,19 @@ from .create import UserCreate
 from .update import UserUpdate
 from .user_mixins import UsernameMixin
 
-allowed_user_fields = [
-    "saml_id",
-    "title",
-    "first_name",
-    "last_name",
-    "email",
-    "gender",
-    "pronoun",
-    "is_active",
-    "is_physical_person",
-    "member_number",
-]
+# external : internal
+allowed_user_fields = {
+    "saml_id": "saml_id",
+    "title": "title",
+    "first_name": "first_name",
+    "last_name": "last_name",
+    "email": "email",
+    "gender": "gender_id",
+    "pronoun": "pronoun",
+    "is_active": "is_active",
+    "is_physical_person": "is_physical_person",
+    "member_number": "member_number",
+}
 
 allowed_meeting_user_fields = [
     "groups",
@@ -101,8 +102,7 @@ class UserSaveSamlAccount(
                     ]
                 }
                 for model_field, payload_field in self.saml_attr_mapping.items()
-                # handle only allowed fields. handle gender separately since it needs conversion to id
-                if model_field in allowed_user_fields and model_field != "gender"
+                if model_field in allowed_user_fields.values()
             },
             "required": [self.saml_attr_mapping["saml_id"]],
             "additionalProperties": True,
@@ -166,7 +166,7 @@ class UserSaveSamlAccount(
                 "meeting_user_ids",
                 "is_present_in_meeting_ids",
                 "gender_id",
-                *allowed_user_fields,
+                *allowed_user_fields.values(),
             ],
         )
         if gender := instance.pop("gender", None):

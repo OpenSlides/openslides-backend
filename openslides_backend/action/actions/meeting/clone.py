@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, cast
 
@@ -9,7 +9,7 @@ from openslides_backend.models.checker import (
     external_motion_fields,
 )
 from openslides_backend.models.models import Meeting, MeetingUser
-from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.services.database.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -127,6 +127,11 @@ class MeetingClone(MeetingImport):
             else:
                 meeting["name"] = old_name + suffix
 
+        # Set proper types for TimestampFields
+        for field_name in ["start_time", "end_time"]:
+            if (value := instance.get(field_name)) and isinstance(value, int):
+                instance[field_name] = datetime.fromtimestamp(value)
+
         meeting.pop("external_id", "")
         for field in updatable_fields:
             if field in instance:
@@ -183,7 +188,7 @@ class MeetingClone(MeetingImport):
             text2="",
         )
         # set imported_at
-        meeting["imported_at"] = round(time.time())
+        meeting["imported_at"] = datetime.now()
 
         # Don't forward orga-wide mediafiles but create new meeting_mediafiles for them
         meeting_wide_mediafiles_mediafiles: dict[int, dict[str, Any]] = {}
@@ -263,7 +268,19 @@ class MeetingClone(MeetingImport):
             raise ActionException(
                 "Cannot create a non-template meeting without administrators"
             )
+        self.transform_json_fields(instance)
         return instance
+
+    def _create_or_get_meeting_user(self, meeting_id: int, user_id: int) -> int:
+        meeting_user = self.get_meeting_user(meeting_id, user_id, ["id"])
+        if meeting_user:
+            return meeting_user["id"]
+        else:
+            meeting_user_id = self.create_meeting_user(meeting_id, user_id)
+            self.datastore.get_changed_model("meeting_user", meeting_user_id).pop(
+                "meta_new", None
+            )
+            return meeting_user_id
 
     def _update_default_and_admin_group(
         self,
@@ -273,7 +290,7 @@ class MeetingClone(MeetingImport):
         meeting_id: int,
     ) -> None:
         additional_meeting_user_ids = [
-            self.create_or_get_meeting_user(meeting_id, user_id)
+            self._create_or_get_meeting_user(meeting_id, user_id)
             for user_id in additional_user_ids
         ]
         meeting_user_ids = set(
@@ -282,11 +299,9 @@ class MeetingClone(MeetingImport):
         meeting_user_ids.update(additional_meeting_user_ids)
         group_id = group_in_instance["id"]
         for meeting_user_id in additional_meeting_user_ids:
-            fqid_meeting_user = fqid_from_collection_and_id(
-                "meeting_user", meeting_user_id
-            )
             meeting_user = cast(
-                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any],
+                self.datastore.get_changed_model("meeting_user", meeting_user_id),
             )
             group_ids = meeting_user.get("group_ids", [])
             if group_id not in group_ids:

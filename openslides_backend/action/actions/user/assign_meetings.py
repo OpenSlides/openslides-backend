@@ -9,7 +9,7 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
 )
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
@@ -170,6 +170,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
         return instance
 
     def check_meetings(self, instance: dict[str, Any]) -> None:
+        """Raises an exception if some meetings in `meeting_ids` are locked from inside."""
         if meeting_ids := instance.get("meeting_ids"):
             locked_meetings = [
                 str(id_)

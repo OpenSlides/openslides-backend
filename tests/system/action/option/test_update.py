@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
@@ -13,6 +14,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
             },
             "vote/22": {
                 "value": "Y",
+                "user_token": "imnotapropertoken",
                 "weight": "0.000000",
                 "meeting_id": 1,
                 "option_id": 57,
@@ -22,9 +24,16 @@ class OptionUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "topic/1": {
+                    "title": "to pic",
+                    "meeting_id": 1,
+                },
+                "agenda_item/1": {"content_object_id": "topic/1", "meeting_id": 1},
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
                     "meeting_id": 1,
                 },
                 "poll/65": {
+                    "title": "pool",
                     "content_object_id": "topic/1",
                     "type": "analog",
                     "state": "created",
@@ -52,22 +61,24 @@ class OptionUpdateActionTest(BaseActionTestCase):
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
         )
         self.assert_status_code(response, 200)
-        option = self.get_model("option/57")
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "2.000000"
-        assert option.get("abstain") == "3.000000"
-        assert option.get("vote_ids") == [22, 23, 24]
-        vote_22 = self.get_model("vote/22")
-        assert vote_22.get("value") == "Y"
-        assert vote_22.get("weight") == "1.000000"
-        vote_23 = self.get_model("vote/23")
-        assert vote_23.get("option_id") == 57
-        assert vote_23.get("value") == "N"
-        assert vote_23.get("weight") == "2.000000"
-        vote_24 = self.get_model("vote/24")
-        assert vote_24.get("option_id") == 57
-        assert vote_24.get("value") == "A"
-        assert vote_24.get("weight") == "3.000000"
+        self.assert_model_exists(
+            "option/57",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("2.000000"),
+                "abstain": Decimal("3.000000"),
+                "vote_ids": [22, 23, 24],
+            },
+        )
+        self.assert_model_exists(
+            "vote/22", {"option_id": 57, "value": "Y", "weight": Decimal("1.000000")}
+        )
+        self.assert_model_exists(
+            "vote/23", {"option_id": 57, "value": "N", "weight": Decimal("2.000000")}
+        )
+        self.assert_model_exists(
+            "vote/24", {"option_id": 57, "value": "A", "weight": Decimal("3.000000")}
+        )
         poll = self.get_model("poll/65")
         assert poll.get("state") == "finished"
 
@@ -83,11 +94,15 @@ class OptionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        option = self.get_model("option/57")
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "2.000000"
-        assert option.get("abstain") == "3.000000"
-        assert "publish_immediately" not in option
+        self.assert_model_exists(
+            "option/57",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("2.000000"),
+                "abstain": Decimal("3.000000"),
+                "publish_immediately": None,
+            },
+        )
         poll = self.get_model("poll/65")
         assert poll.get("state") == "published"
 
@@ -112,11 +127,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "option/57",
-            {
-                "yes": "1.000000",
-                "no": "-2.000000",
-                "abstain": None,
-            },
+            {"yes": Decimal("1.000000"), "no": Decimal("-2.000000"), "abstain": None},
         )
 
     def test_update_invalid_keys(self) -> None:
@@ -149,9 +160,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "global_no": True,
                     "global_abstain": True,
                 },
-                "option/57": {
-                    "used_as_global_option_in_poll_id": 65,
-                },
+                "option/57": {"used_as_global_option_in_poll_id": 65},
             }
         )
         response = self.request(
@@ -159,19 +168,17 @@ class OptionUpdateActionTest(BaseActionTestCase):
             {"id": 57, "Y": "1.000000", "N": "2.000000"},
         )
         self.assert_status_code(response, 200)
-        option = self.get_model("option/57")
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "2.000000"
-        assert option.get("abstain") == "-2.000000"
+        self.assert_model_exists(
+            "option/57",
+            {
+                "yes": Decimal("1.000000"),
+                "no": Decimal("2.000000"),
+                "abstain": Decimal("-2.000000"),
+            },
+        )
 
     def test_update_global_option_invalid(self) -> None:
-        self.set_models(
-            {
-                "option/57": {
-                    "used_as_global_option_in_poll_id": 65,
-                },
-            }
-        )
+        self.set_models({"option/57": {"used_as_global_option_in_poll_id": 65}})
         response = self.request(
             "option.update",
             {"id": 57, "Y": "1.000000"},

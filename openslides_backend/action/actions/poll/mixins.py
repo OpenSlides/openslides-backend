@@ -2,16 +2,13 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Any, cast
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.shared.typing import HistoryInformation
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import (
-    collection_from_fqid,
-    collectionfield_and_fqid_from_fqfield,
-    fqid_from_collection_and_id,
-)
+from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
@@ -79,29 +76,6 @@ class PollPermissionMixin(Action):
 
 
 class StopControl(CountdownControl, Action):
-    def build_write_request(self) -> WriteRequest | None:
-        """
-        Reduce locked fields
-        """
-        self.datastore.locked_fields = {
-            k: v
-            for k, v in self.datastore.locked_fields.items()
-            if collectionfield_and_fqid_from_fqfield(k)[0]
-            not in (
-                "meeting_user/user_id",
-                "meeting_user/vote_delegated_to_id",
-                "poll/pollmethod",
-                "poll/global_option_id",
-                "poll/meeting_id",
-                "poll/content_object_id",
-                "meeting/users_enable_vote_weight",
-                "meeting/poll_couple_countdown",
-                "meeting/poll_countdown_id",
-                "option/meeting_id",
-            )
-        }
-        return super().build_write_request()
-
     def on_stop(self, instance: dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -202,8 +176,8 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(
-            poll | instance, meeting
+        instance["entitled_users_at_stop"] = Jsonb(
+            self.get_entitled_users(poll | instance, meeting)
         )
 
     def get_entitled_users(

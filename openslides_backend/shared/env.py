@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from typing import Any
 
+from openslides_backend.shared.interfaces.env import Env
+
 DEV_PASSWORD = "openslides"
 
 
@@ -18,21 +20,13 @@ def is_truthy(value: str) -> bool:
     return value.lower() in truthy
 
 
-class Environment:
+class Environment(Env):
     """
     Contains all environment variables. See the vars attribute for all defaults.
     """
 
     vars = {
         "ACTION_PORT": "9002",
-        "DATASTORE_READER_HOST": "localhost",
-        "DATASTORE_READER_PATH": "/internal/datastore/reader",
-        "DATASTORE_READER_PORT": "9010",
-        "DATASTORE_READER_PROTOCOL": "http",
-        "DATASTORE_WRITER_HOST": "localhost",
-        "DATASTORE_WRITER_PATH": "/internal/datastore/writer",
-        "DATASTORE_WRITER_PORT": "9011",
-        "DATASTORE_WRITER_PROTOCOL": "http",
         "INTERNAL_AUTH_PASSWORD_FILE": "",
         "MEDIA_HOST": "localhost",
         "MEDIA_PATH": "/internal/media",
@@ -54,6 +48,23 @@ class Environment:
         "VOTE_PATH": "/internal/vote",
         "VOTE_PORT": "9013",
         "VOTE_PROTOCOL": "http",
+        "DATABASE_HOST": "",
+        "DATABASE_PORT": "5432",
+        "DATABASE_NAME": "openslides",
+        "DATABASE_USER": "openslides",
+        "DATABASE_RETRY_TIMEOUT": "0.4",
+        "DATABASE_MAX_RETRIES": "10",
+        "PGPASSWORD": "openslides",
+        "DATABASE_PASSWORD_FILE": "",
+        # psycopg.ConnectionPool attributes with DB_POOL-prefix
+        "DB_POOL_MIN_SIZE": "4",
+        "DB_POOL_MAX_SIZE": "4",
+        "DB_POOL_TIMEOUT": "30",
+        "DB_POOL_MAX_WAITING": "0",
+        "DB_POOL_MAX_LIFETIME": "3600",
+        "DB_POOL_MAX_IDLE": "60",
+        "DB_POOL_RECONNECT_TIMEOUT": "300",
+        "DB_POOL_NUM_WORKERS": "2",
     }
 
     def __init__(self, os_env: Any, *args: Any, **kwargs: Any) -> None:
@@ -90,7 +101,7 @@ class Environment:
     def get_service_url(self) -> dict[str, str]:
         service_url = {}
         # Extend the vars attribute with the lower case properties for the service URLs.
-        for service in ("datastore_reader", "datastore_writer", "media", "vote"):
+        for service in ("media", "vote"):
             key = service + "_url"
             service_url[key] = self.get_endpoint(service.upper())
         return service_url

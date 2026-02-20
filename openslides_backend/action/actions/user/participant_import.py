@@ -1,6 +1,6 @@
 from typing import Any, cast
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ...mixins.import_mixins import ImportRow, ImportState

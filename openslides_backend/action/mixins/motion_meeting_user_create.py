@@ -66,7 +66,7 @@ def build_motion_meeting_user_create_action(
                 FilterOperator("meeting_id", "=", meeting_id),
             )
             exists = self.datastore.exists(
-                collection=self.model.collection, filter=filter
+                collection=self.model.collection, filter_=filter
             )
             if exists:
                 raise ActionException("(meeting_user_id, motion_id) must be unique.")

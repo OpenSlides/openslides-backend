@@ -2,11 +2,11 @@ from typing import Any
 
 import fastjsonschema
 
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
 from openslides_backend.shared.schema import id_list_schema
 
-from ..services.datastore.commands import GetManyRequest
-from ..shared.exceptions import PresenterException
+from ..services.database.commands import GetManyRequest
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -64,30 +64,21 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         if not user.get("committee_ids"):
             return []
 
-        committees_data = []
-        gmr = GetManyRequest("committee", user["committee_ids"], ["id", "name"])
-        committees = {
-            committee["id"]: {"name": committee.get("name", ""), "cml": []}
-            for committee in self.datastore.get_many([gmr])
-            .get("committee", {})
-            .values()
-        }
-        for committee_nr in user.get("committee_management_ids", []):
-            if committee_nr in committees:
-                committees[committee_nr]["cml"].append("can_manage")
-            else:
-                raise PresenterException(
-                    f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
-                )
-        for committee_id, committee in committees.items():
-            committees_data.append(
-                {
-                    "id": committee_id,
-                    "name": committee.get("name", ""),
-                    "cml": ", ".join(committee.get("cml", [])),
-                }
-            )
-        return committees_data
+        gm_result = self.datastore.get_many(
+            [GetManyRequest("committee", user["committee_ids"], ["id", "name"])]
+        )
+        return [
+            {
+                "id": id_,
+                "name": committee.get("name", ""),
+                "cml": (
+                    CommitteeManagementLevel.CAN_MANAGE
+                    if id_ in user.get("committee_management_ids", [])
+                    else ""
+                ),
+            }
+            for id_, committee in gm_result.get("committee", {}).items()
+        ]
 
     def get_meetings_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
         if not (meeting_user_ids := user.get("meeting_user_ids")):

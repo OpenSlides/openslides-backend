@@ -1,9 +1,19 @@
 #!/bin/bash
 
-source scripts/export_datastore_variables.sh
+printf "enter entrypoint.sh"
+set -e
+
+printf "\nOpenslides DBMS:\n"
+printf "Export env variables for database.\n"
+source scripts/export_database_variables.sh
 
 if [ ! $ANONYMOUS_ONLY ]; then
-  scripts/wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
+  meta/dev/scripts/wait-for-database.sh
+  printf "DBMS is started.\n"
 fi
+
+printf "Creating schema ...\n"
+python cli/create_schema.py
+printf "\n"
 
 exec "$@"
