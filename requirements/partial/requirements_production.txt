@@ -13,7 +13,7 @@ psycopg-pool==3.2.6
 requests==2.32.5
 roman==5.2
 simplejson==3.20.2
-Werkzeug==3.1.5
+Werkzeug==3.1.6
 python-magic==0.4.27
 python-sql==1.5.1
 pygments==2.19.2
