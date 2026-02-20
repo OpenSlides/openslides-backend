@@ -276,7 +276,7 @@ class BaseMigrationTestCase(TestCase):
 
                 # 6.6) Recreated constraints
                 assert_content_not_none(
-                    "SELECT 1 FROM information_schema.constraint_column_usage WHERE constraint_name = 'personal_note_t_meeting_user_id_fkey';"
+                    "SELECT 1 FROM information_schema.constraint_column_usage WHERE constraint_name = 'fk_option_t_content_object_id_poll_candidate_list_id_pold428251';"
                 )
 
                 # 6.7) Recreated triggers
@@ -305,7 +305,7 @@ class BaseMigrationTestCase(TestCase):
                         AND ccu.table_name = 'theme_t'
                         AND kcu.column_name = 'theme_id'
                         AND ccu.column_name = 'id'
-                        AND tc.constraint_name = 'organization_t_theme_id_fkey';"""
+                        AND tc.constraint_name = 'fk_organization_t_theme_id_theme_t_id';"""
                 )
 
                 # 6.9) Recreated views
