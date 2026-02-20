@@ -188,8 +188,6 @@ class MigrationHandler(BaseHandler):
 
         # RECREATE some relevant triggers
         # May be error prone due to changing constraints
-        if HelperGetNames.trigger_unique_list:
-            HelperGetNames.trigger_unique_list = []
         (
             pre_code,
             table_name_code,
@@ -486,8 +484,6 @@ class MigrationHandler(BaseHandler):
             )
 
         # RECREATE triggers
-        if HelperGetNames.trigger_unique_list:
-            HelperGetNames.trigger_unique_list = []
         (
             pre_code,
             table_name_code,
