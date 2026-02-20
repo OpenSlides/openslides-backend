@@ -137,23 +137,26 @@ class ActionHandler(BaseHandler):
                             )
 
                         for element in payload:
-                            for data_element in element["data"]:
-                                try:
-                                    result = self.execute_write_requests(
-                                        lambda e: transform_to_list(
-                                            self.perform_action(e)
-                                        ),
-                                        {
-                                            "action": element["action"],
-                                            "data": [data_element],
-                                        },
+                            try:
+                                result: list[Any] = []
+                                for data_element in element["data"]:
+                                    result.extend(
+                                        self.execute_write_requests(
+                                            lambda e: transform_to_list(
+                                                self.perform_action(e)
+                                            ),
+                                            {
+                                                "action": element["action"],
+                                                "data": [data_element],
+                                            },
+                                        )
                                     )
                                     self.datastore.connection.commit()
-                                    results.append(result)
-                                except ActionException as exception:
-                                    error = cast(ActionError, exception.get_json())
-                                    results.append(error)
-                                self.datastore.reset()
+                                results.append(result)
+                            except ActionException as exception:
+                                error = cast(ActionError, exception.get_json())
+                                results.append(error)
+                            self.datastore.reset()
 
                     # execute cleanup methods
                     for on_success in self.on_success:
