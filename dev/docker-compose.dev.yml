@@ -39,6 +39,9 @@ services:
         ports:
             - "9004:9004"
         environment:
+            - DATABASE_HOST=postgres
+            - PGPASSWORD=openslides
+            - OPENSLIDES_DEVELOPMENT=1
             - ACTION_HOST=backend
             - ACTION_PORT=9002
             - MESSAGE_BUS_HOST=redis
