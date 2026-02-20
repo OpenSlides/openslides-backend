@@ -144,6 +144,7 @@ class ActionWorkerWriting:
                     locked_fields={},
                 )
             )
+            # Assert worker exists in db.
             extended_db.get(self.fqid, [], lock_result=False, use_changed_models=False)
             message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
             self.written = True
