@@ -66,8 +66,7 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
+        self.set_organization_management_level(None)
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -116,16 +115,14 @@ class TestPermissions(PatchModelRegistryMixin, BaseActionTestCase):
         )
 
     def test_superadmin(self) -> None:
-        self.set_organization_management_level(
-            OrganizationManagementLevel.SUPERADMIN, self.user_id
-        )
+        self.set_organization_management_level(OrganizationManagementLevel.SUPERADMIN)
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_orgaadmin(self) -> None:
         self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)

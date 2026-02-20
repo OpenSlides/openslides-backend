@@ -715,11 +715,8 @@ class MeetingImport(BaseActionTestCase):
         )
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-
-        organization = self.assert_model_exists(ONE_ORGANIZATION_FQID)
-        self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
-
-        imported_meeting = self.assert_model_exists(
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
+        self.assert_model_exists(
             "meeting/2",
             {
                 "group_ids": [4, 5],
@@ -730,9 +727,9 @@ class MeetingImport(BaseActionTestCase):
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
                 "is_active_in_organization_id": 1,
+                "user_ids": [1],
             },
         )
-        self.assertCountEqual(imported_meeting["user_ids"], [1])
 
         self.assert_model_exists(
             "user/1",
@@ -2980,7 +2977,7 @@ class MeetingImport(BaseActionTestCase):
         )
         presenterapp = create_presenter_test_application()
         presenterclient = Client(presenterapp, self.update_vote_service_auth_data)
-        presenterclient.login("admin", "admin", 1)
+        presenterclient.login("admin", "admin")
         self.auth_data = deepcopy(presenterclient.auth_data)
         response = presenterclient.post(
             get_route_path(PresenterView.presenter_route),

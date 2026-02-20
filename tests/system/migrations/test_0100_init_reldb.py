@@ -2,7 +2,6 @@
 import json
 import os
 from collections.abc import Callable
-from copy import deepcopy
 from datetime import datetime, timedelta
 from importlib import import_module
 from io import StringIO
@@ -11,7 +10,7 @@ from time import sleep
 from typing import Any, cast
 from unittest import TestCase
 from unittest.mock import DEFAULT as mockdefault
-from unittest.mock import Mock, _patch, patch
+from unittest.mock import Mock, patch
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
@@ -78,7 +77,6 @@ class BaseMigrationTestCase(TestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
-    auth_mockers: dict[str, _patch]
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
@@ -132,24 +130,6 @@ class BaseMigrationTestCase(TestCase):
         self.auth = self.services.authentication()
         self.client = Client(self.app)
         self.client.auth = self.auth  # type: ignore
-        if self.auth_data:
-            # Reuse old login data to avoid a new login request
-            self.client.update_auth_data(self.auth_data)
-        else:
-            self.auth.create_update_user_session(
-                {
-                    "type": "create",
-                    "fqid": "user/1",
-                    "fields": {
-                        "username": ADMIN_USERNAME,
-                        "password": self.auth.hash(ADMIN_PASSWORD),
-                    },
-                }
-            )
-            # Login and save copy of auth data for all following tests
-            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
-            BaseMigrationTestCase.auth_data = deepcopy(self.client.auth_data)
-
         self.setup_data()
         self.apply_test_relational_schema()
 

@@ -35,8 +35,7 @@ class GenderDeleteActionTest(BaseActionTestCase):
 
         self.assert_model_exists("user/20", {"gender_id": 1})
         self.assert_model_exists("user/21", {"gender_id": None})
-        organization1 = self.get_model(ONE_ORGANIZATION_FQID)
-        self.assertCountEqual(organization1["gender_ids"], [1, 6])
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"gender_ids": [1, 6]})
         self.assert_model_exists("gender/1", {"name": "male"})
         self.assert_model_exists("gender/6", {"name": "dragon"})
 
