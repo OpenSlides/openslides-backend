@@ -7,7 +7,7 @@ from typing import Any, cast
 import requests
 import yaml
 
-from meta.dev.src.validate import DEFAULT_COLLECTIONS_DIR as SOURCE_COLLECTIONS
+from meta.dev.src.helper_get_names import DEFAULT_COLLECTIONS_DIR as SOURCE_COLLECTIONS
 
 ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),

@@ -7,12 +7,12 @@ from typing import Any, Optional
 
 from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
 from meta.dev.src.helper_get_names import (
+    DEFAULT_COLLECTION_META,
     FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
     TableFieldType,
 )
-from meta.dev.src.validate import DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
@@ -94,7 +94,7 @@ def main() -> None:
     """
     args: Namespace = parse_arguments(DEFAULT_COLLECTION_META)
 
-    InternalHelper.read_models_yml(DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR)
+    InternalHelper.read_models_yml()
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
