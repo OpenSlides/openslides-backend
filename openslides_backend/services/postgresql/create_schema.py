@@ -94,6 +94,7 @@ def create_schema() -> None:
                     db_migration_index,
                     MigrationState.FINALIZED,
                 )
+                activate_notify_triggers(cursor)
                 print(
                     f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
                 )
@@ -102,25 +103,41 @@ def create_schema() -> None:
                 return
 
 
+def get_notify_triggers(cursor: Cursor[dict[str, Any]], table: str) -> dict[Any]:
+    return cursor.execute(
+        sql.SQL(
+            """SELECT
+                tgname AS trigger_name,
+                tgrelid::regclass AS table_name
+            FROM
+                pg_trigger
+            WHERE
+                tgrelid = {table_name}::regclass AND
+                tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
+        ).format(table_name=table)
+    ).fetchall()
+
 def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
     if env.is_dev_mode():
         # deactivate all notify triggers
         for table in MigrationHelper.get_public_tables(cursor):
-            to_disable_triggers = cursor.execute(
-                sql.SQL(
-                    """SELECT
-                        tgname AS trigger_name,
-                        tgrelid::regclass AS table_name
-                    FROM
-                        pg_trigger
-                    WHERE
-                        tgrelid = {table_name}::regclass AND
-                        tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
-                ).format(table_name=table)
-            ).fetchall()
+            to_disable_triggers = get_notify_triggers(cursor, table)
             for trigger_dict in to_disable_triggers:
                 cursor.execute(
                     sql.SQL("ALTER TABLE {table} DISABLE TRIGGER {trigger};").format(
+                        table=sql.Identifier(trigger_dict["table_name"]),
+                        trigger=sql.SQL(trigger_dict["trigger_name"]),
+                    )
+                )
+
+def activate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
+    if env.is_dev_mode():
+        # activate all notify triggers
+        for table in MigrationHelper.get_public_tables(cursor):
+            to_enable_triggers = get_notify_triggers(cursor, table)
+            for trigger_dict in to_enable_triggers:
+                cursor.execute(
+                    sql.SQL("ALTER TABLE {table} ENABLE TRIGGER {trigger};").format(
                         table=sql.Identifier(trigger_dict["table_name"]),
                         trigger=sql.SQL(trigger_dict["trigger_name"]),
                     )
