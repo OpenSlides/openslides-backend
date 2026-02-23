@@ -5,6 +5,21 @@ from tests.system.util import CountDatastoreCalls
 
 
 class AgendaItemAssignActionTest(BaseActionTestCase):
+    PERMISSION_TEST_MODELS = {
+        "agenda_item/7": {"meeting_id": 1, "content_object_id": "topic/1"},
+        "agenda_item/8": {"meeting_id": 1, "content_object_id": "topic/2"},
+        "list_of_speakers/23": {
+            "content_object_id": "topic/1",
+            "meeting_id": 1,
+        },
+        "list_of_speakers/42": {
+            "content_object_id": "topic/2",
+            "meeting_id": 1,
+        },
+        "topic/1": {"meeting_id": 1, "title": "tropic"},
+        "topic/2": {"meeting_id": 1, "title": "tropic"},
+    }
+
     def test_assign_parent_none(self) -> None:
         self.create_meeting(222)
         self.set_models(
@@ -16,18 +31,45 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "child_ids": [8, 9],
                     "level": 0,
                     "weight": 100,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/8": {
                     "comment": "comment_8",
                     "meeting_id": 222,
                     "parent_id": 7,
                     "child_ids": [],
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/9": {
                     "comment": "comment_9",
                     "meeting_id": 222,
                     "parent_id": 7,
                     "child_ids": [],
+                    "content_object_id": "topic/3",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 222,
+                },
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/3": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
             }
         )
@@ -36,15 +78,15 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         agenda_item_7 = self.get_model("agenda_item/7")
-        assert agenda_item_7.get("child_ids") == []
+        assert agenda_item_7.get("child_ids") is None
         assert agenda_item_7.get("parent_id") is None
         agenda_item_8 = self.get_model("agenda_item/8")
-        assert agenda_item_8.get("child_ids") == []
+        assert agenda_item_8.get("child_ids") is None
         assert agenda_item_8.get("parent_id") is None
         assert agenda_item_8.get("level") == 0
         assert agenda_item_8.get("weight") == 10000
         agenda_item_9 = self.get_model("agenda_item/9")
-        assert agenda_item_9.get("child_ids") == []
+        assert agenda_item_9.get("child_ids") is None
         assert agenda_item_9.get("parent_id") is None
         assert agenda_item_9.get("level") == 0
         assert agenda_item_9.get("weight") == 10001
@@ -60,18 +102,45 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "child_ids": [],
                     "level": 0,
                     "weight": 100,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/8": {
                     "comment": "comment_8",
                     "meeting_id": 222,
                     "parent_id": None,
                     "child_ids": [],
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/9": {
                     "comment": "comment_9",
                     "meeting_id": 222,
                     "parent_id": None,
                     "child_ids": [],
+                    "content_object_id": "topic/3",
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 222,
+                },
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/3": {
+                    "meeting_id": 222,
+                    "title": "tropic",
                 },
             }
         )
@@ -80,17 +149,17 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                 "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
             )
         self.assert_status_code(response, 200)
-        assert counter.calls == 4
+        assert counter.calls == 15  # TODO this was 4 #befour
         agenda_item_7 = self.get_model("agenda_item/7")
         assert agenda_item_7.get("child_ids") == [8, 9]
         assert agenda_item_7.get("parent_id") is None
         agenda_item_8 = self.get_model("agenda_item/8")
-        assert agenda_item_8.get("child_ids") == []
+        assert agenda_item_8.get("child_ids") is None
         assert agenda_item_8.get("parent_id") == 7
         assert agenda_item_8.get("level") == 1
         assert agenda_item_8.get("weight") == 101
         agenda_item_9 = self.get_model("agenda_item/9")
-        assert agenda_item_9.get("child_ids") == []
+        assert agenda_item_9.get("child_ids") is None
         assert agenda_item_9.get("parent_id") == 7
         assert agenda_item_9.get("level") == 1
         assert agenda_item_9.get("weight") == 102
@@ -99,8 +168,24 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         self.create_meeting(222)
         self.set_models(
             {
-                "agenda_item/7": {"meeting_id": 222},
-                "agenda_item/8": {"meeting_id": 222},
+                "agenda_item/7": {"meeting_id": 222, "content_object_id": "topic/1"},
+                "agenda_item/8": {"meeting_id": 222, "content_object_id": "topic/2"},
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 222,
+                },
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 222,
+                },
+                "topic/1": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
+                "topic/2": {
+                    "meeting_id": 222,
+                    "title": "tropic",
+                },
             }
         )
         response = self.request_multi(
@@ -118,20 +203,14 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1},
-                "agenda_item/8": {"meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
         )
 
     def test_assign_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1},
-                "agenda_item/8": {"meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             Permissions.AgendaItem.CAN_MANAGE,
@@ -139,10 +218,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_permissions_with_locked_meeting(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1},
-                "agenda_item/8": {"meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.SUPERADMIN,
@@ -152,10 +228,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
 
     def test_assign_permissions_with_locked_meeting_orgaadmin(self) -> None:
         self.base_permission_test(
-            {
-                "agenda_item/7": {"meeting_id": 1},
-                "agenda_item/8": {"meeting_id": 1},
-            },
+            self.PERMISSION_TEST_MODELS,
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,

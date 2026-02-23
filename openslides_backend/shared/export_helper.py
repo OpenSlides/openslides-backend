@@ -1,9 +1,10 @@
+import datetime
 from collections.abc import Iterable
+from decimal import Decimal
 from typing import Any
 
-from datastore.shared.util import is_reserved_field
-
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.shared.patterns import is_reserved_field
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ..models.base import model_registry
@@ -14,9 +15,9 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Meeting, User
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..models.models import Meeting
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
@@ -31,17 +32,18 @@ HISTORY_FIELDS_PER_COLLECTION = {
 
 
 def export_meeting(
-    datastore: DatastoreService,
+    datastore: Database,
     meeting_id: int,
     internal_target: bool = False,
     update_mediafiles: bool = False,
+    datetime_decimal_to_string: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
     # fetch meeting
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        [],
+        list(get_fields_for_export("meeting") - set(FORBIDDEN_FIELDS)),
         lock_result=False,
         use_changed_models=False,
     )
@@ -49,7 +51,7 @@ def export_meeting(
         meeting.pop(forbidden_field, None)
 
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
-    export["_migration_index"] = get_backend_migration_index()
+    export["_migration_index"] = MigrationHelper.get_backend_migration_index()
 
     # initialize user_ids
     user_ids = set(meeting.get("user_ids", []))
@@ -57,7 +59,11 @@ def export_meeting(
     # fetch related models
     relation_fields = list(get_relation_fields())
     get_many_requests = [
-        GetManyRequest(field.get_target_collection(), ids)
+        GetManyRequest(
+            field.get_target_collection(),
+            ids,
+            get_fields_for_export(field.get_target_collection()),
+        )
         for field in relation_fields
         if (ids := meeting.get(field.get_own_field_name()))
     ]
@@ -201,24 +207,62 @@ def export_meeting(
                         id_ = id_from_fqid(entry[field_name])
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore, internal_target)
+
+    # Sort instances by id within each collection
+    for collection, instances in export.items():
+        if collection == "_migration_index":
+            continue
+        export[collection] = dict(
+            sorted(instances.items(), key=lambda item: int(item[0]))
+        )
+        if datetime_decimal_to_string and isinstance(instances, dict):
+            for data in instances.values():
+                for field, value in data.items():
+                    if isinstance(value, datetime.datetime):
+                        data[field] = value.isoformat()
+                    if isinstance(value, Decimal):
+                        data[field] = str(value)
+
     return export
+
+
+# TODO (when removing back relations): replace with Model.get_writable_fields()
+# in `export_meeting` and its helper methods.
+# Reason: Model.get_writable_fields() excludes back relations, so it is not suitable
+# for passing the relations checks in the checker.
+# This method is needed only in `export_meeting` and should be removed after the replacement.
+def get_fields_for_export(collection: str) -> set[str]:
+    """
+    Returns writable fields of the collection with the given name.
+    Excludes fields calculated by db.
+    """
+    model = model_registry[collection]()
+    return {
+        field.get_own_field_name()
+        for field in model.get_fields()
+        if not (
+            isinstance(field, RelationListField)
+            and field.is_view_field
+            and field.read_only
+            and not field.write_fields
+        )
+    }
 
 
 def add_users(
     user_ids: list[int],
     export_data: dict[str, Any],
     meeting_id: int,
-    datastore: DatastoreService,
+    datastore: Database,
     internal_target: bool,
 ) -> None:
     if not user_ids:
         return
-    fields = [field.own_field_name for field in User().get_fields()]
 
     gmr = GetManyRequest(
         "user",
         user_ids,
-        fields,
+        get_fields_for_export("user"),
     )
     users = remove_history_fields(
         "user",
@@ -232,7 +276,6 @@ def add_users(
     )
 
     for user in users.values():
-        user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:

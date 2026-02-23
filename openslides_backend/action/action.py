@@ -1,9 +1,12 @@
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from copy import deepcopy
+from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -17,8 +20,8 @@ from ..permissions.management_levels import (
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
 from ..presenter.base import BasePresenter
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -114,7 +117,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def __init__(
         self,
         services: Services,
-        datastore: DatastoreService,
+        datastore: Database,
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
@@ -313,9 +316,21 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validates one instance of the action data according to schema class attribute.
         """
         try:
-            type(self).schema_validator(instance)
+            type(self).schema_validator(
+                {
+                    # fmt: off
+                    field:
+                        int(value.timestamp()) if isinstance(value, datetime)
+                        else int(value.total_seconds()) if isinstance(value, timedelta)
+                        else str(value) if isinstance(value, Decimal)
+                        else value.obj if isinstance(value, Jsonb)
+                        else value
+                    for field, value in instance.items()
+                    # fmt: on
+                }
+            )
         except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+            raise ActionException(f"Action {self.name}: " + exception.message)
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
@@ -460,9 +475,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                             GetManyRequest(collection, ids, ["meeting_id"])
                             for collection, ids in collection_to_ids.items()
                             if model_registry[collection]().try_get_field("meeting_id")
-                        ]
+                        ],
+                        use_changed_models=False,
                     )
-                    create_events, update_events = calculate_history_event_payloads(
+                    create_events = calculate_history_event_payloads(
                         self.user_id,
                         information,
                         position_id,
@@ -487,16 +503,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                 fields=cast(dict[str, Any], fields),
                             )
                             for fqid, fields in create_events
-                        ]
-                    )
-                    events_by_type[EventType.Update].extend(
-                        [
-                            Event(
-                                type=EventType.Update,
-                                fqid=fqid,
-                                list_fields=cast(ListFields, fields),
-                            )
-                            for fqid, fields in update_events
                         ]
                     )
             write_request.user_id = self.user_id

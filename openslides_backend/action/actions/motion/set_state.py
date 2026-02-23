@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -74,7 +75,7 @@ class MotionSetStateAction(
             motion.get("number"),
             motion.get("number_value"),
         )
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         if not motion.get("workflow_timestamp"):
             set_workflow_timestamp_helper(self.datastore, instance, timestamp)

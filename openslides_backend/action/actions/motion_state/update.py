@@ -2,7 +2,7 @@ from typing import Any
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ....shared.exceptions import ActionException
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema

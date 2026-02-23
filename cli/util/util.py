@@ -7,15 +7,13 @@ from typing import Any, cast
 import requests
 import yaml
 
+from meta.dev.src.validate import DEFAULT_COLLECTIONS_DIR as SOURCE_COLLECTIONS
+
 ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..",
     "..",
 )
-
-META_PATH = "./meta"
-SOURCE_META = f"{META_PATH}/collection-meta.yml"
-SOURCE_COLLECTIONS = f"{META_PATH}/collections"
 
 
 def parse_arguments(default: str) -> Namespace:

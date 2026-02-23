@@ -1,11 +1,13 @@
 from collections import defaultdict
 from typing import Any, cast
 
+from psycopg.types.json import Jsonb
+
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import (
@@ -105,8 +107,9 @@ class MotionCreate(
                 del instance["amendment_paragraphs"]
             if instance.get("amendment_paragraphs") and "text" in instance:
                 del instance["text"]
-        if instance.get("amendment_paragraphs"):
+        if amendment_paragraphs := instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
+            instance["amendment_paragraphs"] = Jsonb(amendment_paragraphs)
         # if amendment and no category set, use category from the lead motion
         if instance.get("lead_motion_id") and "category_id" not in instance:
             lead_motion = self.datastore.get(
@@ -129,7 +132,6 @@ class MotionCreate(
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
         self.create_supporters(instance)
-        self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
         instance = super().update_instance(instance)

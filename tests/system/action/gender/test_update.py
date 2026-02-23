@@ -1,4 +1,3 @@
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -10,7 +9,6 @@ class GenderUpdateActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 self.gender_fqid: {
                     "name": self.gender_name,
                     "organization_id": 1,
@@ -65,10 +63,7 @@ class GenderUpdateActionTest(BaseActionTestCase):
         self.create_data()
         response = self.request(
             "gender.update",
-            {
-                "id": 2,
-                "name": "so wrong to change this gender",
-            },
+            {"id": 2, "name": "so wrong to change this gender"},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -82,13 +77,23 @@ class GenderUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model(self.gender_fqid)
         self.assertEqual(model.get("name"), self.gender_name)
+        self.assertIn(
+            "Model 'gender/200' does not exist.",
+            response.json["message"],
+        )
 
     def test_update_wrong_field(self) -> None:
         self.create_data()
-        response = self.request("gender.update", {"id": 5, "Mercedes": "xxxxx"})
+        response = self.request(
+            "gender.update", {"id": 5, "name": "yyyy", "Mercedes": "xxxxx"}
+        )
         self.assert_status_code(response, 400)
         model = self.get_model(self.gender_fqid)
         self.assertEqual(model.get("name"), self.gender_name)
+        self.assertIn(
+            "Action gender.update: data must not contain {'Mercedes'} properties",
+            response.json["message"],
+        )
 
     def test_update_no_permission(self) -> None:
         self.create_data()

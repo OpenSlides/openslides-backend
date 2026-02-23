@@ -13,7 +13,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.reset_redis()
 
     def test_update_correct(self) -> None:
-        self.create_model("user/2", {"password": "old_pw"})
+        self.create_model("user/2", {"username": "klaus", "password": "old_pw"})
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
@@ -161,19 +161,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                "user/111": {"id": 111},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
+                "user/111": {"username": "peter", "id": 111},
             }
         )
         response = self.request(
@@ -267,7 +255,9 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_saml_id_error(self) -> None:
-        self.create_model("user/2", {"password": "pw", "saml_id": "111"})
+        self.create_model(
+            "user/2", {"username": "giesela", "password": "pw", "saml_id": "111"}
+        )
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
@@ -285,10 +275,9 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         alice_id = self.create_user("alice")
         bob_id = self.create_user("bob")
         self.set_committee_management_level([59], alice_id)
-        self.set_user_groups(bob_id, [3])
 
         self.create_meeting(4)
-        self.set_user_groups(bob_id, [6])
+        self.set_user_groups(bob_id, [3, 6])
 
         self.login(alice_id)
 

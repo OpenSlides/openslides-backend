@@ -4,16 +4,14 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserSetPresentActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting()
+
     def test_set_present_add_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "name": "Test Meeting",
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
                 "user/111": {"username": "username_srtgb123"},
-                "committee/1": {},
             }
         )
         response = self.request(
@@ -33,24 +31,18 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "present_user_ids": [111],
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/111": {
                     "username": "username_srtgb123",
-                    "is_present_in_meeting_ids": [1],
                 },
-                "committee/1": {},
             }
         )
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        assert model.get("is_present_in_meeting_ids") == []
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("present_user_ids") == []
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
+        self.assert_model_exists("meeting/1", {"present_user_ids": None})
         self.assert_history_information(
             "user/111", ["Set not present in meeting {}", "meeting/1"]
         )
@@ -60,34 +52,26 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "present_user_ids": [],
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [],
                 },
-                "committee/1": {},
             }
         )
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": False}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        assert model.get("is_present_in_meeting_ids") == []
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("present_user_ids") == []
+        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
+        self.assert_model_exists("meeting/1", {"present_user_ids": None})
 
     def test_set_present_add_self_correct(self) -> None:
         self.set_models(
             {
                 "meeting/1": {
                     "users_allow_self_set_present": True,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
-                "committee/1": {},
             }
         )
         response = self.request(
@@ -104,11 +88,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"organization_management_level": None},
-                "committee/1": {},
             }
         )
         response = self.request(
@@ -121,13 +102,10 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
-                "committee/1": {},
             }
         )
         response = self.request(
@@ -140,14 +118,10 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
-                "committee/1": {"user_ids": [1]},
+                "committee/60": {"manager_ids": [1]},
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_ids": [1],
-                    "committee_management_ids": [1],
                 },
             }
         )
@@ -161,10 +135,6 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "group_ids": [1],
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [1],
                 },
                 "group/1": {
                     "meeting_user_ids": [1],
@@ -172,10 +142,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "meeting_user_ids": [1],
                 },
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "group_ids": [1]},
-                "committee/1": {},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
         response = self.request(
@@ -188,10 +156,6 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "group_ids": [1],
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [1],
                 },
                 "group/1": {
                     "meeting_user_ids": [1],
@@ -199,10 +163,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "meeting_user_ids": [1],
                 },
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "group_ids": [1]},
-                "committee/1": {},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
         response = self.request(
@@ -215,11 +177,8 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": True,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"organization_management_level": None},
-                "committee/1": {},
             }
         )
         response = self.request(
@@ -232,13 +191,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                     "locked_from_inside": True,
                 },
-                "committee/1": {"user_ids": [1]},
             }
         )
+        self.set_user_groups(1, [3])
         response = self.request(
             "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
         )
@@ -255,15 +212,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {
                     "users_allow_self_set_present": False,
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
                     "locked_from_inside": True,
                 },
-                "committee/1": {"user_ids": [1]},
+                "committee/60": {"manager_ids": [1]},
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_ids": [1],
-                    "committee_management_ids": [1],
                 },
             }
         )

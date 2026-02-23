@@ -1,5 +1,5 @@
 override SERVICE=backend
-override paths = openslides_backend/ tests/ cli/ meta/dev/src/
+override paths = openslides_backend/ tests/ cli/
 
 # Build images for different contexts
 
@@ -44,6 +44,11 @@ test-file:
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 # Models
+
+generate-schema:
+	make -C meta/dev generate-relational-schema
+
+generate-db: | generate-schema create-database-with-schema
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -144,6 +149,26 @@ pip-check: | deprecation-warning
 extract-translations: | deprecation-warning
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
+drop-database:
+	make -C meta/dev drop-database
+
+create-database:
+	make -C meta/dev create-database
+
+generate-relational-schema:
+	make -C meta/dev generate-relational-schema
+
+apply-db-schema:
+	make -C meta/dev apply-db-schema
+
+create-database-with-schema:
+	python cli/create_schema.py
+
+recreate-database:
+	make -C meta/dev create-database-with-schema
+
+run-psql:
+	make -C meta/dev run-psql
 
 # Build and run production docker container (not usable inside the docker container)
 

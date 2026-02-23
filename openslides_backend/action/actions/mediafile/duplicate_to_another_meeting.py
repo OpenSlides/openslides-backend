@@ -1,10 +1,13 @@
 import re
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.create import CreateAction
@@ -59,15 +62,20 @@ class MediafileDuplicateToAnotherMeetingAction(MediafileCreateMixin, CreateActio
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         origin_id = instance.pop("origin_id")
-        instance.update(
-            self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, origin_id),
-                FIELDS,
-                lock_result=False,
-            )
+        origin_instance = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, origin_id),
+            FIELDS,
+            lock_result=False,
         )
+        origin_instance.pop("id")
+        instance.update(origin_instance)
         self.ensure_unique_title_within_parent(instance)
-        instance["create_timestamp"] = round(time())
+
+        instance["create_timestamp"] = datetime.now(ZoneInfo("UTC"))
+        raw_pdf_information = instance.get("pdf_information")
+        if raw_pdf_information and not isinstance(raw_pdf_information, Jsonb):
+            instance["pdf_information"] = Jsonb(raw_pdf_information)
+
         if not instance.get("is_directory"):
             self.media.duplicate_mediafile(origin_id, instance["id"])
         return instance
