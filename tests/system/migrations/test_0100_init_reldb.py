@@ -101,6 +101,7 @@ class BaseMigrationTestCase(TestCase):
         # 8) Final Cleanup
         drop_db()
         cls.apply_test_relational_schema()
+        deactivate_notify_triggers(curs)
         super().tearDownClass()
 
     @staticmethod
