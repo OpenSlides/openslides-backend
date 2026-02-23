@@ -1,4 +1,7 @@
 from textwrap import dedent
+from typing import Any
+
+from psycopg import Cursor, sql
 
 from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
@@ -7,6 +10,30 @@ from openslides_backend.migrations.migration_helper import (
 from openslides_backend.services.postgresql.db_connection_handling import env
 
 openslides_db = env.DATABASE_NAME
+
+
+def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
+    # deactivate all notify triggers
+    for table in MigrationHelper.get_public_tables(cursor):
+        to_disable_triggers = cursor.execute(
+            sql.SQL(
+                """SELECT
+                    tgname AS trigger_name,
+                    tgrelid::regclass AS table_name
+                FROM
+                    pg_trigger
+                WHERE
+                    tgrelid = {table_name}::regclass AND
+                    tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
+            ).format(table_name=table)
+        ).fetchall()
+        for trigger_dict in to_disable_triggers:
+            cursor.execute(
+                sql.SQL("ALTER TABLE {table} DISABLE TRIGGER {trigger};").format(
+                    table=sql.Identifier(trigger_dict["table_name"]),
+                    trigger=sql.SQL(trigger_dict["trigger_name"]),
+                )
+            )
 
 
 def generate_trigger_sql_code(tablenames: tuple[str, ...]) -> str:

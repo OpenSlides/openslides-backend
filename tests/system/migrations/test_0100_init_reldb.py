@@ -35,7 +35,10 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 from openslides_backend.shared.env import DEV_PASSWORD, Environment
 from tests.conftest import OLD_TABLES, get_rel_db_table_names
-from tests.conftest_helper import generate_sql_for_test_initiation
+from tests.conftest_helper import (
+    deactivate_notify_triggers,
+    generate_sql_for_test_initiation,
+)
 from tests.system.action.util import get_internal_auth_header
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
@@ -120,6 +123,7 @@ class BaseMigrationTestCase(TestCase):
         create_db()
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
+                deactivate_notify_triggers(curs)
                 curs.execute(open(DEPR_SQL_PATH).read())
 
         # 1.1) Create services and login.
