@@ -43,6 +43,35 @@ test-file:
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
+# Individual Linters
+
+pyupgrade:
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	pyupgrade --py310-plus $$(find . -name '*.py')
+
+black:
+	black $(paths)
+
+check-black:
+	black --check --diff $(paths)
+
+autoflake:
+	autoflake $(paths)
+
+isort:
+	isort $(paths)
+
+check-isort:
+	isort --check-only --diff $(paths)
+
+flake8:
+	flake8 $(paths)
+
+mypy:
+	mypy $(paths)
+
 # Models
 
 generate-schema:
@@ -90,42 +119,6 @@ stop-dev:
 
 all: | pyupgrade black autoflake isort flake8 mypy
 	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-
-pyupgrade:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
-
-check-pyupgrade:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	pyupgrade --py310-plus $$(find . -name '*.py')
-
-black:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	black $(paths)
-
-check-black:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	black --check --diff $(paths)
-
-autoflake:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	autoflake $(paths)
-
-isort:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	isort $(paths)
-
-check-isort:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	isort --check-only --diff $(paths)
-
-flake8:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	flake8 $(paths)
-
-mypy:
-	@make deprecation-warning-alternative ALTERNATIVE="run-lint"
-	mypy $(paths)
 
 run-bash:
 	@make deprecation-warning-alternative ALTERNATIVE="dev"
