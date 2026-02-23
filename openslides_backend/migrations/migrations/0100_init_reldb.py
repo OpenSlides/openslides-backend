@@ -267,6 +267,8 @@ def get_use_dst():
 
 
 def is_dst(dt):
+    # Taken from tzinfo_examples.py listed in
+    #   https://docs.python.org/3/library/datetime.html#datetime.tzinfo
     tt = (dt.year, dt.month, dt.day,
           dt.hour, dt.minute, dt.second,
           dt.weekday(), 0, 0)
