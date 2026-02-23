@@ -4,7 +4,6 @@ from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -39,16 +38,10 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
                 "workflow_timestamp",
             ],
         )
-        if not motion.get("state_id"):
-            raise ActionException(f"Motion {instance['id']} has no state.")
-
         old_state = self.datastore.get(
             fqid_from_collection_and_id("motion_state", motion["state_id"]),
             ["workflow_id"],
         )
-        if not old_state.get("workflow_id"):
-            raise ActionException(f"State {motion['state_id']} has no workflow.")
-
         workflow = self.datastore.get(
             fqid_from_collection_and_id("motion_workflow", old_state["workflow_id"]),
             ["first_state_id"],
