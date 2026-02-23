@@ -65,6 +65,18 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_no_permission_cause_write_group_2(self) -> None:
+        self.user_id = self.create_user("user", [1])
+        self.login(self.user_id)
+        self.set_group_permissions(1, [Permissions.Motion.CAN_SEE])
+        self.set_models({"motion_comment_section/78": {"submitter_can_write": True}})
+        response = self.request("motion_comment.delete", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertEqual(
+            "You are not allowed to perform action motion_comment.delete. You are not in the write group of the section or in admin group and no submitter.",
+            response.json["message"],
+        )
+
     def test_update_permission_cause_submitter(self) -> None:
         self.user_id = self.create_user("user", [1])
         self.login(self.user_id)
