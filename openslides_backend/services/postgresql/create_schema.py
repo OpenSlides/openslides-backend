@@ -1,7 +1,6 @@
 import os
-from typing import Any
 
-from psycopg import Connection, Cursor, rows, sql
+from psycopg import Connection, rows, sql
 
 from openslides_backend.migrations.exceptions import (
     MismatchingMigrationIndicesException,
@@ -60,7 +59,6 @@ def create_schema() -> None:
                     MigrationHelper.set_database_migration_info(
                         cursor, 100, MigrationState.FINALIZED
                     )
-                deactivate_notify_triggers(cursor)
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not
@@ -88,57 +86,14 @@ def create_schema() -> None:
                     type_ = "fresh"
                     db_migration_index = MigrationHelper.get_backend_migration_index()
                 print(f"Assuming {type_} database.")
-                deactivate_notify_triggers(cursor)
                 MigrationHelper.set_database_migration_info(
                     cursor,
                     db_migration_index,
                     MigrationState.FINALIZED,
                 )
-                activate_notify_triggers(cursor)
                 print(
                     f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
                 )
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return
-
-
-def get_notify_triggers(cursor: Cursor[dict[str, Any]], table: str) -> dict[Any]:
-    return cursor.execute(
-        sql.SQL(
-            """SELECT
-                tgname AS trigger_name,
-                tgrelid::regclass AS table_name
-            FROM
-                pg_trigger
-            WHERE
-                tgrelid = {table_name}::regclass AND
-                tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
-        ).format(table_name=table)
-    ).fetchall()
-
-def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
-    if env.is_dev_mode():
-        # deactivate all notify triggers
-        for table in MigrationHelper.get_public_tables(cursor):
-            to_disable_triggers = get_notify_triggers(cursor, table)
-            for trigger_dict in to_disable_triggers:
-                cursor.execute(
-                    sql.SQL("ALTER TABLE {table} DISABLE TRIGGER {trigger};").format(
-                        table=sql.Identifier(trigger_dict["table_name"]),
-                        trigger=sql.SQL(trigger_dict["trigger_name"]),
-                    )
-                )
-
-def activate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
-    if env.is_dev_mode():
-        # activate all notify triggers
-        for table in MigrationHelper.get_public_tables(cursor):
-            to_enable_triggers = get_notify_triggers(cursor, table)
-            for trigger_dict in to_enable_triggers:
-                cursor.execute(
-                    sql.SQL("ALTER TABLE {table} ENABLE TRIGGER {trigger};").format(
-                        table=sql.Identifier(trigger_dict["table_name"]),
-                        trigger=sql.SQL(trigger_dict["trigger_name"]),
-                    )
-                )
