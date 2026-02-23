@@ -275,29 +275,33 @@ def is_dst(dt):
     return tt.tm_isdst > 0
 
 
-def check_prerequisites() -> bool:
+def check_prerequisites(curs: Cursor[DictRow]) -> bool:
+    # TODO: Include actual LINK
+    MigrationHelper.write_line("This is migration 100, part of the OpenSlides 4.3.0 release.")
+    MigrationHelper.write_line("This migration will fundamentally restructure all data.")
+    MigrationHelper.write_line("See LINK for more information.")
+    MigrationHelper.write_line("")
+
     try:
         i_read_docs = os.environ['MIG0100_I_READ_DOCS']
         utc_offset = os.environ['MIG0100_UTC_OFFSET']
         _ = os.environ['MIG0100_USE_DST']
     except KeyError as e:
-        print("This is migration 100, part of the OpenSlides 4.3.0 release.")
-        print("This migration will fundamentally restructure all data.")
-        print("See LINK for more information.")
-        print()
-        print("env var not set " + str(e))
+        MigrationHelper.write_line("Required env vars not set - aborting.")
         return False
 
     if not re.match(PAT_TRUTHY, i_read_docs, flags=re.IGNORECASE):
-        print(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
+        MigrationHelper.write_line(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
+        MigrationHelper.write_line(f"'{i_read_docs}' is really no acceptable value for MIG0100_I_READ_DOCS")
         return False
     if not re.match(PAT_OFFSET, utc_offset):
-        print(f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET")
+        MigrationHelper.write_line(f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET")
         return False
 
-    print( "For timestamp conversion ...")
-    print(f"- using UTC offset: {utc_offset}")
-    print(f"- using platform provided DST: {get_use_dst()}")
+    MigrationHelper.write_line( "For timestamp conversion ...")
+    MigrationHelper.write_line(f"- using UTC offset: {utc_offset}")
+    MigrationHelper.write_line(f"- using platform provided DST: {get_use_dst()}")
+    MigrationHelper.write_line( "")
 
     return True
 
