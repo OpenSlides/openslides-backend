@@ -13,7 +13,7 @@ openslides_db = env.DATABASE_NAME
 
 
 def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
-    # deactivate all notify triggers
+    """Deactivates all notify triggers present in the database."""
     for table in MigrationHelper.get_public_tables(cursor):
         to_disable_triggers = cursor.execute(
             sql.SQL(
