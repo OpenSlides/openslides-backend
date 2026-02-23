@@ -101,7 +101,6 @@ class BaseMigrationTestCase(TestCase):
         # 8) Final Cleanup
         drop_db()
         cls.apply_test_relational_schema()
-        deactivate_notify_triggers(curs)
         super().tearDownClass()
 
     @staticmethod
@@ -111,6 +110,7 @@ class BaseMigrationTestCase(TestCase):
             with conn.cursor() as curs:
                 table_names = get_rel_db_table_names(curs)
                 curs.execute(generate_sql_for_test_initiation(tuple(table_names)))
+                deactivate_notify_triggers(curs)
 
     def tearDown(self) -> None:
         migration_module.Sql_helper.offset = 0
@@ -124,7 +124,6 @@ class BaseMigrationTestCase(TestCase):
         create_db()
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                deactivate_notify_triggers(curs)
                 curs.execute(open(DEPR_SQL_PATH).read())
 
         # 1.1) Create services and login.
