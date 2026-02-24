@@ -159,6 +159,18 @@ class OrganizationInitialImport(BaseActionTestCase):
             },
         )
 
+    def test_initial_import_example_data_with_number_timestamp(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["meeting"]["1"]["start_time"] = 12345678990
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Could not convert value of field meeting/start_time. Message: fromisoformat: argument must be str",
+            response.json["message"],
+        )
+
     def test_initial_import_missing_default_language(self) -> None:
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         del request_data["data"]["organization"]["1"]["default_language"]
