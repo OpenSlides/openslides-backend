@@ -62,7 +62,7 @@ def test_wrong_format(db_connection: Connection) -> None:
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         with pytest.raises(InvalidFormat) as e_info:
-            extended_database.reserve_ids("user", None)  # type:ignore
+            extended_database.reserve_ids("user", None)  # type: ignore
     assert e_info.value.message == ("Amount must be integer.")
 
 
