@@ -5,7 +5,7 @@ dependency_injector==4.48.3
 dacite==1.7.0
 fastjsonschema==2.21.2
 Flask==3.0.3
-gunicorn==23.0.0
+gunicorn==25.1.0
 pypdf[crypto]==6.6.0
 lxml==5.1.0
 psycopg[c]==3.2.10
