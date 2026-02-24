@@ -61,14 +61,12 @@ MODEL_MIXINS: dict[str, type] = {
     "poll": PollModelMixin,
 }
 
-FILE_TEMPLATE = dedent(
-    """\
+FILE_TEMPLATE = dedent("""\
     # Code generated. DO NOT EDIT.
 
     from . import fields
     from .base import Model
-    """
-)
+    """)
 
 
 def main() -> None:
@@ -131,15 +129,11 @@ class Model(Node):
     collection: str
     attributes: dict[str, "Attribute"]
 
-    MODEL_TEMPLATE = string.Template(
-        dedent(
-            """
+    MODEL_TEMPLATE = string.Template(dedent("""
             class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-            """
-        )
-    )
+            """))
 
     def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection
