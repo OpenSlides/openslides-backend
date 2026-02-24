@@ -6,7 +6,7 @@ dacite==1.7.0
 fastjsonschema==2.21.2
 Flask==3.0.3
 gunicorn==23.0.0
-pypdf[crypto]==6.6.0
+pypdf[crypto]==6.7.2
 lxml==5.1.0
 psycopg[c]==3.2.10
 psycopg-pool==3.2.6
