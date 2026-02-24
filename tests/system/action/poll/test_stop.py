@@ -2,8 +2,6 @@ from decimal import Decimal
 from typing import Any
 from unittest.mock import Mock, patch
 
-from psycopg.types.json import Jsonb
-
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
@@ -54,7 +52,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 1,
                     "users_enable_vote_delegations": True,
-                    "present_user_ids": [1, 2],
+                    "present_user_ids": [user1, user2],
                 },
                 "projector_countdown/1": {
                     "title": "Countdown 1",
@@ -100,28 +98,26 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "votescast": Decimal("2.000000"),
                 "votesinvalid": Decimal("0.000000"),
                 "votesvalid": Decimal("7.200000"),
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": True,
-                            "present": True,
-                            "user_id": user1,
-                            "vote_delegated_to_user_id": None,
-                        },
-                        {
-                            "voted": False,
-                            "present": True,
-                            "user_id": user2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                        {
-                            "voted": True,
-                            "present": False,
-                            "user_id": user3,
-                            "vote_delegated_to_user_id": user1,
-                        },
-                    ]
-                ),
+                "entitled_users_at_stop": [
+                    {
+                        "voted": True,
+                        "present": True,
+                        "user_id": user1,
+                        "vote_delegated_to_user_id": None,
+                    },
+                    {
+                        "voted": False,
+                        "present": True,
+                        "user_id": user2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                    {
+                        "voted": True,
+                        "present": False,
+                        "user_id": user3,
+                        "vote_delegated_to_user_id": user1,
+                    },
+                ],
             },
         )
         # test history
@@ -168,16 +164,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": True,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": True,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
@@ -200,16 +194,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
@@ -233,16 +225,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": 3,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": 3,
+                    },
+                ]
             },
         )
 
@@ -266,16 +256,14 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "entitled_users_at_stop": Jsonb(
-                    [
-                        {
-                            "voted": False,
-                            "present": False,
-                            "user_id": 2,
-                            "vote_delegated_to_user_id": None,
-                        },
-                    ]
-                )
+                "entitled_users_at_stop": [
+                    {
+                        "voted": False,
+                        "present": False,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                ]
             },
         )
 
@@ -367,10 +355,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             response = self.request("poll.stop", {"id": 1})
 
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll["voted_ids"] == user_ids
-        # always 12 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 12 + len(user_ids)
+        self.assert_model_exists("poll/1", {"voted_ids": user_ids})
+        assert counter.calls == 63
 
     @performance
     def test_stop_performance(self) -> None:

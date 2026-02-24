@@ -4,7 +4,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase, TestResult
-from unittest.mock import MagicMock, _patch
+from unittest.mock import MagicMock
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -70,7 +70,6 @@ class BaseSystemTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
 
-    auth_mockers: dict[str, _patch]
     # Save all created fqids
     created_fqids: set[str]
 
@@ -88,6 +87,7 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.set_thread_watch_timeout(-1)
 
+        self.user_id = 1
         self.created_fqids = set()
         if self.init_with_login:
             self.set_models(
@@ -101,7 +101,7 @@ class BaseSystemTestCase(TestCase):
                     "theme/1": {
                         "name": "OpenSlides Organization",
                     },
-                    "user/1": {
+                    f"user/{self.user_id}": {
                         "username": ADMIN_USERNAME,
                         "password": self.auth.hash(ADMIN_PASSWORD),
                         "default_password": ADMIN_PASSWORD,
@@ -119,7 +119,7 @@ class BaseSystemTestCase(TestCase):
                 self.client.update_auth_data(self.auth_data)
             else:
                 # Login and save copy of auth data for all following tests
-                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
+                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
                 BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
         self.anon_client.auth = self.auth  # type: ignore
@@ -148,10 +148,6 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-
-        # TODO: Does something equivalent to this old code
-        #  need to be done here?
-        # injector.get(ShutdownService).shutdown()
 
         super().tearDown()
 
@@ -202,7 +198,7 @@ class BaseSystemTestCase(TestCase):
         """
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"], user_id)
+        self.client.login(user["username"], user["default_password"])
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
@@ -272,9 +268,6 @@ class BaseSystemTestCase(TestCase):
 
     def perform_write_request(self, events: list[Event]) -> None:
         write_request = WriteRequest(events, user_id=0)
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
         self.connection.commit()
 
@@ -318,14 +311,6 @@ class BaseSystemTestCase(TestCase):
             for collection, data in self.datastore.get_everything().items()
             for id_ in data.keys()
         )
-
-    def check_auth_mockers_started(self) -> bool:
-        if (
-            hasattr(self, "auth_mockers")
-            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
-        ):
-            return False
-        return True
 
     def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()

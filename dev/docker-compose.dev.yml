@@ -31,7 +31,7 @@ services:
             - vote
     auth:
         build:
-            context: "https://github.com/OpenSlides/openslides-auth-service.git#feature/relational-db"
+            context: "https://github.com/OpenSlides/openslides-auth-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "dev"
             args:
                 CONTEXT: "dev"
@@ -39,6 +39,9 @@ services:
         ports:
             - "9004:9004"
         environment:
+            - DATABASE_HOST=postgres
+            - PGPASSWORD=openslides
+            - OPENSLIDES_DEVELOPMENT=1
             - ACTION_HOST=backend
             - ACTION_PORT=9002
             - MESSAGE_BUS_HOST=redis
@@ -47,7 +50,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#feature/relational-db"
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
             target: "dev"
             args:
                 CONTEXT: "dev"

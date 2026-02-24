@@ -83,6 +83,9 @@ class PollCreateAction(
 
         state_change = self.check_state_change(instance)
         is_motion_poll = collection_from_fqid(instance["content_object_id"]) == "motion"
+        is_assignment_poll = (
+            collection_from_fqid(instance["content_object_id"]) == "assignment"
+        )
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
@@ -95,10 +98,19 @@ class PollCreateAction(
 
         # check named and live_voting_enabled
         if instance.get("live_voting_enabled") and not (
-            instance["type"] == Poll.TYPE_NAMED and is_motion_poll
+            instance["type"] == Poll.TYPE_NAMED
+            and (
+                is_motion_poll
+                or (
+                    is_assignment_poll
+                    and not instance.get("global_yes")
+                    and instance["pollmethod"] == "Y"
+                    and instance.get("max_votes_amount") == 1
+                )
+            )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls."
+                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
             )
 
         # check entitled_group_ids and analog
