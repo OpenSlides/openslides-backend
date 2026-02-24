@@ -16,16 +16,16 @@ def deactivate_notify_triggers(cursor: Cursor[dict[str, Any]]) -> None:
     """Deactivates all notify triggers present in the database."""
     for table in MigrationHelper.get_public_tables(cursor):
         to_disable_triggers = cursor.execute(
-            sql.SQL(
-                """SELECT
+            sql.SQL("""SELECT
                     tgname AS trigger_name,
                     tgrelid::regclass AS table_name
                 FROM
                     pg_trigger
                 WHERE
                     tgrelid = {table_name}::regclass AND
-                    tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';"""
-            ).format(table_name=table)
+                    tgname LIKE 'tr_log_%' OR tgname LIKE 'notify_%';""").format(
+                table_name=table
+            )
         ).fetchall()
         for trigger_dict in to_disable_triggers:
             cursor.execute(
@@ -55,8 +55,7 @@ def generate_remove_all_test_functions() -> str:
 
 def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
     MigrationHelper.load_migrations()
-    return dedent(
-        f"""
+    return dedent(f"""
         CREATE TABLE IF NOT EXISTS truncate_tables (
             id int,
             tablename varchar(256) UNIQUE
@@ -97,5 +96,4 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
             ON CONFLICT (migration_index) DO UPDATE SET migration_state = EXCLUDED.migration_state;
         END;
         $$ LANGUAGE plpgsql;
-        """
-    )
+        """)
