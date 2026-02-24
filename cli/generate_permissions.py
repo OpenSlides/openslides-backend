@@ -26,15 +26,13 @@ DESTINATION = os.path.abspath(
     )
 )
 
-FILE_TEMPLATE = dedent(
-    """\
+FILE_TEMPLATE = dedent("""\
     # Code generated. DO NOT EDIT.
 
     from enum import StrEnum
 
     from .base_classes import Permission
-    """
-)
+    """)
 
 
 class Permission(str):

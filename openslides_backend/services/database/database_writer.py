@@ -187,12 +187,10 @@ class DatabaseWriter(SqlQueryHelper):
         )
         if id_ and not simple_fields.get("id"):
             simple_fields["id"] = id_
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             INSERT INTO {table_name} ({columns})
             VALUES ({values})
-            """
-        ).format(
+            """).format(
             table_name=sql.Identifier(f"{collection}_t"),
             columns=sql.SQL(", ").join(map(sql.Identifier, simple_fields)),
             values=sql.SQL(", ").join(sql.SQL("%s") for _ in range(len(simple_fields))),
@@ -206,11 +204,11 @@ class DatabaseWriter(SqlQueryHelper):
     def delete_model(
         self, event: Event, collection: Collection, id_: Id
     ) -> FullQualifiedId:
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             DELETE FROM {table_name} WHERE id = {id}
-            """
-        ).format(id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t"))
+            """).format(
+            id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t")
+        )
         return fqid_from_collection_and_id(
             collection, self.execute_sql(statement, [], collection, id_)
         )
@@ -219,11 +217,9 @@ class DatabaseWriter(SqlQueryHelper):
         self, event: Event, collection: Collection, id_: Id
     ) -> FullQualifiedId:
         table = sql.Identifier(f"{collection}_t")
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             UPDATE {table} AS {row} SET
-            """
-        ).format(
+            """).format(
             table=table,
             row=sql.Identifier(f"{collection}_row"),
         )
@@ -281,10 +277,8 @@ class DatabaseWriter(SqlQueryHelper):
         ):
             statement += sql.SQL(", ")
         statement += sql.SQL(", ").join(
-            sql.SQL(
-                """
-            {field} = {array_statement}"""
-            ).format(
+            sql.SQL("""
+            {field} = {array_statement}""").format(
                 field=sql.Identifier(field),
                 array_statement=statement,
             )
@@ -297,11 +291,9 @@ class DatabaseWriter(SqlQueryHelper):
         if not arguments:
             statement += sql.SQL("id = id")
 
-        statement += sql.SQL(
-            """
+        statement += sql.SQL("""
             WHERE id = {id}
-            """
-        ).format(id=id_)
+            """).format(id=id_)
         return fqid_from_collection_and_id(
             collection,
             self.execute_sql(statement, arguments, collection, id_),
@@ -375,13 +367,11 @@ class DatabaseWriter(SqlQueryHelper):
                 )
             intermediate_table, close_side, far_side, _ = field.write_fields
             if values := event_fields.get(field_name):
-                statement = sql.SQL(
-                    """
+                statement = sql.SQL("""
                     INSERT INTO {table_name} ({columns})
                     VALUES {placeholders}
                     ON CONFLICT ({columns}) DO NOTHING
-                    """
-                ).format(
+                    """).format(
                     table_name=sql.Identifier(intermediate_table),
                     columns=sql.Identifier(close_side)
                     + sql.SQL(", ")
@@ -426,12 +416,10 @@ class DatabaseWriter(SqlQueryHelper):
             elif not isinstance(other_column_values, list):
                 other_column_values = [other_column_values]
             intermediate_table, own_column, other_column, *_ = field.write_fields
-            statement = sql.SQL(
-                """
+            statement = sql.SQL("""
                 DELETE FROM {table_name}
                 WHERE ({own_column} = {id} AND {negation}({other_column} = ANY(%s)))
-                """
-            ).format(
+                """).format(
                 table_name=sql.Identifier(intermediate_table),
                 own_column=sql.Identifier(own_column),
                 other_column=sql.Identifier(other_column),
@@ -463,16 +451,14 @@ class DatabaseWriter(SqlQueryHelper):
         """
         return (
             {
-                field_name: sql.SQL(
-                    """ARRAY(
+                field_name: sql.SQL("""ARRAY(
                 SELECT unnest({col_or_placeholder_plus_type}) AS list_element{nothing_or_table}
                 EXCEPT
                 SELECT unnest(%s{remove_list_type})
                 UNION
                 SELECT unnest(%s{add_list_type})
                 ORDER BY list_element
-            )"""
-                ).format(
+            )""").format(
                     col_or_placeholder_plus_type=(
                         sql.Placeholder() + self.get_array_type(list_type)
                         if field_name in set_dict
@@ -591,14 +577,12 @@ class DatabaseWriter(SqlQueryHelper):
             with self.connection.cursor() as curs:
                 curs._tx = adapt.Transformer(curs)
                 real_statement = curs._convert_query(statement, arguments)
-            raise InvalidFormat(
-                f"""{e.args[0]}
+            raise InvalidFormat(f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or id_)}'
         The psycopg arguments are: {arguments}
         The fields are: {statement.as_string().split('(')[1].split(')')[0]}
         The constraint from the relational schema:
-        {constraint}        The postgres statement: {real_statement.query.decode()}"""
-            )
+        {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:
             raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
         except StringDataRightTruncation as e:
@@ -614,10 +598,8 @@ class DatabaseWriter(SqlQueryHelper):
                 raise e
         except Exception as e:
             raise e
-            raise ModelLocked(
-                f"Model ... is locked on fields .... {e}\
-                This is not the end. There will be more next episode. To be continued."
-            )
+            raise ModelLocked(f"Model ... is locked on fields .... {e}\
+                This is not the end. There will be more next episode. To be continued.")
 
         return 0
 
