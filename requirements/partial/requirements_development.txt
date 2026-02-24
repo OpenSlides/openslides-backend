@@ -22,4 +22,4 @@ types-simplejson==3.20.0.20250822
 types-Pygments==2.19.0.20251121
 
 # analyze pstats from Profiler
-snakeviz==2.2.0
+snakeviz==2.2.2
