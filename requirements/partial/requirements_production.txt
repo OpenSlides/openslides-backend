@@ -15,7 +15,7 @@ roman==5.2
 simplejson==3.20.2
 Werkzeug==3.1.5
 python-magic==0.4.27
-python-sql==1.5.1
+python-sql==1.5.2
 pygments==2.19.2
 pyyaml==6.0.3
 sqlfluff==3.4.2
