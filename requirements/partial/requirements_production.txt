@@ -2,7 +2,7 @@ Babel==2.17.0
 beautifulsoup4==4.14.3
 bleach[css]==6.3.0
 dependency_injector==4.48.3
-dacite==1.7.0
+dacite==1.9.2
 fastjsonschema==2.21.2
 Flask==3.0.3
 gunicorn==23.0.0
