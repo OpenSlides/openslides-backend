@@ -29,13 +29,13 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
+from openslides_backend.shared.env import is_truthy
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.typing import Collection
 
-PAT_TRUTHY = r'^(1|YES|ON|TRUE)$'  # matched with IGNORECASE flag
 PAT_OFFSET = r'^[\+-]?\d\d:\d\d$'
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
@@ -263,7 +263,7 @@ def get_utc_offset():
 
 
 def get_use_dst():
-    return bool(re.match(PAT_TRUTHY, os.environ['MIG0100_USE_DST'], flags=re.IGNORECASE))
+    return is_truthy(os.environ['MIG0100_USE_DST'])
 
 
 def is_dst(dt):
@@ -292,7 +292,7 @@ def check_prerequisites(curs: Cursor[DictRow]) -> bool:
         MigrationHelper.write_line("Required env vars not set - aborting.")
         return False
 
-    if not re.match(PAT_TRUTHY, i_read_docs, flags=re.IGNORECASE):
+    if not is_truthy(i_read_docs):
         MigrationHelper.write_line(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
         MigrationHelper.write_line(f"'{i_read_docs}' is really no acceptable value for MIG0100_I_READ_DOCS")
         return False
@@ -416,7 +416,7 @@ def cleanup(curs: Cursor[DictRow]) -> None:
     except KeyError:
         i_read_code = None
     if i_read_code is not None:
-        if re.match(PAT_TRUTHY, i_read_code, flags=re.IGNORECASE):
+        if is_truthy(i_read_code):
             print('(┛◉Д◉)┛彡┻━┻')
             MigrationHelper.write_line('(┛◉Д◉)┛彡┻━┻')
 
