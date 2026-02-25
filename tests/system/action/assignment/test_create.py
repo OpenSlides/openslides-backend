@@ -21,6 +21,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 1, "sequential_number": 1}
         self.assert_model_exists(
             "assignment/1",
             {

@@ -13,6 +13,7 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             "projector.create", {"name": "test projector", "meeting_id": 222}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 223, "sequential_number": 2}
         model = self.assert_model_exists(
             "projector/223",
             {"name": "test projector", "meeting_id": 222, "sequential_number": 2},

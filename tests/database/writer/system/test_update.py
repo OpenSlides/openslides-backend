@@ -70,7 +70,7 @@ def test_update_nm_field_simple() -> None:
             ]
         }
     )
-    committee_id, user_id = create_models(data)
+    user_id, committee_id = create_models(data)
 
     data = [
         {

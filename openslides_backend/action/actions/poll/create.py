@@ -6,8 +6,8 @@ from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_fqid_schema
-from ...generics.create import CreateAction
 from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
@@ -32,7 +32,7 @@ options_schema = {
 @register_action("poll.create")
 class PollCreateAction(
     PollValidationMixin,
-    CreateAction,
+    SequentialNumbersMixin,
     PollPermissionMixin,
     PollHistoryMixin,
     ForbidAnonymousGroupMixin,

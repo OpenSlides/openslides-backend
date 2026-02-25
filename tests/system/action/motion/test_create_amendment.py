@@ -47,6 +47,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 2, "sequential_number": 2}
         self.assert_model_exists(
             "motion/2",
             {

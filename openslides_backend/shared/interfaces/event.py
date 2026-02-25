@@ -34,3 +34,4 @@ class Event(TypedDict):
     list_fields: NotRequired[ListFields]
     fqid: NotRequired[FullQualifiedId]
     collection: NotRequired[str]
+    return_fields: NotRequired[list[str]]
