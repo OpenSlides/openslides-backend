@@ -79,60 +79,19 @@ class DatabaseWriter(SqlQueryHelper):
         self,
         write_requests: list[WriteRequest],
     ) -> dict[FullQualifiedId, dict[str, Any]]:
-        #       with make_span("write request"):
         self.write_requests = write_requests
 
         modified_models: dict[FullQualifiedId, dict[str, Any]] = defaultdict(dict)
         with self._lock:
             for write_request in self.write_requests:
-                #         modified_models = self.write_with_database_context(
-                #             write_request, models
-                #         )
-                # def write_with_database_context(
-                #     self, write_request: WriteRequest, models: dict[str, dict[Id, Model]]
-                # ) -> dict[FullQualifiedId, dict[Field, JSON]]:
                 with make_span(self.env, "write with database context"):
-                    # # get migration index
-                    # if write_request.migration_index is None:
-                    #     migration_index = self.database_reader.get_current_migration_index()
-                    # else:
-                    #     if not self.database_reader.is_empty():
-                    #         raise DatastoreNotEmpty(
-                    #             f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
-                    #         )
-                    #     migration_index = write_request.migration_index
-
-                    # Check locked_fields -> Possible LockedError
-                    # self.occ_locker.assert_locked_fields(write_request)
 
                     results = self.write_events(write_request.events)
                     for fqid, model in results.items():
                         modified_models[fqid].update(model)
 
-        self.print_stats()
-        self.print_summary()
         return modified_models
 
-    def print_stats(self) -> None:
-        pass
-        # stats: dict[str, int] = defaultdict(int)
-        # for write_request in self.write_requests:
-        #     for event in write_request.events:
-        #         stats[self.get_request_name(event)] += 1
-        # stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
-        # logger.info(f"Events executed ({stats_string})")
-
-    def print_summary(self) -> None:
-        pass
-        # summary: dict[str, set[str]] = defaultdict(set)  # event type <-> set[fqid]
-        # for write_request in self.write_requests:
-        #     for event in write_request.events:
-        #         summary[self.get_request_name(event)].add(event.fqid)
-        # logger.info(
-        #     "\n".join(
-        #         f"{eventType}: {list(fqids)}" for eventType, fqids in summary.items()
-        #     )
-        # )
 
     def get_request_name(self, event: WriteRequest) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
