@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
@@ -70,9 +71,9 @@ class PollPublishActionTest(BasePollTestCase):
         self.assert_model_exists(
             "poll/1",
             {
-                "votescast": "0.000000",
-                "votesinvalid": "0.000000",
-                "votesvalid": "0.000000",
+                "votescast": Decimal("0.000000"),
+                "votesinvalid": Decimal("0.000000"),
+                "votesvalid": Decimal("0.000000"),
                 "entitled_users_at_stop": [],
             },
         )

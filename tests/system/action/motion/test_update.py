@@ -519,7 +519,7 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting_user/1": {
                 "meeting_id": 1,
-                "user_id": 1,
+                "user_id": 2,
             },
             "motion_submitter/1": {
                 "meeting_id": 1,
@@ -530,10 +530,11 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
         }
 
     def test_update_no_permissions(self) -> None:
-        self.set_organization_management_level(None)
-        self.set_user_groups(1, [3])
-        self.set_models({"motion_state/1": {"allow_submitter_edit": False}})
-        response = self.request(
+        self.base_permission_test(
+            {
+                **self.permission_test_models,
+                "motion_state/1": {"allow_submitter_edit": False},
+            },
             "motion.update",
             {
                 "id": 111,
@@ -541,11 +542,7 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "text": "text_eNPkDVuq",
                 "reason": "reason_ukWqADfE",
             },
-        )
-        self.assert_status_code(response, 403)
-        self.assertEqual(
-            "You are not allowed to perform action motion.update. Forbidden fields: title, text, reason",
-            response.json["message"],
+            custom_error_message="You are not allowed to perform action motion.update. Forbidden fields: title, text, reason",
         )
 
     def test_update_permission(self) -> None:
@@ -665,10 +662,8 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
         )
 
     def test_update_permission_submitter_allowed(self) -> None:
-        self.set_organization_management_level(None)
-        self.permission_test_models["meeting_user/1"]["motion_submitter_ids"] = [1]
-        self.set_models(self.permission_test_models)
-        response = self.request(
+        self.base_permission_test(
+            self.permission_test_models,
             "motion.update",
             {
                 "id": 111,
@@ -676,19 +671,22 @@ class MotionUpdatePermissionTest(BaseMotionUpdateActionTest):
                 "text": "text_eNPkDVuq",
                 "reason": "reason_ukWqADfE",
             },
+            fail=False,
         )
-        self.assert_status_code(response, 200)
 
     def test_update_permission_metadata_and_submitter(self) -> None:
         self.setup_can_manage_metadata()
-        self.permission_test_models["meeting_user/1"] = {"motion_submitter_ids": [1]}
-        self.set_models(self.permission_test_models)
         self.set_models(
             {
+                "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 111,
+                    "meeting_user_id": 1,
+                },
                 "motion_category/2": {
                     "meeting_id": 1,
                     "name": "test",
-                }
+                },
             }
         )
         response = self.request(

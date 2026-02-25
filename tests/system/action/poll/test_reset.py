@@ -142,6 +142,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         self.test_models["group/1"] = {"poll_ids": [1]}
         self.set_models(self.test_models)
         self.set_user_groups(1, [1])
+        self.set_models({"meeting/1": {"present_user_ids": [1]}})
         self.vote_service.start(1)
         response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
@@ -160,9 +161,9 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
+            "poll/1", {"voted_ids": None, "state": Poll.STATE_CREATED}
         )
-        assert counter.calls == 5
+        assert counter.calls == 14
 
     @performance
     def test_reset_performance(self) -> None:

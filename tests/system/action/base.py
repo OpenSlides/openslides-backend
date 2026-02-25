@@ -241,14 +241,24 @@ class BaseActionTestCase(BaseSystemTestCase):
         fail: bool | None = None,
         lock_meeting: bool = False,
         lock_out_calling_user: bool = False,
+        anonymous: bool = False,
+        user_groups: list[int] = [3],
+        custom_error_message: str | None = None,
     ) -> None:
+        """
+        Checks that response.status_code == 403 when any of the conditions is true:
+            - `permission` is not provided
+            - `custom_error_message` is provided
+            - `fail` is set to True
+        In other cases asserts response.status_code to be 200.
+        """
         meeting_data = {"locked_from_inside": True} if lock_meeting else {}
         self.create_meeting(meeting_data=meeting_data)
         self.user_id = self.create_user("user")
-        self.login(self.user_id)
+        if user_groups:
+            meeting_user_id = self.set_user_groups(self.user_id, user_groups)[0]
         if models:
             self.set_models(models)
-        meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
         if lock_out_calling_user:
             self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
         if permission:
@@ -258,15 +268,17 @@ class BaseActionTestCase(BaseSystemTestCase):
                 self.set_group_permissions(3, permission)
             else:
                 self.set_group_permissions(3, [permission])
-        response = self.request(action, action_data)
+        self.login(self.user_id)
+        response = self.request(action, action_data, anonymous)
         if fail is None:
-            fail = not permission
+            fail = not permission or bool(custom_error_message)
         if fail:
             self.assert_status_code(response, 403)
-            self.assertIn(
-                f"You are not allowed to perform action {action}",
-                response.json["message"],
+            error_message = (
+                custom_error_message
+                or f"You are not allowed to perform action {action}"
             )
+            self.assertIn(error_message, response.json["message"])
         else:
             self.assert_status_code(response, 200)
 
