@@ -92,7 +92,6 @@ class DatabaseWriter(SqlQueryHelper):
 
         return modified_models
 
-
     def get_request_name(self, event: WriteRequest) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
 
