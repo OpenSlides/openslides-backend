@@ -60,9 +60,18 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             ),  # Threads per Worker(process)
             "post_request": gunicorn_post_request,
             "worker_abort": gunicorn_worker_abort,
+            "control_socket_disable": not self.env.OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET,
+            "control_socket": self.get_control_socket_name(),
         }
         for key, value in options.items():
             self.cfg.set(key, value)
+
+    def get_control_socket_name(self) -> str:
+        if self.view_name == "ActionView":
+            return "openslides-action.ctl"
+        elif self.view_name == "PresenterView":
+            return "openslides-presenter.ctl"
+        raise ValueError(f"Invalid view {self.view_name}")
 
     def get_address(self) -> str:
         if self.view_name == "ActionView":
