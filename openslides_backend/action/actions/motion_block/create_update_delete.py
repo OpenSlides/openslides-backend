@@ -2,6 +2,7 @@ from ....models.models import MotionBlock
 from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 from ..agenda_item.agenda_creation import (
@@ -16,6 +17,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
 
 
 class MotionBlockCreate(
+    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,

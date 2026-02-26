@@ -39,7 +39,7 @@ class ConnectionContext:
         self.connection.set_isolation_level(IsolationLevel.REPEATABLE_READ)
         return self.connection
 
-    def __exit__(self, exception, exception_value, traceback) -> None:  # type:ignore
+    def __exit__(self, exception, exception_value, traceback) -> None:  # type: ignore
         self.connection_context.__exit__(exception, exception_value, traceback)
 
 
@@ -50,7 +50,7 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.Dic
     os_conn_pool = ConnectionPool(
         conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",
         # provides type hinting
-        connection_class=Connection[rows.DictRow],  # type:ignore
+        connection_class=Connection[rows.DictRow],  # type: ignore
         # works at runtime
         # TODO allow prepared statements again. Currently disabled since those would randomly be reused when not avaiable.
         kwargs={

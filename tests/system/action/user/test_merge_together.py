@@ -17,11 +17,11 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_ID
-from tests.system.action.base import BaseActionTestCase
+from tests.system.action.poll.test_vote import BaseVoteTestCase
 from tests.util import Response
 
 
-class UserMergeTogether(BaseActionTestCase):
+class UserMergeTogether(BaseVoteTestCase):
     """committee/63 is created but remains unused in all of the tests as 60 is used for meeting/1 and 4"""
 
     def setUp(self) -> None:
@@ -836,6 +836,9 @@ class UserMergeTogether(BaseActionTestCase):
 
     def set_up_polls_for_merge(self) -> None:
         self.create_assignment(1, 1)
+        self.create_motion(4, 4)
+        self.create_topic(7, 7)
+        self.create_assignment(1, 1)
         self.create_motion(4, 1)
         self.create_topic(7, 7)
         self.set_models(
@@ -846,10 +849,11 @@ class UserMergeTogether(BaseActionTestCase):
                 "meeting/10": {"present_user_ids": [5]},
                 "meeting_user/15": {"vote_delegated_to_id": 14},
                 "motion_state/4": {"allow_create_poll": True},
+                "motion_state/4": {"allow_create_poll": True},
                 "motion_submitter/1": {
                     "id": 1,
                     "weight": 1,
-                    "motion_id": 1,
+                    "motion_id": 4,
                     "meeting_id": 4,
                     "meeting_user_id": 43,
                 },
@@ -1090,6 +1094,14 @@ class UserMergeTogether(BaseActionTestCase):
             },
         )
 
+        for id_ in range(3, 5):
+            self.assert_model_not_exists(f"user/{id_}")
+        for id_ in [43, 73, 14, 44, 74, *range(106, 106 + add_to_creatable_ids)]:
+            self.assert_model_not_exists(f"meeting_user/{id_}")
+        for meeting_id, id_ in {1: 12, 7: 106 + add_to_creatable_ids}.items():
+            self.assert_model_exists(
+                f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
+            )
         self.assert_model_exists(
             "meeting_user/42",
             {
@@ -1114,10 +1126,10 @@ class UserMergeTogether(BaseActionTestCase):
                 "represented_ballot_ids": None,
             },
         )
-        self.assert_model_not_exists("motion_submitter/1")
+        self.assert_model_not_exists("motion_submitter/2")
         self.assert_model_exists(
-            "motion_submitter/2",
-            {"motion_id": 1, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
+            "motion_submitter/1",
+            {"motion_id": 4, "meeting_user_id": 42, "meeting_id": 4, "weight": 1},
         )
         for id_ in [1, 3]:
             self.assert_model_exists(
