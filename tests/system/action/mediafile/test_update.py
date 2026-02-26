@@ -838,6 +838,29 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("mediafile/7", {"token": "token_1"})
 
+    def test_update_token_not_unique(self) -> None:
+        self.set_models(
+            {
+                "mediafile/11": {
+                    "title": "first_logo",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "mimetype": "image/png",
+                    "filename": "first_logo.png",
+                    "token": "web_logo",
+                },
+                "mediafile/12": {
+                    "title": "new_logo",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "mimetype": "image/png",
+                    "filename": "new_logo.png",
+                    "token": "new_logo",
+                },
+            }
+        )
+        response = self.request("mediafile.update", {"id": 12, "token": "web_logo"})
+        self.assert_status_code(response, 400)
+        self.assertEqual("Token 'web_logo' is not unique.", response.json["message"])
+
     def test_update_title_parent_id_unique(self) -> None:
         self.create_mediafile(6, 1, is_directory=True)
         self.create_mediafile(7, 1, parent_id=6)

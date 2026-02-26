@@ -54,18 +54,36 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assertIn("Model 'committee/2' does not exist.", response.json["message"])
         self.assert_model_exists(self.COMMITTEE_FQID)
 
-    def test_delete_protected_by_meeting(self) -> None:
+    def base_test_delete_protected_by_meetings(
+        self, related_meetings: list[int], expected_error: str
+    ) -> None:
         self.create_data()
-        self.create_meeting(22, meeting_data={"committee_id": self.COMMITTEE_ID})
+        for id_ in related_meetings:
+            self.create_meeting(id_, meeting_data={"committee_id": self.COMMITTEE_ID})
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
 
         self.assert_status_code(response, 400)
-        assert (
-            "This committee has still a meeting 22. Please remove all meetings before deletion."
-            in response.json["message"]
+        self.assertEqual(expected_error, response.json["message"])
+        self.assert_model_exists(self.COMMITTEE_FQID, {"meeting_ids": related_meetings})
+
+    def test_delete_protected_by_meeting(self) -> None:
+        self.base_test_delete_protected_by_meetings(
+            [22],
+            "This committee has still a meeting 22. Please remove all meetings before deletion.",
         )
-        self.assert_model_exists(self.COMMITTEE_FQID, {"meeting_ids": [22]})
+
+    def test_delete_protected_by_meetings(self) -> None:
+        self.base_test_delete_protected_by_meetings(
+            [22, 33],
+            "This committee has still meetings 22, 33. Please remove all meetings before deletion.",
+        )
+
+    def test_delete_protected_by_meetings_more_than_3(self) -> None:
+        self.base_test_delete_protected_by_meetings(
+            [22, 33, 44, 55],
+            "This committee has still meetings 22, 33, 44, ... Please remove all meetings before deletion.",
+        )
 
     def test_delete_no_permission(self) -> None:
         self.create_data()
