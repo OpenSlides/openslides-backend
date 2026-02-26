@@ -4,15 +4,17 @@ from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import (
     AssignmentCandidate,
+    Ballot,
     MeetingUser,
     MotionEditor,
     MotionSubmitter,
     MotionSupporter,
     MotionWorkingGroupSpeaker,
     PersonalNote,
+    Poll,
+    PollConfigOption,
     Speaker,
 )
-from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, fqid_from_collection_and_id
@@ -113,6 +115,7 @@ motion_meeting_user_list_item_groups: MergeModeDict = {
 
 
 class MotionSubmitterMergeMixin(BaseMergeMixin):
+    # ???
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
@@ -194,6 +197,36 @@ class PersonalNoteMergeMixin(BaseMergeMixin):
         )
 
 
+class PollMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            Poll,
+            {},
+            "meeting_user_id",
+        )
+
+
+class PollConfigOptionMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            PollConfigOption,
+            {},
+            "meeting_user_id",
+        )
+
+
+class BallotMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            Ballot,
+            {},
+            "meeting_user_id",
+        )
+
+
 class MeetingUserMergeMixin(
     PersonalNoteMergeMixin,
     MotionWorkingGroupSpeakerMergeMixin,
@@ -201,6 +234,9 @@ class MeetingUserMergeMixin(
     MotionSubmitterMergeMixin,
     MotionSupporterMergeMixin,
     AssignmentCandidateMergeMixin,
+    PollMergeMixin,
+    PollConfigOptionMergeMixin,
+    BallotMergeMixin,
     SpeakerMergeMixin,
 ):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -225,6 +261,10 @@ class MeetingUserMergeMixin(
                     "chat_message_ids",
                     "group_ids",
                     "structure_level_ids",
+                    "poll_voted_ids",
+                    "poll_option_ids",
+                    "acting_ballot_ids",
+                    "represented_ballot_ids",
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
@@ -275,23 +315,8 @@ class MeetingUserMergeMixin(
             case _:
                 return super().get_merge_comparison_hash(collection, model)
 
-    def check_polls_helper(self, meeting_user_ids: list[int]) -> list[str]:
+    def check_polls_helper(self, meeting_users: dict[str, dict[str, Any]]) -> list[str]:
         messages: list[str] = []
-        meeting_users = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "meeting_user",
-                    meeting_user_ids,
-                    [
-                        "vote_delegations_from_ids",
-                        "vote_delegated_to_id",
-                        "meeting_id",
-                        "group_ids",
-                    ],
-                )
-            ]
-        ).get("meeting_user", {})
-
         group_ids: set[int] = set()
         meeting_ids: set[int] = set()
         meeting_id_by_group_ids: dict[int, int] = {}
@@ -306,7 +331,7 @@ class MeetingUserMergeMixin(
             polls = self.datastore.filter(
                 "poll",
                 And(
-                    FilterOperator("state", "=", "started"),
+                    FilterOperator("state", "=", Poll.STATE_STARTED),
                     Or(
                         FilterOperator("meeting_id", "=", meeting_id)
                         for meeting_id in meeting_ids
@@ -359,7 +384,7 @@ class MeetingUserMergeMixin(
         if len(
             bad_users := [
                 id_
-                for id_ in meeting_user_ids
+                for id_ in list(meeting_users.keys())
                 if id_ in {*delegator_meeting_user_ids, *proxy_meeting_user_ids}
             ]
         ):

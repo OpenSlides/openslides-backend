@@ -5,6 +5,11 @@
     id: Id;
 
 // Optional
+    poll_option_ids: Id[];
+    poll_voted_ids: Id[];
+    acting_ballot_ids: Id[];
+    represented_ballot_ids: Id[];
+
 // Group A
     number: string;
     structure_level_ids: Id[];

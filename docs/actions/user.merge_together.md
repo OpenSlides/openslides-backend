@@ -42,11 +42,10 @@ An error is thrown if:
 - Any of the secondary users have a `saml_id`
 - There are multiple different `member_number`s between the selected users (empty does not count)
 - There are conflicts regarding polls, i.e. two or more of the selected users...
-    - are option content_objects (not counting poll_candidate_list membership) on the same poll
-    - are candidates on the same poll_candidate_list
-    - have voted on the same poll (delegated or not)
     - Any affected meeting_users have groups that are currently entitled to work on any poll
 - Any affected meeting_users _who share a meeting_:
+    - are meeting_users of the poll_config_option on the same poll
+    - have voted on the same poll (delegated or not)
     - have running speakers
     - are in a meeting without `list_of_speakers_allow_multiple_speakers` and have waiting speakers on the same list who cannot be merged together into at most one point_of_order and one normal speech. Speeches may not be merged if there are multiple different values (empty does count) within any of the fields:
         - `speech_state`
@@ -70,8 +69,6 @@ Any date in the custom payload data from the request overwrites anything that wo
 Data validity of the results is checked according to user.update rules.
 
 The secondary users are deleted.
-
-Any poll that contains the id of any secondary user in its `entitled_users_at_stop` list will have it re-written to _additionally_ contain the new user id.
 This means that a line
 `{"voted": false, "present": true, "user_id": 4, "vote_delegated_to_user_id": 7}`
 becomes
@@ -80,7 +77,7 @@ after two merges where for the first `user/4` was merged into `user/2` and for t
 This is to ensure that the client can recognize where users were merged, as simply replacing the ids may cause situations where a user is present on a list twice and not replacing them would mean that the user that voted would not be recognizable anymore.
 
 #### Merging of sub-collections
-Relation lists where simple unification does not suffice (usually because the target collections function mostly as a type of m:n connection between two other collections) are merged. 
+Relation lists where simple unification does not suffice (usually because the target collections function mostly as a type of m:n connection between two other collections) are merged.
 
 For that purpose, target models for these relations are compared and those that are judged to fulfill equivalent roles are grouped together.
 
@@ -141,7 +138,7 @@ He also needs a organization management level that is equal or higher than that 
 
 The client could/should fill the optional fields from a chosen "main" user to not force the editor to rewrite all the data.
 
-Warnings should be shown alerting the user that 
+Warnings should be shown alerting the user that
 - this action is not reversable,
 - will potentially change/overwrite data in archived meetings and
 - will neither port the history information of the secondary users to the new ones nor rewrite the user id in the "Changed by" column
