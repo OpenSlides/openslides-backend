@@ -1,11 +1,13 @@
 import os
 import string
+from argparse import Namespace
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
 from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
 from meta.dev.src.helper_get_names import (
+    DEFAULT_COLLECTION_META,
     FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
@@ -19,8 +21,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -61,14 +61,12 @@ MODEL_MIXINS: dict[str, type] = {
     "poll": PollModelMixin,
 }
 
-FILE_TEMPLATE = dedent(
-    """\
+FILE_TEMPLATE = dedent("""\
     # Code generated. DO NOT EDIT.
 
     from . import fields
     from .base import Model
-    """
-)
+    """)
 
 
 def main() -> None:
@@ -92,9 +90,9 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    args = parse_arguments(SOURCE)
+    args: Namespace = parse_arguments(DEFAULT_COLLECTION_META)
 
-    InternalHelper.read_models_yml(SOURCE)
+    InternalHelper.read_models_yml()
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -117,20 +115,6 @@ def main() -> None:
             print(f"Models file {DESTINATION} successfully created.")
 
 
-def get_model_field(collection: str, field_name: str) -> str | dict:
-    """
-    Helper function the get a specific model field. Used to create generic relations.
-    """
-
-    model = InternalHelper.MODELS.get(collection)
-    if model is None:
-        raise ValueError(f"Collection {collection} does not exist.")
-    value = model.get(field_name)
-    if value is None:
-        raise ValueError(f"Field {field_name} does not exist.")
-    return value
-
-
 class Node:
     """
     We walk down the YML tree and parse the elements in this order (if appropriate):
@@ -145,15 +129,11 @@ class Model(Node):
     collection: str
     attributes: dict[str, "Attribute"]
 
-    MODEL_TEMPLATE = string.Template(
-        dedent(
-            """
+    MODEL_TEMPLATE = string.Template(dedent("""
             class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-            """
-        )
-    )
+            """))
 
     def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection

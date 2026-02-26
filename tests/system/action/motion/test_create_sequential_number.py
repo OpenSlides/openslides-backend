@@ -99,6 +99,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 1, "sequential_number": 1}
         self.assert_model_exists("motion/1", {"sequential_number": 1})
 
         response = self.request("motion.delete", {"id": 1})
@@ -116,6 +117,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/2", {"sequential_number": 2})
+        assert response.json["results"][0][0] == {"id": 2, "sequential_number": 2}
 
     @pytest.mark.skip(
         "Seems to run into an infinite loop, probably since the database is broken. TODO: unskip once this is fixed"

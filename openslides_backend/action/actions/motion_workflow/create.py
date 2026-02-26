@@ -4,8 +4,8 @@ from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ...action import Action
-from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,7 +16,7 @@ MOTION_STATE_DEFAULT_NAME = "default"
 
 
 @register_action("motion_workflow.create")
-class MotionWorkflowCreateAction(CreateActionWithDependencies):
+class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDependencies):
     """
     Action to create a motion workflow.
     """
@@ -43,7 +43,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
 @register_action(
     "motion_workflow.create_simple_workflow", action_type=ActionType.BACKEND_INTERNAL
 )
-class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
+class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin):
     """
     Action to create a simple motion workflow.
     """
@@ -113,7 +113,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
 @register_action(
     "motion_workflow.create_complex_workflow", action_type=ActionType.BACKEND_INTERNAL
 )
-class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
+class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin):
     """
     Action to create a complex motion workflow.
     """

@@ -5,7 +5,7 @@ from ....models.models import MotionState, MotionWorkflow
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.schema import str_list_schema
-from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..motion_state.create import MotionStateCreateAction
@@ -13,7 +13,7 @@ from ..motion_state.update import MotionStateUpdateAction
 
 
 @register_action("motion_workflow.import")
-class MotionWorkflowImport(CreateAction):
+class MotionWorkflowImport(SequentialNumbersMixin):
     """
     Action to import a motion workflow.
     """

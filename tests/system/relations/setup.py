@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, _patch, patch
+from unittest.mock import MagicMock
 
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
@@ -139,20 +139,6 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
             to: {collection_c}/meeting_id
             reference: {collection_c}
     """
-    patcher: _patch
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.patcher = patch(
-            "meta.dev.src.helper_get_names.HelperGetNames.trigger_unique_list", []
-        )
-        cls.patcher.start()
-        super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        cls.patcher.stop()
 
     def setUp(self) -> None:
         super().setUp()
