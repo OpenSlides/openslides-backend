@@ -61,6 +61,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )["meeting_user"]
 
         self.datastore.get_many(
@@ -72,4 +73,5 @@ class VoteCreate(CreateActionWithInferredMeeting):
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )
