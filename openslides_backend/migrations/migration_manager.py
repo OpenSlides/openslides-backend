@@ -71,9 +71,14 @@ class MigrationManager:
         if MigrationHelper.migrate_thread_stream and (
             output := MigrationHelper.migrate_thread_stream.getvalue()
         ):
+            # TODO: removed commented out lines after review
+            # MigrationHelper.write_line is hardly usable when only the last
+            # line is output.
+
             # The last line (index -1) will always be an empty string.
-            last_line = output.split("\n")[-2]
-            result["output"] = f"{last_line}\n"
+            #last_line = output.split("\n")[-2]
+            #result["output"] = f"{last_line}\n"
+            result["output"] = output
         if state in (
             MigrationState.MIGRATION_FAILED,
             MigrationState.FINALIZATION_FAILED,

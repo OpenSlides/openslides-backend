@@ -1,8 +1,12 @@
-from datetime import datetime
+import time as _time
+from datetime import tzinfo,datetime,timedelta
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
+import os
+import re
+
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -25,12 +29,14 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
+from openslides_backend.shared.env import is_truthy
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.typing import Collection
 
+PAT_OFFSET = r'^[\+-]?\d\d:\d\d$'
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
 ORIGIN_COLLECTIONS = [
@@ -163,7 +169,7 @@ class Sql_helper:
             else:
                 data = Decimal(data)
         elif isinstance(field, TimestampField):
-            data = datetime.fromtimestamp(data)
+            data = datetime.fromtimestamp(data,tz=OSTime())
         elif isinstance(field, JSONField):
             data = json_dumps(data)
 
@@ -231,49 +237,75 @@ class Sql_helper:
 
     # END OF FUNCTION
 
-    @staticmethod
-    def get_select_collection_command(
-        collection: Collection, mapped_fields: list[str]
-    ) -> str:
-        """
-        Purpose:
-            Generates SQL to get all of the collections models from the models->>data column.
-        Input:
-            - collection: collection that will be retrieved.
-            - mapped_fields: the fields/columns that are to be retrieved.
-        Returns:
-            - sql string that can be executed.
-        """
-        mf_string = ",".join(mapped_fields)
-        return f"""
-            SELECT {mf_string} FROM models
-            WHERE fqid LIKE '{fqid_from_collection_and_id(collection, '%')}';
-            """
-
-    # END OF FUNCTION
-
-    @staticmethod
-    def get_update_models_command(
-        models: list[dict[str, Any]],
-    ) -> tuple[str, list[tuple[Jsonb, FullQualifiedId],]]:
-        """
-        Purpose:
-            Generates SQL to be executed with executemany for updating models by overwriting their models->>data column.
-        Input:
-            - models: list of all elements that need to be updated. Its dicts must contain 'fqid' and 'data'.
-        Returns:
-            - SQL string that can be executed.
-            - Argument list to be directly passed with SQL. Holding a tuple for each model with Jsonb and the fqid.
-        """
-        return (
-            """UPDATE models SET data=%s WHERE fqid=%s""",
-            [(Jsonb(elem["data"]), elem["fqid"]) for elem in models],
-        )
-
-    # END OF FUNCTION
-
 
 # END HELPER CLASS
+
+
+class OSTime(tzinfo):
+
+    def utcoffset(self, dt):
+        return get_utc_offset() + self.dst(dt)
+
+    def dst(self, dt):
+        dst_hours = 0
+        if get_use_dst() and is_dst(dt):
+            dst_hours = 1
+
+        return timedelta(hours=dst_hours)
+
+    def tzname(self, dt):
+        return None
+
+
+def get_utc_offset():
+    hours, minutes = os.environ['MIG0100_UTC_OFFSET'].split(':')
+    return timedelta(hours=int(hours), minutes=int(minutes))
+
+
+def get_use_dst():
+    return is_truthy(os.environ['MIG0100_USE_DST'])
+
+
+def is_dst(dt):
+    # Taken from tzinfo_examples.py listed in
+    #   https://docs.python.org/3/library/datetime.html#datetime.tzinfo
+    tt = (dt.year, dt.month, dt.day,
+          dt.hour, dt.minute, dt.second,
+          dt.weekday(), 0, 0)
+    stamp = _time.mktime(tt)
+    tt = _time.localtime(stamp)
+    return tt.tm_isdst > 0
+
+
+def check_prerequisites(curs: Cursor[DictRow]) -> bool:
+    # TODO: Include actual LINK
+    MigrationHelper.write_line("This is migration 100, part of the OpenSlides 4.3.0 release.")
+    MigrationHelper.write_line("This migration will fundamentally restructure all data.")
+    MigrationHelper.write_line("See LINK for more information.")
+    MigrationHelper.write_line("")
+
+    try:
+        i_read_docs = os.environ['MIG0100_I_READ_DOCS']
+        utc_offset = os.environ['MIG0100_UTC_OFFSET']
+        _ = os.environ['MIG0100_USE_DST']
+    except KeyError as e:
+        MigrationHelper.write_line("Required env vars not set - aborting.")
+        return False
+
+    if not is_truthy(i_read_docs):
+        MigrationHelper.write_line(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
+        MigrationHelper.write_line(f"'{i_read_docs}' is really no acceptable value for MIG0100_I_READ_DOCS")
+        return False
+    if not re.match(PAT_OFFSET, utc_offset):
+        MigrationHelper.write_line(f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET")
+        return False
+
+    MigrationHelper.write_line( "For timestamp conversion ...")
+    MigrationHelper.write_line(f"- using UTC offset: {utc_offset}")
+    MigrationHelper.write_line(f"- using platform provided DST: {get_use_dst()}")
+    MigrationHelper.write_line( "")
+
+    return True
 
 
 def data_manipulation(curs: Cursor[DictRow]) -> None:
@@ -378,6 +410,16 @@ def cleanup(curs: Cursor[DictRow]) -> None:
     Input:
         cursor
     """
+
+    try:
+        i_read_code = os.environ['MIG0100_I_READ_CODE']
+    except KeyError:
+        i_read_code = None
+    if i_read_code is not None:
+        if is_truthy(i_read_code):
+            print('(┛◉Д◉)┛彡┻━┻')
+            MigrationHelper.write_line('(┛◉Д◉)┛彡┻━┻')
+
     for table_name in OLD_TABLES:
         curs.execute(f"DROP TABLE {table_name} CASCADE;")
 
