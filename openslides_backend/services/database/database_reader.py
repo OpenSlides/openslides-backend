@@ -1,7 +1,12 @@
 from typing import Any
 
 from psycopg import Connection, rows, sql
-from psycopg.errors import UndefinedColumn, UndefinedFunction, UndefinedTable
+from psycopg.errors import (
+    SerializationFailure,
+    UndefinedColumn,
+    UndefinedFunction,
+    UndefinedTable,
+)
 
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
@@ -245,6 +250,8 @@ class DatabaseReader(SqlQueryHelper):
             )
         except UndefinedFunction as e:
             raise InvalidFormat(e.diag.message_primary or "")
+        except SerializationFailure as e:
+            raise e
         except Exception as e:
             raise DatabaseException(f"Unexpected error reading from database: {e}")
 
