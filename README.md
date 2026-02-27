@@ -116,6 +116,10 @@ The action component listens to port 9002. The presenter component listens to po
 
   If `OPENSLIDES_BACKEND_CREATE_INITIAL_DATA` is true, use the password in the given file as the password for the user with id `1`. Only applicable in productive mode. Default: `/run/secrets/superadmin`
 
+* `OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET`
+
+  If `OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET` is true, the backend will generate a gunicorn control interface server for both actions (`openslides-action.ctl`) and presenters (`openslides-presenter.ctl`). This will make it possible to observe how many web workers there are and some other actions by calling `gunicornc -s <control interface name>`, `make open-gunicornc-action`, or `make open-gunicornc-presenter` in the backend container, see [the gunicorn guides](https://gunicorn.org/guides/gunicornc/) for usage information.
+
 ### Development
 
 * `OPENSLIDES_DEVELOPMENT`

@@ -75,6 +75,16 @@ check-initial-data-json:
 check-example-data-json:
 	python cli/check_json.py data/example-data.json
 
+# The commands below can be called in the container to open the gunicorn control socket interfaces
+# for the action and presenter services respectively.
+# Environment setting OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET needs to be true for this to be possible.
+
+open-gunicornc-action:
+	gunicornc -s "openslides-action.ctl"
+
+open-gunicornc-presenter:
+	gunicornc -s "openslides-presenter.ctl"
+
 
 
 ########################## Deprecation List ##########################

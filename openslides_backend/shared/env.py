@@ -39,6 +39,7 @@ class Environment(Env):
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT": "1",
         "OPENSLIDES_BACKEND_CREATE_INITIAL_DATA": "false",
+        "OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET": "false",
         "SUPERADMIN_PASSWORD_FILE": "/run/secrets/superadmin",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
