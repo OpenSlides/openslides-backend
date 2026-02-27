@@ -79,10 +79,10 @@ check-example-data-json:
 # for the action and presenter services respectively.
 # Environment setting OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET needs to be true for this to be possible.
 
-open-action-view-control:
+open-gunicornc-action:
 	gunicornc -s "openslides-action.ctl"
 
-open-presenter-view-control:
+open-gunicornc-presenter:
 	gunicornc -s "openslides-presenter.ctl"
 
 
