@@ -7,12 +7,12 @@ from typing import Any, Optional
 
 from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
 from meta.dev.src.helper_get_names import (
+    DEFAULT_COLLECTION_META,
     FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
     TableFieldType,
 )
-from meta.dev.src.validate import DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
@@ -61,14 +61,12 @@ MODEL_MIXINS: dict[str, type] = {
     "poll": PollModelMixin,
 }
 
-FILE_TEMPLATE = dedent(
-    """\
+FILE_TEMPLATE = dedent("""\
     # Code generated. DO NOT EDIT.
 
     from . import fields
     from .base import Model
-    """
-)
+    """)
 
 
 def main() -> None:
@@ -94,7 +92,7 @@ def main() -> None:
     """
     args: Namespace = parse_arguments(DEFAULT_COLLECTION_META)
 
-    InternalHelper.read_models_yml(DEFAULT_COLLECTION_META, DEFAULT_COLLECTIONS_DIR)
+    InternalHelper.read_models_yml()
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -131,15 +129,11 @@ class Model(Node):
     collection: str
     attributes: dict[str, "Attribute"]
 
-    MODEL_TEMPLATE = string.Template(
-        dedent(
-            """
+    MODEL_TEMPLATE = string.Template(dedent("""
             class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-            """
-        )
-    )
+            """))
 
     def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection

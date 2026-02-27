@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from ....models.models import Motion
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
 from ..agenda_item.create import AgendaItemCreate
 from ..list_of_speakers.create import ListOfSpeakersCreate
@@ -22,6 +23,7 @@ class MotionCreateBase(
     MeetingUserHelperMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
+    SequentialNumbersMixin,
     SetNumberMixin,
     CreateActionWithListOfSpeakersMixin,
 ):

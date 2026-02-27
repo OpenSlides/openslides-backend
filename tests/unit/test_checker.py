@@ -650,6 +650,13 @@ class TestCheckerCheckData(TestCase):
             for id_ in motion_ids
         }
 
+    def test_amendment_paragraphs_correct_attributes(self) -> None:
+        self.set_motion_data([1])
+        self.meeting_data["motion"]["1"]["amendment_paragraphs"] = {
+            "1": '<a href="http://www.openslides.org" id="linkOpenslides" data-link-is-internal="false">test</a>',
+        }
+        self.check_data(data=self.meeting_data)
+
     def test_amendment_paragraphs_error(self) -> None:
         self.set_motion_data([1])
         self.meeting_data["motion"]["1"]["amendment_paragraphs"] = {

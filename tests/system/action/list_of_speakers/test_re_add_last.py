@@ -59,7 +59,6 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 44,
                 },
-                "group/1": {"meeting_user_ids": [42, 43, 44]},
             }
         )
 

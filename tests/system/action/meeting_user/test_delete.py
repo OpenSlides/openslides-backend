@@ -8,14 +8,9 @@ class MeetingUserDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(10)
-        self.set_models(
-            {
-                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "group/10": {"meeting_user_ids": [5]},
-            }
-        )
 
     def test_delete(self) -> None:
+        self.set_models({"meeting_user/5": {"user_id": 1, "meeting_id": 10}})
         response = self.request("meeting_user.delete", {"id": 5})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting_user/5")
@@ -27,6 +22,7 @@ class MeetingUserDelete(BaseActionTestCase):
             {
                 "meeting/10": {"present_user_ids": [1]},
                 "meeting/101": {"present_user_ids": [1]},
+                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "topic/11": {
                     "title": "tipic",
                     "meeting_id": 10,
@@ -70,6 +66,10 @@ class MeetingUserDelete(BaseActionTestCase):
         self.create_motion(10, 11)
         self.set_models(
             {
+                "meeting_user/5": {
+                    "user_id": 1,
+                    "meeting_id": 10,
+                },
                 "motion_editor/1": {
                     "meeting_user_id": 5,
                     "motion_id": 11,
@@ -107,6 +107,7 @@ class MeetingUserDelete(BaseActionTestCase):
     def test_delete_with_chat_message(self) -> None:
         self.set_models(
             {
+                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "chat_group/1": {"name": "cg1", "meeting_id": 10},
                 "chat_message/1": {
                     "content": "message",
