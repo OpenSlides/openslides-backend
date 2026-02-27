@@ -1,8 +1,6 @@
 import threading
 from typing import Any
 
-import pytest
-
 from tests.system.action.base import BaseActionTestCase
 
 CategoryStructure = list[tuple[int, "CategoryStructure"]]
@@ -51,9 +49,6 @@ class TestTreeSortMixin(BaseActionTestCase):
             )
         )
 
-    @pytest.mark.skip(
-        "TODO: unskip later. Currently runs into 'Unexpected error reading from database: could not serialize access due to concurrent update' error."
-    )
     def test_sort_and_delete_at_once(self) -> None:
         self.set_mass_test_data()
         sort_thread = threading.Thread(target=self.thread_sort_method)
@@ -67,9 +62,6 @@ class TestTreeSortMixin(BaseActionTestCase):
         self.assert_sort_thread_results()
         self.assert_delete_thread_results(5)
 
-    @pytest.mark.skip(
-        "TODO: unskip later. Currently runs into 'Unexpected error reading from database: could not serialize access due to concurrent update' error during a database request with raise_exception=False, which then crashes the transaction (SingleRelationHandler ln. 134)."
-    )
     def test_sort_and_create_at_once(self) -> None:
         self.set_mass_test_data()
         sort_thread = threading.Thread(target=self.thread_sort_method)
@@ -83,9 +75,6 @@ class TestTreeSortMixin(BaseActionTestCase):
         self.assert_sort_thread_results()
         self.assert_create_thread_results("TIM", 42)
 
-    @pytest.mark.skip(
-        "TODO: unskip later. Currently runs into 'Unexpected error reading from database: could not serialize access due to concurrent update' error."
-    )
     def test_sort_and_delete_at_once_reverse(self) -> None:
         self.set_mass_test_data()
         delete_thread = threading.Thread(
@@ -99,9 +88,6 @@ class TestTreeSortMixin(BaseActionTestCase):
         self.assert_delete_thread_results(5)
         self.assert_sort_thread_results()
 
-    @pytest.mark.skip(
-        "TODO: unskip later. Currently runs into 'Unexpected error reading from database: could not serialize access due to concurrent update' error during a database request with raise_exception=False, which then crashes the transaction (SingleRelationHandler ln. 134)."
-    )
     def test_sort_and_create_at_once_reverse(self) -> None:
         self.set_mass_test_data()
         create_thread = threading.Thread(
@@ -176,11 +162,20 @@ class TestTreeSortMixin(BaseActionTestCase):
         else:
             assert self.create_response.json == {
                 "message": "Actions handled successfully",
-                "results": [[{"id": 101}]],
+                "results": [[{"id": 102, "sequential_number": 101}]],
                 "status_code": 200,
                 "success": True,
             }
+            self.assert_model_exists("motion_category/100")
+            self.assert_model_not_exists(
+                "motion_category/101"
+            )  # skipped because of retry
             self.assert_model_exists(
-                "motion_category/101",
-                {"meeting_id": 1, "name": name, "parent_id": parent_id},
+                "motion_category/102",
+                {
+                    "meeting_id": 1,
+                    "name": name,
+                    "parent_id": parent_id,
+                    "sequential_number": 101,
+                },
             )
