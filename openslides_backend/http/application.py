@@ -130,7 +130,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                         "SELECT EXISTS(SELECT 1 FROM user_t WHERE keycloak_id IS NULL AND saml_id IS NULL)"
                     )
                     row = curs.fetchone()
-                    if row and not row[0]:
+                    if row and not row["exists"]:
                         self.logger.info(
                             "All users already synced to Keycloak, skipping"
                         )

@@ -98,6 +98,7 @@ def create_test_user(
         # Get the next user ID
         curs.execute("SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM user_t")
         result = curs.fetchone()
+        assert result is not None
         user_id = result["next_id"]
 
         # Insert user
@@ -128,7 +129,7 @@ def delete_test_user(conn: Connection[DictRow], user_id: int) -> None:
         conn.commit()
 
 
-def get_user(conn: Connection[DictRow], user_id: int) -> dict[str, Any]:
+def get_user(conn: Connection[DictRow], user_id: int) -> dict[str, Any] | None:
     """Get a user from the database."""
     with conn.cursor() as curs:
         curs.execute(
@@ -344,6 +345,7 @@ class TestMigrationWithKeycloakConfig:
         with db_connection.cursor() as curs:
             curs.execute("SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM user_t")
             result = curs.fetchone()
+            assert result is not None
             user_id = result["next_id"]
 
             curs.execute(
@@ -391,6 +393,7 @@ class TestMigrationWithKeycloakConfig:
         with db_connection.cursor() as curs:
             curs.execute("SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM user_t")
             result = curs.fetchone()
+            assert result is not None
             user_id = result["next_id"]
 
             curs.execute(
