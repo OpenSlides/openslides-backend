@@ -1,4 +1,3 @@
-from typing import Optional
 from urllib import parse
 
 from osauthlib import (
@@ -30,7 +29,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         self._oidc_configured = False
 
     def configure_oidc(
-        self, oidc_enabled: bool, provider_url: Optional[str], client_id: Optional[str]
+        self, oidc_enabled: bool, provider_url: str | None, client_id: str | None
     ) -> None:
         """
         Configure OIDC authentication from organization settings.
@@ -44,9 +43,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
             self.logger.debug(
                 f"Configuring OIDC authentication: issuer={provider_url}, audience={client_id}"
             )
-            self.auth_handler.configure_oidc(
-                issuer=provider_url, audience=client_id
-            )
+            self.auth_handler.configure_oidc(issuer=provider_url, audience=client_id)
             self._oidc_configured = True
         else:
             self._oidc_configured = False
@@ -105,7 +102,9 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         self.logger.debug(f"SSO login for user_id: {user_id}")
         try:
             access_token, refresh_cookie = self.auth_handler.sso_login(user_id)
-            self.logger.debug(f"SSO login successful: access_token={access_token[:30]}..., refresh_cookie={refresh_cookie[:30] if refresh_cookie else 'None'}...")
+            self.logger.debug(
+                f"SSO login successful: access_token={access_token[:30]}..., refresh_cookie={refresh_cookie[:30] if refresh_cookie else 'None'}..."
+            )
             return access_token, refresh_cookie
         except AuthenticateException as e:
             raise AuthenticationException(e.message)

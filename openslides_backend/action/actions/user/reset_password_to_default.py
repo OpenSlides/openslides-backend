@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -18,7 +18,7 @@ from .password_mixins import ClearSessionsMixin
 class UserResetPasswordToDefaultMixin(
     UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
 ):
-    def _get_keycloak_client(self) -> Optional[KeycloakAdminClient]:
+    def _get_keycloak_client(self) -> KeycloakAdminClient | None:
         """
         Create a Keycloak Admin API client using client credentials.
         """

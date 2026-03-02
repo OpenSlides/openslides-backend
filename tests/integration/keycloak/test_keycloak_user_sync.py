@@ -253,7 +253,9 @@ class TestKeycloakCreateSyncMixin:
         )
 
         action = MockAction()
-        action.services.authentication().access_token = keycloak_helper._get_admin_token()
+        action.services.authentication().access_token = (
+            keycloak_helper._get_admin_token()
+        )
 
         instance: dict[str, Any] = {
             "username": test_username,
@@ -368,7 +370,7 @@ class TestKeycloakPasswordSyncMixin:
             action.services.authentication().access_token = (
                 keycloak_helper._get_admin_token()
             )
-            action.datastore.get.return_value = {"keycloak_id": keycloak_id}
+            action.datastore.get.return_value = {"keycloak_id": keycloak_id}  # type: ignore[attr-defined]
 
             new_password = "new_secure_password_456"
 
@@ -408,7 +410,7 @@ class TestKeycloakPasswordSyncMixin:
         )
 
         action = MockAction()
-        action.datastore.get.return_value = {}  # No keycloak_id
+        action.datastore.get.return_value = {}  # type: ignore[attr-defined]  # No keycloak_id
 
         with patch(
             "openslides_backend.shared.oidc_config.get_oidc_config",
@@ -454,8 +456,10 @@ class TestKeycloakDeleteSyncMixin:
         )
 
         action = MockAction()
-        action.services.authentication().access_token = keycloak_helper._get_admin_token()
-        action.datastore.get.return_value = {"keycloak_id": keycloak_id}
+        action.services.authentication().access_token = (
+            keycloak_helper._get_admin_token()
+        )
+        action.datastore.get.return_value = {"keycloak_id": keycloak_id}  # type: ignore[attr-defined]
 
         with patch(
             "openslides_backend.shared.oidc_config.get_oidc_config",
@@ -505,7 +509,7 @@ class TestKeycloakSyncMixin:
             action.services.authentication().access_token = (
                 keycloak_helper._get_admin_token()
             )
-            action.datastore.get.return_value = {"keycloak_id": keycloak_id}
+            action.datastore.get.return_value = {"keycloak_id": keycloak_id}  # type: ignore[attr-defined]
 
             with patch(
                 "openslides_backend.shared.oidc_config.get_oidc_config",
@@ -548,9 +552,10 @@ class TestErrorHandling:
             with pytest.raises(ActionException) as exc_info:
                 keycloak_client.create_user({"username": test_username})
 
-            assert "409" in str(exc_info.value) or "conflict" in str(
-                exc_info.value
-            ).lower()
+            assert (
+                "409" in str(exc_info.value)
+                or "conflict" in str(exc_info.value).lower()
+            )
         finally:
             keycloak_helper.delete_user_by_username(test_username)
 
@@ -630,7 +635,9 @@ class TestDisabledSync:
                 self.logger = MagicMock()
                 self.services = MagicMock()
 
-        mock_oidc_config = create_mock_oidc_config(enabled=True, admin_api_enabled=False)
+        mock_oidc_config = create_mock_oidc_config(
+            enabled=True, admin_api_enabled=False
+        )
 
         action = MockAction()
 
@@ -685,4 +692,3 @@ class TestDisabledSync:
         ):
             client = action._get_keycloak_client()
             assert client is None
-

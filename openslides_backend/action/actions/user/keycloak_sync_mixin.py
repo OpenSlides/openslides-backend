@@ -1,6 +1,9 @@
-from typing import Any, Optional
+from typing import Any
 
-from ....shared.keycloak_admin_client import KeycloakAdminClient, get_keycloak_admin_client
+from ....shared.keycloak_admin_client import (
+    KeycloakAdminClient,
+    get_keycloak_admin_client,
+)
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 
@@ -24,10 +27,10 @@ class KeycloakSyncMixin(Action):
     Keycloak update fails, the entire action fails.
     """
 
-    def _get_keycloak_client(self) -> Optional[KeycloakAdminClient]:
+    def _get_keycloak_client(self) -> KeycloakAdminClient | None:
         return get_keycloak_admin_client(self.logger)
 
-    def _get_keycloak_id(self, user_id: int) -> Optional[str]:
+    def _get_keycloak_id(self, user_id: int) -> str | None:
         """Get keycloak_id for a user."""
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id),
@@ -82,7 +85,7 @@ class KeycloakDeleteSyncMixin(Action):
     Keycloak deletion fails, the entire action fails.
     """
 
-    def _get_keycloak_client(self) -> Optional[KeycloakAdminClient]:
+    def _get_keycloak_client(self) -> KeycloakAdminClient | None:
         return get_keycloak_admin_client(self.logger)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -122,7 +125,7 @@ class KeycloakCreateSyncMixin(Action):
     the returned keycloak_id on the OpenSlides user.
     """
 
-    def _get_keycloak_client(self) -> Optional[KeycloakAdminClient]:
+    def _get_keycloak_client(self) -> KeycloakAdminClient | None:
         return get_keycloak_admin_client(self.logger)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -175,10 +178,10 @@ class KeycloakPasswordSyncMixin(Action):
     before hashing (stored in _keycloak_password attribute).
     """
 
-    def _get_keycloak_client(self) -> Optional[KeycloakAdminClient]:
+    def _get_keycloak_client(self) -> KeycloakAdminClient | None:
         return get_keycloak_admin_client(self.logger)
 
-    def _get_keycloak_id(self, user_id: int) -> Optional[str]:
+    def _get_keycloak_id(self, user_id: int) -> str | None:
         """Get keycloak_id for a user."""
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id),

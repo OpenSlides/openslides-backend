@@ -1,5 +1,4 @@
 import binascii
-import os
 from base64 import b64decode
 from pathlib import Path
 
@@ -130,7 +129,11 @@ class ActionView(BaseView):
         user_id, _ = self.get_user_id_from_headers(request.headers, request.cookies)
         if user_id and user_id > 0:
             self.logger.debug(f"User authenticated: user_id={user_id}")
-            return {"success": True, "message": "Action handled successfully", "user_id": user_id}, None
+            return {
+                "success": True,
+                "message": "Action handled successfully",
+                "user_id": user_id,
+            }, None
 
         self.logger.debug("No valid session found, returning anonymous.")
         return {"success": True, "message": "anonymous"}, None
@@ -174,6 +177,7 @@ class ActionView(BaseView):
 
         # 2. Publish to Redis logout stream (for Go services)
         from .base_view import _get_redis
+
         r = _get_redis()
         r.xadd("logout", {"sessionId": session_id})
 

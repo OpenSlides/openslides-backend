@@ -49,7 +49,9 @@ class OidcTokenValidator:
     def jwks_client(self) -> PyJWKClient:
         """Lazy-load JWKS client."""
         if self._jwks_client is None:
-            self._jwks_client = PyJWKClient(self.jwks_uri, cache_keys=True, lifespan=300)
+            self._jwks_client = PyJWKClient(
+                self.jwks_uri, cache_keys=True, lifespan=300
+            )
         return self._jwks_client
 
     def validate_token(self, token: str) -> dict[str, Any]:

@@ -169,8 +169,7 @@ class TestBackchannelLogoutEndpoint:
         r = _get_test_redis()
         entries = r.xrevrange("logout", count=10)
         found = any(
-            entry[1].get(b"sessionId") == session_id.encode()
-            for entry in entries
+            entry[1].get(b"sessionId") == session_id.encode() for entry in entries  # type: ignore[union-attr]
         )
         assert found
 
@@ -326,7 +325,7 @@ def redis_available() -> bool:
     try:
         host = os.environ.get("MESSAGE_BUS_HOST", "localhost")
         port = int(os.environ.get("MESSAGE_BUS_PORT", "6379"))
-        return redis_lib.Redis(host=host, port=port).ping()
+        return bool(redis_lib.Redis(host=host, port=port).ping())
     except Exception:
         return False
 
@@ -439,9 +438,7 @@ class TestBackchannelLogoutIntegration:
         assert is_session_invalidated(real_sid) is True
         assert is_session_invalidated(f"fake-sid-{uuid.uuid4()}") is False
 
-    def test_redis_logout_stream_publish_and_read(
-        self, redis_client: Any
-    ) -> None:
+    def test_redis_logout_stream_publish_and_read(self, redis_client: Any) -> None:
         """Publish a session ID to the Redis logout stream and read it back."""
         test_sid = f"test-sid-{uuid.uuid4()}"
 
@@ -449,8 +446,7 @@ class TestBackchannelLogoutIntegration:
 
         entries = redis_client.xrevrange("logout", count=10)
         found = any(
-            entry[1].get(b"sessionId") == test_sid.encode()
-            for entry in entries
+            entry[1].get(b"sessionId") == test_sid.encode() for entry in entries
         )
         assert found, f"Session ID {test_sid} not found in Redis logout stream"
 
@@ -482,8 +478,7 @@ class TestBackchannelLogoutIntegration:
         # Verify Redis stream
         entries = redis_client.xrevrange("logout", count=10)
         found = any(
-            entry[1].get(b"sessionId") == real_sid.encode()
-            for entry in entries
+            entry[1].get(b"sessionId") == real_sid.encode() for entry in entries
         )
         assert found, f"Session ID {real_sid} not found in Redis logout stream"
 
@@ -501,9 +496,7 @@ class TestBackchannelLogoutIntegration:
         keycloak_id = test_user["keycloak_id"]
 
         # Authenticate to create a Keycloak session
-        keycloak_helper.authenticate_user(
-            test_user["username"], test_user["password"]
-        )
+        keycloak_helper.authenticate_user(test_user["username"], test_user["password"])
 
         # Verify session exists
         sessions = keycloak_helper.get_user_sessions(keycloak_id)
@@ -514,4 +507,6 @@ class TestBackchannelLogoutIntegration:
 
         # Verify sessions are cleared
         sessions_after = keycloak_helper.get_user_sessions(keycloak_id)
-        assert len(sessions_after) == 0, "User sessions should be cleared after admin logout"
+        assert (
+            len(sessions_after) == 0
+        ), "User sessions should be cleared after admin logout"

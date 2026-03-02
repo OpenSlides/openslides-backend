@@ -20,7 +20,7 @@ class GeneralPresenterTester(TestCase):
         request = MagicMock()
         request.json = [PresenterBlob(presenter="non_existing_presenter", data={})]
         with self.assertRaises(PresenterException) as context_manager:
-            self.presenter_handler.handle_request(request)
+            self.presenter_handler.handle_request(request, self.user_id)
         self.assertEqual(
             context_manager.exception.message,
             "Presenter non_existing_presenter does not exist.",

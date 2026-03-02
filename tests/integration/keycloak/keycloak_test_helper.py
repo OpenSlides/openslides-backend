@@ -6,7 +6,7 @@ including user management and password verification.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -16,14 +16,17 @@ class KeycloakTestHelper:
 
     def __init__(
         self,
-        admin_url: Optional[str] = None,
-        admin_username: Optional[str] = None,
-        admin_password: Optional[str] = None,
-        realm: Optional[str] = None,
+        admin_url: str | None = None,
+        admin_username: str | None = None,
+        admin_password: str | None = None,
+        realm: str | None = None,
     ):
         self.admin_url = admin_url or os.environ.get(
             "KEYCLOAK_ADMIN_URL",
-            os.environ.get("KEYCLOAK_ADMIN_API_URL", "http://localhost:8180/auth/admin/realms/openslides"),
+            os.environ.get(
+                "KEYCLOAK_ADMIN_API_URL",
+                "http://localhost:8180/auth/admin/realms/openslides",
+            ),
         )
         self.admin_username = admin_username or os.environ.get(
             "KEYCLOAK_ADMIN_USERNAME", "admin"
@@ -32,7 +35,7 @@ class KeycloakTestHelper:
             "KEYCLOAK_ADMIN_PASSWORD", "admin"
         )
         self.realm = realm or os.environ.get("KEYCLOAK_REALM", "openslides")
-        self._token: Optional[str] = None
+        self._token: str | None = None
         self._token_url = self._derive_token_url()
 
     def _derive_token_url(self) -> str:
@@ -70,7 +73,7 @@ class KeycloakTestHelper:
         self,
         method: str,
         endpoint: str,
-        json_data: Optional[dict[str, Any]] = None,
+        json_data: dict[str, Any] | None = None,
         return_response: bool = False,
     ) -> Any:
         """Make authenticated request to Keycloak Admin API."""
@@ -101,14 +104,12 @@ class KeycloakTestHelper:
             return response.json()
         return None
 
-    def get_user_by_username(self, username: str) -> Optional[dict[str, Any]]:
+    def get_user_by_username(self, username: str) -> dict[str, Any] | None:
         """Fetch user from Keycloak by username."""
-        users = self._make_request(
-            "GET", f"users?username={username}&exact=true"
-        )
+        users = self._make_request("GET", f"users?username={username}&exact=true")
         return users[0] if users else None
 
-    def get_user_by_id(self, keycloak_id: str) -> Optional[dict[str, Any]]:
+    def get_user_by_id(self, keycloak_id: str) -> dict[str, Any] | None:
         """Fetch user from Keycloak by ID."""
         try:
             return self._make_request("GET", f"users/{keycloak_id}")
@@ -157,7 +158,7 @@ class KeycloakTestHelper:
 
     def cleanup_test_users(self, prefix: str) -> int:
         """Delete all users with username starting with prefix. Returns count."""
-        users = self._make_request("GET", f"users?max=1000")
+        users = self._make_request("GET", "users?max=1000")
         deleted = 0
         for user in users:
             if user.get("username", "").startswith(prefix):
@@ -171,11 +172,11 @@ class KeycloakTestHelper:
     def create_user(
         self,
         username: str,
-        email: Optional[str] = None,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
         enabled: bool = True,
-        password: Optional[str] = None,
+        password: str | None = None,
     ) -> str:
         """Create a user in Keycloak and return the keycloak_id."""
         user_data = {
@@ -190,9 +191,7 @@ class KeycloakTestHelper:
         if last_name:
             user_data["lastName"] = last_name
 
-        response = self._make_request(
-            "POST", "users", user_data, return_response=True
-        )
+        response = self._make_request("POST", "users", user_data, return_response=True)
 
         if response.status_code != 201:
             raise RuntimeError(
