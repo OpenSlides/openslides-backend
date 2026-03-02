@@ -2524,7 +2524,9 @@ class PollConfigApproval(Model):
     verbose_name = "poll config approval"
 
     id = fields.IntegerField(required=True, constant=True)
-    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    poll_id = fields.RelationField(
+        to={"poll": "config_id"}, is_view_field=True, required=True
+    )
     option_ids = fields.RelationListField(
         to={"poll_config_option": "poll_config_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2558,7 +2560,9 @@ class PollConfigRatingApproval(Model):
     verbose_name = "poll config rating approval"
 
     id = fields.IntegerField(required=True, constant=True)
-    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    poll_id = fields.RelationField(
+        to={"poll": "config_id"}, is_view_field=True, required=True
+    )
     option_ids = fields.RelationListField(
         to={"poll_config_option": "poll_config_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2574,7 +2578,9 @@ class PollConfigRatingScore(Model):
     verbose_name = "poll config rating score"
 
     id = fields.IntegerField(required=True, constant=True)
-    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    poll_id = fields.RelationField(
+        to={"poll": "config_id"}, is_view_field=True, required=True
+    )
     option_ids = fields.RelationListField(
         to={"poll_config_option": "poll_config_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2592,7 +2598,9 @@ class PollConfigSelection(Model):
     verbose_name = "poll config selection"
 
     id = fields.IntegerField(required=True, constant=True)
-    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    poll_id = fields.RelationField(
+        to={"poll": "config_id"}, is_view_field=True, required=True
+    )
     option_ids = fields.RelationListField(
         to={"poll_config_option": "poll_config_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2608,7 +2616,9 @@ class PollConfigStvScottish(Model):
     verbose_name = "poll config stv scottish"
 
     id = fields.IntegerField(required=True, constant=True)
-    poll_id = fields.RelationField(to={"poll": "config_id"}, required=True)
+    poll_id = fields.RelationField(
+        to={"poll": "config_id"}, is_view_field=True, required=True
+    )
     option_ids = fields.RelationListField(
         to={"poll_config_option": "poll_config_id"},
         on_delete=fields.OnDelete.CASCADE,
