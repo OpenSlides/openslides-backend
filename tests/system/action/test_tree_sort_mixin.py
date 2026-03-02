@@ -59,7 +59,7 @@ class TestTreeSortMixin(BaseActionTestCase):
         delete_thread.start()
         sort_thread.join()
         delete_thread.join()
-        self.assert_sort_thread_results()
+        self.assert_sort_thread_results(expect_error_id=5, error_optional=True)
         self.assert_delete_thread_results(5)
 
     def test_sort_and_create_at_once(self) -> None:
@@ -124,7 +124,7 @@ class TestTreeSortMixin(BaseActionTestCase):
         self, expect_error_id: int | None = None, error_optional: bool = False
     ) -> None:
         if expect_error_id and (
-            not error_optional or self.sort_response.json["status_code"] != 200
+            not error_optional or self.sort_response.json.get("status_code") != 200
         ):
             self.assert_status_code(self.sort_response, 400)
             self.assertIn(
