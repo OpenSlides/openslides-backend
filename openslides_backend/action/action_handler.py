@@ -1,6 +1,7 @@
 from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
+from time import sleep
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
@@ -124,7 +125,8 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            retry_count = int(self.env.ACTION_RETRY_COUNT) or 1
+            retry_count = int(self.env.ACTION_MAX_RETRIES) or 1
+            retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
                 try:
                     with get_new_os_conn() as conn:
@@ -178,6 +180,7 @@ class ActionHandler(BaseHandler):
                     )
                 except SerializationFailure as e:
                     if attempt == retry_count:
+                        sleep(retry_timeout)
                         raise DatabaseException(
                             f"Unexpected error reading from database: {e}"
                         )

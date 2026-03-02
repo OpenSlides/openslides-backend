@@ -27,7 +27,8 @@ class Environment(Env):
 
     vars = {
         "ACTION_PORT": "9002",
-        "ACTION_RETRY_COUNT": "3",
+        "ACTION_MAX_RETRIES": "3",
+        "ACTION_RETRY_TIMEOUT": "0.4",
         "INTERNAL_AUTH_PASSWORD_FILE": "",
         "MEDIA_HOST": "localhost",
         "MEDIA_PATH": "/internal/media",
