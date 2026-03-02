@@ -31,7 +31,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 
 # Import the migration module dynamically since it starts with a number
 migration_module = import_module(
-    "openslides_backend.migrations.migrations.0101_migrate_users_to_keycloak"
+    "openslides_backend.migrations.migrations.0102_migrate_users_to_keycloak"
 )
 
 from .keycloak_test_helper import KeycloakTestHelper
