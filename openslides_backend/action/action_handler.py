@@ -180,10 +180,10 @@ class ActionHandler(BaseHandler):
                     )
                 except SerializationFailure as e:
                     if attempt == retry_count:
-                        sleep(retry_timeout)
                         raise DatabaseException(
                             f"Unexpected error reading from database: {e}"
                         )
+                    sleep(retry_timeout)
             raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
