@@ -14,9 +14,6 @@ from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
 
 from ..services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
-
-# OIDC session cookie name (used instead of auth service cookie in OIDC mode)
-OIDC_SESSION_COOKIE = "openslides_session"
 from ..shared.env import is_truthy
 from ..shared.exceptions import ActionException, ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
@@ -29,6 +26,9 @@ from .http_exceptions import (
 )
 from .redirect_response import RedirectResponse
 from .request import Request
+
+# OIDC session cookie name (used instead of auth service cookie in OIDC mode)
+OIDC_SESSION_COOKIE = "openslides_session"
 
 
 class OpenSlidesBackendWSGIApplication(WSGIApplication):
@@ -114,7 +114,10 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
         import time
         from importlib import import_module
 
-        from openslides_backend.migrations.migration_helper import MigrationHelper, MigrationState
+        from openslides_backend.migrations.migration_helper import (
+            MigrationHelper,
+            MigrationState,
+        )
         from openslides_backend.services.postgresql.db_connection_handling import (
             get_new_os_conn,
         )
@@ -128,7 +131,9 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                     )
                     row = curs.fetchone()
                     if row and not row[0]:
-                        self.logger.info("All users already synced to Keycloak, skipping")
+                        self.logger.info(
+                            "All users already synced to Keycloak, skipping"
+                        )
                         return
         except Exception:
             pass  # If check fails, proceed with sync attempt
@@ -145,7 +150,9 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
 
             for attempt in range(max_retries):
                 try:
-                    self.logger.info(f"Syncing users to Keycloak (attempt {attempt + 1}/{max_retries})...")
+                    self.logger.info(
+                        f"Syncing users to Keycloak (attempt {attempt + 1}/{max_retries})..."
+                    )
 
                     # Set up a dummy stream for MigrationHelper.write_line()
                     stream = io.StringIO()
@@ -174,9 +181,13 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                     return
                 except Exception as e:
                     MigrationHelper.migrate_thread_stream = None
-                    if "Connection refused" in str(e) or "Failed to establish" in str(e):
+                    if "Connection refused" in str(e) or "Failed to establish" in str(
+                        e
+                    ):
                         if attempt < max_retries - 1:
-                            self.logger.info(f"Keycloak not ready, retrying in {retry_delay}s...")
+                            self.logger.info(
+                                f"Keycloak not ready, retrying in {retry_delay}s..."
+                            )
                             time.sleep(retry_delay)
                             continue
                     raise
@@ -186,6 +197,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
             )
         except Exception as e:
             import traceback
+
             self.logger.error(f"Failed to sync users to Keycloak: {e}")
             self.logger.error(traceback.format_exc())
 

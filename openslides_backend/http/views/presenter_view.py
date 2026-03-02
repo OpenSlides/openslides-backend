@@ -43,9 +43,7 @@ class PresenterView(BaseView):
     def theme_route(self, request: Request) -> RouteResponse:
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                curs.execute(
-                    "SELECT theme_id FROM organization_t WHERE id = 1"
-                )
+                curs.execute("SELECT theme_id FROM organization_t WHERE id = 1")
                 row = curs.fetchone()
                 if not row or not row["theme_id"]:
                     from ..http_exceptions import NotFound
@@ -55,19 +53,52 @@ class PresenterView(BaseView):
                 theme_id = row["theme_id"]
 
                 color_fields = [
-                    "primary_50", "primary_100", "primary_200", "primary_300",
-                    "primary_400", "primary_500", "primary_600", "primary_700",
-                    "primary_800", "primary_900",
-                    "primary_a100", "primary_a200", "primary_a400", "primary_a700",
-                    "accent_50", "accent_100", "accent_200", "accent_300",
-                    "accent_400", "accent_500", "accent_600", "accent_700",
-                    "accent_800", "accent_900",
-                    "accent_a100", "accent_a200", "accent_a400", "accent_a700",
-                    "warn_50", "warn_100", "warn_200", "warn_300",
-                    "warn_400", "warn_500", "warn_600", "warn_700",
-                    "warn_800", "warn_900",
-                    "warn_a100", "warn_a200", "warn_a400", "warn_a700",
-                    "headbar", "yes", "no", "abstain",
+                    "primary_50",
+                    "primary_100",
+                    "primary_200",
+                    "primary_300",
+                    "primary_400",
+                    "primary_500",
+                    "primary_600",
+                    "primary_700",
+                    "primary_800",
+                    "primary_900",
+                    "primary_a100",
+                    "primary_a200",
+                    "primary_a400",
+                    "primary_a700",
+                    "accent_50",
+                    "accent_100",
+                    "accent_200",
+                    "accent_300",
+                    "accent_400",
+                    "accent_500",
+                    "accent_600",
+                    "accent_700",
+                    "accent_800",
+                    "accent_900",
+                    "accent_a100",
+                    "accent_a200",
+                    "accent_a400",
+                    "accent_a700",
+                    "warn_50",
+                    "warn_100",
+                    "warn_200",
+                    "warn_300",
+                    "warn_400",
+                    "warn_500",
+                    "warn_600",
+                    "warn_700",
+                    "warn_800",
+                    "warn_900",
+                    "warn_a100",
+                    "warn_a200",
+                    "warn_a400",
+                    "warn_a700",
+                    "headbar",
+                    "yes",
+                    "no",
+                    "abstain",
                 ]
                 columns = ", ".join(color_fields)
                 curs.execute(
@@ -80,9 +111,7 @@ class PresenterView(BaseView):
 
                     raise NotFound()
 
-                result = {
-                    k: v for k, v in theme_row.items() if v is not None
-                }
+                result = {k: v for k, v in theme_row.items() if v is not None}
         return result, None
 
     @route("health", method="GET", json=False)

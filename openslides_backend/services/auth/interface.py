@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
 
@@ -13,7 +13,7 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
     auth_handler: Any
 
     def configure_oidc(
-        self, oidc_enabled: bool, provider_url: Optional[str], client_id: Optional[str]
+        self, oidc_enabled: bool, provider_url: str | None, client_id: str | None
     ) -> None:
         """
         Configure OIDC authentication from organization settings.

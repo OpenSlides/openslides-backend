@@ -3,7 +3,7 @@ import os
 import re
 from collections.abc import Callable
 from re import Pattern
-from typing import Any, Optional
+from typing import Any
 
 import redis
 from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME
@@ -13,7 +13,7 @@ from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
-from ...shared.interfaces.wsgi import Headers, ResponseBody, RouteResponse, View
+from ...shared.interfaces.wsgi import Headers, RouteResponse, View
 from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
@@ -52,7 +52,8 @@ def is_session_invalidated(session_id: str) -> bool:
     except redis.RedisError:
         return False
 
-RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
+
+RouteFunction = Callable[[Any, Request], RouteResponse]
 
 
 def route(
@@ -124,7 +125,9 @@ class BaseView(View):
         """
         # Check for OIDC Bearer token (Authorization or Authentication header)
         # Traefik OIDC middleware may send either header
-        auth_header = headers.get("Authorization", "") or headers.get("Authentication", "")
+        auth_header = headers.get("Authorization", "") or headers.get(
+            "Authentication", ""
+        )
         if auth_header.lower().startswith("bearer "):
             from ...shared.oidc_validator import get_oidc_validator
 
@@ -140,16 +143,14 @@ class BaseView(View):
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
-    def _authenticate_oidc(
-        self, token: str, validator: Any
-    ) -> tuple[int, str | None]:
+    def _authenticate_oidc(self, token: str, validator: Any) -> tuple[int, str | None]:
         """
         Validate OIDC token and return user_id.
 
         Looks up user by keycloak_id, provisioning if necessary.
         """
-        from ...services.postgresql.db_connection_handling import get_new_os_conn
         from ...services.database.extended_database import ExtendedDatabase
+        from ...services.postgresql.db_connection_handling import get_new_os_conn
         from ...shared.filters import FilterOperator
 
         # Store the Bearer token in authentication service so it's available
@@ -166,7 +167,9 @@ class BaseView(View):
         # 1b. Check if session was invalidated via backchannel logout
         session_id = payload.get("sid")
         if session_id and is_session_invalidated(session_id):
-            self.logger.debug(f"Session {session_id} invalidated via backchannel logout")
+            self.logger.debug(
+                f"Session {session_id} invalidated via backchannel logout"
+            )
             return 0, None
 
         # 2. User lookup via keycloak_id
@@ -188,11 +191,15 @@ class BaseView(View):
                 self.logger.debug(f"OIDC user authenticated: {user_id}")
                 return user_id, None
             elif len(users) > 1:
-                self.logger.error(f"Multiple users found with keycloak_id: {keycloak_id}")
+                self.logger.error(
+                    f"Multiple users found with keycloak_id: {keycloak_id}"
+                )
                 return 0, None
 
         # 3. User not found - provision via userinfo endpoint
-        self.logger.debug(f"User not found, provisioning for keycloak_id: {keycloak_id}")
+        self.logger.debug(
+            f"User not found, provisioning for keycloak_id: {keycloak_id}"
+        )
         try:
             user_info = validator.get_user_info(token)
             user_id = self._provision_oidc_user(keycloak_id, user_info)
@@ -235,7 +242,11 @@ class BaseView(View):
         if result.get("success") and result.get("results"):
             action_results = result["results"]
             if action_results and action_results[0]:
-                return action_results[0][0].get("user_id")
+                first_result = action_results[0]
+                if isinstance(first_result, list) and first_result:
+                    item = first_result[0]
+                    if isinstance(item, dict):
+                        return item.get("user_id")
 
         return None
 

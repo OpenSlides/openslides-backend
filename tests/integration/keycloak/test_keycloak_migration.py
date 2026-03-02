@@ -15,6 +15,7 @@ Requirements:
 
 import os
 import uuid
+from collections.abc import Generator
 from importlib import import_module
 from io import StringIO
 from typing import Any
@@ -29,12 +30,12 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 
+from .keycloak_test_helper import KeycloakTestHelper
+
 # Import the migration module dynamically since it starts with a number
 migration_module = import_module(
     "openslides_backend.migrations.migrations.0102_migrate_users_to_keycloak"
 )
-
-from .keycloak_test_helper import KeycloakTestHelper
 
 
 def keycloak_available() -> bool:
@@ -67,14 +68,14 @@ def test_username() -> str:
 
 
 @pytest.fixture
-def db_connection():
+def db_connection() -> Generator[Connection[DictRow], None, None]:
     """Provide a database connection for tests."""
     with get_new_os_conn() as conn:
         yield conn
 
 
 @pytest.fixture
-def migration_stream() -> StringIO:
+def migration_stream() -> Generator[StringIO, None, None]:
     """Provide a StringIO for migration output."""
     stream = StringIO()
     MigrationHelper.migrate_thread_stream = stream
@@ -85,12 +86,12 @@ def migration_stream() -> StringIO:
 def create_test_user(
     conn: Connection[DictRow],
     username: str,
-    email: str = None,
-    first_name: str = None,
-    last_name: str = None,
+    email: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
     is_active: bool = True,
-    password: str = None,
-    default_password: str = None,
+    password: str | None = None,
+    default_password: str | None = None,
 ) -> int:
     """Create a test user in the database and return their ID."""
     with conn.cursor() as curs:
@@ -105,7 +106,16 @@ def create_test_user(
             INSERT INTO user_t (id, username, email, first_name, last_name, is_active, password, default_password)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (user_id, username, email, first_name, last_name, is_active, password, default_password),
+            (
+                user_id,
+                username,
+                email,
+                first_name,
+                last_name,
+                is_active,
+                password,
+                default_password,
+            ),
         )
         conn.commit()
         return user_id
@@ -163,7 +173,9 @@ class TestMigrationWithKeycloakConfig:
         data_manipulation = migration_module.data_manipulation
 
         # Create test user with Argon2 password hash
-        argon2_hash = "$argon2id$v=19$m=65536,t=3,p=4$testsalt12345678$testhash1234567890abcdef"
+        argon2_hash = (
+            "$argon2id$v=19$m=65536,t=3,p=4$testsalt12345678$testhash1234567890abcdef"
+        )
         user_id = create_test_user(
             db_connection,
             username=test_username,

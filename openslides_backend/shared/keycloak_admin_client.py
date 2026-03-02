@@ -6,7 +6,9 @@ from .exceptions import ActionException
 from .interfaces.logging import Logger
 
 
-def get_keycloak_admin_client(logger: Optional[Logger] = None) -> Optional["KeycloakAdminClient"]:
+def get_keycloak_admin_client(
+    logger: Logger | None = None,
+) -> Optional["KeycloakAdminClient"]:
     """
     Factory function to create a KeycloakAdminClient from environment config.
 
@@ -46,11 +48,11 @@ class KeycloakAdminClient:
     def __init__(
         self,
         admin_api_url: str,
-        access_token: Optional[str] = None,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
-        token_url: Optional[str] = None,
-        logger: Optional[Logger] = None,
+        access_token: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        token_url: str | None = None,
+        logger: Logger | None = None,
     ):
         self.admin_api_url = admin_api_url.rstrip("/")
         self.logger = logger
@@ -81,7 +83,9 @@ class KeycloakAdminClient:
             self._token_url = f"{base_url}/realms/{realm}/protocol/openid-connect/token"
 
         if self.logger:
-            self.logger.debug(f"Getting client credentials token from: {self._token_url}")
+            self.logger.debug(
+                f"Getting client credentials token from: {self._token_url}"
+            )
 
         response = requests.post(
             self._token_url,
@@ -103,7 +107,7 @@ class KeycloakAdminClient:
         return data["access_token"]
 
     def _make_request(
-        self, method: str, endpoint: str, json_data: Optional[dict[str, Any]] = None
+        self, method: str, endpoint: str, json_data: dict[str, Any] | None = None
     ) -> requests.Response:
         """Make authenticated request with Bearer token."""
         url = f"{self.admin_api_url}/{endpoint}"
@@ -259,7 +263,7 @@ class KeycloakAdminClient:
                 f"Keycloak session clear failed: {response.status_code} - {response.text}"
             )
 
-    def get_user_by_username(self, username: str) -> Optional[dict[str, Any]]:
+    def get_user_by_username(self, username: str) -> dict[str, Any] | None:
         """
         Find a Keycloak user by username.
 
@@ -284,7 +288,7 @@ class KeycloakAdminClient:
             return users[0] if users else None
         return None
 
-    def try_create_user(self, user_data: dict[str, Any]) -> Optional[str]:
+    def try_create_user(self, user_data: dict[str, Any]) -> str | None:
         """
         Try to create user in Keycloak, returning None on conflict.
 

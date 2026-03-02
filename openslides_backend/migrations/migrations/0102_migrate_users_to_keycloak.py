@@ -60,7 +60,6 @@ def _parse_argon2_hash(password_hash: str) -> dict[str, Any] | None:
         argon_type = parts[1]  # "argon2id", "argon2i", or "argon2d"
         version = parts[2].split("=")[1]  # "19"
 
-        # Parse parameters
         params = {}
         for param in parts[3].split(","):
             key, value = param.split("=")
@@ -134,7 +133,9 @@ def _build_argon2_credential(password_hash: str) -> dict[str, Any] | None:
     }
 
 
-def _build_plaintext_credential(password: str, temporary: bool = False) -> dict[str, Any]:
+def _build_plaintext_credential(
+    password: str, temporary: bool = False
+) -> dict[str, Any]:
     """
     Build Keycloak credential data for a plaintext password.
 
@@ -197,7 +198,9 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     MigrationHelper.write_line(f"Keycloak Admin API URL: {admin_api_url}")
 
     admin_client_id = os.environ.get("KEYCLOAK_ADMIN_CLIENT_ID", "openslides-admin")
-    admin_client_secret = os.environ.get("KEYCLOAK_ADMIN_CLIENT_SECRET", "openslides-admin-secret")
+    admin_client_secret = os.environ.get(
+        "KEYCLOAK_ADMIN_CLIENT_SECRET", "openslides-admin-secret"
+    )
 
     # Initialize Keycloak admin client
     try:
@@ -209,21 +212,21 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         MigrationHelper.write_line("Successfully acquired Keycloak admin token")
     except ActionException as e:
         MigrationHelper.write_line(f"ERROR: {e}")
-        MigrationHelper.write_line("Skipping Keycloak user migration due to auth failure")
+        MigrationHelper.write_line(
+            "Skipping Keycloak user migration due to auth failure"
+        )
         MigrationHelper.set_database_migration_info(
             curs, 102, MigrationState.FINALIZATION_REQUIRED
         )
         return
 
     # Query local users (no keycloak_id, no saml_id)
-    curs.execute(
-        """
+    curs.execute("""
         SELECT id, username, email, first_name, last_name, is_active, password, default_password
         FROM user_t
         WHERE keycloak_id IS NULL AND saml_id IS NULL
         ORDER BY id
-        """
-    )
+        """)
     users = curs.fetchall()
 
     if not users:
@@ -277,8 +280,12 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                 credentials.append(argon2_credential)
                 MigrationHelper.write_line(f"  Importing Argon2 hash for {username}")
             elif default_password:
-                credentials.append(_build_plaintext_credential(default_password, temporary=False))
-                MigrationHelper.write_line(f"  Argon2 parse failed, using default_password for {username}")
+                credentials.append(
+                    _build_plaintext_credential(default_password, temporary=False)
+                )
+                MigrationHelper.write_line(
+                    f"  Argon2 parse failed, using default_password for {username}"
+                )
             else:
                 MigrationHelper.write_line(
                     f"  WARNING: Failed to parse Argon2 hash for {username}. User will need password reset."
@@ -286,15 +293,21 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         elif password_hash and _is_sha512_hash(password_hash):
             # SHA512 legacy hash - cannot import into Keycloak
             if default_password:
-                credentials.append(_build_plaintext_credential(default_password, temporary=False))
-                MigrationHelper.write_line(f"  SHA512 hash not importable, using default_password for {username}")
+                credentials.append(
+                    _build_plaintext_credential(default_password, temporary=False)
+                )
+                MigrationHelper.write_line(
+                    f"  SHA512 hash not importable, using default_password for {username}"
+                )
             else:
                 MigrationHelper.write_line(
                     f"  WARNING: SHA512 hash for {username} cannot be migrated. User will need password reset."
                 )
         elif default_password:
             # No real password hash, use default_password
-            credentials.append(_build_plaintext_credential(default_password, temporary=False))
+            credentials.append(
+                _build_plaintext_credential(default_password, temporary=False)
+            )
             MigrationHelper.write_line(f"  Using default_password for {username}")
         else:
             # No password at all

@@ -89,9 +89,7 @@ class PresenterHandler(BaseHandler):
         self.logger.debug("Validate presenter request.")
         payload_schema(payload)
 
-    def parse_presenters(
-        self, request: Request, user_id: int
-    ) -> PresenterResponse:
+    def parse_presenters(self, request: Request, user_id: int) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.

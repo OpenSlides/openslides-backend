@@ -16,7 +16,9 @@ from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(KeycloakDeleteSyncMixin, UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
+class UserDelete(
+    KeycloakDeleteSyncMixin, UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin
+):
     """
     Action to delete a user.
     """
