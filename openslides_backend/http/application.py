@@ -139,7 +139,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
         try:
             # Import the migration module (name starts with digit, need importlib)
             migration_module = import_module(
-                "openslides_backend.migrations.migrations.0101_migrate_users_to_keycloak"
+                "openslides_backend.migrations.migrations.0102_migrate_users_to_keycloak"
             )
             data_manipulation = migration_module.data_manipulation
 

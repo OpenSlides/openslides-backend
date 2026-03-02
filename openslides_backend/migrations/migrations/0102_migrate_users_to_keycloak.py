@@ -190,7 +190,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             "KEYCLOAK_ADMIN_API_URL not set - skipping Keycloak user migration"
         )
         MigrationHelper.set_database_migration_info(
-            curs, 101, MigrationState.FINALIZATION_REQUIRED
+            curs, 102, MigrationState.FINALIZATION_REQUIRED
         )
         return
 
@@ -211,7 +211,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
         MigrationHelper.write_line(f"ERROR: {e}")
         MigrationHelper.write_line("Skipping Keycloak user migration due to auth failure")
         MigrationHelper.set_database_migration_info(
-            curs, 101, MigrationState.FINALIZATION_REQUIRED
+            curs, 102, MigrationState.FINALIZATION_REQUIRED
         )
         return
 
@@ -229,7 +229,7 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     if not users:
         MigrationHelper.write_line("No local users to migrate")
         MigrationHelper.set_database_migration_info(
-            curs, 101, MigrationState.FINALIZATION_REQUIRED
+            curs, 102, MigrationState.FINALIZATION_REQUIRED
         )
         return
 
@@ -361,5 +361,5 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
     MigrationHelper.write_line(f"  Total: {len(users)}")
 
     MigrationHelper.set_database_migration_info(
-        curs, 101, MigrationState.FINALIZATION_REQUIRED
+        curs, 102, MigrationState.FINALIZATION_REQUIRED
     )
