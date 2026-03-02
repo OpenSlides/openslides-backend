@@ -211,6 +211,7 @@ class TestMigrationWithKeycloakConfig:
 
             # Verify OpenSlides user was updated
             db_user = get_user(db_connection, user_id)
+            assert db_user is not None
             assert db_user["keycloak_id"] == kc_user["id"]
             assert db_user["can_change_own_password"] is True
 
@@ -320,6 +321,7 @@ class TestMigrationWithKeycloakConfig:
 
             # Verify OpenSlides user was linked to existing Keycloak user
             db_user = get_user(db_connection, user_id)
+            assert db_user is not None
             assert db_user["keycloak_id"] == kc_id
             assert db_user["can_change_own_password"] is True
 
