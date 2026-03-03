@@ -163,11 +163,13 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                             data_manipulation(curs)
                             # Override: startup sync is not the migration framework.
                             # On fresh install, create_schema.py marks all migrations
-                            # as FINALIZED. data_manipulation() downgrades migration
-                            # 101 to FINALIZATION_REQUIRED, creating an inconsistency.
-                            MigrationHelper.set_database_migration_info(
-                                curs, 101, MigrationState.FINALIZED
-                            )
+                            # as FINALIZED. data_manipulation() downgrades migrations
+                            # to FINALIZATION_REQUIRED, creating an inconsistency.
+                            # Reset both 101 and 102 back to FINALIZED.
+                            for mi in (101, 102):
+                                MigrationHelper.set_database_migration_info(
+                                    curs, mi, MigrationState.FINALIZED
+                                )
                             conn.commit()
 
                     # Log the migration output
