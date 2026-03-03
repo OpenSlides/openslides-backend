@@ -2507,7 +2507,6 @@ class Poll(Model, PollModelMixin):
         to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
         to={"option": "poll_id"},

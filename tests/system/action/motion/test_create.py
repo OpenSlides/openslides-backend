@@ -1024,7 +1024,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def foreign_meeting_user_test(self, field:str)->None:
+    def foreign_meeting_user_test(self, field:str, collection: str)->None:
         self.create_meeting(4)
         self.create_user("bob",[5])
         self.set_user_groups(1,[2])
@@ -1046,13 +1046,15 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
-            "The following models do not belong to meeting 1: ['meeting_user/1']",
+        self.assertIn(
+            f"""Invalid data for '{collection}/1': The relation meeting_user_ids requires the following fields to be equal:
+ {collection}/1/meeting_ids: 1 
+ meeting_user/1/meeting_ids: 4""",
             response.json["message"],
         )
 
     def test_create_foreign_submitter_meeting_user_error(self)-> None:
-        self.foreign_meeting_user_test("submitter_meeting_user_ids")
+        self.foreign_meeting_user_test("submitter_meeting_user_ids", "motion_submitter")
 
     def test_create_foreign_supporter_meeting_user_error(self)-> None:
-        self.foreign_meeting_user_test("supporter_meeting_user_ids")
+        self.foreign_meeting_user_test("supporter_meeting_user_ids", "motion_supporter")
