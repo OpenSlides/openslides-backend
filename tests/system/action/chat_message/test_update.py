@@ -20,7 +20,6 @@ class ChatMessageUpdate(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "meeting_user/7": {"meeting_id": 1, "user_id": 1},
-                "group/1": {"meeting_user_ids": [7]},
             }
         )
         response = self.request("chat_message.update", {"id": 2, "content": "test"})
@@ -39,7 +38,6 @@ class ChatMessageUpdate(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "meeting_user/8": {"meeting_id": 1, "user_id": 2},
-                "group/1": {"meeting_user_ids": [8]},
             }
         )
         response = self.request("chat_message.update", {"id": 2, "content": "test"})

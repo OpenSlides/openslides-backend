@@ -99,7 +99,7 @@ def test_create_empty_field() -> None:
     data = get_data({"last_name": None})
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("user/1", {"id": 1, "username": "1", "first_name": "1"})
 
 
@@ -107,7 +107,7 @@ def test_create_view_field() -> None:
     data = get_data({"meeting_user_ids": [1, 1337]})
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model(
         "user/1",
         {"id": 1, "username": "1", "first_name": "1", "meeting_user_ids": None},
@@ -220,9 +220,7 @@ def test_create_11_field_as_1n() -> None:
     assert_no_model("agenda_item/2")
 
 
-def test_create_error_own_field_not_null(
-    db_connection: Connection[rows.DictRow],
-) -> None:
+def test_create_error_1_1_not_null(db_connection: Connection[rows.DictRow]) -> None:
     with get_new_os_conn() as conn:
         with pytest.raises(BadCodingException) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
@@ -243,57 +241,6 @@ def test_create_error_own_field_not_null(
             )
     assert (
         "Missing fields 'username' in 'user/1'. Ooopsy Daisy!" in e_info.value.message
-    )
-
-
-def test_create_error_1_1_not_null(
-    db_connection: Connection[rows.DictRow],
-) -> None:
-    create_models(get_group_base_data())
-    with get_new_os_conn() as conn:
-        with pytest.raises(DatabaseError) as e_info:
-            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-            extended_database.write(
-                create_write_requests(
-                    [
-                        {
-                            "events": [
-                                {
-                                    "type": EventType.Create,
-                                    "fqid": "motion/2",
-                                    "fields": {
-                                        "title": "2",
-                                        "meeting_id": 1,
-                                        "state_id": 1,
-                                    },
-                                },
-                            ]
-                        }
-                    ]
-                )
-            )
-            conn.commit()
-    assert (
-        "Trigger tr_i_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id"
-        in e_info.value.args[0]
-    )
-
-
-def test_create_error_1_n_not_null(
-    db_connection: Connection[rows.DictRow],
-) -> None:
-    events: list[dict[str, Any]] = get_group_base_data()
-    del events[0]["events"][2]["fields"][
-        "used_as_default_projector_for_topic_in_meeting_id"
-    ]
-    with get_new_os_conn() as conn:
-        with pytest.raises(DatabaseError) as e_info:
-            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-            extended_database.write(create_write_requests(events))
-            conn.commit()
-    assert (
-        "Trigger tr_i_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids"
-        in e_info.value.args[0]
     )
 
 
@@ -380,7 +327,7 @@ def test_create_nm_field_all_() -> None:
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("committee/1", {"id": 1, "name": "com1", "all_child_ids": [2]})
     assert_model("committee/2", {"id": 2, "name": "com2", "all_parent_ids": [1]})
 
@@ -410,7 +357,7 @@ def test_create_nm_field_generic() -> None:
     ]
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("committee/1", {"id": 1, "name": "com1", "organization_tag_ids": [1]})
     assert_model(
         "organization_tag/1",

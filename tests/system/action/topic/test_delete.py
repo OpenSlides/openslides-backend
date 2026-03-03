@@ -102,8 +102,6 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("list_of_speakers/1")
 
     def test_delete_with_agenda_item_and_filled_los(self) -> None:
-        self.set_user_groups(1, [1])
-        self.create_user_for_meeting(1)
         self.set_models(
             {
                 "topic/1": {
@@ -127,6 +125,9 @@ class TopicDeleteActionTest(BaseActionTestCase):
                     "meeting_user_id": 2,
                     "meeting_id": 1,
                 },
+                "user/2": {"username": "user2"},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1, "speaker_ids": [1]},
+                "meeting_user/2": {"user_id": 2, "meeting_id": 1, "speaker_ids": [2]},
             }
         )
         response = self.request("topic.delete", {"id": 1})

@@ -1,4 +1,5 @@
 import threading
+from collections import defaultdict
 from typing import Any
 
 from psycopg import Connection, adapt, rows, sql
@@ -77,59 +78,19 @@ class DatabaseWriter(SqlQueryHelper):
     def write(
         self,
         write_requests: list[WriteRequest],
-    ) -> list[FullQualifiedId]:
-        #       with make_span("write request"):
+    ) -> dict[FullQualifiedId, dict[str, Any]]:
         self.write_requests = write_requests
 
-        modified_models = set()
+        modified_models: dict[FullQualifiedId, dict[str, Any]] = defaultdict(dict)
         with self._lock:
             for write_request in self.write_requests:
-                #         modified_models = self.write_with_database_context(
-                #             write_request, models
-                #         )
-                # def write_with_database_context(
-                #     self, write_request: WriteRequest, models: dict[str, dict[Id, Model]]
-                # ) -> dict[FullQualifiedId, dict[Field, JSON]]:
                 with make_span(self.env, "write with database context"):
-                    # # get migration index
-                    # if write_request.migration_index is None:
-                    #     migration_index = self.database_reader.get_current_migration_index()
-                    # else:
-                    #     if not self.database_reader.is_empty():
-                    #         raise DatastoreNotEmpty(
-                    #             f"Passed a migration index of {write_request.migration_index}, but the datastore is not empty."
-                    #         )
-                    #     migration_index = write_request.migration_index
 
-                    # Check locked_fields -> Possible LockedError
-                    # self.occ_locker.assert_locked_fields(write_request)
+                    results = self.write_events(write_request.events)
+                    for fqid, model in results.items():
+                        modified_models[fqid].update(model)
 
-                    modified_models.update(self.write_events(write_request.events))
-
-        self.print_stats()
-        self.print_summary()
-        return sorted(modified_models)
-
-    def print_stats(self) -> None:
-        pass
-        # stats: dict[str, int] = defaultdict(int)
-        # for write_request in self.write_requests:
-        #     for event in write_request.events:
-        #         stats[self.get_request_name(event)] += 1
-        # stats_string = ", ".join(f"{cnt} {name}" for name, cnt in stats.items())
-        # logger.info(f"Events executed ({stats_string})")
-
-    def print_summary(self) -> None:
-        pass
-        # summary: dict[str, set[str]] = defaultdict(set)  # event type <-> set[fqid]
-        # for write_request in self.write_requests:
-        #     for event in write_request.events:
-        #         summary[self.get_request_name(event)].add(event.fqid)
-        # logger.info(
-        #     "\n".join(
-        #         f"{eventType}: {list(fqids)}" for eventType, fqids in summary.items()
-        #     )
-        # )
+        return modified_models
 
     def get_request_name(self, event: WriteRequest) -> str:
         return type(event).__name__.replace("Request", "").replace("Event", "").upper()
@@ -137,11 +98,13 @@ class DatabaseWriter(SqlQueryHelper):
     def write_events(
         self,
         events: list[Event],
-    ) -> list[FullQualifiedId]:
+    ) -> dict[FullQualifiedId, dict[str, Any]]:
         if not events:
             raise BadCodingException("Events are needed.")
 
-        models_created_or_updated = set()
+        models_created_or_updated: dict[FullQualifiedId, dict[str, Any]] = defaultdict(
+            dict
+        )
         for event in events:
             if fqid := event.get("fqid"):
                 collection, id_ = collection_and_id_from_fqid(fqid)
@@ -162,73 +125,78 @@ class DatabaseWriter(SqlQueryHelper):
 
             match event["type"]:
                 case EventType.Create:
-                    models_created_or_updated.add(
-                        self.insert_model(event, collection, id_)
-                    )
+                    fqid, data = self.insert_model(event, collection, id_)
+                    models_created_or_updated[fqid] = data
                 case EventType.Update:
                     assert id_
-                    models_created_or_updated.add(
-                        self.update_model(event, collection, id_)
-                    )
+                    fqid, data = self.update_model(event, collection, id_)
+                    models_created_or_updated[fqid].update(data)
                 case EventType.Delete:
                     assert id_
-                    models_created_or_updated.discard(
+                    models_created_or_updated[
                         self.delete_model(event, collection, id_)
-                    )
+                    ] = {}
 
-        return list(models_created_or_updated)
+        return models_created_or_updated
 
     def insert_model(
         self, event: Event, collection: Collection, id_: Id | None
-    ) -> FullQualifiedId:
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
         event_fields = event.get("fields", dict())
+        event_return_fields = event.get("return_fields", ["id"])
+        if "id" not in event_return_fields:
+            event_return_fields.append("id")
         simple_fields, intermediate_tables = self.get_simple_fields_intermediate_table(
             event_fields, collection
         )
         if id_ and not simple_fields.get("id"):
             simple_fields["id"] = id_
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             INSERT INTO {table_name} ({columns})
             VALUES ({values})
-            """
-        ).format(
+            """).format(
             table_name=sql.Identifier(f"{collection}_t"),
             columns=sql.SQL(", ").join(map(sql.Identifier, simple_fields)),
             values=sql.SQL(", ").join(sql.SQL("%s") for _ in range(len(simple_fields))),
         )
-        id_ = self.execute_sql(statement, list(simple_fields.values()), collection, id_)
+        result = self.execute_sql(
+            statement,
+            list(simple_fields.values()),
+            collection,
+            id_,
+            return_fields=event_return_fields,
+        )
+        id_ = result.get("id", 0)
         self.write_to_intermediate_tables(
             event_fields, intermediate_tables, id_, collection
         )
-        return fqid_from_collection_and_id(collection, id_)
+        return fqid_from_collection_and_id(collection, id_), result
 
     def delete_model(
         self, event: Event, collection: Collection, id_: Id
     ) -> FullQualifiedId:
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             DELETE FROM {table_name} WHERE id = {id}
-            """
-        ).format(id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t"))
+            """).format(
+            id=sql.Literal(id_), table_name=sql.Identifier(f"{collection}_t")
+        )
         return fqid_from_collection_and_id(
-            collection, self.execute_sql(statement, [], collection, id_)
+            collection, self.execute_sql(statement, [], collection, id_).get("id", 0)
         )
 
     def update_model(
         self, event: Event, collection: Collection, id_: Id
-    ) -> FullQualifiedId:
+    ) -> tuple[FullQualifiedId, dict[str, Any]]:
         table = sql.Identifier(f"{collection}_t")
-        statement = sql.SQL(
-            """
+        statement = sql.SQL("""
             UPDATE {table} AS {row} SET
-            """
-        ).format(
+            """).format(
             table=table,
             row=sql.Identifier(f"{collection}_row"),
         )
 
         event_fields = event["fields"]
+        event_return_fields = event.get("return_fields", ["id"])
         set_fields_dict, intermediate_tables = (
             self.get_simple_fields_intermediate_table(event_fields, collection)
         )
@@ -281,10 +249,8 @@ class DatabaseWriter(SqlQueryHelper):
         ):
             statement += sql.SQL(", ")
         statement += sql.SQL(", ").join(
-            sql.SQL(
-                """
-            {field} = {array_statement}"""
-            ).format(
+            sql.SQL("""
+            {field} = {array_statement}""").format(
                 field=sql.Identifier(field),
                 array_statement=statement,
             )
@@ -297,14 +263,14 @@ class DatabaseWriter(SqlQueryHelper):
         if not arguments:
             statement += sql.SQL("id = id")
 
-        statement += sql.SQL(
-            """
+        statement += sql.SQL("""
             WHERE id = {id}
-            """
-        ).format(id=id_)
+            """).format(id=id_)
         return fqid_from_collection_and_id(
             collection,
-            self.execute_sql(statement, arguments, collection, id_),
+            id_,
+        ), self.execute_sql(
+            statement, arguments, collection, id_, return_fields=event_return_fields
         )
 
     def is_primary_nm_relation(self, field: Field) -> bool:
@@ -375,13 +341,11 @@ class DatabaseWriter(SqlQueryHelper):
                 )
             intermediate_table, close_side, far_side, _ = field.write_fields
             if values := event_fields.get(field_name):
-                statement = sql.SQL(
-                    """
+                statement = sql.SQL("""
                     INSERT INTO {table_name} ({columns})
                     VALUES {placeholders}
                     ON CONFLICT ({columns}) DO NOTHING
-                    """
-                ).format(
+                    """).format(
                     table_name=sql.Identifier(intermediate_table),
                     columns=sql.Identifier(close_side)
                     + sql.SQL(", ")
@@ -398,7 +362,7 @@ class DatabaseWriter(SqlQueryHelper):
                     },
                     collection,
                     id_,
-                    return_id=False,
+                    return_fields=None,
                 )
 
     def delete_from_intermediate_tables(
@@ -426,12 +390,10 @@ class DatabaseWriter(SqlQueryHelper):
             elif not isinstance(other_column_values, list):
                 other_column_values = [other_column_values]
             intermediate_table, own_column, other_column, *_ = field.write_fields
-            statement = sql.SQL(
-                """
+            statement = sql.SQL("""
                 DELETE FROM {table_name}
                 WHERE ({own_column} = {id} AND {negation}({other_column} = ANY(%s)))
-                """
-            ).format(
+                """).format(
                 table_name=sql.Identifier(intermediate_table),
                 own_column=sql.Identifier(own_column),
                 other_column=sql.Identifier(other_column),
@@ -439,11 +401,7 @@ class DatabaseWriter(SqlQueryHelper):
                 id=id_,
             )
             self.execute_sql(
-                statement,
-                [other_column_values],
-                collection,
-                id_,
-                return_id=False,
+                statement, [other_column_values], collection, id_, return_fields=None
             )
 
     def get_array_values(
@@ -463,16 +421,14 @@ class DatabaseWriter(SqlQueryHelper):
         """
         return (
             {
-                field_name: sql.SQL(
-                    """ARRAY(
+                field_name: sql.SQL("""ARRAY(
                 SELECT unnest({col_or_placeholder_plus_type}) AS list_element{nothing_or_table}
                 EXCEPT
                 SELECT unnest(%s{remove_list_type})
                 UNION
                 SELECT unnest(%s{add_list_type})
                 ORDER BY list_element
-            )"""
-                ).format(
+            )""").format(
                     col_or_placeholder_plus_type=(
                         sql.Placeholder() + self.get_array_type(list_type)
                         if field_name in set_dict
@@ -511,26 +467,27 @@ class DatabaseWriter(SqlQueryHelper):
         arguments: list[Any] | dict[str, Any],
         collection: Collection,
         target_id: Id | None,
-        return_id: bool = True,
-    ) -> Id:
+        return_fields: list[str] | None = ["id"],
+    ) -> dict[str, Any]:
         """
         Used for write events; except for those parts writing on intermediate tables.
         Executes the statement with the arguments.
         Returns the id if return_id is True else returns zero.
         """
-        if return_id:
-            statement += sql.SQL("""RETURNING id;""")
+        if return_fields:
+            statement += sql.SQL("""RETURNING {fields};""").format(
+                fields=sql.SQL(", ").join(sql.SQL(field) for field in return_fields)
+            )
         error_fqid = fqid_from_collection_and_id(collection, target_id or 0)
         try:
             with self.connection.cursor() as curs:
                 curs.execute(statement, arguments)
-                if return_id:
+                if return_fields:
                     result = curs.fetchone()
                     if not result or curs.statusmessage in ["DELETE 0", "UPDATE 0"]:
                         assert target_id  # we will never reach here with delete or update events being None on id
                         raise ModelDoesNotExist(error_fqid)
-                    id_ = result.get("id", 0)
-                    return id_
+                    return result
         except InFailedSqlTransaction as e:
             raise BadCodingException(
                 f"Tried to set {error_fqid} in an already broken transaction: {e}"
@@ -591,14 +548,12 @@ class DatabaseWriter(SqlQueryHelper):
             with self.connection.cursor() as curs:
                 curs._tx = adapt.Transformer(curs)
                 real_statement = curs._convert_query(statement, arguments)
-            raise InvalidFormat(
-                f"""{e.args[0]}
-        Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or id_)}'
+            raise InvalidFormat(f"""{e.args[0]}
+        Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
         The psycopg arguments are: {arguments}
         The fields are: {statement.as_string().split('(')[1].split(')')[0]}
         The constraint from the relational schema:
-        {constraint}        The postgres statement: {real_statement.query.decode()}"""
-            )
+        {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:
             raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
         except StringDataRightTruncation as e:
@@ -608,18 +563,16 @@ class DatabaseWriter(SqlQueryHelper):
         except SyntaxError as e:
             if 'syntax error at or near "WHERE"' in e.args[0]:
                 raise ModelDoesNotExist(
-                    fqid_from_collection_and_id(collection, target_id or id_)
+                    fqid_from_collection_and_id(collection, target_id or 0)
                 )
             else:
                 raise e
         except Exception as e:
             raise e
-            raise ModelLocked(
-                f"Model ... is locked on fields .... {e}\
-                This is not the end. There will be more next episode. To be continued."
-            )
+            raise ModelLocked(f"Model ... is locked on fields .... {e}\
+                This is not the end. There will be more next episode. To be continued.")
 
-        return 0
+        return {}
 
     @retry_on_db_failure
     def reserve_ids(self, collection: str, amount: int) -> list[Id]:

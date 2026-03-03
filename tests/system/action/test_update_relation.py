@@ -86,12 +86,10 @@ class TestUpdateRelation(PatchModelRegistryMixin, BaseActionTestCase):
         super().tearDownClass()
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                curs.execute(
-                    f"""
+                curs.execute(f"""
                     DROP TABLE {collection_b}_t CASCADE;
                     DROP TABLE {collection_a}_t CASCADE;
-                    """
-                )
+                    """)
 
     def setUp(self) -> None:
         super().setUp()
@@ -108,12 +106,10 @@ class TestUpdateRelation(PatchModelRegistryMixin, BaseActionTestCase):
     def tearDown(self) -> None:
         super().tearDown()
         with self.connection.cursor() as curs:
-            curs.execute(
-                f"""
+            curs.execute(f"""
                 TRUNCATE TABLE {collection_a}_t RESTART IDENTITY CASCADE;
                 TRUNCATE TABLE {collection_b}_t RESTART IDENTITY CASCADE;
-                """
-            )
+                """)
 
     def test_set_to_null(self) -> None:
         response = self.request(

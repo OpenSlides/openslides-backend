@@ -1623,7 +1623,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "number": "old number",
                     "comment": "old comment",
                 },
-                "group/1": {"meeting_user_ids": [110]},
             }
         )
         fix_fields = {

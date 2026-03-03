@@ -11,6 +11,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from tests.conftest_helper import (
+    deactivate_notify_triggers,
     generate_remove_all_test_functions,
     generate_sql_for_test_initiation,
 )
@@ -52,6 +53,7 @@ def setup_pytest_session() -> Generator[None]:
     """
     with get_new_os_conn() as conn:
         with conn.cursor() as curs:
+            deactivate_notify_triggers(curs)
             tablenames = get_rel_db_table_names(curs)
             if tablenames:
                 curs.execute(

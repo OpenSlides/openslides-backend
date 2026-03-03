@@ -86,20 +86,17 @@ class MotionCategoryNumberMotions(UpdateAction):
         )
         self.main_category_id = main_category_id
 
-        if category.get("meeting_id"):
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", category["meeting_id"]),
-                [
-                    "motion_ids",
-                    "motion_category_ids",
-                    "motions_number_with_blank",
-                    "motions_number_min_digits",
-                    "motions_amendments_prefix",
-                ],
-            )
-            self.meeting = meeting
-        else:
-            raise ActionException("Main category doesnt include meeting_id.")
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", category["meeting_id"]),
+            [
+                "motion_ids",
+                "motion_category_ids",
+                "motions_number_with_blank",
+                "motions_number_min_digits",
+                "motions_amendments_prefix",
+            ],
+        )
+        self.meeting = meeting
 
         gmr_categories = GetManyRequest(
             "motion_category",
