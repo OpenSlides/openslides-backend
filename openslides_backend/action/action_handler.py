@@ -125,7 +125,7 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            retry_count = int(self.env.ACTION_MAX_RETRIES) or 1
+            retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
             retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
             for attempt in range(1, retry_count + 1):
                 try:
@@ -178,10 +178,10 @@ class ActionHandler(BaseHandler):
                     raise RelationException(
                         f"Relation violates required constraint: {e}"
                     )
-                except SerializationFailure as e:
+                except SerializationFailure:
                     if attempt == retry_count:
                         raise DatabaseException(
-                            f"Unexpected error reading from database: {e}"
+                            "Database operation failed due to concurring actions. Please try again later."
                         )
                     sleep(retry_timeout)
             raise BadCodingException("This code should never execute")
