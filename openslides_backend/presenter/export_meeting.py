@@ -18,6 +18,7 @@ export_meeting_schema = fastjsonschema.compile(
         "description": "export meeting",
         "properties": {
             "meeting_id": required_id_schema,
+            "old_db_compatibility": {"type": "boolean"},
         },
     }
 )
@@ -41,7 +42,10 @@ class Export(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         export_data = export_meeting(
-            self.datastore, self.data["meeting_id"], datetime_decimal_to_string=True
+            self.datastore,
+            self.data["meeting_id"],
+            transform_datetime_decimal=True,
+            datetime_to_unix=self.data.get("old_db_compatibility"),
         )
         if id_ := next(
             (
