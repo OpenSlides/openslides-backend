@@ -244,6 +244,7 @@ def test_create_error_own_field_not_null(
     assert (
         "Missing fields 'username' in 'user/1'. Ooopsy Daisy!" in e_info.value.message
     )
+    assert_no_model("user/1")
 
 
 def test_create_error_1_1_not_null(
