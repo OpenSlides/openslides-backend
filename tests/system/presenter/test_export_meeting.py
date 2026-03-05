@@ -520,3 +520,36 @@ class TestExportMeeting(BasePresenterTestCase):
 
     def test_export_with_timestamps_old_db_compatibility_false(self) -> None:
         self.base_test_export_with_timestamps_old_db_compatibility(False)
+
+    def base_test_export_without_mmiagi_old_db_compatibility(
+        self, old_db_compatibility: bool
+    ) -> None:
+        self.create_mediafile(1, 1)
+        self.set_models(
+            {
+                "meeting_mediafile/1": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                },
+            }
+        )
+        old_db_compatibility_data = (
+            {"old_db_compatibility": True} if old_db_compatibility else {}
+        )
+        status_code, data = self.request(
+            "export_meeting",
+            {"meeting_id": 1, **old_db_compatibility_data},
+        )
+        assert status_code == 200
+        if old_db_compatibility:
+            assert data["meeting_mediafile"]["1"]["inherited_access_group_ids"] == []
+        else:
+            assert "inherited_access_group_ids" not in data["meeting_mediafile"]["1"]
+        assert "access_group_ids" not in data["meeting_mediafile"]["1"]
+
+    def test_export_without_mmiagi_old_db_compatibility_true(self) -> None:
+        self.base_test_export_without_mmiagi_old_db_compatibility(True)
+
+    def test_export_without_mmiagi_old_db_compatibility_false(self) -> None:
+        self.base_test_export_without_mmiagi_old_db_compatibility(False)
