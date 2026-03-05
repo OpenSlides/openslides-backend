@@ -220,6 +220,33 @@ def test_create_11_field_as_1n() -> None:
     assert_no_model("agenda_item/2")
 
 
+def test_create_error_own_field_unique(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    create_models(get_data())
+    with get_new_os_conn() as conn:
+        with pytest.raises(RelationException) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Create,
+                                    "fqid": "user/2",
+                                    "fields": {"username": "1", "first_name": "Alice"},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+    assert "Relation from user/2 violates UNIQUE constraint: " in e_info.value.message
+    assert "Key (username)=(1) already exists." in e_info.value.message
+    assert_no_model("user/2")
+
+
 def test_create_error_own_field_not_null(
     db_connection: Connection[rows.DictRow],
 ) -> None:

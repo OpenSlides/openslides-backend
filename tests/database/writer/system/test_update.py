@@ -13,6 +13,7 @@ from openslides_backend.shared.exceptions import (
     BadCodingException,
     InvalidFormat,
     ModelDoesNotExist,
+    RelationException,
 )
 from openslides_backend.shared.interfaces.event import EventType, ListFields
 from openslides_backend.shared.typing import PartialModel
@@ -141,6 +142,50 @@ def test_update_nm_field_null() -> None:
         {"id": 1, "username": "1", "first_name": "1", "committee_management_ids": None},
     )
     assert_model("committee/1", {"id": 1, "name": "com1", "user_ids": None})
+
+
+def test_update_error_own_field_unique(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    create_models(
+        [
+            {
+                "events": [
+                    {
+                        "type": EventType.Create,
+                        "fqid": "user/1",
+                        "fields": {"username": "unique", "first_name": "1"},
+                    },
+                    {
+                        "type": EventType.Create,
+                        "fqid": "user/2",
+                        "fields": {"username": "ordinary", "first_name": "2"},
+                    },
+                ]
+            }
+        ]
+    )
+    with get_new_os_conn() as conn:
+        with pytest.raises(RelationException) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "user/2",
+                                    "fields": {"username": "unique"},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+    assert "Relation from user/2 violates UNIQUE constraint: " in e_info.value.message
+    assert "Key (username)=(unique) already exists." in e_info.value.message
+    assert_model("user/2", {"id": 2, "username": "ordinary", "first_name": "2"})
 
 
 def test_update_error_own_field_not_null(
