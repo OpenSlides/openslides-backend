@@ -710,7 +710,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Invalid data for 'poll/1': The relation content_object_id_assignment_ids requires the following fields to be equal:\n poll/1/meeting_ids: 4 \n assignment/1/meeting_ids", response.json["message"])
+        self.assertIn("Invalid data for 'poll/1': The relation content_object_id_assignment_id requires the following fields to be equal:\n poll/1/meeting_id: 4 \n assignment/1/meeting_id", response.json["message"])
 
     def test_create_user_option_valid(self) -> None:
         self.set_user_groups(1, [1])

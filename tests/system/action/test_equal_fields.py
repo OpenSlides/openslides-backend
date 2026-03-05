@@ -38,9 +38,9 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"""Invalid data for '{collection}/1': The relation meeting_user_ids requires the following fields to be equal:
- {collection}/1/meeting_ids: 1 
- meeting_user/1/meeting_ids: 4""",
+            f"""Invalid data for '{collection}/1': The relation meeting_user_id requires the following fields to be equal:
+ {collection}/1/meeting_id: 1 
+ meeting_user/1/meeting_id: 4""",
             response.json["message"],
         )
 
@@ -52,6 +52,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
 
     def setup_chat_group_test(self) -> None:
         self.set_models({
+            "organization/1": {"enable_chat": True},
             "chat_group/1": {
                 "meeting_id": 1,
                 "name": "Chat me up, baby!"
@@ -63,19 +64,37 @@ class EqualFieldsActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_create_chat_no_group(self) -> None:
+        self.setup_chat_group_test()
         response = self.request("chat_group.create", {"name": "Chat me up too, please?", "meeting_id": 1})
         self.assert_status_code(response, 200)
 
     def test_create_chat_with_same_meeting_read_group(self) -> None:
+        self.setup_chat_group_test()
         response = self.request("chat_group.create", {"name": "Chat me up too, please?", "meeting_id": 1, "read_group_ids": [2]})
         self.assert_status_code(response, 200)
 
     def test_create_chat_with_other_meeting_read_group(self) -> None:
+        self.setup_chat_group_test()
         response = self.request("chat_group.create", {"name": "Chat me up too, please?", "meeting_id": 1, "read_group_ids": [5]})
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"""Invalid data for 'chat_group/1': The relation meeting_user_ids requires the following fields to be equal:
- chat_group/1/meeting_ids: 1 
- meeting_user/1/meeting_ids: 4""",
+            f"""Invalid data for 'chat_group/2': The relation read_chat_group_ids requires the following fields to be equal:
+ group/5/meeting_id: 4 
+ chat_group/2/meeting_id: 1""",
+            response.json["message"],
+        )
+    
+    def test_update_add_group_to_chat_read_group(self) -> None:
+        self.setup_chat_group_test()
+        response = self.request("chat_group.update", {"id": 1, "read_group_ids": [2]})
+        self.assert_status_code(response, 200)
+
+    def test_update_add_other_meeting_group_to_chat_read_group(self) -> None:
+        self.setup_chat_group_test()
+        response = self.request("chat_group.update", {"id": 1, "read_group_ids": [5]})
+        self.assertIn(
+            f"""Invalid data for 'chat_group/1': The relation read_chat_group_ids requires the following fields to be equal:
+ group/5/meeting_id: 4 
+ chat_group/1/meeting_id: 1""",
             response.json["message"],
         )
