@@ -474,3 +474,82 @@ class TestExportMeeting(BasePresenterTestCase):
         assert status_code == 200
         # Should not include mediafile ids bc presenter does not include orga mediafiles
         assert data["mediafile"] == {}
+
+    def base_test_export_with_timestamps_old_db_compatibility(
+        self, old_db_compatibility: bool
+    ) -> None:
+        meeting_timestamp_unix = 626637600
+        meeting_timestamp_string = "1989-11-09T18:00:00+00:00"
+        motion_timestamp_unix = 1033479420
+        motion_timestamp_string = "2002-10-01T13:37:00+00:00"
+        self.set_models(
+            {
+                "meeting/1": {
+                    "start_time": datetime.fromtimestamp(
+                        meeting_timestamp_unix, tz=ZoneInfo("Europe/Berlin")
+                    )
+                }
+            }
+        )
+        self.create_motion(
+            1,
+            1,
+            motion_data={
+                "created": datetime.fromtimestamp(
+                    motion_timestamp_unix, tz=ZoneInfo("Europe/Berlin")
+                )
+            },
+        )
+        old_db_compatibility_data = (
+            {"old_db_compatibility": True} if old_db_compatibility else {}
+        )
+        status_code, data = self.request(
+            "export_meeting",
+            {"meeting_id": 1, **old_db_compatibility_data},
+        )
+        assert status_code == 200
+        if old_db_compatibility:
+            assert data["meeting"]["1"]["start_time"] == meeting_timestamp_unix
+            assert data["motion"]["1"]["created"] == motion_timestamp_unix
+        else:
+            assert data["meeting"]["1"]["start_time"] == meeting_timestamp_string
+            assert data["motion"]["1"]["created"] == motion_timestamp_string
+
+    def test_export_with_timestamps_old_db_compatibility_true(self) -> None:
+        self.base_test_export_with_timestamps_old_db_compatibility(True)
+
+    def test_export_with_timestamps_old_db_compatibility_false(self) -> None:
+        self.base_test_export_with_timestamps_old_db_compatibility(False)
+
+    def base_test_export_without_mmiagi_old_db_compatibility(
+        self, old_db_compatibility: bool
+    ) -> None:
+        self.create_mediafile(1, 1)
+        self.set_models(
+            {
+                "meeting_mediafile/1": {
+                    "is_public": False,
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                },
+            }
+        )
+        old_db_compatibility_data = (
+            {"old_db_compatibility": True} if old_db_compatibility else {}
+        )
+        status_code, data = self.request(
+            "export_meeting",
+            {"meeting_id": 1, **old_db_compatibility_data},
+        )
+        assert status_code == 200
+        if old_db_compatibility:
+            assert data["meeting_mediafile"]["1"]["inherited_access_group_ids"] == []
+        else:
+            assert "inherited_access_group_ids" not in data["meeting_mediafile"]["1"]
+        assert "access_group_ids" not in data["meeting_mediafile"]["1"]
+
+    def test_export_without_mmiagi_old_db_compatibility_true(self) -> None:
+        self.base_test_export_without_mmiagi_old_db_compatibility(True)
+
+    def test_export_without_mmiagi_old_db_compatibility_false(self) -> None:
+        self.base_test_export_without_mmiagi_old_db_compatibility(False)
