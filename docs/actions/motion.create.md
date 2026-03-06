@@ -6,7 +6,7 @@
     meeting_id: Id;
 
 // Optional
-    number: string;
+    number: string;  // unique in the meeting
     additional_submitter: string;
     sort_parent_id: Id;
     category_id: Id;
