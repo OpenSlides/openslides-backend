@@ -210,7 +210,6 @@ class ChatGroup(Model):
         to={"group": "read_chat_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_read_group_ids_group_t",
             "chat_group_id",
@@ -497,7 +496,6 @@ class Group(Model):
     read_chat_group_ids = fields.RelationListField(
         to={"chat_group": "read_group_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_read_group_ids_group_t",
             "group_id",
@@ -2507,7 +2505,6 @@ class Poll(Model, PollModelMixin):
         to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
         to={"option": "poll_id"},
