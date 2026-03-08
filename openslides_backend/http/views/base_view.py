@@ -147,7 +147,9 @@ class BaseView(View):
         """
         Validate OIDC token and return user_id.
 
-        Looks up user by keycloak_id, provisioning if necessary.
+        Looks up user by keycloak_id in the database.
+        Returns 0, None if user is not found, deactivated, or session is invalidated.
+        No provisioning - that happens in the oidc-provision route.
         """
         from ...services.database.extended_database import ExtendedDatabase
         from ...services.postgresql.db_connection_handling import get_new_os_conn
@@ -196,59 +198,12 @@ class BaseView(View):
                 )
                 return 0, None
 
-        # 3. User not found - provision via userinfo endpoint
+        # 3. User not found - no provisioning here, return 0
+        # Provisioning happens in oidc-provision route
         self.logger.debug(
-            f"User not found, provisioning for keycloak_id: {keycloak_id}"
+            f"User not found with keycloak_id: {keycloak_id}. Use oidc-provision route for provisioning."
         )
-        try:
-            user_info = validator.get_user_info(token)
-            user_id = self._provision_oidc_user(keycloak_id, user_info)
-            if user_id:
-                self.logger.debug(f"Provisioned new OIDC user: {user_id}")
-                return user_id, None
-        except Exception as e:
-            self.logger.error(f"Failed to provision user: {e}")
-
         return 0, None
-
-    def _provision_oidc_user(
-        self, keycloak_id: str, user_info: dict[str, Any]
-    ) -> int | None:
-        """
-        Provision a new user via the internal save_keycloak_account action.
-        """
-        from ...action.action_handler import ActionHandler
-
-        # Prepare the action data from user_info
-        action_data = {
-            "keycloak_id": keycloak_id,
-            "email": user_info.get("email"),
-            "given_name": user_info.get("given_name"),
-            "family_name": user_info.get("family_name"),
-            "preferred_username": user_info.get("preferred_username"),
-            "name": user_info.get("name"),
-        }
-
-        # Remove None values
-        action_data = {k: v for k, v in action_data.items() if v is not None}
-
-        handler = ActionHandler(self.env, self.services, self.logging)
-        result = handler.handle_request(
-            [{"action": "user.save_keycloak_account", "data": [action_data]}],
-            user_id=-1,
-            internal=True,
-        )
-
-        if result.get("success") and result.get("results"):
-            action_results = result["results"]
-            if action_results and action_results[0]:
-                first_result = action_results[0]
-                if isinstance(first_result, list) and first_result:
-                    item = first_result[0]
-                    if isinstance(item, dict):
-                        return item.get("user_id")
-
-        return None
 
     def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(
