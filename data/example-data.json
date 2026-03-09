@@ -1965,13 +1965,15 @@
         "1": {
             "id": 1,
             "poll_id": 1,
-            "allow_abstain": false
+            "allow_abstain": false,
+            "onehundred_percent_base": "valid"
         },
         "2": {
             "id": 2,
             "poll_id": 2,
             "allow_abstain": true,
-            "option_ids": [1, 2]
+            "option_ids": [1, 2],
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_selection": {
@@ -1981,7 +1983,9 @@
             "option_ids": [3, 4, 5],
             "max_options_amount": 2,
             "min_options_amount": 1,
-            "allow_nota": true
+            "allow_nota": true,
+            "strike_out": false,
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_rating_score": {
@@ -1993,7 +1997,8 @@
             "min_options_amount": 2,
             "max_votes_per_option": 0,
             "max_vote_sum": 5,
-            "min_vote_sum": 1
+            "min_vote_sum": 1,
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_rating_approval": {
@@ -2003,7 +2008,8 @@
             "max_options_amount": 0,
             "min_options_amount": 0,
             "allow_abstain": true,
-            "option_ids": [8, 9, 10]
+            "option_ids": [8, 9, 10],
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_option": {

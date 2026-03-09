@@ -2533,6 +2533,12 @@ class PollConfigApproval(Model):
         is_view_field=True,
     )
     allow_abstain = fields.BooleanField(default=True)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": ["YN", "valid", "cast", "entitled", "entitled_present", "disabled"]
+        },
+    )
 
 
 class PollConfigOption(Model):
@@ -2571,6 +2577,12 @@ class PollConfigRatingApproval(Model):
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
     allow_abstain = fields.BooleanField(default=True)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": ["YN", "valid", "cast", "entitled", "entitled_present", "disabled"]
+        },
+    )
 
 
 class PollConfigRatingScore(Model):
@@ -2591,6 +2603,12 @@ class PollConfigRatingScore(Model):
     max_votes_per_option = fields.IntegerField(default=0)
     max_vote_sum = fields.IntegerField(default=0)
     min_vote_sum = fields.IntegerField(default=0)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": ["YN", "valid", "cast", "entitled", "entitled_present", "disabled"]
+        },
+    )
 
 
 class PollConfigSelection(Model):
@@ -2609,6 +2627,20 @@ class PollConfigSelection(Model):
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
     allow_nota = fields.BooleanField(default=False)
+    strike_out = fields.BooleanField(default=False)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": [
+                "no_general",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
 
 
 class PollConfigStvScottish(Model):
