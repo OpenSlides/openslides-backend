@@ -221,7 +221,8 @@ def export_meeting(
                 for field, value in data.items():
                     if isinstance(value, datetime.datetime):
                         if datetime_to_unix:
-                            data[field] = value.timestamp()
+                            clean_value = value.replace(microsecond=0)
+                            data[field] = clean_value.timestamp()
                         else:
                             data[field] = value.isoformat()
                     if isinstance(value, Decimal):

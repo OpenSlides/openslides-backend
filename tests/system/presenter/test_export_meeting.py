@@ -480,8 +480,8 @@ class TestExportMeeting(BasePresenterTestCase):
     ) -> None:
         meeting_timestamp_unix = 626637600
         meeting_timestamp_string = "1989-11-09T18:00:00+00:00"
-        motion_timestamp_unix = 1033479420
-        motion_timestamp_string = "2002-10-01T13:37:00+00:00"
+        motion_timestamp_unix = 1033479479
+        motion_timestamp_string = "2002-10-01T13:37:59.687459+00:00"
         self.set_models(
             {
                 "meeting/1": {
@@ -496,7 +496,7 @@ class TestExportMeeting(BasePresenterTestCase):
             1,
             motion_data={
                 "created": datetime.fromtimestamp(
-                    motion_timestamp_unix, tz=ZoneInfo("Europe/Berlin")
+                    1033479479.687459, tz=ZoneInfo("Europe/Berlin")
                 )
             },
         )
