@@ -179,19 +179,28 @@ class ActionView(BaseView):
         In OIDC mode, validates the Bearer token from Authorization header via JWKS.
 
         Response format (API-compatible with auth service):
-        - Success: {"success": true, "message": "Action handled successfully"}
+        - Success: {"success": true, "message": "Action handled successfully",
+                     "user_id": <int>, "token_expires_in": <seconds>}
         - Anonymous: {"success": true, "message": "anonymous"}
         """
+        import time
+
         self.logger.debug("Start OIDC who-am-i request.")
 
         user_id, _ = self.get_user_id_from_headers(request.headers, request.cookies)
         if user_id and user_id > 0:
             self.logger.debug(f"User authenticated: user_id={user_id}")
-            return {
+            response: dict[str, Any] = {
                 "success": True,
                 "message": "Action handled successfully",
                 "user_id": user_id,
-            }, None
+            }
+
+            exp = getattr(self, "_oidc_token_exp", None)
+            if exp:
+                response["token_expires_in"] = max(0, int(exp - time.time()))
+
+            return response, None
 
         self.logger.debug("No valid session found, returning anonymous.")
         return {"success": True, "message": "anonymous"}, None

@@ -161,6 +161,7 @@ class BaseView(View):
 
         # 1. Token validieren
         payload = validator.validate_token(token)
+        self._oidc_token_exp = payload.get("exp")
         keycloak_id = payload.get("sub")
         if not keycloak_id:
             self.logger.error("Missing 'sub' claim in token")
