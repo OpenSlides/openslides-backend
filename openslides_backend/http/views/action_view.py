@@ -167,16 +167,9 @@ class ActionView(BaseView):
 
         self.logger.debug(f"Provisioned OIDC user: {user_id}")
 
-        # 6. Generate auth token and cookie via SSO login
-        access_token, refresh_cookie = self.services.authentication().sso_login(user_id)
-
-        # 7. Redirect to frontend with auth session cookie
+        # 6. Redirect to frontend (Traefik OIDC plugin manages the session)
         redirect_uri = request.args.get("redirect_uri", "/")
-        return RedirectResponse(
-            location=redirect_uri,
-            access_token=access_token,
-            refresh_cookie=refresh_cookie,
-        ), None
+        return RedirectResponse(location=redirect_uri), None
 
     @route("who-am-i", prefix="auth", method="POST", json=False)
     def oidc_who_am_i(self, request: Request) -> RouteResponse:
