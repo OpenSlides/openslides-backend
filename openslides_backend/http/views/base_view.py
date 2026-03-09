@@ -159,7 +159,7 @@ class BaseView(View):
         # for downstream code (e.g., Keycloak Admin API calls)
         self.services.authentication().set_authentication(token, "")
 
-        # 1. Token validieren
+        # 1. Validate token
         payload = validator.validate_token(token)
         self._oidc_token_exp = payload.get("exp")
         keycloak_id = payload.get("sub")
