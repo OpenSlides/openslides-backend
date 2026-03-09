@@ -1195,7 +1195,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"username": "timtari", "is_active": True},
-                "user/3": {"username": "timtari", "is_active": True},
+                "user/3": {"username": "sarah", "is_active": True},
             }
         )
         response = self.request(
