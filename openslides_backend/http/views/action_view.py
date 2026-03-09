@@ -118,31 +118,31 @@ class ActionView(BaseView):
             "Authentication", ""
         )
         if not auth_header.lower().startswith("bearer "):
-            raise Unauthorized("Missing Bearer token")
+            raise Unauthorized()
 
         token = auth_header[7:]
 
         # 2. Validate token via OIDC validator
         validator = get_oidc_validator()
         if not validator:
-            raise Unauthorized("OIDC not configured")
+            raise Unauthorized()
 
         payload = validator.validate_token(token)
         keycloak_id = payload.get("sub")
         if not keycloak_id:
-            raise Unauthorized("Missing 'sub' claim")
+            raise Unauthorized()
 
         # 3. Check if session was invalidated
         session_id = payload.get("sid")
         if session_id and is_session_invalidated(session_id):
-            raise Unauthorized("Session invalidated")
+            raise Unauthorized()
 
         # 4. Get user info from Keycloak userinfo endpoint
         user_info = validator.get_user_info(token)
 
         # 5. Provision/update user via user.save_keycloak_account action
         handler = ActionHandler(self.env, self.services, self.logging)
-        action_data = {
+        action_data: dict[str, Any] = {
             "keycloak_id": keycloak_id,
             "email": user_info.get("email"),
             "given_name": user_info.get("given_name"),
@@ -158,12 +158,15 @@ class ActionView(BaseView):
             internal=True,
         )
 
-        if not result.get("success") or not result.get("results"):
-            raise Unauthorized("User provisioning failed")
+        result_data: dict[str, Any] = dict(result)
+        if not result_data.get("success") or not result_data.get("results"):
+            raise Unauthorized()
 
-        user_id = result["results"][0][0].get("user_id")
+        results_list = result_data["results"]
+        first_result = results_list[0]
+        user_id = first_result[0].get("user_id") if first_result else None
         if not user_id:
-            raise Unauthorized("User creation failed")
+            raise Unauthorized()
 
         self.logger.debug(f"Provisioned OIDC user: {user_id}")
 
