@@ -1984,6 +1984,7 @@
             "max_options_amount": 2,
             "min_options_amount": 1,
             "allow_nota": true,
+            "strike_out": false,
             "onehundred_percent_base": "valid"
         }
     },
