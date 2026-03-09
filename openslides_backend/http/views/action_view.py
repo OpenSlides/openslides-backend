@@ -13,11 +13,11 @@ from ...services.postgresql.db_connection_handling import get_new_os_conn
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError, View400Exception
 from ...shared.interfaces.wsgi import RouteResponse
-from ...shared.oidc_validator import get_oidc_validator, is_session_invalidated
+from ...shared.oidc_validator import get_oidc_validator
 from ..http_exceptions import Unauthorized
 from ..redirect_response import RedirectResponse
 from ..request import Request
-from .base_view import BaseView, invalidate_session, route
+from .base_view import BaseView, invalidate_session, is_session_invalidated, route
 
 INTERNAL_AUTHORIZATION_HEADER = "Authorization"
 
