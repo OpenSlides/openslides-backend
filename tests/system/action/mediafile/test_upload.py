@@ -598,6 +598,25 @@ l,m,n,"""
             in response.json["message"]
         )
 
+    def test_create_directory_title_owner_id_root_unique(self) -> None:
+        self.create_meeting()
+        self.create_mediafile(7, 1)
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/1",
+                "title": "file_7",
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "File 'file_7' already exists in the root folder."
+            in response.json["message"]
+        )
+
     def test_create_directory_owner_access_groups_dont_match(self) -> None:
         self.create_meeting()
         self.create_meeting(4)

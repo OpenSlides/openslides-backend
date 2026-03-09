@@ -891,6 +891,16 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_title_owner_id_root_unique(self) -> None:
+        self.create_mediafile(7, 1)
+        self.create_mediafile(8, 1)
+        response = self.request("mediafile.update", {"id": 8, "title": "file_7"})
+        self.assert_status_code(response, 400)
+        assert (
+            "File 'file_7' already exists in the root folder."
+            in response.json["message"]
+        )
+
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_models,

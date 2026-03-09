@@ -55,6 +55,79 @@ class OptionCreateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_create_text_not_unique(self) -> None:
+        self.create_motion(111, 112)
+        self.set_models(
+            {
+                "poll/65": {
+                    "title": "pool",
+                    "content_object_id": "motion/112",
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "Y",
+                    "meeting_id": 111,
+                },
+                "option/78": {
+                    "text": "test",
+                    "meeting_id": 111,
+                    "weight": 9,
+                    "poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.create",
+            {"text": "test", "meeting_id": 111, "weight": 10, "poll_id": 65},
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(test, 65) already exists.',
+            response.json["message"],
+        )
+
+    def test_create_content_object_id_not_unique(self) -> None:
+        self.set_models(
+            {
+                "motion/112": {
+                    "title": "mosh pit",
+                    "state_id": 111,
+                    "meeting_id": 111,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion/112",
+                    "meeting_id": 111,
+                },
+                "poll/65": {
+                    "title": "pool",
+                    "content_object_id": "motion/112",
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "Y",
+                    "meeting_id": 111,
+                },
+                "option/78": {
+                    "content_object_id": "motion/112",
+                    "meeting_id": 111,
+                    "weight": 9,
+                    "poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.create",
+            {
+                "content_object_id": "motion/112",
+                "meeting_id": 111,
+                "weight": 10,
+                "poll_id": 65,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"\nDETAIL:  Key (content_object_id, poll_id)=(motion/112, 65) already exists.',
+            response.json["message"],
+        )
+
     def test_create_yna_votes(self) -> None:
         response = self.request(
             "option.create",
