@@ -153,7 +153,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
             meeting_id=222,
             base=8,
             motion_data={
-                "number": "001",
+                "number": "004",
                 "number_value": 1,
                 "lead_motion_id": 11,
             },
