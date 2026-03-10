@@ -36,7 +36,8 @@ def export_meeting(
     meeting_id: int,
     internal_target: bool = False,
     update_mediafiles: bool = False,
-    datetime_decimal_to_string: bool = False,
+    transform_datetime_decimal: bool = False,
+    datetime_to_unix: bool = False,
 ) -> dict[str, Any]:
     export: dict[str, Any] = {}
 
@@ -215,11 +216,15 @@ def export_meeting(
         export[collection] = dict(
             sorted(instances.items(), key=lambda item: int(item[0]))
         )
-        if datetime_decimal_to_string and isinstance(instances, dict):
+        if transform_datetime_decimal and isinstance(instances, dict):
             for data in instances.values():
                 for field, value in data.items():
                     if isinstance(value, datetime.datetime):
-                        data[field] = value.isoformat()
+                        if datetime_to_unix:
+                            clean_value = value.replace(microsecond=0)
+                            data[field] = clean_value.timestamp()
+                        else:
+                            data[field] = value.isoformat()
                     if isinstance(value, Decimal):
                         data[field] = str(value)
 
