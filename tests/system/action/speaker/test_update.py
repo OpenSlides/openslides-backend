@@ -17,7 +17,6 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             },
             "user/7": {"username": "test_username1"},
             "meeting_user/7": {"meeting_id": 1, "user_id": 7},
-            "group/1": {"meeting_user_ids": [7]},
             "topic/1337": {
                 "title": "introduction leet gathering",
                 "meeting_id": 1,
@@ -447,7 +446,6 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "meeting_id": 1,
                 },
-                "group/3": {"meeting_user_ids": [8]},
             }
         )
         response = self.request("speaker.update", {"id": 890, "meeting_user_id": 8})
@@ -828,6 +826,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                     "begin_time": datetime.fromtimestamp(1234),
                     "structure_level_list_of_speakers_id": 1,
                 },
+                "meeting_user/7": {"structure_level_ids": [1]},
             }
         )
 

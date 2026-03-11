@@ -17,7 +17,11 @@ WSGIEnvironment = dict[str, Any]
 # TODO Use proper type here.
 ResponseBody = Any
 
-RouteResponse = tuple[ResponseBody, str | None]
+# Second element can be:
+# - None: no auth headers
+# - str: access_token only
+# - tuple[str, str]: (access_token, refresh_cookie)
+RouteResponse = tuple[ResponseBody, str | tuple[str, str] | None]
 
 
 class View(Protocol):

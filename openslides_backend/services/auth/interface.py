@@ -12,6 +12,18 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
 
     auth_handler: Any
 
+    def configure_oidc(
+        self, oidc_enabled: bool, provider_url: str | None, client_id: str | None
+    ) -> None:
+        """
+        Configure OIDC authentication from organization settings.
+
+        Args:
+            oidc_enabled: Whether OIDC is enabled
+            provider_url: Keycloak realm URL
+            client_id: OIDC client ID
+        """
+
     def authenticate(self) -> tuple[int, str | None]:
         """
         A request to get knowledge about themselves. This information is contained in the payload of
@@ -64,4 +76,15 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         """
         Clears all sessions of the given user.
         Use with caution as the auth-service uses its internal route for this.
+        """
+
+    def sso_login(self, user_id: int) -> tuple[str, str]:
+        """
+        Create a session for a user via SSO (OIDC/SAML) login.
+
+        Args:
+            user_id: The OpenSlides user ID to create a session for.
+
+        Returns:
+            Tuple of (access_token, refresh_cookie)
         """

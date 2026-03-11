@@ -12,6 +12,8 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
 from ....shared.filters import And, FilterOperator, Or
+from ....shared.keycloak_admin_client import KeycloakAdminClient
+from ....shared.oidc_config import get_oidc_config
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
@@ -22,6 +24,7 @@ from ...util.register import register_action
 from ..meeting_user.base_delete import MeetingUserBaseDelete
 from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
+from .keycloak_sync_mixin import KeycloakSyncMixin
 from .user_mixins import (
     AdminIntegrityCheckMixin,
     LimitOfUserMixin,
@@ -41,6 +44,7 @@ class MeetingUserDeleteInternal(MeetingUserBaseDelete):
 
 @register_action("user.update")
 class UserUpdate(
+    KeycloakSyncMixin,
     UserMixin,
     EmailCheckMixin,
     CreateUpdatePermissionsMixin,
@@ -85,6 +89,7 @@ class UserUpdate(
             "committee_management_ids",
             "is_demo_user",
             "saml_id",
+            "keycloak_id",
             "member_number",
             "external",
             "home_committee_id",
@@ -144,6 +149,7 @@ class UserUpdate(
                 "is_active",
                 "organization_management_level",
                 "saml_id",
+                "keycloak_id",
                 "password",
                 "home_committee_id",
             ],
@@ -156,16 +162,24 @@ class UserUpdate(
             instance["home_committee_id"] = None
         elif home_committee_id:
             instance["external"] = False
+
+        # Check if user is SAML SSO user (Keycloak users CAN change password via admin API)
         if user.get("saml_id") and (
             instance.get("can_change_own_password") or instance.get("default_password")
         ):
             raise ActionException(
                 f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
+
+        # Clear password when setting SAML ID on existing user with password
         if instance.get("saml_id") and user.get("password"):
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""
+
+        # When setting Keycloak ID, enable self-password-change (syncs via admin API)
+        if instance.get("keycloak_id"):
+            instance["can_change_own_password"] = True
 
         if instance.get("username") and re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
@@ -191,7 +205,8 @@ class UserUpdate(
             if not user.get("is_active"):
                 self.check_limit_of_user(1)
         elif is_active is False and user.get("is_active"):
-            self.auth.clear_sessions_by_user_id(instance["id"])
+            # Clear sessions when deactivating user
+            self._clear_user_sessions(instance["id"], user.get("keycloak_id"))
 
         check_gender_exists(self.datastore, instance)
         return instance
@@ -249,3 +264,35 @@ class UserUpdate(
                 for group_id in group_list
             },
         )
+
+    def _clear_user_sessions(
+        self, user_id: int, keycloak_id: str | None = None
+    ) -> None:
+        """
+        Clear user sessions when deactivating a user.
+
+        In OIDC mode with Keycloak, clears sessions via Keycloak Admin API.
+        In standard mode, clears sessions via the auth service.
+        """
+        oidc_config = get_oidc_config()
+
+        if oidc_config.enabled and oidc_config.admin_api_enabled:
+            # In OIDC mode, clear sessions via Keycloak
+            if keycloak_id and oidc_config.admin_api_url:
+                try:
+                    client = KeycloakAdminClient(
+                        admin_api_url=oidc_config.admin_api_url,
+                        client_id=oidc_config.admin_client_id,
+                        client_secret=oidc_config.admin_client_secret,
+                        logger=self.logger,
+                    )
+                    client.clear_user_sessions(keycloak_id)
+                except Exception as e:
+                    # Log but don't fail - session clearing is not critical
+                    if self.logger:
+                        self.logger.warning(
+                            f"Failed to clear Keycloak sessions for user {user_id}: {e}"
+                        )
+        else:
+            # Standard mode - use auth service
+            self.auth.clear_sessions_by_user_id(user_id)

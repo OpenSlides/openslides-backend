@@ -7,12 +7,16 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .keycloak_sync_mixin import KeycloakPasswordSyncMixin
 from .password_mixins import ClearSessionsMixin
 
 
 @register_action("user.set_password_self")
 class UserSetPasswordSelf(
-    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
+    KeycloakPasswordSyncMixin,
+    UpdateAction,
+    CheckForArchivedMeetingMixin,
+    ClearSessionsMixin,
 ):
     """
     Action to update the own password.
@@ -43,6 +47,7 @@ class UserSetPasswordSelf(
             raise ActionException("Wrong password")
 
         instance["password"] = self.auth.hash(new_pw)
+        self._sync_password_to_keycloak(instance, new_pw)
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

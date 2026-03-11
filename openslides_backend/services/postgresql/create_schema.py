@@ -84,16 +84,25 @@ def create_schema() -> None:
                     db_migration_index -= 1
                 else:
                     type_ = "fresh"
-                    db_migration_index = MigrationHelper.get_backend_migration_index()
                 print(f"Assuming {type_} database.")
-                MigrationHelper.set_database_migration_info(
-                    cursor,
-                    db_migration_index,
-                    MigrationState.FINALIZED,
-                )
-                print(
-                    f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
-                )
+                if type_ == "fresh":
+                    MigrationHelper.load_migrations()
+                    for mi in MigrationHelper.migrations:
+                        MigrationHelper.set_database_migration_info(
+                            cursor, mi, MigrationState.FINALIZED
+                        )
+                    print(
+                        f"Migration info written for all indices: {list(MigrationHelper.migrations.keys())} - {MigrationState.FINALIZED}"
+                    )
+                else:
+                    MigrationHelper.set_database_migration_info(
+                        cursor,
+                        db_migration_index,
+                        MigrationState.FINALIZED,
+                    )
+                    print(
+                        f"Migration info written: {db_migration_index} - {MigrationState.FINALIZED}"
+                    )
             except Exception as e:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return

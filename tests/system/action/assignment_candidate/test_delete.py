@@ -31,7 +31,6 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
             },
             "meeting_user/110": {"meeting_id": 1, "user_id": 110},
-            "group/1": {"meeting_user_ids": [110]},
         }
 
     def test_delete_correct(self) -> None:
@@ -40,7 +39,6 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
             {
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
-                "group/1333": {"meeting_user_ids": [110]},
                 "assignment/111": {
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
@@ -96,7 +94,6 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 },
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
-                "group/1333": {"meeting_user_ids": [110]},
                 "assignment/111": {
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
@@ -128,7 +125,6 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
             {
                 "user/110": {"username": "user"},
                 "meeting_user/110": {"meeting_id": 1333, "user_id": 110},
-                "group/1333": {"meeting_user_ids": [110]},
                 "assignment/111": {
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
