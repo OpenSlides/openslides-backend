@@ -2284,7 +2284,7 @@ class Option(Model):
             "motion": "option_ids",
         },
         constant=True,
-        equal_fields="meeting_id",
+        # equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "option_ids"}, required=True, constant=True

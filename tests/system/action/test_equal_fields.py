@@ -8,6 +8,8 @@ from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from openslides_backend.models.models import Poll
+from openslides_backend.shared.interfaces.event import Event, EventType
 
 
 class EqualFieldsActionTest(BaseActionTestCase):
@@ -98,3 +100,73 @@ class EqualFieldsActionTest(BaseActionTestCase):
  chat_group/1/meeting_id: 1""",
             response.json["message"],
         )
+
+    def test_delete_poll_option_user(self) -> None:
+        self.create_topic(1, 1)
+        bob_id = self.create_user("bob", [1])
+        self.set_models({
+            "poll/1": {
+                "type": "named",
+                "pollmethod": "Y",
+                "backend": "long",
+                "state": "finished",
+                "meeting_id": 1,
+                "content_object_id": "topic/1",
+                "title": "Poll 1",
+                "onehundred_percent_base": "YNA",
+            },
+            "option/1": {"meeting_id": 1, "poll_id": 1, "content_object_id": f"user/{bob_id}"},
+            "option/2": {"meeting_id": 1, "poll_id": 1},
+        })
+        response = self.request("user.delete", {"id": bob_id})
+        self.assert_status_code(response, 200)
+
+    def test_create_option_wrong_meeting_on_user(self) -> None:
+        self.create_topic(1, 1)
+        bob_id = self.create_user("bob",[5])
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YN",
+                "onehundred_percent_base": "valid",
+                "options": [
+                    {
+                        "content_object_id": f"user/{bob_id}",
+                        "Y": "10.000000",
+                        "N": "5.000000",
+                    },
+                    {"text": "text", "Y": "10.000000"},
+                ],
+                "meeting_id": 1,
+                "content_object_id": "topic/1",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"Invalid data for 'option/1': The relation content_object_id_user_id requires the following fields to be equal:\n option/1/meeting_id: 1 \n user/2/meeting_id: <NULL>",
+            response.json["message"],
+        )
+
+    def test_delete_poll_option_user_2(self) -> None:
+        self.create_topic(1, 1)
+        bob_id = self.create_user("bob", [1])
+        self.set_models({
+            "poll/1": {
+                "type": "named",
+                "pollmethod": "Y",
+                "backend": "long",
+                "state": "finished",
+                "meeting_id": 1,
+                "content_object_id": "topic/1",
+                "title": "Poll 1",
+                "onehundred_percent_base": "YNA",
+            },
+            "option/1": {"meeting_id": 1, "poll_id": 1, "content_object_id": f"user/{bob_id}"},
+            "option/2": {"meeting_id": 1, "poll_id": 1},
+        })
+        self.perform_write_request([
+            Event(type=EventType.Delete, fqid="meeting_user/1")
+        ])
+        1
