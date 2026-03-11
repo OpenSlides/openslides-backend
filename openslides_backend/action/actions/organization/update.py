@@ -58,7 +58,6 @@ class OrganizationUpdate(
         "saml_metadata_idp",
         "saml_metadata_sp",
         "saml_private_key",
-        # OIDC fields removed - configuration is now via environment variables only
     )
 
     model = Organization()
