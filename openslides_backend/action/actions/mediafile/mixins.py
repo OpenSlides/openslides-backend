@@ -155,7 +155,7 @@ class MediafileMixin(Action):
         id_: int | None,
         owner_id: str,
     ) -> None:
-        if title:
+        if title is not None:
             filter_ = And(
                 FilterOperator("title", "=", title),
                 FilterOperator("parent_id", "=", parent_id),
@@ -191,7 +191,7 @@ class MediafileMixin(Action):
                     raise ActionException("Owner and access groups don't match.")
 
     def check_token_unique(self, token: str | None, id_: int | None) -> None:
-        if token:
+        if token is not None:
             filter_: Filter = And(
                 FilterOperator("token", "=", token),
                 FilterOperator("owner_id", "=", "organization" + KEYSEPARATOR + "1"),
