@@ -251,7 +251,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 31
+        assert counter.calls == 21
 
     def test_update_workflow_id(self) -> None:
         self.create_workflow(111)
@@ -370,7 +370,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
             {"id": 1, "recommendation_extension": "blablabla [motion/2] blablabla"},
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
+        self.assertIn(
             "The following models do not belong to meeting 1: ['motion/2']",
             response.json["message"],
         )

@@ -348,16 +348,16 @@ class BaseRelationField(Field):
         self,
         to: dict[Collection, str],
         on_delete: OnDelete = OnDelete.SET_NULL,
-        equal_fields: str | list[str] = [],
+        # equal_fields: str | list[str] = [],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.to = to
         self.on_delete = on_delete
-        if isinstance(equal_fields, list):
-            self.equal_fields = equal_fields
-        else:
-            self.equal_fields = [equal_fields]
+        # if isinstance(equal_fields, list):
+        #     self.equal_fields = equal_fields
+        # else:
+        #     self.equal_fields = [equal_fields]
 
     def get_target_collection(self) -> Collection:
         """
@@ -370,7 +370,8 @@ class BaseRelationField(Field):
         return (
             f"{self.__class__.__name__}(to={self.to}, is_list_field={self.is_list_field}, "
             f"on_delete={self.on_delete}, required={self.required}, "
-            f"constraints={self.constraints}, equal_fields={self.equal_fields})"
+            f"constraints={self.constraints})"
+            # f"constraints={self.constraints}, equal_fields={self.equal_fields})"
         )
 
 

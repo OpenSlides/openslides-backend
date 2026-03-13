@@ -201,6 +201,7 @@ class MigrationHandler(BaseHandler):
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
+        # TODO: re-enable equal_fields trigger?
         sql_text = (
             create_trigger_1_1_relation_not_null_code
             + create_trigger_1_n_relation_not_null_code

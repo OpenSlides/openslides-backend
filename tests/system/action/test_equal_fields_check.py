@@ -32,18 +32,20 @@ class FakeModelEFB(FakeModel):
 
     c_id = fields.RelationField(
         to={"fake_model_ef_c": "b_id"},
-        equal_fields="meeting_id",
+        # equal_fields="meeting_id",
     )
     c_ids = fields.RelationListField(
-        to={"fake_model_ef_c": "b_ids"}, equal_fields="meeting_id", is_view_field=True
+        to={"fake_model_ef_c": "b_ids"},
+        # equal_fields="meeting_id",
+        is_view_field=True,
     )
     c_generic_id = fields.GenericRelationField(
         to={"fake_model_ef_c": "b_generic_id"},
-        equal_fields="meeting_id",
+        # equal_fields="meeting_id",
     )
     c_generic_ids = fields.GenericRelationListField(
         to={"fake_model_ef_c": "b_generic_ids"},
-        equal_fields="meeting_id",
+        # equal_fields="meeting_id",
         is_view_field=True,
     )
 

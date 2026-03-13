@@ -179,7 +179,7 @@ class Attribute(Node):
     constant: bool = False
     default: Any = None
     on_delete: OnDelete | None = None
-    equal_fields: str | list[str] | None = None
+    # equal_fields: str | list[str] | None = None
     constraints: dict[str, Any]
     is_view_field: bool = False
     is_primary: bool = False
@@ -219,7 +219,7 @@ class Attribute(Node):
             self.read_only = value.pop("read_only", False)
             self.constant = value.pop("constant", False)
             self.default = value.pop("default", None)
-            self.equal_fields = value.pop("equal_fields", None)
+            # self.equal_fields = value.pop("equal_fields", None)
             for k, v in value.items():
                 if k not in (
                     "items",
@@ -229,6 +229,7 @@ class Attribute(Node):
                     "sql",
                     "deferred",
                     "unique",
+                    "equal_fields",
                 ):
                     self.constraints[k] = v
                 elif self.type in ("string[]", "number[]", "text[]") and k == "items":
@@ -257,8 +258,8 @@ class Attribute(Node):
             properties += "constant=True, "
         if self.default is not None:
             properties += f"default={repr(self.default)}, "
-        if self.equal_fields is not None:
-            properties += f"equal_fields={repr(self.equal_fields)}, "
+        # if self.equal_fields is not None:
+        #     properties += f"equal_fields={repr(self.equal_fields)}, "
         if self.constraints:
             properties += f"constraints={repr(self.constraints)}, "
         if self.write_fields is not None:

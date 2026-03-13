@@ -710,7 +710,10 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Relation violates required constraint: The following models do not belong to meeting 4: ['assignment/1']", response.json["message"])
+        self.assertIn(
+            "Relation violates required constraint: The following models do not belong to meeting 4: ['assignment/1']",
+            response.json["message"],
+        )
 
     def test_create_user_option_valid(self) -> None:
         self.set_user_groups(1, [1])
