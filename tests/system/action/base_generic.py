@@ -77,6 +77,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             create_trigger_1_n_relation_not_null_code,
             create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
+            create_trigger_equal_fields_code,
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
@@ -90,6 +91,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             + create_trigger_1_n_relation_not_null_code
             + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
+            + create_trigger_equal_fields_code
         )
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:

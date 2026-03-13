@@ -71,16 +71,16 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                         "meeting_mediafile", meeting_mediafile_id
                     )
                 )
-            if meeting_member_check_necessary:
-                assert_belongs_to_meeting(
-                    self.datastore,
-                    [fqid_content_object]
-                    + [
-                        fqid_from_collection_and_id("projector", id)
-                        for id in instance["ids"]
-                    ],
-                    meeting_id,
-                )
+            # if meeting_member_check_necessary:
+                # assert_belongs_to_meeting(
+                #     self.datastore,
+                #     [fqid_content_object]
+                #     + [
+                #         fqid_from_collection_and_id("projector", id)
+                #         for id in instance["ids"]
+                #     ],
+                #     meeting_id,
+                # )
 
             self.move_equal_projections_to_history_or_unset(instance, meeting_id)
             if not instance.get("stable"):

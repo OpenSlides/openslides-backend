@@ -695,6 +695,23 @@ class CreatePoll(BasePollTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("poll/1", {"state": "created"})
 
+    def test_not_state_change_wrong_meeting(self) -> None:
+        self.create_meeting(4)
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 4,
+                "options": [{"text": "test1"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("Relation violates required constraint: The following models do not belong to meeting 4: ['assignment/1']", response.json["message"])
+
     def test_create_user_option_valid(self) -> None:
         self.set_user_groups(1, [1])
         response = self.request(
@@ -737,7 +754,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
+        self.assertIn(
             "The following models do not belong to meeting 7: ['user/1']",
             response.json["message"],
         )
