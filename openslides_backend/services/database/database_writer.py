@@ -321,7 +321,14 @@ class DatabaseWriter(SqlQueryHelper):
             for field_name, value_list in dictionary.items():
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
-                        lists_type_dict[field_name] = type(value_list[0])
+                        if (
+                            enum_type := getattr(field, "in_array_constraints", {}).get(
+                                "enum_name"
+                            )
+                        ) is not None:
+                            lists_type_dict[field_name] = enum_type
+                        else:
+                            lists_type_dict[field_name] = type(value_list[0])
                     if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field
         return (lists_type_dict, nm_relation_list_fields)

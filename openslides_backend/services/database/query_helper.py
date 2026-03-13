@@ -148,10 +148,12 @@ class SqlQueryHelper:
         else:
             raise BadCodingException("Invalid filter type")
 
-    def get_array_type(self, list_type: type) -> sql.Composable:
+    def get_array_type(self, list_type: type | str) -> sql.Composable:
         if list_type == int:
             return sql.SQL("::integer[]")
         elif list_type == str:
             return sql.SQL("::text[]")
+        elif isinstance(list_type, str) and list_type.startswith("enum_"):
+            return sql.SQL(f"::{list_type}")
         else:
             raise ValueError("Only integer or string lists are supported.")

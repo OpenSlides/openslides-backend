@@ -414,7 +414,8 @@ class Group(Model):
                 "user.can_see",
                 "user.can_update",
                 "user.can_edit_own_delegation",
-            ]
+            ],
+            "enum_name": "enum_group_permissions[]",
         }
     )
     weight = fields.IntegerField()
@@ -2090,7 +2091,8 @@ class MotionState(Model):
                 "motion.can_manage_metadata",
                 "motion.can_manage",
                 "is_submitter",
-            ]
+            ],
+            "enum_name": "enum_motion_state_restrictions[]",
         },
     )
     allow_support = fields.BooleanField(default=False)
