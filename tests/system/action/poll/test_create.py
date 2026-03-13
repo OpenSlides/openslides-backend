@@ -710,7 +710,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Invalid data for 'poll/1': The relation content_object_id_assignment_id requires the following fields to be equal:\n poll/1/meeting_id: 4 \n assignment/1/meeting_id", response.json["message"])
+        self.assertIn("Relation violates required constraint: The following models do not belong to meeting 4: ['assignment/1']", response.json["message"])
 
     def test_create_user_option_valid(self) -> None:
         self.set_user_groups(1, [1])
@@ -754,7 +754,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
+        self.assertIn(
             "The following models do not belong to meeting 7: ['user/1']",
             response.json["message"],
         )

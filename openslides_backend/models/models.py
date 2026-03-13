@@ -2268,7 +2268,9 @@ class Option(Model):
         to={"poll": "option_ids"}, constant=True, equal_fields="meeting_id"
     )
     used_as_global_option_in_poll_id = fields.RelationField(
-        to={"poll": "global_option_id"}, constant=True, equal_fields="meeting_id"
+        to={"poll": "global_option_id"},
+        is_view_field=True,
+        constant=True,
     )
     vote_ids = fields.RelationListField(
         to={"vote": "option_id"},
@@ -2618,7 +2620,6 @@ class Projection(Model):
         },
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "all_projection_ids"}, required=True, constant=True

@@ -40,9 +40,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"""Invalid data for '{collection}/1': The relation meeting_user_id requires the following fields to be equal:
- {collection}/1/meeting_id: 1 
- meeting_user/1/meeting_id: 4""",
+            "Relation violates required constraint: The following models do not belong to meeting 1: ['meeting_user/1']",
             response.json["message"],
         )
 
@@ -80,9 +78,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         response = self.request("chat_group.create", {"name": "Chat me up too, please?", "meeting_id": 1, "read_group_ids": [5]})
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"""Invalid data for 'chat_group/2': The relation read_chat_group_ids requires the following fields to be equal:
- group/5/meeting_id: 4 
- chat_group/2/meeting_id: 1""",
+            "Relation violates required constraint: The following models do not belong to meeting 1: ['group/5']",
             response.json["message"],
         )
     
@@ -95,9 +91,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         self.setup_chat_group_test()
         response = self.request("chat_group.update", {"id": 1, "read_group_ids": [5]})
         self.assertIn(
-            f"""Invalid data for 'chat_group/1': The relation read_chat_group_ids requires the following fields to be equal:
- group/5/meeting_id: 4 
- chat_group/1/meeting_id: 1""",
+            "Relation violates required constraint: The following models do not belong to meeting 1: ['group/5']",
             response.json["message"],
         )
 
@@ -145,28 +139,43 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"Invalid data for 'option/1': The relation content_object_id_user_id requires the following fields to be equal:\n option/1/meeting_id: 1 \n user/2/meeting_id: <NULL>",
+            f"Relation violates required constraint: The following models do not belong to meeting 1: ['user/2']",
+            response.json["message"],
+        )
+    
+    def test_project_wrong_meeting_by_content_meeting(self) -> None:
+        response = self.request(
+            "projector.project",
+            {
+                "ids": [4],
+                "content_object_id": "meeting/1",
+                "meeting_id": 4,
+                "stable": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Relation violates required constraint: The following models do not belong to meeting 1: ['meeting/4']",
             response.json["message"],
         )
 
-    def test_delete_poll_option_user_2(self) -> None:
-        self.create_topic(1, 1)
-        bob_id = self.create_user("bob", [1])
-        self.set_models({
-            "poll/1": {
-                "type": "named",
-                "pollmethod": "Y",
-                "backend": "long",
-                "state": "finished",
-                "meeting_id": 1,
-                "content_object_id": "topic/1",
-                "title": "Poll 1",
-                "onehundred_percent_base": "YNA",
-            },
-            "option/1": {"meeting_id": 1, "poll_id": 1, "content_object_id": f"user/{bob_id}"},
-            "option/2": {"meeting_id": 1, "poll_id": 1},
-        })
-        self.perform_write_request([
-            Event(type=EventType.Delete, fqid="meeting_user/1")
-        ])
-        1
+    # def test_delete_poll_option_user_2(self) -> None:
+    #     self.create_topic(1, 1)
+    #     bob_id = self.create_user("bob", [1])
+    #     self.set_models({
+    #         "poll/1": {
+    #             "type": "named",
+    #             "pollmethod": "Y",
+    #             "backend": "long",
+    #             "state": "finished",
+    #             "meeting_id": 1,
+    #             "content_object_id": "topic/1",
+    #             "title": "Poll 1",
+    #             "onehundred_percent_base": "YNA",
+    #         },
+    #         "option/1": {"meeting_id": 1, "poll_id": 1, "content_object_id": f"user/{bob_id}"},
+    #         "option/2": {"meeting_id": 1, "poll_id": 1},
+    #     })
+    #     self.assertRaisesRegex(Exception, "blabla", self.perform_write_request, [
+    #         Event(type=EventType.Delete, fqid="meeting_user/1")
+    #     ])

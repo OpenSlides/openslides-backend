@@ -97,7 +97,6 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         b_id:
             type: relation
             to: {collection_b}/meeting_id
-            reference: {collection_b}
         c_ids:
             type: relation-list
             to: {collection_c}/meeting_id
@@ -140,7 +139,6 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         b_id:
             type: relation
             to: {collection_b}/c_id
-            reference: {collection_b}
             equal_fields: meeting_id
         b_ids:
             type: relation-list
