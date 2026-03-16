@@ -99,7 +99,7 @@ def test_create_empty_field() -> None:
     data = get_data({"last_name": None})
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("user/1", {"id": 1, "username": "1", "first_name": "1"})
 
 
@@ -107,7 +107,7 @@ def test_create_view_field() -> None:
     data = get_data({"meeting_user_ids": [1, 1337]})
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model(
         "user/1",
         {"id": 1, "username": "1", "first_name": "1", "meeting_user_ids": None},
@@ -380,7 +380,7 @@ def test_create_nm_field_all_() -> None:
     )
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("committee/1", {"id": 1, "name": "com1", "all_child_ids": [2]})
     assert_model("committee/2", {"id": 2, "name": "com2", "all_parent_ids": [1]})
 
@@ -410,7 +410,7 @@ def test_create_nm_field_generic() -> None:
     ]
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(create_write_requests(data))[0]
+        extended_database.write(create_write_requests(data))
     assert_model("committee/1", {"id": 1, "name": "com1", "organization_tag_ids": [1]})
     assert_model(
         "organization_tag/1",

@@ -565,7 +565,7 @@ class ExtendedDatabase(Database):
 
     def write(
         self, write_requests: list[WriteRequest] | WriteRequest
-    ) -> list[FullQualifiedId]:
+    ) -> dict[FullQualifiedId, dict[str, Any]]:
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]
 
@@ -613,12 +613,12 @@ class ExtendedDatabase(Database):
                                     f"'{field_name}' used for 'list_fields' 'remove' or 'add' is no array in database."
                                 )
         # TODO there should be an improvement by sending each event directly to the database_writers write_event
-        fqids = self.database_writer.write(write_requests)
+        fqids_to_models = self.database_writer.write(write_requests)
         self.logger.debug(
             f"Start WRITE request to database with the following data: "
             f"Write request: {write_requests}"
         )
-        return fqids
+        return fqids_to_models
 
     def truncate_db(self) -> None:
         self.database_writer.truncate_db()

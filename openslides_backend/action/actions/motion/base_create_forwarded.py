@@ -352,6 +352,14 @@ class BaseMotionCreateForwarded(
         result.update(self.id_to_result_extra_data.get(result["id"], {}))
         return result
 
+    def post_edit_fn(self, data: dict, results: dict[str, dict[str, Any]]) -> None:
+        super().post_edit_fn(data, results)
+        dates = [*data.get("amendment_result_data", [])]
+        while len(dates):
+            date = dates.pop(0)
+            super().post_edit_fn(date, results)
+            dates.extend(date.get("amendment_result_data", []))
+
     def handle_number(self, instance: dict[str, Any]) -> dict[str, Any]:
         origin = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["origin_id"]),

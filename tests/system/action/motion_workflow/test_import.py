@@ -48,6 +48,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 43, "sequential_number": 2}
         self.assert_model_exists(
             "motion_workflow/43",
             {

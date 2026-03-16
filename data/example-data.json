@@ -271,8 +271,8 @@
             "description": "Presentation and assembly system",
             "welcome_title": "Welcome to OpenSlides",
             "welcome_text": "[Space for your welcome text.]",
-"start_time": 12345670,
-            "end_time": 12345678,
+            "start_time": "2011-11-11T11:11:11+01:00",
+            "end_time": "2011-03-09T12:00:00+01:00",
             "conference_open_microphone": false,
             "conference_open_video": false,
             "conference_auto_connect": false,
@@ -1102,8 +1102,8 @@
         "11": {
             "id": 11,
             "weight": 11,
-            "begin_time": 1584512636,
-            "end_time": 1584512638,
+            "begin_time": "2011-11-11T11:11:11+01:00",
+            "end_time": "2011-11-11T11:21:11+01:00",
             "list_of_speakers_id": 1,
             "meeting_user_id": 2,
             "meeting_id": 1
@@ -1262,8 +1262,8 @@
             "text_hash": "2d59f168675841ecc69e3040ae3eca7c",
             "category_weight": 10000,
             "sort_weight": 10000,
-            "created": 1584512346,
-            "last_modified": 1584512346,
+            "created": "2011-11-10T14:00:00+01:00",
+            "last_modified": "2011-11-10T18:00:00+01:00",
             "start_line_number": 1,
             "amendment_ids": [
                 2
@@ -1298,8 +1298,8 @@
             "category_weight": 10000,
             "state_extension": "<p>regeer</p>",
             "sort_weight": 10000,
-            "created": 1584512346,
-            "last_modified": 1584512346,
+            "created": "2011-11-10T16:27:39+01:00",
+            "last_modified": "2011-11-11T16:27:39+01:00",
             "start_line_number": 1,
             "lead_motion_id": 1,
             "state_id": 1,
@@ -1327,8 +1327,8 @@
             "text_hash": "60d31eb37595dd44584be5ef363283e3",
             "category_weight": 100,
             "sort_weight": 10000,
-            "created": 1584512346,
-            "last_modified": 1584512346,
+            "created": "2011-11-11T02:14:59+01:00",
+            "last_modified": "2011-11-11T11:18:20+01:00",
             "start_line_number": 1,
             "state_id": 1,
             "category_id": 2,
@@ -1358,8 +1358,8 @@
             "text_hash": "af905e34b34d2b08b60c6af41153f078",
             "category_weight": 10000,
             "sort_weight": 10000,
-            "created": 1584512346,
-            "last_modified": 1584512346,
+            "created": "2011-11-11T03:00:00+01:00",
+            "last_modified": "2011-11-11T11:00:00+01:00",
             "start_line_number": 1,
             "state_id": 7,
             "block_id": 1,
@@ -1489,7 +1489,7 @@
             "line_from": 1,
             "line_to": 2,
             "text": "<p>sdf sdfpef</p>",
-            "creation_time": 1584512345,
+            "creation_time": "2011-11-11T14:08:48+01:00",
             "motion_id": 4,
             "meeting_id": 1
         },
@@ -1501,7 +1501,7 @@
             "line_from": 1,
             "line_to": 1,
             "text": "<p>skp</p>",
-            "creation_time": 1584512667,
+            "creation_time": "2011-11-11T19:27:53+01:00",
             "motion_id": 3,
             "meeting_id": 1
         }
@@ -2353,7 +2353,7 @@
             "title": "logos",
             "token": null,
             "is_directory": true,
-            "create_timestamp": 1584513763,
+            "create_timestamp": "2011-11-09T15:15:33+01:00",
             "owner_id": "meeting/1",
             "meeting_mediafile_ids": [1]
         }
