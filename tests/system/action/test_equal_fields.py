@@ -169,24 +169,3 @@ class EqualFieldsActionTest(BaseActionTestCase):
             "Relation violates required constraint: The following models do not belong to meeting 1: ['meeting/4']",
             response.json["message"],
         )
-
-    # def test_delete_poll_option_user_2(self) -> None:
-    #     self.create_topic(1, 1)
-    #     bob_id = self.create_user("bob", [1])
-    #     self.set_models({
-    #         "poll/1": {
-    #             "type": "named",
-    #             "pollmethod": "Y",
-    #             "backend": "long",
-    #             "state": "finished",
-    #             "meeting_id": 1,
-    #             "content_object_id": "topic/1",
-    #             "title": "Poll 1",
-    #             "onehundred_percent_base": "YNA",
-    #         },
-    #         "option/1": {"meeting_id": 1, "poll_id": 1, "content_object_id": f"user/{bob_id}"},
-    #         "option/2": {"meeting_id": 1, "poll_id": 1},
-    #     })
-    #     self.assertRaisesRegex(Exception, "blabla", self.perform_write_request, [
-    #         Event(type=EventType.Delete, fqid="meeting_user/1")
-    #     ])

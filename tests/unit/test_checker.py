@@ -584,7 +584,7 @@ class TestCheckerCheckData(TestCase):
             )
 
     def test_incorrect_fqid_list_error(self) -> None:
-        base_error = "organization_tag/1/tagged_ids: Type error: Type is not GenericRelationListField(to={'committee': 'organization_tag_ids', 'meeting': 'organization_tag_ids'}, is_list_field=True, on_delete=SET_NULL, required=False, constraints={}, equal_fields=[])"
+        base_error = "organization_tag/1/tagged_ids: Type error: Type is not GenericRelationListField(to={'committee': 'organization_tag_ids', 'meeting': 'organization_tag_ids'}, is_list_field=True, on_delete=SET_NULL, required=False, constraints={})"
         map_invalid_values_to_special_errors = {
             "meetings/1": "organization_tag/1/tagged_ids error: The collection meetings is not supported as a reverse relation in organization_tag/tagged_ids.",
             "meeting/a": None,
