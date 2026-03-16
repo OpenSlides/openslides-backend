@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from ..shared.authenticated_service import AuthenticatedServiceInterface
 
@@ -10,14 +10,21 @@ class VoteService(AuthenticatedServiceInterface, Protocol):
     """
 
     @abstractmethod
-    def start(self, id: int) -> None: ...
+    def create(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
     @abstractmethod
-    def stop(self, id: int) -> dict[str, Any]: ...
+    def update(self, id: int, payload: dict[str, Any]) -> dict[str, Any]: ...
 
     @abstractmethod
-    def clear(self, id: int) -> None: ...
+    def delete(self, id: int) -> dict[str, Any]: ...
 
     @abstractmethod
-    def clear_all(self) -> None:
-        """Only for testing purposes."""
+    def start(self, id: int) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def finalize(
+        self, id: int, optional_attributes: list[Literal["publish", "anonymize"]] = []
+    ) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def reset(self, id: int) -> dict[str, Any]: ...

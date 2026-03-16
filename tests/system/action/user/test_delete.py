@@ -1,6 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -192,30 +193,38 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
     def test_delete_with_poll_candidate(self) -> None:
         self.create_meeting()
+        user_id = self.create_user_for_meeting(1)
         self.set_models(
             {
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "poll_candidate_ids": [34],
+                "poll/1": {
+                    "title": "Poll 1",
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/1",
+                    "state": Poll.STATE_FINISHED,
                 },
-                "poll_candidate/34": {
-                    "user_id": 111,
-                    "poll_candidate_list_id": 1,
-                    "weight": 1,
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/1",
+                },
+                "assignment/1": {
+                    "id": 1,
+                    "title": "Duckburg town council",
                     "meeting_id": 1,
                 },
-                "poll_candidate_list/1": {"meeting_id": 1},
-                "option/1": {
-                    "meeting_id": 1,
-                    "content_object_id": "poll_candidate_list/1",
+                "poll_config_option/1": {
+                    "poll_config_id": "poll_config_approval/1",
+                    "meeting_user_id": 1,
                 },
+                "poll_config_approval/1": {"poll_id": 1},
             }
         )
-        response = self.request("user.delete", {"id": 111})
-
+        response = self.request("user.delete", {"id": user_id})
         self.assert_status_code(response, 200)
-        self.assert_model_not_exists("user/111")
-        self.assert_model_exists("poll_candidate/34", {"user_id": None})
+        self.assert_model_not_exists(f"user/{user_id}")
+        self.assert_model_not_exists("meeting_user/1")
+        self.assert_model_exists("poll_config_option/1", {"meeting_user_id": None})
 
     def test_delete_with_group_ids_set_null(self) -> None:
         self.create_meeting()

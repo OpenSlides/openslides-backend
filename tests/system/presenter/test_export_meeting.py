@@ -61,7 +61,6 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_block",
             "motion_change_recommendation",
             "poll",
-            "option",
             "vote",
             "assignment",
             "assignment_candidate",
@@ -217,12 +216,18 @@ class TestExportMeeting(BasePresenterTestCase):
 
     def test_export_meeting_find_special_users(self) -> None:
         """Find users in:
-        Collection | Field
-        meeting    | present_user_ids
-        motion     | supporter_meeting_user_ids
-        poll       | voted_ids
-        vote       | delegated_meeting_user_id
+        Collection          | Field
+        meeting             | present_user_ids
+
+        Find meeting_users in:
+        Collection          | Field
+        poll                | voted_ids
+        motion              | supporter_meeting_user_ids
+        ballot              | acting_meeting_user_id
+        ballot              | represented_meeting_user_id
+        poll_config_option  | meeting_user_id
         """
+        self.create_meeting()
         self.create_motion(1, 30)
         self.set_models(
             {
@@ -232,45 +237,59 @@ class TestExportMeeting(BasePresenterTestCase):
                 "user/12": {"username": "exuser12"},
                 "user/13": {"username": "exuser13"},
                 "user/14": {"username": "exuser14"},
-                "meeting_user/112": {
-                    "meeting_id": 1,
-                    "user_id": 12,
-                },
+                "meeting_user/112": {"meeting_id": 1, "user_id": 12},
                 "motion_supporter/1": {
                     "motion_id": 30,
                     "meeting_id": 1,
                     "meeting_user_id": 112,
                 },
-                "meeting_user/114": {
-                    "meeting_id": 1,
-                    "user_id": 14,
-                },
+                "meeting_user/113": {"meeting_id": 1, "user_id": 13},
+                "meeting_user/114": {"meeting_id": 1, "user_id": 14},
                 "poll/80": {
                     "title": "Poll 80",
-                    "type": Poll.TYPE_NAMED,
-                    "backend": "fast",
-                    "pollmethod": "YNA",
-                    "onehundred_percent_base": "YNA",
                     "meeting_id": 1,
-                    "content_object_id": "motion/30",
-                    "state": Poll.STATE_PUBLISHED,
-                    "voted_ids": [13],
+                    "content_object_id": "assignment/10",
+                    "visibility": Poll.VISIBILITY_NAMED,
+                    "config_id": "poll_config_approval/90",
+                    "state": Poll.STATE_STARTED,
+                    "voted_ids": [114],
                 },
-                "vote/120": {
-                    "meeting_id": 1,
-                    "delegated_user_id": 14,
-                    "user_id": 14,
-                    "user_token": "asdfgh",
-                    "option_id": 1,
+                "poll_config_approval/90": {"poll_id": 80},
+                "poll_config_option/100": {
+                    "poll_config_id": "poll_config_approval/90",
+                    "meeting_user_id": 113,
                 },
-                "option/1": {"meeting_id": 1},
+                "ballot/120": {
+                    "poll_id": 80,
+                    "value": "yes",
+                    "represented_meeting_user_id": 114,
+                    "acting_meeting_user_id": 114,
+                },
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
         assert data["meeting"]["1"].get("user_ids") is None
-        for id_ in ("11", "12", "13", "14"):
-            assert data["user"][id_]
+        for id_ in range(11, 15):
+            assert data["user"][str(id_)]
+        for id_ in range(112, 115):
+            assert data["meeting_user"][str(id_)]
+
+        assert data["meeting"]["1"]["present_user_ids"] == [11]
+        assert data["user"]["11"]["is_present_in_meeting_ids"] == [1]
+
+        assert data["motion"]["30"]["supporter_meeting_user_ids"] == [112]
+        assert data["meeting_user"]["112"]["supported_motion_ids"] == [30]
+
+        assert data["poll_config_option"]["100"]["meeting_user_id"] == 113
+        assert data["meeting_user"]["113"]["poll_option_ids"] == [100]
+
+        assert data["poll"]["80"]["voted_ids"] == [114]
+        assert data["meeting_user"]["114"]["poll_voted_ids"] == [80]
+        assert data["ballot"]["120"]["c"] == 114
+        assert data["ballot"]["120"]["represented_meeting_user_id"] == 114
+        assert data["meeting_user"]["114"]["acting_ballot_ids"] == [120]
+        assert data["meeting_user"]["114"]["represented_ballot_ids"] == [120]
 
     def test_with_structured_published_orga_files(self) -> None:
         self.set_models(
@@ -385,7 +404,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "assignment_poll_default_backend": "fast",
                     "poll_default_type": "analog",
                     "poll_default_onehundred_percent_base": "YNA",
-                    "poll_default_backend": "fast",
                     "poll_default_live_voting_enabled": False,
                     "poll_couple_countdown": True,
                 },
