@@ -313,12 +313,9 @@ class MigrationHandler(BaseHandler):
 
                     if not pre_check_ok:
                         self.logger.info("failed.")
-                        # TODO: Is rasing an exception appropriate here?
-
-                        #raise MigrationException(
-                        #    f"pre check for migration {module_name} failed."
-                        #)
-                        return
+                        raise MigrationException(
+                            f"pre check for migration {module_name} failed."
+                        )
                     self.logger.info("OK.")
 
                 # Block other migration requests by setting state to running.
@@ -331,14 +328,14 @@ class MigrationHandler(BaseHandler):
                     MigrationHelper.set_database_migration_info(
                         self.cursor,
                         minimum_required_index["min"],
-                        MigrationState.MIGRATION_RUNNING,  # Should be smth. like MIGRATION_INITIALIZING
+                        MigrationState.MIGRATION_RUNNING,  # Should be smth. like MIGRATION_PREPARING
                     )
-                MigrationHelper.write_line("started")
+                MigrationHelper.write_line("migration started")
                 self.set_public_tables_read_only()
                 self.setup_migration_relations()
                 self.execute_migrations()
+                MigrationHelper.write_line("migration finished")
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
-                MigrationHelper.write_line("finished")
             case MigrationState.FINALIZATION_REQUIRED:
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.FINALIZED:

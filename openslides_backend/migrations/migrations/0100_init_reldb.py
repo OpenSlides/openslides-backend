@@ -36,7 +36,7 @@ from openslides_backend.shared.patterns import (
 )
 from openslides_backend.shared.typing import Collection
 
-PAT_OFFSET = r'^[\+-]?\d\d:\d\d$'
+PAT_UTC_OFFSET = r'^[\+-]?\d\d:\d\d$'
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
 ORIGIN_COLLECTIONS = [
@@ -294,9 +294,8 @@ def check_prerequisites(curs: Cursor[DictRow]) -> bool:
 
     if not is_truthy(i_read_docs):
         MigrationHelper.write_line(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
-        MigrationHelper.write_line(f"'{i_read_docs}' is really no acceptable value for MIG0100_I_READ_DOCS")
         return False
-    if not re.match(PAT_OFFSET, utc_offset):
+    if not re.match(PAT_UTC_OFFSET, utc_offset):
         MigrationHelper.write_line(f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET")
         return False
 
