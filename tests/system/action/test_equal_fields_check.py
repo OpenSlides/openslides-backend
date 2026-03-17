@@ -82,7 +82,8 @@ class FakeModelEFBUpdateAction(UpdateAction):
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
-
+# 1r(meeting_id):1r
+# 1r(meeting_id):nr
 class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     collection_a = "fake_model_ef_a"
     collection_b = "fake_model_ef_b"
@@ -128,6 +129,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         c_generic_ids:
             type: generic-relation-list
             to:
+            - {collection_c}/b_generic_ids
             collections:
                 - {collection_c}
             field: b_generic_ids
@@ -156,6 +158,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         b_generic_ids:
             type: generic-relation-list
             to:
+            - {collection_b}/c_generic_ids
             collections:
                 - {collection_b}
             field: c_generic_ids
