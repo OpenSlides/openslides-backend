@@ -105,7 +105,7 @@ def main() -> None:
         for collection, data in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
-            model = Model(collection, data['fields'])
+            model = Model(collection, data["fields"])
             dest.write(model.get_code())
 
         if args.check:
