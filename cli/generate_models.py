@@ -102,10 +102,10 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in InternalHelper.MODELS.items():
+        for collection, data in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
-            model = Model(collection, fields)
+            model = Model(collection, data['fields'])
             dest.write(model.get_code())
 
         if args.check:

@@ -198,9 +198,7 @@ class ChatGroup(Model):
     verbose_name = "chat group"
 
     id = fields.IntegerField(required=True, constant=True)
-    name = fields.CharField(
-        required=True, constraints={"description": "unique in meeting"}
-    )
+    name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "chat_group_id"},
@@ -368,7 +366,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField(required=True, constant=True)
-    external_id = fields.CharField(constraints={"description": "unique in meeting"})
+    external_id = fields.CharField()
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={
@@ -1543,10 +1541,7 @@ class MeetingUser(Model):
     vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
     locked_out = fields.BooleanField()
     user_id = fields.RelationField(
-        to={"user": "meeting_user_ids"},
-        required=True,
-        constant=True,
-        constraints={"description": "unique in meeting"},
+        to={"user": "meeting_user_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "meeting_user_ids"}, required=True, constant=True
@@ -1629,7 +1624,7 @@ class Motion(Model):
     verbose_name = "motion"
 
     id = fields.IntegerField(required=True, constant=True)
-    number = fields.CharField(constraints={"description": "unique in meeting"})
+    number = fields.CharField()
     number_value = fields.IntegerField(
         read_only=True,
         constraints={
@@ -2078,9 +2073,7 @@ class MotionState(Model):
     verbose_name = "motion state"
 
     id = fields.IntegerField(required=True, constant=True)
-    name = fields.CharField(
-        required=True, constraints={"description": "unique for workflow"}
-    )
+    name = fields.CharField(required=True)
     weight = fields.IntegerField(required=True)
     recommendation_label = fields.CharField()
     is_internal = fields.BooleanField()
@@ -2269,7 +2262,7 @@ class Option(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField(default=10000)
-    text = fields.HTMLStrictField(constraints={"description": "unique in poll"})
+    text = fields.HTMLStrictField()
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
@@ -2294,7 +2287,6 @@ class Option(Model):
         },
         constant=True,
         equal_fields="meeting_id",
-        constraints={"description": "unique in poll"},
     )
     meeting_id = fields.RelationField(
         to={"meeting": "option_ids"}, required=True, constant=True
@@ -2745,9 +2737,7 @@ class ProjectorCountdown(Model):
     verbose_name = "projector countdown"
 
     id = fields.IntegerField(required=True, constant=True)
-    title = fields.CharField(
-        required=True, constraints={"description": "unique in meeting"}
-    )
+    title = fields.CharField(required=True)
     description = fields.CharField(default="")
     default_time = fields.IntegerField()
     countdown_time = fields.FloatField(default=60)
@@ -2837,9 +2827,7 @@ class StructureLevel(Model):
     verbose_name = "structure level"
 
     id = fields.IntegerField(required=True, constant=True)
-    name = fields.CharField(
-        required=True, constraints={"description": "unique in meeting"}
-    )
+    name = fields.CharField(required=True)
     color = fields.ColorField()
     default_time = fields.IntegerField(constraints={"minimum": 0})
     meeting_user_ids = fields.RelationListField(
@@ -2872,7 +2860,6 @@ class StructureLevelListOfSpeakers(Model):
         to={"structure_level": "structure_level_list_of_speakers_ids"},
         required=True,
         equal_fields="meeting_id",
-        constraints={"description": "unique in list_of_speakers"},
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "structure_level_list_of_speakers_ids"},
