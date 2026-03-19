@@ -11,30 +11,30 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.orga_permission_test_models: dict[str, dict[str, Any]] = {
             "mediafile/111": {
-                "title": "title_srtgb123",
+                "title": "mediafile_111",
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
         }
         self.test_models: dict[str, dict[str, Any]] = {
             "mediafile/110": {
-                "title": "title_srtgb199",
+                "title": "mediafile_110",
                 "child_ids": [111],
                 "is_directory": True,
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
             "mediafile/111": {
-                "title": "title_srtgb123",
+                "title": "mediafile_111",
                 "parent_id": 110,
                 "is_directory": True,
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
             "mediafile/112": {
-                "title": "title_srtgb123",
+                "title": "mediafile_112",
                 "parent_id": 111,
                 "owner_id": ONE_ORGANIZATION_FQID,
             },
             "mediafile/113": {
-                "title": "title_srtgb123",
+                "title": "mediafile_113",
                 "parent_id": 111,
                 "owner_id": ONE_ORGANIZATION_FQID,
             },

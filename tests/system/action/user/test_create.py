@@ -353,6 +353,14 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"member_number": None})
 
+    def test_member_number_empty(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "user2", "member_number": ""},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("This member_number is forbidden.", response.json["message"])
+
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         self.create_meeting()
         response = self.request(
@@ -1195,7 +1203,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"username": "timtari", "is_active": True},
-                "user/3": {"username": "timtari", "is_active": True},
+                "user/3": {"username": "sarah", "is_active": True},
             }
         )
         response = self.request(

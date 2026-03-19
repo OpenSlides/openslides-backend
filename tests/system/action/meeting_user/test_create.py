@@ -114,3 +114,12 @@ class MeetingUserCreate(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/1", {"id": 1, **test_dict, "vote_weight": Decimal("1.5")}
         )
+
+    def test_create_user_id_not_unique_in_meeting(self) -> None:
+        self.set_user_groups(1, [10])
+        response = self.request("meeting_user.create", {"meeting_id": 10, "user_id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            "MeetingUser instance with user 1 and meeting 10 already exists"
+            == response.json["message"]
+        )

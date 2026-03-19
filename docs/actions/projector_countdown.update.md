@@ -5,7 +5,7 @@
     id: Id;
 
 // Optional
-    title: string;
+    title: string;  // unique in the meeting
     description: string;
     default_time: number;
     countdown_time: number;

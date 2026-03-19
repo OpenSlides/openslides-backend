@@ -102,10 +102,10 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in InternalHelper.MODELS.items():
+        for collection, data in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
-            model = Model(collection, fields)
+            model = Model(collection, data["fields"])
             dest.write(model.get_code())
 
         if args.check:
@@ -140,6 +140,8 @@ class Model(Node):
         assert collection
         self.attributes = {}
         for field_name, field in fields.items():
+            if field_name == "_meta":
+                continue
             if field.get("calculated"):
                 continue
             self.attributes[field_name] = Attribute(
@@ -175,6 +177,7 @@ class Attribute(Node):
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False
+    unique: bool = False
     read_only: bool = False
     constant: bool = False
     default: Any = None
@@ -216,6 +219,7 @@ class Attribute(Node):
                 )
             value.pop("type")
             self.required = value.pop("required", False)
+            self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
             self.constant = value.pop("constant", False)
             self.default = value.pop("default", None)
@@ -251,6 +255,8 @@ class Attribute(Node):
             properties += "is_primary=True, "
         if self.required:
             properties += "required=True, "
+        if self.unique:
+            properties += "unique=True, "
         if self.read_only:
             properties += "read_only=True, "
         if self.constant:

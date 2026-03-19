@@ -153,7 +153,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
             meeting_id=222,
             base=8,
             motion_data={
-                "number": "001",
+                "number": "004",
                 "number_value": 1,
                 "lead_motion_id": 11,
             },
@@ -360,6 +360,22 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 222,
                 "number": "TEST",
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("motion/2")
+        self.assertEqual("Number is not unique.", response.json["message"])
+
+    def test_complex_example_manually_empty_not_unique(self) -> None:
+        self.create_motion(222, 1, motion_data={"number": ""})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 222,
+                "number": "",
                 "text": "test",
             },
         )
