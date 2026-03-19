@@ -1,16 +1,15 @@
+import os
+import re
 import time as _time
-from datetime import tzinfo,datetime,timedelta
+from datetime import tzinfo, datetime, timedelta
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
-import os
-import re
 
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
-from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.migrations.migration_helper import (
@@ -30,13 +29,8 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.shared.env import is_truthy
-from openslides_backend.shared.patterns import (
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-)
-from openslides_backend.shared.typing import Collection
 
-PAT_UTC_OFFSET = r'^[\+-]?\d\d:\d\d$'
+PAT_UTC_OFFSET = r"^[\+-]?\d\d:\d\d$"
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
 ORIGIN_COLLECTIONS = [
@@ -169,7 +163,7 @@ class Sql_helper:
             else:
                 data = Decimal(data)
         elif isinstance(field, TimestampField):
-            data = datetime.fromtimestamp(data,tz=OSTime())
+            data = datetime.fromtimestamp(data, tz=OSTime())
         elif isinstance(field, JSONField):
             data = json_dumps(data)
 
@@ -258,20 +252,18 @@ class OSTime(tzinfo):
 
 
 def get_utc_offset():
-    hours, minutes = os.environ['MIG0100_UTC_OFFSET'].split(':')
+    hours, minutes = os.environ["MIG0100_UTC_OFFSET"].split(":")
     return timedelta(hours=int(hours), minutes=int(minutes))
 
 
 def get_use_dst():
-    return is_truthy(os.environ['MIG0100_USE_DST'])
+    return is_truthy(os.environ["MIG0100_USE_DST"])
 
 
 def is_dst(dt):
     # Taken from tzinfo_examples.py listed in
     #   https://docs.python.org/3/library/datetime.html#datetime.tzinfo
-    tt = (dt.year, dt.month, dt.day,
-          dt.hour, dt.minute, dt.second,
-          dt.weekday(), 0, 0)
+    tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.weekday(), 0, 0)
     stamp = _time.mktime(tt)
     tt = _time.localtime(stamp)
     return tt.tm_isdst > 0
