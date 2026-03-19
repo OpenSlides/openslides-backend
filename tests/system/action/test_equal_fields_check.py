@@ -93,73 +93,76 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             constant: true
             required: true
     {collection_a}:
-        id: *id_field
-        b_id:
-            type: relation
-            to: {collection_b}/meeting_id
-            reference: {collection_b}
-        c_ids:
-            type: relation-list
-            to: {collection_c}/meeting_id
-            reference: {collection_c}
+        fields:
+            id: *id_field
+            b_id:
+                type: relation
+                to: {collection_b}/meeting_id
+                reference: {collection_b}
+            c_ids:
+                type: relation-list
+                to: {collection_c}/meeting_id
+                reference: {collection_c}
     {collection_b}:
-        id: *id_field
-        meeting_id:
-            type: relation
-            to: {collection_a}/b_id
-            reference: {collection_a}
-        c_id:
-            type: relation
-            to: {collection_c}/b_id
-            reference: {collection_c}
-            equal_fields: meeting_id
-        c_ids:
-            type: relation-list
-            to: {collection_c}/b_ids
-            equal_fields: meeting_id
-        c_generic_id:
-            type: generic-relation
-            reference:
-            - {collection_c}
-            to:
-            - {collection_c}/b_generic_id
-            equal_fields: meeting_id
-        c_generic_ids:
-            type: generic-relation-list
-            to:
-            collections:
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {collection_a}/b_id
+                reference: {collection_a}
+            c_id:
+                type: relation
+                to: {collection_c}/b_id
+                reference: {collection_c}
+                equal_fields: meeting_id
+            c_ids:
+                type: relation-list
+                to: {collection_c}/b_ids
+                equal_fields: meeting_id
+            c_generic_id:
+                type: generic-relation
+                reference:
                 - {collection_c}
-            field: b_generic_ids
-            equal_fields: meeting_id
+                to:
+                - {collection_c}/b_generic_id
+                equal_fields: meeting_id
+            c_generic_ids:
+                type: generic-relation-list
+                to:
+                collections:
+                    - {collection_c}
+                field: b_generic_ids
+                equal_fields: meeting_id
     {collection_c}:
-        id: *id_field
-        meeting_id:
-            type: relation
-            to: {collection_a}/c_ids
-            reference: {collection_a}
-        b_id:
-            type: relation
-            to: {collection_b}/c_id
-            reference: {collection_b}
-            equal_fields: meeting_id
-        b_ids:
-            type: relation-list
-            to: {collection_b}/c_ids
-            equal_fields: meeting_id
-        b_generic_id:
-            type: generic-relation
-            reference:
-            - {collection_b}
-            to:
-            - {collection_b}/c_generic_id
-            equal_fields: meeting_id
-        b_generic_ids:
-            type: generic-relation-list
-            to:
-            collections:
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {collection_a}/c_ids
+                reference: {collection_a}
+            b_id:
+                type: relation
+                to: {collection_b}/c_id
+                reference: {collection_b}
+                equal_fields: meeting_id
+            b_ids:
+                type: relation-list
+                to: {collection_b}/c_ids
+                equal_fields: meeting_id
+            b_generic_id:
+                type: generic-relation
+                reference:
                 - {collection_b}
-            field: c_generic_ids
-            equal_fields: meeting_id
+                to:
+                - {collection_b}/c_generic_id
+                equal_fields: meeting_id
+            b_generic_ids:
+                type: generic-relation-list
+                to:
+                collections:
+                    - {collection_b}
+                field: c_generic_ids
+                equal_fields: meeting_id
     """
 
     def test_simple_pass(self) -> None:
