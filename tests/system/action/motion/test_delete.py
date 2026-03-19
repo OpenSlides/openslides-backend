@@ -184,12 +184,10 @@ class MotionDeletePermissionTest(BaseMotionDeleteActionTest):
         self.create_motion(1, 222, motion_data={"lead_motion_id": 111})
         self.permission_test_models: dict[str, Any] = {
             "motion_submitter/12": {
-                "meeting_user_id": 5,
+                "meeting_user_id": 1,
                 "motion_id": 111,
                 "meeting_id": 1,
             },
-            "meeting_user/5": {"user_id": 2, "meeting_id": 1},
-            "group/1": {"meeting_user_ids": [5]},
             "motion_state/1": {"allow_submitter_edit": True},
         }
 

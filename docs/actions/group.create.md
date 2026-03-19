@@ -7,7 +7,7 @@
 
 // Optional
     permissions: string[];
-    external_id: string;
+    external_id: string;  // unique in the meeting
     weight: number
 }
 ```
