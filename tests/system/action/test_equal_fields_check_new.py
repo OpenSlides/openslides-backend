@@ -129,30 +129,33 @@ final_yml = f"""
             constant: true
             required: true
     {collection_a}:
-        id: *id_field
-        b_id:
-            type: relation
-            to: {collection_b}/meeting_id
-        c_ids:
-            type: relation-list
-            to: {collection_c}/meeting_id
+        fields:
+            id: *id_field
+            b_id:
+                type: relation
+                to: {collection_b}/meeting_id
+            c_ids:
+                type: relation-list
+                to: {collection_c}/meeting_id
             reference: {collection_c}
     {collection_b}:
-        id: *id_field
-        a_number:
-            type: number
-        meeting_id:
-            type: relation
-            to: {collection_a}/b_id
-            reference: {collection_a}{definition1}
+        fields:
+            id: *id_field
+            a_number:
+                type: number
+            meeting_id:
+                type: relation
+                to: {collection_a}/b_id
+                reference: {collection_a}{definition1}
     {collection_c}:
-        id: *id_field
-        a_number:
-            type: number
-        meeting_id:
-            type: relation
-            to: {collection_a}/c_ids
-            reference: {collection_a}{definition2}
+        fields:
+            id: *id_field
+            a_number:
+                type: number
+            meeting_id:
+                type: relation
+                to: {collection_a}/c_ids
+                reference: {collection_a}{definition2}
     """
 
 class FakeModelEFA(FakeModel):
