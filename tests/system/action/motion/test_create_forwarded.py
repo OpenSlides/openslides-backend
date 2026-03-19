@@ -747,7 +747,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
         self.set_test_models()
         self.create_motion(1, 13, motion_data={"number": "1"})
         self.set_models(
@@ -784,7 +784,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_2(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
         self.set_test_models(motion_12_data={"number": "1"})
         self.create_motion(1, 13)
         self.set_models(
@@ -821,13 +821,17 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_3(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
-        self.set_test_models(motion_12_data={"number": "1"})
-        self.create_motion(1, 13, motion_data={"number": "1"})
-        self.create_motion(4, 14, motion_data={"number": "1"})
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
+        self.set_test_models()
+        self.create_meeting(7)
+        self.create_motion(1, 12, motion_data={"number": "1"})
+        self.create_motion(4, 13, motion_data={"number": "1"})
+        self.create_motion(7, 14, motion_data={"number": "1"})
         self.set_models(
             {
                 "motion_state/4": {"allow_motion_forwarding": True},
+                "committee/60": {"forward_to_committee_ids": [66]},
+                "committee/63": {"forward_to_committee_ids": [66]},
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -845,7 +849,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             [
                 {
                     "title": "title_12",
-                    "meeting_id": 4,
+                    "meeting_id": 7,
                     "origin_id": 12,
                     "text": "test2",
                     "reason": "reason_jLvcgAMx2",
@@ -854,7 +858,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 },
                 {
                     "title": "title_13",
-                    "meeting_id": 4,
+                    "meeting_id": 7,
                     "origin_id": 13,
                     "text": "test3",
                     "reason": "reason_jLvcgAMx3",

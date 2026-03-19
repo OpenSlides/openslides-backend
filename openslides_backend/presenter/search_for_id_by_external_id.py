@@ -65,13 +65,13 @@ class SearchForIdByExternalId(BasePresenter):
         )
         if is_group and len(filtered):
             self.filter_out_locked_meeting_groups(filtered)
-        if len(filtered) == 1:
+        if filtered:
             return {"id": next(iter(filtered.values()))["id"]}
-        elif len(filtered) == 0:
-            error = f"No item with '{self.data['external_id']}' was found."
         else:
-            error = f"More then one item with '{self.data['external_id']}' were found."
-        return {"id": None, "error": error}
+            return {
+                "id": None,
+                "error": f"No item with '{self.data['external_id']}' was found.",
+            }
 
     def filter_out_locked_meeting_groups(
         self, filtered: dict[int, dict[str, Any]]

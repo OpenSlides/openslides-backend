@@ -260,7 +260,7 @@ class Committee(Model):
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
-    external_id = fields.CharField(constraints={"description": "unique"})
+    external_id = fields.CharField(unique=True)
     meeting_ids = fields.RelationListField(
         to={"meeting": "committee_id"},
         on_delete=fields.OnDelete.PROTECT,
@@ -352,7 +352,7 @@ class Gender(Model):
     verbose_name = "gender"
 
     id = fields.IntegerField(required=True, constant=True)
-    name = fields.CharField(required=True, constraints={"description": "unique"})
+    name = fields.CharField(required=True, unique=True)
     organization_id = fields.OrganizationField(
         to={"organization": "gender_ids"}, required=True
     )
@@ -366,7 +366,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField(required=True, constant=True)
-    external_id = fields.CharField(constraints={"description": "unique in meeting"})
+    external_id = fields.CharField()
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={
@@ -665,7 +665,7 @@ class Mediafile(Model):
     mimetype = fields.CharField()
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
-    token = fields.CharField()
+    token = fields.CharField(unique=True)
     published_to_meetings_in_organization_id = fields.RelationField(
         to={"organization": "published_mediafile_ids"}
     )
@@ -692,7 +692,7 @@ class Meeting(Model, MeetingModelMixin):
     verbose_name = "meeting"
 
     id = fields.IntegerField(required=True, constant=True)
-    external_id = fields.CharField(constraints={"description": "unique in committee"})
+    external_id = fields.CharField(unique=True)
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
@@ -3051,13 +3051,14 @@ class User(Model):
     verbose_name = "user"
 
     id = fields.IntegerField(required=True, constant=True)
-    username = fields.CharField(required=True)
-    member_number = fields.CharField()
+    username = fields.CharField(required=True, unique=True)
+    member_number = fields.CharField(unique=True)
     saml_id = fields.CharField(
+        unique=True,
         constraints={
             "minLength": 1,
             "description": "unique-key from IdP for SAML login",
-        }
+        },
     )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()

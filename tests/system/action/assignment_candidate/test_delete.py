@@ -14,7 +14,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "is_active": True,
                 "default_password": DEFAULT_PASSWORD,
                 "password": self.auth.hash(DEFAULT_PASSWORD),
-                "username": "user",
+                "username": "user110",
             },
             "assignment/111": {
                 "title": "title_xTcEkItp",
