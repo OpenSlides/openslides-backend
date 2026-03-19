@@ -72,7 +72,7 @@ def generate_collection_field_name(prefix:str, field_type: str, rel_name:str, ba
 
 
 def generate_collection_field_def(name:str, field_type:str, multi:bool, back_coll:str, back_name: str, equal_field:str|None=None) -> str:
-    buffer = "            "
+    buffer = "                "
     definition = f"{name}:\n{buffer}type: "
     if generic:=("G" in field_type or "G" in field_type):
         definition += "generic-"
@@ -110,7 +110,7 @@ def generate_collection_field_defs(coll_name: str, back_coll_name: str, rel_type
 def generate_collection_fields(coll_name1:str, coll_name2:str, rel_types:list[str], equal_fields: list[str])->tuple[str,str]:
     definition1=""
     definition2=""
-    buffer = "        "
+    buffer = "            "
     for rel_type in rel_types:
         types = [rel_type]
         for a_type in types:
@@ -137,7 +137,7 @@ final_yml = f"""
             c_ids:
                 type: relation-list
                 to: {collection_c}/meeting_id
-            reference: {collection_c}
+                reference: {collection_c}
     {collection_b}:
         fields:
             id: *id_field
@@ -280,8 +280,8 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         helper_get_names.build_models_yaml_content = mock.Mock()
         helper_get_names.build_models_yaml_content.return_value = final_yml.encode()
         loaded_yml: dict[str,dict[str,Any]] = yaml.safe_load(final_yml)
-        efb_model = Model(collection_b, loaded_yml[collection_b])
-        efc_model = Model(collection_c, loaded_yml[collection_c])
+        efb_model = Model(collection_b, loaded_yml[collection_b]["fields"])
+        efc_model = Model(collection_c, loaded_yml[collection_c]["fields"])
         for rel_type in check_relations:
             for equal_field in ["meeting_id", "a_number"]:
                 b_name = generate_collection_field_name(equal_field, rel_type.split(":")[0], rel_type)[0]
