@@ -84,9 +84,9 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "committee/1": {"name": "test", "manager_ids": [1, 2]},
-                "user/1": {"username": "na"},
-                "user/2": {"username": "na"},
-                "user/3": {"username": "na", "home_committee_id": 1},
+                "user/1": {"username": "jack"},
+                "user/2": {"username": "john"},
+                "user/3": {"username": "jill", "home_committee_id": 1},
             }
         )
         status_code, data = self.request(

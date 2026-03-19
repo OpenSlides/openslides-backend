@@ -118,41 +118,45 @@ class TestCreateRelation(PatchModelRegistryMixin, BaseGenericTestCase):
             constant: true
             required: true
     {collection_a}:
-        id: *id_field
-        req_field:
-            type: number
-            required: true
-        not_req_field:
-            type: number
+        fields:
+            id: *id_field
+            req_field:
+                type: number
+                required: true
+            not_req_field:
+                type: number
     {collection_b}:
-        id: *id_field
-        name:
-            type: text
-        fake_model_cr_c_id:
-            type: relation
-            to: {collection_c}/fake_model_cr_b_id
-            required: true
+        fields:
+            id: *id_field
+            name:
+                type: text
+            fake_model_cr_c_id:
+                type: relation
+                to: {collection_c}/fake_model_cr_b_id
+                required: true
     {collection_c}:
-        id: *id_field
-        name:
-            type: text
-        fake_model_cr_b_id:
-            type: relation
-            to: {collection_b}/fake_model_cr_c_id
-            reference: {collection_b}
-            required: true
-        fake_model_cr_d_id:
-            type: relation
-            to: {collection_d}/fake_model_cr_c_ids
-            reference: {collection_d}
+        fields:
+            id: *id_field
+            name:
+                type: text
+            fake_model_cr_b_id:
+                type: relation
+                to: {collection_b}/fake_model_cr_c_id
+                reference: {collection_b}
+                required: true
+            fake_model_cr_d_id:
+                type: relation
+                to: {collection_d}/fake_model_cr_c_ids
+                reference: {collection_d}
     {collection_d}:
-        id: *id_field
-        name:
-            type: text
-        fake_model_cr_c_ids:
-            type: relation
-            to: {collection_c}/fake_model_cr_d_id
-            required: true
+        fields:
+            id: *id_field
+            name:
+                type: text
+            fake_model_cr_c_ids:
+                type: relation
+                to: {collection_c}/fake_model_cr_d_id
+                required: true
     """
 
     def test_simple_create(self) -> None:
