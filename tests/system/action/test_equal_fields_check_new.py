@@ -24,12 +24,12 @@ collection_c = "fake_model_ef_c"
 
 # TODO: see if these are really all supported relation types
 unturned_check_relations = [
-    "1r:1t",
-    "1r:nr",
-    "1r:nt",
-    # "1Gr:1Gr", # Delete not working
-    "1Gr:nr",
-    "1Gr:nt",
+    "1r:1t", #
+    "1r:nr", #
+    "1r:nt", #
+    # "1Gr:1Gr", # Delete not working, field not supported
+    "1Gr:nr", #
+    "1Gr:nt", #
     "nt:nt",
     "nGt:nt",
 
@@ -404,6 +404,34 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             response = self.request(f"{collection_c if back else collection_b}.delete", {"id":1})
             self.assert_status_code(response, 200)
         return base_test_delete
+    
+    @classmethod
+    def get_base_test_update_equal_field_success_fn(cls, rel_type: str, equal_field: str= "meeting_id") -> Callable:
+        def base_test_update_equal_field(self) -> None:
+            field1,ref_val1,field2, ref_val2 = self.get_test_relation_data(rel_type, equal_field)
+            self.set_models({
+                f"{collection_b}/1": {equal_field:1, field1:ref_val1},
+                f"{collection_c}/1": {equal_field:1, field2:ref_val2}
+            })
+            self.set_models({
+                f"{collection_b}/1": {equal_field:4},
+                f"{collection_c}/1": {equal_field:4}
+            })
+            for coll in [collection_b, collection_c]:
+                self.assert_model_exists(f"{coll}/1", {equal_field:4})
+        return base_test_update_equal_field
+
+    @classmethod
+    def get_base_test_update_equal_field_error_fn(cls, rel_type: str, equal_field: str= "meeting_id", back:bool=False) -> Callable:
+        def base_test_update_equal_field(self) -> None:
+            field1,ref_val1,field2, ref_val2 = self.get_test_relation_data(rel_type, equal_field)
+            self.set_models({
+                f"{collection_b}/1": {equal_field:1, field1:ref_val1},
+                f"{collection_c}/1": {equal_field:1, field2:ref_val2}
+            })
+            response = self.request(f"{collection_c if back else collection_b}.update", {"id":1, equal_field:4})
+            self.assert_fail_test_error(response,equal_field,back, field1, field2)
+        return base_test_update_equal_field
 
 
 for rel_type in check_relations:
@@ -418,3 +446,8 @@ for rel_type in check_relations:
         setattr(TestEqualFieldsCheck, f"test_equal_fields_{equal_field}_update_success_back_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_update_success_fn(rel_type,equal_field, back=True))
         setattr(TestEqualFieldsCheck, f"test_equal_fields_{equal_field}_delete_success_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_delete_fn(rel_type,equal_field))
         setattr(TestEqualFieldsCheck, f"test_equal_fields_{equal_field}_delete_success_back_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_delete_fn(rel_type,equal_field, back=True))
+
+for rel_type in check_relations:
+    setattr(TestEqualFieldsCheck, f"test_equal_fields_update_a_number_error_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_update_equal_field_error_fn(rel_type,"a_number"))
+    setattr(TestEqualFieldsCheck, f"test_equal_fields_update_a_number_error_back_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_update_equal_field_error_fn(rel_type,"a_number", back=True))
+    setattr(TestEqualFieldsCheck, f"test_equal_fields_update_a_number_success_{rel_type}".replace(":", "_"), TestEqualFieldsCheck.get_base_test_update_equal_field_success_fn(rel_type,"a_number"))
