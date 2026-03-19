@@ -9,7 +9,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 0},
                 "user/2": {"username": "kimi", "is_active": True},
-                "user/3": {"username": "kimi", "is_active": True},
+                "user/3": {"username": "matias", "is_active": True},
             }
         )
         status_code, data = self.request(
@@ -23,7 +23,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"username": "kimi", "is_active": True},
-                "user/3": {"username": "kimi", "is_active": True},
+                "user/3": {"username": "matias", "is_active": True},
             }
         )
         status_code, data = self.request(
@@ -37,7 +37,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 4},
                 "user/2": {"username": "kimi", "is_active": True},
-                "user/3": {"username": "kimi", "is_active": False},
+                "user/3": {"username": "matias", "is_active": False},
             }
         )
         status_code, data = self.request(

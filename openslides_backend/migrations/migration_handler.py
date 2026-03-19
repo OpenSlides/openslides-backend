@@ -191,6 +191,7 @@ class MigrationHandler(BaseHandler):
             alter_table_code,
             final_info_code,
             missing_handled_attributes,
+            missing_handled_collections_meta_attributes,
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
@@ -487,6 +488,7 @@ class MigrationHandler(BaseHandler):
             alter_table_code,  # should be sufficiently (re-)created with migrate command
             final_info_code,
             missing_handled_attributes,
+            missing_handled_collections_meta_attributes,
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,

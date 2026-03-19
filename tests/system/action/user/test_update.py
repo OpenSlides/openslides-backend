@@ -209,7 +209,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "username": "username_Xcdfgee",
                 },
                 "user/23": {
-                    "username": "username_Xcdfgee",
+                    "username": "username_Ycdfgee",
                 },
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23},
                 "group/1": {"meeting_user_ids": [223]},
@@ -303,7 +303,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "username": "username_Xcdfgee",
                 },
                 "user/23": {
-                    "username": "username_Xcdfgee",
+                    "username": "username_Ycdfgee",
                 },
                 "meeting_user/222": {"meeting_id": 1, "user_id": 22, "group_ids": [1]},
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23, "group_ids": [1]},
@@ -656,7 +656,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/221", {"username": "username_Xcdfgee", "member_number": "abcdefghij"}
         )
         self.create_model(
-            "user/222", {"username": "username_Xcdfgee", "member_number": "klmnopqrst"}
+            "user/222", {"username": "username_Ycdfgee", "member_number": "klmnopqrst"}
         )
         response = self.request(
             "user.update", {"id": 222, "member_number": "abcdefghij"}
