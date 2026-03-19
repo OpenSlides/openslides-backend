@@ -48,6 +48,9 @@ check-all: validate-models-yml check-models check-initial-data-json check-exampl
 generate-schema:
 	make -C meta/dev generate-relational-schema
 
+join-models-yml:
+	make -C meta/dev join-models-yml
+
 generate-db: | generate-schema create-database-with-schema
 
 generate-models:

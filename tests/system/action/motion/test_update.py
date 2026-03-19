@@ -459,6 +459,13 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
         self.assert_status_code(response, 400)
         self.assertEqual("Number is not unique.", response.json["message"])
 
+    def test_update_check_empty_not_unique_number(self) -> None:
+        self.create_motion(1, 1, motion_data={"number": "T001"})
+        self.create_motion(1, 2, motion_data={"number": ""})
+        response = self.request("motion.update", {"id": 1, "number": ""})
+        self.assert_status_code(response, 400)
+        self.assertEqual("Number is not unique.", response.json["message"])
+
     def test_update_with_published_orga_mediafile_generate_mediafile(self) -> None:
         self.set_test_models()
         self.create_mediafile(1)
