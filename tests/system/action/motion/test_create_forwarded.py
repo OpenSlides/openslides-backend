@@ -784,7 +784,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_2(
         self,
     ) -> None:
-        """Forwarding of 2 motion to 1 meeting in 1 transaction"""
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
         self.set_test_models(motion_12_data={"number": "1"})
         self.create_motion(1, 13)
         self.set_models(
