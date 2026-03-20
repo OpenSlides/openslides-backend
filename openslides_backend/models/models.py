@@ -757,7 +757,7 @@ class Meeting(Model, MeetingModelMixin):
         default="center", constraints={"enum": ["left", "right", "center"]}
     )
     export_pdf_fontsize = fields.IntegerField(
-        default=10, constraints={"enum": [10, 11, 12]}
+        default=10, constraints={"minimum": 10, "maximum": 12}
     )
     export_pdf_line_height = fields.FloatField(
         default=1.25, constraints={"minimum": 1.0}
