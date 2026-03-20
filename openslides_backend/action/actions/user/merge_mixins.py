@@ -12,7 +12,7 @@ from ....models.models import (
     MotionWorkingGroupSpeaker,
     PersonalNote,
     Poll,
-    PollConfigOption,
+    PollOption,
     Speaker,
 )
 from ....shared.exceptions import ActionException
@@ -207,11 +207,11 @@ class PollMergeMixin(BaseMergeMixin):
         )
 
 
-class PollConfigOptionMergeMixin(BaseMergeMixin):
+class PollOptionMergeMixin(BaseMergeMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
-            PollConfigOption,
+            PollOption,
             {},
             "meeting_user_id",
         )
@@ -235,7 +235,7 @@ class MeetingUserMergeMixin(
     MotionSupporterMergeMixin,
     AssignmentCandidateMergeMixin,
     PollMergeMixin,
-    PollConfigOptionMergeMixin,
+    PollOptionMergeMixin,
     BallotMergeMixin,
     SpeakerMergeMixin,
 ):
