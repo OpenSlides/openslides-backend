@@ -700,49 +700,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         Validates all relation fields according to the model definition.
         """
-        for field in self.model.get_relation_fields():
-            # if not field.equal_fields or field.own_field_name not in instance:
-            #     continue
-
-            fields = [field.own_field_name]
-            # for equal_field in field.equal_fields:
-            #     if not (own_equal_field_value := instance.get(equal_field)):
-            #         fqid = fqid_from_collection_and_id(
-            #             self.model.collection, instance["id"]
-            #         )
-            #         db_instance = self.datastore.get(
-            #             fqid,
-            #             [equal_field],
-            #         )
-            #         if not (own_equal_field_value := db_instance.get(equal_field)):
-            #             raise ActionException(
-            #                 f"{fqid} has no value for the field {equal_field}"
-            #             )
-            #     for instance_field in fields:
-            #         fqids = transform_to_fqids(
-            #             instance[instance_field], field.get_target_collection()
-            #         )
-            #         if equal_field == "meeting_id":
-            #             assert_belongs_to_meeting(
-            #                 self.datastore, fqids, own_equal_field_value
-            #             )
-            #         else:
-            #             for fqid in fqids:
-            #                 related_instance = self.datastore.get(
-            #                     fqid,
-            #                     [equal_field],
-            #                 )
-            #                 if str(related_instance.get(equal_field)) != str(
-            #                     own_equal_field_value
-            #                 ):
-            #                     raise ActionException(
-            #                         f"The relation {field.own_field_name} requires the following "
-            #                         f"fields to be equal:\n"
-            #                         f"{field.own_collection}/{instance['id']}/{equal_field}: "
-            #                         f"{own_equal_field_value}\n"
-            #                         f"{fqid}/{equal_field}: "
-            #                         f"{related_instance.get(equal_field)}"
-            #                     )
 
     def apply_instance(
         self, instance: dict[str, Any], fqid: FullQualifiedId | None = None

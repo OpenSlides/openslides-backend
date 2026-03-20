@@ -545,7 +545,8 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['projector/4']", response.json["message"]
+            "The following models do not belong to meeting 1: ['projector/4']",
+            response.json["message"],
         )
 
     def test_project_wrong_meeting_by_object(self) -> None:
@@ -561,7 +562,8 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 4: ['assignment/452']", response.json["message"]
+            "The following models do not belong to meeting 4: ['assignment/452']",
+            response.json["message"],
         )
 
     def test_project_wrong_meeting_by_ids_and_object(self) -> None:
@@ -576,15 +578,17 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        # TODO: Decide what needs to be done for the equal_fields in terms of wether list equal_field should throw joined errors and 
+        # TODO: Decide what needs to be done for the equal_fields in terms of wether list equal_field should throw joined errors and
         # either expect both fqids to be in the error message after fixing the schema, or delete this comment.
         if "'assignment/452'" in response.json["message"]:
             self.assertIn(
-                "The following models do not belong to meeting 4: ['assignment/452']", response.json["message"]
+                "The following models do not belong to meeting 4: ['assignment/452']",
+                response.json["message"],
             )
         else:
             self.assertIn(
-                "The following models do not belong to meeting 4: ['projector/1']", response.json["message"]
+                "The following models do not belong to meeting 4: ['projector/1']",
+                response.json["message"],
             )
 
     def test_project_wrong_meeting_by_content_user(self) -> None:
@@ -592,7 +596,12 @@ class ProjectorProject(BaseActionTestCase):
         self.create_user_for_meeting(1)
         response = self.request(
             "projector.project",
-            {"ids": [4], "content_object_id": "user/2", "meeting_id": 4, "stable": True},
+            {
+                "ids": [4],
+                "content_object_id": "user/2",
+                "meeting_id": 4,
+                "stable": True,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(

@@ -3127,7 +3127,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_user("dummy2", [1])
         self.create_user("dummy3", [1])
-        self.set_user_groups(1,[1])
+        self.set_user_groups(1, [1])
         self.create_topic(1, 1)
         self.set_models(
             {

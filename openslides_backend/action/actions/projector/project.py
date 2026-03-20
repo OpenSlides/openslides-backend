@@ -50,8 +50,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
             content_object_collection, content_object_id = collection_and_id_from_fqid(
                 fqid_content_object
             )
-            meeting_member_check_necessary = True
-            if content_object_collection == "mediafile":
+            if content_object_collection == "mediafile":  # TODO: Not possible I think
                 meeting_mediafile = get_meeting_mediafile_id_or_create_payload(
                     self.datastore, meeting_id, content_object_id, lock_result=False
                 )
@@ -62,7 +61,6 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                     meeting_mediafile_id: int = cast(
                         list[dict[str, Any]], create_result
                     )[0]["id"]
-                    meeting_member_check_necessary = False
                 else:
                     meeting_mediafile_id = meeting_mediafile
                 fqid_content_object = instance["content_object_id"] = (
@@ -70,16 +68,6 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                         "meeting_mediafile", meeting_mediafile_id
                     )
                 )
-            # if meeting_member_check_necessary:
-            # assert_belongs_to_meeting(
-            #     self.datastore,
-            #     [fqid_content_object]
-            #     + [
-            #         fqid_from_collection_and_id("projector", id)
-            #         for id in instance["ids"]
-            #     ],
-            #     meeting_id,
-            # )
 
             self.move_equal_projections_to_history_or_unset(instance, meeting_id)
             if not instance.get("stable"):

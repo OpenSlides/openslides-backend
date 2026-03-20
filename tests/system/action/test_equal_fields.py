@@ -1,4 +1,3 @@
-
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -150,7 +149,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f"Relation violates required constraint: The following models do not belong to meeting 1: ['user/2']",
+            "Relation violates required constraint: The following models do not belong to meeting 1: ['user/2']",
             response.json["message"],
         )
 

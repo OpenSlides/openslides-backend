@@ -481,7 +481,6 @@ class DatabaseWriter(SqlQueryHelper):
         error_fqid = fqid_from_collection_and_id(collection, target_id or 0)
         try:
             with self.connection.cursor() as curs:
-                state = f"{statement.as_string()} || {arguments}"
                 curs.execute(statement, arguments)
                 if return_fields:
                     result = curs.fetchone()

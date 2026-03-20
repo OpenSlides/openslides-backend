@@ -235,7 +235,6 @@ class DatabaseReader(SqlQueryHelper):
             query += sql.SQL(" FOR UPDATE")
         try:
             with self.connection.cursor() as curs:
-                state = f"{query.as_string()} || {arguments}"
                 results = curs.execute(query, arguments).fetchall()
         except UndefinedColumn as e:
             column = e.args[0].split('"')[1]

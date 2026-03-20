@@ -290,7 +290,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "doubleleet",
                     "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/2676", "meeting_id": 7844},
+                "agenda_item/1": {
+                    "content_object_id": "topic/2676",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/2676",
                     "meeting_id": 7844,
@@ -345,7 +348,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 7844},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -383,7 +389,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 7844},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -429,7 +438,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 7844},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -495,7 +507,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 7844},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,

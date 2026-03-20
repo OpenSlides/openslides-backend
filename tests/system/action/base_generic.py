@@ -6,8 +6,8 @@ from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, InternalHelper
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
-from openslides_backend.shared.typing import Model
 from openslides_backend.shared.exceptions import BadCodingException
+from openslides_backend.shared.typing import Model
 
 from .base import BaseActionTestCase
 
@@ -85,7 +85,9 @@ class BaseGenericTestCase(BaseActionTestCase):
         ) = GenerateCodeBlocks.generate_the_code()
 
         if errors:
-            raise BadCodingException(f"Failed relational schema generation: {'; '.join(errors)}")
+            raise BadCodingException(
+                f"Failed relational schema generation: {'; '.join(errors)}"
+            )
 
         sql = (
             table_name_code

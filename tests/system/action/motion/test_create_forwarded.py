@@ -838,9 +838,9 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                     "meeting_id": 1,
                 },
                 "motion_submitter/13": {
-                    "meeting_user_id": 1,
+                    "meeting_user_id": 2,
                     "motion_id": 13,
-                    "meeting_id": 1,
+                    "meeting_id": 4,
                 },
             }
         )
