@@ -918,16 +918,13 @@ class Meeting(Model, MeetingModelMixin):
         },
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
-    motion_poll_default_type = fields.CharField(default="pseudoanonymous")
-    motion_poll_default_method = fields.CharField(default="YNA")
+    motion_poll_default_type = fields.CharField(default="secret")
+    motion_poll_default_allow_abstain = fields.BooleanField(default=True)
     motion_poll_default_onehundred_percent_base = fields.CharField(
-        default="YNA",
+        default="valid",
         constraints={
             "enum": [
-                "Y",
-                "YN",
-                "YNA",
-                "N",
+                "yes_no",
                 "valid",
                 "cast",
                 "entitled",
@@ -938,9 +935,6 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}, is_view_field=True
-    )
-    motion_poll_default_backend = fields.CharField(
-        default="fast", constraints={"enum": ["long", "fast"]}
     )
     motion_poll_projection_name_order_first = fields.CharField(
         required=True,
@@ -994,16 +988,14 @@ class Meeting(Model, MeetingModelMixin):
     )
     assignment_poll_enable_max_votes_per_option = fields.BooleanField(default=False)
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
-    assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
-    assignment_poll_default_method = fields.CharField(default="Y")
+    assignment_poll_default_type = fields.CharField(default="secret")
+    assignment_poll_default_method = fields.CharField(default="selection")
     assignment_poll_default_onehundred_percent_base = fields.CharField(
         default="valid",
         constraints={
             "enum": [
-                "Y",
-                "YN",
-                "YNA",
-                "N",
+                "no_general",
+                "yes_no",
                 "valid",
                 "cast",
                 "entitled",
@@ -1014,9 +1006,6 @@ class Meeting(Model, MeetingModelMixin):
     )
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}, is_view_field=True
-    )
-    assignment_poll_default_backend = fields.CharField(
-        default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_ballot_paper_selection = fields.CharField(
         constraints={
@@ -1035,10 +1024,7 @@ class Meeting(Model, MeetingModelMixin):
         default="YNA",
         constraints={
             "enum": [
-                "Y",
-                "YN",
-                "YNA",
-                "N",
+                "no_general",
                 "valid",
                 "cast",
                 "entitled",
@@ -2533,6 +2519,19 @@ class PollConfigApproval(Model):
         is_view_field=True,
     )
     allow_abstain = fields.BooleanField(default=True)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": [
+                "yes_no",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
 
 
 class PollConfigOption(Model):
@@ -2571,6 +2570,19 @@ class PollConfigRatingApproval(Model):
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
     allow_abstain = fields.BooleanField(default=True)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": [
+                "yes_no",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
 
 
 class PollConfigRatingScore(Model):
@@ -2591,6 +2603,19 @@ class PollConfigRatingScore(Model):
     max_votes_per_option = fields.IntegerField(default=0)
     max_vote_sum = fields.IntegerField(default=0)
     min_vote_sum = fields.IntegerField(default=0)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": [
+                "yes_no",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
 
 
 class PollConfigSelection(Model):
@@ -2609,6 +2634,20 @@ class PollConfigSelection(Model):
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
     allow_nota = fields.BooleanField(default=False)
+    strike_out = fields.BooleanField(default=False)
+    onehundred_percent_base = fields.CharField(
+        required=True,
+        constraints={
+            "enum": [
+                "no_general",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
 
 
 class PollConfigStvScottish(Model):

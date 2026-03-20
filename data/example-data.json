@@ -355,14 +355,13 @@
             "motions_export_follow_recommendation": false,
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
-            "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_method": "YNA",
-            "motion_poll_default_onehundred_percent_base": "YNA",
+            "motion_poll_default_type": "secret",
+            "motion_poll_default_allow_abstain": true,
+            "motion_poll_default_onehundred_percent_base": "valid",
             "motion_poll_default_group_ids": [
                 2,
                 3
             ],
-            "motion_poll_default_backend": "fast",
             "motion_poll_projection_name_order_first": "last_name",
             "motion_poll_projection_max_columns": 6,
             "users_enable_presence_view": true,
@@ -381,14 +380,13 @@
             "assignment_poll_add_candidates_to_list_of_speakers": false,
             "assignment_poll_enable_max_votes_per_option": false,
             "assignment_poll_sort_poll_result_by_votes": true,
-            "assignment_poll_default_type": "pseudoanonymous",
-            "assignment_poll_default_method": "Y",
+            "assignment_poll_default_type": "secret",
+            "assignment_poll_default_method": "selection",
             "assignment_poll_default_onehundred_percent_base": "valid",
             "assignment_poll_default_group_ids": [
                 2,
                 3
             ],
-            "assignment_poll_default_backend": "fast",
             "poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "poll_ballot_paper_number": 8,
             "poll_sort_poll_result_by_votes": true,
@@ -1965,13 +1963,15 @@
         "1": {
             "id": 1,
             "poll_id": 1,
-            "allow_abstain": false
+            "allow_abstain": false,
+            "onehundred_percent_base": "valid"
         },
         "2": {
             "id": 2,
             "poll_id": 2,
             "allow_abstain": true,
-            "option_ids": [1, 2]
+            "option_ids": [1, 2],
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_selection": {
@@ -1981,7 +1981,9 @@
             "option_ids": [3, 4, 5],
             "max_options_amount": 2,
             "min_options_amount": 1,
-            "allow_nota": true
+            "allow_nota": true,
+            "strike_out": false,
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_rating_score": {
@@ -1993,7 +1995,8 @@
             "min_options_amount": 2,
             "max_votes_per_option": 0,
             "max_vote_sum": 5,
-            "min_vote_sum": 1
+            "min_vote_sum": 1,
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_rating_approval": {
@@ -2003,7 +2006,8 @@
             "max_options_amount": 0,
             "min_options_amount": 0,
             "allow_abstain": true,
-            "option_ids": [8, 9, 10]
+            "option_ids": [8, 9, 10],
+            "onehundred_percent_base": "valid"
         }
     },
     "poll_config_option": {
