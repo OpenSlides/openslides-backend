@@ -838,9 +838,9 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                     "meeting_id": 1,
                 },
                 "motion_submitter/13": {
-                    "meeting_user_id": 1,
+                    "meeting_user_id": 2,
                     "motion_id": 13,
-                    "meeting_id": 1,
+                    "meeting_id": 4,
                 },
             }
         )
@@ -2322,8 +2322,8 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         if not allow_amendment_forwarding:
             self.set_models(
                 {
-                    "motion_state/4": {"allow_motion_forwarding": True},
-                    "motion/13": {"state_id": 4},
+                    "motion_state/1": {"allow_amendment_forwarding": False},
+                    "motion/13": {"state_id": 1},
                 }
             )
         response = self.request(

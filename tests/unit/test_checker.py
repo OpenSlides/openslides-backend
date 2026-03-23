@@ -559,7 +559,7 @@ class TestCheckerCheckData(TestCase):
             )
 
     def test_incorrect_fqid_error(self) -> None:
-        base_error = "projection/1/content_object_id: Type error: Type is not GenericRelationField(to={'projector_countdown': 'projection_ids', 'projector_message': 'projection_ids', 'poll': 'projection_ids', 'topic': 'projection_ids', 'agenda_item': 'projection_ids', 'assignment': 'projection_ids', 'motion_block': 'projection_ids', 'list_of_speakers': 'projection_ids', 'meeting_mediafile': 'projection_ids', 'motion': 'projection_ids', 'meeting': 'projection_ids'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={}, equal_fields=['meeting_id'])"
+        base_error = "projection/1/content_object_id: Type error: Type is not GenericRelationField(to={'projector_countdown': 'projection_ids', 'projector_message': 'projection_ids', 'poll': 'projection_ids', 'topic': 'projection_ids', 'agenda_item': 'projection_ids', 'assignment': 'projection_ids', 'motion_block': 'projection_ids', 'list_of_speakers': 'projection_ids', 'meeting_mediafile': 'projection_ids', 'motion': 'projection_ids', 'meeting': 'projection_ids'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={})"
         map_invalid_values_to_special_errors = {
             "meetings/1": "projection/1/content_object_id error: The collection meetings is not supported as a reverse relation in projection/content_object_id.",
             "meeting/a": None,
@@ -583,7 +583,7 @@ class TestCheckerCheckData(TestCase):
             )
 
     def test_incorrect_fqid_list_error(self) -> None:
-        base_error = "organization_tag/1/tagged_ids: Type error: Type is not GenericRelationListField(to={'committee': 'organization_tag_ids', 'meeting': 'organization_tag_ids'}, is_list_field=True, on_delete=SET_NULL, required=False, constraints={}, equal_fields=[])"
+        base_error = "organization_tag/1/tagged_ids: Type error: Type is not GenericRelationListField(to={'committee': 'organization_tag_ids', 'meeting': 'organization_tag_ids'}, is_list_field=True, on_delete=SET_NULL, required=False, constraints={})"
         map_invalid_values_to_special_errors = {
             "meetings/1": "organization_tag/1/tagged_ids error: The collection meetings is not supported as a reverse relation in organization_tag/tagged_ids.",
             "meeting/a": None,

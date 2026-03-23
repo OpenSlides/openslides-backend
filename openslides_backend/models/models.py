@@ -59,18 +59,14 @@ class AgendaItem(Model, AgendaItemModelMixin):
         },
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
-    parent_id = fields.RelationField(
-        to={"agenda_item": "child_ids"}, equal_fields="meeting_id"
-    )
+    parent_id = fields.RelationField(to={"agenda_item": "child_ids"})
     child_ids = fields.RelationListField(
-        to={"agenda_item": "parent_id"}, is_view_field=True, equal_fields="meeting_id"
+        to={"agenda_item": "parent_id"}, is_view_field=True
     )
     tag_ids = fields.RelationListField(
         to={"tag": "tagged_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_tag_tagged_ids_t",
             "agenda_item_id",
@@ -82,7 +78,6 @@ class AgendaItem(Model, AgendaItemModelMixin):
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "agenda_item_ids"}, required=True, constant=True
@@ -115,19 +110,16 @@ class Assignment(Model):
         to={"assignment_candidate": "assignment_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
@@ -135,12 +127,10 @@ class Assignment(Model):
         is_view_field=True,
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
         to={"tag": "tagged_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_tag_tagged_ids_t",
             "assignment_id",
@@ -151,7 +141,6 @@ class Assignment(Model):
     attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_meeting_mediafile_attachment_ids_t",
             "assignment_id",
@@ -163,7 +152,6 @@ class Assignment(Model):
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_ids"}, required=True, constant=True
@@ -180,10 +168,7 @@ class AssignmentCandidate(Model):
     id = fields.IntegerField(required=True, constant=True)
     weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
-        to={"assignment": "candidate_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"assignment": "candidate_ids"}, required=True, constant=True
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "assignment_candidate_ids"}, constant=True
@@ -204,13 +189,11 @@ class ChatGroup(Model):
         to={"chat_message": "chat_group_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     read_group_ids = fields.RelationListField(
         to={"group": "read_chat_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_read_group_ids_group_t",
             "chat_group_id",
@@ -222,7 +205,6 @@ class ChatGroup(Model):
         to={"group": "write_chat_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_write_group_ids_group_t",
             "chat_group_id",
@@ -422,7 +404,6 @@ class Group(Model):
         to={"meeting_user": "group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_meeting_user_ids_meeting_user_t",
             "group_id",
@@ -449,7 +430,6 @@ class Group(Model):
         to={"meeting_mediafile": "access_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_mmagi_meeting_mediafile_t",
             "group_id",
@@ -474,7 +454,6 @@ class Group(Model):
         to={"motion_comment_section": "read_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_read_comment_section_ids_motion_comment_section_t",
             "group_id",
@@ -486,7 +465,6 @@ class Group(Model):
         to={"motion_comment_section": "write_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_write_comment_section_ids_motion_comment_section_t",
             "group_id",
@@ -497,7 +475,6 @@ class Group(Model):
     read_chat_group_ids = fields.RelationListField(
         to={"chat_group": "read_group_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_read_group_ids_group_t",
             "group_id",
@@ -508,7 +485,6 @@ class Group(Model):
     write_chat_group_ids = fields.RelationListField(
         to={"chat_group": "write_group_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_chat_group_write_group_ids_group_t",
             "group_id",
@@ -520,7 +496,6 @@ class Group(Model):
         to={"poll": "entitled_group_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=("nm_group_poll_ids_poll_t", "group_id", "poll_id", []),
     )
     used_as_motion_poll_default_id = fields.RelationField(
@@ -619,25 +594,21 @@ class ListOfSpeakers(Model):
         },
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
         to={"speaker": "list_of_speakers_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     structure_level_list_of_speakers_ids = fields.RelationListField(
         to={"structure_level_list_of_speakers": "list_of_speakers_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_ids"}, required=True, constant=True
@@ -669,11 +640,9 @@ class Mediafile(Model):
     published_to_meetings_in_organization_id = fields.RelationField(
         to={"organization": "published_mediafile_ids"}
     )
-    parent_id = fields.RelationField(
-        to={"mediafile": "child_ids"}, equal_fields="owner_id"
-    )
+    parent_id = fields.RelationField(to={"mediafile": "child_ids"})
     child_ids = fields.RelationListField(
-        to={"mediafile": "parent_id"}, is_view_field=True, equal_fields="owner_id"
+        to={"mediafile": "parent_id"}, is_view_field=True
     )
     owner_id = fields.GenericRelationField(
         to={"organization": "mediafile_ids", "meeting": "mediafile_ids"},
@@ -1550,54 +1519,38 @@ class MeetingUser(Model):
         to={"personal_note": "meeting_user_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
-        to={"speaker": "meeting_user_id"}, is_view_field=True, equal_fields="meeting_id"
+        to={"speaker": "meeting_user_id"}, is_view_field=True
     )
     motion_supporter_ids = fields.RelationListField(
-        to={"motion_supporter": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion_supporter": "meeting_user_id"}, is_view_field=True
     )
     motion_editor_ids = fields.RelationListField(
-        to={"motion_editor": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion_editor": "meeting_user_id"}, is_view_field=True
     )
     motion_working_group_speaker_ids = fields.RelationListField(
-        to={"motion_working_group_speaker": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion_working_group_speaker": "meeting_user_id"}, is_view_field=True
     )
     motion_submitter_ids = fields.RelationListField(
-        to={"motion_submitter": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion_submitter": "meeting_user_id"}, is_view_field=True
     )
     assignment_candidate_ids = fields.RelationListField(
-        to={"assignment_candidate": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"assignment_candidate": "meeting_user_id"}, is_view_field=True
     )
     vote_delegated_to_id = fields.RelationField(
-        to={"meeting_user": "vote_delegations_from_ids"}, equal_fields="meeting_id"
+        to={"meeting_user": "vote_delegations_from_ids"}
     )
     vote_delegations_from_ids = fields.RelationListField(
-        to={"meeting_user": "vote_delegated_to_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"meeting_user": "vote_delegated_to_id"}, is_view_field=True
     )
     chat_message_ids = fields.RelationListField(
-        to={"chat_message": "meeting_user_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"chat_message": "meeting_user_id"}, is_view_field=True
     )
     group_ids = fields.RelationListField(
         to={"group": "meeting_user_ids"},
         is_view_field=True,
         required=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_meeting_user_ids_meeting_user_t",
             "meeting_user_id",
@@ -1609,7 +1562,6 @@ class MeetingUser(Model):
         to={"structure_level": "meeting_user_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_meeting_user_structure_level_ids_structure_level_t",
             "meeting_user_id",
@@ -1661,20 +1613,15 @@ class Motion(Model):
             "description": "Forwarded amendments can be marked as such. This is just optional, however. Forwarded amendments can also have this field set to false."
         }
     )
-    lead_motion_id = fields.RelationField(
-        to={"motion": "amendment_ids"}, equal_fields="meeting_id"
-    )
+    lead_motion_id = fields.RelationField(to={"motion": "amendment_ids"})
     amendment_ids = fields.RelationListField(
         to={"motion": "lead_motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
-    sort_parent_id = fields.RelationField(
-        to={"motion": "sort_child_ids"}, equal_fields="meeting_id"
-    )
+    sort_parent_id = fields.RelationField(to={"motion": "sort_child_ids"})
     sort_child_ids = fields.RelationListField(
-        to={"motion": "sort_parent_id"}, is_view_field=True, equal_fields="meeting_id"
+        to={"motion": "sort_parent_id"}, is_view_field=True
     )
     origin_id = fields.RelationField(to={"motion": "derived_motion_ids"})
     origin_meeting_id = fields.RelationField(to={"meeting": "forwarded_motion_ids"})
@@ -1713,17 +1660,14 @@ class Motion(Model):
             [],
         ),
     )
-    state_id = fields.RelationField(
-        to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
-    )
+    state_id = fields.RelationField(to={"motion_state": "motion_ids"}, required=True)
     recommendation_id = fields.RelationField(
-        to={"motion_state": "motion_recommendation_ids"}, equal_fields="meeting_id"
+        to={"motion_state": "motion_recommendation_ids"}
     )
     state_extension_reference_ids = fields.GenericRelationListField(
         to={"motion": "referenced_in_motion_state_extension_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_motion_state_extension_reference_ids_t",
             "motion_id",
@@ -1734,7 +1678,6 @@ class Motion(Model):
     referenced_in_motion_state_extension_ids = fields.RelationListField(
         to={"motion": "state_extension_reference_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_motion_state_extension_reference_ids_t",
             "motion_id",
@@ -1746,7 +1689,6 @@ class Motion(Model):
         to={"motion": "referenced_in_motion_recommendation_extension_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_motion_recommendation_extension_reference_ids_t",
             "motion_id",
@@ -1757,7 +1699,6 @@ class Motion(Model):
     referenced_in_motion_recommendation_extension_ids = fields.RelationListField(
         to={"motion": "recommendation_extension_reference_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_motion_recommendation_extension_reference_ids_t",
             "motion_id",
@@ -1765,66 +1706,53 @@ class Motion(Model):
             ["referenced_in_motion_recommendation_extension_id_motion_id"],
         ),
     )
-    category_id = fields.RelationField(
-        to={"motion_category": "motion_ids"}, equal_fields="meeting_id"
-    )
-    block_id = fields.RelationField(
-        to={"motion_block": "motion_ids"}, equal_fields="meeting_id"
-    )
+    category_id = fields.RelationField(to={"motion_category": "motion_ids"})
+    block_id = fields.RelationField(to={"motion_block": "motion_ids"})
     submitter_ids = fields.RelationListField(
         to={"motion_submitter": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     supporter_ids = fields.RelationListField(
         to={"motion_supporter": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     editor_ids = fields.RelationListField(
         to={"motion_editor": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     working_group_speaker_ids = fields.RelationListField(
         to={"motion_working_group_speaker": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
         to={"option": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
     )
     change_recommendation_ids = fields.RelationListField(
         to={"motion_change_recommendation": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     comment_ids = fields.RelationListField(
         to={"motion_comment": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
@@ -1832,18 +1760,15 @@ class Motion(Model):
         is_view_field=True,
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
         to={"tag": "tagged_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=("gm_tag_tagged_ids_t", "motion_id", "tag_id", ["tag_id_tag_id"]),
     )
     attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_meeting_mediafile_attachment_ids_t",
             "motion_id",
@@ -1855,13 +1780,11 @@ class Motion(Model):
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_ids"}, required=True, constant=True
@@ -1887,27 +1810,22 @@ class MotionBlock(Model):
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
-    motion_ids = fields.RelationListField(
-        to={"motion": "block_id"}, is_view_field=True, equal_fields="meeting_id"
-    )
+    motion_ids = fields.RelationListField(to={"motion": "block_id"}, is_view_field=True)
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         required=True,
-        equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_block_ids"}, required=True, constant=True
@@ -1934,16 +1852,12 @@ class MotionCategory(Model):
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
         },
     )
-    parent_id = fields.RelationField(
-        to={"motion_category": "child_ids"}, equal_fields="meeting_id"
-    )
+    parent_id = fields.RelationField(to={"motion_category": "child_ids"})
     child_ids = fields.RelationListField(
-        to={"motion_category": "parent_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion_category": "parent_id"}, is_view_field=True
     )
     motion_ids = fields.RelationListField(
-        to={"motion": "category_id"}, is_view_field=True, equal_fields="meeting_id"
+        to={"motion": "category_id"}, is_view_field=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_category_ids"}, required=True, constant=True
@@ -1967,10 +1881,7 @@ class MotionChangeRecommendation(Model):
     text = fields.HTMLStrictField()
     creation_time = fields.TimestampField(read_only=True)
     motion_id = fields.RelationField(
-        to={"motion": "change_recommendation_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "change_recommendation_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_change_recommendation_ids"}, required=True, constant=True
@@ -1984,16 +1895,10 @@ class MotionComment(Model):
     id = fields.IntegerField(required=True, constant=True)
     comment = fields.HTMLStrictField()
     motion_id = fields.RelationField(
-        to={"motion": "comment_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "comment_ids"}, required=True, constant=True
     )
     section_id = fields.RelationField(
-        to={"motion_comment_section": "comment_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion_comment_section": "comment_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_comment_ids"}, required=True, constant=True
@@ -2021,12 +1926,10 @@ class MotionCommentSection(Model):
         to={"motion_comment": "section_id"},
         on_delete=fields.OnDelete.PROTECT,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     read_group_ids = fields.RelationListField(
         to={"group": "read_comment_section_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_read_comment_section_ids_motion_comment_section_t",
             "motion_comment_section_id",
@@ -2037,7 +1940,6 @@ class MotionCommentSection(Model):
     write_group_ids = fields.RelationListField(
         to={"group": "write_comment_section_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_group_write_comment_section_ids_motion_comment_section_t",
             "motion_comment_section_id",
@@ -2058,10 +1960,7 @@ class MotionEditor(Model):
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(to={"meeting_user": "motion_editor_ids"})
     motion_id = fields.RelationField(
-        to={"motion": "editor_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "editor_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_editor_ids"}, required=True, constant=True
@@ -2108,19 +2007,15 @@ class MotionState(Model):
     set_workflow_timestamp = fields.BooleanField(default=False)
     state_button_label = fields.CharField()
     submitter_withdraw_state_id = fields.RelationField(
-        to={"motion_state": "submitter_withdraw_back_ids"},
-        equal_fields=["meeting_id", "workflow_id"],
+        to={"motion_state": "submitter_withdraw_back_ids"}
     )
     submitter_withdraw_back_ids = fields.RelationListField(
-        to={"motion_state": "submitter_withdraw_state_id"},
-        is_view_field=True,
-        equal_fields=["meeting_id", "workflow_id"],
+        to={"motion_state": "submitter_withdraw_state_id"}, is_view_field=True
     )
     next_state_ids = fields.RelationListField(
         to={"motion_state": "previous_state_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields=["meeting_id", "workflow_id"],
         write_fields=(
             "nm_motion_state_next_state_ids_motion_state_t",
             "previous_state_id",
@@ -2131,7 +2026,6 @@ class MotionState(Model):
     previous_state_ids = fields.RelationListField(
         to={"motion_state": "next_state_ids"},
         is_view_field=True,
-        equal_fields=["meeting_id", "workflow_id"],
         write_fields=(
             "nm_motion_state_next_state_ids_motion_state_t",
             "next_state_id",
@@ -2140,24 +2034,18 @@ class MotionState(Model):
         ),
     )
     motion_ids = fields.RelationListField(
-        to={"motion": "state_id"},
-        on_delete=fields.OnDelete.PROTECT,
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion": "state_id"}, on_delete=fields.OnDelete.PROTECT, is_view_field=True
     )
     motion_recommendation_ids = fields.RelationListField(
-        to={"motion": "recommendation_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"motion": "recommendation_id"}, is_view_field=True
     )
     workflow_id = fields.RelationField(
-        to={"motion_workflow": "state_ids"}, required=True, equal_fields="meeting_id"
+        to={"motion_workflow": "state_ids"}, required=True
     )
     first_state_of_workflow_id = fields.RelationField(
         to={"motion_workflow": "first_state_id"},
         on_delete=fields.OnDelete.PROTECT,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_state_ids"}, required=True, constant=True
@@ -2172,10 +2060,7 @@ class MotionSubmitter(Model):
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(to={"meeting_user": "motion_submitter_ids"})
     motion_id = fields.RelationField(
-        to={"motion": "submitter_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "submitter_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_submitter_ids"}, required=True, constant=True
@@ -2189,10 +2074,7 @@ class MotionSupporter(Model):
     id = fields.IntegerField(required=True, constant=True)
     meeting_user_id = fields.RelationField(to={"meeting_user": "motion_supporter_ids"})
     motion_id = fields.RelationField(
-        to={"motion": "supporter_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "supporter_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_supporter_ids"}, required=True, constant=True
@@ -2218,12 +2100,9 @@ class MotionWorkflow(Model):
         to={"motion_state": "workflow_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     first_state_id = fields.RelationField(
-        to={"motion_state": "first_state_of_workflow_id"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"motion_state": "first_state_of_workflow_id"}, required=True
     )
     default_workflow_meeting_id = fields.RelationField(
         to={"meeting": "motions_default_workflow_id"}, is_view_field=True
@@ -2246,10 +2125,7 @@ class MotionWorkingGroupSpeaker(Model):
         to={"meeting_user": "motion_working_group_speaker_ids"}
     )
     motion_id = fields.RelationField(
-        to={"motion": "working_group_speaker_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"motion": "working_group_speaker_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_working_group_speaker_ids"}, required=True, constant=True
@@ -2266,18 +2142,15 @@ class Option(Model):
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
-    poll_id = fields.RelationField(
-        to={"poll": "option_ids"}, constant=True, equal_fields="meeting_id"
-    )
+    poll_id = fields.RelationField(to={"poll": "option_ids"}, constant=True)
     used_as_global_option_in_poll_id = fields.RelationField(
-        to={"poll": "global_option_id"}, constant=True, equal_fields="meeting_id"
+        to={"poll": "global_option_id"}, is_view_field=True, constant=True
     )
     vote_ids = fields.RelationListField(
         to={"vote": "option_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
         to={
@@ -2286,7 +2159,6 @@ class Option(Model):
             "motion": "option_ids",
         },
         constant=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "option_ids"}, required=True, constant=True
@@ -2409,13 +2281,10 @@ class PersonalNote(Model):
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "personal_note_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"meeting_user": "personal_note_ids"}, required=True, constant=True
     )
     content_object_id = fields.GenericRelationField(
-        to={"motion": "personal_note_ids"}, constant=True, equal_fields="meeting_id"
+        to={"motion": "personal_note_ids"}, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "personal_note_ids"}, required=True, constant=True
@@ -2433,9 +2302,7 @@ class PointOfOrderCategory(Model):
         to={"meeting": "point_of_order_category_ids"}, required=True, constant=True
     )
     speaker_ids = fields.RelationListField(
-        to={"speaker": "point_of_order_category_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"speaker": "point_of_order_category_id"}, is_view_field=True
     )
 
 
@@ -2507,20 +2374,17 @@ class Poll(Model, PollModelMixin):
         to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
         to={"option": "poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
     )
     global_option_id = fields.RelationField(
         to={"option": "used_as_global_option_in_poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         constant=True,
-        equal_fields="meeting_id",
     )
     voted_ids = fields.RelationListField(
         to={"user": "poll_voted_ids"},
@@ -2531,14 +2395,12 @@ class Poll(Model, PollModelMixin):
     entitled_group_ids = fields.RelationListField(
         to={"group": "poll_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=("nm_group_poll_ids_poll_t", "poll_id", "group_id", []),
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "poll_ids"}, required=True, constant=True
@@ -2551,10 +2413,7 @@ class PollCandidate(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     poll_candidate_list_id = fields.RelationField(
-        to={"poll_candidate_list": "poll_candidate_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"poll_candidate_list": "poll_candidate_ids"}, required=True, constant=True
     )
     user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, constant=True)
     weight = fields.IntegerField(required=True)
@@ -2573,7 +2432,6 @@ class PollCandidateList(Model):
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "poll_candidate_list_ids"}, required=True, constant=True
@@ -2583,7 +2441,6 @@ class PollCandidateList(Model):
         is_view_field=True,
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
 
 
@@ -2597,13 +2454,13 @@ class Projection(Model):
     weight = fields.IntegerField()
     type = fields.CharField()
     current_projector_id = fields.RelationField(
-        to={"projector": "current_projection_ids"}, equal_fields="meeting_id"
+        to={"projector": "current_projection_ids"}
     )
     preview_projector_id = fields.RelationField(
-        to={"projector": "preview_projection_ids"}, equal_fields="meeting_id"
+        to={"projector": "preview_projection_ids"}
     )
     history_projector_id = fields.RelationField(
-        to={"projector": "history_projection_ids"}, equal_fields="meeting_id"
+        to={"projector": "history_projection_ids"}
     )
     content_object_id = fields.GenericRelationField(
         to={
@@ -2621,7 +2478,6 @@ class Projection(Model):
         },
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "all_projection_ids"}, required=True, constant=True
@@ -2668,19 +2524,16 @@ class Projector(Model):
         to={"projection": "current_projector_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     preview_projection_ids = fields.RelationListField(
         to={"projection": "preview_projector_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     history_projection_ids = fields.RelationListField(
         to={"projection": "history_projector_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={"meeting": "reference_projector_id"}, is_view_field=True
@@ -2746,7 +2599,6 @@ class ProjectorCountdown(Model):
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     used_as_list_of_speakers_countdown_meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_countdown_id"}, is_view_field=True
@@ -2769,7 +2621,6 @@ class ProjectorMessage(Model):
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "projector_message_ids"}, required=True, constant=True
@@ -2802,20 +2653,14 @@ class Speaker(Model):
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField(constant=True)
     list_of_speakers_id = fields.RelationField(
-        to={"list_of_speakers": "speaker_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"list_of_speakers": "speaker_ids"}, required=True, constant=True
     )
     structure_level_list_of_speakers_id = fields.RelationField(
-        to={"structure_level_list_of_speakers": "speaker_ids"},
-        equal_fields="meeting_id",
+        to={"structure_level_list_of_speakers": "speaker_ids"}
     )
-    meeting_user_id = fields.RelationField(
-        to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
-    )
+    meeting_user_id = fields.RelationField(to={"meeting_user": "speaker_ids"})
     point_of_order_category_id = fields.RelationField(
-        to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
+        to={"point_of_order_category": "speaker_ids"}
     )
     meeting_id = fields.RelationField(
         to={"meeting": "speaker_ids"}, required=True, constant=True
@@ -2833,7 +2678,6 @@ class StructureLevel(Model):
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "structure_level_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_meeting_user_structure_level_ids_structure_level_t",
             "structure_level_id",
@@ -2844,7 +2688,6 @@ class StructureLevel(Model):
     structure_level_list_of_speakers_ids = fields.RelationListField(
         to={"structure_level_list_of_speakers": "structure_level_id"},
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "structure_level_ids"}, required=True
@@ -2857,19 +2700,13 @@ class StructureLevelListOfSpeakers(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     structure_level_id = fields.RelationField(
-        to={"structure_level": "structure_level_list_of_speakers_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"structure_level": "structure_level_list_of_speakers_ids"}, required=True
     )
     list_of_speakers_id = fields.RelationField(
-        to={"list_of_speakers": "structure_level_list_of_speakers_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"list_of_speakers": "structure_level_list_of_speakers_ids"}, required=True
     )
     speaker_ids = fields.RelationListField(
-        to={"speaker": "structure_level_list_of_speakers_id"},
-        is_view_field=True,
-        equal_fields="meeting_id",
+        to={"speaker": "structure_level_list_of_speakers_id"}, is_view_field=True
     )
     initial_time = fields.IntegerField(
         required=True,
@@ -2909,7 +2746,6 @@ class Tag(Model):
         to={"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_tag_tagged_ids_t",
             "tag_id",
@@ -3005,7 +2841,6 @@ class Topic(Model):
     attachment_meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "attachment_ids"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "gm_meeting_mediafile_attachment_ids_t",
             "topic_id",
@@ -3019,7 +2854,6 @@ class Topic(Model):
         is_view_field=True,
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
@@ -3027,19 +2861,16 @@ class Topic(Model):
         is_view_field=True,
         required=True,
         constant=True,
-        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
-        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "topic_ids"}, required=True, constant=True
@@ -3158,10 +2989,7 @@ class Vote(Model):
     value = fields.CharField(constant=True)
     user_token = fields.CharField(required=True, constant=True)
     option_id = fields.RelationField(
-        to={"option": "vote_ids"},
-        required=True,
-        constant=True,
-        equal_fields="meeting_id",
+        to={"option": "vote_ids"}, required=True, constant=True
     )
     user_id = fields.RelationField(to={"user": "vote_ids"})
     delegated_user_id = fields.RelationField(to={"user": "delegated_vote_ids"})
