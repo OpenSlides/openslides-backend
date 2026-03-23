@@ -194,7 +194,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         print(response.json)
         self.assertIn(
             "organization/1/theme_id: Type error: Type is not RelationField(to={'theme': 'theme_for_organization_id'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={})",
-            # "organization/1/theme_id: Type error: Type is not RelationField(to={'theme': 'theme_for_organization_id'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={}, equal_fields=[])",
             response.json["message"],
         )
         self.assertIn(

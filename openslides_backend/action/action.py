@@ -696,11 +696,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             raise ActionException(str(e))
         return instance
 
-    def validate_relation_fields(self, instance: dict[str, Any]) -> None:
-        """
-        Validates all relation fields according to the model definition.
-        """
-
     def apply_instance(
         self, instance: dict[str, Any], fqid: FullQualifiedId | None = None
     ) -> None:

@@ -560,7 +560,6 @@ class TestCheckerCheckData(TestCase):
 
     def test_incorrect_fqid_error(self) -> None:
         base_error = "projection/1/content_object_id: Type error: Type is not GenericRelationField(to={'projector_countdown': 'projection_ids', 'projector_message': 'projection_ids', 'poll': 'projection_ids', 'topic': 'projection_ids', 'agenda_item': 'projection_ids', 'assignment': 'projection_ids', 'motion_block': 'projection_ids', 'list_of_speakers': 'projection_ids', 'meeting_mediafile': 'projection_ids', 'motion': 'projection_ids', 'meeting': 'projection_ids'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={})"
-        # base_error = "projection/1/content_object_id: Type error: Type is not GenericRelationField(to={'projector_countdown': 'projection_ids', 'projector_message': 'projection_ids', 'poll': 'projection_ids', 'topic': 'projection_ids', 'agenda_item': 'projection_ids', 'assignment': 'projection_ids', 'motion_block': 'projection_ids', 'list_of_speakers': 'projection_ids', 'meeting_mediafile': 'projection_ids', 'motion': 'projection_ids', 'meeting': 'projection_ids'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={}, equal_fields=['meeting_id'])"
         map_invalid_values_to_special_errors = {
             "meetings/1": "projection/1/content_object_id error: The collection meetings is not supported as a reverse relation in projection/content_object_id.",
             "meeting/a": None,
