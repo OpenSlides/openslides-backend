@@ -249,7 +249,7 @@ def BaseFakeModelFactory(
 
 
 def BaseFakeModelActionFactory(
-    fake_model: type[FakeModel], action_name: str, BaseClass: type[Action]
+    fake_model: type[FakeModel], action_name: str, BaseClass: Any
 ) -> type[Action]:
     @register_action(
         f"{fake_model.collection}.{action_name}",
@@ -268,7 +268,7 @@ def get_attr_helper(collection: str, field_name: str, attr_data: Attribute) -> A
     to = to_data.to if to_data else {}
     match attr_data.type:
         case "generic-relation-list":
-            field = fields.GenericRelationListField(
+            field: fields.Field = fields.GenericRelationListField(
                 to=to,
                 is_view_field=attr_data.is_view_field,
                 write_fields=attr_data.write_fields,
@@ -429,7 +429,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_create_success_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_success(self) -> None:
+        def base_test_success(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -471,7 +471,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_update_success_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_success(self) -> None:
+        def base_test_success(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -542,7 +542,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_create_fail_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_fail(self) -> None:
+        def base_test_fail(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -572,7 +572,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_update_fail_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_fail(self) -> None:
+        def base_test_fail(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -602,7 +602,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_delete_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_delete(self) -> None:
+        def base_test_delete(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -631,7 +631,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_update_equal_field_success_fn(
         cls, rel_type: str, equal_field: str = "meeting_id"
     ) -> Callable:
-        def base_test_update_equal_field(self) -> None:
+        def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
@@ -664,7 +664,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     def get_base_test_update_equal_field_error_fn(
         cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
     ) -> Callable:
-        def base_test_update_equal_field(self) -> None:
+        def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
