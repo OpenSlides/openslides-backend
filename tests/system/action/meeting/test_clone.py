@@ -391,6 +391,50 @@ class MeetingClone(BaseActionTestCase):
             {"external_id": None, "template_for_organization_id": None},
         )
 
+    def test_clone_with_change_recommendation(self) -> None:
+        self.set_test_data_with_admin()
+        self.create_meeting(4)
+        self.create_motion(4, 22)
+        self.create_motion(1, 23)
+        self.set_models(
+            {
+                "motion_change_recommendation/111": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "I am a recommendation",
+                    "motion_id": 23,
+                    "meeting_id": 1,
+                    "rejected": False,
+                },
+                "motion_change_recommendation/112": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "I am another recommendation",
+                    "motion_id": 22,
+                    "meeting_id": 4,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/5", {"motion_ids": [24], "motion_change_recommendation_ids": [113]}
+        )
+        self.assert_model_exists(
+            "motion/24",
+            {"meeting_id": 5, "change_recommendation_ids": [113]},
+        )
+        self.assert_model_exists(
+            "motion_change_recommendation/113",
+            {
+                "line_from": 11,
+                "line_to": 23,
+                "text": "I am a recommendation",
+                "motion_id": 24,
+                "meeting_id": 5,
+            },
+        )
+
     def test_clone_with_recommendation_extension(self) -> None:
         self.set_test_data_with_admin()
         self.create_motion(1, 23)
