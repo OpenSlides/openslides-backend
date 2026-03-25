@@ -89,6 +89,7 @@ class BaseSystemTestCase(TestCase):
 
         self.user_id = 1
         self.created_fqids = {ONE_ORGANIZATION_FQID, "theme/1"}
+        self.deleted_fqids: set[str] = set()
         if self.init_with_login:
             self.set_models(
                 {
@@ -240,6 +241,7 @@ class BaseSystemTestCase(TestCase):
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_delete_events(self, fqid: str) -> list[Event]:
+        self.deleted_fqids.add(fqid)
         return [Event(type=EventType.Delete, fqid=fqid)]
 
     def get_update_list_events(
@@ -270,27 +272,36 @@ class BaseSystemTestCase(TestCase):
         fqid to this set.
         """
         events: list[Event] = []
+        newly_created_collections = set()
+        existing_fqids = self.created_fqids - self.deleted_fqids
         for fqid, model in models.items():
-            if fqid in self.created_fqids:
+            if model.pop("meta_", None) == "delete":
+                events.extend(self.get_delete_events(fqid))
+            elif fqid in existing_fqids:
                 events.extend(self.get_update_events(fqid, model))
             else:
                 events.extend(self.get_create_events(fqid, model))
+                newly_created_collections.add(collection_from_fqid(fqid))
         self.perform_write_request(events)
-        self.adjust_id_sequences()
+        for collection in newly_created_collections:
+            self.adjust_id_sequence(collection)
+        self.connection.commit()
 
     def adjust_id_sequences(self) -> None:
+        """Also commits the connection."""
         for collection in {collection_from_fqid(fqid) for fqid in self.created_fqids}:
-            maximum = self.datastore.max(collection, None, "id")
-            with self.connection.cursor() as curs:
-                curs.execute(
-                    sql.SQL(
-                        """SELECT setval('{collection}_t_id_seq', {maximum})"""
-                    ).format(
-                        collection=sql.SQL(collection),
-                        maximum=sql.Literal(maximum),
-                    )
+            self.adjust_id_sequence(collection)
+        self.connection.commit()
+
+    def adjust_id_sequence(self, collection: str) -> None:
+        maximum = self.datastore.max(collection, None, "id")
+        with self.connection.cursor() as curs:
+            curs.execute(
+                sql.SQL("""SELECT setval('{collection}_t_id_seq', {maximum})""").format(
+                    collection=sql.SQL(collection),
+                    maximum=sql.Literal(maximum),
                 )
-            self.connection.commit()
+            )
 
     def update_created_fqids(self) -> None:
         """

@@ -119,6 +119,12 @@ class TestInternalActionsDev(BaseInternalActionTest):
         assert self.auth.is_equal("new_password", model["password"])
 
     def test_internal_organization_initial_import(self) -> None:
+        self.set_models(
+            {
+                "theme/1": {"meta_": "delete"},
+                ONE_ORGANIZATION_FQID: {"meta_": "delete"},
+            }
+        )
         response = self.internal_request("organization.initial_import", {"data": {}})
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID)
@@ -142,6 +148,9 @@ class TestInternalActionsDev(BaseInternalActionTest):
         self.assert_model_not_exists("user/2")
 
     def test_internal_execute_stack_internal_via_public_route(self) -> None:
+        self.set_models(
+            {"theme/1": {"meta_": "delete"}, ONE_ORGANIZATION_FQID: {"meta_": "delete"}}
+        )
         response = self.request(
             "organization.initial_import", {"data": {}}, internal=False
         )
@@ -202,6 +211,9 @@ class TestInternalActionsProdWithPasswordFile(
         self.assert_model_exists("user/2")
 
     def test_internal_execute_stack_internal_action(self) -> None:
+        self.set_models(
+            {"theme/1": {"meta_": "delete"}, ONE_ORGANIZATION_FQID: {"meta_": "delete"}}
+        )
         response = self.internal_request(
             "organization.initial_import", {"data": {}}, self.internal_auth_password
         )
