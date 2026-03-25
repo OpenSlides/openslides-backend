@@ -343,7 +343,7 @@ class Committee(Model):
         ),
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "committee_ids"}, required=True, constant=True
+        to={"organization": "committee_ids"}, required=True, constant=True, default=1
     )
 
 
@@ -354,7 +354,7 @@ class Gender(Model):
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True, unique=True)
     organization_id = fields.OrganizationField(
-        to={"organization": "gender_ids"}, required=True
+        to={"organization": "gender_ids"}, required=True, default=1
     )
     user_ids = fields.RelationListField(
         to={"user": "gender_id"}, is_view_field=True, is_primary=True
@@ -2397,7 +2397,7 @@ class OrganizationTag(Model):
         ),
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "organization_tag_ids"}, required=True
+        to={"organization": "organization_tag_ids"}, required=True, default=1
     )
 
 
@@ -2982,7 +2982,7 @@ class Theme(Model):
         to={"organization": "theme_id"}, is_view_field=True
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "theme_ids"}, required=True
+        to={"organization": "theme_ids"}, required=True, default=1
     )
 
 
@@ -3145,7 +3145,7 @@ class User(Model):
         },
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "user_ids"}, required=True, constant=True
+        to={"organization": "user_ids"}, required=True, constant=True, default=1
     )
 
 

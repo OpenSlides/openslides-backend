@@ -59,7 +59,8 @@ def assert_no_model(fqid: FullQualifiedId) -> None:
 
 
 def assert_no_db_entry(db_cur: Cursor[rows.DictRow]) -> None:
-    assert_db_entries(db_cur, 0)
+    """Keep in mind: organization and theme always already exist."""
+    assert_db_entries(db_cur, 2)
 
 
 def assert_db_entries(db_cur: Cursor[rows.DictRow], amount: int) -> None:
