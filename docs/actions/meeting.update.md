@@ -12,6 +12,7 @@
     name: string;
     description: string;
     location: string;
+    timezone: string; // A valid IANA timezone string
     start_time: timestamp;
     end_time: timestamp;
     locked_from_inside: boolean;
