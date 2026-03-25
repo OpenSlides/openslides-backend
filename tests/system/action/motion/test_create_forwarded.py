@@ -2541,18 +2541,11 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
     def test_forward_with_diff_version(self) -> None:
         self.create_meeting()
         self.create_meeting(4)
+        self.create_motion(1, 1, motion_data={"diff_version": "0.1.2"})
         self.set_models(
             {
                 "motion_state/1": {"allow_motion_forwarding": True},
                 "committee/60": {"forward_to_committee_ids": [63]},
-                "committee/63": {"receive_forwardings_from_committee_ids": [60]},
-                "motion/1": {
-                    "title": "Motion 1",
-                    "sequential_number": 1,
-                    "state_id": 1,
-                    "meeting_id": 1,
-                    "diff_version": "0.1.2",
-                },
             }
         )
         response = self.request(
