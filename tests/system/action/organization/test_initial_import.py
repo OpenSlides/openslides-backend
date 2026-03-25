@@ -28,6 +28,9 @@ class OrganizationInitialImport(BaseActionTestCase):
             False  # don't use client or write organization and first user
         )
         super().setUp()
+        self.set_models(
+            {"theme/1": {"meta_": "delete"}, ONE_ORGANIZATION_FQID: {"meta_": "delete"}}
+        )
 
     def get_formatted_value(
         self,
