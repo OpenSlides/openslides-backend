@@ -1,10 +1,12 @@
 import base64
 import mimetypes
+from datetime import datetime
 from io import BytesIO
-from time import time
 from typing import Any, TypedDict, cast
+from zoneinfo import ZoneInfo
 
 import magic as python_magic
+from psycopg.types.json import Jsonb
 from pygments.lexers import guess_lexer, guess_lexer_for_filename
 from pygments.util import ClassNotFound
 from pypdf import PdfReader
@@ -88,7 +90,7 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
         Looks for the mimetype of the file by name and content
         """
         instance = super().update_instance(instance)
-        instance["create_timestamp"] = round(time())
+        instance["create_timestamp"] = datetime.now(ZoneInfo("UTC"))
         filename_ = instance.get("filename", "")
         file_ = instance.pop("file")  # get content of file
         decoded_file = base64.b64decode(file_)
@@ -157,7 +159,7 @@ class MediafileUploadAction(MediafileCreateMixin, CreateAction):
         id_ = instance["id"]
         instance["mimetype"] = use_mimetype
         if instance["mimetype"] == "application/pdf":
-            instance["pdf_information"] = self.get_pdf_information(decoded_file)
+            instance["pdf_information"] = Jsonb(self.get_pdf_information(decoded_file))
         collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
             self.handle_meeting_meeting_mediafile_creation(meeting_id, instance)

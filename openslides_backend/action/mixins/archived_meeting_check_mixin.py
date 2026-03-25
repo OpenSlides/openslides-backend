@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ...models import fields
 from ...models.base import model_registry
-from ...services.datastore.commands import GetManyRequest
+from ...services.database.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ..action import Action
 
@@ -19,7 +19,7 @@ class CheckForArchivedMeetingMixin(Action):
         """check all instance fields for their meeting and if the meeting is active"""
         if self.skip_archived_meeting_check:
             return
-        model = model_registry[self.model.collection]()
+        model = model_registry[self.model.collection]
         meeting_ids: set[int] = set()
         if "meeting_id" in instance:
             meeting_ids.add(instance["meeting_id"])

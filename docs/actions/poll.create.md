@@ -70,6 +70,8 @@ The `entitled_group_ids` may not contain the meetings `anonymous_group_id`.
 
 The `max_votes_per_option` and `min_votes_amount` must be smaller or equal to `max_votes_amount`.
 
+The `live_voting_enabled` could be set for named motion and certain named assignment polls. Assignment polls also need pollmethod `Y` and not `global_yes` and `max_votes_amount` of 1 to set the option.
+
 ## Permissions
 The request user needs:
 - `motion.can_manage_polls` if the poll's content object is a motion

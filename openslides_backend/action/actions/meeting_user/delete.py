@@ -23,6 +23,9 @@ class MeetingUserDelete(ConditionalSpeakerCascadeMixinHelper, MeetingUserBaseDel
         )
         speaker_ids = meeting_user.get("speaker_ids", [])
         self.conditionally_delete_speakers(speaker_ids)
-        self.remove_presence(meeting_user["user_id"], meeting_user["meeting_id"])
+        if not self.datastore.is_deleted(
+            fqid_from_collection_and_id("user", meeting_user["user_id"])
+        ):
+            self.remove_presence(meeting_user["user_id"], meeting_user["meeting_id"])
 
         return super().update_instance(instance)

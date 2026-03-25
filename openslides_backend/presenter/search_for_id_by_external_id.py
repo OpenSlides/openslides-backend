@@ -8,7 +8,7 @@ from openslides_backend.action.mixins.meeting_user_helper import (
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
 from ..shared.schema import schema_version
@@ -65,13 +65,13 @@ class SearchForIdByExternalId(BasePresenter):
         )
         if is_group and len(filtered):
             self.filter_out_locked_meeting_groups(filtered)
-        if len(filtered) == 1:
+        if filtered:
             return {"id": next(iter(filtered.values()))["id"]}
-        elif len(filtered) == 0:
-            error = f"No item with '{self.data['external_id']}' was found."
         else:
-            error = f"More then one item with '{self.data['external_id']}' were found."
-        return {"id": None, "error": error}
+            return {
+                "id": None,
+                "error": f"No item with '{self.data['external_id']}' was found.",
+            }
 
     def filter_out_locked_meeting_groups(
         self, filtered: dict[int, dict[str, Any]]

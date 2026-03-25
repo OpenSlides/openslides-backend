@@ -96,10 +96,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -124,7 +122,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": []},
+            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": None},
         )
 
     def test_update_foreign_delegation_error(self) -> None:
@@ -132,10 +130,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -167,10 +163,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -192,7 +186,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting_user/11",
-            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": []},
+            {"vote_delegated_to_id": 12, "vote_delegations_from_ids": None},
         )
 
     def test_update_remove_delegation(self) -> None:
@@ -200,10 +194,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -234,10 +226,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -266,10 +256,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -290,10 +278,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -314,10 +300,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -336,10 +320,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "meeting_user/11": {"user_id": 1, "meeting_id": 1, "group_ids": []},
-                "meeting/1": {
-                    "meeting_user_ids": [11],
-                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         self.set_user_groups(1, [3])
@@ -357,13 +339,9 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
     def test_update_delegation_permission(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {
-                    "meeting_user_ids": [11, 12],
-                },
-                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "user/3": {"username": "username_srtgb124", "meeting_user_ids": [12]},
-                "meeting_user/12": {"user_id": 3, "meeting_id": 1, "group_ids": [3]},
-                "group/3": {"meeting_user_ids": [12]},
+                "user/3": {"username": "username_srtgb124"},
+                "meeting_user/12": {"user_id": 3, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [12]},
             },
             "user.update_self",
             {"meeting_id": 1, "vote_delegated_to_id": 12},
@@ -373,15 +351,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
     def test_update_delegation_permission_denied(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {
-                    "meeting_user_ids": [11, 12],
-                },
-                "user/1": {"username": "username_srtgb123", "meeting_user_ids": [11]},
-                "user/3": {"username": "username_srtgb124", "meeting_user_ids": [12]},
-                "meeting_user/12": {"user_id": 3, "meeting_id": 1, "group_ids": [3]},
-                "group/3": {"meeting_user_ids": [12]},
+                "user/3": {"username": "username_srtgb124"},
+                "meeting_user/12": {"user_id": 3, "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [12]},
             },
             "user.update_self",
             {"meeting_id": 1, "vote_delegated_to_id": 12},
-            None,
         )

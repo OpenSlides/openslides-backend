@@ -1,9 +1,8 @@
 from typing import Any
 
-from datastore.shared.util import fqid_from_collection_and_id
-
 from openslides_backend.action.action import Action
 from openslides_backend.shared.exceptions import ActionException, PermissionException
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 
@@ -27,12 +26,10 @@ class GenderPermissionMixin(Action):
         # default genders shall not be mutable
         gender_id = instance.get("id", 0)
         if 0 < gender_id < 5:
-            if gender_name := self.datastore.get(
+            gender_name = self.datastore.get(
                 fqid_from_collection_and_id("gender", gender_id),
                 ["name"],
                 lock_result=False,
-            ).get("name"):
-                msg = f"Cannot delete or update gender '{gender_name}' from default selection."
-            else:
-                msg = f"Cannot delete or update gender '{gender_id}' from default selection."
+            ).get("name")
+            msg = f"Cannot delete or update gender '{gender_name}' from default selection."
             raise PermissionException(msg)

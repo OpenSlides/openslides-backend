@@ -2,8 +2,8 @@ from typing import Any
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
+from ....services.database.commands import GetManyRequest
+from ....shared.exceptions import ActionException, DatabaseException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID
@@ -37,7 +37,7 @@ class MediafileMixin(Action):
                     ["parent_id"],
                 )
                 parent_id = mediafile.get("parent_id")
-            except DatastoreException:
+            except DatabaseException:
                 pass
         self.check_title_parent_unique(
             instance.get("title"),
@@ -155,7 +155,7 @@ class MediafileMixin(Action):
         id_: int | None,
         owner_id: str,
     ) -> None:
-        if title:
+        if title is not None:
             filter_ = And(
                 FilterOperator("title", "=", title),
                 FilterOperator("parent_id", "=", parent_id),
@@ -191,7 +191,7 @@ class MediafileMixin(Action):
                     raise ActionException("Owner and access groups don't match.")
 
     def check_token_unique(self, token: str | None, id_: int | None) -> None:
-        if token:
+        if token is not None:
             filter_: Filter = And(
                 FilterOperator("token", "=", token),
                 FilterOperator("owner_id", "=", "organization" + KEYSEPARATOR + "1"),

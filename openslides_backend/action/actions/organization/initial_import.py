@@ -1,12 +1,11 @@
 from collections.abc import Iterable
 from typing import Any
 
-from datastore.shared.util import DeletedModelsBehaviour
-
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
+from ....models.base import json_dict_to_non_json_data_types
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
@@ -70,7 +69,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         if not data:
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
-
+        json_dict_to_non_json_data_types(data)
         # check datavalidation
         checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:
@@ -81,6 +80,11 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         self.translate_organization_and_theme(data)
         self.data_migration_index = data["_migration_index"]
 
+        for collection, models in data.items():
+            if collection == "_migration_index":
+                continue
+            self.datastore.reserve_ids(collection, len(models))
+
         return instance
 
     def check_empty_datastore(self) -> None:
@@ -88,7 +92,6 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         if self.datastore.exists(
             "organization",
             filter_,
-            DeletedModelsBehaviour.ALL_MODELS,
             False,
         ):
             raise ActionException("Datastore is not empty.")
@@ -141,7 +144,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def create_action_result_element(
         self, instance: dict[str, Any]
     ) -> ActionResultElement | None:
-        backend_migration_index = get_backend_migration_index()
+        backend_migration_index = MigrationHelper.get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
             "backend_migration_index": backend_migration_index,

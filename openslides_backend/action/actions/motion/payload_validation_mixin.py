@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 from openslides_backend.shared.patterns import (
@@ -10,7 +10,7 @@ from openslides_backend.shared.patterns import (
 from .set_number_mixin import SetNumberMixin
 
 
-class MotionErrorType(str, Enum):
+class MotionErrorType(StrEnum):
     ADDITIONAL_SUBMITTER = "addtional_submitter"
     UNIQUE_NUMBER = "number_unique"
     RECO_EXTENSION = "recommendation_extension"
@@ -41,7 +41,7 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
         previous_numbers: list[str] = [],
     ) -> list[MotionActionErrorData]:
         errors: list[MotionActionErrorData] = []
-        if instance.get("number"):
+        if instance.get("number") is not None:
             if not self._check_if_unique(
                 instance["number"], meeting_id, instance.get("id"), previous_numbers
             ):

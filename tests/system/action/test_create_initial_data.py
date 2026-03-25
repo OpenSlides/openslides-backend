@@ -8,8 +8,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
+        self.init_with_login = False
         super().setUp()
-        self.datastore.truncate_db()
         self.vars = deepcopy(self.env.vars)
         self.env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "1"
 
@@ -35,8 +35,10 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.logger.error.assert_called_with("Initial data creation failed: test")
 
     def test_initial_data_prod_mode_changed_superadmin_password(self) -> None:
+        old_changed_password = "password123"
+        new_changed_password = "password456"
         with tempfile.NamedTemporaryFile(delete=False) as fp:
-            fp.write(b"password123")
+            fp.write(old_changed_password.encode())
         self.env.vars["OPENSLIDES_DEVELOPMENT"] = "false"
         self.env.vars["SUPERADMIN_PASSWORD_FILE"] = fp.name
         self.app.create_initial_data()
@@ -44,17 +46,19 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.logger.error.assert_not_called()
         self.assert_model_exists("organization/1", {"name": "[Your organization]"})
         user = self.assert_model_exists("user/1", {"username": "superadmin"})
-        assert self.auth.is_equal("password123", user["password"])
-        self.request(
+        assert self.auth.is_equal(old_changed_password, user["password"])
+        self.client.login(user["username"], old_changed_password)
+        response = self.request(
             "user.set_password",
             {
                 "id": 1,
-                "password": "password456",
+                "password": new_changed_password,
             },
         )
-        self.app.create_initial_data()
+        self.assert_status_code(response, 200)
+        self.app.create_initial_data()  # throws an db-not-empty exception, may not change users passwort
         user = self.assert_model_exists("user/1", {"username": "superadmin"})
-        assert self.auth.is_equal("password456", user["password"])
+        assert self.auth.is_equal(new_changed_password, user["password"])
         self.assert_logged_out()
 
     def test_initial_data_prod_mode(self) -> None:

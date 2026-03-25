@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+from psycopg.types.json import Jsonb
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -27,21 +29,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {
-                    "name": "aBuwxoYU",
-                    "description": "XrHbAWiF",
-                    "theme_id": 1,
-                    "theme_ids": [1, 2],
-                },
-                "theme/1": {
-                    "name": "default",
-                    "organization_id": 1,
-                    "theme_for_organization_id": 1,
-                },
-                "theme/2": {
-                    "name": "default2",
-                    "organization_id": 1,
-                },
+                "theme/1": {"name": "default"},
+                "theme/2": {"name": "default2"},
             }
         )
 
@@ -263,26 +252,22 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
-                "saml_metadata_idp": dedent(
-                    """
+                "saml_metadata_idp": dedent("""
                     <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                         entityID="https://auth.digiv.de/auth/realms/demo">
                         </md:IDPSSODescriptor>
                     </md:EntityDescriptor>
-                    """
-                ),
-                "saml_metadata_sp": dedent(
-                    """
+                    """),
+                "saml_metadata_sp": dedent("""
                     <EntityDescriptor
                     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
                     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                     entityID="http://localhost:9004/saml/metadata">
                     </EntityDescriptor>
-                    """
-                ),
+                    """),
                 "saml_private_key": "private key dependency",
             },
         )
@@ -331,27 +316,23 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             {
                 "organization/1": {
                     "saml_enabled": True,
-                    "saml_attr_mapping": self.saml_attr_mapping,
-                    "saml_metadata_idp": dedent(
-                        """
+                    "saml_attr_mapping": Jsonb(self.saml_attr_mapping),
+                    "saml_metadata_idp": dedent("""
                     <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                         entityID="https://auth.digiv.de/auth/realms/demo">
                         </md:IDPSSODescriptor>
                     </md:EntityDescriptor>
-                    """
-                    ),
-                    "saml_metadata_sp": dedent(
-                        """
+                    """),
+                    "saml_metadata_sp": dedent("""
                     <EntityDescriptor
                     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
                     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                     entityID="http://localhost:9004/saml/metadata">
                     </EntityDescriptor>
-                    """
-                    ),
+                    """),
                     "saml_private_key": "private key dependency",
                 }
             }
@@ -371,7 +352,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
             {
-                "name": "aBuwxoYU",
+                "name": "OpenSlides Organization",
                 "saml_enabled": False,
                 "saml_attr_mapping": None,
                 "saml_metadata_idp": "",
@@ -390,7 +371,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
         self.assert_model_exists(
-            ONE_ORGANIZATION_FQID, {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+            ONE_ORGANIZATION_FQID,
+            {"name": "OpenSlides Organization", "description": None},
         )
 
     def test_update_broken_email(self) -> None:
@@ -482,13 +464,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "url": "test",
         }
         for field, value in fields.items():
-            response = self.request(
-                "organization.update",
-                {
-                    "id": 1,
-                    field: value,
-                },
-            )
+            response = self.request("organization.update", {"id": 1, field: value})
             self.assert_status_code(response, 403)
 
     def test_update_group_b_permissions(self) -> None:
@@ -510,18 +486,11 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_too_many_active_meetings(self) -> None:
-        self.update_model(
-            ONE_ORGANIZATION_FQID,
-            {
-                "active_meeting_ids": [1, 2, 3],
-            },
-        )
+        for id_ in (1, 4, 7):
+            self.create_meeting(id_)
         response = self.request(
             "organization.update",
-            {
-                "id": 1,
-                "limit_of_meetings": 2,
-            },
+            {"id": 1, "limit_of_meetings": 2},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -530,18 +499,11 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_too_many_active_users(self) -> None:
-        self.set_models(
-            {
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
-            }
-        )
+        self.create_user("violetta")
+        self.create_user("banafshe")
         response = self.request(
             "organization.update",
-            {
-                "id": 1,
-                "limit_of_users": 2,
-            },
+            {"id": 1, "limit_of_users": 2},
         )
         self.assert_status_code(response, 400)
         assert (

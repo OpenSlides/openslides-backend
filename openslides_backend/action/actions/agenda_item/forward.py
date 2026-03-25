@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ....models.models import AgendaItem
 from ....permissions.permission_helper import is_admin
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid

@@ -1,3 +1,7 @@
+from typing import Any
+
+from psycopg.types.json import Jsonb
+
 from ....models.models import Projection
 from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
@@ -16,3 +20,9 @@ class ProjectionUpdateOptions(UpdateAction):
         required_properties=["options"]
     )
     permission = Permissions.Projector.CAN_MANAGE
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
+        if (options := instance.get("options")) is not None:
+            instance["options"] = Jsonb(options)
+        return instance

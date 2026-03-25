@@ -48,16 +48,12 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "meeting/1": {
-                        "user_ids": [111],
                         "group_ids": [1, 2, 3, 11],
                     },
                     "meeting/4": {
-                        "user_ids": [111],
                         "group_ids": [4, 5, 6, 22],
                     },
                     "user/111": {
-                        "meeting_ids": [1, 4],
-                        "committee_ids": [60, 63],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -86,9 +82,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "committee/60": {"meeting_ids": [1, 4]},
                     "meeting/1": {
-                        "user_ids": [111],
                         "group_ids": [11],
                     },
                     "meeting/4": {
@@ -97,8 +91,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                         "group_ids": [11],
                     },
                     "user/111": {
-                        "meeting_ids": [1, 4],
-                        "committee_ids": [60],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -128,9 +120,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "user/111": {
-                        "meeting_user_ids": [1111],
-                        "meeting_ids": [1],
-                        "committee_ids": [60],
                         "username": "user111",
                     },
                     "meeting_user/1111": {

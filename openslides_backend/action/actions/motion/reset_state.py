@@ -1,9 +1,9 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -38,24 +38,14 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
                 "workflow_timestamp",
             ],
         )
-        if not motion.get("state_id"):
-            raise ActionException(f"Motion {instance['id']} has no state.")
-
         old_state = self.datastore.get(
             fqid_from_collection_and_id("motion_state", motion["state_id"]),
             ["workflow_id"],
         )
-        if not old_state.get("workflow_id"):
-            raise ActionException(f"State {motion['state_id']} has no workflow.")
-
         workflow = self.datastore.get(
             fqid_from_collection_and_id("motion_workflow", old_state["workflow_id"]),
             ["first_state_id"],
         )
-        if not workflow.get("first_state_id"):
-            raise ActionException(
-                f"State {old_state['workflow_id']} has no first_state_id."
-            )
         instance["state_id"] = workflow.get("first_state_id")
         self.set_number(
             instance,
@@ -66,7 +56,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             motion.get("number"),
             motion.get("number_value"),
         )
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         instance["workflow_timestamp"] = None
         set_workflow_timestamp_helper(self.datastore, instance, timestamp)

@@ -1,12 +1,14 @@
+from decimal import Decimal
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class OptionCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting(111)
+
     def test_create(self) -> None:
-        self.create_model(
-            "meeting/111",
-            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
-        )
         response = self.request(
             "option.create", {"text": "testtesttest", "meeting_id": 111, "weight": 10}
         )
@@ -17,10 +19,6 @@ class OptionCreateActionTest(BaseActionTestCase):
         assert model.get("weight") == 10
 
     def test_create_without_text_and_content_object_id(self) -> None:
-        self.create_model(
-            "meeting/111",
-            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
-        )
         response = self.request("option.create", {"meeting_id": 111, "weight": 10})
         self.assert_status_code(response, 400)
         assert (
@@ -31,11 +29,15 @@ class OptionCreateActionTest(BaseActionTestCase):
     def test_create_with_both_text_and_content_object_id(self) -> None:
         self.set_models(
             {
-                "meeting/111": {
-                    "name": "meeting_Xcdfgee",
-                    "is_active_in_organization_id": 1,
+                "motion/112": {
+                    "title": "mosh pit",
+                    "state_id": 111,
+                    "meeting_id": 111,
                 },
-                "motion/112": {"meeting_id": 111},
+                "list_of_speakers/23": {
+                    "content_object_id": "motion/112",
+                    "meeting_id": 111,
+                },
             }
         )
         response = self.request(
@@ -53,11 +55,110 @@ class OptionCreateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_create_yna_votes(self) -> None:
-        self.create_model(
-            "meeting/111",
-            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
+    def test_create_text_not_unique(self) -> None:
+        self.create_motion(111, 112)
+        self.set_models(
+            {
+                "poll/65": {
+                    "title": "pool",
+                    "content_object_id": "motion/112",
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "Y",
+                    "meeting_id": 111,
+                },
+                "option/78": {
+                    "text": "test",
+                    "meeting_id": 111,
+                    "weight": 9,
+                    "poll_id": 65,
+                },
+            }
         )
+        response = self.request(
+            "option.create",
+            {"text": "test", "meeting_id": 111, "weight": 10, "poll_id": 65},
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(test, 65) already exists.',
+            response.json["message"],
+        )
+
+    def test_create_text_not_unique_empty(self) -> None:
+        self.create_motion(111, 112)
+        self.set_models(
+            {
+                "poll/65": {
+                    "title": "pool",
+                    "content_object_id": "motion/112",
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "Y",
+                    "meeting_id": 111,
+                },
+                "option/78": {
+                    "text": "",
+                    "meeting_id": 111,
+                    "weight": 9,
+                    "poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.create",
+            {"text": "", "meeting_id": 111, "weight": 10, "poll_id": 65},
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(, 65) already exists.',
+            response.json["message"],
+        )
+
+    def test_create_content_object_id_not_unique(self) -> None:
+        self.set_models(
+            {
+                "motion/112": {
+                    "title": "mosh pit",
+                    "state_id": 111,
+                    "meeting_id": 111,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "motion/112",
+                    "meeting_id": 111,
+                },
+                "poll/65": {
+                    "title": "pool",
+                    "content_object_id": "motion/112",
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "Y",
+                    "meeting_id": 111,
+                },
+                "option/78": {
+                    "content_object_id": "motion/112",
+                    "meeting_id": 111,
+                    "weight": 9,
+                    "poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.create",
+            {
+                "content_object_id": "motion/112",
+                "meeting_id": 111,
+                "weight": 10,
+                "poll_id": 65,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"\nDETAIL:  Key (content_object_id, poll_id)=(motion/112, 65) already exists.',
+            response.json["message"],
+        )
+
+    def test_create_yna_votes(self) -> None:
         response = self.request(
             "option.create",
             {
@@ -70,18 +171,13 @@ class OptionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        option = self.get_model("option/1")
-        assert option.get("vote_ids") == [1, 2, 3]
-        assert option.get("text") == "test"
-        vote_1 = self.get_model("vote/1")
-        assert vote_1.get("value") == "Y"
-        assert vote_1.get("weight") == "1.000000"
-        assert vote_1.get("option_id") == 1
-        vote_2 = self.get_model("vote/2")
-        assert vote_2.get("value") == "N"
-        assert vote_2.get("weight") == "2.500000"
-        assert vote_2.get("option_id") == 1
-        vote_3 = self.get_model("vote/3")
-        assert vote_3.get("value") == "A"
-        assert vote_3.get("weight") == "0.666667"
-        assert vote_3.get("option_id") == 1
+        self.assert_model_exists("option/1", {"vote_ids": [1, 2, 3], "text": "test"})
+        self.assert_model_exists(
+            "vote/1", {"value": "Y", "weight": Decimal("1.000000"), "option_id": 1}
+        )
+        self.assert_model_exists(
+            "vote/2", {"value": "N", "weight": Decimal("2.500000"), "option_id": 1}
+        )
+        self.assert_model_exists(
+            "vote/3", {"value": "A", "weight": Decimal("0.666667"), "option_id": 1}
+        )
