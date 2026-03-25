@@ -88,19 +88,10 @@ class BaseSystemTestCase(TestCase):
         self.set_thread_watch_timeout(-1)
 
         self.user_id = 1
-        self.created_fqids = set()
+        self.created_fqids = {ONE_ORGANIZATION_FQID, "theme/1"}
         if self.init_with_login:
             self.set_models(
                 {
-                    ONE_ORGANIZATION_FQID: {
-                        "name": "OpenSlides Organization",
-                        "default_language": "en",
-                        "user_ids": [1],
-                        "theme_id": 1,
-                    },
-                    "theme/1": {
-                        "name": "OpenSlides Organization",
-                    },
                     f"user/{self.user_id}": {
                         "username": ADMIN_USERNAME,
                         "password": self.auth.hash(ADMIN_PASSWORD),
