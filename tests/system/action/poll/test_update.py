@@ -642,23 +642,9 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_live_voting_named_motion_poll(self) -> None:
         self.base_test_live_voting_allowed(Poll.TYPE_NAMED, True)
-        # self.create_motion(1, 3)
-        # self.set_models({"motion_state/1": {"allow_create_poll": True}})
-        # self.update_model(
-        #     "poll/1", {"type": Poll.TYPE_NAMED, "content_object_id": "motion/3"}
-        # )
-
-        # response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
-        # self.assert_status_code(response, 200)
-        # self.assert_model_exists("poll/1", {"live_voting_enabled": True})
 
     def test_live_voting_named_assignment_poll(self) -> None:
         self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False)
-        # self.update_model("poll/1", {"type": Poll.TYPE_NAMED})
-
-        # response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
-        # self.assert_status_code(response, 200)
-        # self.assert_model_exists("poll/1", {"live_voting_enabled": True})
 
     def test_live_voting_named_list_poll(self) -> None:
         self.set_models({"user/3": {"username": "User3"}})
