@@ -42,7 +42,7 @@ from openslides_backend.shared.patterns import (
     id_from_fqid,
     is_reserved_field,
 )
-from openslides_backend.shared.typing import PartialModel
+from openslides_backend.shared.typing import DeletedModel, PartialModel
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     ONE_ORGANIZATION_FQID,
@@ -275,7 +275,7 @@ class BaseSystemTestCase(TestCase):
         newly_created_collections = set()
         existing_fqids = self.created_fqids - self.deleted_fqids
         for fqid, model in models.items():
-            if model.pop("meta_", None) == "delete":
+            if isinstance(model, DeletedModel):
                 events.extend(self.get_delete_events(fqid))
             elif fqid in existing_fqids:
                 events.extend(self.get_update_events(fqid, model))
