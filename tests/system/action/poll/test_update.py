@@ -647,9 +647,9 @@ class UpdatePollTestCase(BasePollTestCase):
         self.base_test_live_voting(Poll.TYPE_NAMED, True, False)
 
     def test_live_voting_named_list_poll(self) -> None:
-        self.set_models({"user/2": {"username": "User2"}})
         self.set_models(
             {
+                "user/2": {"username": "User2"},
                 "poll_candidate/1": {
                     "id": 1,
                     "weight": 1,
