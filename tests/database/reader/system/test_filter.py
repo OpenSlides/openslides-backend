@@ -195,7 +195,9 @@ def test_types_enum_list(db_connection: Connection) -> None:
         response = extended_database.filter(
             "group",
             FilterOperator(
-                "permissions", "=", [
+                "permissions",
+                "=",
+                [
                     "agenda_item.can_see_internal",
                     "assignment.can_see",
                     "list_of_speakers.can_see",
@@ -203,8 +205,8 @@ def test_types_enum_list(db_connection: Connection) -> None:
                     "meeting.can_see_frontpage",
                     "motion.can_see",
                     "projector.can_see",
-                    "user.can_see"
-                ]
+                    "user.can_see",
+                ],
             ),
             [],
             use_changed_models=False,

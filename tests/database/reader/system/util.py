@@ -207,7 +207,10 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
 
 meeting_data: dict[str, dict[int, Any]] = {
     "group": {
-        1: {"name": "default", "meeting_id": 1, "permissions": [
+        1: {
+            "name": "default",
+            "meeting_id": 1,
+            "permissions": [
                 "agenda_item.can_see_internal",
                 "assignment.can_see",
                 "list_of_speakers.can_see",
@@ -215,8 +218,9 @@ meeting_data: dict[str, dict[int, Any]] = {
                 "meeting.can_see_frontpage",
                 "motion.can_see",
                 "projector.can_see",
-                "user.can_see"
-            ]},
+                "user.can_see",
+            ],
+        },
         2: {
             "name": "staff",
             "meeting_id": 1,
@@ -235,7 +239,7 @@ meeting_data: dict[str, dict[int, Any]] = {
                 "poll.can_manage",
                 "projector.can_manage",
                 "tag.can_manage",
-                "user.can_manage"
+                "user.can_manage",
             ],
         },
     },
@@ -285,7 +289,7 @@ meeting_responses: dict[str, dict[int, dict[str, Any]]] = {
                 "meeting.can_see_frontpage",
                 "motion.can_see",
                 "projector.can_see",
-                "user.can_see"
+                "user.can_see",
             ],
             "poll_ids": None,
             "read_chat_group_ids": None,
@@ -324,7 +328,7 @@ meeting_responses: dict[str, dict[int, dict[str, Any]]] = {
                 "poll.can_manage",
                 "projector.can_manage",
                 "tag.can_manage",
-                "user.can_manage"
+                "user.can_manage",
             ],
             "poll_ids": None,
             "read_chat_group_ids": None,
