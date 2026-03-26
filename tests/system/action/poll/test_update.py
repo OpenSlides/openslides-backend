@@ -751,19 +751,13 @@ class UpdatePollTestCase(BasePollTestCase):
         self.base_test_live_voting(Poll.TYPE_PSEUDOANONYMOUS, False, True)
 
     def test_live_voting_assignment_poll_wrong_pollmethod_yna(self) -> None:
-        self.base_test_live_voting(
-            Poll.TYPE_NAMED, False, False, {"pollmethod": "YNA"}
-        )
+        self.base_test_live_voting(Poll.TYPE_NAMED, False, False, {"pollmethod": "YNA"})
 
     def test_live_voting_assignment_poll_wrong_pollmethod_yn(self) -> None:
-        self.base_test_live_voting(
-            Poll.TYPE_NAMED, False, False, {"pollmethod": "YN"}
-        )
+        self.base_test_live_voting(Poll.TYPE_NAMED, False, False, {"pollmethod": "YN"})
 
     def test_live_voting_assignment_poll_wrong_global_yes(self) -> None:
-        self.base_test_live_voting(
-            Poll.TYPE_NAMED, False, False, {"global_yes": True}
-        )
+        self.base_test_live_voting(Poll.TYPE_NAMED, False, False, {"global_yes": True})
 
     def test_live_voting_assignment_poll_wrong_max_votes_amount(self) -> None:
         self.base_test_live_voting(
