@@ -13,6 +13,7 @@
     login_text: string;
     theme_id: Id;
     default_language: string;
+    time_zone: string; // A valid IANA timezone string
     users_email_sender: string;
     users_email_replyto: string;
     users_email_subject: string;
