@@ -12,6 +12,7 @@ from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.shared.typing import DeletedModel
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     INITIAL_DATA_FILE,
@@ -29,7 +30,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
         super().setUp()
         self.set_models(
-            {"theme/1": {"meta_": "delete"}, ONE_ORGANIZATION_FQID: {"meta_": "delete"}}
+            {"theme/1": DeletedModel(), ONE_ORGANIZATION_FQID: DeletedModel()}
         )
 
     def get_formatted_value(
@@ -171,6 +172,45 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Could not convert value of field meeting/start_time. Message: fromisoformat: argument must be str",
+            response.json["message"],
+        )
+
+    def test_initial_import_example_data_with_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Asia/Colombo"
+        request_data["data"]["meeting"]["1"]["time_zone"] = "Atlantic/Faroe"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1", {"time_zone": "Asia/Colombo"})
+        self.assert_model_exists("meeting/1", {"time_zone": "Atlantic/Faroe"})
+
+    def test_initial_import_example_data_with_invalid_orga_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Mars/Promethei_Terra"
+        request_data["data"]["meeting"]["1"][
+            "time_zone"
+        ] = "America/Argentina/Buenos_Aires"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "organization_t" violates check constraint "timezone_organization_time_zone"',
+            response.json["message"],
+        )
+
+    def test_initial_import_example_data_with_invalid_meeting_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Pacific/Easter"
+        request_data["data"]["meeting"]["1"]["time_zone"] = "Mars/Tharsis_Montes"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
             response.json["message"],
         )
 

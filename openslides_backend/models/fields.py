@@ -173,6 +173,10 @@ class TextField(Field):
         return self.extend_schema(super().get_schema(), type=["string", "null"])
 
 
+class TimezoneField(TextField):
+    pass
+
+
 class CharField(TextField):
     def get_schema(self) -> Schema:
         schema = super().get_schema()

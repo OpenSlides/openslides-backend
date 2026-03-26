@@ -709,6 +709,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
+    time_zone = fields.TimezoneField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
     locked_from_inside = fields.BooleanField()
@@ -2330,6 +2331,7 @@ class Organization(Model):
     default_language = fields.CharField(
         default="en", constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
+    time_zone = fields.TimezoneField()
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
     restrict_editing_same_level_committee_admins = fields.BooleanField()

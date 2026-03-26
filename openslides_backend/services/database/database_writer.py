@@ -532,7 +532,7 @@ class DatabaseWriter(SqlQueryHelper):
                 f"Invalid data type for '{column}' in {error_fqid}. {e}"
             )
         except CheckViolation as e:
-            _, table, _, constraint_name, _ = e.args[0].split('"')
+            _, table, _, constraint_name, *_ = e.args[0].split('"')
             # Fetch the generated constraint from the initially applied schema.
             in_table_block = False
             constraint = ""
@@ -553,7 +553,7 @@ class DatabaseWriter(SqlQueryHelper):
             raise InvalidFormat(f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
         The psycopg arguments are: {arguments}
-        The fields are: {statement.as_string().split('(')[1].split(')')[0]}
+        The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:

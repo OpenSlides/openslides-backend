@@ -3,6 +3,7 @@ from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.typing import DeletedModel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -10,9 +11,7 @@ class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
         self.init_with_login = False
         super().setUp()
-        self.set_models(
-            {"theme/1": {"meta_": "delete"}, "organization/1": {"meta_": "delete"}}
-        )
+        self.set_models({"theme/1": DeletedModel(), "organization/1": DeletedModel()})
         self.vars = deepcopy(self.env.vars)
         self.env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "1"
 

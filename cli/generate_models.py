@@ -46,6 +46,7 @@ COMMON_FIELD_CLASSES = {
     "number[]": "NumberArrayField",
     "text": "TextField",
     "text[]": "TextArrayField",
+    "timezone": "TimezoneField",
 }
 
 RELATION_FIELD_CLASSES = {
