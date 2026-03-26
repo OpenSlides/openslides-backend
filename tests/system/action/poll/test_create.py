@@ -1157,10 +1157,21 @@ class CreatePoll(BasePollTestCase):
     def test_live_voting_named_assignment_poll_wrong_max_votes(self) -> None:
         self.base_test_live_voting_assignment(error_dict={"max_votes_amount": 2})
 
-    def test_live_voting_named_assignment_poll_wrong_votes_amount(self) -> None:
+    def test_live_voting_named_assignment_poll_wrong_option_amount_yna(self) -> None:
         self.base_test_live_voting_assignment(
             error_dict={
                 "pollmethod": "YNA",
+                "options": [
+                    {"text": "option1"},
+                    {"text": "option2"},
+                ],
+            }
+        )
+
+    def test_live_voting_named_assignment_poll_wrong_option_amount_yn(self) -> None:
+        self.base_test_live_voting_assignment(
+            error_dict={
+                "pollmethod": "YN",
                 "options": [
                     {"text": "option1"},
                     {"text": "option2"},
