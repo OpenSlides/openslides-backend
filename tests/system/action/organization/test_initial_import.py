@@ -174,6 +174,45 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_initial_import_example_data_with_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Asia/Colombo"
+        request_data["data"]["meeting"]["1"]["time_zone"] = "Atlantic/Faroe"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1", {"time_zone": "Asia/Colombo"})
+        self.assert_model_exists("meeting/1", {"time_zone": "Atlantic/Faroe"})
+
+    def test_initial_import_example_data_with_invalid_orga_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Mars/Promethei_Terra"
+        request_data["data"]["meeting"]["1"][
+            "time_zone"
+        ] = "America/Argentina/Buenos_Aires"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "organization_t" violates check constraint "timezone_organization_time_zone"',
+            response.json["message"],
+        )
+
+    def test_initial_import_example_data_with_invalid_meeting_timezone(self) -> None:
+        request_data = {"data": get_initial_data_file(EXAMPLE_DATA_FILE)}
+        request_data["data"]["organization"]["1"]["time_zone"] = "Pacific/Easter"
+        request_data["data"]["meeting"]["1"]["time_zone"] = "Mars/Tharsis_Montes"
+        response = self.request(
+            "organization.initial_import", request_data, anonymous=True, internal=True
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+            response.json["message"],
+        )
+
     def test_initial_import_missing_default_language(self) -> None:
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         del request_data["data"]["organization"]["1"]["default_language"]
