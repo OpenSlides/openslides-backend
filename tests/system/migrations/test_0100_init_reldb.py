@@ -116,6 +116,12 @@ class BaseMigrationTestCase(TestCase):
         migration_module.Sql_helper.offset = 0
         MigrationHelper.table_translations = dict()
         MigrationHelper.migrate_thread_stream = None
+        # Reset tables to ensure that init sql doesn't write garbage.
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                for collection in self.used_collections:
+                    curs.execute(f"DELETE FROM {collection}_t CASCADE;")
+                    curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
 
     def setUp(self):
         # 1) Create old idempotent key-value-store schema and relational schema on top
@@ -134,6 +140,7 @@ class BaseMigrationTestCase(TestCase):
         self.auth = self.services.authentication()
         self.client = Client(self.app)
         self.client.auth = self.auth  # type: ignore
+        self.used_collections = set()
         self.setup_data()
         self.apply_test_relational_schema()
 
@@ -165,6 +172,7 @@ class BaseMigrationTestCase(TestCase):
         for collection, models in raw_data.items():
             if collection == "_migration_index":
                 continue
+            self.used_collections.add(collection)
             for model_id, model in models.items():
                 data[f"{collection}/{model_id}"] = {
                     f: v for f, v in model.items() if not f.startswith("meta_")
