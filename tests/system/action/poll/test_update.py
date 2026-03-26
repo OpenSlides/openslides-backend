@@ -648,59 +648,61 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_live_voting_named_list_poll(self) -> None:
         self.set_models({"user/3": {"username": "User3"}})
-        self.set_models({
-            "poll_candidate/1": {
-                "id": 1,
-                "weight": 1,
-                "user_id": 1,
-                "meeting_id": 1,
-                "poll_candidate_list_id": 1,
-            },
-            "poll_candidate_list/1": {
-                "id": 1,
-                "option_id": 1,
-                "meeting_id": 1,
-                "poll_candidate_ids": [1],
-            },
-            "option/3": {
-                "id": 3,
-                "poll_id": 2,
-                "meeting_id": 1,
-                "content_object_id": "poll_candidate_list/1",
-            },
-            "poll/2": {
-                "content_object_id": "assignment/1",
-                "title": "test_live_voting_named_list_poll",
-                "pollmethod": "YNA",
-                "type": Poll.TYPE_NAMED,
-                "onehundred_percent_base": "Y",
-                "state": Poll.STATE_CREATED,
-                "meeting_id": 1,
-                "min_votes_amount": 1,
-                "max_votes_amount": 1,
-                "max_votes_per_option": 1,
-            },
-        })
+        self.set_models(
+            {
+                "poll_candidate/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "poll_candidate_list_id": 1,
+                },
+                "poll_candidate_list/1": {
+                    "id": 1,
+                    "option_id": 1,
+                    "meeting_id": 1,
+                    "poll_candidate_ids": [1],
+                },
+                "option/3": {
+                    "id": 3,
+                    "poll_id": 2,
+                    "meeting_id": 1,
+                    "content_object_id": "poll_candidate_list/1",
+                },
+                "poll/2": {
+                    "content_object_id": "assignment/1",
+                    "title": "test_live_voting_named_list_poll",
+                    "pollmethod": "YNA",
+                    "type": Poll.TYPE_NAMED,
+                    "onehundred_percent_base": "Y",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                },
+            }
+        )
         self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False, poll_id=2)
 
     def test_live_voting_named_assignment_poll_one_option(self) -> None:
-        self.set_models({
-            "poll/2": {
-                "content_object_id": "assignment/1",
-                "title": "test_live_voting_named_list_poll",
-                "pollmethod": "YNA",
-                "type": Poll.TYPE_NAMED,
-                "onehundred_percent_base": "Y",
-                "state": Poll.STATE_CREATED,
-                "meeting_id": 1,
-                "min_votes_amount": 1,
-                "max_votes_amount": 1,
-                "max_votes_per_option": 1,
-            },
-            "option/1": {
-                "poll_id": 2
+        self.set_models(
+            {
+                "poll/2": {
+                    "content_object_id": "assignment/1",
+                    "title": "test_live_voting_named_list_poll",
+                    "pollmethod": "YNA",
+                    "type": Poll.TYPE_NAMED,
+                    "onehundred_percent_base": "Y",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                },
+                "option/1": {"poll_id": 2},
             }
-        })
+        )
         self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False, poll_id=2)
 
     def test_live_voting_not_allowed_type_analog(self) -> None:
@@ -710,10 +712,14 @@ class UpdatePollTestCase(BasePollTestCase):
         self.base_test_live_voting_not_allowed(Poll.TYPE_PSEUDOANONYMOUS, True)
 
     def test_live_voting_not_allowed_assignment_poll_pollmethod(self) -> None:
-        self.base_test_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"pollmethod": "YN"})
+        self.base_test_live_voting_not_allowed(
+            Poll.TYPE_NAMED, False, {"pollmethod": "YN"}
+        )
 
     def test_live_voting_not_allowed_assignment_poll_global_yes(self) -> None:
-        self.base_test_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"global_yes": True})
+        self.base_test_live_voting_not_allowed(
+            Poll.TYPE_NAMED, False, {"global_yes": True}
+        )
 
     def test_live_voting_not_allowed_assignment_poll_max_votes_amount(self) -> None:
         self.base_test_live_voting_not_allowed(
@@ -735,7 +741,9 @@ class UpdatePollTestCase(BasePollTestCase):
             self.update_model(f"poll/{poll_id}", poll_changes)
         self.update_model(f"poll/{poll_id}", {"type": poll_type})
 
-        response = self.request("poll.update", {"id": poll_id, "live_voting_enabled": True})
+        response = self.request(
+            "poll.update", {"id": poll_id, "live_voting_enabled": True}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists(f"poll/{poll_id}", {"live_voting_enabled": True})
 

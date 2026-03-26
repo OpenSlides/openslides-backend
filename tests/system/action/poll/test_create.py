@@ -1136,12 +1136,14 @@ class CreatePoll(BasePollTestCase):
 
     def test_live_voting_list_poll(self) -> None:
         self.set_models({"user/3": {"username": "User3"}})
-        self.base_test_live_voting_assignment({
-            "pollmethod": "YNA",
-            "options": [
-                {"poll_candidate_user_ids": [1, 3]},
-            ],
-        })
+        self.base_test_live_voting_assignment(
+            {
+                "pollmethod": "YNA",
+                "options": [
+                    {"poll_candidate_user_ids": [1, 3]},
+                ],
+            }
+        )
 
     def test_live_voting_named_assignment_poll_pollmethod_yna(self) -> None:
         self.base_test_live_voting_assignment({"pollmethod": "YNA"})
@@ -1156,18 +1158,20 @@ class CreatePoll(BasePollTestCase):
         self.base_test_live_voting_assignment(error_dict={"max_votes_amount": 2})
 
     def test_live_voting_named_assignment_poll_wrong_votes_amount(self) -> None:
-        self.base_test_live_voting_assignment(error_dict={
-            "pollmethod": "YNA",
-            "options": [
-                {"text": "option1"},
-                {"text": "option2"},
-            ],
-        })
+        self.base_test_live_voting_assignment(
+            error_dict={
+                "pollmethod": "YNA",
+                "options": [
+                    {"text": "option1"},
+                    {"text": "option2"},
+                ],
+            }
+        )
 
     def base_test_live_voting_assignment(
         self,
         override_dict: dict[str, typing.Any] | None = None,
-        error_dict: dict[str, typing.Any] | None = None
+        error_dict: dict[str, typing.Any] | None = None,
     ) -> None:
         self.create_assignment(3, 1)
 
