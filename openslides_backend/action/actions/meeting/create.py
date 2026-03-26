@@ -43,6 +43,7 @@ class MeetingCreate(
             "end_time",
             "organization_tag_ids",
             "external_id",
+            "time_zone",
         ],
         additional_optional_fields={
             "admin_ids": id_list_schema,

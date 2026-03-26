@@ -34,6 +34,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         return response.json["message"]
 
+    def test_create_with_timezone(self) -> None:
+        self.basic_test({"time_zone": "Antarctica/Rothera"})
+        self.assert_model_exists("meeting/1", {"time_zone": "Antarctica/Rothera"})
+
+    def test_create_invalid_timezone(self) -> None:
+        msg = self.basic_test({"time_zone": "Mars/Syrtis_Major"}, check_200=False)
+        self.assertIn(
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+            msg,
+        )
+
     def test_update_some_fields_export(self) -> None:
         data = {
             "export_csv_encoding": "utf-8",
