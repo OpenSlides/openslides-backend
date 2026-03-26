@@ -12,6 +12,7 @@ from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.shared.typing import DeletedModel
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     INITIAL_DATA_FILE,
@@ -28,6 +29,9 @@ class OrganizationInitialImport(BaseActionTestCase):
             False  # don't use client or write organization and first user
         )
         super().setUp()
+        self.set_models(
+            {"theme/1": DeletedModel(), ONE_ORGANIZATION_FQID: DeletedModel()}
+        )
 
     def get_formatted_value(
         self,
