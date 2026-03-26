@@ -10,6 +10,9 @@ class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
         self.init_with_login = False
         super().setUp()
+        self.set_models(
+            {"theme/1": {"meta_": "delete"}, "organization/1": {"meta_": "delete"}}
+        )
         self.vars = deepcopy(self.env.vars)
         self.env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "1"
 
