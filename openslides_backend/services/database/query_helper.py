@@ -1,6 +1,7 @@
 from psycopg import sql
 
 from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import Field
 from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 
@@ -83,7 +84,7 @@ class SqlQueryHelper:
         )
         if filter_:
             query += sql.SQL(" WHERE ({filter_str})").format(
-                filter_str=self.build_filter_str(filter_, arguments)
+                filter_str=self.build_filter_str(filter_, arguments, collection)
             )
         return (
             query,
@@ -94,6 +95,7 @@ class SqlQueryHelper:
         self,
         filter_: Filter,
         arguments: SqlArguments,
+        collection: str,
         table_alias: str = "",
     ) -> sql.Composed | sql.Identifier:
         """
@@ -103,20 +105,24 @@ class SqlQueryHelper:
         if isinstance(filter_, Not):
             return sql.SQL("NOT ({filter_str})").format(
                 filter_str=self.build_filter_str(
-                    filter_.not_filter, arguments, table_alias
+                    filter_.not_filter, arguments, collection, table_alias
                 )
             )
         elif isinstance(filter_, Or):
             return sql.SQL(" OR ").join(
                 sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                    filter_str=self.build_filter_str(
+                        part, arguments, collection, table_alias
+                    )
                 )
                 for part in filter_.or_filter
             )
         elif isinstance(filter_, And):
             return sql.SQL(" AND ").join(
                 sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                    filter_str=self.build_filter_str(
+                        part, arguments, collection, table_alias
+                    )
                 )
                 for part in filter_.and_filter
             )
@@ -164,13 +170,15 @@ class SqlQueryHelper:
                 elif filter_.operator in ("=", "!=") and isinstance(
                     filter_.value, list
                 ):
+                    field = model_registry[collection]().get_field(filter_.field)
                     condition = sql.SQL(
                         "{table_column} {filter_operator} %s{type}"
                     ).format(
                         table_column=table_column,
                         filter_operator=sql.SQL(filter_.operator),
                         type=self.get_array_type(
-                            type(next(iter(filter_.value))) if filter_.value else int,
+                            field,
+                            (type(next(iter(filter_.value))) if filter_.value else int),
                         ),
                     )
                 else:
@@ -183,12 +191,11 @@ class SqlQueryHelper:
         else:
             raise BadCodingException("Invalid filter type")
 
-    def get_array_type(self, list_type: type | str) -> sql.Composable:
+    def get_array_type(self, field: Field, list_type: type) -> sql.Composable:
         if list_type == int:
             return sql.SQL("::integer[]")
-        elif list_type == str:
+        if enum_name := getattr(field, "enum_name", None):
+            return sql.SQL(f"::{enum_name}")
+        if list_type == str:
             return sql.SQL("::text[]")
-        elif isinstance(list_type, str) and list_type.startswith("enum_"):
-            return sql.SQL(f"::{list_type}")
-        else:
-            raise ValueError("Only integer or string lists are supported.")
+        raise ValueError("Only integer or string lists are supported.")

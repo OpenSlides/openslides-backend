@@ -334,6 +334,10 @@ class TextArrayField(ArrayField):
             items.update(self.in_array_constraints)
         return self.extend_schema(super().get_schema(), items=items)
 
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
+
 
 class CharArrayField(ArrayField):
     def get_schema(self) -> Schema:
@@ -341,6 +345,10 @@ class CharArrayField(ArrayField):
         if self.in_array_constraints is not None:
             items.update(self.in_array_constraints)
         return self.extend_schema(super().get_schema(), items=items)
+
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
 
 
 class NumberArrayField(ArrayField):

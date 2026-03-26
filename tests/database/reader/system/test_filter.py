@@ -23,6 +23,8 @@ from openslides_backend.shared.patterns import Id
 from openslides_backend.shared.typing import DeletedModel, Model
 from tests.database.reader.system.util import (
     insert_into_intermediate_table,
+    meeting_data,
+    meeting_responses,
     setup_data,
     standard_data,
     standard_responses,
@@ -136,6 +138,78 @@ def test_types_int_list(db_connection: Connection) -> None:
         2: standard_responses["user"][2]
         | {"committee_ids": [1, 2], "committee_management_ids": [1, 2]}
     }
+
+
+def test_types_str_list(db_connection: Connection) -> None:
+    history_data = {
+        "history_position": {
+            1: {
+                "user_id": 1,
+                "timestamp": datetime.now(ZoneInfo("UTC")).isoformat(),
+                "original_user_id": 1,
+            }
+        },
+        "history_entry": {
+            1: {
+                "entries": ["User added to meetings"],
+                "meeting_id": 1,
+                "position_id": 1,
+                "model_id": "user/1",
+            },
+            2: {
+                "entries": ["User created", "User added to meetings"],
+                "meeting_id": 1,
+                "position_id": 1,
+                "model_id": "user/2",
+            },
+        },
+    }
+    setup_data(db_connection, {**standard_data, **meeting_data, **history_data})
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.filter(
+            "history_entry",
+            FilterOperator("entries", "=", ["User added to meetings"]),
+            [],
+            use_changed_models=False,
+        )
+    assert response == {
+        1: {
+            "id": 1,
+            "entries": ["User added to meetings"],
+            "meeting_id": 1,
+            "model_id": "user/1",
+            "model_id_assignment_id": None,
+            "model_id_motion_id": None,
+            "model_id_user_id": 1,
+            "original_model_id": None,
+            "position_id": 1,
+        }
+    }
+
+
+def test_types_enum_list(db_connection: Connection) -> None:
+    setup_data(db_connection, {**standard_data, **meeting_data})
+    with get_new_os_conn() as conn:
+        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+        response = extended_database.filter(
+            "group",
+            FilterOperator(
+                "permissions", "=", [
+                    "agenda_item.can_see_internal",
+                    "assignment.can_see",
+                    "list_of_speakers.can_see",
+                    "mediafile.can_see",
+                    "meeting.can_see_frontpage",
+                    "motion.can_see",
+                    "projector.can_see",
+                    "user.can_see"
+                ]
+            ),
+            [],
+            use_changed_models=False,
+        )
+    assert response == {1: meeting_responses["group"][1]}
 
 
 @pytest.mark.parametrize(

@@ -158,7 +158,5 @@ class Model(metaclass=ModelMetaClass):
 
     def get_enum_array_fields(self) -> Iterable[fields.Field]:
         for model_field in self.get_fields():
-            if (getattr(model_field, "in_array_constraints", None) or {}).get(
-                "enum_name"
-            ) is not None:
+            if getattr(model_field, "enum_name", None) is not None:
                 yield model_field
