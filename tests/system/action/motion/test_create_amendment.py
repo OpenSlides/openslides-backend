@@ -308,7 +308,6 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "motion.create",
                 {
                     **self.default_action_data,
-                    "diff_version": "0.1.2",
                     field: 12,
                 },
             )
@@ -317,3 +316,17 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 f"You are not allowed to perform action motion.create. Forbidden fields: {field} with possibly needed permission(s): motion.can_manage",
                 response.json["message"],
             )
+
+    def test_create_amendment_with_diff_version_not_allowed(self) -> None:
+        response = self.request(
+            "motion.create",
+            {
+                **self.default_action_data,
+                "diff_version": "0.1.2",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "You can define a diff_version only for the lead motion",
+            response.json["message"],
+        )
