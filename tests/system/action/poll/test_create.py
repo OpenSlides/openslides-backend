@@ -1132,29 +1132,31 @@ class CreatePoll(BasePollTestCase):
         )
 
     def test_live_voting_named_assignment_poll(self) -> None:
-        self.base_live_voting_assigment()
+        self.base_test_live_voting_assignment()
 
     def test_live_voting_list_poll(self) -> None:
         self.set_models({"user/3": {"username": "User3"}})
-        self.base_live_voting_assigment({
+        self.base_test_live_voting_assignment({
             "pollmethod": "YNA",
             "options": [
                 {"poll_candidate_user_ids": [1, 3]},
             ],
         })
 
-    def test_live_voting_named_assignment_poll_pollmethods(self) -> None:
-        self.base_live_voting_assigment({"pollmethod": "YNA"})
-        self.base_live_voting_assigment({"pollmethod": "YN"})
+    def test_live_voting_named_assignment_poll_pollmethod_yna(self) -> None:
+        self.base_test_live_voting_assignment({"pollmethod": "YNA"})
+
+    def test_live_voting_named_assignment_poll_pollmethod_yn(self) -> None:
+        self.base_test_live_voting_assignment({"pollmethod": "YN"})
 
     def test_live_voting_named_assignment_poll_wrong_globalyes(self) -> None:
-        self.base_live_voting_assigment(error_dict={"global_yes": True})
+        self.base_test_live_voting_assignment(error_dict={"global_yes": True})
 
     def test_live_voting_named_assignment_poll_wrong_max_votes(self) -> None:
-        self.base_live_voting_assigment(error_dict={"max_votes_amount": 2})
+        self.base_test_live_voting_assignment(error_dict={"max_votes_amount": 2})
 
     def test_live_voting_named_assignment_poll_wrong_votes_amount(self) -> None:
-        self.base_live_voting_assigment(error_dict={
+        self.base_test_live_voting_assignment(error_dict={
             "pollmethod": "YNA",
             "options": [
                 {"text": "option1"},
@@ -1162,7 +1164,7 @@ class CreatePoll(BasePollTestCase):
             ],
         })
 
-    def base_live_voting_assigment(
+    def base_test_live_voting_assignment(
         self,
         override_dict: dict[str, typing.Any] | None = None,
         error_dict: dict[str, typing.Any] | None = None
@@ -1193,7 +1195,7 @@ class CreatePoll(BasePollTestCase):
             self.assert_status_code(response, 400)
             self.assert_model_not_exists("poll/1")
             assert (
-                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
+                "live_voting_enabled only allowed for named motion polls and some named assignment polls."
             ) in response.json["message"]
 
     def test_live_voting_not_allowed_type_analog(self) -> None:
@@ -1224,6 +1226,6 @@ class CreatePoll(BasePollTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
         self.assertEqual(
-            "live_voting_enabled only allowed for named motion polls and named Yes assignment polls.",
+            "live_voting_enabled only allowed for named motion polls and some named assignment polls.",
             response.json["message"],
         )

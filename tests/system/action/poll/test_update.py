@@ -641,41 +641,119 @@ class UpdatePollTestCase(BasePollTestCase):
         )
 
     def test_live_voting_named_motion_poll(self) -> None:
-        self.create_motion(1, 3)
-        self.set_models({"motion_state/1": {"allow_create_poll": True}})
-        self.update_model(
-            "poll/1", {"type": Poll.TYPE_NAMED, "content_object_id": "motion/3"}
-        )
+        self.base_test_live_voting_allowed(Poll.TYPE_NAMED, True)
+        # self.create_motion(1, 3)
+        # self.set_models({"motion_state/1": {"allow_create_poll": True}})
+        # self.update_model(
+        #     "poll/1", {"type": Poll.TYPE_NAMED, "content_object_id": "motion/3"}
+        # )
 
-        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("poll/1", {"live_voting_enabled": True})
+        # response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        # self.assert_status_code(response, 200)
+        # self.assert_model_exists("poll/1", {"live_voting_enabled": True})
 
     def test_live_voting_named_assignment_poll(self) -> None:
-        self.update_model("poll/1", {"type": Poll.TYPE_NAMED})
+        self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False)
+        # self.update_model("poll/1", {"type": Poll.TYPE_NAMED})
 
-        response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("poll/1", {"live_voting_enabled": True})
+        # response = self.request("poll.update", {"id": 1, "live_voting_enabled": True})
+        # self.assert_status_code(response, 200)
+        # self.assert_model_exists("poll/1", {"live_voting_enabled": True})
+
+    def test_live_voting_named_list_poll(self) -> None:
+        self.set_models({"user/3": {"username": "User3"}})
+        self.set_models({
+            "poll_candidate/1": {
+                "id": 1,
+                "weight": 1,
+                "user_id": 1,
+                "meeting_id": 1,
+                "poll_candidate_list_id": 1,
+            },
+            "poll_candidate_list/1": {
+                "id": 1,
+                "option_id": 1,
+                "meeting_id": 1,
+                "poll_candidate_ids": [1],
+            },
+            "option/3": {
+                "id": 3,
+                "poll_id": 2,
+                "meeting_id": 1,
+                "content_object_id": "poll_candidate_list/1",
+            },
+            "poll/2": {
+                "content_object_id": "assignment/1",
+                "title": "test_live_voting_named_list_poll",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "onehundred_percent_base": "Y",
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 1,
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "max_votes_per_option": 1,
+            },
+        })
+        self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False, poll_id=2)
+
+    def test_live_voting_named_assignment_poll_one_option(self) -> None:
+        self.set_models({
+            "poll/2": {
+                "content_object_id": "assignment/1",
+                "title": "test_live_voting_named_list_poll",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "onehundred_percent_base": "Y",
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 1,
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "max_votes_per_option": 1,
+            },
+            "option/1": {
+                "poll_id": 2
+            }
+        })
+        self.base_test_live_voting_allowed(Poll.TYPE_NAMED, False, poll_id=2)
 
     def test_live_voting_not_allowed_type_analog(self) -> None:
-        self.base_live_voting_not_allowed(Poll.TYPE_ANALOG, True)
+        self.base_test_live_voting_not_allowed(Poll.TYPE_ANALOG, True)
 
     def test_live_voting_not_allowed_type_pseudoanonymous(self) -> None:
-        self.base_live_voting_not_allowed(Poll.TYPE_PSEUDOANONYMOUS, True)
+        self.base_test_live_voting_not_allowed(Poll.TYPE_PSEUDOANONYMOUS, True)
 
     def test_live_voting_not_allowed_assignment_poll_pollmethod(self) -> None:
-        self.base_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"pollmethod": "YN"})
+        self.base_test_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"pollmethod": "YN"})
 
     def test_live_voting_not_allowed_assignment_poll_global_yes(self) -> None:
-        self.base_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"global_yes": True})
+        self.base_test_live_voting_not_allowed(Poll.TYPE_NAMED, False, {"global_yes": True})
 
     def test_live_voting_not_allowed_assignment_poll_max_votes_amount(self) -> None:
-        self.base_live_voting_not_allowed(
+        self.base_test_live_voting_not_allowed(
             Poll.TYPE_NAMED, False, {"max_votes_amount": 2}
         )
 
-    def base_live_voting_not_allowed(
+    def base_test_live_voting_allowed(
+        self,
+        poll_type: str,
+        is_motion_poll: bool,
+        poll_changes: dict[str, Any] | None = None,
+        poll_id: int = 1,
+    ) -> None:
+        if is_motion_poll:
+            self.create_motion(1, 3)
+            self.set_models({"motion_state/1": {"allow_create_poll": True}})
+            self.update_model(f"poll/{poll_id}", {"content_object_id": "motion/3"})
+        elif poll_changes:
+            self.update_model(f"poll/{poll_id}", poll_changes)
+        self.update_model(f"poll/{poll_id}", {"type": poll_type})
+
+        response = self.request("poll.update", {"id": poll_id, "live_voting_enabled": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(f"poll/{poll_id}", {"live_voting_enabled": True})
+
+    def base_test_live_voting_not_allowed(
         self,
         poll_type: str,
         is_motion_poll: bool,
@@ -693,5 +771,5 @@ class UpdatePollTestCase(BasePollTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("poll/1", {"live_voting_enabled": False})
         assert (
-            "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
+            "live_voting_enabled only allowed for named motion polls and some named assignment polls."
         ) in response.json["message"]

@@ -117,13 +117,13 @@ class PollCreateAction(
                                 or instance["pollmethod"] == "YN"
                             )
                             and len(instance.get("options", [])) == 1
-                        ) 
+                        )
                     )
                 )
             )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
+                "live_voting_enabled only allowed for named motion polls and some named assignment polls."
             )
 
         # check entitled_group_ids and analog
