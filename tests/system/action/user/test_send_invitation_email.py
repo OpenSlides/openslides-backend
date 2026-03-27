@@ -699,7 +699,6 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [60],
                 },
                 ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
@@ -735,7 +734,6 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [60],
                 },
                 ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
@@ -770,7 +768,6 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [60],
                 },
                 ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
@@ -806,7 +803,6 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_management_ids": [60],
                 },
                 ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
