@@ -17,7 +17,7 @@ class SqlQueryHelper:
     ) -> sql.Composed:
         """
         Returns an sql.Composed string:
-        - of the mapped fields
+        - of the mapped fields if mapped fields are provided
         - of all the fields explicitly if any of them must be fetched with a custom sql and the whole model is required
         Returns only * otherwise.
         """
