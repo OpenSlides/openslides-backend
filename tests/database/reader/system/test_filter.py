@@ -24,7 +24,6 @@ from openslides_backend.shared.typing import DeletedModel, Model
 from tests.database.reader.system.util import (
     insert_into_intermediate_table,
     meeting_data,
-    meeting_responses,
     setup_data,
     standard_data,
     standard_responses,
@@ -211,7 +210,40 @@ def test_types_enum_list(db_connection: Connection) -> None:
             [],
             use_changed_models=False,
         )
-    assert response == {1: meeting_responses["group"][1]}
+    assert response == {
+        1: {
+            "admin_group_for_meeting_id": 1,
+            "anonymous_group_for_meeting_id": None,
+            "default_group_for_meeting_id": 1,
+            "external_id": None,
+            "id": 1,
+            "meeting_id": 1,
+            "meeting_mediafile_access_group_ids": None,
+            "meeting_mediafile_inherited_access_group_ids": None,
+            "meeting_user_ids": None,
+            "name": "default",
+            "permissions": [
+                "agenda_item.can_see_internal",
+                "assignment.can_see",
+                "list_of_speakers.can_see",
+                "mediafile.can_see",
+                "meeting.can_see_frontpage",
+                "motion.can_see",
+                "projector.can_see",
+                "user.can_see",
+            ],
+            "poll_ids": None,
+            "read_chat_group_ids": None,
+            "read_comment_section_ids": None,
+            "used_as_assignment_poll_default_id": None,
+            "used_as_motion_poll_default_id": None,
+            "used_as_poll_default_id": None,
+            "used_as_topic_poll_default_id": None,
+            "weight": None,
+            "write_chat_group_ids": None,
+            "write_comment_section_ids": None,
+        }
+    }
 
 
 @pytest.mark.parametrize(

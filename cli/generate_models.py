@@ -240,7 +240,7 @@ class Attribute(Node):
                         self.constraints[k] = InternalHelper.ENUMS[enum_name]
                     else:
                         self.constraints[k] = v
-                elif self.type in ("string[]", "number[]", "text[]") and k == "items":
+                elif self.type in ("string[]", "text[]") and k == "items":
                     enum = v["enum"]
                     if isinstance(enum, str):
                         enum_name = HelperGetNames.get_enum_name(enum)
