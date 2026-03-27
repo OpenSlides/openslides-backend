@@ -59,6 +59,7 @@ def test_simple(db_connection: Connection) -> None:
                 "theme_ids": [
                     1,
                 ],
+                "time_zone": None,
                 "url": "https://example.com",
                 "user_ids": [
                     1,
