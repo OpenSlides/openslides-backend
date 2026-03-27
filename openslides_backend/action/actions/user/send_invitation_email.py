@@ -19,8 +19,12 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....models.models import User
-from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from ....permissions.permission_helper import (
+    get_shared_committee_management_levels,
     has_organization_management_level,
     has_perm,
 )
@@ -335,11 +339,27 @@ class UserSendInvitationMail(UpdateAction):
             instance["meeting_id"],
         ):
             return
-        if not instance.get("meeting_id") and has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
+        comm_ids: list[int] = []
+        if not instance.get("meeting_id"):
+            if has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_USERS,
+            ):
+                return
+            comm_ids = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]), ["committee_ids"]
+            ).get("committee_ids", [])
+            if get_shared_committee_management_levels(
+                self.datastore, self.user_id, comm_ids
+            ):
+                return
         if instance.get("meeting_id"):
             raise MissingPermission(Permissions.User.CAN_UPDATE)
         else:
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: set(comm_ids),
+                }
+            )
