@@ -20,9 +20,8 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ..database.commands import GetManyRequest
 from .mapped_fields import MappedFields
-from .query_helper import SqlArguments, SqlQueryHelper
-
-SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
+from .query_helper import SqlQueryHelper
+from .interface import SqlArgumentsExtended
 
 
 class DatabaseReader(SqlQueryHelper):
@@ -220,6 +219,17 @@ class DatabaseReader(SqlQueryHelper):
         #                + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
         #            )
         return -1
+
+    def execute_custom_select(
+        self,
+        query: sql.Composed,
+        lock_result: LockResult,
+        arguments: SqlArgumentsExtended = []
+    ) -> list[PartialModel]:
+        query = sql.SQL("SELECT ") + query
+        return self.execute_query(
+            "custom", query, lock_result, None, arguments
+        )
 
     @retry_on_db_failure
     def execute_query(

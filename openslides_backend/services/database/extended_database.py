@@ -2,7 +2,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, cast
 
-from psycopg import Connection, rows
+from psycopg import Connection, rows, sql
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
@@ -51,6 +51,7 @@ from ..database.interface import Database
 from .database_reader import DatabaseReader
 from .database_writer import DatabaseWriter
 from .mapped_fields import MappedFields
+from .interface import SqlArgumentsExtended
 
 MappedFieldsPerCollectionAndId = dict[str, dict[Id, list[str]]]
 VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
@@ -634,6 +635,14 @@ class ExtendedDatabase(Database):
             }.items()
             if v
         }
+
+    def execute_custom_select(
+        self,
+        query: sql.Composed,
+        lock_result: LockResult,
+        arguments: SqlArgumentsExtended = []
+    ) -> list[PartialModel]:
+        return self.database_reader.execute_custom_select(query, lock_result, arguments)
 
     def _model_fits_subfilter(
         self, model: Model, filter_: Filter, negation: bool = False

@@ -4,8 +4,7 @@ from openslides_backend.shared.exceptions import BadCodingException, InvalidForm
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 
 from .mapped_fields import MappedFields
-
-SqlArguments = list[str | int]
+from .interface import SqlArguments
 
 
 # TODO move insert and select creation into this class?

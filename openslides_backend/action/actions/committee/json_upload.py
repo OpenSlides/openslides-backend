@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from psycopg import sql
 
 from openslides_backend.action.actions.meeting.mixins import MeetingCheckTimesMixin
 from openslides_backend.shared.exceptions import ActionException
@@ -39,7 +40,7 @@ class CommitteeJsonUpload(
                         **{
                             f"meeting_{field}": prop
                             for field, prop in Meeting()
-                            .get_properties("name", "start_time", "end_time")
+                            .get_properties("name", "start_time", "end_time", "time_zone")
                             .items()
                         },
                         "meeting_admins": str_list_schema,
@@ -78,6 +79,7 @@ class CommitteeJsonUpload(
         {"property": "meeting_name", "type": "string"},
         {"property": "meeting_start_time", "type": "date"},
         {"property": "meeting_end_time", "type": "date"},
+        {"property": "meeting_time_zone", "type": "string", "is_object": True},
         {
             "property": "meeting_admins",
             "type": "string",
@@ -88,6 +90,7 @@ class CommitteeJsonUpload(
         {"property": "parent", "type": "string", "is_object": True},
     ]
     import_name = "committee"
+    timezone_field_name = "meeting_time_zone"
 
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
@@ -166,12 +169,33 @@ class CommitteeJsonUpload(
                 for field in (
                     "meeting_start_time",
                     "meeting_end_time",
+                    "meeting_time_zone"
                     "meeting_admins",
                     "meeting_template",
                 )
             ):
                 messages.append("No meeting will be created without meeting_name")
         else:
+            if (tz:=entry.get("meeting_time_zone")):
+                result = self.datastore.execute_custom_select(
+                    sql.SQL("is_timezone(%s) AS valid"), False, [tz]
+                )
+                if not result[0].get("valid"):
+                    row_state = ImportState.ERROR
+                    entry["meeting_time_zone"]={
+                        "value": tz,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(f"Error: Invalid timezone format: {tz} (expected canonic IANA timezone name)")
+                else:
+                    entry["meeting_time_zone"]={
+                        "value": tz,
+                        "info": ImportState.DONE,
+                    }
+            elif entry.get("meeting_start_time") or entry.get("meeting_end_time"):
+                entry["meeting_time_zone"] = {"info": ImportState.WARNING, "value": None}
+                zone = self.get_time_zone()
+                messages.append(f"Since no timezone was given, the dates will be interpreted as being in the '{zone}' zone.")
             self.validate_with_lookup(
                 entry, "meeting_admins", self.username_lookup, messages
             )
@@ -214,9 +238,10 @@ class CommitteeJsonUpload(
                     FilterOperator("committee_id", "=", committee_id),
                     FilterOperator("name", "=", meeting_name),
                 ]
+                zone = self.get_time_zone_info(entry)
                 for field in ("start_time", "end_time"):
                     if time := entry.get(f"meeting_{field}"):
-                        start_of_day = datetime.fromtimestamp(time, timezone.utc)
+                        start_of_day = datetime.fromtimestamp(time, zone)
                         start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
                         end_of_day = start_of_day + timedelta(days=1)
                         parts.extend(

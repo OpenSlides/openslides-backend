@@ -68,6 +68,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 {"property": "meeting_name", "type": "string"},
                 {"property": "meeting_start_time", "type": "date"},
                 {"property": "meeting_end_time", "type": "date"},
+                {"property": "meeting_time_zone", "type": "string", "is_object": True},
                 {
                     "property": "meeting_admins",
                     "type": "string",
@@ -401,12 +402,115 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.NEW,
-            "messages": [],
+            "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone."
+            ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
+            },
+        }
+
+    def test_json_upload_with_dates_and_timezone(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
+                        "meeting_time_zone": "Europe/Vatican",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "test", "info": ImportState.NEW},
+                "meeting_name": "test meeting",
+                # time offset +2hrs in rome during dst
+                "meeting_start_time": 1691539200 - 2*3600,
+                "meeting_end_time": 1691625600 - 2*3600,
+                "meeting_time_zone": {"info":ImportState.DONE, "value":"Europe/Vatican"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
+            },
+        }
+
+    def test_json_upload_with_dates_and_non_mean_timezone(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
+                        "meeting_time_zone": "Asia/Pyongyang",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"value": "test", "info": ImportState.NEW},
+                "meeting_name": "test meeting",
+                # Time offset +9hrs in pyongyang
+                "meeting_start_time": 1691539200 - 9*3600,
+                "meeting_end_time": 1691625600 - 9*3600,
+                "meeting_time_zone": {"info":ImportState.DONE, "value":"Asia/Pyongyang"},
+                "meeting_admins": [
+                    {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
+                ],
+            },
+        }
+
+    def test_json_upload_with_dates_and_invalid_timezone(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "test meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
+                        "meeting_time_zone": "Mars/Acidalia_Planitia",
+                        "meeting_admins": [ADMIN_USERNAME],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.ERROR,
+            "messages": [
+                "Error: Invalid timezone format: Mars/Acidalia_Planitia (expected canonic IANA timezone name)"
+            ],
+            "data": {
+                "name": {"value": "test", "info": ImportState.NEW},
+                "meeting_name": "test meeting",
+                "meeting_start_time": 1691539200,
+                "meeting_end_time": 1691625600,
+                "meeting_time_zone": {"info":ImportState.ERROR, "value":"Mars/Acidalia_Planitia"},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -439,13 +543,17 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
-            "messages": ["Error: A meeting with this name and dates already exists."],
+            "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone.",
+                "Error: A meeting with this name and dates already exists."
+            ],
             "data": {
                 "id": 61,
                 "name": {"value": "Committee61", "info": ImportState.DONE, "id": 61},
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -476,12 +584,14 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response, 0) == {
             "state": ImportState.ERROR,
             "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone.",
                 "Error: Only one of start_time and end_time is not allowed.",
             ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691539200,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -490,12 +600,14 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response, 1) == {
             "state": ImportState.ERROR,
             "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone.",
                 "Error: Only one of start_time and end_time is not allowed.",
             ],
             "data": {
                 "name": {"value": "test2", "info": ImportState.NEW},
                 "meeting_name": "test meeting 2",
                 "meeting_end_time": 1691625600,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -521,6 +633,9 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert "Invalid date format" in response.json["message"]
 
     def test_json_upload_start_date_after_end_date(self) -> None:
+        self.set_models({
+            "organization/1": {"time_zone":"Europe/Chisinau"}
+        })
         response = self.request(
             "committee.json_upload",
             {
@@ -539,13 +654,16 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
             "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'Europe/Chisinau' zone.",
                 "Error: start_time must be before end_time.",
             ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
-                "meeting_start_time": 1691625600,
-                "meeting_end_time": 1691539200,
+                # Moldova is +3hrs during DST
+                "meeting_start_time": 1691625600 - (3*3600),
+                "meeting_end_time": 1691539200 - (3*3600),
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
