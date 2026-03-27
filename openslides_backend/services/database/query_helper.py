@@ -18,7 +18,7 @@ class SqlQueryHelper:
         """
         Returns an sql.Composed string:
         - of the mapped fields
-        - or of all the fields if any of them must be fetched with a custom sql
+        - of all the fields explicitly if any of them must be fetched with a custom sql and the whole model is required
         Returns only * otherwise.
         """
         unique_fields = (
