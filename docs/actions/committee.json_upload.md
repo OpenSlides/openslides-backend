@@ -17,6 +17,7 @@ The types noted below are the internal types after conversion in the backend. Se
         meeting_name: string,
         meeting_start_time: date,
         meeting_end_time: date,
+        meeting_time_zone: timezone,
         meeting_admins: string[],
         meeting_template: string,
     }[]
@@ -50,6 +51,10 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
 - `meeting_template`:
   - `done`: The meeting was found in the datastore, the new meeting will be cloned from it.
   - `warning`: The meeting was not found and the new meeting will not be cloned, but freshly created.
+- `meeting_time_zone`:
+  - `done`: Valid IANA timezone string.
+  - `warning`: Field empty and there's a start/end_time.
+  - `error`: Not a valid IANA timezone string.
 
 The fields `forward_to_committee`, `organization_tags`, `managers`, `meeting_admins` and `meeting_template` store the `id` of the related model, if it exists, in the object for the import.
 
