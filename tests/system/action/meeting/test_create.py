@@ -29,6 +29,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "committee_id": 1,
             "organization_tag_ids": [3],
             "language": "en",
+            "time_zone": "Europe/London",
             "admin_ids": [1],
         }
 
@@ -40,9 +41,15 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         if set_400_str:
             self.assert_status_code(response, 400)
-            assert set_400_str == response.json["message"]
+            self.assertIn(set_400_str, response.json["message"])
         else:
             self.assert_status_code(response, 200)
+
+    def test_create_invalid_timezone(self) -> None:
+        self.basic_test(
+            {"time_zone": "Mars/Terra_Sirenum"},
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+        )
 
     def test_create_simple_and_complex_workflow(self) -> None:
         self.basic_test()
@@ -428,14 +435,16 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_not_exists("meeting/2")
 
-    def test_create_external_id_empty_special_case(self) -> None:
+    def test_create_external_id_empty_not_unique(self) -> None:
         external_id = ""
         self.create_meeting(
             meeting_data=({"committee_id": 1, "external_id": external_id})
         )
-        self.base_action_data.update({"external_id": external_id})
-        self.basic_test()
-        self.assert_model_exists("meeting/2", {"external_id": external_id})
+        self.basic_test(
+            {"external_id": external_id},
+            set_400_str="The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+        )
+        self.assert_model_not_exists("meeting/2")
 
     def test_enable_duplicate_mandatory(self) -> None:
         self.set_organization_management_level(None)

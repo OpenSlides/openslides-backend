@@ -829,6 +829,21 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assertEqual("Number is not unique.", response.json["message"])
         self.assert_model_not_exists("motion/3")
 
+    def test_create_check_not_unique_number_empty(self) -> None:
+        self.create_motion(1, 1, motion_data={"number": ""})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "",
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual("Number is not unique.", response.json["message"])
+        self.assert_model_not_exists("motion/2")
+
     def test_create_amendment_paragraphs_where_not_allowed(self) -> None:
         self.create_motion(1)
         response = self.request(

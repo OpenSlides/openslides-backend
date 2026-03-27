@@ -190,6 +190,7 @@ class MeetingUpdate(
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
+            "time_zone",
             "external_id",
             "reference_projector_id",
             "organization_tag_ids",
@@ -209,7 +210,7 @@ class MeetingUpdate(
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
-        if instance.get("external_id"):
+        if instance.get("external_id") is not None:
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],

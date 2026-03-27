@@ -86,6 +86,7 @@ class StopControl(CountdownControl, Action):
                 "global_option_id",
                 "entitled_group_ids",
             ],
+            lock_result=False,
         )
         # reset countdown given by meeting
         meeting = self.datastore.get(
@@ -96,6 +97,7 @@ class StopControl(CountdownControl, Action):
                 "users_enable_vote_weight",
                 "users_enable_vote_delegations",
             ],
+            lock_result=False,
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], CountdownCommand.RESET)
@@ -190,7 +192,10 @@ class StopControl(CountdownControl, Action):
         gmr = GetManyRequest(
             "group", poll.get("entitled_group_ids", []), ["meeting_user_ids"]
         )
-        gm_result = self.datastore.get_many([gmr])
+        gm_result = self.datastore.get_many(
+            [gmr],
+            lock_result=False,
+        )
         groups = gm_result.get("group", {}).values()
 
         # fetch presence status
@@ -200,7 +205,10 @@ class StopControl(CountdownControl, Action):
         gmr = GetManyRequest(
             "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
         )
-        gm_result = self.datastore.get_many([gmr])
+        gm_result = self.datastore.get_many(
+            [gmr],
+            lock_result=False,
+        )
         meeting_users = gm_result.get("meeting_user", {}).values()
 
         mu_to_user_id = {}
@@ -211,14 +219,17 @@ class StopControl(CountdownControl, Action):
             )
             if delegated_to_mu_ids:
                 gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
-                mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
+                mu_to_user_id = self.datastore.get_many(
+                    [gmr],
+                    lock_result=False,
+                ).get("meeting_user", {})
 
         gmr = GetManyRequest(
             "user",
             [mu["user_id"] for mu in meeting_users],
             ["is_present_in_meeting_ids"],
         )
-        users = self.datastore.get_many([gmr]).get("user", {})
+        users = self.datastore.get_many([gmr], lock_result=False).get("user", {})
 
         for mu in meeting_users:
             entitled_users.append(

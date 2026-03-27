@@ -54,6 +54,7 @@ class Field:
     def __init__(
         self,
         required: bool = False,
+        unique: bool = False,
         read_only: bool = False,
         constant: bool = False,
         default: Any | None = None,
@@ -63,6 +64,7 @@ class Field:
         write_fields: tuple[str, str, str, list[str]] | None = None,
     ) -> None:
         self.required = required
+        self.unique = unique
         self.read_only = read_only
         self.constant = constant
         self.default = default
@@ -169,6 +171,10 @@ class TextField(Field):
         if self.required:
             return self.extend_schema(super().get_schema(), type="string", minLength=1)
         return self.extend_schema(super().get_schema(), type=["string", "null"])
+
+
+class TimezoneField(TextField):
+    pass
 
 
 class CharField(TextField):

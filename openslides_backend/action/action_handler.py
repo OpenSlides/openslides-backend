@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
@@ -5,18 +6,20 @@ from time import sleep
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
-from psycopg.errors import RaiseException, SerializationFailure
+from psycopg.errors import ForeignKeyViolation, RaiseException, SerializationFailure
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.exceptions import DatabaseException
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ..shared.exceptions import (
     ActionException,
     BadCodingException,
     DatastoreLockedException,
+    ModelDoesNotExist,
     RelationException,
     View400Exception,
 )
@@ -178,10 +181,19 @@ class ActionHandler(BaseHandler):
                     raise RelationException(
                         f"Relation violates required constraint: {e}"
                     )
+                except ForeignKeyViolation as e:
+                    # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
+                    if match := re.search(pattern, e.args[0]):
+                        error_fqid = fqid_from_collection_and_id(
+                            match.group(2), match.group(1)
+                        )
+                        raise ModelDoesNotExist(error_fqid)
+                    raise e
                 except SerializationFailure:
                     if attempt == retry_count:
                         raise DatabaseException(
-                            "Database operation failed due to concurring actions. Please try again later."
+                            "Database operation failed due to concurrent conflicting actions. Please try again later."
                         )
                     sleep(retry_timeout)
             raise BadCodingException("This code should never execute")
