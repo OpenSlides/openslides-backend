@@ -172,7 +172,8 @@ class CommitteeJsonUpload(
                 for field in (
                     "meeting_start_time",
                     "meeting_end_time",
-                    "meeting_time_zone" "meeting_admins",
+                    "meeting_time_zone",
+                    "meeting_admins",
                     "meeting_template",
                 )
             ):
