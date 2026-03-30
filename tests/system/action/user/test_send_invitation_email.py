@@ -694,6 +694,41 @@ class SendInvitationMail(BaseActionTestCase):
             "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee {60} Mail 1 from 1",
         )
 
+    def test_organization_send_parent_committee_permission(self) -> None:
+        self.create_committee(57)
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/57": {"manager_ids": [1], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 57},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
     def test_organization_send_committee_permission(self) -> None:
         self.set_models(
             {
