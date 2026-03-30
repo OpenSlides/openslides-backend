@@ -4,7 +4,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatabaseException, MissingPermission
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import Action
@@ -39,6 +39,12 @@ class MediafileMixin(Action):
                 parent_id = mediafile.get("parent_id")
             except DatabaseException:
                 pass
+        self.check_title_unique_if_in_root(
+            instance.get("title"),
+            parent_id,
+            instance.get("id"),
+            fqid_from_collection_and_id(collection, id_),
+        )
 
         if collection == "organization":
             if "access_group_ids" in instance and (
@@ -151,6 +157,25 @@ class MediafileMixin(Action):
             for group in groups:
                 if group.get("meeting_id") != meeting_id:
                     raise ActionException("Owner and access groups don't match.")
+
+    def check_title_unique_if_in_root(
+        self,
+        title: str | None,
+        parent_id: int | None,
+        id_: int | None,
+        owner_id: str,
+    ) -> None:
+        if parent_id is None and title is not None:
+            filter_ = And(
+                FilterOperator("title", "=", title),
+                FilterOperator("parent_id", "=", parent_id),
+                FilterOperator("owner_id", "=", owner_id),
+            )
+            if id_:
+                filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
+            results = self.datastore.filter(self.model.collection, filter_, ["id"])
+            if results:
+                raise ActionException(f"File '{title}' already exists in the root folder.")
 
 
 class MediafileCreateMixin(MediafileMixin):
