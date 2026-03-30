@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, Protocol
+
 from psycopg import sql
 
 from openslides_backend.shared.interfaces.collection_field_lock import (
@@ -163,7 +164,7 @@ class Database(Protocol):
     @abstractmethod
     def execute_custom_select(
         self,
-        query: sql.Composed,
+        query: sql.Composed | sql.SQL,
         lock_result: LockResult,
-        arguments: SqlArgumentsExtended = []
+        arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]: ...

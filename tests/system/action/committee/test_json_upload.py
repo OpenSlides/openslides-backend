@@ -441,9 +441,12 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 # time offset +2hrs in rome during dst
-                "meeting_start_time": 1691539200 - 2*3600,
-                "meeting_end_time": 1691625600 - 2*3600,
-                "meeting_time_zone": {"info":ImportState.DONE, "value":"Europe/Vatican"},
+                "meeting_start_time": 1691539200 - 2 * 3600,
+                "meeting_end_time": 1691625600 - 2 * 3600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Europe/Vatican",
+                },
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -474,9 +477,12 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 # Time offset +9hrs in pyongyang
-                "meeting_start_time": 1691539200 - 9*3600,
-                "meeting_end_time": 1691625600 - 9*3600,
-                "meeting_time_zone": {"info":ImportState.DONE, "value":"Asia/Pyongyang"},
+                "meeting_start_time": 1691539200 - 9 * 3600,
+                "meeting_end_time": 1691625600 - 9 * 3600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Asia/Pyongyang",
+                },
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -510,7 +516,10 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "meeting_name": "test meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
-                "meeting_time_zone": {"info":ImportState.ERROR, "value":"Mars/Acidalia_Planitia"},
+                "meeting_time_zone": {
+                    "info": ImportState.ERROR,
+                    "value": "Mars/Acidalia_Planitia",
+                },
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
                 ],
@@ -545,7 +554,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "state": ImportState.ERROR,
             "messages": [
                 "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone.",
-                "Error: A meeting with this name and dates already exists."
+                "Error: A meeting with this name and dates already exists.",
             ],
             "data": {
                 "id": 61,
@@ -633,9 +642,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert "Invalid date format" in response.json["message"]
 
     def test_json_upload_start_date_after_end_date(self) -> None:
-        self.set_models({
-            "organization/1": {"time_zone":"Europe/Chisinau"}
-        })
+        self.set_models({"organization/1": {"time_zone": "Europe/Chisinau"}})
         response = self.request(
             "committee.json_upload",
             {
@@ -661,8 +668,8 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
                 # Moldova is +3hrs during DST
-                "meeting_start_time": 1691625600 - (3*3600),
-                "meeting_end_time": 1691539200 - (3*3600),
+                "meeting_start_time": 1691625600 - (3 * 3600),
+                "meeting_end_time": 1691539200 - (3 * 3600),
                 "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
                 "meeting_admins": [
                     {"info": ImportState.DONE, "value": ADMIN_USERNAME, "id": 1}
@@ -1135,6 +1142,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                         "meeting_name": "meeting",
                         "meeting_start_time": "2023-08-09",
                         "meeting_end_time": "2023-08-10",
+                        "meeting_time_zone": "Atlantic/Azores",
                         "meeting_admins": ["meeting_admin"],
                     }
                 ]
@@ -1155,8 +1163,255 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
                 "meeting_end_time": 1691625600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Atlantic/Azores",
+                },
                 "meeting_admins": [
                     {"value": "meeting_admin", "info": ImportState.DONE, "id": 2}
+                ],
+            },
+        }
+
+    def json_upload_with_timestamps_orga_timezone(self) -> None:
+        self.set_models({"organization/1": {"time_zone": "Australia/Lord_Howe"}})
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "A weird place",
+                        "description": "Lord Howe Island has 30min DST transition.",
+                        "managers": ["admin"],
+                        "meeting_name": "Lord Howe Meeting",
+                        "meeting_start_time": "2027-01-01",
+                        "meeting_end_time": "2027-07-01",
+                        "meeting_admins": ["admin"],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'Australia/Lord_Howe' zone."
+            ],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "A weird place"},
+                "description": "Lord Howe Island has 30min DST transition.",
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "meeting_name": "Lord Howe Meeting",
+                "meeting_start_time": 1798761600 - 11 * 3600,
+                "meeting_end_time": 1814400000 - 10 * 3600 - 1800,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
+                "meeting_admins": [
+                    {"value": "admin", "info": ImportState.DONE, "id": 1}
+                ],
+            },
+        }
+
+    def json_upload_with_timestamps_no_timezone(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "Armageddon",
+                        "description": "It's the end of the world as we know it.",
+                        "managers": ["admin"],
+                        "meeting_name": "Armageddon Countdown",
+                        "meeting_start_time": "2012-12-21",
+                        "meeting_end_time": "2012-12-21",
+                        "meeting_admins": ["admin"],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'UTC' zone."
+            ],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "Armageddon"},
+                "description": "It's the end of the world as we know it.",
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "meeting_name": "Armageddon Countdown",
+                "meeting_start_time": 1356048000,
+                "meeting_end_time": 1356048000,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
+                "meeting_admins": [
+                    {"value": "admin", "info": ImportState.DONE, "id": 1}
+                ],
+            },
+        }
+
+    def json_upload_with_timezones(self) -> None:
+        self.set_models({"organization/1": {"time_zone": "Europe/London"}})
+        self.create_user("billieLondon")
+        self.create_user("colinFrenchman")
+        self.create_user("danSpain")
+        self.create_user("evanPitkern")
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "Main Conference",
+                        "description": "We discuss the important stuff here",
+                        "managers": ["admin"],
+                        "meeting_name": "Main Conference",
+                        "meeting_start_time": "2027-01-01",
+                        "meeting_end_time": "2027-01-02",
+                        "meeting_admins": ["billieLondon"],
+                    },
+                    {
+                        "name": "London Conference",
+                        "managers": ["admin"],
+                        "forward_to_committees": ["Main Conference"],
+                        "meeting_name": "London Conference",
+                        "meeting_start_time": "2026-12-01",
+                        "meeting_end_time": "2026-12-02",
+                        "meeting_time_zone": "Europe/London",
+                        "meeting_admins": ["billieLondon"],
+                    },
+                    {
+                        "name": "Guernsey Conference",
+                        "managers": ["admin"],
+                        "forward_to_committees": ["Main Conference"],
+                        "meeting_name": "Guernsey Conference",
+                        "meeting_start_time": "2026-12-01",
+                        "meeting_end_time": "2026-12-02",
+                        "meeting_time_zone": "Europe/Guernsey",
+                        "meeting_admins": ["colinFrenchman"],
+                    },
+                    {
+                        "name": "Gibraltar Conference",
+                        "managers": ["admin"],
+                        "forward_to_committees": ["Main Conference"],
+                        "meeting_name": "Gibraltar Conference",
+                        "meeting_start_time": "2026-12-01",
+                        "meeting_end_time": "2026-12-02",
+                        "meeting_time_zone": "Europe/Gibraltar",
+                        "meeting_admins": ["danSpain"],
+                    },
+                    {
+                        "name": "Pitcairn Conference",
+                        "managers": ["admin"],
+                        "forward_to_committees": ["Main Conference"],
+                        "meeting_name": "Pitcairn Conference",
+                        "meeting_start_time": "2026-12-01",
+                        "meeting_end_time": "2026-12-02",
+                        "meeting_time_zone": "Pacific/Pitcairn",
+                        "meeting_admins": ["evanPitkern"],
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        assert len(response.json["results"][0][0]["rows"]) == 5
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [
+                "Since no timezone was given, the dates will be interpreted as being in the 'Europe/London' zone."
+            ],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "Main Conference"},
+                "description": "We discuss the important stuff here",
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "meeting_name": "Main Conference",
+                "meeting_start_time": 1798761600,
+                "meeting_end_time": 1798848000,
+                "meeting_time_zone": {"info": ImportState.WARNING, "value": None},
+                "meeting_admins": [
+                    {"value": "billieLondon", "info": ImportState.DONE, "id": 2}
+                ],
+            },
+        }
+        assert self.get_row(response, 1) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "London Conference"},
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "forward_to_committees": [
+                    {"value": "Main Conference", "info": ImportState.DONE}
+                ],
+                "meeting_name": "London Conference",
+                "meeting_start_time": 1796083200,
+                "meeting_end_time": 1796169600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Europe/London",
+                },
+                "meeting_admins": [
+                    {"value": "billieLondon", "info": ImportState.DONE, "id": 2}
+                ],
+            },
+        }
+        assert self.get_row(response, 2) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "Guernsey Conference"},
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "forward_to_committees": [
+                    {"value": "Main Conference", "info": ImportState.DONE}
+                ],
+                "meeting_name": "Guernsey Conference",
+                "meeting_start_time": 1796083200,
+                "meeting_end_time": 1796169600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Europe/Guernsey",
+                },
+                "meeting_admins": [
+                    {"value": "colinFrenchman", "info": ImportState.DONE, "id": 3}
+                ],
+            },
+        }
+        assert self.get_row(response, 3) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "Gibraltar Conference"},
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "forward_to_committees": [
+                    {"value": "Main Conference", "info": ImportState.DONE}
+                ],
+                "meeting_name": "Gibraltar Conference",
+                "meeting_start_time": 1796083200 - 3600,
+                "meeting_end_time": 1796169600 - 3600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Europe/Gibraltar",
+                },
+                "meeting_admins": [
+                    {"value": "danSpain", "info": ImportState.DONE, "id": 4}
+                ],
+            },
+        }
+        assert self.get_row(response, 4) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "Pitcairn Conference"},
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "forward_to_committees": [
+                    {"value": "Main Conference", "info": ImportState.DONE}
+                ],
+                "meeting_name": "Pitcairn Conference",
+                "meeting_start_time": 1796083200 + 8 * 3600,
+                "meeting_end_time": 1796169600 + 8 * 3600,
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Pacific/Pitcairn",
+                },
+                "meeting_admins": [
+                    {"value": "evanPitkern", "info": ImportState.DONE, "id": 5}
                 ],
             },
         }
@@ -1172,6 +1427,7 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                         "meeting_name": "test meeting",
                         "meeting_template": "test",
                         "meeting_admins": ["bob"],
+                        "meeting_time_zone": "Asia/Novosibirsk",
                     }
                 ]
             },
@@ -1185,11 +1441,19 @@ class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
                 "meeting_name": "test meeting",
                 "meeting_template": {"value": "test", "info": ImportState.WARNING},
                 "meeting_admins": [{"info": ImportState.DONE, "value": "bob", "id": 2}],
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Asia/Novosibirsk",
+                },
             },
         }
         self.assert_statistics(response, {"meetings_created": 1})
 
     def json_upload_admin_defined_meeting_template_found(self) -> None:
+        """
+        Also tests what happens if there's an orga timezone but no meeting times
+        """
+        self.set_models({"organization/1": {"time_zone": "Indian/Mauritius"}})
         self.create_meeting(2, meeting_data={"name": "template"})
         response = self.request(
             "committee.json_upload",

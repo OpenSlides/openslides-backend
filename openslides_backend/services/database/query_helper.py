@@ -3,8 +3,8 @@ from psycopg import sql
 from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 
-from .mapped_fields import MappedFields
 from .interface import SqlArguments
+from .mapped_fields import MappedFields
 
 
 # TODO move insert and select creation into this class?

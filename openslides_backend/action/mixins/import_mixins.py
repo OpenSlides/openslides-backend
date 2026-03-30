@@ -5,7 +5,6 @@ from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum, StrEnum
-from time import mktime, strptime
 from typing import Any, TypedDict, Union, cast
 from zoneinfo import ZoneInfo
 
@@ -21,8 +20,8 @@ from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.services import Database
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
-from ...shared.util import ONE_ORGANIZATION_FQID
 from ...shared.schema import required_id_schema
+from ...shared.util import ONE_ORGANIZATION_FQID
 from ..util.default_schema import DefaultSchema
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
@@ -392,7 +391,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     statistics: list[StatisticEntry]
     import_state: ImportState
     meeting_id: int
-    timezone_field_name: str|None = None
+    timezone_field_name: str | None = None
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
@@ -455,18 +454,35 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         for payload_index, entry in enumerate(action_data):
             entry["payload_index"] = payload_index
         return action_data
-    
-    def get_time_zone(self, entry: dict[str,Any]={}) -> str:
-        tz: str = entry.get(self.timezone_field_name or "") or (self.datastore.get(fqid_from_collection_and_id("meeting", self.meeting_id), ["time_zone"]).get("time_zone") if hasattr(self, "meeting_id")else None) or self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get("time_zone") or "UTC"
+
+    def get_time_zone(self, entry: dict[str, Any] = {}) -> str:
+        tz: str = (
+            entry.get(self.timezone_field_name or "")
+            or (
+                self.datastore.get(
+                    fqid_from_collection_and_id("meeting", self.meeting_id),
+                    ["time_zone"],
+                ).get("time_zone")
+                if hasattr(self, "meeting_id")
+                else None
+            )
+            or self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get("time_zone")
+            or "UTC"
+        )
         return tz
 
-    def get_time_zone_info(self, entry: dict[str,Any]={}) -> ZoneInfo:
+    def get_time_zone_info(self, entry: dict[str, Any] = {}) -> ZoneInfo:
         tz = self.get_time_zone(entry)
         try:
             zone = ZoneInfo(tz)
         except Exception:
             if tz == entry.get(self.timezone_field_name or ""):
-                zone = ZoneInfo(self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get("time_zone") or "UTC")
+                zone = ZoneInfo(
+                    self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get(
+                        "time_zone"
+                    )
+                    or "UTC"
+                )
             else:
                 raise ActionException(
                     f"Invalid timezone format: {tz} (expected canonic IANA timezone name)"
@@ -527,8 +543,12 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                     elif type_ == "date":
                         zone = self.get_time_zone_info(entry)
                         try:
-                            y,m,d = entry[field].split("-")
-                            entry[field] = int(datetime(int(y), int(m), int(d), tzinfo=zone).timestamp())
+                            y, m, d = entry[field].split("-")
+                            entry[field] = int(
+                                datetime(
+                                    int(y), int(m), int(d), tzinfo=zone
+                                ).timestamp()
+                            )
                         except Exception:
                             raise ActionException(
                                 f"Invalid date format: {entry[field]} (expected YYYY-MM-DD)"

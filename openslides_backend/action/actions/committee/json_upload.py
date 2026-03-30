@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
 from psycopg import sql
 
 from openslides_backend.action.actions.meeting.mixins import MeetingCheckTimesMixin
@@ -40,7 +41,9 @@ class CommitteeJsonUpload(
                         **{
                             f"meeting_{field}": prop
                             for field, prop in Meeting()
-                            .get_properties("name", "start_time", "end_time", "time_zone")
+                            .get_properties(
+                                "name", "start_time", "end_time", "time_zone"
+                            )
                             .items()
                         },
                         "meeting_admins": str_list_schema,
@@ -169,33 +172,39 @@ class CommitteeJsonUpload(
                 for field in (
                     "meeting_start_time",
                     "meeting_end_time",
-                    "meeting_time_zone"
-                    "meeting_admins",
+                    "meeting_time_zone" "meeting_admins",
                     "meeting_template",
                 )
             ):
                 messages.append("No meeting will be created without meeting_name")
         else:
-            if (tz:=entry.get("meeting_time_zone")):
-                result = self.datastore.execute_custom_select(
+            if tz := entry.get("meeting_time_zone"):
+                valid = self.datastore.execute_custom_select(
                     sql.SQL("is_timezone(%s) AS valid"), False, [tz]
-                )
-                if not result[0].get("valid"):
+                )[0].get("valid")
+                if not valid:
                     row_state = ImportState.ERROR
-                    entry["meeting_time_zone"]={
+                    entry["meeting_time_zone"] = {
                         "value": tz,
                         "info": ImportState.ERROR,
                     }
-                    messages.append(f"Error: Invalid timezone format: {tz} (expected canonic IANA timezone name)")
+                    messages.append(
+                        f"Error: Invalid timezone format: {tz} (expected canonic IANA timezone name)"
+                    )
                 else:
-                    entry["meeting_time_zone"]={
+                    entry["meeting_time_zone"] = {
                         "value": tz,
                         "info": ImportState.DONE,
                     }
             elif entry.get("meeting_start_time") or entry.get("meeting_end_time"):
-                entry["meeting_time_zone"] = {"info": ImportState.WARNING, "value": None}
+                entry["meeting_time_zone"] = {
+                    "info": ImportState.WARNING,
+                    "value": None,
+                }
                 zone = self.get_time_zone()
-                messages.append(f"Since no timezone was given, the dates will be interpreted as being in the '{zone}' zone.")
+                messages.append(
+                    f"Since no timezone was given, the dates will be interpreted as being in the '{zone}' zone."
+                )
             self.validate_with_lookup(
                 entry, "meeting_admins", self.username_lookup, messages
             )

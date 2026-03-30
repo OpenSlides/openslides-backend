@@ -19,9 +19,9 @@ from openslides_backend.shared.typing import LockResult, Model, PartialModel
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ..database.commands import GetManyRequest
+from .interface import SqlArgumentsExtended
 from .mapped_fields import MappedFields
 from .query_helper import SqlQueryHelper
-from .interface import SqlArgumentsExtended
 
 
 class DatabaseReader(SqlQueryHelper):
@@ -222,14 +222,14 @@ class DatabaseReader(SqlQueryHelper):
 
     def execute_custom_select(
         self,
-        query: sql.Composed,
+        query: sql.Composed | sql.SQL,
         lock_result: LockResult,
-        arguments: SqlArgumentsExtended = []
+        arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
+        if isinstance(query, sql.SQL):
+            query = sql.Composed([query])
         query = sql.SQL("SELECT ") + query
-        return self.execute_query(
-            "custom", query, lock_result, None, arguments
-        )
+        return self.execute_query("custom", query, lock_result, None, arguments)
 
     @retry_on_db_failure
     def execute_query(

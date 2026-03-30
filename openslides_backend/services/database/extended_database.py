@@ -50,8 +50,8 @@ from ..database.commands import GetManyRequest
 from ..database.interface import Database
 from .database_reader import DatabaseReader
 from .database_writer import DatabaseWriter
-from .mapped_fields import MappedFields
 from .interface import SqlArgumentsExtended
+from .mapped_fields import MappedFields
 
 MappedFieldsPerCollectionAndId = dict[str, dict[Id, list[str]]]
 VALID_AGGREGATE_FUNCTIONS = ["min", "max", "count"]
@@ -638,9 +638,9 @@ class ExtendedDatabase(Database):
 
     def execute_custom_select(
         self,
-        query: sql.Composed,
+        query: sql.Composed | sql.SQL,
         lock_result: LockResult,
-        arguments: SqlArgumentsExtended = []
+        arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
         return self.database_reader.execute_custom_select(query, lock_result, arguments)
 
