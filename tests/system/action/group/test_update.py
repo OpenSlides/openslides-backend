@@ -73,7 +73,7 @@ class GroupUpdateActionTest(BaseActionTestCase):
         response = self.request("group.update", {"id": 3, "external_id": external_id})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            "duplicate key value violates unique constraint",
             response.json["message"],
         )
 

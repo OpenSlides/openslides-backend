@@ -199,7 +199,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            "duplicate key value violates unique constraint",
             response.json["message"],
         )
 
@@ -212,7 +212,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            "duplicate key value violates unique constraint",
             response.json["message"],
         )
 

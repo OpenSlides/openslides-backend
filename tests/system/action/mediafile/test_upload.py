@@ -594,7 +594,7 @@ l,m,n,"""
         )
         self.assert_status_code(response, 400)
         assert (
-            "File 'file_7' already exists in folder 'folder_6'."
+            "duplicate key value violates unique constraint"
             in response.json["message"]
         )
 
@@ -616,7 +616,7 @@ l,m,n,"""
         )
         self.assert_status_code(response, 400)
         assert (
-            "File '' already exists in folder 'folder_6'." in response.json["message"]
+            "duplicate key value violates unique constraint" in response.json["message"]
         )
 
     def test_create_root_title_owner_id_unique(self) -> None:

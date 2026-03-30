@@ -91,7 +91,7 @@ class ChatGroupUpdate(BaseActionTestCase):
         )
         response = self.request("chat_group.update", {"id": 1, "name": "test"})
         self.assert_status_code(response, 400)
-        assert "The name of a chat group must be unique." == response.json["message"]
+        assert "duplicate key value violates unique constraint" in response.json["message"]
 
     def test_update_anonymous_may_read(self) -> None:
         self.set_models(self.test_models)

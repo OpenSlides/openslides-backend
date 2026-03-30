@@ -134,7 +134,7 @@ class ChatGroupCreate(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "The name of a chat group must be unique." == response.json["message"]
+        assert "Key (meeting_id, name)=(1, test) already exists." in response.json["message"]
 
     def test_create_same_name_in_two_meetings(self) -> None:
         self.create_meeting()

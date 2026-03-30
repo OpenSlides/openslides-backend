@@ -81,7 +81,7 @@ class OptionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(test, 65) already exists.',
+            'option/79: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(test, 65) already exists.',
             response.json["message"],
         )
 
@@ -111,7 +111,7 @@ class OptionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(, 65) already exists.',
+            'option/79: duplicate key value violates unique constraint "unique_option_text_poll_id"\nDETAIL:  Key (text, poll_id)=(, 65) already exists.',
             response.json["message"],
         )
 
@@ -154,7 +154,7 @@ class OptionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            'Relation from option/79 violates UNIQUE constraint: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"\nDETAIL:  Key (content_object_id, poll_id)=(motion/112, 65) already exists.',
+            'option/79: duplicate key value violates unique constraint "unique_option_content_object_id_poll_id"\nDETAIL:  Key (content_object_id, poll_id)=(motion/112, 65) already exists.',
             response.json["message"],
         )
 

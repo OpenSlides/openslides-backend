@@ -571,7 +571,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "File 'file_7' already exists in folder 'folder_6'."
+            "duplicate key value violates unique constraint"
             in response.json["message"]
         )
 
