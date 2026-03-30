@@ -21,4 +21,7 @@ Returns a timezone-name to current abbreviation dict.
 In general this is going to return mostly canonic IANA timezone names.
 
 # Permissions
-The user must be OML Superadmin. 
+The user needs to either:
+- `OML.can_manage_organization`,
+- `CML.can_manage` in any committee, or
+- `meeting.can_manage_settings` in any meeting.
