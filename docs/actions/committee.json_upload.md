@@ -17,7 +17,7 @@ The types noted below are the internal types after conversion in the backend. Se
         meeting_name: string,
         meeting_start_time: date,
         meeting_end_time: date,
-        meeting_time_zone: timezone,
+        meeting_time_zone: string,
         meeting_admins: string[],
         meeting_template: string,
     }[]
