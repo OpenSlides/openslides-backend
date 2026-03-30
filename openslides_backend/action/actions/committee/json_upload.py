@@ -189,7 +189,7 @@ class CommitteeJsonUpload(
                         "info": ImportState.ERROR,
                     }
                     messages.append(
-                        f"Error: Invalid timezone format: {tz} (expected canonic IANA timezone name)"
+                        f"Error: Invalid timezone format: '{tz}' (expected valid timezone name)"
                     )
                 else:
                     entry["meeting_time_zone"] = {

@@ -165,6 +165,6 @@ class Database(Protocol):
     def execute_custom_select(
         self,
         query: sql.Composed | sql.SQL,
-        lock_result: LockResult,
+        lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]: ...

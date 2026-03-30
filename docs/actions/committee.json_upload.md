@@ -52,9 +52,9 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
   - `done`: The meeting was found in the datastore, the new meeting will be cloned from it.
   - `warning`: The meeting was not found and the new meeting will not be cloned, but freshly created.
 - `meeting_time_zone`:
-  - `done`: Valid IANA timezone string.
+  - `done`: Valid timezone string (see [presenter](../presenters/get_valid_timezones.md)).
   - `warning`: Field empty and there's a start/end_time.
-  - `error`: Not a valid IANA timezone string.
+  - `error`: Not a valid timezone string.
 
 The fields `forward_to_committee`, `organization_tags`, `managers`, `meeting_admins` and `meeting_template` store the `id` of the related model, if it exists, in the object for the import.
 

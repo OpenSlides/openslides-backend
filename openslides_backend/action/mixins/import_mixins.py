@@ -485,7 +485,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                 )
             else:
                 raise ActionException(
-                    f"Invalid timezone format: {tz} (expected canonic IANA timezone name)"
+                    f"Invalid timezone format: '{tz}' (expected valid timezone name)"
                 )
         return zone
 

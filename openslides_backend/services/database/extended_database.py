@@ -639,7 +639,7 @@ class ExtendedDatabase(Database):
     def execute_custom_select(
         self,
         query: sql.Composed | sql.SQL,
-        lock_result: LockResult,
+        lock_result: LockResult = False,
         arguments: SqlArgumentsExtended = [],
     ) -> list[PartialModel]:
         return self.database_reader.execute_custom_select(query, lock_result, arguments)

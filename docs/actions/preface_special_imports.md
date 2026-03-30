@@ -116,8 +116,7 @@ The internal types will be created by the backend service from the CSV-strings
 - **integer** Use something like "1234" without fraction
 - **number** means a `,` (comma) or `.` (point) separated value like `3123,45` or `3123.45`, but not `3.123,45` or `3,123.45`
 - **decimal** A decimal number with exactly 6 digits after the decimal seperator dot, e.g. `1.500000`
-- **date** Use a string in Isoformat "YYYY-MM-DD", for example "2023-04-26"  
-- **timezone** canonic IANA timezone name string, example `Europe/Berlin`
+- **date** Use a string in Isoformat "YYYY-MM-DD", for example "2023-04-26"
 
 ## Import_Preview to store the data to import in database
 ```js

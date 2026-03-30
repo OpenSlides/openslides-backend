@@ -509,7 +509,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
         assert self.get_row(response) == {
             "state": ImportState.ERROR,
             "messages": [
-                "Error: Invalid timezone format: Mars/Acidalia_Planitia (expected canonic IANA timezone name)"
+                "Error: Invalid timezone format: 'Mars/Acidalia_Planitia' (expected valid timezone name)"
             ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
