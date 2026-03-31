@@ -13,7 +13,6 @@
     login_text: string;
     theme_id: Id;
     default_language: string;
-    time_zone: string;
     users_email_sender: string;
     users_email_replyto: string;
     users_email_subject: string;
@@ -43,7 +42,6 @@
 ## Action
 Updates the organization.
 Checks if the theme_id is one of the theme_ids.
-`time_zone` must be a valid timezone string (see [presenter](../presenters/get_valid_timezones.md)).
 
 This is an example of the saml_attr_mapping, where you can see the mappable fields.
 ```json
