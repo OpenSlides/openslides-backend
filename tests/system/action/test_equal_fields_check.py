@@ -47,7 +47,7 @@ turned_grouped_check_relations: list[tuple[str, ...]] = [
     )
     for relations in grouped_check_relations
 ]
-new_group_check_relations: list[str] = [
+check_trigger_existence_relations: list[str] = [
     group[-1] for group in turned_grouped_check_relations
 ]
 
@@ -91,7 +91,7 @@ def generate_collection_field_def(
 ) -> str:
     buffer = "                "
     definition = f"{name}:\n{buffer}type: "
-    if generic := ("G" in field_type or "g" in field_type):
+    if generic := "g" in field_type.lower():
         definition += "generic-"
     definition += "relation"
     if multi:
@@ -118,11 +118,7 @@ def generate_collection_field_def(
 
 def get_collection_name(rel_type: str, base_coll: str, equal_field: str) -> str:
     uscore_rel_type = (
-        rel_type.replace(":", "_")
-        .replace("1", "one")
-        .replace("R", "q")
-        .replace(":", "_")
-        .lower()
+        rel_type.replace(":", "_").replace("1", "one").replace("R", "q").lower()
     )
     return f"{base_coll[-1]}_{equal_field}_{uscore_rel_type}"
 
@@ -162,7 +158,7 @@ def generate_collection_fields(
         # for equal_field in equal_fields:
         b_coll = get_collection_name(rel_type, collection_b, equal_field)
         c_coll = get_collection_name(rel_type, collection_c, equal_field)
-        no1, no2 = generate_collection_field_defs(
+        field_group_1, field_group_2 = generate_collection_field_defs(
             coll_name1, coll_name2, rel_type, equal_field
         )
         definition1 += f"""
@@ -184,7 +180,7 @@ def generate_collection_fields(
                 constant: true
                 to: {collection_a}/{b_coll}_id
                 reference: {collection_a}
-            {no1}
+            {field_group_1}
     {c_coll}:
         fields:
             id: *id_field
@@ -195,7 +191,7 @@ def generate_collection_fields(
                 constant: true
                 to: {collection_a}/{c_coll}_ids
                 reference: {collection_a}
-            {no2}"""
+            {field_group_2}"""
     return definition1 + definition2
 
 
@@ -336,9 +332,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         ] = {"create": CreateAction, "update": UpdateAction, "delete": DeleteAction}
         for equal_field, rel_type in equal_field_relations:
             if rel_type not in cls.classes:
-                # for rel_type in check_relations:
                 cls.classes[rel_type] = {}
-            # for equal_field in ["meeting_id", "a_number"]:
             b_coll = get_collection_name(rel_type, collection_b, equal_field)
             c_coll = get_collection_name(rel_type, collection_c, equal_field)
             efb_model = Model(b_coll, loaded_yml[b_coll]["fields"])
@@ -427,7 +421,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_create_success_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_success(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -469,7 +463,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_update_success_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_success(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -540,7 +534,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_create_fail_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_fail(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -570,7 +564,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_update_fail_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_fail(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -600,7 +594,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_delete_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_delete(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -629,7 +623,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_update_equal_field_success_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id"
+        cls, rel_type: str, equal_field: str
     ) -> Callable:
         def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -662,7 +656,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
 
     @classmethod
     def get_base_test_update_equal_field_error_fn(
-        cls, rel_type: str, equal_field: str = "meeting_id", back: bool = False
+        cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
@@ -704,16 +698,21 @@ def get_rr_stat(rel: str) -> list[bool]:
 rel_to_tasks: dict[str, dict[str, bool]] = {}
 for group in grouped_check_relations:
     rel_to_rr_stat = {rel: get_rr_stat(rel) for rel in group}
+    # per relation in group, calculate possible test cases based on required values
     task_to_rel = {
         "back": [rel for rel, rr in rel_to_rr_stat.items() if not rr[0]],
         "to": [rel for rel, rr in rel_to_rr_stat.items() if not rr[1]],
         "update": [rel for rel, rr in rel_to_rr_stat.items() if not any(rr)],
     }
     unused = {rel for rel in group}
+    # make sure the check_equal-field-update test is done for every relation
+    # that is to be tested with the `a_number` field.
     for rel in group:
         if ("a_number", rel) in equal_field_relations:
             unused.remove(rel)
             rel_to_tasks[rel] = {"eq_update": True}
+    # assign one relation of the group to each main test case if possible
+    # try to always use one that hasn't been used for any other test type before.
     tasks = ["back", "to", "update"]
     for task in tasks:
         if allowed := task_to_rel[task]:
@@ -722,6 +721,7 @@ for group in grouped_check_relations:
                 rel_to_tasks[unused_allowed[0]] = {task: True}
             else:
                 rel_to_tasks[allowed[0]][task] = True
+    # assign remaining relations of the group to whatever test type, making sure they are only tested once.
     for i, rel in enumerate(sorted(unused)):
         for j in range(3):
             task = tasks[(i + j) % len(tasks)]
@@ -732,7 +732,7 @@ for group in grouped_check_relations:
             rel_to_tasks[rel] = {"eq_update": False}
 # One test for each relation type that checks if the trigger gets generated
 # if equal_fields is on the other side
-for rel in new_group_check_relations:
+for rel in check_trigger_existence_relations:
     rr_stat = get_rr_stat(rel)
     if ("a_number", rel) in equal_field_relations:
         rel_to_tasks[rel] = {"eq_update": False}

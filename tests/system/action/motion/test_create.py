@@ -1039,7 +1039,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def foreign_meeting_user_test(self, field: str, collection: str) -> None:
+    def foreign_meeting_user_test(self, field: str) -> None:
         self.create_meeting(4)
         self.create_user("bob", [5])
         self.set_user_groups(1, [2])
@@ -1069,7 +1069,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_foreign_submitter_meeting_user_error(self) -> None:
-        self.foreign_meeting_user_test("submitter_meeting_user_ids", "motion_submitter")
+        self.foreign_meeting_user_test("submitter_meeting_user_ids")
 
     def test_create_foreign_supporter_meeting_user_error(self) -> None:
-        self.foreign_meeting_user_test("supporter_meeting_user_ids", "motion_supporter")
+        self.foreign_meeting_user_test("supporter_meeting_user_ids")

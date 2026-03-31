@@ -3133,9 +3133,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "username": "boady",
-                    "poll_candidate_ids": [1],
-                    "option_ids": [1],
-                    "vote_ids": [1, 2],
                 },
                 "user/2": {"username": "john", "delegated_vote_ids": [2]},
                 "meeting/1": {
