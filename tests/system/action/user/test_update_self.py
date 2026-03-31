@@ -60,7 +60,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("user/1")
         assert model.get("username") == "username_srtgb123"
-        assert "This username is forbidden." in response.json["message"]
+        assert "Update of user/1: You try to set following required fields to an empty value: ['username']" in response.json["message"]
 
     def test_update_self_strip_space(self) -> None:
         response = self.request(

@@ -120,7 +120,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 if not instance[what]:
                     raise ActionException(f"This {what} is forbidden.")
 
-        check_existence("username")
         check_existence("saml_id")
         if instance.get("member_number") is not None:
             check_existence("member_number")
