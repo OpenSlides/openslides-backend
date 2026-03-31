@@ -44,9 +44,8 @@ class ProjectorCountdown(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertEqual(
-            "Title already exists in this meeting.", response.json["message"]
-        )
+        self.assertIn('projector_countdown/2: duplicate key value violates unique constraint "unique_projector_countdown_meeting_id_title"', response.json["message"])
+        self.assertIn('DETAIL:  Key (meeting_id, title)=(1, blablabla) already exists.', response.json["message"])
 
     def test_create_no_default_time(self) -> None:
         response = self.request(
