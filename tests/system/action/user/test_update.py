@@ -2320,7 +2320,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "username": "   "})
         self.assert_status_code(response, 400)
-        assert "Update of user/111: You try to set following required fields to an empty value: ['username']" in response.json["message"]
+        assert (
+            "Update of user/111: You try to set following required fields to an empty value: ['username']"
+            in response.json["message"]
+        )
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 

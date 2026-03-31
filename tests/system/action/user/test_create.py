@@ -325,9 +325,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "User with username 'admin' already exists."
-        )
+        assert response.json["message"] == "User with username 'admin' already exists."
 
     def test_member_number_already_exists(self) -> None:
         response = self.request(

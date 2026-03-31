@@ -10,9 +10,7 @@ from .mixins import ChatEnabledMixin
 
 
 @register_action("chat_group.update")
-class ChatGroupUpdate(
-    ChatEnabledMixin, UpdateAction, ForbidAnonymousGroupMixin
-):
+class ChatGroupUpdate(ChatEnabledMixin, UpdateAction, ForbidAnonymousGroupMixin):
     """
     Action to update a chat group.
     """

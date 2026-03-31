@@ -175,7 +175,9 @@ class MediafileMixin(Action):
                 filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
-                raise ActionException(f"File '{title}' already exists in the root folder.")
+                raise ActionException(
+                    f"File '{title}' already exists in the root folder."
+                )
 
 
 class MediafileCreateMixin(MediafileMixin):

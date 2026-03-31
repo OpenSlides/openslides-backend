@@ -499,11 +499,11 @@ class DatabaseWriter(SqlQueryHelper):
                 elif "," not in e.args[0]:
                     key = e.args[0].split(")=")[0].split("(")[1]
                     value = e.args[0].split("=(")[1].split(")")[0]
-                    raise RelationException(f"{model_registry[collection].verbose_name.capitalize()} with {key} '{value}' already exists.")
-                else:
                     raise RelationException(
-                        f"{error_fqid}: {e}"
+                        f"{model_registry[collection].verbose_name.capitalize()} with {key} '{value}' already exists."
                     )
+                else:
+                    raise RelationException(f"{error_fqid}: {e}")
         except NotNullViolation as e:
             column = e.args[0].split('"')[1]
             raise BadCodingException(

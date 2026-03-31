@@ -86,7 +86,7 @@ class OptionCreateActionTest(BaseActionTestCase):
         )
         self.assertIn(
             "DETAIL:  Key (text, poll_id)=(test, 65) already exists.",
-            response.json["message"]
+            response.json["message"],
         )
 
     def test_create_text_not_unique_empty(self) -> None:

@@ -14,9 +14,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 
-class CommitteeCommonCreateUpdateMixin(
-    CheckForArchivedMeetingMixin
-):
+class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
     def check_forwarding_fields(self, instance: dict[str, Any]) -> None:
         id_ = instance.get("id")
         forwarding_fields = [

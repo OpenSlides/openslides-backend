@@ -859,7 +859,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 12, "token": "web_logo"})
         self.assert_status_code(response, 400)
-        self.assertEqual("Mediafile with token 'web_logo' already exists.", response.json["message"])
+        self.assertEqual(
+            "Mediafile with token 'web_logo' already exists.", response.json["message"]
+        )
 
     def test_update_token_empty_not_unique(self) -> None:
         self.set_models(
@@ -882,7 +884,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 12, "token": ""})
         self.assert_status_code(response, 400)
-        self.assertEqual("Mediafile with token '' already exists.", response.json["message"])
+        self.assertEqual(
+            "Mediafile with token '' already exists.", response.json["message"]
+        )
 
     def test_update_title_parent_id_unique(self) -> None:
         self.create_mediafile(6, 1, is_directory=True)

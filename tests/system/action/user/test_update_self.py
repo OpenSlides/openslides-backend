@@ -30,9 +30,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.create_model("user/222", {"username": "user"})
         response = self.request("user.update_self", {"username": "user"})
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "User with username 'user' already exists."
-        )
+        assert response.json["message"] == "User with username 'user' already exists."
 
     def test_update_self_anonymus(self) -> None:
         response = self.request(
@@ -60,7 +58,10 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("user/1")
         assert model.get("username") == "username_srtgb123"
-        assert "Update of user/1: You try to set following required fields to an empty value: ['username']" in response.json["message"]
+        assert (
+            "Update of user/1: You try to set following required fields to an empty value: ['username']"
+            in response.json["message"]
+        )
 
     def test_update_self_strip_space(self) -> None:
         response = self.request(
