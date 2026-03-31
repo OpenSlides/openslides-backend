@@ -909,9 +909,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 8, "title": "file_7"})
         self.assert_status_code(response, 400)
-        assert (
-            "duplicate key value violates unique constraint"
-            in response.json["message"]
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"',
+            response.json["message"],
+        )
+        self.assertIn(
+            "DETAIL:  Key (title, parent_id, owner_id)=(file_7, 6, meeting/1) already exists.",
+            response.json["message"],
         )
 
     def test_update_title_empty_parent_id_unique(self) -> None:
@@ -940,8 +944,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 8, "title": ""})
         self.assert_status_code(response, 400)
-        assert (
-            "duplicate key value violates unique constraint" in response.json["message"]
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"',
+            response.json["message"],
+        )
+        self.assertIn(
+            "DETAIL:  Key (title, parent_id, owner_id)=(, 6, meeting/1) already exists.",
+            response.json["message"],
         )
 
     def test_update_title_owner_id_root_unique(self) -> None:
