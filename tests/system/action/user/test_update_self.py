@@ -30,7 +30,9 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.create_model("user/222", {"username": "user"})
         response = self.request("user.update_self", {"username": "user"})
         self.assert_status_code(response, 400)
-        self.assertEqual(response.json["message"], "User with username 'user' already exists.")
+        self.assertEqual(
+            response.json["message"], "User with username 'user' already exists."
+        )
 
     def test_update_self_anonymus(self) -> None:
         response = self.request(

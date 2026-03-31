@@ -413,7 +413,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "User 111 can't delegate the vote to himself." , response.json["message"]
+            "User 111 can't delegate the vote to himself.", response.json["message"]
         )
 
     def test_update_self_vote_delegation_2(self) -> None:
@@ -431,7 +431,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "User 111 can't delegate the vote to himself." , response.json["message"]
+            "User 111 can't delegate the vote to himself.", response.json["message"]
         )
 
     def test_committee_manager_without_committee_ids(self) -> None:
@@ -625,7 +625,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "email": "broken@@"})
         self.assert_status_code(response, 400)
-        self.assertIn("email must be valid email." , response.json["message"])
+        self.assertIn("email must be valid email.", response.json["message"])
 
     def test_wrong_id(self) -> None:
         self.create_model(
@@ -690,8 +690,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.pronoun must be shorter than or equal to 32 characters"
-            , response.json["message"]
+            "data.pronoun must be shorter than or equal to 32 characters",
+            response.json["message"],
         )
 
     def test_perm_nothing(self) -> None:
@@ -2321,8 +2321,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "username": "   "})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Update of user/111: You try to set following required fields to an empty value: ['username']"
-            , response.json["message"]
+            "Update of user/111: You try to set following required fields to an empty value: ['username']",
+            response.json["message"],
         )
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
@@ -2334,7 +2334,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "username": "test name"})
         self.assert_status_code(response, 400)
-        self.assertIn("Username may not contain spaces" , response.json["message"])
+        self.assertIn("Username may not contain spaces", response.json["message"])
         model = self.get_model("user/111")
         self.assertEqual(model.get("username"), "username_srtgb123")
 
@@ -2354,7 +2354,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
-        assert "Model 'gender/5' does not exist." , response.json["message"]
+        assert "Model 'gender/5' does not exist.", response.json["message"]
 
         response = self.request("user.update", {"id": 111, "gender_id": 3})
         self.assert_status_code(response, 200)
@@ -2374,8 +2374,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must not contain {'is_present_in_meeting_ids'} properties"
-            , response.json["message"]
+            "data must not contain {'is_present_in_meeting_ids'} properties",
+            response.json["message"],
         )
 
     def test_update_change_group(self) -> None:
@@ -2411,8 +2411,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to change a user with a Level of superadmin!"
-            , response.json["message"]
+            "Your organization management level is not high enough to change a user with a Level of superadmin!",
+            response.json["message"],
         )
 
     def test_update_demote_superadmin(self) -> None:
@@ -2433,8 +2433,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to change a user with a Level of superadmin!"
-            , response.json["message"]
+            "Your organization management level is not high enough to change a user with a Level of superadmin!",
+            response.json["message"],
         )
 
     def test_update_change_superadmin_meeting_specific(self) -> None:
@@ -4814,7 +4814,7 @@ class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
                     [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
                 ]
             )
-            self.assertEqual( meeting_user.get("meeting_id"), 1)
+            self.assertEqual(meeting_user.get("meeting_id"), 1)
             self.assertEqual(meeting_user.get("group_ids"), [1])
 
     def update_with_home_committee_group_D(self) -> None:
