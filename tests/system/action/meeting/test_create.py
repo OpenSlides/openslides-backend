@@ -29,6 +29,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "committee_id": 1,
             "organization_tag_ids": [3],
             "language": "en",
+            "time_zone": "Europe/London",
             "admin_ids": [1],
         }
 
@@ -40,9 +41,15 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         if set_400_str:
             self.assert_status_code(response, 400)
-            assert set_400_str == response.json["message"]
+            self.assertIn(set_400_str, response.json["message"])
         else:
             self.assert_status_code(response, 200)
+
+    def test_create_invalid_timezone(self) -> None:
+        self.basic_test(
+            {"time_zone": "Mars/Terra_Sirenum"},
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+        )
 
     def test_create_simple_and_complex_workflow(self) -> None:
         self.basic_test()
