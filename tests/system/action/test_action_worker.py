@@ -197,7 +197,6 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assertFalse(action_worker1["result"]["success"])
         self.assertIn("Text is required", action_worker1["result"]["message"])
 
-    @pytest.mark.skip
     def test_action_error_index_with_action_worker(self) -> None:
         self.set_thread_watch_timeout(0)
         response = self.request_multi(
@@ -207,7 +206,7 @@ class ActionWorkerTest(BaseActionTestCase):
                     "username": "test",
                 },
                 {
-                    "username": "admin",
+                    "username": "test with spaces",
                 },
             ],
         )
