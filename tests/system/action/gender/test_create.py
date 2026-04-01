@@ -38,7 +38,7 @@ class GenderCreateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Gender with name 'exists' already exists.",
+            "gender/2: Gender with name 'exists' already exists.",
             response.json["message"],
         )
         self.assert_model_exists("gender/1")

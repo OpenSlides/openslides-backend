@@ -211,7 +211,7 @@ def test_create_11_field_as_1n() -> None:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(write_requests)
     assert (
-        "Agenda item with content_object_id_motion_id '1' already exists."
+        "agenda_item/2: Agenda item with content_object_id_motion_id '1' already exists."
         in e_info.value.message
     )
     assert_model("motion/2", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 2})
@@ -242,7 +242,7 @@ def test_create_error_own_field_unique(
                     ]
                 )
             )
-    assert "User with username '1' already exists." in e_info.value.message
+    assert "user/2: User with username '1' already exists." in e_info.value.message
     assert_no_model("user/2")
 
 

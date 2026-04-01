@@ -648,7 +648,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 222, "username": "admin"})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "User with username 'admin' already exists.", response.json["message"]
+            "user/222: User with username 'admin' already exists.", response.json["message"]
         )
 
     def test_member_number_already_given(self) -> None:
@@ -663,7 +663,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "User with member_number 'abcdefghij' already exists.",
+            "user/222: User with member_number 'abcdefghij' already exists.",
             response.json["message"],
         )
 

@@ -1599,7 +1599,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "Meeting with external_id 'ext_id' already exists."
+            "meeting/2: Meeting with external_id 'ext_id' already exists."
             in response.json["message"]
         )
 

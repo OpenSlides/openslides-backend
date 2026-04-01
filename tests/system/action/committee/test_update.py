@@ -630,7 +630,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Committee with external_id 'external' already exists.",
+            "committee/2: Committee with external_id 'external' already exists.",
             response.json["message"],
         )
 

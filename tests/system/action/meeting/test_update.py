@@ -936,7 +936,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         response = self.request("meeting.update", {"id": 4, "external_id": external_id})
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "Meeting with external_id 'external' already exists.",
+            "meeting/4: Meeting with external_id 'external' already exists.",
             response.json["message"],
         )
         self.assert_model_exists("meeting/4", {"external_id": None, "committee_id": 63})
