@@ -19,11 +19,12 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/1")
-        self.assertEqual(model.get("username"), "username_Xcdfgee")
-        self.assertEqual(model.get("email"), "email1@example.com")
-        self.assertEqual(model.get("pronoun"), "Test")
-        self.assertEqual(model.get("gender_id"), 1)
+        self.assert_model_exists("user/1", {
+            "username":  "username_Xcdfgee",
+            "email": "email1@example.com",
+            "pronoun": "Test",
+            "gender_id": 1
+        })
         self.assert_history_information("user/1", ["Personal data changed"])
 
     def test_username_already_given(self) -> None:
@@ -58,8 +59,9 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        model = self.get_model("user/1")
-        self.assertEqual(model.get("username"), "username_srtgb123")
+        self.assert_model_exists("user/1", {
+            "username": "username_srtgb123"
+        })
         self.assertIn(
             "Update of user/1: You try to set following required fields to an empty value: ['username']",
             response.json["message"],

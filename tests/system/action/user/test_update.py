@@ -162,8 +162,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        self.assertEqual(model.get("username"), "username_Xcdfgee")
+        self.assert_model_exists("user/111", {
+            "username": "username_Xcdfgee"
+        })
         self.assert_history_information("user/111", ["Personal data changed"])
 
     def test_update_some_more_fields(self) -> None:
@@ -640,8 +641,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Model 'user/112' does not exist.",
             response.json["message"],
         )
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_srtgb123"
+        self.assert_model_exists("user/111", {
+            "username": "username_srtgb123"
+        })
 
     def test_username_already_given(self) -> None:
         self.create_model("user/222", {"username": "username_Xcdfgee"})
@@ -2324,8 +2326,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Update of user/111: You try to set following required fields to an empty value: ['username']",
             response.json["message"],
         )
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_srtgb123"
+        self.assert_model_exists("user/111", {
+            "username": "username_srtgb123"
+        })
 
     def test_update_username_with_spaces(self) -> None:
         self.create_model(
@@ -2335,8 +2338,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "username": "test name"})
         self.assert_status_code(response, 400)
         self.assertIn("Username may not contain spaces", response.json["message"])
-        model = self.get_model("user/111")
-        self.assertEqual(model.get("username"), "username_srtgb123")
+        self.assert_model_exists("user/111", {
+            "username": "username_srtgb123"
+        })
 
     def test_update_gender(self) -> None:
         self.create_model(
@@ -4814,8 +4818,7 @@ class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
                     [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
                 ]
             )
-            self.assertEqual(meeting_user.get("meeting_id"), 1)
-            self.assertEqual(meeting_user.get("group_ids"), [1])
+            self.assertGreaterEqual(meeting_user.items(), {"meeting_id": 1, "group_ids": [1]}.items())
 
     def update_with_home_committee_group_D(self) -> None:
         response = self.request(
