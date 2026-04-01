@@ -190,6 +190,7 @@ class MeetingUpdate(
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
+            "time_zone",
             "external_id",
             "reference_projector_id",
             "organization_tag_ids",

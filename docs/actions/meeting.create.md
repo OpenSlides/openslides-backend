@@ -9,6 +9,7 @@
 // Optional
     description: string;
     location: string;
+    timezone: string; // A valid IANA timezone string
     start_time: datetime;
     end_time: datetime;
     organization_tag_ids: Id[];
