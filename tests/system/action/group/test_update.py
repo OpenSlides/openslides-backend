@@ -73,8 +73,8 @@ class GroupUpdateActionTest(BaseActionTestCase):
         response = self.request("group.update", {"id": 3, "external_id": external_id})
         self.assert_status_code(response, 400)
         self.assertIn(
-            'group/3: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n' +
-            "DETAIL:  Key (meeting_id, external_id)=(1, external_id) already exists.",
+            'group/3: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n'
+            + "DETAIL:  Key (meeting_id, external_id)=(1, external_id) already exists.",
             response.json["message"],
         )
 
