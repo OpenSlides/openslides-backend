@@ -19,8 +19,8 @@ from psycopg.errors import (
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
-    Field,
     CharField,
+    Field,
     GenericRelationListField,
     RelationListField,
 )
