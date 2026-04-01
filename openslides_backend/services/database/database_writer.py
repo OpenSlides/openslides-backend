@@ -20,6 +20,7 @@ from psycopg.errors import (
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     Field,
+    CharField,
     GenericRelationListField,
     RelationListField,
 )
@@ -497,10 +498,13 @@ class DatabaseWriter(SqlQueryHelper):
                 if "Key (id)" in e.args[0]:
                     raise ModelExists(error_fqid)
                 elif "," not in e.args[0]:
+                    model = model_registry[collection]
                     key = e.args[0].split(")=")[0].split("(")[1]
                     value = e.args[0].split("=(")[1].split(")")[0]
+                    field = model.try_get_field(key)
+                    value = f"'{value}'" if type(field) is CharField else value
                     raise RelationException(
-                        f"{error_fqid}: {model_registry[collection].verbose_name.capitalize()} with {key} '{value}' already exists."
+                        f"{error_fqid}: {model_registry[collection].verbose_name.capitalize()} with {key} {value} already exists."
                     )
                 else:
                     raise RelationException(f"{error_fqid}: {e}")
