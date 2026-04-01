@@ -2,16 +2,12 @@ from collections.abc import Callable
 from typing import Any, Literal, cast
 from unittest import mock
 
+import pytest
 import yaml
 
 from cli.generate_models import Attribute, Model
 from meta.dev.src import helper_get_names
 from openslides_backend.action.action import Action
-from openslides_backend.action.generics.create import CreateAction
-from openslides_backend.action.generics.delete import DeleteAction
-from openslides_backend.action.generics.update import UpdateAction
-from openslides_backend.action.util.action_type import ActionType
-from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
@@ -244,21 +240,6 @@ def BaseFakeModelFactory(
     return BaseFakeModelX, back_rel
 
 
-def BaseFakeModelActionFactory(
-    fake_model: type[FakeModel], action_name: str, BaseClass: Any
-) -> type[Action]:
-    @register_action(
-        f"{fake_model.collection}.{action_name}",
-        action_type=ActionType.BACKEND_INTERNAL,
-    )
-    class BaseFakeModelAction(BaseClass):
-        model = fake_model()
-        schema = {}  # type: ignore
-        skip_archived_meeting_check = True
-
-    return BaseFakeModelAction
-
-
 def get_attr_helper(collection: str, field_name: str, attr_data: Attribute) -> Any:
     to_data = attr_data.to
     to = to_data.to if to_data else {}
@@ -327,61 +308,46 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         helper_get_names.build_models_yaml_content = mock.Mock()
         helper_get_names.build_models_yaml_content.return_value = final_yml.encode()
         loaded_yml: dict[str, dict[str, Any]] = yaml.safe_load(final_yml)
-        action_name_to_class: dict[
-            Literal["create", "update", "delete"], type[Action]
-        ] = {"create": CreateAction, "update": UpdateAction, "delete": DeleteAction}
         for equal_field, rel_type in equal_field_relations:
             if rel_type not in cls.classes:
                 cls.classes[rel_type] = {}
-            b_coll = get_collection_name(rel_type, collection_b, equal_field)
-            c_coll = get_collection_name(rel_type, collection_c, equal_field)
-            efb_model = Model(b_coll, loaded_yml[b_coll]["fields"])
-            efc_model = Model(c_coll, loaded_yml[c_coll]["fields"])
-            b_name = generate_collection_field_name(rel_type.split(":")[0])[0]
-            efb_attr = efb_model.attributes[b_name]
-            clas, back_rel = BaseFakeModelFactory(
-                collection_b,
-                "b",
-                "id",
-                rel_type,
-                equal_field,
-                {b_name: get_attr_helper(b_coll, b_name, efb_attr)},
-            )
-            setattr(
-                FakeModelEFA,
-                back_rel,
-                fields.RelationField(
-                    to={clas.collection: "meeting_id"}, is_view_field=True
-                ),
-            )
-            cls.classes[rel_type][equal_field] = {collection_b: {"class": clas}}
-            for action_name, action_class in action_name_to_class.items():
-                cls.classes[rel_type][equal_field][collection_b][action_name] = (
-                    BaseFakeModelActionFactory(clas, action_name, action_class)
-                )
-            c_name = generate_collection_field_name(rel_type.split(":")[1], True)[0]
-            efc_attr = efc_model.attributes[c_name]
-            clas, back_rel = BaseFakeModelFactory(
-                collection_c,
-                "c",
-                "ids",
-                rel_type,
-                equal_field,
-                {c_name: get_attr_helper(c_coll, c_name, efc_attr)},
-            )
-            setattr(
-                FakeModelEFA,
-                back_rel,
-                fields.RelationListField(
-                    to={clas.collection: "meeting_id"}, is_view_field=True
-                ),
-            )
-            cls.classes[rel_type][equal_field][collection_c] = {"class": clas}
-            for action_name, action_class in action_name_to_class.items():
-                cls.classes[rel_type][equal_field][collection_c][action_name] = (
-                    BaseFakeModelActionFactory(clas, action_name, action_class)
-                )
+            cls.build_model_class(loaded_yml, "b", rel_type, collection_b, equal_field)
+            cls.build_model_class(loaded_yml, "c", rel_type, collection_c, equal_field)
         helper_get_names.build_models_yaml_content = orig_build_models_yaml_content
+
+    @classmethod
+    def build_model_class(
+        cls,
+        loaded_yml: dict[str, dict[str, Any]],
+        coll_abbrev: Literal["b", "c"],
+        rel_type: str,
+        collection: str,
+        equal_field: str,
+    ) -> None:
+        coll = get_collection_name(rel_type, collection, equal_field)
+        ef_model = Model(coll, loaded_yml[coll]["fields"])
+        name = generate_collection_field_name(
+            rel_type.split(":")[0 if coll_abbrev == "b" else 1], coll_abbrev == "c"
+        )[0]
+        ef_attr = ef_model.attributes[name]
+        clas, back_rel = BaseFakeModelFactory(
+            collection,
+            coll_abbrev,
+            "id" if coll_abbrev == "b" else "ids",
+            rel_type,
+            equal_field,
+            {name: get_attr_helper(coll, name, ef_attr)},
+        )
+        setattr(
+            FakeModelEFA,
+            back_rel,
+            fields.RelationListField(
+                to={clas.collection: "meeting_id"}, is_view_field=True
+            ),
+        )
+        if equal_field not in cls.classes[rel_type]:
+            cls.classes[rel_type][equal_field] = {}
+        cls.classes[rel_type][equal_field][collection] = {"class": clas}
 
     def setUp(self) -> None:
         super().setUp()
@@ -419,44 +385,66 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         ref_val2 = self.get_reference_value(1, multiple2, generic2, b_coll)
         return b_coll, field1, ref_val1, c_coll, field2, ref_val2
 
+    def get_test_data(
+        self,
+        rel_type: str,
+        equal_field: str,
+        back: bool,
+        fail: bool = False,
+        is_update: bool = False,
+    ) -> tuple[
+        dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]]
+    ]:
+        collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
+            self.get_test_relation_data(rel_type, equal_field)
+        )
+        test_coll = collection_c if back else collection_b
+        back_coll = collection_b if back else collection_c
+        setup_data = {
+            f"{back_coll}/1": {
+                "meeting_id": 1,
+                equal_field: 1,
+            }
+        }
+        test_data = {
+            f"{collection_b}/1": {field1: ref_val1},
+            f"{collection_c}/1": {field2: ref_val2},
+        }
+        if is_update:
+            setup_data[f"{test_coll}/1"] = {
+                "meeting_id": 1,
+                equal_field: 4 if fail else 1,
+            }
+        else:
+            test_data[f"{test_coll}/1"].update(
+                {
+                    "meeting_id": 1,
+                    equal_field: 4 if fail else 1,
+                }
+            )
+        return (
+            setup_data,
+            test_data,
+            {
+                fqid: {**setup_data.get(fqid, {}), **date}
+                for fqid, date in test_data.items()
+            },
+        )
+
     @classmethod
     def get_base_test_create_success_fn(
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_success(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
+            setup_data, test_data, expected = self.get_test_data(
+                rel_type, equal_field, back
             )
-            self.set_models(
-                {
-                    f"{collection_b if back else collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                    }
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.create",
-                {
-                    "meeting_id": 1,
-                    equal_field: 1,
-                    field2 if back else field1: ref_val2 if back else ref_val1,
-                },
-            )
-            self.assert_status_code(response, 200)
-            data = {
-                f"{collection_b}/1": {
-                    "meeting_id": 1,
-                    equal_field: 1,
-                    field1: ref_val1,
-                },
-                f"{collection_c}/1": {
-                    "meeting_id": 1,
-                    equal_field: 1,
-                    field2: ref_val2,
-                },
-            }
-            for fqid, date in data.items():
+            self.set_models(setup_data)
+            try:
+                self.set_models(test_data)
+            except Exception as e:
+                raise pytest.fail(str(e))
+            for fqid, date in expected.items():
                 self.assert_model_exists(fqid, date)
 
         return base_test_success
@@ -466,36 +454,22 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_success(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
+            setup_data, test_data, expected = self.get_test_data(
+                rel_type, equal_field, back, is_update=True
             )
-            self.set_models(
-                {
-                    f"{collection_b}/1": {"meeting_id": 1, equal_field: 1},
-                    f"{collection_c}/1": {"meeting_id": 1, equal_field: 1},
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.update",
-                {
-                    "id": 1,
-                    equal_field: 1,
-                    field2 if back else field1: ref_val2 if back else ref_val1,
-                },
-            )
-            self.assert_status_code(response, 200)
-            data = {
-                f"{collection_b}/1": {equal_field: 1, field1: ref_val1},
-                f"{collection_c}/1": {equal_field: 1, field2: ref_val2},
-            }
-            for fqid, date in data.items():
+            self.set_models(setup_data)
+            try:
+                self.set_models(test_data)
+            except Exception as e:
+                raise pytest.fail(str(e))
+            for fqid, date in expected.items():
                 self.assert_model_exists(fqid, date)
 
         return base_test_success
 
     def assert_fail_test_error(
         self,
-        response: Any,
+        response: str,
         equal_field: str,
         back: bool,
         field1: str,
@@ -503,17 +477,17 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         collection_b: str,
         collection_c: str,
     ) -> None:
-        self.assert_status_code(response, 400)
-        shortened = response.json["message"].split("\nCONTEXT:")[0]
+        # self.assert_status_code(response, 400)
+        shortened = response.split("\nCONTEXT:")[0]
         if equal_field == "meeting_id":
             if "to meeting 4:" in shortened:
                 self.assertEqual(
-                    f"Relation violates required constraint: The following models do not belong to meeting 4: ['{collection_b if back else collection_c}/1']",
+                    f"The following models do not belong to meeting 4: ['{collection_b if back else collection_c}/1']",
                     shortened,
                 )
             else:
                 self.assertEqual(
-                    f"Relation violates required constraint: The following models do not belong to meeting 1: ['{collection_c if back else collection_b}/1']",
+                    f"The following models do not belong to meeting 1: ['{collection_c if back else collection_b}/1']",
                     shortened,
                 )
         else:
@@ -522,7 +496,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
                 if (generic_relation_name := f"{expect_field}_{coll}_id") in shortened:
                     expect_field = generic_relation_name
             self.assertIn(
-                f"Relation violates required constraint: The relation {expect_field} requires the following fields to be equal:",
+                f"The relation {expect_field} requires the following fields to be equal:",
                 shortened,
             )
             self.assertIn(
@@ -537,28 +511,28 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_fail(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
+            setup_data, test_data, _ = self.get_test_data(
+                rel_type, equal_field, back, fail=True
             )
-            self.set_models(
-                {
-                    f"{collection_b if back else collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                    }
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.create",
-                {
-                    "meeting_id": 1,
-                    equal_field: 4,
-                    field2 if back else field1: ref_val2 if back else ref_val1,
-                },
-            )
-            self.assert_fail_test_error(
-                response, equal_field, back, field1, field2, collection_b, collection_c
-            )
+            self.set_models(setup_data)
+            try:
+                self.set_models(test_data)
+                raise pytest.fail(
+                    f"Expected setting test data {rel_type} create fail test to fail."
+                )
+            except Exception as e:
+                collection_b, field1, _, collection_c, field2, _ = (
+                    self.get_test_relation_data(rel_type, equal_field)
+                )
+                self.assert_fail_test_error(
+                    str(e),
+                    equal_field,
+                    back,
+                    field1,
+                    field2,
+                    collection_b,
+                    collection_c,
+                )
 
         return base_test_fail
 
@@ -567,28 +541,28 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_fail(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
+            setup_data, test_data, _ = self.get_test_data(
+                rel_type, equal_field, back, fail=True, is_update=True
             )
-            self.set_models(
-                {
-                    f"{collection_b if back else collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                    },
-                    f"{collection_c if back else collection_b}/1": {
-                        "meeting_id": 1,
-                        equal_field: 4,
-                    },
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.update",
-                {"id": 1, field2 if back else field1: ref_val2 if back else ref_val1},
-            )
-            self.assert_fail_test_error(
-                response, equal_field, back, field1, field2, collection_b, collection_c
-            )
+            self.set_models(setup_data)
+            try:
+                self.set_models(test_data)
+                raise pytest.fail(
+                    f"Expected setting test data {rel_type} update fail test to fail."
+                )
+            except Exception as e:
+                collection_b, field1, _, collection_c, field2, _ = (
+                    self.get_test_relation_data(rel_type, equal_field)
+                )
+                self.assert_fail_test_error(
+                    str(e),
+                    equal_field,
+                    back,
+                    field1,
+                    field2,
+                    collection_b,
+                    collection_c,
+                )
 
         return base_test_fail
 
@@ -597,27 +571,34 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_delete(self: TestEqualFieldsCheck) -> None:
+            _, _, setup_data = self.get_test_data(rel_type, equal_field, back)
             collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
-            self.set_models(
-                {
-                    f"{collection_b}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field1: ref_val1,
-                    },
-                    f"{collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field2: ref_val2,
-                    },
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.delete", {"id": 1}
-            )
-            self.assert_status_code(response, 200)
+            self.set_models(setup_data)
+
+            fqid = f"{collection_c if back else collection_b}/1"
+            sides = rel_type.split(":")
+            side = sides[0] if back else sides[1]
+            needs_back_update = "1" in side and "r" in side
+            try:
+                self.perform_write_request(
+                    [
+                        *(
+                            self.get_update_events(
+                                f"{collection_b if back else collection_c}/1",
+                                {field1 if back else field2: None},
+                            )
+                            if needs_back_update
+                            else []
+                        ),
+                        *self.get_delete_events(fqid),
+                    ]
+                )
+                self.adjust_id_sequences()
+            except Exception as e:
+                raise pytest.fail(str(e))
+            self.assert_model_not_exists(fqid)
 
         return base_test_delete
 
@@ -626,29 +607,20 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str
     ) -> Callable:
         def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
-                self.get_test_relation_data(rel_type, equal_field)
+            _, _, setup_data = self.get_test_data(rel_type, equal_field, False)
+            collection_b, _, _, collection_c, _, _ = self.get_test_relation_data(
+                rel_type, equal_field
             )
-            self.set_models(
-                {
-                    f"{collection_b}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field1: ref_val1,
-                    },
-                    f"{collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field2: ref_val2,
-                    },
-                }
-            )
-            self.set_models(
-                {
-                    f"{collection_b}/1": {equal_field: 4},
-                    f"{collection_c}/1": {equal_field: 4},
-                }
-            )
+            self.set_models(setup_data)
+            try:
+                self.set_models(
+                    {
+                        f"{collection_b}/1": {equal_field: 4},
+                        f"{collection_c}/1": {equal_field: 4},
+                    }
+                )
+            except Exception as e:
+                raise pytest.fail(str(e))
             for coll in [collection_b, collection_c]:
                 self.assert_model_exists(f"{coll}/1", {equal_field: 4})
 
@@ -659,30 +631,33 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         cls, rel_type: str, equal_field: str, back: bool = False
     ) -> Callable:
         def base_test_update_equal_field(self: TestEqualFieldsCheck) -> None:
-            collection_b, field1, ref_val1, collection_c, field2, ref_val2 = (
+            _, _, setup_data = self.get_test_data(rel_type, equal_field, False)
+            collection_b, field1, _, collection_c, field2, _ = (
                 self.get_test_relation_data(rel_type, equal_field)
             )
-            self.set_models(
-                {
-                    f"{collection_b}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field1: ref_val1,
-                    },
-                    f"{collection_c}/1": {
-                        "meeting_id": 1,
-                        equal_field: 1,
-                        field2: ref_val2,
-                    },
-                }
-            )
-            response = self.request(
-                f"{collection_c if back else collection_b}.update",
-                {"id": 1, equal_field: 4},
-            )
-            self.assert_fail_test_error(
-                response, equal_field, back, field1, field2, collection_b, collection_c
-            )
+            self.set_models(setup_data)
+            try:
+                self.set_models(
+                    {
+                        f"{collection_c if back else collection_b}/1": {
+                            "id": 1,
+                            equal_field: 4,
+                        }
+                    }
+                )
+                raise pytest.fail(
+                    f"Expected setting test data {rel_type} create fail test to fail."
+                )
+            except Exception as e:
+                self.assert_fail_test_error(
+                    str(e),
+                    equal_field,
+                    back,
+                    field1,
+                    field2,
+                    collection_b,
+                    collection_c,
+                )
 
         return base_test_update_equal_field
 
