@@ -431,7 +431,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.create_meeting(meeting_data=({"external_id": external_id}))
         self.basic_test(
             {"external_id": external_id},
-            set_400_str="The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+            set_400_str="meeting/2: Meeting with external_id 'external' already exists.",
         )
         self.assert_model_not_exists("meeting/2")
 
@@ -442,7 +442,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.basic_test(
             {"external_id": external_id},
-            set_400_str="The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+            set_400_str="meeting/2: Meeting with external_id '' already exists.",
         )
         self.assert_model_not_exists("meeting/2")
 

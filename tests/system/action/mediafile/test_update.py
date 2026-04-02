@@ -865,7 +865,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 12, "token": "web_logo"})
         self.assert_status_code(response, 400)
-        self.assertEqual("Token 'web_logo' is not unique.", response.json["message"])
+        self.assertEqual(
+            "mediafile/12: Mediafile with token 'web_logo' already exists.",
+            response.json["message"],
+        )
 
     def test_update_token_empty_not_unique(self) -> None:
         self.set_models(
@@ -888,7 +891,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 12, "token": ""})
         self.assert_status_code(response, 400)
-        self.assertEqual("Token '' is not unique.", response.json["message"])
+        self.assertEqual(
+            "mediafile/12: Mediafile with token '' already exists.",
+            response.json["message"],
+        )
 
     def test_update_title_parent_id_unique(self) -> None:
         self.create_mediafile(6, 1, is_directory=True)
@@ -915,9 +921,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("mediafile.update", {"id": 8, "title": "file_7"})
         self.assert_status_code(response, 400)
-        assert (
-            "File 'file_7' already exists in folder 'folder_6'."
-            in response.json["message"]
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"\n'
+            + "DETAIL:  Key (title, parent_id, owner_id)=(file_7, 6, meeting/1) already exists.",
+            response.json["message"],
         )
 
     def test_update_title_owner_id_root_unique(self) -> None:

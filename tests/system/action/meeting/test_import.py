@@ -1600,7 +1600,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request."
+            "meeting/2: Meeting with external_id 'ext_id' already exists."
             in response.json["message"]
         )
 
