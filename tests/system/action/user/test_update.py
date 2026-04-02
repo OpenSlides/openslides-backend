@@ -4811,9 +4811,7 @@ class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
                     [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
                 ]
             )
-            self.assertGreaterEqual(
-                meeting_user.items(), {"meeting_id": 1, "group_ids": [1]}.items()
-            )
+            assert meeting_user.get("group_ids") == [1]
 
     def update_with_home_committee_group_D(self) -> None:
         response = self.request(
