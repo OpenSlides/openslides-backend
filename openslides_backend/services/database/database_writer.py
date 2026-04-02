@@ -19,6 +19,7 @@ from psycopg.errors import (
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
+    CharField,
     Field,
     GenericRelationListField,
     RelationListField,
@@ -496,10 +497,17 @@ class DatabaseWriter(SqlQueryHelper):
             if "duplicate key value violates unique constraint" in e.args[0]:
                 if "Key (id)" in e.args[0]:
                     raise ModelExists(error_fqid)
-                else:
+                elif "," not in e.args[0]:
+                    model = model_registry[collection]
+                    key = e.args[0].split(")=")[0].split("(")[1]
+                    value = e.args[0].split("=(")[1].split(")")[0]
+                    field = model.try_get_field(key)
+                    value = f"'{value}'" if type(field) is CharField else value
                     raise RelationException(
-                        f"Relation from {error_fqid} violates UNIQUE constraint: {e}"
+                        f"{error_fqid}: {model_registry[collection].verbose_name.capitalize()} with {key} {value} already exists."
                     )
+                else:
+                    raise RelationException(f"{error_fqid}: {e}")
         except NotNullViolation as e:
             column = e.args[0].split('"')[1]
             raise BadCodingException(
