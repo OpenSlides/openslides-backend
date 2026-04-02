@@ -926,7 +926,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         response = self.request("mediafile.update", {"id": 8, "title": "file_7"})
         self.assert_status_code(response, 400)
         assert (
-            "File 'file_7' already exists in the root folder." in response.json["message"]
+            "File 'file_7' already exists in the root folder."
+            in response.json["message"]
         )
 
     def test_update_no_permissions(self) -> None:
