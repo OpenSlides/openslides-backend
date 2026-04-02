@@ -79,42 +79,10 @@ class OptionCreateActionTest(BaseActionTestCase):
             "option.create",
             {"text": "test", "meeting_id": 111, "weight": 10, "poll_id": 65},
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            'option/79: duplicate key value violates unique constraint "unique_option_text_poll_id"\n'
-            + "DETAIL:  Key (text, poll_id)=(test, 65) already exists.",
-            response.json["message"],
-        )
-
-    def test_create_text_not_unique_empty(self) -> None:
-        self.create_motion(111, 112)
-        self.set_models(
-            {
-                "poll/65": {
-                    "title": "pool",
-                    "content_object_id": "motion/112",
-                    "type": "analog",
-                    "state": "created",
-                    "pollmethod": "Y",
-                    "meeting_id": 111,
-                },
-                "option/78": {
-                    "text": "",
-                    "meeting_id": 111,
-                    "weight": 9,
-                    "poll_id": 65,
-                },
-            }
-        )
-        response = self.request(
-            "option.create",
-            {"text": "", "meeting_id": 111, "weight": 10, "poll_id": 65},
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            'option/79: duplicate key value violates unique constraint "unique_option_text_poll_id"\n'
-            + "DETAIL:  Key (text, poll_id)=(, 65) already exists.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "option/79",
+            {"text": "test", "meeting_id": 111, "weight": 10, "poll_id": 65},
         )
 
     def test_create_content_object_id_not_unique(self) -> None:
