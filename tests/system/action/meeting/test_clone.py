@@ -391,6 +391,116 @@ class MeetingClone(BaseActionTestCase):
             {"external_id": None, "template_for_organization_id": None},
         )
 
+    def test_clone_with_change_recommendation(self) -> None:
+        self.set_test_data_with_admin()
+        self.create_meeting(4)
+        self.create_motion(4, 22)
+        self.create_motion(1, 23)
+        self.set_models(
+            {
+                "motion_change_recommendation/111": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "I am a recommendation",
+                    "motion_id": 23,
+                    "meeting_id": 1,
+                    "rejected": False,
+                },
+                "motion_change_recommendation/112": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "I am another recommendation",
+                    "motion_id": 22,
+                    "meeting_id": 4,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/5", {"motion_ids": [24], "motion_change_recommendation_ids": [113]}
+        )
+        self.assert_model_exists(
+            "motion/24",
+            {"meeting_id": 5, "change_recommendation_ids": [113]},
+        )
+        self.assert_model_exists(
+            "motion_change_recommendation/113",
+            {
+                "line_from": 11,
+                "line_to": 23,
+                "text": "I am a recommendation",
+                "motion_id": 24,
+                "meeting_id": 5,
+            },
+        )
+
+    def test_clone_with_change_recommendation_complex(self) -> None:
+        # TODO: Reduce this to a minimum payload later.
+        # load_example_data should not be used and the first 4 requests
+        # should be unified into a shortened set_models statement.
+        self.load_example_data()
+        response = self.request(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "start_time": None,
+                "end_time": None,
+                "name": "Dev-Meeting",
+                "location": "",
+                "admin_ids": [1],
+                "organization_tag_ids": [],
+                "external_id": "",
+                "language": "en",
+                "set_as_template": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "meeting.update",
+            {
+                "start_time": 1924988400,
+                "end_time": 1927580400,
+                "name": "Dev Meeting",
+                "location": "",
+                "organization_tag_ids": [],
+                "external_id": "",
+                "jitsi_domain": "",
+                "jitsi_room_name": "",
+                "jitsi_room_password": "",
+                "id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "motion.create",
+            {
+                "meeting_id": 2,
+                "title": "a",
+                "text": "<p> Vom Ödipuskomplex maßlos gequält, übt Wilfried zyklisches Jodeln.</p>",
+                "submitter_meeting_user_ids": [4],
+                "workflow_id": 3,
+                "agenda_create": False,
+                "agenda_type": "internal",
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "motion_change_recommendation.create",
+            {
+                "internal": False,
+                "line_from": 1,
+                "line_to": 1,
+                "motion_id": 5,
+                "rejected": False,
+                "text": "<p>a Ödipuskomplex maßlos gequält, übt Wilfried zyklisches Jodeln.</p>",
+                "type": "replacement",
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request("meeting.clone", {"meeting_id": 2})
+        self.assert_status_code(response, 200)
+
     def test_clone_with_recommendation_extension(self) -> None:
         self.set_test_data_with_admin()
         self.create_motion(1, 23)
