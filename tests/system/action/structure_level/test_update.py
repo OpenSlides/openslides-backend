@@ -53,7 +53,8 @@ class StructureLevelUpdateTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The name of the structure level must be unique.",
+            'structure_level/1: duplicate key value violates unique constraint "unique_structure_level_meeting_id_name"\n'
+            + "DETAIL:  Key (meeting_id, name)=(1, test2) already exists.",
             response.json["message"],
         )
         self.assert_model_exists("structure_level/1", {"name": "test"})
