@@ -34,7 +34,6 @@ class OrganizationUpdate(
         "login_text",
         "theme_id",
         "default_language",
-        "time_zone",
         "users_email_sender",
         "users_email_replyto",
         "users_email_subject",
