@@ -414,7 +414,8 @@ class Group(Model):
                 "user.can_see",
                 "user.can_update",
                 "user.can_edit_own_delegation",
-            ]
+            ],
+            "enum_name": "enum_group_permissions[]",
         }
     )
     weight = fields.IntegerField()
@@ -757,7 +758,7 @@ class Meeting(Model, MeetingModelMixin):
         default="center", constraints={"enum": ["left", "right", "center"]}
     )
     export_pdf_fontsize = fields.IntegerField(
-        default=10, constraints={"enum": [10, 11, 12]}
+        default=10, constraints={"minimum": 10, "maximum": 12}
     )
     export_pdf_line_height = fields.FloatField(
         default=1.25, constraints={"minimum": 1.0}
@@ -2091,7 +2092,8 @@ class MotionState(Model):
                 "motion.can_manage_metadata",
                 "motion.can_manage",
                 "is_submitter",
-            ]
+            ],
+            "enum_name": "enum_motion_state_restrictions[]",
         },
     )
     allow_support = fields.BooleanField(default=False)

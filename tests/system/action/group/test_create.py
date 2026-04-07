@@ -17,7 +17,7 @@ class GroupCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
                 "meeting_id": 22,
-                "permissions": None,
+                "permissions": [],
                 "weight": 1,
             },
         )

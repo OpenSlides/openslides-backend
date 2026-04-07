@@ -211,8 +211,8 @@ class DatabaseWriter(SqlQueryHelper):
         list_fields = event.get("list_fields") or dict()
         add_dict = list_fields.get("add", dict())
         remove_dict = list_fields.get("remove", dict())
-        list_types, nm_relation_list_fields = (
-            self.get_list_types_and_nm_relation_list_fields(
+        array_types, nm_relation_list_fields = (
+            self.get_array_types_and_nm_relation_list_fields(
                 collection, add_dict, remove_dict
             )
         )
@@ -228,7 +228,7 @@ class DatabaseWriter(SqlQueryHelper):
                 )
 
         array_statements_per_field, array_values = self.get_array_values(
-            collection, table, set_fields_dict, add_dict, remove_dict, list_types
+            collection, table, set_fields_dict, add_dict, remove_dict, array_types
         )
 
         statement += sql.SQL(", ").join(
@@ -302,12 +302,12 @@ class DatabaseWriter(SqlQueryHelper):
             if self.is_primary_nm_relation(field)
         }
 
-    def get_list_types_and_nm_relation_list_fields(
+    def get_array_types_and_nm_relation_list_fields(
         self,
         collection: Collection,
         add_dict: ListFieldsDict,
         remove_dict: ListFieldsDict,
-    ) -> tuple[dict[str, type], dict[str, Field]]:
+    ) -> tuple[dict[str, sql.Composable], dict[str, Field]]:
         """
         used for 'add' and 'remove' list fields
         returns in the tuple
@@ -315,16 +315,18 @@ class DatabaseWriter(SqlQueryHelper):
             * a dict of all fields that are relation fields
         """
         collection_cls = model_registry[collection]()
-        lists_type_dict = dict()
+        array_type_dict = dict()
         nm_relation_list_fields = dict()
         for dictionary in [add_dict, remove_dict]:
             for field_name, value_list in dictionary.items():
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
-                        lists_type_dict[field_name] = type(value_list[0])
+                        array_type_dict[field_name] = self.get_array_type(
+                            field, type(value_list[0])
+                        )
                     if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field
-        return (lists_type_dict, nm_relation_list_fields)
+        return (array_type_dict, nm_relation_list_fields)
 
     def write_to_intermediate_tables(
         self,
@@ -411,7 +413,7 @@ class DatabaseWriter(SqlQueryHelper):
         set_dict: PartialModel,
         add_dict: ListFieldsDict,
         remove_dict: ListFieldsDict,
-        field_list_types: dict[str, type],
+        field_array_types: dict[str, sql.Composable],
     ) -> tuple[
         dict[str, sql.Composed],
         list[tuple[ListField, ListField, ListField] | tuple[ListField, ListField]],
@@ -430,7 +432,7 @@ class DatabaseWriter(SqlQueryHelper):
                 ORDER BY list_element
             )""").format(
                     col_or_placeholder_plus_type=(
-                        sql.Placeholder() + self.get_array_type(list_type)
+                        sql.Placeholder() + array_type
                         if field_name in set_dict
                         else sql.Identifier(f"{collection}_row", field_name)
                     ),
@@ -439,10 +441,10 @@ class DatabaseWriter(SqlQueryHelper):
                         if field_name in set_dict
                         else sql.SQL(" FROM ") + table
                     ),
-                    add_list_type=self.get_array_type(list_type),
-                    remove_list_type=self.get_array_type(list_type),
+                    add_list_type=array_type,
+                    remove_list_type=array_type,
                 )
-                for field_name, list_type in field_list_types.items()
+                for field_name, array_type in field_array_types.items()
             },
             [
                 (
@@ -457,7 +459,7 @@ class DatabaseWriter(SqlQueryHelper):
                         add_dict.get(field_name, []),
                     )
                 )
-                for field_name in field_list_types.keys()
+                for field_name in field_array_types.keys()
             ],
         )
 
