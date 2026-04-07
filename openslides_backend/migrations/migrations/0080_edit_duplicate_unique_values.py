@@ -74,7 +74,7 @@ class Migration(BaseModelMigration):
         "personal_note": {
             "meeting_user_id": {"meeting_user": "personal_note_ids"},
             "content_object_id": {"motion": "personal_note_ids"},
-            "meeting_id": {"meeting": "personal_note_id"},
+            "meeting_id": {"meeting": "personal_note_ids"},
         },
     }
 
@@ -92,6 +92,7 @@ class Migration(BaseModelMigration):
         collection_to_fields: dict[str, list[str]] = {
             collection: list(
                 {
+                    *self.collection_to_back_relations.get(collection, {}),
                     *[
                         field
                         for fields in self.error_unique_fields.get(collection, [])
@@ -188,8 +189,8 @@ class Migration(BaseModelMigration):
                 tuple[str, ...], dict[tuple[str, ...], list[int]]
             ] = {tup: defaultdict(list) for tup in collection_to_tuples[collection]}
             unique_tuple_to_combinations_with_duplicates: dict[
-                tuple[str, ...], list[tuple[str, ...]]
-            ] = defaultdict(list)
+                tuple[str, ...], set[tuple[str, ...]]
+            ] = defaultdict(set)
             models = self.reader.get_all(collection, fields)
             for id_, model in models.items():
                 for tup in collection_to_tuples[collection]:
@@ -198,12 +199,12 @@ class Migration(BaseModelMigration):
                         continue
                     unique_tuple_to_data[tup][vals].append(id_)
                     if len(unique_tuple_to_data[tup][vals]) > 1:
-                        unique_tuple_to_combinations_with_duplicates[tup].append(vals)
+                        unique_tuple_to_combinations_with_duplicates[tup].add(vals)
             for fields in self.error_unique_fields.get(collection, []):
                 tup = tuple(fields)
                 for vals in unique_tuple_to_combinations_with_duplicates[tup]:
                     errors.append(
-                        f"For collection {collection}: Ids {unique_tuple_to_data[tup][vals]}: Duplicate values for {tup} (values: {vals}) cannot be handled."
+                        f"For collection {collection}: Ids {sorted(unique_tuple_to_data[tup][vals])}: Duplicate values for {tup} (values: {vals}) cannot be handled."
                     )
             if len(errors):
                 continue
