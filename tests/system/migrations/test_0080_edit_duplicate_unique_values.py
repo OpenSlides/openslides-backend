@@ -649,7 +649,7 @@ def build_option_test_data(fail: bool = False) -> TestData:
             setup_data,
             {"option": [3]},
             [
-                f"For collection option: Ids [4, 5]: Duplicate values for ('content_object_id', 'poll_id') (values: ('user/5', 1)) cannot be handled."
+                "For collection option: Ids [4, 5]: Duplicate values for ('content_object_id', 'poll_id') (values: ('user/5', 1)) cannot be handled."
             ],
         )
     return setup_data, {"option": [3]}, expect_data
@@ -859,6 +859,10 @@ def build_structure_level_list_of_speakers_test_data(fail: bool = False) -> Test
     return setup_data, {"structure_level_list_of_speakers": [5]}, expect_data
 
 
+def remove_none_values(model: dict[str, Any]) -> dict[str, Any]:
+    return {key: val for key, val in model.items() if val is not None}
+
+
 def build_user_test_data(fail: bool = False) -> TestData:
     setup_data: IterableData = {"user": {}}
     expect_data: IterableData = {"user": {}}
@@ -870,53 +874,71 @@ def build_user_test_data(fail: bool = False) -> TestData:
         ("Sir Galahad the Pure", "G4L4#4D", "Galahad"),
     ]
     for id_, (username, member_number, saml_id) in enumerate(test_data, 1):
-        setup_data["user"][id_] = expect_data["user"][id_] = {
-            "username": username,
-            "member_number": member_number,
-            "saml_id": saml_id,
-        }
-        setup_data["user"][id_ + 5] = expect_data["user"][id_] = {
-            "username": username,
-            "member_number": member_number,
-            "saml_id": saml_id,
-        }
+        setup_data["user"][id_] = expect_data["user"][id_] = remove_none_values(
+            {
+                "username": username,
+                "member_number": member_number,
+                "saml_id": saml_id,
+            }
+        )
+        setup_data["user"][id_ + 5] = expect_data["user"][id_] = remove_none_values(
+            {
+                "username": username,
+                "member_number": member_number,
+                "saml_id": saml_id,
+            }
+        )
     if fail:
-        setup_data["user"][11] = {
-            "username": test_data[0][0],
-            "member_number": "user11",
-            "saml_id": "user11",
-        }
-        setup_data["user"][12] = {
-            "username": "user12",
-            "member_number": test_data[1][1],
-            "saml_id": "user12",
-        }
-        setup_data["user"][13] = {
-            "username": "user13",
-            "member_number": "user13",
-            "saml_id": test_data[2][2],
-        }
-        setup_data["user"][14] = {
-            "username": test_data[3][0],
-            "member_number": test_data[3][1],
-            "saml_id": "user14",
-        }
-        setup_data["user"][15] = {
-            "username": "user15",
-            "member_number": test_data[4][1],
-            "saml_id": test_data[4][2],
-        }
-        setup_data["user"][16] = {
-            "username": test_data[0][0],
-            "member_number": "user16",
-            "saml_id": test_data[0][2],
-        }
+        setup_data["user"][11] = remove_none_values(
+            {
+                "username": test_data[0][0],
+                "member_number": "user11",
+                "saml_id": "user11",
+            }
+        )
+        setup_data["user"][12] = remove_none_values(
+            {
+                "username": "user12",
+                "member_number": test_data[1][1],
+                "saml_id": "user12",
+            }
+        )
+        setup_data["user"][13] = remove_none_values(
+            {
+                "username": "user13",
+                "member_number": "user13",
+                "saml_id": test_data[2][2],
+            }
+        )
+        setup_data["user"][14] = remove_none_values(
+            {
+                "username": test_data[3][0],
+                "member_number": test_data[3][1],
+                "saml_id": "user14",
+            }
+        )
+        setup_data["user"][15] = remove_none_values(
+            {
+                "username": "user15",
+                "member_number": test_data[4][1],
+                "saml_id": test_data[4][2],
+            }
+        )
+        setup_data["user"][16] = remove_none_values(
+            {
+                "username": test_data[0][0],
+                "member_number": "user16",
+                "saml_id": test_data[0][2],
+            }
+        )
         username, member_number, saml_id = test_data[1]
-        setup_data["user"][17] = {
-            "username": username,
-            "member_number": member_number,
-            "saml_id": saml_id,
-        }
+        setup_data["user"][17] = remove_none_values(
+            {
+                "username": username,
+                "member_number": member_number,
+                "saml_id": saml_id,
+            }
+        )
         return (
             setup_data,
             {"user": [6, 7, 8, 9, 10]},
@@ -1326,6 +1348,13 @@ def test_user_error(write, finalize, assert_model):
 
 
 def merge_iterable_data(data1: IterableData, data2: IterableData) -> None:
+    data2 = {
+        coll: {
+            id_: {field: deepcopy(val) for field, val in model.items()}
+            for id_, model in coll_data.items()
+        }
+        for coll, coll_data in data2.items()
+    }
     for collection, models in data2.items():
         if collection not in data1:
             data1[collection] = models
@@ -1362,7 +1391,6 @@ def merge_iterable_data(data1: IterableData, data2: IterableData) -> None:
 
 
 def merge_test_data(test_data: list[TestData]) -> TestData:
-    test_data = deepcopy(test_data)
     setup_data: IterableData = {}
     to_delete_data: dict[str, list[int]] = {}
     expect_data: list[str] | IterableData = {}
@@ -1390,132 +1418,186 @@ def merge_test_data(test_data: list[TestData]) -> TestData:
 
 
 def test_all_successes(write, finalize, assert_model) -> None:
-    do_test(write, finalize, assert_model, merge_test_data([
-        build_name_unique_with_test_data(
-            "name", "chat_group", "meeting_id", "meeting", "chat_group_ids"
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        merge_test_data(
+            [
+                build_name_unique_with_test_data(
+                    "name", "chat_group", "meeting_id", "meeting", "chat_group_ids"
+                ),
+                build_single_external_id_test_data("committee"),
+                build_single_issue_numbering_test_data("gender", "name"),
+                build_meeting_id_and_string_field_test_data(
+                    "group", "group_ids", "external_id"
+                ),
+                build_mediafile_test_data(add_empty=True),
+                build_single_external_id_test_data("meeting"),
+                build_meeting_user_test_data(),
+                build_meeting_id_and_string_field_test_data(
+                    "motion", "motion_ids", "number"
+                ),
+                build_motion_comment_test_data(),
+                *[
+                    build_motion_meeting_user_test_data(coll, has_weight=True)
+                    for coll in ["editor", "submitter", "working_group_speaker"]
+                ],
+                build_motion_meeting_user_test_data("supporter"),
+                build_name_unique_with_test_data(
+                    "name",
+                    "motion_state",
+                    "workflow_id",
+                    "motion_workflow",
+                    "state_ids",
+                ),
+                build_option_test_data(),
+                build_personal_note_test_data(),
+                build_name_unique_with_test_data(
+                    "title",
+                    "projector_countdown",
+                    "meeting_id",
+                    "meeting",
+                    "projector_countdown_ids",
+                ),
+                build_name_unique_with_test_data(
+                    "name",
+                    "structure_level",
+                    "meeting_id",
+                    "meeting",
+                    "structure_level_ids",
+                ),
+                build_structure_level_list_of_speakers_test_data(),
+                build_user_test_data(),
+            ]
         ),
-        build_single_external_id_test_data("committee"),
-        build_single_issue_numbering_test_data("gender", "name"),
-        build_meeting_id_and_string_field_test_data(
-            "group", "group_ids", "external_id"
-        ),
-        build_mediafile_test_data(add_empty=True),
-        build_single_external_id_test_data("meeting"),
-         build_meeting_user_test_data(),
-        build_meeting_id_and_string_field_test_data("motion", "motion_ids", "number"),
-        build_motion_comment_test_data(),
-        *[build_motion_meeting_user_test_data(coll, has_weight=True) for coll in ["editor", "submitter", "working_group_speaker"]],
-        build_motion_meeting_user_test_data("supporter", has_weight=True),
-        build_name_unique_with_test_data(
-            "name", "motion_state", "workflow_id", "motion_workflow", "state_ids"
-        ),
-        build_option_test_data(),
-        build_personal_note_test_data(),
-        build_name_unique_with_test_data(
-            "title",
-            "projector_countdown",
-            "meeting_id",
-            "meeting",
-            "projector_countdown_ids",
-        ),
-        build_name_unique_with_test_data(
-            "name", "structure_level", "meeting_id", "meeting", "structure_level_ids"
-        ),
-        build_structure_level_list_of_speakers_test_data(),
-        build_user_test_data()
-    ]))
+    )
 
 
 def test_all_problems(write, finalize, assert_model) -> None:
-    do_test(write, finalize, assert_model, merge_test_data([
-        build_name_unique_with_test_data(
-            "name",
-            "chat_group",
-            "meeting_id",
-            "meeting",
-            "chat_group_ids",
-            with_problems=True,
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        merge_test_data(
+            [
+                build_name_unique_with_test_data(
+                    "name",
+                    "chat_group",
+                    "meeting_id",
+                    "meeting",
+                    "chat_group_ids",
+                    with_problems=True,
+                ),
+                build_single_external_id_test_data("committee"),
+                build_single_issue_numbering_test_data(
+                    "gender", "name", with_problems=True
+                ),
+                build_meeting_id_and_string_field_test_data(
+                    "group", "group_ids", "external_id"
+                ),
+                build_mediafile_test_data(add_empty=True, with_problems=True),
+                build_single_external_id_test_data("meeting"),
+                build_meeting_user_test_data(),
+                build_meeting_id_and_string_field_test_data(
+                    "motion", "motion_ids", "number"
+                ),
+                build_motion_comment_test_data(with_problems=True),
+                *[
+                    build_motion_meeting_user_test_data(
+                        coll, has_weight=True, with_problems=True
+                    )
+                    for coll in ["editor", "submitter", "working_group_speaker"]
+                ],
+                build_motion_meeting_user_test_data("supporter", with_problems=True),
+                build_name_unique_with_test_data(
+                    "name",
+                    "motion_state",
+                    "workflow_id",
+                    "motion_workflow",
+                    "state_ids",
+                    with_problems=True,
+                ),
+                build_option_test_data(),
+                build_personal_note_test_data(with_problems=True),
+                build_name_unique_with_test_data(
+                    "title",
+                    "projector_countdown",
+                    "meeting_id",
+                    "meeting",
+                    "projector_countdown_ids",
+                    with_problems=True,
+                ),
+                build_name_unique_with_test_data(
+                    "name",
+                    "structure_level",
+                    "meeting_id",
+                    "meeting",
+                    "structure_level_ids",
+                    with_problems=True,
+                ),
+                build_structure_level_list_of_speakers_test_data(),
+                build_user_test_data(),
+            ]
         ),
-        build_single_external_id_test_data("committee"),
-        build_single_issue_numbering_test_data("gender", "name", with_problems=True),
-        build_meeting_id_and_string_field_test_data(
-            "group", "group_ids", "external_id"
-        ),
-        build_mediafile_test_data(add_empty=True, with_problems=True),
-        build_single_external_id_test_data("meeting"),
-        build_meeting_user_test_data(),
-        build_meeting_id_and_string_field_test_data("motion", "motion_ids", "number"),
-        build_motion_comment_test_data(with_problems=True),
-        *[build_motion_meeting_user_test_data(coll, has_weight=True, with_problems=True) for coll in ["editor", "submitter", "working_group_speaker"]],
-        build_motion_meeting_user_test_data("supporter", has_weight=True, with_problems=True),
-        build_name_unique_with_test_data(
-            "name",
-            "motion_state",
-            "workflow_id",
-            "motion_workflow",
-            "state_ids",
-            with_problems=True,
-        ),
-        build_option_test_data(),
-        build_personal_note_test_data(with_problems=True),
-        build_name_unique_with_test_data(
-            "title",
-            "projector_countdown",
-            "meeting_id",
-            "meeting",
-            "projector_countdown_ids",
-            with_problems=True,
-        ),
-        build_name_unique_with_test_data(
-            "name",
-            "structure_level",
-            "meeting_id",
-            "meeting",
-            "structure_level_ids",
-            with_problems=True,
-        ),
-        build_structure_level_list_of_speakers_test_data(),
-        build_user_test_data()
-    ]))
+    )
 
 
 def test_all_failures(write, finalize, assert_model) -> None:
-    do_test(write, finalize, assert_model, merge_test_data([
-        build_name_unique_with_test_data(
-            "name", "chat_group", "meeting_id", "meeting", "chat_group_ids"
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        merge_test_data(
+            [
+                build_name_unique_with_test_data(
+                    "name", "chat_group", "meeting_id", "meeting", "chat_group_ids"
+                ),
+                build_single_external_id_test_data("committee", fail=True),
+                build_single_issue_numbering_test_data("gender", "name"),
+                build_meeting_id_and_string_field_test_data(
+                    "group", "group_ids", "external_id", fail=True
+                ),
+                build_mediafile_test_data(add_empty=True),
+                build_single_external_id_test_data("meeting", fail=True),
+                build_meeting_user_test_data(fail=True),
+                build_meeting_id_and_string_field_test_data(
+                    "motion", "motion_ids", "number", fail=True
+                ),
+                build_motion_comment_test_data(),
+                *[
+                    build_motion_meeting_user_test_data(coll, has_weight=True)
+                    for coll in ["editor", "submitter", "working_group_speaker"]
+                ],
+                build_motion_meeting_user_test_data("supporter"),
+                build_name_unique_with_test_data(
+                    "name",
+                    "motion_state",
+                    "workflow_id",
+                    "motion_workflow",
+                    "state_ids",
+                ),
+                build_option_test_data(fail=True),
+                build_personal_note_test_data(),
+                build_name_unique_with_test_data(
+                    "title",
+                    "projector_countdown",
+                    "meeting_id",
+                    "meeting",
+                    "projector_countdown_ids",
+                ),
+                build_name_unique_with_test_data(
+                    "name",
+                    "structure_level",
+                    "meeting_id",
+                    "meeting",
+                    "structure_level_ids",
+                ),
+                build_structure_level_list_of_speakers_test_data(fail=True),
+                build_user_test_data(fail=True),
+            ]
         ),
-        build_single_external_id_test_data("committee", fail=True),
-        build_single_issue_numbering_test_data("gender", "name"),
-        build_meeting_id_and_string_field_test_data(
-            "group", "group_ids", "external_id", fail=True
-        ),
-        build_mediafile_test_data(add_empty=True),
-        build_single_external_id_test_data("meeting", fail=True),
-        build_meeting_user_test_data(fail=True),
-        build_meeting_id_and_string_field_test_data(
-                "motion", "motion_ids", "number", fail=True
-            ),
-        build_motion_comment_test_data(),
-        *[build_motion_meeting_user_test_data(coll, has_weight=True) for coll in ["editor", "submitter", "working_group_speaker"]],
-        build_motion_meeting_user_test_data("supporter", has_weight=True),
-        build_name_unique_with_test_data(
-            "name", "motion_state", "workflow_id", "motion_workflow", "state_ids"
-        ),
-        build_option_test_data(fail=True),
-        build_personal_note_test_data(),
-        build_name_unique_with_test_data(
-            "title",
-            "projector_countdown",
-            "meeting_id",
-            "meeting",
-            "projector_countdown_ids",
-        ),
-        build_name_unique_with_test_data(
-            "name", "structure_level", "meeting_id", "meeting", "structure_level_ids"
-        ),
-        build_structure_level_list_of_speakers_test_data(fail=True),
-        build_user_test_data(fail=True)
-    ]))
+    )
 
 
 # TODO: Test the following:
