@@ -7,7 +7,7 @@ isort==8.0.1
 mypy==1.19.1
 sqlfluff==4.0.4
 pip-check==3.2.1
-pytest==9.0.2
+pytest==9.0.3
 pytest-cov==7.1.0
 pytest-profiling==1.8.1
 pyupgrade==3.21.2
