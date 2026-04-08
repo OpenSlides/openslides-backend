@@ -1,7 +1,12 @@
 from typing import Any
 
 from psycopg import Connection, rows, sql
-from psycopg.errors import UndefinedColumn, UndefinedFunction, UndefinedTable
+from psycopg.errors import (
+    SerializationFailure,
+    UndefinedColumn,
+    UndefinedFunction,
+    UndefinedTable,
+)
 
 from openslides_backend.services.postgresql.db_connection_handling import (
     retry_on_db_failure,
@@ -54,7 +59,9 @@ class DatabaseReader(SqlQueryHelper):
             for id_ in ids:
                 if not id_ > 0:
                     raise InvalidFormat("Id must be positive.")
-            mapped_fields = MappedFields(list(get_many_request.mapped_fields))
+            mapped_fields = MappedFields(
+                list(get_many_request.mapped_fields), collection
+            )
             if "id" not in mapped_fields.unique_fields:
                 mapped_fields.unique_fields.append("id")
 
@@ -80,6 +87,7 @@ class DatabaseReader(SqlQueryHelper):
     ) -> dict[Id, PartialModel]:
         if mapped_fields is None:
             mapped_fields = MappedFields()
+        mapped_fields.collection = collection
         mapped_fields_sql = self.build_select_from_mapped_fields(mapped_fields)
         query = sql.SQL("""SELECT {columns} FROM {collection}""").format(
             columns=mapped_fields_sql,
@@ -202,6 +210,7 @@ class DatabaseReader(SqlQueryHelper):
             else:
                 collection_result_part[id_] = row
 
+    # TODO: Fix or delete
     def get_current_migration_index(self) -> int:
         #        result = self.connection.query(
         #            "select min(migration_index), max(migration_index) from positions", []
@@ -244,6 +253,8 @@ class DatabaseReader(SqlQueryHelper):
             )
         except UndefinedFunction as e:
             raise InvalidFormat(e.diag.message_primary or "")
+        except SerializationFailure as e:
+            raise e
         except Exception as e:
             raise DatabaseException(f"Unexpected error reading from database: {e}")
 

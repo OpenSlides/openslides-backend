@@ -59,6 +59,12 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {
+            "id": 13,
+            "sequential_number": 1,
+            "amendment_result_data": [],
+            "non_forwarded_amendment_amount": 0,
+        }
         model = self.assert_model_exists(
             "motion/13",
             {
@@ -322,11 +328,13 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 14,
+                "sequential_number": 2,
                 "non_forwarded_amendment_amount": 0,
                 "amendment_result_data": [
                     {
                         "amendment_result_data": [],
                         "id": 15,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                     }
                 ],
@@ -471,19 +479,23 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 18,
+                "sequential_number": 4,
                 "non_forwarded_amendment_amount": 1,
                 "amendment_result_data": [
                     {
                         "id": 19,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                         "amendment_result_data": [],
                     },
                     {
                         "id": 20,
+                        "sequential_number": 3,
                         "non_forwarded_amendment_amount": 1,
                         "amendment_result_data": [
                             {
                                 "id": 21,
+                                "sequential_number": 2,
                                 "non_forwarded_amendment_amount": 0,
                                 "amendment_result_data": [],
                             },
@@ -735,7 +747,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
         self.set_test_models()
         self.create_motion(1, 13, motion_data={"number": "1"})
         self.set_models(
@@ -772,7 +784,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_2(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
         self.set_test_models(motion_12_data={"number": "1"})
         self.create_motion(1, 13)
         self.set_models(
@@ -809,13 +821,17 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_3(
         self,
     ) -> None:
-        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
-        self.set_test_models(motion_12_data={"number": "1"})
-        self.create_motion(1, 13, motion_data={"number": "1"})
-        self.create_motion(4, 14, motion_data={"number": "1"})
+        """Forwarding of 2 motions to 1 meeting in 1 transaction"""
+        self.set_test_models()
+        self.create_meeting(7)
+        self.create_motion(1, 12, motion_data={"number": "1"})
+        self.create_motion(4, 13, motion_data={"number": "1"})
+        self.create_motion(7, 14, motion_data={"number": "1"})
         self.set_models(
             {
                 "motion_state/4": {"allow_motion_forwarding": True},
+                "committee/60": {"forward_to_committee_ids": [66]},
+                "committee/63": {"forward_to_committee_ids": [66]},
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -833,7 +849,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
             [
                 {
                     "title": "title_12",
-                    "meeting_id": 4,
+                    "meeting_id": 7,
                     "origin_id": 12,
                     "text": "test2",
                     "reason": "reason_jLvcgAMx2",
@@ -842,7 +858,7 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                 },
                 {
                     "title": "title_13",
-                    "meeting_id": 4,
+                    "meeting_id": 7,
                     "origin_id": 13,
                     "text": "test3",
                     "reason": "reason_jLvcgAMx3",
@@ -1272,10 +1288,12 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
         assert response.json["results"][0] == [
             {
                 "id": 4,
+                "sequential_number": 2,
                 "non_forwarded_amendment_amount": 1,
                 "amendment_result_data": [
                     {
                         "id": 5,
+                        "sequential_number": 1,
                         "non_forwarded_amendment_amount": 0,
                         "amendment_result_data": [],
                     },
@@ -2519,6 +2537,28 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
                 "attachment_ids": ["motion/20", "motion/21"],
             },
         )
+
+    def test_forward_with_diff_version(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_motion(1, 1, motion_data={"diff_version": "0.1.2"})
+        self.set_models(
+            {
+                "motion_state/1": {"allow_motion_forwarding": True},
+                "committee/60": {"forward_to_committee_ids": [63]},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Motion 2",
+                "text": "text",
+                "meeting_id": 4,
+                "origin_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/2", {"diff_version": "0.1.2"})
 
     def test_forward_with_deleted_submitters(self) -> None:
         self.create_meeting(1)

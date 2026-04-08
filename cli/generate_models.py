@@ -1,11 +1,13 @@
 import os
 import string
+from argparse import Namespace
 from collections import ChainMap
 from textwrap import dedent
 from typing import Any, Optional
 
 from cli.util.util import ROOT, assert_equal, open_output, parse_arguments
 from meta.dev.src.helper_get_names import (
+    DEFAULT_COLLECTION_META,
     FieldSqlErrorType,
     HelperGetNames,
     InternalHelper,
@@ -19,8 +21,6 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -46,6 +46,7 @@ COMMON_FIELD_CLASSES = {
     "number[]": "NumberArrayField",
     "text": "TextField",
     "text[]": "TextArrayField",
+    "timezone": "TimezoneField",
 }
 
 RELATION_FIELD_CLASSES = {
@@ -61,14 +62,12 @@ MODEL_MIXINS: dict[str, type] = {
     "poll": PollModelMixin,
 }
 
-FILE_TEMPLATE = dedent(
-    """\
+FILE_TEMPLATE = dedent("""\
     # Code generated. DO NOT EDIT.
 
     from . import fields
     from .base import Model
-    """
-)
+    """)
 
 
 def main() -> None:
@@ -92,9 +91,9 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    args = parse_arguments(SOURCE)
+    args: Namespace = parse_arguments(DEFAULT_COLLECTION_META)
 
-    InternalHelper.read_models_yml(SOURCE)
+    InternalHelper.read_models_yml()
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
@@ -104,10 +103,10 @@ def main() -> None:
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        for collection, fields in InternalHelper.MODELS.items():
+        for collection, data in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
-            model = Model(collection, fields)
+            model = Model(collection, data["fields"])
             dest.write(model.get_code())
 
         if args.check:
@@ -115,20 +114,6 @@ def main() -> None:
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")
-
-
-def get_model_field(collection: str, field_name: str) -> str | dict:
-    """
-    Helper function the get a specific model field. Used to create generic relations.
-    """
-
-    model = InternalHelper.MODELS.get(collection)
-    if model is None:
-        raise ValueError(f"Collection {collection} does not exist.")
-    value = model.get(field_name)
-    if value is None:
-        raise ValueError(f"Field {field_name} does not exist.")
-    return value
 
 
 class Node:
@@ -145,21 +130,19 @@ class Model(Node):
     collection: str
     attributes: dict[str, "Attribute"]
 
-    MODEL_TEMPLATE = string.Template(
-        dedent(
-            """
+    MODEL_TEMPLATE = string.Template(dedent("""
             class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-            """
-        )
-    )
+            """))
 
     def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection
         assert collection
         self.attributes = {}
         for field_name, field in fields.items():
+            if field_name == "_meta":
+                continue
             if field.get("calculated"):
                 continue
             self.attributes[field_name] = Attribute(
@@ -195,6 +178,7 @@ class Attribute(Node):
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False
+    unique: bool = False
     read_only: bool = False
     constant: bool = False
     default: Any = None
@@ -236,6 +220,7 @@ class Attribute(Node):
                 )
             value.pop("type")
             self.required = value.pop("required", False)
+            self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
             self.constant = value.pop("constant", False)
             self.default = value.pop("default", None)
@@ -250,9 +235,23 @@ class Attribute(Node):
                     "deferred",
                     "unique",
                 ):
-                    self.constraints[k] = v
-                elif self.type in ("string[]", "number[]", "text[]") and k == "items":
-                    self.in_array_constraints.update(v)
+                    if k == "enum" and isinstance(v, str):
+                        enum_name = HelperGetNames.get_enum_name(v)
+                        self.constraints[k] = InternalHelper.ENUMS[enum_name]
+                    else:
+                        self.constraints[k] = v
+                elif self.type in ("string[]", "text[]") and k == "items":
+                    enum = v["enum"]
+                    if isinstance(enum, str):
+                        enum_name = HelperGetNames.get_enum_name(enum)
+                        enum = InternalHelper.ENUMS[enum_name]
+                    else:
+                        enum_name = HelperGetNames.get_enum_name_for_column(
+                            collection_name, field_name
+                        )
+                    self.in_array_constraints.update(
+                        {"enum": enum, "enum_name": f"{enum_name}[]"}
+                    )
 
     def get_code(self, field_name: str) -> str:
         if field_name == "organization_id":
@@ -271,6 +270,8 @@ class Attribute(Node):
             properties += "is_primary=True, "
         if self.required:
             properties += "required=True, "
+        if self.unique:
+            properties += "unique=True, "
         if self.read_only:
             properties += "read_only=True, "
         if self.constant:

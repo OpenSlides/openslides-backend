@@ -29,6 +29,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 1, "sequential_number": 1}
         motion = self.assert_model_exists(
             "motion/1",
             {
@@ -828,6 +829,21 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assertEqual("Number is not unique.", response.json["message"])
         self.assert_model_not_exists("motion/3")
 
+    def test_create_check_not_unique_number_empty(self) -> None:
+        self.create_motion(1, 1, motion_data={"number": ""})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "",
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual("Number is not unique.", response.json["message"])
+        self.assert_model_not_exists("motion/2")
+
     def test_create_amendment_paragraphs_where_not_allowed(self) -> None:
         self.create_motion(1)
         response = self.request(
@@ -854,9 +870,11 @@ class MotionCreateActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
         disable_delegations: bool = False,
     ) -> None:
+        self.set_user_groups(1, [1])
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
         self.set_models(
             {
-                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
                 "meeting/1": {
                     delegator_setting: True,
                     **(
@@ -876,9 +894,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "meeting_user/2": {"vote_delegations_from_ids": [1]},
                 }
             )
-        self.set_organization_management_level(None)
-        self.set_group_permissions(1, [perm])
-        self.set_user_groups(1, [1])
 
     def test_create_delegator_setting(self) -> None:
         self.set_models(
@@ -906,7 +921,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -928,7 +943,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -970,7 +985,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -996,7 +1011,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
             },
         )
 
@@ -1020,6 +1035,29 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 1,
                 "text": "test",
-                "submitter_ids": [1],
+                "submitter_ids": None,
+            },
+        )
+
+    def test_create_motion_with_diff_version(self) -> None:
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 1,
+                "text": "test",
+                "diff_version": "0.1.2",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/1",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "submitter_ids": None,
+                "diff_version": "0.1.2",
             },
         )

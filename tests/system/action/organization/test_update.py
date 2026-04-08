@@ -43,6 +43,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "enable_anonymous": True,
+                "time_zone": "Asia/Tokyo",
             },
         )
         self.assert_status_code(response, 200)
@@ -54,6 +55,24 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "enable_anonymous": True,
             },
+        )
+
+    def test_update_with_invalid_time_zone(self) -> None:
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
+                "time_zone": "Mars/Elysium_Planitia",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "organization_t" violates check constraint "timezone_organization_time_zone"',
+            response.json["message"],
         )
 
     def test_update_with_meeting(self) -> None:
@@ -252,26 +271,22 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
-                "saml_metadata_idp": dedent(
-                    """
+                "saml_metadata_idp": dedent("""
                     <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                         entityID="https://auth.digiv.de/auth/realms/demo">
                         </md:IDPSSODescriptor>
                     </md:EntityDescriptor>
-                    """
-                ),
-                "saml_metadata_sp": dedent(
-                    """
+                    """),
+                "saml_metadata_sp": dedent("""
                     <EntityDescriptor
                     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
                     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                     entityID="http://localhost:9004/saml/metadata">
                     </EntityDescriptor>
-                    """
-                ),
+                    """),
                 "saml_private_key": "private key dependency",
             },
         )
@@ -321,26 +336,22 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "organization/1": {
                     "saml_enabled": True,
                     "saml_attr_mapping": Jsonb(self.saml_attr_mapping),
-                    "saml_metadata_idp": dedent(
-                        """
+                    "saml_metadata_idp": dedent("""
                     <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                         xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                         entityID="https://auth.digiv.de/auth/realms/demo">
                         </md:IDPSSODescriptor>
                     </md:EntityDescriptor>
-                    """
-                    ),
-                    "saml_metadata_sp": dedent(
-                        """
+                    """),
+                    "saml_metadata_sp": dedent("""
                     <EntityDescriptor
                     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
                     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
                     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
                     entityID="http://localhost:9004/saml/metadata">
                     </EntityDescriptor>
-                    """
-                    ),
+                    """),
                     "saml_private_key": "private key dependency",
                 }
             }

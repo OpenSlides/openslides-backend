@@ -48,6 +48,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 43, "sequential_number": 2}
         self.assert_model_exists(
             "motion_workflow/43",
             {
@@ -240,3 +241,20 @@ class MotionWorkflowImport(BaseActionTestCase):
         self.assertEqual(
             "State edit is not in next of begin.", response.json["message"]
         )
+
+    def test_import_state_not_unique(self) -> None:
+        response = self.request(
+            "motion_workflow.import",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 42,
+                "first_state_name": "",
+                "states": [
+                    self.get_state("begin", [], []),
+                    self.get_state("begin", [], []),
+                    self.get_state("end", [], []),
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual("State name begin not unique.", response.json["message"])

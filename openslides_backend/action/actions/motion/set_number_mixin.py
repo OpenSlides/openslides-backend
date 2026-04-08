@@ -22,7 +22,7 @@ class SetNumberMixin(Action):
         Sets the motion number and the motion number value.
         """
         # Conditions to stop generate an automatic number.
-        if instance.get("number"):
+        if instance.get("number") is not None:
             if not self._check_if_unique(
                 instance["number"],
                 meeting_id,

@@ -1,9 +1,10 @@
 import threading
+from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase, TestResult
-from unittest.mock import MagicMock, _patch
+from unittest.mock import MagicMock
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -32,7 +33,7 @@ from openslides_backend.shared.exceptions import (
     ModelDoesNotExist,
 )
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.event import Event, EventType, ListFields
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
@@ -41,7 +42,7 @@ from openslides_backend.shared.patterns import (
     id_from_fqid,
     is_reserved_field,
 )
-from openslides_backend.shared.typing import PartialModel
+from openslides_backend.shared.typing import DeletedModel, PartialModel
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     ONE_ORGANIZATION_FQID,
@@ -69,7 +70,6 @@ class BaseSystemTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
 
-    auth_mockers: dict[str, _patch]
     # Save all created fqids
     created_fqids: set[str]
 
@@ -87,20 +87,13 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.set_thread_watch_timeout(-1)
 
-        self.created_fqids = set()
+        self.user_id = 1
+        self.created_fqids = {ONE_ORGANIZATION_FQID, "theme/1"}
+        self.deleted_fqids: set[str] = set()
         if self.init_with_login:
             self.set_models(
                 {
-                    ONE_ORGANIZATION_FQID: {
-                        "name": "OpenSlides Organization",
-                        "default_language": "en",
-                        "user_ids": [1],
-                        "theme_id": 1,
-                    },
-                    "theme/1": {
-                        "name": "OpenSlides Organization",
-                    },
-                    "user/1": {
+                    f"user/{self.user_id}": {
                         "username": ADMIN_USERNAME,
                         "password": self.auth.hash(ADMIN_PASSWORD),
                         "default_password": ADMIN_PASSWORD,
@@ -118,7 +111,7 @@ class BaseSystemTestCase(TestCase):
                 self.client.update_auth_data(self.auth_data)
             else:
                 # Login and save copy of auth data for all following tests
-                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
+                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
                 BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
         self.anon_client.auth = self.auth  # type: ignore
@@ -147,10 +140,6 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-
-        # TODO: Does something equivalent to this old code
-        #  need to be done here?
-        # injector.get(ShutdownService).shutdown()
 
         super().tearDown()
 
@@ -201,7 +190,7 @@ class BaseSystemTestCase(TestCase):
         """
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"], user_id)
+        self.client.login(user["username"], user["default_password"])
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
@@ -220,31 +209,40 @@ class BaseSystemTestCase(TestCase):
             print(response.json)
         self.assertEqual(response.status_code, code)
 
-    def create_model(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> None:
-        create_events = self.get_create_events(fqid, data, deleted)
+    def create_model(self, fqid: str, data: dict[str, Any] = {}) -> None:
+        create_events = self.get_create_events(fqid, data)
         self.perform_write_request(create_events)
         self.adjust_id_sequences()
 
-    def update_model(self, fqid: str, data: dict[str, Any]) -> None:
-        update_events = self.get_update_events(fqid, data)
+    def update_model(
+        self, fqid: str, fields: dict[str, Any], list_fields: ListFields = {}
+    ) -> None:
+        if fields:
+            update_events = self.get_update_events(fqid, fields)
+        else:
+            update_events = []
+        if list_fields:
+            update_events.extend(
+                self.get_update_list_events(
+                    fqid, list_fields.get("add", {}), list_fields.get("remove", {})
+                )
+            )
         self.perform_write_request(update_events)
 
-    def get_create_events(
-        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
-    ) -> list[Event]:
+    def get_create_events(self, fqid: str, data: dict[str, Any] = {}) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
-        if deleted:
-            events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
         self.validate_fields(fqid, data)
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
+
+    def get_delete_events(self, fqid: str) -> list[Event]:
+        self.deleted_fqids.add(fqid)
+        return [Event(type=EventType.Delete, fqid=fqid)]
 
     def get_update_list_events(
         self, fqid: str, add: dict[str, Any] = {}, remove: dict[str, Any] = {}
@@ -263,9 +261,6 @@ class BaseSystemTestCase(TestCase):
 
     def perform_write_request(self, events: list[Event]) -> None:
         write_request = WriteRequest(events, user_id=0)
-        if self.check_auth_mockers_started():
-            for event in write_request.events:
-                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
         self.connection.commit()
 
@@ -277,35 +272,47 @@ class BaseSystemTestCase(TestCase):
         fqid to this set.
         """
         events: list[Event] = []
+        newly_created_collections = set()
+        existing_fqids = self.created_fqids - self.deleted_fqids
         for fqid, model in models.items():
-            if fqid in self.created_fqids:
+            if isinstance(model, DeletedModel):
+                events.extend(self.get_delete_events(fqid))
+            elif fqid in existing_fqids:
                 events.extend(self.get_update_events(fqid, model))
             else:
                 events.extend(self.get_create_events(fqid, model))
+                newly_created_collections.add(collection_from_fqid(fqid))
         self.perform_write_request(events)
-        self.adjust_id_sequences()
+        for collection in newly_created_collections:
+            self.adjust_id_sequence(collection)
+        self.connection.commit()
 
     def adjust_id_sequences(self) -> None:
+        """Also commits the connection."""
         for collection in {collection_from_fqid(fqid) for fqid in self.created_fqids}:
-            maximum = self.datastore.max(collection, None, "id")
-            with self.connection.cursor() as curs:
-                curs.execute(
-                    sql.SQL(
-                        """SELECT setval('{collection}_t_id_seq', {maximum})"""
-                    ).format(
-                        collection=sql.SQL(collection),
-                        maximum=sql.Literal(maximum),
-                    )
-                )
-            self.connection.commit()
+            self.adjust_id_sequence(collection)
+        self.connection.commit()
 
-    def check_auth_mockers_started(self) -> bool:
-        if (
-            hasattr(self, "auth_mockers")
-            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
-        ):
-            return False
-        return True
+    def adjust_id_sequence(self, collection: str) -> None:
+        maximum = self.datastore.max(collection, None, "id")
+        with self.connection.cursor() as curs:
+            curs.execute(
+                sql.SQL("""SELECT setval('{collection}_t_id_seq', {maximum})""").format(
+                    collection=sql.SQL(collection),
+                    maximum=sql.Literal(maximum),
+                )
+            )
+
+    def update_created_fqids(self) -> None:
+        """
+        Helper method for explicit update of self.created_fqids.
+        Ensures correct behaviour of set_models after creating models by the request.
+        """
+        self.created_fqids.update(
+            fqid_from_collection_and_id(collection, id_)
+            for collection, data in self.datastore.get_everything().items()
+            for id_ in data.keys()
+        )
 
     def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()
@@ -611,48 +618,64 @@ class BaseSystemTestCase(TestCase):
             }
         )
 
-    def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
+    def set_user_groups(self, user_id: int, target_group_ids: list[int]) -> list[int]:
         """
         Sets the groups in corresponding meeting_users and creates new ones if not existent.
         Returns the meeting_user_ids.
         """
-        assert isinstance(group_ids, list)
+        assert isinstance(target_group_ids, list)
         current_meeting_users = self.datastore.filter(
             "meeting_user",
             FilterOperator("user_id", "=", user_id),
             ["id", "user_id", "meeting_id", "group_ids"],
             lock_result=False,
         )
-        request_group_ids = set(group_ids)
-        for mu in current_meeting_users.values():
-            if mu_group_ids := mu.get("group_ids"):
-                request_group_ids.update(mu_group_ids)
+        current_group_ids: set[int] = {
+            group_id
+            for mu in current_meeting_users.values()
+            for group_id in mu.get("group_ids", [])
+        }
         all_users_groups = self.datastore.get_many(
             [
                 GetManyRequest(
                     "group",
-                    list(request_group_ids),
+                    list(set(target_group_ids) | current_group_ids),
                     ["id", "meeting_id", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
         )["group"]
-        meeting_ids: list[int] = list(
-            {v["meeting_id"] for v in all_users_groups.values() if v["id"] in group_ids}
-        )
-        meeting_users: dict[int, dict[str, Any]] = {
-            data["meeting_id"]: data
-            for data in current_meeting_users.values()
-            if data["meeting_id"] in meeting_ids
+
+        # Calculate the changes
+        target_meeting_ids: set[int] = {
+            v["meeting_id"]
+            for v in all_users_groups.values()
+            if v["id"] in target_group_ids
         }
-        # remove from all_users_groups in difference with requested group_ids
-        groups_remove_from = set(all_users_groups) - set(group_ids)
-        for group_id in groups_remove_from:
-            if meeting_user_ids := all_users_groups[group_id].get("meeting_user_ids"):
-                # remove intersection with user
+
+        remaining_and_new_meeting_users: dict[int, dict[str, Any]] = {}
+        events_data_meeting_users_to_delete: set[int] = set()
+        for mu in current_meeting_users.values():
+            if mu["meeting_id"] in target_meeting_ids:
+                remaining_and_new_meeting_users[mu["meeting_id"]] = mu
+            else:
+                events_data_meeting_users_to_delete.add(mu["id"])
+
+        events_data_groups: dict[int, dict[str, list[int]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        for group_id, group in all_users_groups.items():
+            if group_id not in target_group_ids and (
+                meeting_user_ids := group.get("meeting_user_ids")
+            ):
                 for meeting_user_id in meeting_user_ids:
-                    if meeting_user_id in current_meeting_users:
-                        meeting_user_ids.remove(meeting_user_id)
+                    # Skip groups of meeting_users marked for deletion: they will be deleted recursively
+                    if (
+                        meeting_user_id in current_meeting_users
+                        and meeting_user_id not in events_data_meeting_users_to_delete
+                    ):
+                        events_data_groups[group_id]["remove"].append(meeting_user_id)
+
         last_meeting_user_id = max(
             [
                 int(k[1])
@@ -661,41 +684,46 @@ class BaseSystemTestCase(TestCase):
             ]
             or [0]
         )
-        if meeting_users_new := {
-            meeting_id: {
-                "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
-                "user_id": user_id,
-                "meeting_id": meeting_id,
-            }
-            for meeting_id in meeting_ids
-            if meeting_id not in meeting_users
-        }:
-            meeting_users.update(meeting_users_new)
 
-        # fill relevant meeting_user relations
-        for group_id in group_ids:
-            group = all_users_groups[group_id]
-            meeting_id = group["meeting_id"]
-            meeting_user_id = meeting_users[meeting_id]["id"]
-            if meeting_user_ids := group.get("meeting_user_ids"):
-                if meeting_user_id not in meeting_user_ids:
-                    meeting_user_ids.append(meeting_user_id)
-            else:
-                group["meeting_user_ids"] = [meeting_user_id]
-        if meeting_users_new or all_users_groups:
-            self.set_models(
-                {
-                    **{
-                        f"meeting_user/{mu['id']}": mu
-                        for mu in meeting_users_new.values()
-                    },
-                    **{
-                        f"group/{group['id']}": group
-                        for group in all_users_groups.values()
-                    },
+        events_data_meeting_users_to_add = {}
+        for meeting_id in target_meeting_ids:
+            if meeting_id not in remaining_and_new_meeting_users:
+                last_meeting_user_id += 1
+                events_data_meeting_users_to_add[meeting_id] = {
+                    "id": last_meeting_user_id,
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
                 }
+        remaining_and_new_meeting_users.update(events_data_meeting_users_to_add)
+
+        for group_id in target_group_ids:
+            if group_id not in current_group_ids:
+                meeting_id = all_users_groups[group_id]["meeting_id"]
+                meeting_user_id = remaining_and_new_meeting_users[meeting_id]["id"]
+                events_data_groups[group_id]["add"].append(meeting_user_id)
+
+        # Build and execute events
+        events = []
+
+        for id_ in events_data_meeting_users_to_delete:
+            events += self.get_delete_events(f"meeting_user/{id_}")
+
+        for mu in events_data_meeting_users_to_add.values():
+            id_ = mu.pop("id")
+            events += self.get_create_events(f"meeting_user/{id_}", mu)
+
+        for group_id, list_events_data in events_data_groups.items():
+            events += self.get_update_list_events(
+                f"group/{group_id}",
+                add={"meeting_user_ids": list_events_data.get("add", [])},
+                remove={"meeting_user_ids": list_events_data.get("remove", [])},
             )
-        return [mu["id"] for mu in meeting_users.values()]
+
+        if events:
+            self.perform_write_request(events)
+            self.adjust_id_sequences()
+
+        return [mu["id"] for mu in remaining_and_new_meeting_users.values()]
 
     def set_group_permissions(
         self, group_id: int, permissions: list[Permission]
@@ -705,17 +733,17 @@ class BaseSystemTestCase(TestCase):
     def add_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        events = self.get_update_list_events(
+        self.update_model(
             fqid_from_collection_and_id("group", group_id),
-            add={"permissions": [str(p) for p in permissions]},
+            {},
+            {"add": {"permissions": [str(p) for p in permissions]}},
         )
-        self.perform_write_request(events)
 
     def remove_group_permissions(
         self, group_id: int, permissions: list[Permission]
     ) -> None:
-        events = self.get_update_list_events(
+        self.update_model(
             fqid_from_collection_and_id("group", group_id),
-            remove={"permissions": [str(p) for p in permissions]},
+            {},
+            {"remove": {"permissions": [str(p) for p in permissions]}},
         )
-        self.perform_write_request(events)

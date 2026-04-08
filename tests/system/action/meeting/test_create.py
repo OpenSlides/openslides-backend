@@ -29,6 +29,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "committee_id": 1,
             "organization_tag_ids": [3],
             "language": "en",
+            "time_zone": "Europe/London",
             "admin_ids": [1],
         }
 
@@ -40,9 +41,15 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         if set_400_str:
             self.assert_status_code(response, 400)
-            assert set_400_str == response.json["message"]
+            self.assertIn(set_400_str, response.json["message"])
         else:
             self.assert_status_code(response, 200)
+
+    def test_create_invalid_timezone(self) -> None:
+        self.basic_test(
+            {"time_zone": "Mars/Terra_Sirenum"},
+            'new row for relation "meeting_t" violates check constraint "timezone_meeting_time_zone"',
+        )
 
     def test_create_simple_and_complex_workflow(self) -> None:
         self.basic_test()
@@ -249,7 +256,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        meeting = self.get_model("meeting/1")
+        meeting = self.assert_model_exists("meeting/1", {"user_ids": [1, 2, 3]})
         default_group_id = meeting.get("default_group_id")
         admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
@@ -273,9 +280,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "meeting_user/3",
             {"meeting_id": 1, "user_id": 3, "group_ids": [default_group_id]},
         )
-        self.assertCountEqual(meeting.get("user_ids", []), [1, 2, 3])
-        committee = self.get_model("committee/1")
-        self.assertCountEqual(committee.get("user_ids", []), [1, 2, 3])
+        self.assert_model_exists("committee/1", {"user_ids": [1, 2, 3]})
 
     def test_create_with_admins_empty_array(self) -> None:
         self.basic_test(
@@ -321,8 +326,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_name_too_long(self) -> None:
         self.basic_test(
-            {"name": "A" * 101},
-            set_400_str="Action meeting.create: data.name must be shorter than or equal to 100 characters",
+            {"name": "A" * 201},
+            set_400_str="Action meeting.create: data.name must be shorter than or equal to 200 characters",
         )
 
     def test_create_no_permissions(self) -> None:
@@ -426,18 +431,20 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.create_meeting(meeting_data=({"external_id": external_id}))
         self.basic_test(
             {"external_id": external_id},
-            set_400_str="The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
+            set_400_str="meeting/2: Meeting with external_id 'external' already exists.",
         )
         self.assert_model_not_exists("meeting/2")
 
-    def test_create_external_id_empty_special_case(self) -> None:
+    def test_create_external_id_empty_not_unique(self) -> None:
         external_id = ""
         self.create_meeting(
             meeting_data=({"committee_id": 1, "external_id": external_id})
         )
-        self.base_action_data.update({"external_id": external_id})
-        self.basic_test()
-        self.assert_model_exists("meeting/2", {"external_id": external_id})
+        self.basic_test(
+            {"external_id": external_id},
+            set_400_str="meeting/2: Meeting with external_id '' already exists.",
+        )
+        self.assert_model_not_exists("meeting/2")
 
     def test_enable_duplicate_mandatory(self) -> None:
         self.set_organization_management_level(None)

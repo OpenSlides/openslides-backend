@@ -55,6 +55,10 @@ def create_schema() -> None:
                 print(
                     "Assuming relational schema is applied, because table version exists.\n"
                 )
+                if not MigrationHelper.get_database_migration_index(cursor):
+                    MigrationHelper.set_database_migration_info(
+                        cursor, 100, MigrationState.FINALIZED
+                    )
                 return
             # We have a migration index if this is a legacy instance.
             # A migration index higher than or equal to MIN_NON_REL_MIGRATION is not

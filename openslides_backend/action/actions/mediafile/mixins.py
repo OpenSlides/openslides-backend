@@ -4,7 +4,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatabaseException, MissingPermission
-from ....shared.filters import And, Filter, FilterOperator, Not
+from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import Action
@@ -39,7 +39,7 @@ class MediafileMixin(Action):
                 parent_id = mediafile.get("parent_id")
             except DatabaseException:
                 pass
-        self.check_title_parent_unique(
+        self.check_title_unique_if_in_root(
             instance.get("title"),
             parent_id,
             instance.get("id"),
@@ -47,7 +47,6 @@ class MediafileMixin(Action):
         )
 
         if collection == "organization":
-            self.check_token_unique(instance.get("token"), instance.get("id"))
             if "access_group_ids" in instance and (
                 "meeting_id" not in instance
                 or not self.check_implicitly_published(instance, parent_id)
@@ -148,37 +147,6 @@ class MediafileMixin(Action):
             if parent.get("owner_id") != owner_id:
                 raise ActionException("Owner and parent don't match.")
 
-    def check_title_parent_unique(
-        self,
-        title: str | None,
-        parent_id: int | None,
-        id_: int | None,
-        owner_id: str,
-    ) -> None:
-        if title:
-            filter_ = And(
-                FilterOperator("title", "=", title),
-                FilterOperator("parent_id", "=", parent_id),
-                FilterOperator("owner_id", "=", owner_id),
-            )
-            if id_:
-                filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
-            results = self.datastore.filter(self.model.collection, filter_, ["id"])
-            if results:
-                if parent_id:
-                    parent = self.datastore.get(
-                        fqid_from_collection_and_id(self.model.collection, parent_id),
-                        ["title"],
-                    )
-                    parent_title = parent.get("title", "")
-                    raise ActionException(
-                        f"File '{title}' already exists in folder '{parent_title}'."
-                    )
-                else:
-                    raise ActionException(
-                        f"File '{title}' already exists in the root folder."
-                    )
-
     def check_access_groups_and_owner(
         self, access_group_ids: list[int] | None, meeting_id: int
     ) -> None:
@@ -190,20 +158,26 @@ class MediafileMixin(Action):
                 if group.get("meeting_id") != meeting_id:
                     raise ActionException("Owner and access groups don't match.")
 
-    def check_token_unique(self, token: str | None, id_: int | None) -> None:
-        if token:
-            filter_: Filter = And(
-                FilterOperator("token", "=", token),
-                FilterOperator("owner_id", "=", "organization" + KEYSEPARATOR + "1"),
+    def check_title_unique_if_in_root(
+        self,
+        title: str | None,
+        parent_id: int | None,
+        id_: int | None,
+        owner_id: str,
+    ) -> None:
+        if parent_id is None and title is not None:
+            filter_ = And(
+                FilterOperator("title", "=", title),
+                FilterOperator("parent_id", "=", parent_id),
+                FilterOperator("owner_id", "=", owner_id),
             )
             if id_:
-                filter_ = And(
-                    filter_,
-                    Not(FilterOperator("id", "=", id_)),
-                )
+                filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
-                raise ActionException(f"Token '{token}' is not unique.")
+                raise ActionException(
+                    f"File '{title}' already exists in the root folder."
+                )
 
 
 class MediafileCreateMixin(MediafileMixin):

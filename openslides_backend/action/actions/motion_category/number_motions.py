@@ -35,12 +35,6 @@ class MotionCategoryNumberMotions(UpdateAction):
 
             affected_categories = self.get_affected_categories(instance["id"])
             affected_motions = self.get_affected_motions(affected_categories)
-            non_affected_motion_ids = [
-                id for id in self.mem_motions if id not in affected_motions
-            ]
-            non_affected_numbers = [
-                self.mem_motions[id].get("number") for id in non_affected_motion_ids
-            ]
 
             # check for missing lead_motion_ids in affected_motions.
             for motion_id in affected_motions:
@@ -65,11 +59,6 @@ class MotionCategoryNumberMotions(UpdateAction):
 
             for motion_id in affected_motions:
                 number, number_value = self.get_number(motion_id, number_value_map)
-                if number in non_affected_numbers:
-                    raise ActionException(
-                        f'Numbering aborted because the motion identifier "{number}" already exists.'
-                    )
-
                 yield {
                     "id": motion_id,
                     "number": number,
@@ -86,20 +75,17 @@ class MotionCategoryNumberMotions(UpdateAction):
         )
         self.main_category_id = main_category_id
 
-        if category.get("meeting_id"):
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", category["meeting_id"]),
-                [
-                    "motion_ids",
-                    "motion_category_ids",
-                    "motions_number_with_blank",
-                    "motions_number_min_digits",
-                    "motions_amendments_prefix",
-                ],
-            )
-            self.meeting = meeting
-        else:
-            raise ActionException("Main category doesnt include meeting_id.")
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", category["meeting_id"]),
+            [
+                "motion_ids",
+                "motion_category_ids",
+                "motions_number_with_blank",
+                "motions_number_min_digits",
+                "motions_amendments_prefix",
+            ],
+        )
+        self.meeting = meeting
 
         gmr_categories = GetManyRequest(
             "motion_category",

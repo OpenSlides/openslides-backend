@@ -24,13 +24,18 @@ def json_dict_to_non_json_data_types(json: dict[str, Any]) -> None:
         for element in elements.values():
             for field_name, value in element.items():
                 field = model_description.try_get_field(field_name)
-                match type(field):
-                    case fields.DecimalField:
-                        element[field_name] = Decimal(value)
-                    case fields.TimestampField:
-                        element[field_name] = datetime.fromtimestamp(value)
-                    case fields.JSONField:
-                        element[field_name] = Jsonb(value)
+                try:
+                    match type(field):
+                        case fields.DecimalField:
+                            element[field_name] = Decimal(value)
+                        case fields.TimestampField:
+                            element[field_name] = datetime.fromisoformat(value)
+                        case fields.JSONField:
+                            element[field_name] = Jsonb(value)
+                except Exception as e:
+                    raise ActionException(
+                        f"Could not convert value of field {collection}/{field_name}. Message: {e}"
+                    )
 
 
 class ModelMetaClass(type):
@@ -149,4 +154,9 @@ class Model(metaclass=ModelMetaClass):
         """
         for model_field in self.get_fields():
             if model_field.required:
+                yield model_field
+
+    def get_enum_array_fields(self) -> Iterable[fields.Field]:
+        for model_field in self.get_fields():
+            if getattr(model_field, "enum_name", None) is not None:
                 yield model_field

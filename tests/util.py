@@ -51,7 +51,7 @@ class Client(WerkzeugClient):
         self.auth_data: AuthData = {}
         self.on_auth_data_changed = on_auth_data_changed
 
-    def login(self, username: str, password: str, user_id: int) -> None:
+    def login(self, username: str, password: str) -> None:
         handler = self.application.services.authentication().auth_handler.http_handler
         retries = 0
         while True:

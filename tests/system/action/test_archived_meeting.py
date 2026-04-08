@@ -85,7 +85,7 @@ class MeetingActions(BaseActionTestCase):
         )
 
     def test_delete_meeting(self) -> None:
-        self.create_user_for_meeting(1)
+        self.create_user("user2")
         self.set_models(
             {
                 "meeting_user/3": {
@@ -96,6 +96,7 @@ class MeetingActions(BaseActionTestCase):
                     "user_id": 1,
                     "meeting_id": 1,
                 },
+                "group/3": {"meeting_user_ids": [3, 4]},
                 "topic/23": {
                     "title": "to pic",
                     "meeting_id": 1,

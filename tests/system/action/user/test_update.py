@@ -21,11 +21,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
-        self.set_models(
-            {
-                "user/111": {"username": "User111"},
-            }
-        )
+        self.set_models({"user/111": {"username": "User111"}})
 
     def two_meetings_test_fail_ADEFGH(
         self, committee_id: None | int = None, group_B_success: bool = False
@@ -166,8 +162,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_Xcdfgee"
+        self.assert_model_exists("user/111", {"username": "username_Xcdfgee"})
         self.assert_history_information("user/111", ["Personal data changed"])
 
     def test_update_some_more_fields(self) -> None:
@@ -213,7 +208,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "username": "username_Xcdfgee",
                 },
                 "user/23": {
-                    "username": "username_Xcdfgee",
+                    "username": "username_Ycdfgee",
                 },
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23},
                 "group/1": {"meeting_user_ids": [223]},
@@ -307,7 +302,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "username": "username_Xcdfgee",
                 },
                 "user/23": {
-                    "username": "username_Xcdfgee",
+                    "username": "username_Ycdfgee",
                 },
                 "meeting_user/222": {"meeting_id": 1, "user_id": 22, "group_ids": [1]},
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23, "group_ids": [1]},
@@ -409,14 +404,15 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/111": {"username": "username_srtgb123"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 111},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         response = self.request(
             "user.update", {"id": 111, "vote_delegated_to_id": 11, "meeting_id": 1}
         )
         self.assert_status_code(response, 400)
-        assert (
-            "User 111 can't delegate the vote to himself." in response.json["message"]
+        self.assertIn(
+            "User 111 can't delegate the vote to himself.", response.json["message"]
         )
 
     def test_update_self_vote_delegation_2(self) -> None:
@@ -425,6 +421,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/111": {"username": "username_srtgb123"},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 111},
+                "group/1": {"meeting_user_ids": [11]},
             }
         )
         response = self.request(
@@ -432,8 +429,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"id": 111, "vote_delegations_from_ids": [11], "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "User 111 can't delegate the vote to himself." in response.json["message"]
+        self.assertIn(
+            "User 111 can't delegate the vote to himself.", response.json["message"]
         )
 
     def test_committee_manager_without_committee_ids(self) -> None:
@@ -627,7 +624,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "email": "broken@@"})
         self.assert_status_code(response, 400)
-        assert "email must be valid email." in response.json["message"]
+        self.assertIn("email must be valid email.", response.json["message"])
 
     def test_wrong_id(self) -> None:
         self.create_model(
@@ -642,15 +639,15 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Model 'user/112' does not exist.",
             response.json["message"],
         )
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_srtgb123"
+        self.assert_model_exists("user/111", {"username": "username_srtgb123"})
 
     def test_username_already_given(self) -> None:
         self.create_model("user/222", {"username": "username_Xcdfgee"})
         response = self.request("user.update", {"id": 222, "username": "admin"})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "A user with the username admin already exists.", response.json["message"]
+            "user/222: User with username 'admin' already exists.",
+            response.json["message"],
         )
 
     def test_member_number_already_given(self) -> None:
@@ -658,14 +655,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/221", {"username": "username_Xcdfgee", "member_number": "abcdefghij"}
         )
         self.create_model(
-            "user/222", {"username": "username_Xcdfgee", "member_number": "klmnopqrst"}
+            "user/222", {"username": "username_Ycdfgee", "member_number": "klmnopqrst"}
         )
         response = self.request(
             "user.update", {"id": 222, "member_number": "abcdefghij"}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "A user with the member_number abcdefghij already exists.",
+            "user/222: User with member_number 'abcdefghij' already exists.",
             response.json["message"],
         )
 
@@ -691,9 +688,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "pronoun": "123456789012345678901234567890123"}
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data.pronoun must be shorter than or equal to 32 characters"
-            in response.json["message"]
+        self.assertIn(
+            "data.pronoun must be shorter than or equal to 32 characters",
+            response.json["message"],
         )
 
     def test_perm_nothing(self) -> None:
@@ -951,10 +948,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "new_username",
                 "committee_ids": [60, 63],
+                "meeting_ids": [1, 4],
             },
         )
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_meeting_manage_user_with_only_archived_meeting_no_permission(
         self,
@@ -1298,10 +1294,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "new_username",
                 "committee_ids": [60, 63],
+                "meeting_ids": [1, 4],
             },
         )
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_meeting_manage_user_active_and_archived_meetings_in_same_committee(
         self,
@@ -1345,9 +1340,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"username": "new_username"})
-        user111 = self.get_model("user/111")
-        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "meeting_ids": [1, 4],
+            },
+        )
 
     def test_perm_group_A_no_permission(self) -> None:
         """May not update group A fields on organization scope, although having both committee permissions"""
@@ -1947,7 +1946,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/4": {"committee_id": 60},
                 "meeting_user/2": {"meeting_id": 1, "user_id": 111, "group_ids": [1]},
-                "group/1": {"meeting_user_ids": [2]},
+                "group/1": {"meeting_user_ids": [1, 2]},
             }
         )
 
@@ -1977,11 +1976,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_committee_management_level([60], self.user_id)
-        self.set_models(
-            {
-                "meeting_user/2": {"meeting_id": 1, "user_id": 111, "group_ids": [1]},
-            }
-        )
+        self.set_user_groups(111, [1])
 
         response = self.request(
             "user.update",
@@ -2071,9 +2066,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists("user/111")
-        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
-        self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "committee_management_ids": [60, 63],
+                "committee_ids": [60, 63],
+            },
+        )
 
     def test_perm_group_D_no_permission(self) -> None:
         """May not update Group D committee fields, because of missing CML permission for one committee"""
@@ -2136,9 +2135,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists("user/111")
-        self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
-        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
+        self.assert_model_exists(
+            "user/111",
+            {
+                "committee_ids": [60, 63],
+                "committee_management_ids": [60, 63],
+            },
+        )
 
     def test_perm_group_D_permission_with_CML_missing_permission(
         self,
@@ -2316,9 +2319,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "username": "   "})
         self.assert_status_code(response, 400)
-        assert "This username is forbidden." in response.json["message"]
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_srtgb123"
+        self.assertIn(
+            "Update of user/111: You try to set following required fields to an empty value: ['username']",
+            response.json["message"],
+        )
+        self.assert_model_exists("user/111", {"username": "username_srtgb123"})
 
     def test_update_username_with_spaces(self) -> None:
         self.create_model(
@@ -2327,9 +2332,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "username": "test name"})
         self.assert_status_code(response, 400)
-        assert "Username may not contain spaces" in response.json["message"]
-        model = self.get_model("user/111")
-        assert model.get("username") == "username_srtgb123"
+        self.assertIn("Username may not contain spaces", response.json["message"])
+        self.assert_model_exists("user/111", {"username": "username_srtgb123"})
 
     def test_update_gender(self) -> None:
         self.create_model(
@@ -2347,7 +2351,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
-        assert "Model 'gender/5' does not exist." in response.json["message"]
+        assert "Model 'gender/5' does not exist.", response.json["message"]
 
         response = self.request("user.update", {"id": 111, "gender_id": 3})
         self.assert_status_code(response, 200)
@@ -2366,9 +2370,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "is_present_in_meeting_ids": [1]}
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data must not contain {'is_present_in_meeting_ids'} properties"
-            in response.json["message"]
+        self.assertIn(
+            "data must not contain {'is_present_in_meeting_ids'} properties",
+            response.json["message"],
         )
 
     def test_update_change_group(self) -> None:
@@ -2403,9 +2407,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Your organization management level is not high enough to change a user with a Level of superadmin!"
-            in response.json["message"]
+        self.assertIn(
+            "Your organization management level is not high enough to change a user with a Level of superadmin!",
+            response.json["message"],
         )
 
     def test_update_demote_superadmin(self) -> None:
@@ -2425,9 +2429,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Your organization management level is not high enough to change a user with a Level of superadmin!"
-            in response.json["message"]
+        self.assertIn(
+            "Your organization management level is not high enough to change a user with a Level of superadmin!",
+            response.json["message"],
         )
 
     def test_update_change_superadmin_meeting_specific(self) -> None:
@@ -2472,9 +2476,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The number of active users cannot exceed the limit of users."
-            == response.json["message"]
+        self.assertEqual(
+            "The number of active users cannot exceed the limit of users.",
+            response.json["message"],
         )
 
     def test_update_user_limit_okay(self) -> None:
@@ -2688,6 +2692,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "user_id": 111,
                     "meeting_id": 1,
                 },
+                "group/1": {"meeting_user_ids": [10]},
             }
         )
         response = self.request(
@@ -2766,14 +2771,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
         self.create_meeting()
         user_id = self.create_user(username="test")
-        self.set_models(
-            {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": user_id,
-                },
-            }
-        )
+        self.set_user_groups(user_id, [1])
 
         response = self.request(
             "user.update",
@@ -4813,7 +4811,6 @@ class UserUpdateHomeCommitteePermissionTest(BaseActionTestCase):
                     [m_user["meeting_id"] == 1 for m_user in meeting_users].index(True)
                 ]
             )
-            assert meeting_user.get("meeting_id") == 1
             assert meeting_user.get("group_ids") == [1]
 
     def update_with_home_committee_group_D(self) -> None:

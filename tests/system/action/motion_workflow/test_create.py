@@ -9,6 +9,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             "motion_workflow.create", {"name": "test_Xcdfgee", "meeting_id": 42}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0] == {"id": 43, "sequential_number": 2}
         self.assert_model_exists(
             "motion_workflow/43",
             {"name": "test_Xcdfgee", "first_state_id": 43, "sequential_number": 2},

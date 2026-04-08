@@ -20,6 +20,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             "user/234": {"username": "username_234"},
             "meeting_user/233": {"meeting_id": 1, "user_id": 233},
             "meeting_user/234": {"meeting_id": 1, "user_id": 234},
+            "group/1": {"meeting_user_ids": [233, 234]},
             "assignment_candidate/31": {
                 "assignment_id": 222,
                 "meeting_user_id": 233,
@@ -48,6 +49,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "user/234": {"username": "username_234"},
                 "meeting_user/233": {"meeting_id": 1, "user_id": 233},
                 "meeting_user/234": {"meeting_id": 1, "user_id": 234},
+                "group/1": {"meeting_user_ids": [233, 234]},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,
@@ -86,6 +88,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "user/234": {"username": "username_234"},
                 "meeting_user/233": {"meeting_id": 1, "user_id": 233},
                 "meeting_user/234": {"meeting_id": 1, "user_id": 234},
+                "group/1": {"meeting_user_ids": [233, 234]},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,
@@ -121,6 +124,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "meeting_user/233": {"meeting_id": 1, "user_id": 233},
                 "meeting_user/234": {"meeting_id": 1, "user_id": 234},
                 "meeting_user/236": {"meeting_id": 1, "user_id": 236},
+                "group/1": {"meeting_user_ids": [233, 234, 236]},
                 "assignment_candidate/31": {
                     "assignment_id": 222,
                     "meeting_user_id": 233,

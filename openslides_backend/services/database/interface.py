@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 from openslides_backend.shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
@@ -139,7 +139,7 @@ class Database(Protocol):
     @abstractmethod
     def write(
         self, write_requests: list[WriteRequest] | WriteRequest
-    ) -> list[FullQualifiedId]: ...
+    ) -> dict[FullQualifiedId, dict[str, Any]]: ...
 
     @abstractmethod
     def truncate_db(self) -> None: ...

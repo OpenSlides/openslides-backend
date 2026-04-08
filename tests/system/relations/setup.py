@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, _patch, patch
+from unittest.mock import MagicMock
 
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
@@ -32,127 +32,117 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
             constant: true
             required: true
     {collection_a}:
-        id: *id_field
-        meeting_id:
-            type: relation
-            to: {fake_meeting}/{collection_a}_ids
-            reference: {fake_meeting}
-            default: 1
-        {collection_b}_oo:
-            type: relation
-            to: {collection_b}/{collection_a}_oo
-            reference: {collection_b}
-        {collection_b}_om:
-            type: relation
-            to: {collection_b}/{collection_a}_mo
-            reference: {collection_b}
-        {collection_b}_mm:
-            type: relation-list
-            to: {collection_b}/{collection_a}_mm
-            equal_fields: meeting_id
-        {collection_b}_generic_oo:
-            type: relation
-            to: {collection_b}/{collection_a}_generic_oo
-            reference: {collection_b}
-        {collection_b}_generic_mm:
-            type: relation-list
-            to: {collection_b}/{collection_a}_generic_mm
-        fake_model_generic_multitype:
-            type: generic-relation
-            reference:
-            - {collection_c}
-            - {collection_b}
-            to:
-            - {collection_c}/{collection_a}_generic_multitype_o
-            - {collection_b}/{collection_a}_generic_multitype_m
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {fake_meeting}/{collection_a}_ids
+                reference: {fake_meeting}
+                default: 1
+            {collection_b}_oo:
+                type: relation
+                to: {collection_b}/{collection_a}_oo
+                reference: {collection_b}
+            {collection_b}_om:
+                type: relation
+                to: {collection_b}/{collection_a}_mo
+                reference: {collection_b}
+            {collection_b}_mm:
+                type: relation-list
+                to: {collection_b}/{collection_a}_mm
+                equal_fields: meeting_id
+            {collection_b}_generic_oo:
+                type: relation
+                to: {collection_b}/{collection_a}_generic_oo
+                reference: {collection_b}
+            {collection_b}_generic_mm:
+                type: relation-list
+                to: {collection_b}/{collection_a}_generic_mm
+            fake_model_generic_multitype:
+                type: generic-relation
+                reference:
+                - {collection_c}
+                - {collection_b}
+                to:
+                - {collection_c}/{collection_a}_generic_multitype_o
+                - {collection_b}/{collection_a}_generic_multitype_m
     {collection_b}:
-        id: *id_field
-        meeting_id:
-            type: relation
-            to: {fake_meeting}/{collection_b}_ids
-            reference: {fake_meeting}
-            required: true
-            default: 1
-        {collection_a}_oo:
-            type: relation
-            to: {collection_a}/{collection_b}_oo
-            reference: {collection_a}
-        {collection_a}_mo:
-            type: relation-list
-            to: {collection_a}/{collection_b}_om
-            reference: {collection_a}
-        {collection_a}_mm:
-            type: relation-list
-            to: {collection_a}/{collection_b}_mm
-            equal_fields: meeting_id
-        {collection_a}_generic_oo:
-            type: generic-relation
-            reference:
-            - {collection_a}
-            to:
-            - {collection_a}/{collection_b}_generic_oo
-        {collection_a}_generic_mm:
-            type: generic-relation-list
-            to:
-                collections:
-                    - {collection_a}
-                field: {collection_b}_generic_mm
-        {collection_a}_generic_multitype_m:
-            type: relation-list
-            to: {collection_a}/fake_model_generic_multitype
-            reference: {collection_a}
-        {collection_c}_ids:
-            type: relation-list
-            to: {collection_c}/foreign_key_field
-            reference: {collection_c}
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {fake_meeting}/{collection_b}_ids
+                reference: {fake_meeting}
+                required: true
+                default: 1
+            {collection_a}_oo:
+                type: relation
+                to: {collection_a}/{collection_b}_oo
+                reference: {collection_a}
+            {collection_a}_mo:
+                type: relation-list
+                to: {collection_a}/{collection_b}_om
+                reference: {collection_a}
+            {collection_a}_mm:
+                type: relation-list
+                to: {collection_a}/{collection_b}_mm
+                equal_fields: meeting_id
+            {collection_a}_generic_oo:
+                type: generic-relation
+                reference:
+                - {collection_a}
+                to:
+                - {collection_a}/{collection_b}_generic_oo
+            {collection_a}_generic_mm:
+                type: generic-relation-list
+                to:
+                    collections:
+                        - {collection_a}
+                    field: {collection_b}_generic_mm
+            {collection_a}_generic_multitype_m:
+                type: relation-list
+                to: {collection_a}/fake_model_generic_multitype
+                reference: {collection_a}
+            {collection_c}_ids:
+                type: relation-list
+                to: {collection_c}/foreign_key_field
+                reference: {collection_c}
     {collection_c}:
-        id: *id_field
-        meeting_id:
-            type: relation
-            to: {fake_meeting}/{collection_c}_ids
-            reference: {fake_meeting}
-            required: true
-            default: 1
-        {collection_a}_generic_multitype_o:
-            type: relation
-            to: {collection_a}/fake_model_generic_multitype
-            reference: {collection_a}
-        foreign_key_field:
-            type: relation
-            to: {collection_b}/{collection_c}_ids
-            reference: {collection_b}
+        fields:
+            id: *id_field
+            meeting_id:
+                type: relation
+                to: {fake_meeting}/{collection_c}_ids
+                reference: {fake_meeting}
+                required: true
+                default: 1
+            {collection_a}_generic_multitype_o:
+                type: relation
+                to: {collection_a}/fake_model_generic_multitype
+                reference: {collection_a}
+            foreign_key_field:
+                type: relation
+                to: {collection_b}/{collection_c}_ids
+                reference: {collection_b}
     {fake_meeting}:
-        id: *id_field
-        real_value:
-            type: string
-            default: ⚞(⚬___⚬)⚟
-        {collection_a}_ids:
-            type: relation-list
-            to: {collection_a}/meeting_id
-            reference: {collection_a}
-        {collection_b}_ids:
-            type: relation-list
-            to: {collection_b}/meeting_id
-            reference: {collection_b}
-        {collection_c}_ids:
-            type: relation-list
-            to: {collection_c}/meeting_id
-            reference: {collection_c}
+        fields:
+            id: *id_field
+            real_value:
+                type: string
+                default: ⚞(⚬___⚬)⚟
+            {collection_a}_ids:
+                type: relation-list
+                to: {collection_a}/meeting_id
+                reference: {collection_a}
+            {collection_b}_ids:
+                type: relation-list
+                to: {collection_b}/meeting_id
+                reference: {collection_b}
+            {collection_c}_ids:
+                type: relation-list
+                to: {collection_c}/meeting_id
+                reference: {collection_c}
     """
-    patcher: _patch
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.patcher = patch(
-            "meta.dev.src.helper_get_names.HelperGetNames.trigger_unique_list", []
-        )
-        cls.patcher.start()
-        super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        super().tearDownClass()
-        cls.patcher.stop()
 
     def setUp(self) -> None:
         super().setUp()

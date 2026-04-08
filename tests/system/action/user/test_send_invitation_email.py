@@ -524,6 +524,7 @@ class SendInvitationMail(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting_id = response.json["results"][0][0]["id"]
+        self.update_created_fqids()
         self.set_models(
             {
                 "user/2": {
@@ -533,10 +534,9 @@ class SendInvitationMail(BaseActionTestCase):
                     "meeting_id": meeting_id,
                     "user_id": 2,
                 },
+                "group/4": {"meeting_user_ids": [12]},
             }
         )
-        # models created by the request aren't registered for set_models and need to be explicitly updated
-        self.update_model("group/4", {"meeting_user_ids": [12]})
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -691,7 +691,183 @@ class SendInvitationMail(BaseActionTestCase):
         )
         self.assertEqual(
             response.json["results"][0][0]["message"],
-            "Missing OrganizationManagementLevel: can_manage_users Mail 1 from 1",
+            "Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee {60} Mail 1 from 1",
+        )
+
+    def test_organization_send_parent_committee_permission(self) -> None:
+        self.create_committee(57)
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/57": {"manager_ids": [1], "all_child_ids": [60]},
+                "committee/60": {"parent_id": 57},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
+    def test_organization_send_committee_permission(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/60": {"manager_ids": [1]},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
+    def test_organization_send_committee_permission_one_of(self) -> None:
+        self.create_meeting(4)
+        self.set_user_groups(2, [1, 4])
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/60": {"manager_ids": [1]},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
+    def test_organization_send_committee_permission_not_home_comm(self) -> None:
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/60": {"manager_ids": [1]},
+                "user/2": {"home_committee_id": 63},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
+    def test_organization_send_committee_permission_home_comm(self) -> None:
+        cindy_id = self.create_user("cindy")
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+                "committee/60": {"manager_ids": [1]},
+                f"user/{cindy_id}": {
+                    "home_committee_id": 60,
+                    "email": "cin.dy@cindy.cindy",
+                },
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": cindy_id,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
         )
 
     def test_with_parent_meeting_permission(self) -> None:

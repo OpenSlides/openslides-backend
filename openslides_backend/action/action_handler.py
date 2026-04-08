@@ -1,19 +1,25 @@
+import re
 from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
+from time import sleep
 from typing import Any, TypeVar, cast
 
 import fastjsonschema
-from psycopg.errors import RaiseException
+from psycopg.errors import ForeignKeyViolation, RaiseException, SerializationFailure
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.shared.exceptions import DatabaseException
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ..shared.exceptions import (
     ActionException,
+    BadCodingException,
     DatastoreLockedException,
+    ModelDoesNotExist,
     RelationException,
     View400Exception,
 )
@@ -68,6 +74,8 @@ payload_schema = fastjsonschema.compile(
     }
 )
 
+META_POST_EDIT_FN_KEY = "META_EDIT_FN_GHETZHSRHSRGG"
+
 
 class ActionHandler(BaseHandler):
     """
@@ -120,51 +128,75 @@ class ActionHandler(BaseHandler):
                 except fastjsonschema.JsonSchemaException as exception:
                     raise ActionException(exception.message)
 
-            try:
-                with get_new_os_conn() as conn:
-                    self.datastore = ExtendedDatabase(conn, self.logging, self.env)
-                    results: ActionsResponseResults = []
-                    if atomic:
-                        results = self.execute_write_requests(
-                            self.parse_actions, payload
-                        )
-                    else:
-
-                        def transform_to_list(
-                            tuple: tuple[WriteRequest | None, ActionResults | None],
-                        ) -> tuple[list[WriteRequest], ActionResults | None]:
-                            return (
-                                [tuple[0]] if tuple[0] is not None else [],
-                                tuple[1],
+            retry_count = int(self.env.ACTION_MAX_RETRIES or 1)
+            retry_timeout = float(self.env.ACTION_RETRY_TIMEOUT or 0.4)
+            for attempt in range(1, retry_count + 1):
+                try:
+                    with get_new_os_conn() as conn:
+                        self.post_edit_necessary = False
+                        self.datastore = ExtendedDatabase(conn, self.logging, self.env)
+                        results: ActionsResponseResults = []
+                        if atomic:
+                            results = self.execute_write_requests(
+                                self.parse_actions, payload
                             )
+                        else:
 
-                        for element in payload:
-                            try:
-                                result = self.execute_write_requests(
-                                    lambda e: transform_to_list(self.perform_action(e)),
-                                    element,
+                            def transform_to_list(
+                                tuple: tuple[WriteRequest | None, ActionResults | None],
+                            ) -> tuple[list[WriteRequest], ActionResults | None]:
+                                return (
+                                    [tuple[0]] if tuple[0] is not None else [],
+                                    tuple[1],
                                 )
-                                results.append(result)
-                            except ActionException as exception:
-                                error = cast(ActionError, exception.get_json())
-                                results.append(error)
-                            self.datastore.reset()
 
-                    # execute cleanup methods
-                    for on_success in self.on_success:
-                        on_success()
+                            for element in payload:
+                                try:
+                                    result = self.execute_write_requests(
+                                        lambda e: transform_to_list(
+                                            self.perform_action(e)
+                                        ),
+                                        element,
+                                    )
+                                    results.append(result)
+                                except ActionException as exception:
+                                    error = cast(ActionError, exception.get_json())
+                                    results.append(error)
+                                self.datastore.reset()
 
-                    # Return action result
-                    self.logger.info("Request was successful. Send response now.")
-                    return ActionsResponse(
-                        status_code=HTTPStatus.OK.value,
-                        success=True,
-                        message="Actions handled successfully",
-                        results=results,
+                        # execute cleanup methods
+                        for on_success in self.on_success:
+                            on_success()
+
+                        # Return action result
+                        self.logger.info("Request was successful. Send response now.")
+                        return ActionsResponse(
+                            status_code=HTTPStatus.OK.value,
+                            success=True,
+                            message="Actions handled successfully",
+                            results=results,
+                        )
+                except RaiseException as e:
+                    # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    raise RelationException(
+                        f"Relation violates required constraint: {e}"
                     )
-            except RaiseException as e:
-                # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
-                raise RelationException(f"Relation violates required constraint: {e}")
+                except ForeignKeyViolation as e:
+                    # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'
+                    if match := re.search(pattern, e.args[0]):
+                        error_fqid = fqid_from_collection_and_id(
+                            match.group(2), match.group(1)
+                        )
+                        raise ModelDoesNotExist(error_fqid)
+                    raise e
+                except SerializationFailure:
+                    if attempt == retry_count:
+                        raise DatabaseException(
+                            "Database operation failed due to concurrent conflicting actions. Please try again later."
+                        )
+                    sleep(retry_timeout)
+            raise BadCodingException("This code should never execute")
 
     def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
         """Helper function to execute an internal action with user id -1."""
@@ -190,7 +222,8 @@ class ActionHandler(BaseHandler):
                 try:
                     write_requests, data = get_write_requests(*args)
                     if write_requests:
-                        self.datastore.write(write_requests)
+                        results = self.datastore.write(write_requests)
+                        data = self.update_action_data_with_write_results(data, results)
                     return data
                 except DatastoreLockedException as exception:
                     retries += 1
@@ -198,6 +231,20 @@ class ActionHandler(BaseHandler):
                         raise ActionException(exception.message)
                     else:
                         self.datastore.reset()
+
+    def update_action_data_with_write_results(
+        self, data: T, results: dict[str, dict[str, Any]]
+    ) -> T:
+        if self.post_edit_necessary:
+            if isinstance(data, list):
+                for element in data:
+                    if element:
+                        self.update_action_data_with_write_results(element, results)
+            elif isinstance(data, dict):
+                edit_fn = data.pop(META_POST_EDIT_FN_KEY, None)
+                if edit_fn:
+                    return edit_fn(data, results)
+        return data
 
     def parse_actions(
         self, payload: Payload
@@ -275,6 +322,12 @@ class ActionHandler(BaseHandler):
                 write_request, results = action.perform(
                     action_data, self.user_id, internal=self.internal
                 )
+                if results and (edit_fn := action.get_post_edit_function()):
+                    for element in results:
+                        if element and isinstance(element, dict):
+                            element[META_POST_EDIT_FN_KEY] = edit_fn
+                            self.post_edit_necessary = True
+
             if write_request:
                 action.validate_write_request(write_request)
 

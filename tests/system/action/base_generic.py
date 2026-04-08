@@ -65,12 +65,14 @@ class BaseGenericTestCase(BaseActionTestCase):
         InternalHelper.MODELS = yaml.safe_load(yml)
 
         (
+            enum_definions,
             pre_code,
             table_name_code,
             view_name_code,
             alter_table_code,
             final_info_code,
             missing_handled_attributes,
+            missing_handled_collections_meta_attributes,
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
