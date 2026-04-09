@@ -53,8 +53,8 @@ def build_name_unique_with_test_data(
     setup_data: IterableData = {collection: {}}
     expect_data: IterableData = {collection: {}}
     setup_data[back_collection] = expect_data[back_collection] = {
-        1: {back_id_field: [1, 2, *([4, 6, 7, 8, 9, 10] if with_problems else [])]},
-        2: {back_id_field: [5, 11] if with_problems else []},
+        1: {back_id_field: [1, 2, *([4, 6, 7, 8, 9, 10, 11] if with_problems else [])]},
+        2: {back_id_field: [5, 12, 13] if with_problems else []},
     }
     setup_data[collection][1] = expect_data[collection][1] = {
         name_field: "unproblematic",
@@ -97,8 +97,11 @@ def build_name_unique_with_test_data(
             name_field: "actual problem (3) (2)",
             id_field: 1,
         }
-        setup_data[collection][11] = expect_data[collection][11] = {
+        setup_data[collection][12] = expect_data[collection][12] = {
             name_field: "actual problem",
+            id_field: 2,
+        }
+        setup_data[collection][13] = expect_data[collection][13] = {
             id_field: 2,
         }
     return setup_data, {collection: [3]}, expect_data
@@ -113,6 +116,7 @@ def build_single_external_id_test_data(collection: str, fail: bool = False) -> T
     }
     setup_data[collection][3] = {"external_id": "now unique"}
     expect_data[collection][3] = {"external_id": "now unique", "meta_deleted": True}
+    setup_data[collection][6] = expect_data[collection][6] = {"id": 6}
     if fail:
         setup_data[collection][4] = {"external_id": "not unique"}
         setup_data[collection][5] = {"external_id": "not unique"}
@@ -214,7 +218,7 @@ def build_mediafile_test_data(
         )
     data["meeting"] = expect["meeting"] = {
         1: {"mediafile_ids": [13, 14, 15, 16]},
-        2: {"mediafile_ids": [17, 18, 19, 20, 21]},
+        2: {"mediafile_ids": [17, 18, 19, 20, 21, 23]},
     }
     data["mediafile"][13] = expect["mediafile"][13] = {
         "owner_id": "meeting/1",
@@ -239,7 +243,7 @@ def build_mediafile_test_data(
     data["mediafile"][17] = expect["mediafile"][17] = {
         "owner_id": "meeting/2",
         "title": "Everybody look at me.png",
-        "child_ids": [18, 19, 20, 21],
+        "child_ids": [18, 19, 20, 21, 23],
     }
     data["mediafile"][18] = expect["mediafile"][18] = {
         "owner_id": "meeting/2",
@@ -259,6 +263,10 @@ def build_mediafile_test_data(
     data["mediafile"][21] = expect["mediafile"][21] = {
         "owner_id": "meeting/2",
         "title": "SameAsMeeting.png",
+        "parent_id": 17,
+    }
+    data["mediafile"][23] = expect["mediafile"][23] = {
+        "owner_id": "meeting/2",
         "parent_id": 17,
     }
     if with_problems:
@@ -1598,7 +1606,3 @@ def test_all_failures(write, finalize, assert_model) -> None:
             ]
         ),
     )
-
-
-# TODO: Test the following:
-# and test all together.
