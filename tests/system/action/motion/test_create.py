@@ -1038,3 +1038,26 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "submitter_ids": None,
             },
         )
+
+    def test_create_motion_with_diff_version(self) -> None:
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 1,
+                "text": "test",
+                "diff_version": "0.1.2",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/1",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "submitter_ids": None,
+                "diff_version": "0.1.2",
+            },
+        )

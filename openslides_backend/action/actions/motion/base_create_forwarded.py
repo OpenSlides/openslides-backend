@@ -78,6 +78,7 @@ class BaseMotionCreateForwarded(
                         "all_derived_motion_ids",
                         "amendment_ids",
                         "attachment_meeting_mediafile_ids",
+                        "diff_version",
                     ],
                 ),
             ],
@@ -229,6 +230,7 @@ class BaseMotionCreateForwarded(
 
         self.handle_number(instance)
         self.set_origin_ids(instance)
+        self.set_diff_version(instance)
         self.set_text_hash(instance)
         instance["forwarded"] = datetime.now(ZoneInfo("UTC"))
         with_change_recommendations = instance.pop("with_change_recommendations", False)
@@ -440,6 +442,14 @@ class BaseMotionCreateForwarded(
             instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
+
+    def set_diff_version(self, instance: dict[str, Any]) -> None:
+        if diff_version := self.datastore.get(
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
+            ["diff_version"],
+            lock_result=False,
+        ).get("diff_version"):
+            instance["diff_version"] = diff_version
 
     def duplicate_mediafiles(
         self,
