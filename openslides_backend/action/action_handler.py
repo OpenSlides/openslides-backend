@@ -178,6 +178,7 @@ class ActionHandler(BaseHandler):
                         )
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
+                    # TODO: differentiate between required and equal_fields constraint.
                     raise RelationException(
                         f"Relation violates required constraint: {e}"
                     )

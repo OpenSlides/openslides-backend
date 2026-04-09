@@ -1,6 +1,7 @@
 from tests.system.action.base import BaseActionTestCase
 
 
+# TODO: Move or delete these tests.
 class EqualFieldsActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()

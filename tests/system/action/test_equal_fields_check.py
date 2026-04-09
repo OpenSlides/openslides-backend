@@ -4,6 +4,7 @@ from unittest import mock
 
 import pytest
 import yaml
+from psycopg.errors import RaiseException
 
 from cli.generate_models import Attribute, Model
 from meta.dev.src import helper_get_names
@@ -151,7 +152,6 @@ def generate_collection_fields(
             id: *id_field"""
     definition2 = ""
     for equal_field, rel_type in equal_field_relations:
-        # for equal_field in equal_fields:
         b_coll = get_collection_name(rel_type, collection_b, equal_field)
         c_coll = get_collection_name(rel_type, collection_c, equal_field)
         field_group_1, field_group_2 = generate_collection_field_defs(
@@ -189,11 +189,6 @@ def generate_collection_fields(
                 reference: {collection_a}
             {field_group_2}"""
     return definition1 + definition2
-
-
-final_yml = generate_collection_fields(
-    collection_b, collection_c, equal_field_relations
-)
 
 
 class FakeModelEFA(FakeModel):
@@ -243,48 +238,37 @@ def BaseFakeModelFactory(
 def get_attr_helper(collection: str, field_name: str, attr_data: Attribute) -> Any:
     to_data = attr_data.to
     to = to_data.to if to_data else {}
+    clazz: (
+        type[fields.GenericRelationListField]
+        | type[fields.RelationListField]
+        | type[fields.GenericRelationField]
+        | type[fields.RelationField]
+    )
     match attr_data.type:
         case "generic-relation-list":
-            field: fields.Field = fields.GenericRelationListField(
-                to=to,
-                is_view_field=attr_data.is_view_field,
-                write_fields=attr_data.write_fields,
-                is_primary=attr_data.is_primary,
-                required=attr_data.required,
-            )
+            clazz = fields.GenericRelationListField
         case "relation-list":
-            field = fields.RelationListField(
-                to=to,
-                is_view_field=attr_data.is_view_field,
-                write_fields=attr_data.write_fields,
-                is_primary=attr_data.is_primary,
-                required=attr_data.required,
-            )
+            clazz = fields.RelationListField
         case "generic-relation":
-            field = fields.GenericRelationField(
-                to=to,
-                is_view_field=attr_data.is_view_field,
-                write_fields=attr_data.write_fields,
-                is_primary=attr_data.is_primary,
-                required=attr_data.required,
-            )
+            clazz = fields.GenericRelationField
         case "relation":
-            field = fields.RelationField(
-                to=to,
-                is_view_field=attr_data.is_view_field,
-                write_fields=attr_data.write_fields,
-                is_primary=attr_data.is_primary,
-                required=attr_data.required,
-            )
+            clazz = fields.RelationField
         case _:
             raise Exception("get_attr_helper shouldn't be called for non-relations.")
+    field = clazz(
+        to=to,
+        is_view_field=attr_data.is_view_field,
+        write_fields=attr_data.write_fields,
+        is_primary=attr_data.is_primary,
+        required=attr_data.required,
+    )
     field.own_field_name = field_name
     field.own_collection = collection
     return field
 
 
 class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
-    yml = final_yml
+    yml = generate_collection_fields(collection_b, collection_c, equal_field_relations)
 
     # rel_type to equal_field to collection type class_type to class
     classes: dict[
@@ -306,8 +290,8 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         super().setUpClass()
         orig_build_models_yaml_content = helper_get_names.build_models_yaml_content
         helper_get_names.build_models_yaml_content = mock.Mock()
-        helper_get_names.build_models_yaml_content.return_value = final_yml.encode()
-        loaded_yml: dict[str, dict[str, Any]] = yaml.safe_load(final_yml)
+        helper_get_names.build_models_yaml_content.return_value = cls.yml.encode()
+        loaded_yml: dict[str, dict[str, Any]] = yaml.safe_load(cls.yml)
         for equal_field, rel_type in equal_field_relations:
             if rel_type not in cls.classes:
                 cls.classes[rel_type] = {}
@@ -326,17 +310,17 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
     ) -> None:
         coll = get_collection_name(rel_type, collection, equal_field)
         ef_model = Model(coll, loaded_yml[coll]["fields"])
-        name = generate_collection_field_name(
+        field_name = generate_collection_field_name(
             rel_type.split(":")[0 if coll_abbrev == "b" else 1], coll_abbrev == "c"
         )[0]
-        ef_attr = ef_model.attributes[name]
+        ef_attr = ef_model.attributes[field_name]
         clas, back_rel = BaseFakeModelFactory(
             collection,
             coll_abbrev,
             "id" if coll_abbrev == "b" else "ids",
             rel_type,
             equal_field,
-            {name: get_attr_helper(coll, name, ef_attr)},
+            {field_name: get_attr_helper(coll, field_name, ef_attr)},
         )
         setattr(
             FakeModelEFA,
@@ -477,7 +461,6 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         collection_b: str,
         collection_c: str,
     ) -> None:
-        # self.assert_status_code(response, 400)
         shortened = response.split("\nCONTEXT:")[0]
         if equal_field == "meeting_id":
             if "to meeting 4:" in shortened:
@@ -515,24 +498,20 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
                 rel_type, equal_field, back, fail=True
             )
             self.set_models(setup_data)
-            try:
+            with pytest.raises(RaiseException) as e:
                 self.set_models(test_data)
-                raise pytest.fail(
-                    f"Expected setting test data {rel_type} create fail test to fail."
-                )
-            except Exception as e:
-                collection_b, field1, _, collection_c, field2, _ = (
-                    self.get_test_relation_data(rel_type, equal_field)
-                )
-                self.assert_fail_test_error(
-                    str(e),
-                    equal_field,
-                    back,
-                    field1,
-                    field2,
-                    collection_b,
-                    collection_c,
-                )
+            collection_b, field1, _, collection_c, field2, _ = (
+                self.get_test_relation_data(rel_type, equal_field)
+            )
+            self.assert_fail_test_error(
+                str(e.value),
+                equal_field,
+                back,
+                field1,
+                field2,
+                collection_b,
+                collection_c,
+            )
 
         return base_test_fail
 
@@ -545,24 +524,20 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
                 rel_type, equal_field, back, fail=True, is_update=True
             )
             self.set_models(setup_data)
-            try:
+            with pytest.raises(RaiseException) as e:
                 self.set_models(test_data)
-                raise pytest.fail(
-                    f"Expected setting test data {rel_type} update fail test to fail."
-                )
-            except Exception as e:
-                collection_b, field1, _, collection_c, field2, _ = (
-                    self.get_test_relation_data(rel_type, equal_field)
-                )
-                self.assert_fail_test_error(
-                    str(e),
-                    equal_field,
-                    back,
-                    field1,
-                    field2,
-                    collection_b,
-                    collection_c,
-                )
+            collection_b, field1, _, collection_c, field2, _ = (
+                self.get_test_relation_data(rel_type, equal_field)
+            )
+            self.assert_fail_test_error(
+                str(e.value),
+                equal_field,
+                back,
+                field1,
+                field2,
+                collection_b,
+                collection_c,
+            )
 
         return base_test_fail
 
@@ -582,6 +557,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             side = sides[0] if back else sides[1]
             needs_back_update = "1" in side and "r" in side
             try:
+                # TODO: Merge main, then use set_models instead
                 self.perform_write_request(
                     [
                         *(
@@ -636,7 +612,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
                 self.get_test_relation_data(rel_type, equal_field)
             )
             self.set_models(setup_data)
-            try:
+            with pytest.raises(RaiseException) as e:
                 self.set_models(
                     {
                         f"{collection_c if back else collection_b}/1": {
@@ -645,19 +621,15 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
                         }
                     }
                 )
-                raise pytest.fail(
-                    f"Expected setting test data {rel_type} create fail test to fail."
-                )
-            except Exception as e:
-                self.assert_fail_test_error(
-                    str(e),
-                    equal_field,
-                    back,
-                    field1,
-                    field2,
-                    collection_b,
-                    collection_c,
-                )
+            self.assert_fail_test_error(
+                str(e.value),
+                equal_field,
+                back,
+                field1,
+                field2,
+                collection_b,
+                collection_c,
+            )
 
         return base_test_update_equal_field
 
