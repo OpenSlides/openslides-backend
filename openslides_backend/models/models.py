@@ -325,7 +325,7 @@ class Committee(Model):
         ),
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "committee_ids"}, required=True, constant=True
+        to={"organization": "committee_ids"}, required=True, constant=True, default=1
     )
 
 
@@ -336,7 +336,7 @@ class Gender(Model):
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True, unique=True)
     organization_id = fields.OrganizationField(
-        to={"organization": "gender_ids"}, required=True
+        to={"organization": "gender_ids"}, required=True, default=1
     )
     user_ids = fields.RelationListField(
         to={"user": "gender_id"}, is_view_field=True, is_primary=True
@@ -396,7 +396,8 @@ class Group(Model):
                 "user.can_see",
                 "user.can_update",
                 "user.can_edit_own_delegation",
-            ]
+            ],
+            "enum_name": "enum_group_permissions[]",
         }
     )
     weight = fields.IntegerField()
@@ -677,6 +678,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
+    time_zone = fields.TimezoneField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
     locked_from_inside = fields.BooleanField()
@@ -725,7 +727,7 @@ class Meeting(Model, MeetingModelMixin):
         default="center", constraints={"enum": ["left", "right", "center"]}
     )
     export_pdf_fontsize = fields.IntegerField(
-        default=10, constraints={"enum": [10, 11, 12]}
+        default=10, constraints={"minimum": 10, "maximum": 12}
     )
     export_pdf_line_height = fields.FloatField(
         default=1.25, constraints={"minimum": 1.0}
@@ -1593,6 +1595,7 @@ class Motion(Model):
         },
     )
     title = fields.CharField(required=True)
+    diff_version = fields.CharField()
     text = fields.HTMLStrictField()
     text_hash = fields.CharField()
     amendment_paragraphs = fields.JSONField()
@@ -1989,7 +1992,8 @@ class MotionState(Model):
                 "motion.can_manage_metadata",
                 "motion.can_manage",
                 "is_submitter",
-            ]
+            ],
+            "enum_name": "enum_motion_state_restrictions[]",
         },
     )
     allow_support = fields.BooleanField(default=False)
@@ -2200,6 +2204,7 @@ class Organization(Model):
     default_language = fields.CharField(
         default="en", constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
+    time_zone = fields.TimezoneField()
     require_duplicate_from = fields.BooleanField()
     enable_anonymous = fields.BooleanField()
     restrict_editing_same_level_committee_admins = fields.BooleanField()
@@ -2269,7 +2274,7 @@ class OrganizationTag(Model):
         ),
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "organization_tag_ids"}, required=True
+        to={"organization": "organization_tag_ids"}, required=True, default=1
     )
 
 
@@ -2818,7 +2823,7 @@ class Theme(Model):
         to={"organization": "theme_id"}, is_view_field=True
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "theme_ids"}, required=True
+        to={"organization": "theme_ids"}, required=True, default=1
     )
 
 
@@ -2976,7 +2981,7 @@ class User(Model):
         },
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "user_ids"}, required=True, constant=True
+        to={"organization": "user_ids"}, required=True, constant=True, default=1
     )
 
 

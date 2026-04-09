@@ -185,6 +185,7 @@ class MigrationHandler(BaseHandler):
         # RECREATE some relevant triggers
         # May be error prone due to changing constraints
         (
+            enum_definitions,
             pre_code,
             table_name_code,
             view_name_code,
@@ -484,6 +485,7 @@ class MigrationHandler(BaseHandler):
 
         # RECREATE triggers
         (
+            enum_definitions,
             pre_code,
             table_name_code,
             view_name_code,

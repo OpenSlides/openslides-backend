@@ -46,6 +46,7 @@ COMMON_FIELD_CLASSES = {
     "number[]": "NumberArrayField",
     "text": "TextField",
     "text[]": "TextArrayField",
+    "timezone": "TimezoneField",
 }
 
 RELATION_FIELD_CLASSES = {
@@ -233,9 +234,23 @@ class Attribute(Node):
                     "unique",
                     "equal_fields",
                 ):
-                    self.constraints[k] = v
-                elif self.type in ("string[]", "number[]", "text[]") and k == "items":
-                    self.in_array_constraints.update(v)
+                    if k == "enum" and isinstance(v, str):
+                        enum_name = HelperGetNames.get_enum_name(v)
+                        self.constraints[k] = InternalHelper.ENUMS[enum_name]
+                    else:
+                        self.constraints[k] = v
+                elif self.type in ("string[]", "text[]") and k == "items":
+                    enum = v["enum"]
+                    if isinstance(enum, str):
+                        enum_name = HelperGetNames.get_enum_name(enum)
+                        enum = InternalHelper.ENUMS[enum_name]
+                    else:
+                        enum_name = HelperGetNames.get_enum_name_for_column(
+                            collection_name, field_name
+                        )
+                    self.in_array_constraints.update(
+                        {"enum": enum, "enum_name": f"{enum_name}[]"}
+                    )
 
     def get_code(self, field_name: str) -> str:
         if field_name == "organization_id":
