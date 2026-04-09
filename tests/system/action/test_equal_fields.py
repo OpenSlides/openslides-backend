@@ -32,7 +32,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 1: ['meeting_user/1']",
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
             response.json["message"],
         )
 
@@ -77,7 +77,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 1: ['group/5']",
+            "The following models do not belong to meeting 1: ['group/5']",
             response.json["message"],
         )
 
@@ -90,7 +90,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         self.setup_chat_group_test()
         response = self.request("chat_group.update", {"id": 1, "read_group_ids": [5]})
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 1: ['group/5']",
+            "The following models do not belong to meeting 1: ['group/5']",
             response.json["message"],
         )
 
@@ -144,7 +144,7 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 1: ['user/2']",
+            "The following models do not belong to meeting 1: ['user/2']",
             response.json["message"],
         )
 
@@ -160,6 +160,6 @@ class EqualFieldsActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 1: ['meeting/4']",
+            "The following models do not belong to meeting 1: ['meeting/4']",
             response.json["message"],
         )
