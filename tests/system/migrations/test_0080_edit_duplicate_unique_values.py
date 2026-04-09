@@ -13,6 +13,12 @@ TestData = tuple[IterableData, dict[str, list[int]], list[str] | IterableData]
 
 def do_test(write, finalize, assert_model, test_data: TestData) -> None:
     setup, to_delete, expect_or_error = test_data
+    for id_, file in setup.get("meeting_mediafile", {}).items():
+        file.update({"is_public": True, "inherited_access_group_ids": []})
+        if isinstance(expect_or_error, dict):
+            expect_or_error["meeting_mediafile"][id_].update(
+                {"is_public": True, "inherited_access_group_ids": []}
+            )
     write(
         *[
             {"type": "create", "fqid": f"{collection}/{id_}", "fields": data}
@@ -346,51 +352,53 @@ def build_meeting_id_and_string_field_test_data(
     return setup_data, {collection: [3]}, expect_data
 
 
-def build_meeting_user_test_data(fail: bool = False) -> TestData:
-    setup_data: IterableData = {"meeting_user": {}}
-    expect_data: IterableData = {"meeting_user": {}}
+def build_meeting_connection_test_data(
+    collection: str, non_meeting_id_field: str, back_collection: str, fail: bool = False
+) -> TestData:
+    setup_data: IterableData = {collection: {}}
+    expect_data: IterableData = {collection: {}}
     setup_data["meeting"] = expect_data["meeting"] = {
-        1: {"meeting_user_ids": [1, 3, *([6, 7] if fail else [])]},
-        2: {"meeting_user_ids": [2, 4]},
+        1: {f"{collection}_ids": [1, 3, *([6, 7] if fail else [])]},
+        2: {f"{collection}_ids": [2, 4]},
     }
-    setup_data["user"] = expect_data["user"] = {
-        1: {"meeting_user_ids": [1, 2, *([6] if fail else [])]},
-        2: {"meeting_user_ids": [3, 4, *([7] if fail else [])]},
+    setup_data[back_collection] = expect_data[back_collection] = {
+        1: {f"{collection}_ids": [1, 2, *([6] if fail else [])]},
+        2: {f"{collection}_ids": [3, 4, *([7] if fail else [])]},
     }
-    setup_data["meeting_user"][1] = expect_data["meeting_user"][1] = {
-        "user_id": 1,
+    setup_data[collection][1] = expect_data[collection][1] = {
+        non_meeting_id_field: 1,
         "meeting_id": 1,
     }
-    setup_data["meeting_user"][2] = expect_data["meeting_user"][2] = {
-        "user_id": 1,
+    setup_data[collection][2] = expect_data[collection][2] = {
+        non_meeting_id_field: 1,
         "meeting_id": 2,
     }
-    setup_data["meeting_user"][3] = expect_data["meeting_user"][3] = {
-        "user_id": 2,
+    setup_data[collection][3] = expect_data[collection][3] = {
+        non_meeting_id_field: 2,
         "meeting_id": 1,
     }
-    setup_data["meeting_user"][4] = expect_data["meeting_user"][4] = {
-        "user_id": 2,
+    setup_data[collection][4] = expect_data[collection][4] = {
+        non_meeting_id_field: 2,
         "meeting_id": 2,
     }
-    setup_data["meeting_user"][5] = {"user_id": 1, "meeting_id": 1}
-    expect_data["meeting_user"][5] = {
-        "user_id": 1,
+    setup_data[collection][5] = {non_meeting_id_field: 1, "meeting_id": 1}
+    expect_data[collection][5] = {
+        non_meeting_id_field: 1,
         "meeting_id": 1,
         "meta_deleted": True,
     }
     if fail:
-        setup_data["meeting_user"][6] = {"user_id": 1, "meeting_id": 1}
-        setup_data["meeting_user"][7] = {"user_id": 2, "meeting_id": 1}
+        setup_data[collection][6] = {non_meeting_id_field: 1, "meeting_id": 1}
+        setup_data[collection][7] = {non_meeting_id_field: 2, "meeting_id": 1}
         return (
             setup_data,
-            {"meeting_user": [5]},
+            {collection: [5]},
             [
-                "For collection meeting_user: Ids [1, 6]: Duplicate values for ('meeting_id', 'user_id') (values: (1, 1)) cannot be handled.",
-                "For collection meeting_user: Ids [3, 7]: Duplicate values for ('meeting_id', 'user_id') (values: (1, 2)) cannot be handled.",
+                f"For collection {collection}: Ids [1, 6]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 1)) cannot be handled.",
+                f"For collection {collection}: Ids [3, 7]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 2)) cannot be handled.",
             ],
         )
-    return setup_data, {"meeting_user": [5]}, expect_data
+    return setup_data, {collection: [5]}, expect_data
 
 
 def build_motion_comment_test_data(with_problems: bool = False) -> TestData:
@@ -1083,11 +1091,45 @@ def test_meeting_error(write, finalize, assert_model):
 
 
 def test_meeting_user_success(write, finalize, assert_model):
-    do_test(write, finalize, assert_model, build_meeting_user_test_data())
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_meeting_connection_test_data("meeting_user", "user_id", "user"),
+    )
 
 
 def test_meeting_user_error(write, finalize, assert_model):
-    do_test(write, finalize, assert_model, build_meeting_user_test_data(fail=True))
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_meeting_connection_test_data(
+            "meeting_user", "user_id", "user", fail=True
+        ),
+    )
+
+
+def test_meeting_mediafile_success(write, finalize, assert_model):
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_meeting_connection_test_data(
+            "meeting_mediafile", "mediafile_id", "mediafile"
+        ),
+    )
+
+
+def test_meeting_mediafile_error(write, finalize, assert_model):
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_meeting_connection_test_data(
+            "meeting_mediafile", "mediafile_id", "mediafile", fail=True
+        ),
+    )
 
 
 def test_motion_success(write, finalize, assert_model):
@@ -1442,7 +1484,10 @@ def test_all_successes(write, finalize, assert_model) -> None:
                 ),
                 build_mediafile_test_data(add_empty=True),
                 build_single_external_id_test_data("meeting"),
-                build_meeting_user_test_data(),
+                build_meeting_connection_test_data("meeting_user", "user_id", "user"),
+                build_meeting_connection_test_data(
+                    "meeting_mediafile", "mediafile_id", "mediafile"
+                ),
                 build_meeting_id_and_string_field_test_data(
                     "motion", "motion_ids", "number"
                 ),
@@ -1506,7 +1551,10 @@ def test_all_problems(write, finalize, assert_model) -> None:
                 ),
                 build_mediafile_test_data(add_empty=True, with_problems=True),
                 build_single_external_id_test_data("meeting"),
-                build_meeting_user_test_data(),
+                build_meeting_connection_test_data("meeting_user", "user_id", "user"),
+                build_meeting_connection_test_data(
+                    "meeting_mediafile", "mediafile_id", "mediafile"
+                ),
                 build_meeting_id_and_string_field_test_data(
                     "motion", "motion_ids", "number"
                 ),
@@ -1568,7 +1616,12 @@ def test_all_failures(write, finalize, assert_model) -> None:
                 ),
                 build_mediafile_test_data(add_empty=True),
                 build_single_external_id_test_data("meeting", fail=True),
-                build_meeting_user_test_data(fail=True),
+                build_meeting_connection_test_data(
+                    "meeting_user", "user_id", "user", fail=True
+                ),
+                build_meeting_connection_test_data(
+                    "meeting_mediafile", "mediafile_id", "mediafile", fail=True
+                ),
                 build_meeting_id_and_string_field_test_data(
                     "motion", "motion_ids", "number", fail=True
                 ),

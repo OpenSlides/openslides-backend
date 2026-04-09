@@ -29,6 +29,7 @@ class Migration(BaseModelMigration):
         "group": [["meeting_id", "external_id"]],
         "meeting": [["external_id"]],
         "meeting_user": [["meeting_id", "user_id"]],
+        "meeting_mediafile": [["meeting_id", "mediafile_id"]],
         "motion": [["meeting_id", "number"]],
         "option": [["content_object_id", "poll_id"]],
         "structure_level_list_of_speakers": [
