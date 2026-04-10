@@ -1039,6 +1039,41 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
 
+    def foreign_meeting_user_test(self, field: str) -> None:
+        self.create_meeting(4)
+        self.create_user("bob", [5])
+        self.set_user_groups(1, [2])
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motions_create_enable_additional_submitter_text": True,
+                    "motions_supporters_min_amount": 1,
+                }
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "reason": "test",
+                "additional_submitter": "test",
+                field: [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
+            response.json["message"],
+        )
+
+    def test_create_foreign_submitter_meeting_user_error(self) -> None:
+        self.foreign_meeting_user_test("submitter_meeting_user_ids")
+
+    def test_create_foreign_supporter_meeting_user_error(self) -> None:
+        self.foreign_meeting_user_test("supporter_meeting_user_ids")
+
     def test_create_motion_with_diff_version(self) -> None:
         response = self.request(
             "motion.create",
