@@ -1,22 +1,18 @@
 import logging
 import os
 import sys
+from json import dumps
 
-from openslides_backend.presenter.check_database import check_meetings
-from openslides_backend.presenter.check_database_all import check_everything
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
 from openslides_backend.shared.env import Environment
 
-from json import dumps
-
 
 def main() -> int:
     env = Environment(os.environ)
 
-    arg = sys.argv[1] if len(sys.argv) > 1 else None
     with get_new_os_conn() as conn:
         database = ExtendedDatabase(conn, logging, env)
 

@@ -38,7 +38,9 @@ class MigrationHandler(BaseHandler):
 
     def copy_table(self, table_name: str) -> None:
         """Copies the table with its definition and rows. Does not copy trigger."""
-        table_m = sql.Identifier(HelperGetNames.get_table_name(table_name, migration=True))
+        table_m = sql.Identifier(
+            HelperGetNames.get_table_name(table_name, migration=True)
+        )
         table_t = sql.Identifier(table_name)
         self.cursor.execute(
             sql.SQL("CREATE TABLE {table_m} (LIKE {table_t} INCLUDING ALL);").format(

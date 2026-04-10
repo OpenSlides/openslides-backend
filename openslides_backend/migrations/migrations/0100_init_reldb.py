@@ -1,12 +1,11 @@
 import os
 import re
 import time as _time
-from datetime import tzinfo, datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
-
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -237,30 +236,31 @@ class Sql_helper:
 
 class OSTime(tzinfo):
 
-    def utcoffset(self, dt):
+    def utcoffset(self, dt: datetime | None) -> timedelta:
         return get_utc_offset() + self.dst(dt)
 
-    def dst(self, dt):
+    def dst(self, dt: datetime | None) -> timedelta:
+        assert dt
         dst_hours = 0
         if get_use_dst() and is_dst(dt):
             dst_hours = 1
 
         return timedelta(hours=dst_hours)
 
-    def tzname(self, dt):
+    def tzname(self, dt: datetime | None) -> None:
         return None
 
 
-def get_utc_offset():
+def get_utc_offset() -> timedelta:
     hours, minutes = os.environ["MIG0100_UTC_OFFSET"].split(":")
     return timedelta(hours=int(hours), minutes=int(minutes))
 
 
-def get_use_dst():
+def get_use_dst() -> bool:
     return is_truthy(os.environ["MIG0100_USE_DST"])
 
 
-def is_dst(dt):
+def is_dst(dt: datetime) -> bool:
     # Taken from tzinfo_examples.py listed in
     #   https://docs.python.org/3/library/datetime.html#datetime.tzinfo
     tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.weekday(), 0, 0)
@@ -271,30 +271,38 @@ def is_dst(dt):
 
 def check_prerequisites(curs: Cursor[DictRow]) -> bool:
     # TODO: Include actual LINK
-    MigrationHelper.write_line("This is migration 100, part of the OpenSlides 4.3.0 release.")
-    MigrationHelper.write_line("This migration will fundamentally restructure all data.")
+    MigrationHelper.write_line(
+        "This is migration 100, part of the OpenSlides 4.3.0 release."
+    )
+    MigrationHelper.write_line(
+        "This migration will fundamentally restructure all data."
+    )
     MigrationHelper.write_line("See LINK for more information.")
     MigrationHelper.write_line("")
 
     try:
-        i_read_docs = os.environ['MIG0100_I_READ_DOCS']
-        utc_offset = os.environ['MIG0100_UTC_OFFSET']
-        _ = os.environ['MIG0100_USE_DST']
+        i_read_docs = os.environ["MIG0100_I_READ_DOCS"]
+        utc_offset = os.environ["MIG0100_UTC_OFFSET"]
+        _ = os.environ["MIG0100_USE_DST"]
     except KeyError as e:
-        MigrationHelper.write_line("Required env vars not set - aborting.")
+        MigrationHelper.write_line(f"Required env vars not set - aborting.\n{e}")
         return False
 
     if not is_truthy(i_read_docs):
-        MigrationHelper.write_line(f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS")
+        MigrationHelper.write_line(
+            f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS"
+        )
         return False
     if not re.match(PAT_UTC_OFFSET, utc_offset):
-        MigrationHelper.write_line(f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET")
+        MigrationHelper.write_line(
+            f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET"
+        )
         return False
 
-    MigrationHelper.write_line( "For timestamp conversion ...")
+    MigrationHelper.write_line("For timestamp conversion ...")
     MigrationHelper.write_line(f"- using UTC offset: {utc_offset}")
     MigrationHelper.write_line(f"- using platform provided DST: {get_use_dst()}")
-    MigrationHelper.write_line( "")
+    MigrationHelper.write_line("")
 
     return True
 
@@ -403,13 +411,13 @@ def cleanup(curs: Cursor[DictRow]) -> None:
     """
 
     try:
-        i_read_code = os.environ['MIG0100_I_READ_CODE']
+        i_read_code = os.environ["MIG0100_I_READ_CODE"]
     except KeyError:
         i_read_code = None
     if i_read_code is not None:
         if is_truthy(i_read_code):
-            print('(┛◉Д◉)┛彡┻━┻')
-            MigrationHelper.write_line('(┛◉Д◉)┛彡┻━┻')
+            print("(┛◉Д◉)┛彡┻━┻")
+            MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
 
     for table_name in OLD_TABLES:
         curs.execute(f"DROP TABLE {table_name} CASCADE;")

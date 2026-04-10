@@ -1,8 +1,9 @@
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
-from os import listdir
+from os import SEEK_END, listdir
 from re import Match, match
+from threading import Thread
 from typing import Any
 
 from psycopg import Cursor, sql
@@ -66,7 +67,10 @@ class MigrationHelper:
     """
 
     migrations: dict = {}
+    migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
+    migrate_thread_stream_read_pos: int = 0
+    migrate_thread_stream_just_read: bool = False
     migrate_thread_stream_can_be_closed = False
     migrate_thread_exception: Exception | None = None
 
@@ -74,9 +78,28 @@ class MigrationHelper:
     def write_line(message: str) -> None:
         """
         Writes a single line with \n to the migration threads io stream.
+        Also moves the read head if stream was read just before.
+        This is to preserve lines for read until new lines were written.
         """
-        assert MigrationHelper.migrate_thread_stream
+        assert (stream := MigrationHelper.migrate_thread_stream)
+        if MigrationHelper.migrate_thread_stream_just_read:
+            MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
+            MigrationHelper.migrate_thread_stream_just_read = False
+        stream.seek(0, SEEK_END)
         MigrationHelper.migrate_thread_stream.write(message + "\n")
+
+    @staticmethod
+    def read_stream() -> str:
+        """
+        Reads all lines since reading last.
+        Also signals the write process on the buffer that it was just read.
+        This is to preserve lines for read until new lines were written.
+        """
+        assert (stream := MigrationHelper.migrate_thread_stream)
+        stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
+        result = stream.read()
+        MigrationHelper.migrate_thread_stream_just_read = True
+        return result
 
     @staticmethod
     def load_migrations() -> None:
