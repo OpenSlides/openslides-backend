@@ -711,7 +711,7 @@ class CreatePoll(BasePollTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Relation violates required constraint: The following models do not belong to meeting 4: ['assignment/1']",
+            "The following models do not belong to meeting 4: ['assignment/1']",
             response.json["message"],
         )
 

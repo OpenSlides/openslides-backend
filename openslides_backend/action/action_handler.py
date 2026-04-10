@@ -178,7 +178,6 @@ class ActionHandler(BaseHandler):
                         )
                 except RaiseException as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
-                    # TODO: differentiate between required and equal_fields constraint.
                     if len(msg_lis := str(e).split(": ")) > 1 and msg_lis[1].startswith(
                         "NOT NULL CONSTRAINT VIOLATED"
                     ):
