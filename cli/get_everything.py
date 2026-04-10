@@ -17,9 +17,13 @@ def main() -> int:
         database = ExtendedDatabase(conn, logging, env)
 
         everything = database.get_everything()
+<<<<<<< migration-100-guided
 
         print(dumps(everything, indent=4, sort_keys=True, default=str))
         print(everything)
+=======
+        print(dumps(everything, indent=4, sort_keys=True, default=str))
+>>>>>>> main
 
     return 0
 

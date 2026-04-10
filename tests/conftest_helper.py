@@ -95,6 +95,10 @@ def generate_sql_for_test_initiation(tablenames: tuple[str, ...]) -> str:
             INSERT INTO version (migration_index, migration_state)
             VALUES ({MigrationHelper.get_backend_migration_index()}, '{MigrationState.FINALIZED}')
             ON CONFLICT (migration_index) DO UPDATE SET migration_state = EXCLUDED.migration_state;
+            INSERT INTO theme_t (name)
+            VALUES ('OpenSlides Organization');
+            INSERT INTO organization_t (theme_id, name, default_language)
+            VALUES (1, 'OpenSlides Organization', 'en');
         END;
         $$ LANGUAGE plpgsql;
         """)

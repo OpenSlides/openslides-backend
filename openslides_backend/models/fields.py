@@ -173,6 +173,10 @@ class TextField(Field):
         return self.extend_schema(super().get_schema(), type=["string", "null"])
 
 
+class TimezoneField(TextField):
+    pass
+
+
 class CharField(TextField):
     def get_schema(self) -> Schema:
         schema = super().get_schema()
@@ -247,13 +251,16 @@ class DecimalField(Field):
         schema = self.extend_schema(super().get_schema(), **decimal_schema)
         if not self.required:
             schema["type"] = ["string", "null"]
-        # remove minimum since it is checked in the validate method
+        # remove minimum and maximum since they are checked in the validate method
         schema.pop("minimum", None)
+        schema.pop("maximum", None)
         return schema
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
-            if (min_ := self.constraints.get("minimum")) is not None:
+            min_ = self.constraints.get("minimum")
+            max_ = self.constraints.get("maximum")
+            if (min_, max_) != (None, None):
                 if isinstance(value, str):
                     try:
                         value = Decimal(value)
@@ -265,9 +272,14 @@ class DecimalField(Field):
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
                     )
-                assert value >= Decimal(
-                    min_
-                ), f"{self.own_field_name} must be bigger than or equal to {min_}."
+                if min_:
+                    assert value >= Decimal(
+                        min_
+                    ), f"{self.own_field_name} must be bigger than or equal to {min_}."
+                if max_:
+                    assert value <= Decimal(
+                        max_
+                    ), f"{self.own_field_name} must be smaller than or equal to {max_}."
         return value
 
     def validate_with_schema(
@@ -326,6 +338,10 @@ class TextArrayField(ArrayField):
             items.update(self.in_array_constraints)
         return self.extend_schema(super().get_schema(), items=items)
 
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
+
 
 class CharArrayField(ArrayField):
     def get_schema(self) -> Schema:
@@ -333,6 +349,10 @@ class CharArrayField(ArrayField):
         if self.in_array_constraints is not None:
             items.update(self.in_array_constraints)
         return self.extend_schema(super().get_schema(), items=items)
+
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
 
 
 class NumberArrayField(ArrayField):
