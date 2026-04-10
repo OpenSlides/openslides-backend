@@ -8,6 +8,7 @@ from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
+from openslides_backend.shared.exceptions import CommandNotImplemented
 
 from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
@@ -37,7 +38,9 @@ class MigrationHandler(BaseHandler):
 
     def copy_table(self, table_name: str) -> None:
         """Copies the table with its definition and rows. Does not copy trigger."""
-        table_m = sql.Identifier(HelperGetNames.get_table_name(table_name, True))
+        table_m = sql.Identifier(
+            HelperGetNames.get_table_name(table_name, migration=True)
+        )
         table_t = sql.Identifier(table_name)
         self.cursor.execute(
             sql.SQL("CREATE TABLE {table_m} (LIKE {table_t} INCLUDING ALL);").format(
@@ -279,11 +282,9 @@ class MigrationHandler(BaseHandler):
         Executes the data_definition and data_manipulation methods of the migrations
         stored in MigrationHelper.migrations.
         """
-        module_name: str
-
-        for index, migration in MigrationHelper.migrations.items():
-            module_name = migration
+        for index, module_name in MigrationHelper.migrations.items():
             migration_module = import_module(f"{MODULE_PATH}{module_name}")
+
             self.logger.info("Executing migration: " + module_name)
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.MIGRATION_RUNNING
@@ -303,10 +304,25 @@ class MigrationHandler(BaseHandler):
         """
         Starts the migration process.
         """
-        self.logger.info("Running migrations.")
+        self.logger.info("Preparing migrations ...")
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.MIGRATION_REQUIRED:
+                # Check prerequisites
+                for index, module_name in MigrationHelper.migrations.items():
+                    migration_module = import_module(f"{MODULE_PATH}{module_name}")
+                    self.logger.info("pre check: " + module_name + " ...")
+                    pre_check_ok = False
+                    if callable(getattr(migration_module, "check_prerequisites", None)):
+                        pre_check_ok = migration_module.check_prerequisites(self.cursor)
+
+                    if not pre_check_ok:
+                        self.logger.info("failed.")
+                        raise MigrationException(
+                            f"pre check for migration {module_name} failed."
+                        )
+                    self.logger.info("OK.")
+
                 # Block other migration requests by setting state to running.
                 if minimum_required_index := self.cursor.execute(
                     sql.SQL(
@@ -317,14 +333,14 @@ class MigrationHandler(BaseHandler):
                     MigrationHelper.set_database_migration_info(
                         self.cursor,
                         minimum_required_index["min"],
-                        MigrationState.MIGRATION_RUNNING,
+                        MigrationState.MIGRATION_RUNNING,  # Should be smth. like MIGRATION_PREPARING
                     )
-                MigrationHelper.write_line("started")
+                MigrationHelper.write_line("migration started")
                 self.set_public_tables_read_only()
                 self.setup_migration_relations()
                 self.execute_migrations()
+                MigrationHelper.write_line("migration finished")
                 MigrationHelper.migrate_thread_stream_can_be_closed = True
-                MigrationHelper.write_line("finished")
             case MigrationState.FINALIZATION_REQUIRED:
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.FINALIZED:
@@ -423,8 +439,7 @@ class MigrationHandler(BaseHandler):
                 )
 
         MigrationHelper.write_line("finalization started")
-        for index, migration in MigrationHelper.migrations.items():
-            module_name = migration
+        for index, module_name in MigrationHelper.migrations.items():
             migration_module = import_module(f"{MODULE_PATH}{module_name}")
             if callable(getattr(migration_module, "cleanup", None)):
                 migration_module.cleanup(self.cursor)
@@ -476,7 +491,7 @@ class MigrationHandler(BaseHandler):
                 sql.SQL("ALTER TABLE {migration_name} RENAME TO {real_name}").format(
                     real_name=sql.Identifier(table_name),
                     migration_name=sql.Identifier(
-                        HelperGetNames.get_table_name(table_name, True)
+                        HelperGetNames.get_table_name(table_name, migration=True)
                     ),
                 )
             )
@@ -545,6 +560,7 @@ class MigrationHandler(BaseHandler):
         """
         Resets the migrations currently in progress and restores the state before the migration.
         """
+        raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
         self.close_migrate_thread_stream()
         self._clean_migration_data()

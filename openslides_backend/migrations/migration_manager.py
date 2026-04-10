@@ -69,11 +69,9 @@ class MigrationManager:
         state = MigrationHelper.get_migration_state(self.cursor)
         result = {"status": str(state)}
         if MigrationHelper.migrate_thread_stream and (
-            output := MigrationHelper.migrate_thread_stream.getvalue()
+            output := MigrationHelper.read_stream()
         ):
-            # The last line (index -1) will always be an empty string.
-            last_line = output.split("\n")[-2]
-            result["output"] = f"{last_line}\n"
+            result["output"] = output
         if state in (
             MigrationState.MIGRATION_FAILED,
             MigrationState.FINALIZATION_FAILED,
@@ -200,7 +198,7 @@ class MigrationManager:
                 verbose = payload.get("verbose", False)
                 if command in iter(MigrationCommand):
                     MigrationHelper.migrate_thread_stream = StringIO()
-                    thread = Thread(
+                    MigrationHelper.migrate_thread = thread = Thread(
                         target=self.execute_migrate_command, args=[command, verbose]
                     )
                     thread.start()
@@ -211,7 +209,7 @@ class MigrationManager:
                         # Migration still running. Report current progress and return
                         return {
                             "status": MigrationHelper.get_migration_state(self.cursor),
-                            "output": MigrationHelper.migrate_thread_stream.getvalue(),
+                            "output": MigrationHelper.read_stream(),
                         }
                     else:
                         # Migration already finished/had nothing to do
