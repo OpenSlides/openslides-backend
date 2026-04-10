@@ -10,6 +10,7 @@ from cli.generate_models import Attribute, Model
 from meta.dev.src import helper_get_names
 from openslides_backend.action.action import Action
 from openslides_backend.models import fields
+from openslides_backend.shared.typing import DeletedModel
 from tests.patch_model_registry_helper import FakeModel, PatchModelRegistryMixin
 
 from .base_generic import BaseGenericTestCase
@@ -557,19 +558,19 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
             side = sides[0] if back else sides[1]
             needs_back_update = "1" in side and "r" in side
             try:
-                # TODO: Merge main, then use set_models instead
-                self.perform_write_request(
-                    [
-                        *(
-                            self.get_update_events(
-                                f"{collection_b if back else collection_c}/1",
-                                {field1 if back else field2: None},
-                            )
+                self.set_models(
+                    {
+                        **(
+                            {
+                                f"{collection_b if back else collection_c}/1": {
+                                    field1 if back else field2: None
+                                }
+                            }
                             if needs_back_update
-                            else []
+                            else {}
                         ),
-                        *self.get_delete_events(fqid),
-                    ]
+                        fqid: DeletedModel(),
+                    }
                 )
                 self.adjust_id_sequences()
             except Exception as e:
