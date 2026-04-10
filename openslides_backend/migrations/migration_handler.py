@@ -8,6 +8,7 @@ from psycopg.rows import DictRow
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
+from openslides_backend.shared.exceptions import CommandNotImplemented
 
 from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
 from ..migrations.migration_helper import (
@@ -555,6 +556,7 @@ class MigrationHandler(BaseHandler):
         """
         Resets the migrations currently in progress and restores the state before the migration.
         """
+        raise CommandNotImplemented("The reset route is not implemented yet.")
         self.logger.info("Reset migrations.")
         self.close_migrate_thread_stream()
         self._clean_migration_data()
