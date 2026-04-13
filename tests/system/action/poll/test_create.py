@@ -710,7 +710,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 4: ['assignment/1']",
             response.json["message"],
         )
@@ -757,7 +757,7 @@ class CreatePoll(BasePollTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 7: ['user/1']",
             response.json["message"],
         )

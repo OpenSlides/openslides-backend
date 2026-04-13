@@ -370,7 +370,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
             {"id": 1, "recommendation_extension": "blablabla [motion/2] blablabla"},
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['motion/2']",
             response.json["message"],
         )

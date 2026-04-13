@@ -121,7 +121,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['projector/4']",
             response.json["message"],
         )

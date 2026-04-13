@@ -544,7 +544,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['projector/4']",
             response.json["message"],
         )
@@ -561,7 +561,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 4: ['assignment/452']",
             response.json["message"],
         )
@@ -604,8 +604,8 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'",
+        self.assertEqual(
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'.",
             response.json["message"],
         )
 
@@ -621,7 +621,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['meeting/4']",
             response.json["message"],
         )

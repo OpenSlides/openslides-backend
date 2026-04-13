@@ -186,7 +186,7 @@ class ActionHandler(BaseHandler):
                         )
                     else:
                         # Assume equal_fields error
-                        raise RelationException(str(e))
+                        raise RelationException(str(e).split("\nCONTEXT:")[0])
                 except ForeignKeyViolation as e:
                     # This is raised at the end of transaction as the constraint trigger has to be initially deferred.
                     pattern = r'Key\s*\(\w+_id\)=\((\d+)\).*?"(\w+)_t"'

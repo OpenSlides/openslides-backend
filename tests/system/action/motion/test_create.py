@@ -1063,7 +1063,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
+        self.assertEqual(
             "The following models do not belong to meeting 1: ['meeting_user/1']",
             response.json["message"],
         )
