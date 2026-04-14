@@ -7,8 +7,8 @@ from openslides_backend.migrations.exceptions import MigrationException
 
 IterableData = dict[str, dict[int, dict[str, Any]]]
 ErrorData = list[str]
-# setup, ids_to_delete, error
-TestData = tuple[IterableData, dict[str, list[int]], list[str] | IterableData]
+# setup, ids_to_delete, error or expected data
+TestData = tuple[IterableData, dict[str, list[int]], ErrorData | IterableData]
 
 
 def do_test(write, finalize, assert_model, test_data: TestData) -> None:
@@ -328,7 +328,7 @@ def build_meeting_id_and_string_field_test_data(
     }
     setup_data[collection][7] = expect_data[collection][7] = {
         "name": "different_meeting",
-        str_field: "now different_meeting",
+        str_field: "different_meeting",
         "meeting_id": 2,
     }
     if fail:
@@ -618,11 +618,11 @@ def build_option_test_data(fail: bool = False) -> TestData:
     expect_data: IterableData = {"option": {}}
     setup_data["poll"] = expect_data["poll"] = {
         1: {"option_ids": [1, 2, *([4, 5] if fail else []), 6]},
-        2: {"option_ids": [7]},
+        2: {"option_ids": [7,8]},
     }
     setup_data["user"] = expect_data["user"] = {
         1: {"option_ids": [1]},
-        2: {"option_ids": [2]},
+        2: {"option_ids": [2,8]},
         3: {"option_ids": [6]},
         4: {"option_ids": [7]},
         5: {"option_ids": [4, 5] if fail else []},
@@ -650,6 +650,10 @@ def build_option_test_data(fail: bool = False) -> TestData:
     }
     setup_data["option"][7] = expect_data["option"][7] = {
         "content_object_id": "user/4",
+        "poll_id": 2,
+    }
+    setup_data["option"][8] = expect_data["option"][8] = {
+        "content_object_id": "user/2",
         "poll_id": 2,
     }
     if fail:
@@ -890,18 +894,19 @@ def build_user_test_data(fail: bool = False) -> TestData:
         ("Sir Galahad the Pure", "G4L4#4D", "Galahad"),
     ]
     for id_, (username, member_number, saml_id) in enumerate(test_data, 1):
-        setup_data["user"][id_] = expect_data["user"][id_] = remove_none_values(
+        setup_data["user"][id_] = expect_data["user"][id_] = setup_data["user"][id_ + 5] = remove_none_values(
             {
                 "username": username,
                 "member_number": member_number,
                 "saml_id": saml_id,
             }
         )
-        setup_data["user"][id_ + 5] = expect_data["user"][id_] = remove_none_values(
+        expect_data["user"][id_+5] = remove_none_values(
             {
                 "username": username,
                 "member_number": member_number,
                 "saml_id": saml_id,
+                "meta_deleted": True
             }
         )
     if fail:
@@ -1056,7 +1061,6 @@ def test_group_error(write, finalize, assert_model):
     )
 
 
-# commented out bc they only test one unique field.
 def test_mediafile_success(write, finalize, assert_model):
     do_test(
         write,
@@ -1072,6 +1076,23 @@ def test_mediafile_success_with_problems(write, finalize, assert_model):
         finalize,
         assert_model,
         build_mediafile_test_data(add_empty=True, with_problems=True),
+    )
+
+def test_mediafile_success_no_empty(write, finalize, assert_model):
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_mediafile_test_data(),
+    )
+
+
+def test_mediafile_success_with_problems_no_empty(write, finalize, assert_model):
+    do_test(
+        write,
+        finalize,
+        assert_model,
+        build_mediafile_test_data(with_problems=True),
     )
 
 
@@ -1273,7 +1294,7 @@ def test_motion_working_group_speaker_success(write, finalize, assert_model):
         write,
         finalize,
         assert_model,
-        build_motion_meeting_user_test_data("working_group_speaker"),
+        build_motion_meeting_user_test_data("working_group_speaker", has_weight=True),
     )
 
 
@@ -1443,7 +1464,7 @@ def merge_iterable_data(data1: IterableData, data2: IterableData) -> None:
 def merge_test_data(test_data: list[TestData]) -> TestData:
     setup_data: IterableData = {}
     to_delete_data: dict[str, list[int]] = {}
-    expect_data: list[str] | IterableData = {}
+    expect_data: ErrorData | IterableData = {}
     expect_errors: bool = False
 
     for setup, to_delete, expect in test_data:

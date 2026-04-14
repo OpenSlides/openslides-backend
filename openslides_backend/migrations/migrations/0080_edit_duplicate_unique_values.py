@@ -82,7 +82,6 @@ class Migration(BaseModelMigration):
     target_migration_index = 81
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
-        self.deleted_fqids: list[str] = []
         collections = {
             *self.error_unique_fields,
             *self.add_count_unique_fields,
@@ -196,9 +195,9 @@ class Migration(BaseModelMigration):
             for id_, model in models.items():
                 for tup in collection_to_tuples[collection]:
                     vals = tuple(
-                        val for field in tup if (val := model.get(field)) is not None or len(tup) > 1 
+                        val for field in tup if (val := model.get(field)) is not None
                     )
-                    if len(tup) == 1 and len(vals) != len(tup):
+                    if len(vals) != len(tup):
                         continue
                     unique_tuple_to_data[tup][vals].append(id_)
                     if len(unique_tuple_to_data[tup][vals]) > 1:
@@ -218,11 +217,11 @@ class Migration(BaseModelMigration):
                 tup = (change_field, *other_fields)
                 for vals in unique_tuple_to_combinations_with_duplicates[tup]:
                     ids = sorted(unique_tuple_to_data[tup][vals])
-                    i = 2
+                    counter = 2
                     exchange: list[str] = []
                     while len(exchange) < len(ids[1:]):
-                        check = vals[0] + f" ({i})"
-                        if exchange not in all_exchanged and not self.reader.filter(
+                        check = vals[0] + f" ({counter})"
+                        if check not in all_exchanged and not self.reader.filter(
                             collection,
                             And(
                                 FilterOperator("meta_deleted", "=", False),
@@ -235,7 +234,8 @@ class Migration(BaseModelMigration):
                             ["id"],
                         ):
                             exchange.append(check)
-                        i += 1
+                            all_exchanged.append(check)
+                        counter += 1
                     events.extend(
                         RequestUpdateEvent(
                             fqid_from_collection_and_id(collection, id_),
@@ -246,7 +246,7 @@ class Migration(BaseModelMigration):
                         )
                     )
                     print(
-                        f"For collection {collection}: Updating ids {ids}: Duplicate values for {tup} (values: {vals}): Appending numbers to {change_field}..."
+                        f"For collection {collection}: Updating ids {ids[1:]}: Duplicate values for {tup} (values: {vals}): Appending numbers to {change_field}..."
                     )
             for merge_fields, tup_fields in self.merge_values_unique_fields.get(
                 collection, {}
@@ -265,7 +265,10 @@ class Migration(BaseModelMigration):
                             data[field] = field_vals[0]
                         elif len(field_vals) > 1:
                             if isinstance(field_vals[0], bool):
-                                data[field] = any(field_vals)
+                                if (aggregated_value := any(field_vals)) != field_vals[
+                                    0
+                                ]:
+                                    data[field] = aggregated_value
                             else:
                                 data[field] = "\n".join(field_vals)
                     if data:
@@ -339,18 +342,16 @@ class Migration(BaseModelMigration):
                         back_coll = collection_from_fqid(back_fqid)
                         back_field = relation[back_coll]
                     back_multi = back_field.endswith("_ids")
-                    if back_fqid not in self.deleted_fqids:
-                        events.append(
-                            RequestUpdateEvent(
-                                back_fqid,
-                                fields={} if back_multi else {back_field: None},
-                                list_fields=(
-                                    {"remove": {back_field: [id_]}}
-                                    if back_multi
-                                    else {}
-                                ),
-                            )
+                    events.append(
+                        RequestUpdateEvent(
+                            back_fqid,
+                            fields={} if back_multi else {back_field: None},
+                            list_fields=(
+                                {"remove": {back_field: [id_]}}
+                                if back_multi
+                                else {}
+                            ),
                         )
+                    )
             events.append(RequestDeleteEvent(fqid))
-            self.deleted_fqids.append(fqid)
         return events
