@@ -7,7 +7,7 @@ from importlib import import_module
 from io import StringIO
 from threading import Lock
 from time import sleep
-from typing import Any, cast
+from typing import Any
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 
@@ -32,7 +32,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_unpooled_db_connection,
     os_conn_pool,
 )
-from openslides_backend.shared.env import DEV_PASSWORD, Environment
+from openslides_backend.shared.env import DEV_PASSWORD
 from tests.conftest import OLD_TABLES, get_rel_db_table_names
 from tests.conftest_helper import (
     deactivate_notify_triggers,
@@ -143,7 +143,6 @@ migration started\n"""
 
     def setUp(self):
         # 1) Create old idempotent key-value-store schema and relational schema on top
-        # self.drop_tables()
         drop_db()
         create_db()
         with get_new_os_conn() as conn:
@@ -152,12 +151,7 @@ migration started\n"""
 
         # 1.1) Create services and login.
         self.app = create_action_test_application()
-        # self.logger = cast(MagicMock, self.app.logger)
-        self.services = self.app.services
-        self.env = cast(Environment, self.app.env)
-        self.auth = self.services.authentication()
         self.client = Client(self.app)
-        self.client.auth = self.auth  # type: ignore
         self.used_collections = set()
         self.setup_data()
         self.apply_test_relational_schema()
@@ -363,9 +357,7 @@ migration started\n"""
         # 5) Call data_manipulation of module
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                handler = MigrationHandler(
-                    curs, self.env, self.services, self.app.logging
-                )
+                handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging)
                 handler.execute_command("migrate")
                 self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
                 handler.execute_command("finalize")
@@ -375,7 +367,7 @@ migration started\n"""
 
     def test_migration_manager(self) -> None:
         # 5) Call data_manipulation of module
-        manager = MigrationManager(self.env, self.services, self.app.logging)
+        manager = MigrationManager(Mock(), Mock(), self.app.logging)
         manager.handle_request({"cmd": "migrate", "verbose": True})
 
         self.wait_for_migration_thread(self.MAX_WAIT)
