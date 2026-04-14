@@ -196,9 +196,9 @@ class Migration(BaseModelMigration):
             for id_, model in models.items():
                 for tup in collection_to_tuples[collection]:
                     vals = tuple(
-                        val for field in tup if (val := model.get(field)) is not None
+                        val for field in tup if (val := model.get(field)) is not None or len(tup) > 1 
                     )
-                    if len(vals) != len(tup):
+                    if len(tup) == 1 and len(vals) != len(tup):
                         continue
                     unique_tuple_to_data[tup][vals].append(id_)
                     if len(unique_tuple_to_data[tup][vals]) > 1:
