@@ -5,22 +5,20 @@ from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations.exceptions import MigrationException
-from openslides_backend.migrations.migration_handler import (
-    MigrationHandler,
-    MigrationState,
-)
+from openslides_backend.migrations.migration_handler import MigrationState
 from openslides_backend.migrations.migration_helper import (
     MIN_NON_REL_MIGRATION,
     MigrationHelper,
 )
 from openslides_backend.shared.env import DEV_PASSWORD
+from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
 
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
-class BaseMigrationRouteTest(BaseInternalRequestTest):
+class BaseMigrationRouteTest(BaseInternalRequestTest, BaseMigrationTestCase):
     """
     Uses the anonymous client to call the migration route.
     """
@@ -28,23 +26,12 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     backend_migration_index = MigrationHelper.get_backend_migration_index()
     route: RouteFunction = ActionView.migrations_route
 
-    def setUp(self) -> None:
-        MigrationHelper.migrate_thread = None
-        MigrationHelper.migrate_thread_exception = None
-        MigrationHelper.migrate_thread_stream_read_pos = 0
-        MigrationHelper.migrate_thread_stream_just_read = False
-        if MigrationHelper.migrate_thread_stream:
-            MigrationHandler.close_migrate_thread_stream()
-        super().setUp()
-
-    def wait_for_migration_thread(self, state: MigrationState) -> None:
+    def wait_for_migration_thread_and_state(self, state: MigrationState) -> None:
         """
         Waits for the thread to terminate for two seconds and asserts the state.
         If state is MIGRATION_FAILED: asserts a migrate_thread_exception.
         """
-        assert MigrationHelper.migrate_thread
-        MigrationHelper.migrate_thread.join(2)
-        assert not MigrationHelper.migrate_thread.is_alive()
+        super().wait_for_migration_thread(2)
         if state == MigrationState.MIGRATION_FAILED:
             assert MigrationHelper.migrate_thread_exception
         with self.connection.cursor() as curs:
@@ -81,7 +68,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_migrate_success(self) -> None:
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
-        self.wait_for_migration_thread(MigrationState.FINALIZED)
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZED)
         with self.connection.cursor() as curs:
             assert (
                 MigrationHelper.get_database_migration_index(curs)
@@ -178,7 +165,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         assert response.json["output"] == "migration started\n"
 
         wait_lock.release()
-        self.wait_for_migration_thread(MigrationState.FINALIZATION_REQUIRED)
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZATION_REQUIRED)
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["output"] == "migration finished\n"
@@ -229,7 +216,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         }
 
         wait_lock.release()
-        self.wait_for_migration_thread(MigrationState.FINALIZED)
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZED)
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
@@ -287,7 +274,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         assert response.json["output"] == "migration started\n"
 
         wait_lock.release()
-        self.wait_for_migration_thread(MigrationState.MIGRATION_FAILED)
+        self.wait_for_migration_thread_and_state(MigrationState.MIGRATION_FAILED)
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True

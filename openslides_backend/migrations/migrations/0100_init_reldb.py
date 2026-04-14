@@ -269,8 +269,9 @@ def is_dst(dt: datetime) -> bool:
     return tt.tm_isdst > 0
 
 
-def check_prerequisites(curs: Cursor[DictRow]) -> bool:
+def check_prerequisites(curs: Cursor[DictRow]) -> str:
     # TODO: Include actual LINK
+    errors = ""
     MigrationHelper.write_line(
         "This is migration 100, part of the OpenSlides 4.3.0 release."
     )
@@ -285,26 +286,21 @@ def check_prerequisites(curs: Cursor[DictRow]) -> bool:
         utc_offset = os.environ["MIG0100_UTC_OFFSET"]
         _ = os.environ["MIG0100_USE_DST"]
     except KeyError as e:
-        MigrationHelper.write_line(f"Required env vars not set - aborting.\n{e}")
-        return False
+        errors += f"Required env vars not set - aborting.\n{e}"
 
     if not is_truthy(i_read_docs):
-        MigrationHelper.write_line(
-            f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS"
-        )
-        return False
+        errors += f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS"
     if not re.match(PAT_UTC_OFFSET, utc_offset):
-        MigrationHelper.write_line(
-            f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET"
-        )
-        return False
+        errors += f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET"
+    if errors:
+        return errors
 
     MigrationHelper.write_line("For timestamp conversion ...")
     MigrationHelper.write_line(f"- using UTC offset: {utc_offset}")
     MigrationHelper.write_line(f"- using platform provided DST: {get_use_dst()}")
     MigrationHelper.write_line("")
 
-    return True
+    return ""
 
 
 def data_manipulation(curs: Cursor[DictRow]) -> None:

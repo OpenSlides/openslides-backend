@@ -8,7 +8,6 @@ from io import StringIO
 from threading import Lock
 from time import sleep
 from typing import Any, cast
-from unittest import TestCase
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
 
@@ -40,6 +39,7 @@ from tests.conftest_helper import (
     generate_sql_for_test_initiation,
 )
 from tests.system.action.util import get_internal_auth_header
+from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
 
@@ -63,7 +63,7 @@ created_fqids: set()
 data: dict[str, any] = {}
 
 
-class BaseMigrationTestCase(TestCase):
+class TestMigration100(BaseMigrationTestCase):
     """
     Commentary:
         The test cases initially may seem to be spartanic caused by the lack of testing of integrity
@@ -80,6 +80,16 @@ class BaseMigrationTestCase(TestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
+    MAX_WAIT = 10
+    EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
+This migration will fundamentally restructure all data.
+See LINK for more information.
+
+For timestamp conversion ...
+- using UTC offset: +01:00
+- using platform provided DST: True
+
+migration started\n"""
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
@@ -97,10 +107,19 @@ class BaseMigrationTestCase(TestCase):
         return _wait_for_lock
 
     @classmethod
+    def setUpClass(cls):
+        os.environ["MIG0100_UTC_OFFSET"] = "+01:00"
+        os.environ["MIG0100_USE_DST"] = "YES"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
+
+    @classmethod
     def tearDownClass(cls) -> None:
         # 8) Final Cleanup
         drop_db()
         cls.apply_test_relational_schema()
+        del os.environ["MIG0100_UTC_OFFSET"]
+        del os.environ["MIG0100_USE_DST"]
+        del os.environ["MIG0100_I_READ_DOCS"]
         super().tearDownClass()
 
     @staticmethod
@@ -114,14 +133,13 @@ class BaseMigrationTestCase(TestCase):
 
     def tearDown(self) -> None:
         migration_module.Sql_helper.offset = 0
-        MigrationHelper.table_translations = dict()
-        MigrationHelper.migrate_thread_stream = None
         # Reset tables to ensure that init sql doesn't write garbage.
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 for collection in self.used_collections:
                     curs.execute(f"DELETE FROM {collection}_t CASCADE;")
                     curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
+        super().tearDown()
 
     def setUp(self):
         # 1) Create old idempotent key-value-store schema and relational schema on top
@@ -360,14 +378,7 @@ class BaseMigrationTestCase(TestCase):
         manager = MigrationManager(self.env, self.services, self.app.logging)
         manager.handle_request({"cmd": "migrate", "verbose": True})
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                while (
-                    MigrationHelper.get_migration_state(curs)
-                    != MigrationState.FINALIZATION_REQUIRED
-                ):
-                    sleep(0.1)
-                    curs.connection.commit()
+        self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
 
         manager.handle_request({"cmd": "finalize", "verbose": True})
@@ -455,7 +466,7 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "started\n",
+            "output": self.EXPECTED_INTRODUCTION,
         }
 
         # Test before and after setting migration states. (Committing points of transaction)
@@ -465,7 +476,7 @@ class BaseMigrationTestCase(TestCase):
             "success": True,
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
-                "output": "started\n",
+                "output": self.EXPECTED_INTRODUCTION,
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -474,13 +485,24 @@ class BaseMigrationTestCase(TestCase):
         wait_lock.release()
 
         # Wait for migrate with a sec delay per iteration.
-        max_time = timedelta(seconds=15)
+        max_time = timedelta(seconds=self.MAX_WAIT)
         start = datetime.now()
-        while (response := self.request("progress").json) != {
+        expected_response = {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "finished\n",
-        }:
+            "output": "migration finished\n",
+        }
+        while not (
+            # fmt: off
+            (response := self.request("progress").json) == expected_response
+            or response == expected_response | {
+                "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\nmigration finished\n",
+            }
+            or response == expected_response | {
+                "output": "161 of 161 models written to tables.\nmigration finished\n",
+            }
+            # fmt: on
+        ):
             sleep(0.1)
             if datetime.now() - start > max_time:
                 raise Exception(
@@ -525,11 +547,11 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": "started\n",
+            "output": self.EXPECTED_INTRODUCTION,
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
-        max_time = timedelta(seconds=15)
+        max_time = timedelta(seconds=self.MAX_WAIT)
         start = datetime.now()
         while (response := self.request("migrate").json) != {
             "success": True,

@@ -312,16 +312,11 @@ class MigrationHandler(BaseHandler):
                 for index, module_name in MigrationHelper.migrations.items():
                     migration_module = import_module(f"{MODULE_PATH}{module_name}")
                     self.logger.info("pre check: " + module_name + " ...")
-                    pre_check_ok = False
                     if callable(getattr(migration_module, "check_prerequisites", None)):
-                        pre_check_ok = migration_module.check_prerequisites(self.cursor)
-
-                    if not pre_check_ok:
-                        self.logger.info("failed.")
-                        raise MigrationException(
-                            f"pre check for migration {module_name} failed."
-                        )
-                    self.logger.info("OK.")
+                        if errors := migration_module.check_prerequisites(self.cursor):
+                            errors = f"pre check for migration {module_name} failed.\n{errors}"
+                            self.logger.info(errors)
+                            raise MigrationException(errors)
 
                 # Block other migration requests by setting state to running.
                 if minimum_required_index := self.cursor.execute(
