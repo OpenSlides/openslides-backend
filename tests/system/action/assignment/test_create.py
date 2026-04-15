@@ -143,7 +143,12 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/110": {"agenda_item_creation": "default_yes"},
-                "mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID},
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "mimetype": "text/plain",
+                    "title": "orga notes",
+                    "filename": "list_of_easter_eggs.txt",
+                },
             }
         )
         response = self.request(
