@@ -50,6 +50,7 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "name": "meeting",
                 "start_time": datetime.fromtimestamp(1691539200, ZoneInfo("UTC")),
                 "end_time": datetime.fromtimestamp(1691625600, ZoneInfo("UTC")),
+                "time_zone": "Atlantic/Azores",
             },
         )
         self.assert_model_exists(
@@ -68,6 +69,119 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "group_ids": [2],
             },
         )
+
+    def test_json_upload_with_timestamps_orga_timezone(self) -> None:
+        self.json_upload_with_timestamps_orga_timezone()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "name": "A weird place",
+                "description": "Lord Howe Island has 30min DST transition.",
+                "manager_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "committee_id": 1,
+                "name": "Lord Howe Meeting",
+                "start_time": datetime.fromtimestamp(
+                    1798761600 - 11 * 3600, ZoneInfo("UTC")
+                ),
+                "end_time": datetime.fromtimestamp(
+                    1814400000 - 10 * 3600 - 1800, ZoneInfo("UTC")
+                ),
+                "time_zone": None,
+            },
+        )
+        self.assert_model_exists("meeting_user/1", {"user_id": 1, "meeting_id": 1})
+
+    def test_json_upload_with_timestamps_no_timezone(self) -> None:
+        self.json_upload_with_timestamps_no_timezone()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "name": "Armageddon",
+                "description": "It's the end of the world as we know it.",
+                "manager_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "committee_id": 1,
+                "name": "Armageddon Countdown",
+                "start_time": datetime.fromtimestamp(1356048000, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1356048000, ZoneInfo("UTC")),
+                "time_zone": None,
+            },
+        )
+        self.assert_model_exists("meeting_user/1", {"user_id": 1, "meeting_id": 1})
+
+    def test_json_upload_with_timezones(self) -> None:
+        self.json_upload_with_timezones()
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "name": "Main Conference",
+                "description": "We discuss the important stuff here",
+                "manager_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "committee_id": 1,
+                "name": "Main Conference",
+                "start_time": datetime.fromtimestamp(1798761600, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1798848000, ZoneInfo("UTC")),
+                "time_zone": None,
+            },
+        )
+        self.assert_model_exists("meeting_user/1", {"user_id": 2, "meeting_id": 1})
+        for i, (continent, place, offset) in enumerate(
+            [
+                ("Europe", "London", 0),
+                ("Europe", "Guernsey", 0),
+                ("Europe", "Gibraltar", 1),
+                ("Pacific", "Pitcairn", -8),
+            ],
+            2,
+        ):
+            self.assert_model_exists(
+                f"committee/{i}",
+                {
+                    "name": f"{place} Conference",
+                    "forward_to_committee_ids": [1],
+                    "manager_ids": [1],
+                },
+            )
+            self.assert_model_exists(
+                f"meeting/{i}",
+                {
+                    "committee_id": i,
+                    "name": f"{place} Conference",
+                    "start_time": datetime.fromtimestamp(
+                        1796083200 - offset * 3600, ZoneInfo("UTC")
+                    ),
+                    "end_time": datetime.fromtimestamp(
+                        1796169600 - offset * 3600, ZoneInfo("UTC")
+                    ),
+                    "time_zone": f"{continent}/{place}",
+                },
+            )
+            self.assert_model_exists(
+                f"meeting_user/{i}", {"user_id": i, "meeting_id": i}
+            )
 
     def test_import_cancel(self) -> None:
         response = self.request(
@@ -711,6 +825,10 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 "meeting_name": "test meeting",
                 "meeting_template": {"info": "warning", "value": "test"},
                 "meeting_admins": [{"info": ImportState.DONE, "value": "bob", "id": 2}],
+                "meeting_time_zone": {
+                    "info": ImportState.DONE,
+                    "value": "Asia/Novosibirsk",
+                },
             },
             "messages": ["Template meetings can only be used for existing committees."],
             "state": "new",
@@ -795,6 +913,10 @@ class TestCommitteeImport(TestCommitteeJsonUploadForImport):
                 {"info": ImportState.WARNING, "value": "bob", "id": 2},
                 {"info": "error", "value": ""},
             ],
+            "meeting_time_zone": {
+                "info": "done",
+                "value": "Asia/Novosibirsk",
+            },
         }
         assert sorted(preview_row["messages"]) == sorted(
             [

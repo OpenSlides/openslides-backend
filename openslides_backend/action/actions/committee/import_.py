@@ -182,6 +182,7 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                         "start_time",
                         "end_time",
                         "admin_ids",
+                        "time_zone",
                     )
                     if (meeting_field := f"meeting_{field}") in entry
                 } | {
