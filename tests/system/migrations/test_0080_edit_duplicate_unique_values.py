@@ -40,7 +40,7 @@ def do_test(write, finalize, assert_model, test_data: TestData) -> None:
             raise pytest.fail("Expected migration to fail. It didn't.")
         except MigrationException as e:
             err_str = "\n* ".join(sorted(expect_or_error))
-            assert str(e) == f"Migration exception:\n* {err_str}"
+            assert e.message == f"Migration exception:\n* {err_str}"
     else:
         finalize("0080_edit_duplicate_unique_values")
         for collection, expect_data in expect_or_error.items():
@@ -276,6 +276,19 @@ def build_mediafile_test_data(
         "parent_id": 17,
     }
     if with_problems:
+        data["mediafile"][24] = {
+            field: val
+            for field, val in data["mediafile"][1].items()
+            if field != "child_ids"
+        }
+        expect["mediafile"][24] = {
+            field: val
+            for field, val in expect["mediafile"][1].items()
+            if field != "child_ids"
+        }
+        expect["mediafile"][24]["title"] += " (2)"
+        expect["mediafile"][24]["token"] += " (2)"
+        data["organization"][1]["mediafile_ids"].append(24)
         data["meeting"][2]["mediafile_ids"].append(22)
         data["mediafile"][17]["child_ids"].append(22)
         data["mediafile"][22] = {
@@ -618,11 +631,11 @@ def build_option_test_data(fail: bool = False) -> TestData:
     expect_data: IterableData = {"option": {}}
     setup_data["poll"] = expect_data["poll"] = {
         1: {"option_ids": [1, 2, *([4, 5] if fail else []), 6]},
-        2: {"option_ids": [7,8]},
+        2: {"option_ids": [7, 8]},
     }
     setup_data["user"] = expect_data["user"] = {
         1: {"option_ids": [1]},
-        2: {"option_ids": [2,8]},
+        2: {"option_ids": [2, 8]},
         3: {"option_ids": [6]},
         4: {"option_ids": [7]},
         5: {"option_ids": [4, 5] if fail else []},
@@ -894,19 +907,21 @@ def build_user_test_data(fail: bool = False) -> TestData:
         ("Sir Galahad the Pure", "G4L4#4D", "Galahad"),
     ]
     for id_, (username, member_number, saml_id) in enumerate(test_data, 1):
-        setup_data["user"][id_] = expect_data["user"][id_] = setup_data["user"][id_ + 5] = remove_none_values(
+        setup_data["user"][id_] = expect_data["user"][id_] = setup_data["user"][
+            id_ + 5
+        ] = remove_none_values(
             {
                 "username": username,
                 "member_number": member_number,
                 "saml_id": saml_id,
             }
         )
-        expect_data["user"][id_+5] = remove_none_values(
+        expect_data["user"][id_ + 5] = remove_none_values(
             {
                 "username": username,
                 "member_number": member_number,
                 "saml_id": saml_id,
-                "meta_deleted": True
+                "meta_deleted": True,
             }
         )
     if fail:
@@ -1077,6 +1092,7 @@ def test_mediafile_success_with_problems(write, finalize, assert_model):
         assert_model,
         build_mediafile_test_data(add_empty=True, with_problems=True),
     )
+
 
 def test_mediafile_success_no_empty(write, finalize, assert_model):
     do_test(

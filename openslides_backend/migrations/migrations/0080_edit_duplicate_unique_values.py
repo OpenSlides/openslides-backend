@@ -186,16 +186,19 @@ class Migration(BaseModelMigration):
         for collection in sorted(collection_to_fields):
             fields = collection_to_fields[collection]
             unique_tuple_to_data: dict[
-                tuple[str, ...], dict[tuple[str, ...], list[int]]
+                tuple[str, ...], dict[tuple[Any, ...], list[int]]
             ] = {tup: defaultdict(list) for tup in collection_to_tuples[collection]}
             unique_tuple_to_combinations_with_duplicates: dict[
-                tuple[str, ...], set[tuple[str, ...]]
+                tuple[str, ...], set[tuple[Any, ...]]
             ] = defaultdict(set)
             models = self.reader.get_all(collection, fields)
             for id_, model in models.items():
                 for tup in collection_to_tuples[collection]:
                     vals = tuple(
-                        val for field in tup if (val := model.get(field)) is not None
+                        val
+                        for field in tup
+                        if (val := model.get(field)) is not None
+                        or (collection == "mediafile" and field == "parent_id")
                     )
                     if len(vals) != len(tup):
                         continue
@@ -347,9 +350,7 @@ class Migration(BaseModelMigration):
                             back_fqid,
                             fields={} if back_multi else {back_field: None},
                             list_fields=(
-                                {"remove": {back_field: [id_]}}
-                                if back_multi
-                                else {}
+                                {"remove": {back_field: [id_]}} if back_multi else {}
                             ),
                         )
                     )
