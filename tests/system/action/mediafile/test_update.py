@@ -832,7 +832,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_token_payload_old_token(self) -> None:
         self.set_models(
-            {"mediafile/7": {"token": "token_1", "owner_id": ONE_ORGANIZATION_FQID}}
+            {
+                "mediafile/7": {
+                    "token": "token_1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "title": "file_7",
+                }
+            }
         )
         response = self.request("mediafile.update", {"id": 7, "token": "token_1"})
         self.assert_status_code(response, 200)
