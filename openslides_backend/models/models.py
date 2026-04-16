@@ -622,7 +622,8 @@ class Mediafile(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(
-        constraints={"description": "Title and parent_id must be unique."}
+        required=True,
+        constraints={"description": "Title and parent_id must be unique."},
     )
     is_directory = fields.BooleanField()
     filesize = fields.IntegerField(

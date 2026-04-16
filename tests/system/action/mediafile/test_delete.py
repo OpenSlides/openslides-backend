@@ -11,7 +11,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {"logo_web_header_id": 222},
-            "mediafile/222": {"owner_id": "meeting/1"},
+            "mediafile/222": {"owner_id": "meeting/1", "title": "file_222"},
             "meeting_mediafile/222": {
                 "mediafile_id": 222,
                 "is_public": True,

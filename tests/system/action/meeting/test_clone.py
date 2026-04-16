@@ -672,11 +672,17 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "mediafile/1": {
                     "owner_id": "meeting/1",
-                    "mimetype": "text/plain",
+                    "mimetype": "image/png",
+                    "owner_id": "meeting/1",
+                    "title": "logo (new)",
+                    "filename": "logo_2026.png",
                 },
                 "mediafile/2": {
                     "owner_id": "meeting/1",
-                    "mimetype": "text/plain",
+                    "mimetype": "font/woff",
+                    "owner_id": "meeting/1",
+                    "title": "fancy font",
+                    "filename": "font-fancy.woff",
                 },
                 "meeting_mediafile/10": {
                     "meeting_id": 1,
@@ -1066,18 +1072,21 @@ class MeetingClone(BaseActionTestCase):
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "public",
                 },
                 "mediafile/15": {
                     "is_directory": True,
                     "parent_id": 14,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "fonts",
                 },
                 "mediafile/16": {
                     "is_directory": True,
                     "parent_id": 15,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "published",
                 },
                 "mediafile/17": {
                     "parent_id": 16,
@@ -1085,6 +1094,8 @@ class MeetingClone(BaseActionTestCase):
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "font-galactic.woff",
+                    "title": "fonts for special highlighted headers",
                 },
                 "meeting_mediafile/11": {
                     "is_public": False,
