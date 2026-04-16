@@ -29,7 +29,7 @@ def turn_relation(relation: str) -> str:
 
 # Accepted relation types grouped by type
 # i.e. the combination of generic/non-generic, relation/tablefield, 1/n
-# Possible differences are only which side is reruired
+# Possible differences are only which side is required
 # First side is the one that will be generated with equal_fields set
 # No inverted relation-types yet since the generated code will be the same for each
 grouped_check_relations: list[tuple[str, ...]] = [
