@@ -27,6 +27,11 @@ def turn_relation(relation: str) -> str:
     return f"{type2}:{type1}"
 
 
+# Accepted relation types grouped by type
+# i.e. the combination of generic/non-generic, relation/tablefield, 1/n
+# Possible differences are only which side is reruired
+# First side is the one that will be generated with equal_fields set
+# No inverted relation-types yet since the generated code will be the same for each
 grouped_check_relations: list[tuple[str, ...]] = [
     ("1r:1t", "1rR:1t"),
     ("1r:nt", "1r:ntR", "1rR:nt"),
@@ -37,6 +42,9 @@ grouped_check_relations: list[tuple[str, ...]] = [
     ("nGt:nt",),
     ("1Gr:1tR", "1GrR:1tR", "1GrR:1t"),
 ]
+
+# Create another list with one inverted relation order each to allow singular tests
+# that check whether the sql code also gets generated if `equal_fields` is on the other side in models.yml
 turned_grouped_check_relations: list[tuple[str, ...]] = [
     (
         (*relations, turned_relation)
@@ -49,6 +57,10 @@ check_trigger_existence_relations: list[str] = [
     group[-1] for group in turned_grouped_check_relations
 ]
 
+# We need some tests that check whether the normal error message appears, and some that check whether the meeting_id error message appears
+# Always using normal field for double required relations though,
+# since they are used for the update equal_fields tests
+# and those need the equal_field to be non-constant to work. meeting_id is constant.
 equal_field_relations: list[tuple[str, str]] = []
 for group in turned_grouped_check_relations:
     for i, relation in enumerate(group):
