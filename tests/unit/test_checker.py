@@ -684,7 +684,11 @@ class TestCheckerCheckData(TestCase):
         for collection in ["theme", "committee", "organization"]:
             del self.meeting_data[collection]
         self.meeting_data.update(
-            {"mediafile": {"1": {"id": 1, "owner_id": ONE_ORGANIZATION_FQID}}}
+            {
+                "mediafile": {
+                    "1": {"id": 1, "owner_id": ONE_ORGANIZATION_FQID, "title": "1"}
+                }
+            }
         )
         self.check_data(
             data=self.meeting_data,
@@ -728,24 +732,28 @@ class TestCheckerCheckData(TestCase):
             "mediafile": {
                 "1": {
                     "id": 1,
+                    "title": "1",
                     "owner_id": "meeting/1",
                     "child_ids": [2],
                     "meeting_mediafile_ids": [11],
                 },
                 "2": {
                     "id": 2,
+                    "title": "2",
                     "owner_id": "meeting/1",
                     "parent_id": 1,
                     "meeting_mediafile_ids": [12],
                 },
                 "3": {
                     "id": 3,
+                    "title": "3",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
                     "child_ids": [4],
                 },
                 "4": {
                     "id": 4,
+                    "title": "4",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "is_directory": True,
                     "parent_id": 3,
@@ -753,6 +761,7 @@ class TestCheckerCheckData(TestCase):
                 },
                 "5": {
                     "id": 5,
+                    "title": "5",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "parent_id": 4,
                     "meeting_mediafile_ids": [15],
@@ -818,11 +827,13 @@ class TestCheckerCheckData(TestCase):
             "mediafile": {
                 "1": {
                     "id": 1,
+                    "title": "1",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "child_ids": [2],
                 },
                 "2": {
                     "id": 2,
+                    "title": "2",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "parent_id": 1,
                     "meeting_mediafile_ids": [12],

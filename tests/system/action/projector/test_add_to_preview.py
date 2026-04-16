@@ -283,7 +283,9 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
 
     def test_unpublished_mediafile_as_content_object(self) -> None:
-        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
+        self.set_models(
+            {"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID, "title": "private"}}
+        )
         response = self.request(
             "projector.add_to_preview",
             {"ids": [2], "content_object_id": "mediafile/1", "meeting_id": 1},

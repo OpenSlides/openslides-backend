@@ -832,7 +832,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_token_payload_old_token(self) -> None:
         self.set_models(
-            {"mediafile/7": {"token": "token_1", "owner_id": ONE_ORGANIZATION_FQID}}
+            {
+                "mediafile/7": {
+                    "token": "token_1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "title": "file_7",
+                }
+            }
         )
         response = self.request("mediafile.update", {"id": 7, "token": "token_1"})
         self.assert_status_code(response, 200)
@@ -914,53 +920,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_update_title_empty_parent_id_unique(self) -> None:
-        self.create_mediafile(6, 1, is_directory=True)
-        self.create_mediafile(7, 1, parent_id=6)
-        self.create_mediafile(8, 1, parent_id=6)
-        self.set_models(
-            {
-                "mediafile/7": {"title": ""},
-                "meeting_mediafile/16": {
-                    "mediafile_id": 6,
-                    "is_public": True,
-                    "meeting_id": 1,
-                },
-                "meeting_mediafile/17": {
-                    "mediafile_id": 7,
-                    "is_public": True,
-                    "meeting_id": 1,
-                },
-                "meeting_mediafile/18": {
-                    "mediafile_id": 8,
-                    "is_public": True,
-                    "meeting_id": 1,
-                },
-            }
-        )
-        response = self.request("mediafile.update", {"id": 8, "title": ""})
-        self.assert_status_code(response, 400)
-        assert (
-            "File '' already exists in folder 'folder_6'." in response.json["message"]
-        )
-
     def test_update_title_owner_id_root_unique(self) -> None:
         self.create_mediafile(7, 1)
         self.create_mediafile(8, 1)
         response = self.request("mediafile.update", {"id": 8, "title": "file_7"})
         self.assert_status_code(response, 400)
         assert (
-            "File 'file_7' already exists in the root folder."
-            in response.json["message"]
+            "File 'file_7' already exists in the root folder." in response.json["message"]
         )
-
-    def test_update_title_empty_owner_id_root_unique(self) -> None:
-        self.create_mediafile(7, 1)
-        self.create_mediafile(8, 1)
-        self.set_models({"mediafile/7": {"title": ""}})
-        response = self.request("mediafile.update", {"id": 8, "title": ""})
-        self.assert_status_code(response, 400)
-        assert "File '' already exists in the root folder." in response.json["message"]
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
