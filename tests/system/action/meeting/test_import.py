@@ -2052,6 +2052,7 @@ class MeetingImport(BaseActionTestCase):
         assert "last_login" not in user
 
     def test_merge_meeting_users_fields(self) -> None:
+        self.create_motion(1, 1)
         self.set_models(
             {
                 "user/14": {
@@ -2082,7 +2083,7 @@ class MeetingImport(BaseActionTestCase):
                 "group/1": {"meeting_user_ids": [1, 14]},
                 "personal_note/1": {
                     "meeting_id": 1,
-                    "content_object_id": None,
+                    "content_object_id": "motion/1",
                     "note": "<p>Some content..</p>",
                     "star": False,
                     "meeting_user_id": 14,
@@ -2119,7 +2120,7 @@ class MeetingImport(BaseActionTestCase):
                     "1": {
                         "id": 1,
                         "meeting_id": 1,
-                        "content_object_id": None,
+                        "content_object_id": "motion/2",
                         "note": "<p>Some content..</p>",
                         "star": False,
                         "meeting_user_id": 12,
@@ -2127,7 +2128,7 @@ class MeetingImport(BaseActionTestCase):
                     "2": {
                         "id": 2,
                         "meeting_id": 1,
-                        "content_object_id": None,
+                        "content_object_id": "motion/2",
                         "note": "blablabla",
                         "star": False,
                         "meeting_user_id": 13,
@@ -2153,10 +2154,30 @@ class MeetingImport(BaseActionTestCase):
                         "group_ids": [2],
                     },
                 },
+                "motion": {
+                    "2": {
+                        "id": 2,
+                        "personal_note_ids": [1, 2],
+                        "title": "New motion",
+                        "meeting_id": 1,
+                        "state_id": 1,
+                        "list_of_speakers_id": 2,
+                    }
+                },
+                "list_of_speakers": {
+                    "2": {
+                        "id": 2,
+                        "content_object_id": "motion/2",
+                        "meeting_id": 1,
+                    }
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12, 13]
+        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [2]
+        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [2]
+        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [2]
         request_data["meeting"]["group"]["2"]["meeting_user_ids"] = [12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)

@@ -190,6 +190,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "meeting_user_id": 2,
                     "meeting_id": 1,
                     "note": "note_in_meeting1",
+                    "content_object_id": "motion/1",
                 },
             }
         )
