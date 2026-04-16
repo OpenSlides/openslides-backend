@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
@@ -584,6 +585,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "user_id": 4,
                     "delegated_user_id": 5,
                     "meeting_id": 1,
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/8": {
                     "vote_ids": [7],

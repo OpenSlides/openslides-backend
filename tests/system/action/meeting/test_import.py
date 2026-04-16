@@ -1,6 +1,7 @@
 import base64
 import time
 from copy import deepcopy
+from decimal import Decimal
 from typing import Any
 
 from psycopg.types.json import Jsonb
@@ -2326,6 +2327,8 @@ class MeetingImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_id": 10,
                     "user_token": "asdfgh",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/10": {
                     "vote_ids": [1],
@@ -2347,6 +2350,8 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "option_id": 1,
                         "user_token": "asdfgh",
+                        "weight": "1.000000",
+                        "value": "Y",
                     },
                 },
                 "option": {
@@ -2529,6 +2534,8 @@ class MeetingImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_id": 10,
                     "user_token": "asdfgh",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/10": {
                     "vote_ids": [1],
@@ -2550,6 +2557,8 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "option_id": 1,
                         "user_token": "asdfgh",
+                        "weight": "1.000000",
+                        "value": "Y",
                     },
                 },
                 "option": {

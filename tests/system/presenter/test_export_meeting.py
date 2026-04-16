@@ -263,6 +263,8 @@ class TestExportMeeting(BasePresenterTestCase):
                     "user_id": 14,
                     "user_token": "asdfgh",
                     "option_id": 1,
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/1": {"meeting_id": 1},
             }

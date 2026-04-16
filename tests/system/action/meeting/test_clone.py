@@ -1681,6 +1681,8 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_id": 1,
                     "user_token": "asdfgh",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "vote/2": {
                     "user_id": 1,
@@ -1688,6 +1690,8 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 4,
                     "option_id": 2,
                     "user_token": "hjkl",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/1": {"meeting_id": 1},
                 "option/2": {"meeting_id": 4},
