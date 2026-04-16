@@ -172,7 +172,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "The following models do not belong to meeting 1: ['motion/42']",
+            "Model 'motion/42' does not exist.",
             response.json["message"],
         )
 
