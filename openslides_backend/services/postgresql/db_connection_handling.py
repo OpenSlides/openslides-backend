@@ -55,6 +55,7 @@ def create_os_conn_pool(open: bool = True) -> ConnectionPool[Connection[rows.Dic
         kwargs={
             "autocommit": True,
             "row_factory": rows.dict_row,
+            "prepare_threshold": None,
         },
         min_size=int(env.DB_POOL_MIN_SIZE),
         max_size=int(env.DB_POOL_MAX_SIZE),
