@@ -3,10 +3,6 @@ from typing import Any, cast
 
 from psycopg.types.json import Jsonb
 
-from openslides_backend.action.mixins.check_unique_name_mixin import (
-    CheckUniqueInContextMixin,
-)
-
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
 from ....models.models import Meeting
@@ -178,7 +174,6 @@ meeting_settings_keys = [
 
 @register_action("meeting.update")
 class MeetingUpdate(
-    CheckUniqueInContextMixin,
     EmailCheckMixin,
     EmailSenderCheckMixin,
     UpdateAction,
@@ -207,16 +202,6 @@ class MeetingUpdate(
         },
     )
     check_email_field = "users_email_replyto"
-
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if instance.get("external_id") is not None:
-            self.check_unique_in_context(
-                "external_id",
-                instance["external_id"],
-                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
-                instance["id"],
-            )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template

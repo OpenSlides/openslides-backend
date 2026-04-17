@@ -38,7 +38,7 @@ class GenderCreateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Gender 'exists' already exists.",
+            "gender/2: Gender with name 'exists' already exists.",
             response.json["message"],
         )
         self.assert_model_exists("gender/1")
@@ -62,7 +62,7 @@ class GenderCreateActionTest(BaseActionTestCase):
         response = self.request("gender.create", {"name": ""})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Empty gender name not allowed.",
+            "Action gender.create: data.name must be longer than or equal to 1 characters",
             response.json["message"],
         )
         self.assert_model_not_exists("gender/1")

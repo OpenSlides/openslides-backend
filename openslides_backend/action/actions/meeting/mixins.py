@@ -9,20 +9,9 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
-from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 
 
-class MeetingPermissionMixin(CheckUniqueInContextMixin):
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if instance.get("external_id") is not None:
-            self.check_unique_in_context(
-                "external_id",
-                instance["external_id"],
-                "The external id of the meeting is not unique in the organization scope. Send a differing external id with this request.",
-                None,
-            )
-
+class MeetingPermissionMixin(Action):
     def check_permissions(self, instance: dict[str, Any]) -> None:
         committee_id = self.get_committee_id(instance)
         if (
