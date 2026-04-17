@@ -233,7 +233,6 @@ class Sql_helper:
 
 
 def check_prerequisites(curs: Cursor[DictRow]) -> str:
-    # TODO: Include actual LINK
     errors = ""
     MigrationHelper.write_line(
         "This is migration 100, part of the OpenSlides 4.3.0 release."
@@ -241,7 +240,7 @@ def check_prerequisites(curs: Cursor[DictRow]) -> str:
     MigrationHelper.write_line(
         "This migration will fundamentally restructure all data."
     )
-    MigrationHelper.write_line("See LINK for more information.")
+    MigrationHelper.write_line("See https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md for more information.")
     MigrationHelper.write_line("")
 
     for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
