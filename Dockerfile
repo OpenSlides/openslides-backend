@@ -16,6 +16,7 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
+    git \ 
     libmagic1 \
     media-types \
     ncat \
