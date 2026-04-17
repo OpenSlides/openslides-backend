@@ -187,6 +187,7 @@ class TestCheckerCheckData(TestCase):
                 "1": {
                     "id": 1,
                     "meeting_id": 1,
+                    "name": "Main projector",
                     "used_as_reference_projector_meeting_id": 1,
                     "used_as_default_projector_for_agenda_item_list_in_meeting_id": 1,
                     "used_as_default_projector_for_topic_in_meeting_id": 1,
@@ -502,7 +503,7 @@ class TestCheckerCheckData(TestCase):
             {
                 "field_type": ColorField,
                 "collection": "theme",
-                "field_name": "accent_500",
+                "field_name": "accent_400",
                 "value": "#e412a3",
             },
             {

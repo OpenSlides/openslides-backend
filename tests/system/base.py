@@ -403,6 +403,7 @@ class BaseSystemTestCase(TestCase):
                 },
                 f"projector/{base}": {
                     "meeting_id": base,
+                    "name": f"Projector {base}",
                     **{field: base for field in Meeting.reverse_default_projectors()},
                 },
                 f"group/{base}": {"meeting_id": base, "name": f"group{base}"},
