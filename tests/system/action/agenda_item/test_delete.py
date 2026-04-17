@@ -87,12 +87,8 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.create_motion(20, 34)
         self.set_models(
             {
-                "meeting/20": {
-                    "all_projection_ids": [1],
-                },
                 "agenda_item/111": {
                     "content_object_id": "motion/34",
-                    "projection_ids": [1],
                     "meeting_id": 20,
                 },
                 "projection/1": {
@@ -100,10 +96,7 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 20,
                 },
-                "projector/1": {
-                    "current_projection_ids": [1],
-                    "meeting_id": 20,
-                },
+                "projector/1": {"meeting_id": 20, "name": "Projector 1"},
             }
         )
         response = self.request("agenda_item.delete", {"id": 111})

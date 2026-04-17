@@ -10,8 +10,8 @@ class ProjectorProject(BaseActionTestCase):
         self.set_models(
             {
                 "projector/1": {"scroll": 80},
-                "projector/65": {"meeting_id": 1},
-                "projector/75": {"meeting_id": 1},
+                "projector/65": {"meeting_id": 1, "name": "Projector 65"},
+                "projector/75": {"meeting_id": 1, "name": "Projector 75"},
                 "projection/105": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/452",
