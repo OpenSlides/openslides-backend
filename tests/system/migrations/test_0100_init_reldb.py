@@ -492,7 +492,7 @@ See https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md for more
         response = self.request("migrate")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_RUNNING,
+            "status": MigrationState.MIGRATION_PREPARING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
         }
@@ -503,7 +503,7 @@ See https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md for more
         assert response.json == {
             "success": True,
             "stats": {
-                "status": MigrationState.MIGRATION_RUNNING,
+                "status": MigrationState.MIGRATION_PREPARING,
                 "output": self.EXPECTED_INTRODUCTION
                 + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
@@ -575,7 +575,7 @@ See https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md for more
         response = self.request("finalize")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_RUNNING,
+            "status": MigrationState.MIGRATION_PREPARING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
         }

@@ -122,7 +122,11 @@ class MigrationManager:
             for mi in migration_indices
             if mi > current_migration_index
             if state_per_mi[mi]
-            in (MigrationState.MIGRATION_REQUIRED, MigrationState.MIGRATION_RUNNING)
+            in (
+                MigrationState.MIGRATION_REQUIRED,
+                MigrationState.MIGRATION_RUNNING,
+                MigrationState.MIGRATION_PREPARING,
+            )
             for collection, r_tables in MigrationHelper.get_replace_tables(mi).items()
         }
         stats = {
@@ -177,7 +181,10 @@ class MigrationManager:
                 self.assert_valid_migration_index(curs)
 
                 match MigrationHelper.get_migration_state(curs):
-                    case MigrationState.MIGRATION_RUNNING:
+                    case (
+                        MigrationState.MIGRATION_RUNNING
+                        | MigrationState.MIGRATION_PREPARING
+                    ):
                         process = "Migration"
                     case MigrationState.FINALIZATION_RUNNING:
                         process = "Finalization"
@@ -227,7 +234,10 @@ class MigrationManager:
                 with conn.cursor() as curs:
                     if (
                         MigrationHelper.get_migration_state(curs)
-                        == MigrationState.MIGRATION_RUNNING
+                        in [
+                            MigrationState.MIGRATION_RUNNING,
+                            MigrationState.MIGRATION_PREPARING,
+                        ]
                         and command != MigrationCommand.RESET
                     ):
                         raise MigrationException(

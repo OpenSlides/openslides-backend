@@ -330,7 +330,7 @@ class MigrationHandler(BaseHandler):
                     MigrationHelper.set_database_migration_info(
                         self.cursor,
                         minimum_required_index["min"],
-                        MigrationState.MIGRATION_RUNNING,  # Should be smth. like MIGRATION_PREPARING
+                        MigrationState.MIGRATION_PREPARING,
                     )
                 MigrationHelper.write_line("migration started")
                 self.set_public_tables_read_only()
@@ -342,7 +342,7 @@ class MigrationHandler(BaseHandler):
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.FINALIZED:
                 self.logger.info("No migration needed.")
-            case MigrationState.MIGRATION_RUNNING:
+            case MigrationState.MIGRATION_RUNNING | MigrationState.MIGRATION_PREPARING:
                 self.logger.info("There is already a migration running.")
             case _:
                 raise MigrationException(

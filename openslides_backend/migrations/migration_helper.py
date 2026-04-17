@@ -39,6 +39,7 @@ class MigrationState(StrEnum):
     """
 
     MIGRATION_REQUIRED = "migration_required"
+    MIGRATION_PREPARING = "migration_preparing"
     MIGRATION_RUNNING = "migration_running"
     MIGRATION_FAILED = "migration_failed"
     FINALIZATION_REQUIRED = "finalization_required"
@@ -319,9 +320,10 @@ class MigrationHelper:
         if not states_and_indices:
             return MigrationState.FINALIZED
         states = {elem.get("migration_state") for elem in states_and_indices}
-        # 1. migration, 2. finalization -> failed > running > required
+        # 1. migration, 2. finalization | -> failed > (preparing >) running > required
         for state in [
             MigrationState.MIGRATION_FAILED,
+            MigrationState.MIGRATION_PREPARING,
             MigrationState.MIGRATION_RUNNING,
             MigrationState.MIGRATION_REQUIRED,
             MigrationState.FINALIZATION_FAILED,
