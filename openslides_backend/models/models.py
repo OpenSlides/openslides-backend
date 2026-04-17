@@ -622,7 +622,8 @@ class Mediafile(Model):
 
     id = fields.IntegerField(required=True, constant=True)
     title = fields.CharField(
-        constraints={"description": "Title and parent_id must be unique."}
+        required=True,
+        constraints={"description": "Title and parent_id must be unique."},
     )
     is_directory = fields.BooleanField()
     filesize = fields.IntegerField(
@@ -1878,8 +1879,8 @@ class MotionChangeRecommendation(Model):
         constraints={"enum": ["replacement", "insertion", "deletion", "other"]},
     )
     other_description = fields.CharField()
-    line_from = fields.IntegerField(constraints={"minimum": 0})
-    line_to = fields.IntegerField(constraints={"minimum": 0})
+    line_from = fields.IntegerField(required=True, constraints={"minimum": 0})
+    line_to = fields.IntegerField(required=True, constraints={"minimum": 0})
     text = fields.HTMLStrictField()
     creation_time = fields.TimestampField(read_only=True)
     motion_id = fields.RelationField(
@@ -1895,7 +1896,7 @@ class MotionComment(Model):
     verbose_name = "motion comment"
 
     id = fields.IntegerField(required=True, constant=True)
-    comment = fields.HTMLStrictField()
+    comment = fields.HTMLStrictField(required=True)
     motion_id = fields.RelationField(
         to={"motion": "comment_ids"}, required=True, constant=True
     )
@@ -2288,7 +2289,7 @@ class PersonalNote(Model):
         to={"meeting_user": "personal_note_ids"}, required=True, constant=True
     )
     content_object_id = fields.GenericRelationField(
-        to={"motion": "personal_note_ids"}, constant=True
+        to={"motion": "personal_note_ids"}, required=True, constant=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "personal_note_ids"}, required=True, constant=True
@@ -2493,7 +2494,7 @@ class Projector(Model):
     verbose_name = "projector"
 
     id = fields.IntegerField(required=True, constant=True)
-    name = fields.CharField()
+    name = fields.CharField(required=True)
     is_internal = fields.BooleanField(default=False)
     scale = fields.IntegerField(default=0)
     scroll = fields.IntegerField(default=0, constraints={"minimum": 0})
@@ -2620,7 +2621,7 @@ class ProjectorMessage(Model):
     verbose_name = "projector message"
 
     id = fields.IntegerField(required=True, constant=True)
-    message = fields.HTMLStrictField()
+    message = fields.HTMLStrictField(required=True)
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -2777,7 +2778,7 @@ class Theme(Model):
     accent_300 = fields.ColorField()
     accent_400 = fields.ColorField()
     accent_50 = fields.ColorField()
-    accent_500 = fields.ColorField(default="#2196f3")
+    accent_500 = fields.ColorField(required=True, default="#2196f3")
     accent_600 = fields.ColorField()
     accent_700 = fields.ColorField()
     accent_800 = fields.ColorField()
@@ -2791,7 +2792,7 @@ class Theme(Model):
     primary_300 = fields.ColorField()
     primary_400 = fields.ColorField()
     primary_50 = fields.ColorField()
-    primary_500 = fields.ColorField(default="#317796")
+    primary_500 = fields.ColorField(required=True, default="#317796")
     primary_600 = fields.ColorField()
     primary_700 = fields.ColorField()
     primary_800 = fields.ColorField()
@@ -2805,7 +2806,7 @@ class Theme(Model):
     warn_300 = fields.ColorField()
     warn_400 = fields.ColorField()
     warn_50 = fields.ColorField()
-    warn_500 = fields.ColorField(default="#f06400")
+    warn_500 = fields.ColorField(required=True, default="#f06400")
     warn_600 = fields.ColorField()
     warn_700 = fields.ColorField()
     warn_800 = fields.ColorField()
@@ -2989,8 +2990,8 @@ class Vote(Model):
     verbose_name = "vote"
 
     id = fields.IntegerField(required=True, constant=True)
-    weight = fields.DecimalField(constant=True)
-    value = fields.CharField(constant=True)
+    weight = fields.DecimalField(required=True, constant=True)
+    value = fields.CharField(required=True, constant=True)
     user_token = fields.CharField(required=True, constant=True)
     option_id = fields.RelationField(
         to={"option": "vote_ids"}, required=True, constant=True
