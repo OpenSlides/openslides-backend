@@ -436,69 +436,111 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_with_change_recommendation_complex(self) -> None:
-        # TODO: Reduce this to a minimum payload later.
-        # load_example_data should not be used and the first 4 requests
-        # should be unified into a shortened set_models statement.
-        self.load_example_data()
-        response = self.request(
-            "meeting.create",
-            {
-                "committee_id": 1,
-                "start_time": None,
-                "end_time": None,
-                "name": "Dev-Meeting",
-                "location": "",
-                "admin_ids": [1],
-                "organization_tag_ids": [],
-                "external_id": "",
-                "language": "en",
-                "set_as_template": False,
-            },
-        )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "meeting.update",
-            {
-                "start_time": 1924988400,
-                "end_time": 1927580400,
+        self.create_meeting()
+        self.create_meeting(
+            4,
+            meeting_data={
+                "committee_id": 60,
+                "start_time": datetime.fromtimestamp(1924988400, ZoneInfo("UTC")),
+                "end_time": datetime.fromtimestamp(1927580400, ZoneInfo("UTC")),
                 "name": "Dev Meeting",
-                "location": "",
-                "organization_tag_ids": [],
-                "external_id": "",
-                "jitsi_domain": "",
-                "jitsi_room_name": "",
-                "jitsi_room_password": "",
-                "id": 2,
+                "motions_preamble": "The assembly may decide:",
+                "motions_default_line_numbering": "none",
+                "motions_line_length": 90,
+                "motions_reason_required": False,
+                "motions_origin_motion_toggle_default": True,
+                "motions_enable_origin_motion_display": True,
+                "motions_enable_text_on_projector": True,
+                "motions_enable_reason_on_projector": True,
+                "motions_enable_sidebox_on_projector": True,
+                "motions_enable_recommendation_on_projector": True,
+                "motions_show_referring_motions": True,
+                "motions_show_sequential_number": True,
+                "motions_recommendations_by": "ABK",
+                "motions_recommendation_text_mode": "original",
+                "motions_default_sorting": "number",
+                "motions_number_type": "per_category",
+                "motions_number_min_digits": 3,
+                "motions_number_with_blank": False,
+                "motions_amendments_enabled": True,
+                "motions_amendments_in_main_list": True,
+                "motions_amendments_of_amendments": True,
+                "motions_amendments_prefix": "Ä-",
+                "motions_amendments_text_mode": "freestyle",
+                "motions_amendments_multiple_paragraphs": True,
+                "motions_supporters_min_amount": 1,
+                "motions_export_title": "Motions",
+                "motions_export_preamble": "an export preamble",
+                "motions_export_submitter_recommendation": True,
+                "motions_export_follow_recommendation": True,
+                "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
+                "motion_poll_ballot_paper_number": 8,
+                "motion_poll_default_type": "pseudoanonymous",
+                "motion_poll_default_method": "YNA",
+                "motion_poll_default_onehundred_percent_base": "YNA",
+                "motion_poll_default_group_ids": [],
+                "motion_poll_default_backend": "fast",
             },
         )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "motion.create",
-            {
-                "meeting_id": 2,
+        self.set_user_groups(1, [5])
+        self.create_motion(
+            4,
+            1,
+            motion_data={
                 "title": "a",
                 "text": "<p> Vom Ödipuskomplex maßlos gequält, übt Wilfried zyklisches Jodeln.</p>",
-                "submitter_meeting_user_ids": [4],
-                "workflow_id": 3,
-                "agenda_create": False,
-                "agenda_type": "internal",
+                "number": "1 - 1",
+                "number_value": 1,
+                "category_weight": 10000,
+                "state_extension": "<p>regeer</p>",
+                "sort_weight": 10000,
+                "created": datetime.fromtimestamp(1924988600, ZoneInfo("UTC")),
+                "last_modified": datetime.fromtimestamp(1924988680, ZoneInfo("UTC")),
+                "start_line_number": 1,
             },
         )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "motion_change_recommendation.create",
+        self.set_models(
             {
-                "internal": False,
-                "line_from": 1,
-                "line_to": 1,
-                "motion_id": 5,
-                "rejected": False,
-                "text": "<p>a Ödipuskomplex maßlos gequält, übt Wilfried zyklisches Jodeln.</p>",
-                "type": "replacement",
-            },
+                **{
+                    f"motion_{role}/1": {
+                        "meeting_user_id": 1,
+                        "motion_id": 1,
+                        "meeting_id": 4,
+                        **({"weight": 1} if role != "supporter" else {}),
+                    }
+                    for role in [
+                        "editor",
+                        "submitter",
+                        "supporter",
+                        "working_group_speaker",
+                    ]
+                },
+                "motion_change_recommendation/111": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "<p>a Ödipuskomplex maßlos gequält, übt Wilfried zyklisches Jodeln.</p>",
+                    "motion_id": 1,
+                    "meeting_id": 4,
+                    "rejected": False,
+                },
+                "motion_change_recommendation/112": {
+                    "line_from": 1,
+                    "line_to": 1,
+                    "text": "Falsches Üben von Xylophonmusik quält jeden größeren Zwerg.",
+                    "motion_id": 1,
+                    "meeting_id": 4,
+                    "creation_time": datetime.fromtimestamp(
+                        1924988680, ZoneInfo("UTC")
+                    ),
+                },
+                "agenda_item/1": {
+                    "meeting_id": 4,
+                    "content_object_id": "motion/1",
+                    "type": "internal",
+                },
+            }
         )
-        self.assert_status_code(response, 200)
-        response = self.request("meeting.clone", {"meeting_id": 2})
+        response = self.request("meeting.clone", {"meeting_id": 4})
         self.assert_status_code(response, 200)
 
     def test_clone_with_recommendation_extension(self) -> None:
