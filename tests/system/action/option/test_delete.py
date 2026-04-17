@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -34,6 +36,8 @@ class OptionDeleteTest(BaseActionTestCase):
                     "user_token": "imnotapropertoken",
                     "option_id": 112,
                     "meeting_id": 1,
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "poll_candidate_list/2": {"option_id": 112, "meeting_id": 1},
             }
