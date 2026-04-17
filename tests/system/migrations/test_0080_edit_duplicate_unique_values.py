@@ -130,7 +130,7 @@ def build_single_external_id_test_data(collection: str, fail: bool = False) -> T
             setup_data,
             {collection: [3]},
             [
-                f"For collection {collection}: Ids [4, 5]: Duplicate values for ('external_id',) (values: ('not unique',)) cannot be handled."
+                f"For collection {collection}: Ids [4, 5]: Duplicate values for ('external_id',) (values: ('not unique',)) cannot be handled.\n"
             ],
         )
     return setup_data, {collection: [3]}, expect_data
@@ -359,7 +359,7 @@ def build_meeting_id_and_string_field_test_data(
             setup_data,
             {collection: [3]},
             [
-                f"For collection {collection}: Ids [4, 5]: Duplicate values for ('meeting_id', '{str_field}') (values: (1, 'not unique')) cannot be handled."
+                f"For collection {collection}: Ids [4, 5]: Duplicate values for ('meeting_id', '{str_field}') (values: (1, 'not unique')) cannot be handled.\n"
             ],
         )
     return setup_data, {collection: [3]}, expect_data
@@ -407,8 +407,8 @@ def build_meeting_connection_test_data(
             setup_data,
             {collection: [5]},
             [
-                f"For collection {collection}: Ids [1, 6]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 1)) cannot be handled.",
-                f"For collection {collection}: Ids [3, 7]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 2)) cannot be handled.",
+                f"For collection {collection}: Ids [1, 6]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 1)) cannot be handled.\n",
+                f"For collection {collection}: Ids [3, 7]: Duplicate values for ('meeting_id', '{non_meeting_id_field}') (values: (1, 2)) cannot be handled.\n",
             ],
         )
     return setup_data, {collection: [5]}, expect_data
@@ -682,7 +682,7 @@ def build_option_test_data(fail: bool = False) -> TestData:
             setup_data,
             {"option": [3]},
             [
-                "For collection option: Ids [4, 5]: Duplicate values for ('content_object_id', 'poll_id') (values: ('user/5', 1)) cannot be handled."
+                "For collection option: Ids [4, 5]: Duplicate values for ('content_object_id', 'poll_id') (values: ('user/5', 1)) cannot be handled.\n"
             ],
         )
     return setup_data, {"option": [3]}, expect_data
@@ -885,8 +885,8 @@ def build_structure_level_list_of_speakers_test_data(fail: bool = False) -> Test
             setup_data,
             {"structure_level_list_of_speakers": [5]},
             [
-                "For collection structure_level_list_of_speakers: Ids [1, 6]: Duplicate values for ('meeting_id', 'structure_level_id', 'list_of_speakers_id') (values: (1, 1, 1)) cannot be handled.",
-                "For collection structure_level_list_of_speakers: Ids [3, 7]: Duplicate values for ('meeting_id', 'structure_level_id', 'list_of_speakers_id') (values: (1, 2, 1)) cannot be handled.",
+                "For collection structure_level_list_of_speakers: Ids [1, 6]: Duplicate values for ('meeting_id', 'structure_level_id', 'list_of_speakers_id') (values: (1, 1, 1)) cannot be handled.\n",
+                "For collection structure_level_list_of_speakers: Ids [3, 7]: Duplicate values for ('meeting_id', 'structure_level_id', 'list_of_speakers_id') (values: (1, 2, 1)) cannot be handled.\n",
             ],
         )
     return setup_data, {"structure_level_list_of_speakers": [5]}, expect_data
@@ -979,16 +979,16 @@ def build_user_test_data(fail: bool = False) -> TestData:
             setup_data,
             {"user": [6, 7, 8, 9, 10]},
             [
-                "For collection user: Ids [1, 11, 16]: Duplicate values for ('username',) (values: ('King Arthur',)) cannot be handled.",
+                "For collection user: Ids [1, 11, 16]: Duplicate values for ('username',) (values: ('King Arthur',)) cannot be handled.\n",
                 # No screaming bc of member_number/saml_id for King arthur bc empty
-                "For collection user: Ids [2, 12, 17]: Duplicate values for ('member_number',) (values: ('L4NC3L07',)) cannot be handled.",
-                "For collection user: Ids [2, 17]: Duplicate values for ('username',) (values: ('Sir Lancelot the Brave',)) cannot be handled.",
+                "For collection user: Ids [2, 12, 17]: Duplicate values for ('member_number',) (values: ('L4NC3L07',)) cannot be handled.\n",
+                "For collection user: Ids [2, 17]: Duplicate values for ('username',) (values: ('Sir Lancelot the Brave',)) cannot be handled.\n",
                 # No screaming bc of saml_id for Lancelot bc empty
-                "For collection user: Ids [3, 13]: Duplicate values for ('saml_id',) (values: ('Robin',)) cannot be handled.",
-                "For collection user: Ids [4, 14]: Duplicate values for ('username',) (values: ('Sir Bedevere the Wise',)) cannot be handled.",
-                "For collection user: Ids [4, 14]: Duplicate values for ('member_number',) (values: ('B3D3V323',)) cannot be handled.",
-                "For collection user: Ids [5, 15]: Duplicate values for ('member_number',) (values: ('G4L4#4D',)) cannot be handled.",
-                "For collection user: Ids [5, 15]: Duplicate values for ('saml_id',) (values: ('Galahad',)) cannot be handled.",
+                "For collection user: Ids [3, 13]: Duplicate values for ('saml_id',) (values: ('Robin',)) cannot be handled.\n",
+                "For collection user: Ids [4, 14]: Duplicate values for ('username',) (values: ('Sir Bedevere the Wise',)) cannot be handled.\n",
+                "For collection user: Ids [4, 14]: Duplicate values for ('member_number',) (values: ('B3D3V323',)) cannot be handled.\n",
+                "For collection user: Ids [5, 15]: Duplicate values for ('member_number',) (values: ('G4L4#4D',)) cannot be handled.\n",
+                "For collection user: Ids [5, 15]: Duplicate values for ('saml_id',) (values: ('Galahad',)) cannot be handled.\n",
             ],
         )
     return setup_data, {"user": [6, 7, 8, 9, 10]}, expect_data
