@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from openslides_backend.models.models import Poll
@@ -32,6 +33,8 @@ class PollAnonymize(BasePollTestCase):
                 "delegated_user_id": 1,
                 "user_token": "abc",
                 "option_id": 1,
+                "weight": Decimal("1.000000"),
+                "value": "Y",
             },
             "vote/2": {
                 "user_id": 1,
@@ -39,6 +42,8 @@ class PollAnonymize(BasePollTestCase):
                 "delegated_user_id": 1,
                 "user_token": "edf",
                 "option_id": 2,
+                "weight": Decimal("2.000000"),
+                "value": "Y",
             },
         }
 

@@ -632,12 +632,14 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_personal_note(self) -> None:
         self.set_test_data_with_admin()
+        self.create_motion(1, 1)
         self.set_models(
             {
                 "personal_note/1": {
                     "note": "test note",
                     "meeting_user_id": 1,
                     "meeting_id": 1,
+                    "content_object_id": "motion/1",
                 }
             }
         )
@@ -672,11 +674,17 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "mediafile/1": {
                     "owner_id": "meeting/1",
-                    "mimetype": "text/plain",
+                    "mimetype": "image/png",
+                    "owner_id": "meeting/1",
+                    "title": "logo (new)",
+                    "filename": "logo_2026.png",
                 },
                 "mediafile/2": {
                     "owner_id": "meeting/1",
-                    "mimetype": "text/plain",
+                    "mimetype": "font/woff",
+                    "owner_id": "meeting/1",
+                    "title": "fancy font",
+                    "filename": "font-fancy.woff",
                 },
                 "meeting_mediafile/10": {
                     "meeting_id": 1,
@@ -1066,18 +1074,21 @@ class MeetingClone(BaseActionTestCase):
                     "is_directory": True,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "public",
                 },
                 "mediafile/15": {
                     "is_directory": True,
                     "parent_id": 14,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "fonts",
                 },
                 "mediafile/16": {
                     "is_directory": True,
                     "parent_id": 15,
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "published",
                 },
                 "mediafile/17": {
                     "parent_id": 16,
@@ -1085,6 +1096,8 @@ class MeetingClone(BaseActionTestCase):
                     "mimetype": "font/woff",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "font-galactic.woff",
+                    "title": "fonts for special highlighted headers",
                 },
                 "meeting_mediafile/11": {
                     "is_public": False,
@@ -1668,6 +1681,8 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_id": 1,
                     "user_token": "asdfgh",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "vote/2": {
                     "user_id": 1,
@@ -1675,6 +1690,8 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 4,
                     "option_id": 2,
                     "user_token": "hjkl",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/1": {"meeting_id": 1},
                 "option/2": {"meeting_id": 4},
