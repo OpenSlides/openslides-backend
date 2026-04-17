@@ -85,9 +85,7 @@ class TestMigration100(BaseMigrationTestCase):
     EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
 This migration will fundamentally restructure all data.
 See LINK for more information.
-
-For setting organization and meeting time zones using 'CET'.
-migration started\n"""
+\n"""
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
@@ -366,10 +364,7 @@ migration started\n"""
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
             "exception": "Pre check for migration 0100_init_reldb failed.\nRequired env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE",
-            "output": """This is migration 100, part of the OpenSlides 4.3.0 release.
-This migration will fundamentally restructure all data.
-See LINK for more information.
-\n""",
+            "output": self.EXPECTED_INTRODUCTION,
             "current_migration_index": 73,
             "target_migration_index": 100,
             "migratable_models": {},
@@ -383,10 +378,7 @@ See LINK for more information.
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_FAILED,
             "exception": "Pre check for migration 0100_init_reldb failed.\nJST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available.",
-            "output": """This is migration 100, part of the OpenSlides 4.3.0 release.
-This migration will fundamentally restructure all data.
-See LINK for more information.
-\n""",
+            "output": self.EXPECTED_INTRODUCTION,
             "current_migration_index": 73,
             "target_migration_index": 100,
             "migratable_models": {},
@@ -501,7 +493,8 @@ See LINK for more information.
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": self.EXPECTED_INTRODUCTION,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
         }
 
         # Test before and after setting migration states. (Committing points of transaction)
@@ -511,7 +504,8 @@ See LINK for more information.
             "success": True,
             "stats": {
                 "status": MigrationState.MIGRATION_RUNNING,
-                "output": self.EXPECTED_INTRODUCTION,
+                "output": self.EXPECTED_INTRODUCTION
+                + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -582,7 +576,8 @@ See LINK for more information.
         assert response.json == {
             "success": True,
             "status": MigrationState.MIGRATION_RUNNING,
-            "output": self.EXPECTED_INTRODUCTION,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
