@@ -17,7 +17,7 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
     libmagic1 \
-    mime-support \
+    media-types \
     ncat \
     ${CONTEXT_INSTALLS} && \
     rm -rf /var/lib/apt/lists/*
