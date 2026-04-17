@@ -185,6 +185,7 @@ class MigrationHandler(BaseHandler):
         # RECREATE some relevant triggers
         # May be error prone due to changing constraints
         (
+            enum_definitions,
             pre_code,
             table_name_code,
             view_name_code,
@@ -198,6 +199,7 @@ class MigrationHandler(BaseHandler):
             create_trigger_1_n_relation_not_null_code,
             create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
+            create_trigger_equal_fields_code,
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
@@ -206,6 +208,7 @@ class MigrationHandler(BaseHandler):
             + create_trigger_1_n_relation_not_null_code
             + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
+            + create_trigger_equal_fields_code
         )
         # replace with the migration names before execute
         replaced_blocks = []
@@ -482,6 +485,7 @@ class MigrationHandler(BaseHandler):
 
         # RECREATE triggers
         (
+            enum_definitions,
             pre_code,
             table_name_code,
             view_name_code,
@@ -495,6 +499,7 @@ class MigrationHandler(BaseHandler):
             create_trigger_1_n_relation_not_null_code,
             create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
+            create_trigger_equal_fields_code,
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
@@ -507,6 +512,7 @@ class MigrationHandler(BaseHandler):
             + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
             + create_trigger_notify_code
+            + create_trigger_equal_fields_code
         )
         for collection_or_imt in im_tables | set(unified_replace_tables):
             to_drop_triggers = self.cursor.execute(

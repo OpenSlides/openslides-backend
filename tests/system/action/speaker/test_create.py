@@ -286,13 +286,16 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/7": {"username": "Nils"},
                 "user/8": {"username": "Claudia"},
                 "user/9": {"username": "Wulf-Siegmar"},
-                "topic/1337": {
-                    "title": "leet",
-                    "meeting_id": 1,
+                "topic/2676": {
+                    "title": "doubleleet",
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/2676",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
-                    "content_object_id": "topic/1337",
+                    "content_object_id": "topic/2676",
                     "meeting_id": 7844,
                 },
             }
@@ -343,9 +346,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -381,9 +387,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "group/7844": {"meeting_user_ids": [19]},
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -427,9 +436,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -493,9 +505,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "topic/1337": {
                     "title": "leet",
-                    "meeting_id": 1,
+                    "meeting_id": 7844,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {
+                    "content_object_id": "topic/1337",
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 7844,
@@ -531,7 +546,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "title": "leet",
                     "meeting_id": 4,
                 },
-                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+                "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 4},
                 "list_of_speakers/23": {
                     "content_object_id": "topic/1337",
                     "meeting_id": 4,

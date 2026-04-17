@@ -19,6 +19,7 @@ from psycopg.errors import (
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
+    CharField,
     Field,
     GenericRelationListField,
     RelationListField,
@@ -211,8 +212,8 @@ class DatabaseWriter(SqlQueryHelper):
         list_fields = event.get("list_fields") or dict()
         add_dict = list_fields.get("add", dict())
         remove_dict = list_fields.get("remove", dict())
-        list_types, nm_relation_list_fields = (
-            self.get_list_types_and_nm_relation_list_fields(
+        array_types, nm_relation_list_fields = (
+            self.get_array_types_and_nm_relation_list_fields(
                 collection, add_dict, remove_dict
             )
         )
@@ -228,7 +229,7 @@ class DatabaseWriter(SqlQueryHelper):
                 )
 
         array_statements_per_field, array_values = self.get_array_values(
-            collection, table, set_fields_dict, add_dict, remove_dict, list_types
+            collection, table, set_fields_dict, add_dict, remove_dict, array_types
         )
 
         statement += sql.SQL(", ").join(
@@ -302,12 +303,12 @@ class DatabaseWriter(SqlQueryHelper):
             if self.is_primary_nm_relation(field)
         }
 
-    def get_list_types_and_nm_relation_list_fields(
+    def get_array_types_and_nm_relation_list_fields(
         self,
         collection: Collection,
         add_dict: ListFieldsDict,
         remove_dict: ListFieldsDict,
-    ) -> tuple[dict[str, type], dict[str, Field]]:
+    ) -> tuple[dict[str, sql.Composable], dict[str, Field]]:
         """
         used for 'add' and 'remove' list fields
         returns in the tuple
@@ -315,16 +316,18 @@ class DatabaseWriter(SqlQueryHelper):
             * a dict of all fields that are relation fields
         """
         collection_cls = model_registry[collection]()
-        lists_type_dict = dict()
+        array_type_dict = dict()
         nm_relation_list_fields = dict()
         for dictionary in [add_dict, remove_dict]:
             for field_name, value_list in dictionary.items():
                 if field := collection_cls.get_field(field_name):
                     if value_list and not field.is_view_field:
-                        lists_type_dict[field_name] = type(value_list[0])
+                        array_type_dict[field_name] = self.get_array_type(
+                            field, type(value_list[0])
+                        )
                     if self.is_primary_nm_relation(field):
                         nm_relation_list_fields[field_name] = field
-        return (lists_type_dict, nm_relation_list_fields)
+        return (array_type_dict, nm_relation_list_fields)
 
     def write_to_intermediate_tables(
         self,
@@ -411,7 +414,7 @@ class DatabaseWriter(SqlQueryHelper):
         set_dict: PartialModel,
         add_dict: ListFieldsDict,
         remove_dict: ListFieldsDict,
-        field_list_types: dict[str, type],
+        field_array_types: dict[str, sql.Composable],
     ) -> tuple[
         dict[str, sql.Composed],
         list[tuple[ListField, ListField, ListField] | tuple[ListField, ListField]],
@@ -430,7 +433,7 @@ class DatabaseWriter(SqlQueryHelper):
                 ORDER BY list_element
             )""").format(
                     col_or_placeholder_plus_type=(
-                        sql.Placeholder() + self.get_array_type(list_type)
+                        sql.Placeholder() + array_type
                         if field_name in set_dict
                         else sql.Identifier(f"{collection}_row", field_name)
                     ),
@@ -439,10 +442,10 @@ class DatabaseWriter(SqlQueryHelper):
                         if field_name in set_dict
                         else sql.SQL(" FROM ") + table
                     ),
-                    add_list_type=self.get_array_type(list_type),
-                    remove_list_type=self.get_array_type(list_type),
+                    add_list_type=array_type,
+                    remove_list_type=array_type,
                 )
-                for field_name, list_type in field_list_types.items()
+                for field_name, array_type in field_array_types.items()
             },
             [
                 (
@@ -457,7 +460,7 @@ class DatabaseWriter(SqlQueryHelper):
                         add_dict.get(field_name, []),
                     )
                 )
-                for field_name in field_list_types.keys()
+                for field_name in field_array_types.keys()
             ],
         )
 
@@ -496,10 +499,17 @@ class DatabaseWriter(SqlQueryHelper):
             if "duplicate key value violates unique constraint" in e.args[0]:
                 if "Key (id)" in e.args[0]:
                     raise ModelExists(error_fqid)
-                else:
+                elif "," not in e.args[0]:
+                    model = model_registry[collection]
+                    key = e.args[0].split(")=")[0].split("(")[1]
+                    value = e.args[0].split("=(")[1].split(")")[0]
+                    field = model.try_get_field(key)
+                    value = f"'{value}'" if type(field) is CharField else value
                     raise RelationException(
-                        f"Relation from {error_fqid} violates UNIQUE constraint: {e}"
+                        f"{error_fqid}: {model_registry[collection].verbose_name.capitalize()} with {key} {value} already exists."
                     )
+                else:
+                    raise RelationException(f"{error_fqid}: {e}")
         except NotNullViolation as e:
             column = e.args[0].split('"')[1]
             raise BadCodingException(
@@ -530,7 +540,7 @@ class DatabaseWriter(SqlQueryHelper):
                 f"Invalid data type for '{column}' in {error_fqid}. {e}"
             )
         except CheckViolation as e:
-            _, table, _, constraint_name, _ = e.args[0].split('"')
+            _, table, _, constraint_name, *_ = e.args[0].split('"')
             # Fetch the generated constraint from the initially applied schema.
             in_table_block = False
             constraint = ""
@@ -551,7 +561,7 @@ class DatabaseWriter(SqlQueryHelper):
             raise InvalidFormat(f"""{e.args[0]}
         Violating data formatting or other constraints for fqid '{fqid_from_collection_and_id(collection, target_id or 0)}'
         The psycopg arguments are: {arguments}
-        The fields are: {statement.as_string().split('(')[1].split(')')[0]}
+        The fields are: {statement.as_string().split('(')[1].split(')')[0] if "UPDATE " not in statement.as_string() else statement.as_string().split("SET\n")[1].split("WHERE\n")[0].strip()}
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:

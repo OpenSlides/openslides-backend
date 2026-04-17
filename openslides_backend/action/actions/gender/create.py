@@ -7,11 +7,10 @@ from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import GenderUniqueMixin
 
 
 @register_action("gender.create")
-class GenderCreate(CreateAction, CheckForArchivedMeetingMixin, GenderUniqueMixin):
+class GenderCreate(CreateAction, CheckForArchivedMeetingMixin):
     """
     Action to create a gender.
     """

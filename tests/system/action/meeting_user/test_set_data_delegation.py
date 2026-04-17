@@ -64,7 +64,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: ['group/227']",
+            "The following models do not belong to meeting 225: ['meeting_user/14']",
             response.json["message"],
         )
 
@@ -150,7 +150,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: ['group/227']",
+            "The following models do not belong to meeting 225: ['meeting_user/14']",
             response.json["message"],
         )
 

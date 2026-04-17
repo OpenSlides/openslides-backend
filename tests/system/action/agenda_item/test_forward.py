@@ -949,7 +949,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             for group_id, name in meeting_group_data.items():
                 self.assert_model_exists(
                     f"group/{group_id}",
-                    {"meeting_id": meeting_id, "name": name, "permissions": None},
+                    {"meeting_id": meeting_id, "name": name, "permissions": []},
                 )
 
     def assert_structure_level_data(
@@ -3551,7 +3551,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 },
             }
         )
-        self.set_user_groups(1, [4])
+        self.set_user_groups(1, [7])
         self.create_user("bob", [1])  # 2, musers: 2
         self.create_user("colin", [2])  # 3, musers: 3
         self.create_user("dan", [3])  # 4, musers: 4
