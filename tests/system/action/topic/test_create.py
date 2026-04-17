@@ -1,6 +1,5 @@
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -105,29 +104,16 @@ class TopicCreateSystemTest(BaseActionTestCase):
 
     def test_create_more_fields(self) -> None:
         self.create_meeting()
+        self.create_mediafile(1)
+        self.create_mediafile(2, is_directory=True)
+        self.create_mediafile(3, parent_id=2)
+        self.create_mediafile(4)
         self.set_models(
             {
-                "mediafile/1": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
                 "meeting_mediafile/11": {
                     "is_public": False,
                     "mediafile_id": 1,
                     "meeting_id": 1,
-                },
-                "mediafile/2": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-                "mediafile/3": {
-                    "parent_id": 2,
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-                "mediafile/4": {
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 },
                 "meeting_mediafile/14": {
                     "is_public": False,

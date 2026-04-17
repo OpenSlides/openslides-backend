@@ -16,8 +16,6 @@ class UpdateAction(Action):
         instance = self.update_instance(instance)
         self.apply_instance(instance)
 
-        self.validate_relation_fields(instance)
-
         return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:

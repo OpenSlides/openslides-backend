@@ -11,8 +11,10 @@ class MediafileUnsetFontActionTest(BaseActionTestCase):
                 "meeting/1": {"font_projector_h1_id": 7, "font_projector_h2_id": 7},
                 "mediafile/17": {
                     "is_directory": False,
-                    "mimetype": "image/png",
+                    "mimetype": "font/woff",
                     "owner_id": "meeting/1",
+                    "filename": "font-basic.woff",
+                    "title": "boring font",
                 },
                 "meeting_mediafile/7": {
                     "meeting_id": 1,

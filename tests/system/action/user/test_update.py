@@ -2988,6 +2988,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting(4)
         self.create_meeting(7)
         self.create_topic(1, 4)
+        self.create_topic(2, 7)
         self.set_models(
             {
                 "user/1234": {
@@ -3025,7 +3026,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "begin_time": datetime(2012, 5, 31, 0, 0, tzinfo=ZoneInfo("UTC")),
                 },
                 "speaker/25": {
-                    "list_of_speakers_id": 1,
+                    "list_of_speakers_id": 2,
                     "meeting_user_id": 7777,
                     "meeting_id": 7,
                 },
@@ -3126,14 +3127,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_user("dummy2", [1])
         self.create_user("dummy3", [1])
+        self.set_user_groups(1, [1])
         self.create_topic(1, 1)
         self.set_models(
             {
                 "user/1": {
                     "username": "boady",
-                    "poll_candidate_ids": [1],
-                    "option_ids": [1],
-                    "vote_ids": [1, 2],
                 },
                 "user/2": {"username": "john", "delegated_vote_ids": [2]},
                 "meeting/1": {

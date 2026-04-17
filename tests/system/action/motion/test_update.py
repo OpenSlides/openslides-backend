@@ -251,7 +251,7 @@ class MotionUpdateActionTest(BaseMotionUpdateActionTest):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 31
+        assert counter.calls == 21
 
     def test_update_workflow_id(self) -> None:
         self.create_workflow(111)
