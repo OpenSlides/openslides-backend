@@ -164,7 +164,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 111,
                 },
-                "projector/1": {"meeting_id": 111},
+                "projector/1": {"meeting_id": 111, "name": "Projector 1"},
             }
         )
         response = self.request("mediafile.delete", {"id": 222})
