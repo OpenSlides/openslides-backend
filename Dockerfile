@@ -20,6 +20,7 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     libmagic1 \
     media-types \
     ncat \
+    postgresql-client \
     ${CONTEXT_INSTALLS} && \
     rm -rf /var/lib/apt/lists/*
 
