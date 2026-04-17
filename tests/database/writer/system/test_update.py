@@ -183,8 +183,7 @@ def test_update_error_own_field_unique(
                     ]
                 )
             )
-    assert "Relation from user/2 violates UNIQUE constraint: " in e_info.value.message
-    assert "Key (username)=(unique) already exists." in e_info.value.message
+    assert "user/2: User with username 'unique' already exists." in e_info.value.message
     assert_model("user/2", {"id": 2, "username": "ordinary", "first_name": "2"})
 
 

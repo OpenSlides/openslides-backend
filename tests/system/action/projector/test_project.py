@@ -10,8 +10,8 @@ class ProjectorProject(BaseActionTestCase):
         self.set_models(
             {
                 "projector/1": {"scroll": 80},
-                "projector/65": {"meeting_id": 1},
-                "projector/75": {"meeting_id": 1},
+                "projector/65": {"meeting_id": 1, "name": "Projector 65"},
+                "projector/75": {"meeting_id": 1, "name": "Projector 75"},
                 "projection/105": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/452",
@@ -510,7 +510,9 @@ class ProjectorProject(BaseActionTestCase):
         )
 
     def test_unpublished_mediafile_as_content_object(self) -> None:
-        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
+        self.set_models(
+            {"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID, "title": "private"}}
+        )
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "mediafile/1", "meeting_id": 1},

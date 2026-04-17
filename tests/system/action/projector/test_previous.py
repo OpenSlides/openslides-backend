@@ -8,9 +8,9 @@ class ProjectorPrevious(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "projector/2": {"meeting_id": 1},
-                "projector/3": {"meeting_id": 1},
-                "projector/4": {"meeting_id": 1},
+                "projector/2": {"meeting_id": 1, "name": "Projector 2"},
+                "projector/3": {"meeting_id": 1, "name": "Projector 3"},
+                "projector/4": {"meeting_id": 1, "name": "Projector 4"},
                 "projection/1": {
                     "current_projector_id": 3,
                     "meeting_id": 1,
