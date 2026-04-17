@@ -331,12 +331,16 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "child_ids": [4],
                     "is_directory": True,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "title": "notes",
                 },
                 "mediafile/4": {
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "parent_id": 3,
                     "meeting_mediafile_ids": [4],
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "mimetype": "text/plain",
+                    "title": "birthdays (Saturday)",
+                    "filename": "birthdays-07-18.txt",
                 },
                 "meeting_mediafile/4": {
                     "meeting_id": 1,
@@ -532,8 +536,16 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_clock": True,
                     **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
-                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [1]},
-                "mediafile/2": {"owner_id": "meeting/1", "meeting_mediafile_ids": [2]},
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [1],
+                    "title": "first",
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [2],
+                    "title": "second",
+                },
                 "meeting_mediafile/1": {
                     "meeting_id": 1,
                     "mediafile_id": 1,

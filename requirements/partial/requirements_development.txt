@@ -5,9 +5,9 @@ debugpy==1.8.20
 flake8==7.3.0
 isort==8.0.1
 mypy==1.19.1
-sqlfluff==4.0.4
+sqlfluff==4.1.0
 pip-check==3.2.1
-pytest==9.0.2
+pytest==9.0.3
 pytest-cov==7.1.0
 pytest-profiling==1.8.1
 pyupgrade==3.21.2
@@ -17,8 +17,8 @@ types-babel==2.11.0.15
 types-beautifulsoup4==4.12.0.20250516
 types-bleach==6.3.0.20251115
 types-PyYAML==6.0.12.20250915
-types-requests==2.32.4.20260107
-types-simplejson==3.20.0.20250822
+types-requests==2.33.0.20260408
+types-simplejson==3.20.0.20260408
 types-Pygments==2.19.0.20251121
 
 # analyze pstats from Profiler
