@@ -313,10 +313,10 @@ class MigrationHandler(BaseHandler):
                 # Check prerequisites
                 for index, module_name in MigrationHelper.migrations.items():
                     migration_module = import_module(f"{MODULE_PATH}{module_name}")
-                    self.logger.info("pre check: " + module_name + " ...")
+                    self.logger.info("Pre check: " + module_name + " ...")
                     if callable(getattr(migration_module, "check_prerequisites", None)):
                         if errors := migration_module.check_prerequisites(self.cursor):
-                            errors = f"pre check for migration {module_name} failed.\n{errors}"
+                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
                             self.logger.info(errors)
                             raise MigrationException(errors)
 

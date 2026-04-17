@@ -10,6 +10,7 @@ from time import sleep
 from typing import Any
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
@@ -80,15 +81,12 @@ class TestMigration100(BaseMigrationTestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
-    MAX_WAIT = 10
+    MAX_WAIT = 15
     EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
 This migration will fundamentally restructure all data.
 See LINK for more information.
 
-For timestamp conversion ...
-- using UTC offset: +01:00
-- using platform provided DST: True
-
+For setting organization and meeting time zones using 'CET'.
 migration started\n"""
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
@@ -107,19 +105,13 @@ migration started\n"""
         return _wait_for_lock
 
     @classmethod
-    def setUpClass(cls):
-        os.environ["MIG0100_UTC_OFFSET"] = "+01:00"
-        os.environ["MIG0100_USE_DST"] = "YES"
-        os.environ["MIG0100_I_READ_DOCS"] = "YES"
-
-    @classmethod
     def tearDownClass(cls) -> None:
         # 8) Final Cleanup
         drop_db()
         cls.apply_test_relational_schema()
-        del os.environ["MIG0100_UTC_OFFSET"]
-        del os.environ["MIG0100_USE_DST"]
-        del os.environ["MIG0100_I_READ_DOCS"]
+        for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
+            if not os.getenv(key):
+                del os.environ[key]
         super().tearDownClass()
 
     @staticmethod
@@ -142,6 +134,10 @@ migration started\n"""
         super().tearDown()
 
     def setUp(self):
+        # 0) Set up environment
+        os.environ["MIG0100_TIMEZONE"] = "CET"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
+
         # 1) Create old idempotent key-value-store schema and relational schema on top
         drop_db()
         create_db()
@@ -334,6 +330,18 @@ migration started\n"""
 
                 # 6.9) Recreated views
                 assert_content_not_none("SELECT 1 from organization;")
+
+                # 6.10) Created correct timestamp
+                assert cur.execute(
+                    "SELECT start_time, end_time, time_zone FROM meeting_t;"
+                ).fetchone() == {
+                    # Meeting begins and ends at midnight CET.
+                    # UTC value is epxected to be shifted by the CET offset one hour or two hours considering dst.
+                    # Client will calculate the display time from UTC considering the meetings `time_zone`.
+                    "start_time": datetime(2020, 1, 17, 23, tzinfo=ZoneInfo("UTC")),
+                    "end_time": datetime(2020, 6, 17, 22, tzinfo=ZoneInfo("UTC")),
+                    "time_zone": "CET",
+                }
         # END TEST CASES
 
     def assert_indices_state(self, state: MigrationState) -> None:
@@ -348,6 +356,41 @@ migration started\n"""
                         "migration_index": idx,
                         "migration_state": state,
                     } == row
+
+    def test_migration_fail_prerequisites(self) -> None:
+        del os.environ["MIG0100_TIMEZONE"]
+        del os.environ["MIG0100_I_READ_DOCS"]
+        response = self.request("migrate")
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        response = self.request("stats")
+        assert response.json["stats"] == {
+            "status": MigrationState.MIGRATION_FAILED,
+            "exception": "Pre check for migration 0100_init_reldb failed.\nRequired env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE",
+            "output": """This is migration 100, part of the OpenSlides 4.3.0 release.
+This migration will fundamentally restructure all data.
+See LINK for more information.
+\n""",
+            "current_migration_index": 73,
+            "target_migration_index": 100,
+            "migratable_models": {},
+        }
+
+    def test_migration_fail_time_zone(self) -> None:
+        os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
+        response = self.request("migrate")
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        response = self.request("stats")
+        assert response.json["stats"] == {
+            "status": MigrationState.MIGRATION_FAILED,
+            "exception": "Pre check for migration 0100_init_reldb failed.\nJST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available.",
+            "output": """This is migration 100, part of the OpenSlides 4.3.0 release.
+This migration will fundamentally restructure all data.
+See LINK for more information.
+\n""",
+            "current_migration_index": 73,
+            "target_migration_index": 100,
+            "migratable_models": {},
+        }
 
     def test_migration_handler(self) -> None:
         # Prepare what manager would.

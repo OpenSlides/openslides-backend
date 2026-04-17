@@ -1,11 +1,10 @@
 import os
-import re
-import time as _time
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -29,7 +28,6 @@ from openslides_backend.models.fields import (
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
 from openslides_backend.shared.env import is_truthy
 
-PAT_UTC_OFFSET = r"^[\+-]?\d\d:\d\d$"
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
 ORIGIN_COLLECTIONS = [
@@ -162,7 +160,7 @@ class Sql_helper:
             else:
                 data = Decimal(data)
         elif isinstance(field, TimestampField):
-            data = datetime.fromtimestamp(data, tz=OSTime())
+            data = datetime.fromtimestamp(data, ZoneInfo("UTC"))
         elif isinstance(field, JSONField):
             data = json_dumps(data)
 
@@ -234,41 +232,6 @@ class Sql_helper:
 # END HELPER CLASS
 
 
-class OSTime(tzinfo):
-
-    def utcoffset(self, dt: datetime | None) -> timedelta:
-        return get_utc_offset() + self.dst(dt)
-
-    def dst(self, dt: datetime | None) -> timedelta:
-        assert dt
-        dst_hours = 0
-        if get_use_dst() and is_dst(dt):
-            dst_hours = 1
-
-        return timedelta(hours=dst_hours)
-
-    def tzname(self, dt: datetime | None) -> None:
-        return None
-
-
-def get_utc_offset() -> timedelta:
-    hours, minutes = os.environ["MIG0100_UTC_OFFSET"].split(":")
-    return timedelta(hours=int(hours), minutes=int(minutes))
-
-
-def get_use_dst() -> bool:
-    return is_truthy(os.environ["MIG0100_USE_DST"])
-
-
-def is_dst(dt: datetime) -> bool:
-    # Taken from tzinfo_examples.py listed in
-    #   https://docs.python.org/3/library/datetime.html#datetime.tzinfo
-    tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.weekday(), 0, 0)
-    stamp = _time.mktime(tt)
-    tt = _time.localtime(stamp)
-    return tt.tm_isdst > 0
-
-
 def check_prerequisites(curs: Cursor[DictRow]) -> str:
     # TODO: Include actual LINK
     errors = ""
@@ -281,25 +244,35 @@ def check_prerequisites(curs: Cursor[DictRow]) -> str:
     MigrationHelper.write_line("See LINK for more information.")
     MigrationHelper.write_line("")
 
-    try:
-        i_read_docs = os.environ["MIG0100_I_READ_DOCS"]
-        utc_offset = os.environ["MIG0100_UTC_OFFSET"]
-        _ = os.environ["MIG0100_USE_DST"]
-    except KeyError as e:
-        errors += f"Required env vars not set - aborting.\n{e}"
-
-    if not is_truthy(i_read_docs):
-        errors += f"'{i_read_docs}' is no acceptable value for MIG0100_I_READ_DOCS"
-    if not re.match(PAT_UTC_OFFSET, utc_offset):
-        errors += f"'{utc_offset}' is no acceptable value for MIG0100_UTC_OFFSET"
+    for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
+        if not os.getenv(key, ""):
+            if not errors:
+                errors += f"Required env vars not set - aborting.\nMissing: {key}"
+            else:
+                errors += f", {key}"
     if errors:
         return errors
 
-    MigrationHelper.write_line("For timestamp conversion ...")
-    MigrationHelper.write_line(f"- using UTC offset: {utc_offset}")
-    MigrationHelper.write_line(f"- using platform provided DST: {get_use_dst()}")
-    MigrationHelper.write_line("")
+    i_read_docs = os.environ["MIG0100_I_READ_DOCS"]
+    time_zone = os.environ["MIG0100_TIMEZONE"]
 
+    if not is_truthy(i_read_docs):
+        errors += f"{i_read_docs} is no acceptable value for MIG0100_I_READ_DOCS"
+    pg_time_zones = [
+        tz["abbrev"] for tz in curs.execute("SELECT abbrev FROM pg_timezone_names;")
+    ]
+    if time_zone not in (pg_time_zones):
+        errors += f"{time_zone} is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
+    if errors:
+        return errors
+
+    MigrationHelper.write_line(
+        f"For setting organization and meeting time zones using '{time_zone}'."
+    )
+    if not "UTC" == str(local_time_zone := datetime.now().astimezone().tzinfo):
+        MigrationHelper.write_line(
+            f"OS is not UTC but using {local_time_zone} during migration."
+        )
     return ""
 
 
@@ -335,11 +308,14 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
             table_name = HelperGetNames.get_table_name(collection, True)
             data = data_row["data"]
 
-            if collection == "action_worker":
-                # shorten name to fit into 256 bytes.
-                action_names = data["name"].split(",")
-                if len(action_names) > 1:
-                    data["name"] = f"{action_names[0]}_({len(action_names)})"
+            match collection:
+                case "action_worker":
+                    # shorten name to fit into 256 bytes.
+                    action_names = data["name"].split(",")
+                    if len(action_names) > 1:
+                        data["name"] = f"{action_names[0]}_({len(action_names)})"
+                case "organization" | "meeting":
+                    data["time_zone"] = os.environ["MIG0100_TIMEZONE"]
 
             model = model_registry[collection]()
             sql_fields = ""

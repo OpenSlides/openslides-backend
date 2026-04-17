@@ -140,7 +140,7 @@ class MigrationManager:
             "target_migration_index": self.target_migration_index,
             "migratable_models": stats,
             **(
-                {"exception": MigrationHelper.migrate_thread_exception}
+                {"exception": str(MigrationHelper.migrate_thread_exception)}
                 if MigrationHelper.migrate_thread_exception
                 else {}
             ),
