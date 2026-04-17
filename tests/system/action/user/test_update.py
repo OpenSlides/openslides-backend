@@ -3176,6 +3176,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "option_id": 1,
                     "user_id": 1,
                     "user_token": "dfjdskjfksdjf",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "vote/2": {
                     "meeting_id": 1,
@@ -3183,6 +3185,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "delegated_user_id": 2,
                     "user_token": "dfjdskjfksdjf",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
             }
         )
