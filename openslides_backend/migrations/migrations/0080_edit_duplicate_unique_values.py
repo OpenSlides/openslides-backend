@@ -209,7 +209,7 @@ class Migration(BaseModelMigration):
                 tup = tuple(fields)
                 for vals in unique_tuple_to_combinations_with_duplicates[tup]:
                     errors.append(
-                        f"For collection {collection}: Ids {sorted(unique_tuple_to_data[tup][vals])}: Duplicate values for {tup} (values: {vals}) cannot be handled."
+                        f"For collection {collection}: Ids {sorted(unique_tuple_to_data[tup][vals])}: Duplicate values for {tup} (values: {vals}) cannot be handled.\n"
                     )
             if len(errors):
                 continue
