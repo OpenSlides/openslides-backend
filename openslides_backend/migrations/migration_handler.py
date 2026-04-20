@@ -599,9 +599,8 @@ class MigrationHandler(BaseHandler):
                 self.cursor, idx
             ).items()
         }
-        if MigrationHelper.get_database_migration_index(self.cursor) < 100:
-            for collection in replace_tables:
-                self.cursor.execute(f"DROP TABLE {collection}_t;")
+        for collection in replace_tables:
+            self.cursor.execute(f"DROP TABLE {collection}_m;")
         if any(mi > 100 for mi in indices):
             for table_view in replace_tables.values():
                 self.cursor.execute(f"DROP TABLE {table_view['table']};")
