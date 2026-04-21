@@ -1,13 +1,16 @@
-import time
 from copy import deepcopy
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
@@ -52,6 +55,7 @@ class MotionUpdate(
         optional_properties=[
             "title",
             "number",
+            "diff_version",
             "additional_submitter",
             "text",
             "reason",
@@ -61,7 +65,6 @@ class MotionUpdate(
             "start_line_number",
             "category_id",
             "block_id",
-            "supporter_meeting_user_ids",
             "tag_ids",
             "created",
             "workflow_timestamp",
@@ -92,7 +95,6 @@ class MotionUpdate(
                         "identical_motion_ids",
                         "category_id",
                         "block_id",
-                        "supporter_meeting_user_ids",
                         "tag_ids",
                         "attachment_meeting_mediafile_ids",
                         "recommendation_extension_reference_ids",
@@ -107,7 +109,7 @@ class MotionUpdate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        timestamp = round(time.time())
+        timestamp = datetime.now(ZoneInfo("UTC"))
         instance["last_modified"] = timestamp
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -118,8 +120,16 @@ class MotionUpdate(
         )
         if len(error_messages):
             raise ActionException(error_messages[0]["message"])
-        if instance.get("amendment_paragraphs"):
+        if paragraphs := instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
+            instance["amendment_paragraphs"] = Jsonb(paragraphs)
+
+        for field_name in ["workflow_timestamp", "created"]:
+            raw_timestamp = instance.get(field_name)
+            if isinstance(raw_timestamp, int):
+                instance[field_name] = datetime.fromtimestamp(
+                    raw_timestamp, ZoneInfo("UTC")
+                )
 
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
@@ -187,7 +197,6 @@ class MotionUpdate(
             allowed_fields += [
                 "category_id",
                 "block_id",
-                "supporter_meeting_user_ids",
                 "additional_submitter",
                 "recommendation_extension",
                 "start_line_number",
@@ -219,12 +228,7 @@ class MotionUpdate(
         for instance in deepcopy(self.instances):
             instance_information = []
 
-            # supporters changed
-            if "supporter_meeting_user_ids" in instance:
-                instance.pop("supporter_meeting_user_ids")
-                instance_information.append("Supporters changed")
-
-            # supporters changed
+            # workflow timestamp changed
             if "workflow_timestamp" in instance:
                 timestamp = instance.pop("workflow_timestamp")
                 instance_information.extend(

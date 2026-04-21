@@ -1,6 +1,9 @@
-import time
 from collections import defaultdict
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from psycopg.types.json import Jsonb
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.shared.typing import HistoryInformation
@@ -9,7 +12,7 @@ from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.write_request import WriteRequest
@@ -75,6 +78,7 @@ class BaseMotionCreateForwarded(
                         "all_derived_motion_ids",
                         "amendment_ids",
                         "attachment_meeting_mediafile_ids",
+                        "diff_version",
                     ],
                 ),
             ],
@@ -224,11 +228,11 @@ class BaseMotionCreateForwarded(
             name = committee.get("name", f"Committee {committee['id']}")
             instance["additional_submitter"] = name
 
-        self.set_sequential_number(instance)
         self.handle_number(instance)
         self.set_origin_ids(instance)
+        self.set_diff_version(instance)
         self.set_text_hash(instance)
-        instance["forwarded"] = round(time.time())
+        instance["forwarded"] = datetime.now(ZoneInfo("UTC"))
         with_change_recommendations = instance.pop("with_change_recommendations", False)
         self.datastore.apply_changed_model(
             fqid_from_collection_and_id("motion", instance["id"]), instance
@@ -305,6 +309,8 @@ class BaseMotionCreateForwarded(
                     (state_id := amendment.pop("state_id", None)) and state_id in states
                 ):
                     new_amendments.pop(amendment["id"])
+                if paragraphs := amendment.get("amendment_paragraphs"):
+                    amendment["amendment_paragraphs"] = Jsonb(paragraphs)
             amendment_data = new_amendments.values()
             for amendment in amendment_data:
                 amendment.update(
@@ -347,6 +353,14 @@ class BaseMotionCreateForwarded(
         result = super().create_action_result_element(instance) or {}
         result.update(self.id_to_result_extra_data.get(result["id"], {}))
         return result
+
+    def post_edit_fn(self, data: dict, results: dict[str, dict[str, Any]]) -> None:
+        super().post_edit_fn(data, results)
+        dates = [*data.get("amendment_result_data", [])]
+        while len(dates):
+            date = dates.pop(0)
+            super().post_edit_fn(date, results)
+            dates.extend(date.get("amendment_result_data", []))
 
     def handle_number(self, instance: dict[str, Any]) -> dict[str, Any]:
         origin = self.datastore.get(
@@ -428,6 +442,14 @@ class BaseMotionCreateForwarded(
             instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
+
+    def set_diff_version(self, instance: dict[str, Any]) -> None:
+        if diff_version := self.datastore.get(
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
+            ["diff_version"],
+            lock_result=False,
+        ).get("diff_version"):
+            instance["diff_version"] = diff_version
 
     def duplicate_mediafiles(
         self,
@@ -568,7 +590,6 @@ class BaseMotionCreateForwarded(
                         "is_public",
                         "access_group_ids",
                         "inherited_access_group_ids",
-                        "parent_id",
                     ],
                 )
             ],

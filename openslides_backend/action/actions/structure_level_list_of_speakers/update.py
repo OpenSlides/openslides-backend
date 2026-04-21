@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.action.generics.update import UpdateAction
@@ -14,7 +15,12 @@ from ...util.register import register_action
 class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     model = StructureLevelListOfSpeakers()
     schema = DefaultSchema(StructureLevelListOfSpeakers()).get_update_schema(
-        optional_properties=["initial_time", "current_start_time", "remaining_time"],
+        optional_properties=[
+            "initial_time",
+            "current_start_time",
+            "remaining_time",
+            "additional_time",
+        ],
         additional_optional_fields={
             "spoken_time": {"type": "integer", "minimum": 0},
         },
@@ -24,7 +30,7 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if not self.internal:
-            for field in ("current_start_time", "spoken_time"):
+            for field in ("current_start_time", "spoken_time", "additional_time"):
                 if field in instance:
                     raise ActionException(field + " is not allowed to be set.")
 
@@ -40,6 +46,9 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
             raise ActionException(
                 "Cannot set remaining_time and spoken_time at the same time."
             )
+
+        if (t := instance.get("current_start_time")) and isinstance(t, int):
+            instance["current_start_time"] = datetime.fromtimestamp(t)
 
         if spoken_time := instance.pop("spoken_time", None):
             db_instance = self.datastore.get(

@@ -1,8 +1,10 @@
-from decimal import Decimal
-from enum import Enum
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from enum import StrEnum
 from typing import Any, cast
 
 import fastjsonschema
+from psycopg.types.json import Jsonb
 
 from openslides_backend.shared.exceptions import ActionException
 
@@ -27,7 +29,7 @@ TRUE_VALUES = ("1", "true", "yes", "t", "y")
 FALSE_VALUES = ("0", "false", "no", "f", "n")
 
 
-class OnDelete(str, Enum):
+class OnDelete(StrEnum):
     PROTECT = "PROTECT"
     CASCADE = "CASCADE"
     SET_NULL = "SET_NULL"
@@ -47,22 +49,31 @@ class Field:
     constant: bool
     default: str | None
     constraints: dict[str, Any]
+    is_view_field: bool
 
     def __init__(
         self,
         required: bool = False,
+        unique: bool = False,
         read_only: bool = False,
         constant: bool = False,
         default: Any | None = None,
         constraints: dict[str, Any] | None = None,
+        is_view_field: bool = False,
+        is_primary: bool = False,
+        write_fields: tuple[str, str, str, list[str]] | None = None,
     ) -> None:
         self.required = required
+        self.unique = unique
         self.read_only = read_only
         self.constant = constant
         self.default = default
         if not self.required and constraints and "enum" in constraints:
             constraints["enum"].append(None)
         self.constraints = constraints or {}
+        self.is_view_field = is_view_field
+        self.is_primary = is_primary
+        self.write_fields = write_fields
         self.schema_validator = fastjsonschema.compile(self.get_schema())
 
     def get_schema(self) -> Schema:
@@ -112,6 +123,8 @@ class IntegerField(Field):
     def check_required_not_fulfilled(
         self, instance: dict[str, Any], is_create: bool
     ) -> bool:
+        if self.constraints.get("sequence_scope"):
+            return False
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None
@@ -160,6 +173,10 @@ class TextField(Field):
         return self.extend_schema(super().get_schema(), type=["string", "null"])
 
 
+class TimezoneField(TextField):
+    pass
+
+
 class CharField(TextField):
     def get_schema(self) -> Schema:
         schema = super().get_schema()
@@ -173,6 +190,17 @@ class JSONField(Field):
         if not self.required:
             types.append("null")
         return self.extend_schema(super().get_schema(), type=types)
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: list | dict | Jsonb
+    ) -> None:
+        if isinstance(value, Jsonb):
+            value = value.obj
+        elif not isinstance(value, list | dict | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
 
 
 class HTMLStrictField(TextField):
@@ -223,28 +251,64 @@ class DecimalField(Field):
         schema = self.extend_schema(super().get_schema(), **decimal_schema)
         if not self.required:
             schema["type"] = ["string", "null"]
-        # remove minimum since it is checked in the validate method
+        # remove minimum and maximum since they are checked in the validate method
         schema.pop("minimum", None)
+        schema.pop("maximum", None)
         return schema
 
     def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
-            if (min := self.constraints.get("minimum")) is not None:
+            min_ = self.constraints.get("minimum")
+            max_ = self.constraints.get("maximum")
+            if (min_, max_) != (None, None):
                 if isinstance(value, str):
-                    assert Decimal(value) >= Decimal(
-                        min
-                    ), f"{self.own_field_name} must be bigger than or equal to {min}."
-                else:
+                    try:
+                        value = Decimal(value)
+                    except InvalidOperation:
+                        raise ActionException(
+                            f"{self.own_field_name}: value '{value}' couldn't be converted to decimal."
+                        )
+                elif not isinstance(value, Decimal | None):
                     raise NotImplementedError(
                         f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
                     )
+                if min_:
+                    assert value >= Decimal(
+                        min_
+                    ), f"{self.own_field_name} must be bigger than or equal to {min_}."
+                if max_:
+                    assert value <= Decimal(
+                        max_
+                    ), f"{self.own_field_name} must be smaller than or equal to {max_}."
         return value
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: str | Decimal
+    ) -> None:
+        if isinstance(value, Decimal):
+            value = str(value)
+        elif not isinstance(value, str | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
 
 
 class TimestampField(IntegerField):
     """
     Used to represent a UNIX timestamp.
     """
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: datetime | int
+    ) -> None:
+        if isinstance(value, datetime):
+            value = int(value.timestamp())
+        elif not isinstance(value, int | None):
+            raise NotImplementedError(
+                f"Unexpected type: {type(value)} (value: {value}) for field {field_name}."
+            )
+        super().validate_with_schema(fqid, field_name, value)
 
 
 class ColorField(TextField):
@@ -267,12 +331,28 @@ class ArrayField(Field):
         return self.extend_schema(super().get_schema(), type=["array", "null"])
 
 
+class TextArrayField(ArrayField):
+    def get_schema(self) -> Schema:
+        items = dict(type="string")
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
+
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
+
+
 class CharArrayField(ArrayField):
     def get_schema(self) -> Schema:
         items = dict(type="string", maxLength=256)
         if self.in_array_constraints is not None:
             items.update(self.in_array_constraints)
         return self.extend_schema(super().get_schema(), items=items)
+
+    @property
+    def enum_name(self) -> str | None:
+        return (getattr(self, "in_array_constraints", None) or {}).get("enum_name")
 
 
 class NumberArrayField(ArrayField):
@@ -290,16 +370,11 @@ class BaseRelationField(Field):
         self,
         to: dict[Collection, str],
         on_delete: OnDelete = OnDelete.SET_NULL,
-        equal_fields: str | list[str] = [],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.to = to
         self.on_delete = on_delete
-        if isinstance(equal_fields, list):
-            self.equal_fields = equal_fields
-        else:
-            self.equal_fields = [equal_fields]
 
     def get_target_collection(self) -> Collection:
         """
@@ -312,7 +387,7 @@ class BaseRelationField(Field):
         return (
             f"{self.__class__.__name__}(to={self.to}, is_list_field={self.is_list_field}, "
             f"on_delete={self.on_delete}, required={self.required}, "
-            f"constraints={self.constraints}, equal_fields={self.equal_fields})"
+            f"constraints={self.constraints})"
         )
 
 

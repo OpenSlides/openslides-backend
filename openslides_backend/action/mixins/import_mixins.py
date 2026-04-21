@@ -2,11 +2,13 @@ import copy
 import csv
 from collections import defaultdict
 from collections.abc import Callable
+from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-from time import mktime, strptime, time
+from enum import Enum, StrEnum
 from typing import Any, TypedDict, Union, cast
+from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
 from typing_extensions import NotRequired
 
 from openslides_backend.action.action import Action
@@ -15,10 +17,11 @@ from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
-from ...shared.interfaces.services import DatastoreService
+from ...shared.interfaces.services import Database
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ...shared.schema import required_id_schema
+from ...shared.util import ONE_ORGANIZATION_FQID
 from ..util.default_schema import DefaultSchema
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
@@ -30,7 +33,7 @@ FALSE_VALUES = ("0", "false", "no", "n", "f")
 SearchFieldType = Union[str, tuple[str, ...]]
 
 
-class ImportState(str, Enum):
+class ImportState(StrEnum):
     WARNING = "warning"
     NEW = "new"
     DONE = "done"
@@ -57,7 +60,7 @@ class ResultType(Enum):
 class Lookup:
     def __init__(
         self,
-        datastore: DatastoreService,
+        datastore: Database,
         collection: str,
         name_entries: list[tuple[SearchFieldType, dict[str, Any]]],
         field: SearchFieldType = "name",
@@ -351,7 +354,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
                 store_id = instance["id"]
                 if self.import_state == ImportState.ERROR:
                     continue
-                self.datastore.write_without_events(
+                self.datastore.write(
                     WriteRequest(
                         events=[
                             Event(
@@ -388,6 +391,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     statistics: list[StatisticEntry]
     import_state: ImportState
     meeting_id: int
+    timezone_field_name: str | None = None
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
@@ -405,11 +409,11 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
     def store_rows_in_the_import_preview(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
-        time_created = int(time())
+        time_created = datetime.now(ZoneInfo("UTC"))
         result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
-        self.datastore.write_without_events(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(
@@ -418,7 +422,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": result,
+                            "result": Jsonb(result),
                             "created": time_created,
                             "state": self.import_state,
                         },
@@ -450,6 +454,40 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         for payload_index, entry in enumerate(action_data):
             entry["payload_index"] = payload_index
         return action_data
+
+    def get_time_zone(self, entry: dict[str, Any] = {}) -> str:
+        tz: str = (
+            entry.get(self.timezone_field_name or "")
+            or (
+                self.datastore.get(
+                    fqid_from_collection_and_id("meeting", self.meeting_id),
+                    ["time_zone"],
+                ).get("time_zone")
+                if hasattr(self, "meeting_id")
+                else None
+            )
+            or self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get("time_zone")
+            or "UTC"
+        )
+        return tz
+
+    def get_time_zone_info(self, entry: dict[str, Any] = {}) -> ZoneInfo:
+        tz = self.get_time_zone(entry)
+        try:
+            zone = ZoneInfo(tz)
+        except Exception:
+            if tz == entry.get(self.timezone_field_name or ""):
+                zone = ZoneInfo(
+                    self.datastore.get(ONE_ORGANIZATION_FQID, ["time_zone"]).get(
+                        "time_zone"
+                    )
+                    or "UTC"
+                )
+            else:
+                raise ActionException(
+                    f"Invalid timezone format: '{tz}' (expected valid timezone name)"
+                )
+        return zone
 
     def validate_instance(self, instance: dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
@@ -503,9 +541,13 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                                 f"Could not parse {entry[field]} expect boolean"
                             )
                     elif type_ == "date":
+                        zone = self.get_time_zone_info(entry)
                         try:
+                            y, m, d = entry[field].split("-")
                             entry[field] = int(
-                                mktime(strptime(entry[field], "%Y-%m-%d"))
+                                datetime(
+                                    int(y), int(m), int(d), tzinfo=zone
+                                ).timestamp()
                             )
                         except Exception:
                             raise ActionException(

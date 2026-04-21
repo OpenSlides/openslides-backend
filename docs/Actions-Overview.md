@@ -88,7 +88,6 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [motion.follow_recommendation](actions/motion.follow_recommendation.md)
 - [motion.set_recommendation](actions/motion.set_recommendation.md)
 - [motion.reset_recommendation](actions/motion.reset_recommendation.md)
-- [motion.set_support_self](actions/motion.set_support_self.md)
 - [motion.set_state](actions/motion.set_state.md)
 - [motion.reset_state](actions/motion.reset_state.md)
 
@@ -116,6 +115,8 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [motion_submitter.create](actions/motion_submitter.create.md)
 - [motion_submitter.delete](actions/motion_submitter.delete.md)
 - [motion_submitter.sort](actions/motion_submitter.sort.md)
+- [motion_supporter.create](actions/motion_supporter.create.md)
+- [motion_supporter.delete](actions/motion_supporter.delete.md)
 
 ## Motion workflows and states
 

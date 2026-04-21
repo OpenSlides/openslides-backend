@@ -13,12 +13,15 @@
     login_text: string;
     theme_id: Id;
     default_language: string;
+    time_zone: string;
     users_email_sender: string;
     users_email_replyto: string;
     users_email_subject: string;
     users_email_body: text;
     require_duplicate_from: boolean;
     disable_forward_with_attachments: boolean;
+    restrict_editing_same_level_committee_admins: boolean;
+    restrict_edit_forward_committees: boolean;
     
 // Group B
     enable_electronic_voting: boolean;
@@ -40,6 +43,8 @@
 ## Action
 Updates the organization.
 Checks if the theme_id is one of the theme_ids.
+`time_zone` must be a valid timezone string (see [presenter](../presenters/get_valid_timezones.md)).
+
 This is an example of the saml_attr_mapping, where you can see the mappable fields.
 ```json
 {

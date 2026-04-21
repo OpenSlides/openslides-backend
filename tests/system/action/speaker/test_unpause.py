@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from math import ceil, floor
 from time import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
@@ -13,14 +15,23 @@ class TestSpeakerUnpause(BaseActionTestCase):
         self.create_meeting()
         self.models: dict[str, dict[str, Any]] = {
             "user/7": {"username": "test_username1"},
-            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
-            "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+            "group/1": {"meeting_user_ids": [7]},
+            "topic/1337": {
+                "title": "introduction leet gathering",
+                "meeting_id": 1,
+            },
+            "agenda_item/1": {"content_object_id": "topic/1337", "meeting_id": 1},
+            "list_of_speakers/23": {
+                "content_object_id": "topic/1337",
+                "meeting_id": 1,
+            },
             "speaker/890": {
                 "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
                 "meeting_id": 1,
-                "begin_time": floor(time()) - 100,
-                "pause_time": floor(time()) - 50,
+                "begin_time": datetime.now() - timedelta(seconds=100),
+                "pause_time": datetime.now() - timedelta(seconds=50),
             },
         }
         self.set_models(self.models)
@@ -33,6 +44,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
                     "list_of_speakers_countdown_id": 75,
                 },
                 "projector_countdown/75": {
+                    "title": "pc",
                     "running": False,
                     "default_time": 200,
                     "countdown_time": 100,
@@ -42,9 +54,9 @@ class TestSpeakerUnpause(BaseActionTestCase):
         )
 
     def test_unpause_correct(self) -> None:
-        start = floor(time())
+        start = time()
         response = self.request("speaker.unpause", {"id": 890})
-        end = ceil(time())
+        end = time()
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
         self.assertIsNone(model.get("pause_time"), None)
@@ -85,7 +97,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "end_time": floor(time()),
+                    "end_time": datetime.now(),
                 },
             }
         )
@@ -105,25 +117,20 @@ class TestSpeakerUnpause(BaseActionTestCase):
         assert countdown.get("running") is True
         assert now <= countdown["countdown_time"] - 100 <= ceil(time())
 
-    def setup_structure_level(self) -> None:
+    def setup_structure_level_with_speaker(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                    "structure_level_list_of_speakers_ids": [2],
-                },
                 "structure_level/1": {
+                    "name": "UDC",
                     "meeting_id": 1,
-                    "structure_level_list_of_speakers_ids": [2],
                 },
                 "structure_level_list_of_speakers/2": {
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
-                    "speaker_ids": [890],
+                    "initial_time": 299,
                     "remaining_time": 100,
                 },
-                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
                     "structure_level_list_of_speakers_id": 2,
                     "total_pause": 20,
@@ -132,8 +139,8 @@ class TestSpeakerUnpause(BaseActionTestCase):
         )
 
     def test_unpause_with_structure_level(self) -> None:
-        self.setup_structure_level()
-        start = floor(time())
+        self.setup_structure_level_with_speaker()
+        start = datetime.now(ZoneInfo("UTC"))
         response = self.request("speaker.unpause", {"id": 890})
         self.assert_status_code(response, 200)
         model = self.get_model("structure_level_list_of_speakers/2")
@@ -141,7 +148,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         self.assertEqual(model["remaining_time"], 100)
 
     def test_unpause_intervention_with_structure_level(self) -> None:
-        self.setup_structure_level()
+        self.setup_structure_level_with_speaker()
         self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
         response = self.request("speaker.unpause", {"id": 890})
         self.assert_status_code(response, 200)
@@ -150,7 +157,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         )
 
     def test_unpause_point_of_order_with_structure_level(self) -> None:
-        self.setup_structure_level()
+        self.setup_structure_level_with_speaker()
         self.set_models({"speaker/890": {"point_of_order": True}})
         response = self.request("speaker.unpause", {"id": 890})
         self.assert_status_code(response, 200)
@@ -159,7 +166,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         )
 
     def test_unpause_interposed_question_with_structure_level(self) -> None:
-        self.setup_structure_level()
+        self.setup_structure_level_with_speaker()
         self.set_models(
             {"speaker/890": {"speech_state": SpeechState.INTERPOSED_QUESTION}}
         )

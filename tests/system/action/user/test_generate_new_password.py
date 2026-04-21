@@ -128,19 +128,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                "user/111": {"id": 111},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
+                "user/111": {"id": 111, "username": "fritz"},
             }
         )
         response = self.request("user.generate_new_password", {"id": 111})

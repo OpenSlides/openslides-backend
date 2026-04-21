@@ -1,23 +1,20 @@
 from typing import Any
 
-from openslides_backend.action.mixins.check_unique_name_mixin import (
-    CheckUniqueInContextMixin,
-)
-
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import get_failing_committee_management_levels
+from ....permissions.permission_helper import (
+    get_failing_committee_management_levels,
+    has_organization_management_level,
+)
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.util import ONE_ORGANIZATION_ID
+from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 
-class CommitteeCommonCreateUpdateMixin(
-    CheckUniqueInContextMixin, CheckForArchivedMeetingMixin
-):
+class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
     def check_forwarding_fields(self, instance: dict[str, Any]) -> None:
         id_ = instance.get("id")
         forwarding_fields = [
@@ -31,9 +28,22 @@ class CommitteeCommonCreateUpdateMixin(
             )
         else:
             committee = {}
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["restrict_edit_forward_committees"]
+        )
         field_difference: set[int] = set()
         for field in forwarding_fields:
             if field in instance:
+                if organization.get(
+                    "restrict_edit_forward_committees"
+                ) and not has_organization_management_level(
+                    self.datastore,
+                    self.user_id,
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                ):
+                    raise ActionException(
+                        "You are not allowed to set 'forward_to_committee_ids' and 'receive_forwardings_from_committee_ids', because it is restricted."
+                    )
                 field_set = set(instance.get(field, []))
                 field_difference.update(
                     field_set.symmetric_difference(committee.get(field, []))
@@ -58,25 +68,16 @@ class CommitteeCommonCreateUpdateMixin(
         """
         instance = super().update_instance(instance)
         id_ = instance.get("id")
-        if (
-            instance.get("forward_to_committee_ids") is None
-            or instance.get("receive_forwardings_from_committee_ids") is None
-        ):
-            return instance
-        if (id_ in instance.get("forward_to_committee_ids", [])) != (
-            id_ in instance.get("receive_forwardings_from_committee_ids", [])
-        ):
-            raise ActionException(
-                "Forwarding or receiving to/from own must be configured in both directions!"
-            )
+        motion_forwarding_fields = [
+            "forward_to_committee_ids",
+            "receive_forwardings_from_committee_ids",
+        ]
+        for message, fields in {
+            "Forwarding or receiving to/from own must be configured in both directions!": motion_forwarding_fields,
+        }.items():
+            if (
+                not any(instance.get(field) is None for field in fields)
+                and len({id_ in instance.get(field, []) for field in fields}) == 2
+            ):
+                raise ActionException(message)
         return instance
-
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if instance.get("external_id"):
-            self.check_unique_in_context(
-                "external_id",
-                instance["external_id"],
-                "The external_id of the committee is not unique.",
-                instance.get("id"),
-            )

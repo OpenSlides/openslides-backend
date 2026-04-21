@@ -88,15 +88,53 @@ class ServiceException(View400Exception):
     pass
 
 
-class DatastoreException(ServiceException):
+class DatabaseException(ServiceException):
     pass
 
 
-class DatastoreConnectionException(DatastoreException):
+class InvalidFormat(DatabaseException):
     pass
 
 
-class DatastoreLockedException(DatastoreException):
+class InvalidData(DatabaseException):
+    pass
+
+
+class RelationException(DatabaseException):
+    pass
+
+
+class ModelDoesNotExist(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        super().__init__(f"Model '{fqid}' does not exist.")
+        self.fqid = fqid
+
+
+class ModelExists(DatabaseException):
+    def __init__(self, fqid: str) -> None:
+        super().__init__(f"Model '{fqid}' exists.")
+        self.fqid = fqid
+
+
+class ModelLocked(DatabaseException):
+    def __init__(self, keys: str) -> None:
+        super().__init__("")
+        self.keys = keys
+
+
+class InvalidDatastoreState(DatabaseException):
+    pass
+
+
+class DatastoreNotEmpty(DatabaseException):
+    pass
+
+
+class DatastoreConnectionException(DatabaseException):
+    pass
+
+
+class DatastoreLockedException(DatabaseException):
     pass
 
 
@@ -132,6 +170,7 @@ class MissingPermission(PermissionDenied):
     def __init__(
         self,
         permissions: AnyPermission | dict[AnyPermission, int | set[int]],
+        use_and: bool = False,
     ) -> None:
         if isinstance(permissions, dict):
             to_remove = []
@@ -141,7 +180,7 @@ class MissingPermission(PermissionDenied):
             for permission in to_remove:
                 del permissions[permission]
             self.message = "Missing permission" + self._plural_s(permissions) + ": "
-            self.message += " or ".join(
+            self.message += (" and " if use_and else " or ").join(
                 f"{permission.get_verbose_type()} {permission} in {permission.get_base_model()}{self._plural_s(id_or_ids)} {id_or_ids}"
                 for permission, id_or_ids in permissions.items()
             )

@@ -18,6 +18,7 @@ export_meeting_schema = fastjsonschema.compile(
         "description": "export meeting",
         "properties": {
             "meeting_id": required_id_schema,
+            "old_db_compatibility": {"type": "boolean"},
         },
     }
 )
@@ -40,7 +41,12 @@ class Export(BasePresenter):
             msg = "You are not allowed to perform presenter export_meeting."
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
-        export_data = export_meeting(self.datastore, self.data["meeting_id"])
+        export_data = export_meeting(
+            self.datastore,
+            self.data["meeting_id"],
+            transform_datetime_decimal=True,
+            datetime_to_unix=self.data.get("old_db_compatibility"),
+        )
         if id_ := next(
             (
                 id_
@@ -51,6 +57,8 @@ class Export(BasePresenter):
         ):
             raise PresenterException(f"Cannot export: meeting {id_} is locked.")
         self.exclude_organization_tags_and_default_meeting_for_committee(export_data)
+        if self.data.get("old_db_compatibility"):
+            self.add_missing_mm_inherited_access_group_ids(export_data)
         return export_data
 
     def exclude_organization_tags_and_default_meeting_for_committee(
@@ -60,6 +68,15 @@ class Export(BasePresenter):
         self.get_meeting_from_json(export_data).pop(
             "default_meeting_for_committee_id", None
         )
+
+    def add_missing_mm_inherited_access_group_ids(
+        self, export_data: dict[str, Any]
+    ) -> None:
+        if "meeting_mediafile" not in export_data:
+            return
+        for meeting_mediafile_data in export_data["meeting_mediafile"].values():
+            if "inherited_access_group_ids" not in meeting_mediafile_data:
+                meeting_mediafile_data["inherited_access_group_ids"] = []
 
     def get_meeting_from_json(self, export_data: Any) -> Any:
         key = next(iter(export_data["meeting"]))

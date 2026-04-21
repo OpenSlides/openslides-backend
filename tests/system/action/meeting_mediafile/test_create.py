@@ -4,7 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingMediafileCreate(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_meeting()
-        self.set_models({"mediafile/10": {"title": "hOi"}})
+        self.set_models(
+            {"mediafile/10": {"title": "hOi", "owner_id": "organization/1"}}
+        )
         test_dict = {
             "mediafile_id": 10,
             "meeting_id": 1,
@@ -19,18 +21,11 @@ class MeetingMediafileCreate(BaseActionTestCase):
 
     def test_create_existing(self) -> None:
         self.create_meeting()
+        self.create_mediafile(10, 1)
         self.set_models(
             {
-                "meeting/1": {"mediafile_ids": [10], "meeting_mediafile_ids": [2]},
-                "mediafile/10": {
-                    "title": "hOi",
-                    "meeting_mediafile_ids": [2],
-                    "owner_id": "meeting/1",
-                },
                 "meeting_mediafile/2": {
                     "meeting_id": 1,
-                    "access_group_ids": [],
-                    "inherited_access_group_ids": [],
                     "mediafile_id": 10,
                     "is_public": True,
                 },
@@ -44,6 +39,7 @@ class MeetingMediafileCreate(BaseActionTestCase):
         response = self.request("meeting_mediafile.create", test_dict)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "MeetingMediafile instance with mediafile 10 and meeting 1 already exists",
+            'meeting_mediafile/3: duplicate key value violates unique constraint "unique_meeting_mediafile_mediafile_id_meeting_id"\n'
+            + "DETAIL:  Key (mediafile_id, meeting_id)=(10, 1) already exists.",
             response.json["message"],
         )

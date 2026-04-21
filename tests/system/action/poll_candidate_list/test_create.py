@@ -3,23 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollCandidateList(BaseActionTestCase):
     def test_create_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "name": "meeting_1",
-                    "is_active_in_organization_id": 1,
-                },
-                "user/2": {
-                    "username": "test1",
-                },
-                "user/3": {
-                    "username": "test2",
-                },
-                "option/4": {
-                    "meeting_id": 1,
-                },
-            },
-        )
+        self.create_meeting()
+        self.create_user("test1")
+        self.create_user("test2")
+        self.set_models({"option/4": {"meeting_id": 1}})
         response = self.request(
             "poll_candidate_list.create",
             {

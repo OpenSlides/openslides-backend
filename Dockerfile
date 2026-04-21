@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.10.18-slim-bookworm AS base
+FROM python:3.12.13-slim-trixie AS base
 
 ## Setup
 ARG CONTEXT
@@ -16,12 +16,11 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
-    git \
-    gcc \
-    libpq-dev \
+    git \ 
     libmagic1 \
-    mime-support \
+    media-types \
     ncat \
+    postgresql-client \
     ${CONTEXT_INSTALLS} && \
     rm -rf /var/lib/apt/lists/*
 
@@ -98,17 +97,18 @@ FROM base AS prod
 RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts
+COPY cli/create_schema.py cli/create_schema.py
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
-COPY meta meta
 COPY data data
+COPY meta meta
 
 RUN chown appuser ./scripts/ && \
  chown appuser ./entrypoint.sh && \
  chown appuser ./openslides_backend && \
+ chown appuser ./data && \
  chown appuser ./meta && \
- chown appuser ./command.sh && \
- chown appuser ./data
+ chown appuser ./command.sh
 
 ARG VERSION=dev
 RUN echo "$VERSION" > openslides_backend/version.txt

@@ -5,13 +5,12 @@ on:
     branches:
       - main
       - 'feature/**'
-      - 'staging/**'
+      - 'staging**'
   merge_group:
     types: [checks_requested]
 
 env:
-  PYTHON_VERSION: 3.10.x
-  DATASTORE_COMMIT_HASH: main  # will be set during job
+  PYTHON_VERSION: 3.12.x
   AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
@@ -23,13 +22,23 @@ jobs:
         working-directory: .github/docker-compose
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
+      with:
+        submodules: recursive
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v4
+      with:
+        version: latest
+
+    - name: Build docker production image
+      run: docker compose -f docker-compose.prod.yml build --parallel
+
     - name: Run docker production image
-      run: docker compose -f docker-compose.prod.yml up --build -d
+      run: docker compose -f docker-compose.prod.yml up -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
@@ -51,7 +60,9 @@ jobs:
     name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
       - name: Run tests
         run: dev/run-tests.sh
@@ -60,33 +71,26 @@ jobs:
     name: Build and test local dev setup
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         path: openslides-backend
+        submodules: recursive
 
     - name: Set env vars
       working-directory: openslides-backend/requirements
       run: |
         . export_service_commits.sh
-        echo "DATASTORE_COMMIT_HASH=$(echo $DATASTORE_COMMIT_HASH)" >> $GITHUB_ENV
         echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
 
-    - name: Clone datastore
-      uses: actions/checkout@v5
-      with:
-        repository: OpenSlides/openslides-datastore-service
-        ref: ${{ env.DATASTORE_COMMIT_HASH }}
-        path: openslides-datastore-service
-
     - name: Clone auth service
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-auth-service
         ref: ${{ env.AUTH_COMMIT_HASH }}
         path: openslides-auth-service
 
     - name: Clone vote service
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: OpenSlides/openslides-vote-service
         ref: main
@@ -100,7 +104,7 @@ jobs:
     name: Check coding style
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
@@ -139,7 +143,7 @@ jobs:
       PYTHONPATH: .
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: true
 
@@ -158,11 +162,3 @@ jobs:
     - name: Check for up to date permissions.py
       if: always()
       run: make check-permissions
-
-    - name: Check initial-data.json
-      if: always()
-      run: make check-initial-data-json
-
-    - name: Check example-data.json
-      if: always()
-      run: make check-example-data-json

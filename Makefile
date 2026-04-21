@@ -1,5 +1,5 @@
 override SERVICE=backend
-override paths = openslides_backend/ tests/ cli/ meta/dev/src/
+override paths = openslides_backend/ tests/ cli/
 
 # Build images for different contexts
 
@@ -34,7 +34,12 @@ coverage:
 	pytest --cov --cov-report html
 
 test-file:
-	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f
+# f= to pass the file name
+# k= to pass a test name
+# v=1 to run verbose test output
+# cap=1 to capture print to system out
+# cov=1 to run coverage report
+	python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest $f $(if $(k),-k $k) $(if $(v),-vv) $(if $(cap),--capture=no) $(if $(cov),--cov --cov-report term-missing:skip-covered)
 
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
@@ -69,6 +74,14 @@ mypy:
 
 # Models
 
+generate-schema:
+	make -C meta/dev generate-relational-schema
+
+join-models-yml:
+	make -C meta/dev join-models-yml
+
+generate-db: | generate-schema create-database-with-schema
+
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py
@@ -93,6 +106,16 @@ check-initial-data-json:
 
 check-example-data-json:
 	python cli/check_json.py data/example-data.json
+
+# The commands below can be called in the container to open the gunicorn control socket interfaces
+# for the action and presenter services respectively.
+# Environment setting OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET needs to be true for this to be possible.
+
+open-gunicornc-action:
+	gunicornc -s "openslides-action.ctl"
+
+open-gunicornc-presenter:
+	gunicornc -s "openslides-presenter.ctl"
 
 
 
@@ -129,9 +152,29 @@ pip-check: | deprecation-warning
 	pip-check -H
 
 
-extract-translations: | deprecation-warning
-	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
+extract-translations:
+	pybabel extract --no-location --sort-output -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
+drop-database:
+	make -C meta/dev drop-database
+
+create-database:
+	make -C meta/dev create-database
+
+generate-relational-schema:
+	make -C meta/dev generate-relational-schema
+
+apply-db-schema:
+	make -C meta/dev apply-db-schema
+
+create-database-with-schema:
+	python cli/create_schema.py
+
+recreate-database:
+	make -C meta/dev create-database-with-schema
+
+run-psql:
+	make -C meta/dev run-psql
 
 # Build and run production docker container (not usable inside the docker container)
 

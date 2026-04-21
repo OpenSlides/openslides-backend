@@ -1,17 +1,12 @@
+from decimal import Decimal
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class VoteCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.set_models(
-            {
-                "meeting/111": {
-                    "name": "meeting_Xcdfgee",
-                    "is_active_in_organization_id": 1,
-                },
-                "option/12": {"text": "blabalbal", "meeting_id": 111},
-            }
-        )
+        self.create_meeting(111)
+        self.set_models({"option/12": {"text": "blabalbal", "meeting_id": 111}})
         response = self.request(
             "vote.create",
             {
@@ -22,11 +17,14 @@ class VoteCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("meeting_id") == 111
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("option_id") == 12
-        assert vote.get("user_token") == "aaaabbbbccccdddd"
-        option = self.get_model("option/12")
-        assert option.get("vote_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "meeting_id": 111,
+                "weight": Decimal("1.000000"),
+                "option_id": 12,
+                "user_token": "aaaabbbbccccdddd",
+            },
+        )
+        self.assert_model_exists("option/12", {"vote_ids": [1]})

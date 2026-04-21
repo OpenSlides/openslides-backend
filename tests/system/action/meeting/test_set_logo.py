@@ -8,182 +8,120 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingSetLogoActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.permission_test_models: dict[str, dict[str, Any]] = {
-            "meeting/1": {
-                "name": "name_meeting1",
-                "is_active_in_organization_id": 1,
-                "meeting_mediafile_ids": [7],
-            },
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "image/png",
                 "owner_id": "meeting/1",
-                "meeting_mediafile_ids": [7],
+                "filename": "new_final_finalest_final_for_sure_1_1.png",
+                "title": "approved logo",
             },
-            "meeting_mediafile/7": {"meeting_id": 1, "mediafile_id": 17},
+            "meeting_mediafile/7": {
+                "meeting_id": 1,
+                "mediafile_id": 17,
+                "is_public": True,
+            },
         }
 
     def test_set_logo_correct(self) -> None:
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7],
-                },
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "image/png",
-                    "owner_id": "meeting/222",
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 17},
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/222", {"logo_web_header_id": 7})
-
-    def test_set_logo_svg_xml(self) -> None:
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7],
-                },
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "image/svg+xml",
-                    "owner_id": "meeting/222",
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 17},
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/222", {"logo_web_header_id": 7})
-
-    def test_set_logo_wrong_place(self) -> None:
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7],
-                },
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "image/png",
-                    "owner_id": "meeting/222",
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 17},
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "broken"}
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "logo_broken_id is not a valid field for model meeting."
-            == response.json["message"]
-        )
-
-    def test_set_logo_wrong_directory(self) -> None:
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7],
-                },
-                "mediafile/17": {
-                    "is_directory": True,
-                    "mimetype": "image/png",
-                    "owner_id": "meeting/222",
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 17},
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
-        )
-        self.assert_status_code(response, 400)
-        assert "Cannot set a directory." in response.json["message"]
-
-    def test_set_logo_wrong_no_image(self) -> None:
-        self.create_meeting(222)
-        self.set_models(
-            {
-                "meeting/222": {
-                    "meeting_mediafile_ids": [7],
-                },
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "text/plain",
-                    "owner_id": "meeting/222",
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {"meeting_id": 222, "mediafile_id": 17},
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
-        )
-        self.assert_status_code(response, 400)
-        assert "Invalid mimetype" in response.json["message"]
-
-    def test_set_logo_orga_mediafile_error(self) -> None:
-        self.create_meeting(1)
-        self.set_models(
-            {
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "image/png",
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                },
-            }
-        )
-        response = self.request(
-            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "No meeting_mediafile creation possible: Mediafile is not published.",
-            response.json["message"],
-        )
-
-    def test_set_logo_published_root_orga_mediafile(self) -> None:
-        self.create_meeting(1)
-        self.set_models(
-            {
-                "meeting/1": {"meeting_mediafile_ids": [7]},
-                "mediafile/17": {
-                    "is_directory": False,
-                    "mimetype": "image/png",
-                    "owner_id": ONE_ORGANIZATION_FQID,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "meeting_mediafile_ids": [7],
-                },
-                "meeting_mediafile/7": {
-                    "meeting_id": 1,
-                    "mediafile_id": 17,
-                    "is_public": True,
-                    "inherited_access_group_ids": [],
-                },
-            }
-        )
+        self.set_models(self.permission_test_models)
         response = self.request(
             "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"logo_web_header_id": 7})
+        self.assert_model_exists(
+            "meeting_mediafile/7", {"used_as_logo_web_header_in_meeting_id": 1}
+        )
+
+    def test_set_logo_svg_xml(self) -> None:
+        self.permission_test_models["mediafile/17"]["mimetype"] = "image/svg+xml"
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"logo_web_header_id": 7})
+        self.assert_model_exists(
+            "meeting_mediafile/7", {"used_as_logo_web_header_in_meeting_id": 1}
+        )
+
+    def test_set_logo_wrong_place(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "broken"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "logo_broken_id is not a valid field for model meeting.",
+            response.json["message"],
+        )
+
+    def test_set_logo_wrong_directory(self) -> None:
+        self.permission_test_models["mediafile/17"] = {
+            "owner_id": "meeting/1",
+            "is_directory": True,
+            "title": "logos",
+        }
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual("Cannot set a directory.", response.json["message"])
+
+    def test_set_logo_wrong_no_image(self) -> None:
+        self.permission_test_models["mediafile/17"]["mimetype"] = "text/plain"
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "Invalid mimetype: text/plain, allowed are ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml']",
+            response.json["message"],
+        )
+
+    def test_set_logo_unpublished_orga_mediafile_error(self) -> None:
+        self.set_models(
+            {
+                "mediafile/17": {
+                    "is_directory": False,
+                    "mimetype": "image/png",
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "filename": "DRAFT_NOT_PUBLISH.png",
+                    "title": "logo_2026",
+                },
+            }
+        )
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "No meeting_mediafile creation possible: Mediafile is not published.",
+            response.json["message"],
+        )
+
+    def test_set_logo_published_root_orga_mediafile(self) -> None:
+        self.permission_test_models["mediafile/17"].update(
+            {
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+            }
+        )
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "meeting.set_logo", {"id": 1, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"logo_web_header_id": 7})
+        self.assert_model_exists(
+            "meeting_mediafile/7", {"used_as_logo_web_header_in_meeting_id": 1}
+        )
 
     def test_set_logo_published_root_orga_mediafile_generate_data(self) -> None:
-        self.create_meeting(1)
         self.set_models(
             {
                 "mediafile/17": {
@@ -191,6 +129,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "logo_monochrome.png",
+                    "title": "logo-bw",
                 },
             }
         )
@@ -207,11 +147,11 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                 "access_group_ids": [2],
                 "inherited_access_group_ids": [2],
                 "is_public": False,
+                "used_as_logo_web_header_in_meeting_id": 1,
             },
         )
 
     def test_set_logo_published_child_orga_mediafile_generate_data(self) -> None:
-        self.create_meeting(1)
         self.set_models(
             {
                 "mediafile/16": {
@@ -219,6 +159,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [17],
+                    "title": "logos",
                 },
                 "mediafile/17": {
                     "parent_id": 16,
@@ -226,6 +167,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "logo_2026.png",
+                    "title": "logo (new)",
                 },
             }
         )
@@ -234,16 +177,18 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"logo_web_header_id": 1})
-        meeting_mediafile = self.assert_model_exists(
+        self.assert_model_exists(
             "meeting_mediafile/1",
             {
                 "meeting_id": 1,
                 "mediafile_id": 17,
+                "access_group_ids": None,
                 "inherited_access_group_ids": [2],
                 "is_public": False,
+                "used_as_logo_web_header_in_meeting_id": 1,
             },
         )
-        assert "access_group_ids" not in meeting_mediafile
+        self.assert_model_not_exists("meeting_mediafile/2")
 
     def test_set_logo_no_permissions(self) -> None:
         self.base_permission_test(
