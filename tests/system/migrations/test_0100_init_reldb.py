@@ -84,7 +84,8 @@ class TestMigration100(BaseMigrationTestCase):
     MAX_WAIT = 15
     EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
 This migration will fundamentally restructure all data.
-See https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md for more information.
+For more information, see
+  https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md
 \n"""
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
