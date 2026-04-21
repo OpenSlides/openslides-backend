@@ -362,7 +362,12 @@ class UserSaveSamlAccount(
                 )
             ):
                 continue
-            if is_update:
+            if is_update and get_meeting_user(
+                self.datastore,
+                meeting_id,
+                user_id,
+                ["id"],
+            ):
                 instance_meeting_user = instance_meeting_user_data.get("for_update")
             else:
                 instance_meeting_user = instance_meeting_user_data.get("for_create")
