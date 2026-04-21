@@ -240,9 +240,7 @@ def check_prerequisites(curs: Cursor[DictRow]) -> str:
     MigrationHelper.write_line(
         "This migration will fundamentally restructure all data."
     )
-    MigrationHelper.write_line(
-        "For more information, see"
-    )
+    MigrationHelper.write_line("For more information, see")
     MigrationHelper.write_line(
         "  https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md"
     )
