@@ -8,6 +8,7 @@ from psycopg.rows import DictRow
 
 from openslides_backend.migrations.exceptions import (
     MigrationException,
+    MigrationSetupException,
     MismatchingMigrationIndicesException,
 )
 from openslides_backend.migrations.migration_helper import (
@@ -113,40 +114,42 @@ class MigrationManager:
             self.cursor
         )
 
-        migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
-        state_per_mi = MigrationHelper.get_database_migration_states(
-            self.cursor, migration_indices
-        )
-        unmigrated_collections = {
-            collection: cast(str, r_tables["table"])
-            for mi in migration_indices
-            if mi > current_migration_index
-            if state_per_mi[mi]
-            in (
-                MigrationState.MIGRATION_REQUIRED,
-                MigrationState.MIGRATION_RUNNING,
-                MigrationState.MIGRATION_PREPARING,
+        if not MigrationHelper.migrate_thread_exception:
+            migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
+            state_per_mi = MigrationHelper.get_database_migration_states(
+                self.cursor, migration_indices
             )
-            for collection, r_tables in MigrationHelper.get_replace_tables(mi).items()
-        }
-        stats = {
-            collection: {
-                "count": amount,
-                "migrated": count(migration_table, self.cursor),
+            unmigrated_collections = {
+                collection: cast(str, r_tables["table"])
+                for mi in migration_indices
+                if mi > current_migration_index
+                if state_per_mi[mi]
+                in (
+                    MigrationState.MIGRATION_REQUIRED,
+                    MigrationState.MIGRATION_RUNNING,
+                    MigrationState.MIGRATION_PREPARING,
+                )
+                for collection, r_tables in MigrationHelper.get_replace_tables(
+                    mi
+                ).items()
             }
-            for collection, migration_table in unmigrated_collections.items()
-            if (amount := count(collection + "_t", self.cursor))
-        }
+            stats = {
+                collection: {
+                    "count": amount,
+                    "migrated": count(migration_table, self.cursor),
+                }
+                for collection, migration_table in unmigrated_collections.items()
+                if (amount := count(collection + "_t", self.cursor))
+            }
 
         return {
             **self.get_migration_result(),
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
-            "migratable_models": stats,
             **(
                 {"exception": str(MigrationHelper.migrate_thread_exception)}
                 if MigrationHelper.migrate_thread_exception
-                else {}
+                else {"migratable_models": stats}
             ),
         }
 
@@ -248,6 +251,9 @@ class MigrationManager:
                         curs, self.env, self.services, self.logging
                     )
                     return self.handler.execute_command(command)
+        except MigrationSetupException as e:
+            MigrationHelper.migrate_thread_exception = e
+            self.logger.exception(e)
         except Exception as e:
             MigrationHelper.migrate_thread_exception = e
             self.logger.exception(e)

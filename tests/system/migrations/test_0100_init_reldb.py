@@ -109,7 +109,7 @@ For more information, see
         drop_db()
         cls.apply_test_relational_schema()
         for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
-            if not os.getenv(key):
+            if os.getenv(key):
                 del os.environ[key]
         super().tearDownClass()
 
@@ -363,13 +363,13 @@ For more information, see
         self.wait_for_migration_thread(self.MAX_WAIT)
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_FAILED,
+            "status": MigrationState.MIGRATION_REQUIRED,
             "exception": "Pre check for migration 0100_init_reldb failed.\nRequired env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE",
             "output": self.EXPECTED_INTRODUCTION,
             "current_migration_index": 73,
             "target_migration_index": 100,
-            "migratable_models": {},
         }
+        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
 
     def test_migration_fail_time_zone(self) -> None:
         os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
@@ -377,13 +377,13 @@ For more information, see
         self.wait_for_migration_thread(self.MAX_WAIT)
         response = self.request("stats")
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_FAILED,
+            "status": MigrationState.MIGRATION_REQUIRED,
             "exception": "Pre check for migration 0100_init_reldb failed.\nJST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available.",
             "output": self.EXPECTED_INTRODUCTION,
             "current_migration_index": 73,
             "target_migration_index": 100,
-            "migratable_models": {},
         }
+        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
 
     def test_migration_handler(self) -> None:
         # Prepare what manager would.

@@ -10,7 +10,11 @@ from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, HelperGetNames
 from openslides_backend.models.base import model_registry
 from openslides_backend.shared.exceptions import CommandNotImplemented
 
-from ..migrations.exceptions import InvalidMigrationCommand, MigrationException
+from ..migrations.exceptions import (
+    InvalidMigrationCommand,
+    MigrationException,
+    MigrationSetupException,
+)
 from ..migrations.migration_helper import (
     MODULE_PATH,
     OLD_TABLES,
@@ -310,17 +314,7 @@ class MigrationHandler(BaseHandler):
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.MIGRATION_REQUIRED:
-                # Check prerequisites
-                for index, module_name in MigrationHelper.migrations.items():
-                    migration_module = import_module(f"{MODULE_PATH}{module_name}")
-                    self.logger.info("Pre check: " + module_name + " ...")
-                    if callable(getattr(migration_module, "check_prerequisites", None)):
-                        if errors := migration_module.check_prerequisites(self.cursor):
-                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
-                            self.logger.info(errors)
-                            raise MigrationException(errors)
-
-                # Block other migration requests by setting state to running.
+                # Block other migration requests by setting state to preparing.
                 if minimum_required_index := self.cursor.execute(
                     sql.SQL(
                         "SELECT MIN(migration_index) FROM version WHERE migration_state = %s"
@@ -332,6 +326,20 @@ class MigrationHandler(BaseHandler):
                         minimum_required_index["min"],
                         MigrationState.MIGRATION_PREPARING,
                     )
+                # Check prerequisites
+                for index, module_name in MigrationHelper.migrations.items():
+                    migration_module = import_module(f"{MODULE_PATH}{module_name}")
+                    self.logger.info("Pre check: " + module_name + " ...")
+                    if callable(getattr(migration_module, "check_prerequisites", None)):
+                        if errors := migration_module.check_prerequisites(self.cursor):
+                            MigrationHelper.set_database_migration_info(
+                                self.cursor,
+                                minimum_required_index["min"],
+                                MigrationState.MIGRATION_REQUIRED,
+                            )
+                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
+                            self.logger.info(errors)
+                            raise MigrationSetupException(errors)
                 MigrationHelper.write_line("migration started")
                 self.set_public_tables_read_only()
                 self.setup_migration_relations()
