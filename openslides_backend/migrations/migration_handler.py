@@ -332,11 +332,12 @@ class MigrationHandler(BaseHandler):
                     self.logger.info("Pre check: " + module_name + " ...")
                     if callable(getattr(migration_module, "check_prerequisites", None)):
                         if errors := migration_module.check_prerequisites(self.cursor):
-                            MigrationHelper.set_database_migration_info(
-                                self.cursor,
-                                minimum_required_index["min"],
-                                MigrationState.MIGRATION_REQUIRED,
-                            )
+                            if minimum_required_index:
+                                MigrationHelper.set_database_migration_info(
+                                    self.cursor,
+                                    minimum_required_index["min"],
+                                    MigrationState.MIGRATION_REQUIRED,
+                                )
                             errors = f"Pre check for migration {module_name} failed.\n{errors}"
                             self.logger.info(errors)
                             raise MigrationSetupException(errors)
