@@ -274,8 +274,8 @@ class Committee(Model):
         is_view_field=True,
         write_fields=(
             "nm_committee_all_child_ids_committee_t",
-            "all_parent_id",
             "all_child_id",
+            "all_parent_id",
             [],
         ),
     )
@@ -285,8 +285,8 @@ class Committee(Model):
         is_primary=True,
         write_fields=(
             "nm_committee_all_child_ids_committee_t",
-            "all_child_id",
             "all_parent_id",
+            "all_child_id",
             [],
         ),
     )
@@ -299,8 +299,8 @@ class Committee(Model):
         is_primary=True,
         write_fields=(
             "nm_committee_forward_to_committee_ids_committee_t",
-            "forward_to_committee_id",
             "receive_forwardings_from_committee_id",
+            "forward_to_committee_id",
             [],
         ),
     )
@@ -309,8 +309,8 @@ class Committee(Model):
         is_view_field=True,
         write_fields=(
             "nm_committee_forward_to_committee_ids_committee_t",
-            "receive_forwardings_from_committee_id",
             "forward_to_committee_id",
+            "receive_forwardings_from_committee_id",
             [],
         ),
     )
@@ -1637,8 +1637,8 @@ class Motion(Model):
         is_view_field=True,
         write_fields=(
             "nm_motion_all_derived_motion_ids_motion_t",
-            "all_origin_id",
             "all_derived_motion_id",
+            "all_origin_id",
             [],
         ),
     )
@@ -1648,8 +1648,8 @@ class Motion(Model):
         is_primary=True,
         write_fields=(
             "nm_motion_all_derived_motion_ids_motion_t",
-            "all_derived_motion_id",
             "all_origin_id",
+            "all_derived_motion_id",
             [],
         ),
     )
@@ -1659,8 +1659,8 @@ class Motion(Model):
         is_primary=True,
         write_fields=(
             "nm_motion_identical_motion_ids_motion_t",
-            "identical_motion_id_2",
             "identical_motion_id_1",
+            "identical_motion_id_2",
             [],
         ),
     )
@@ -2023,8 +2023,8 @@ class MotionState(Model):
         is_primary=True,
         write_fields=(
             "nm_motion_state_next_state_ids_motion_state_t",
-            "next_state_id",
             "previous_state_id",
+            "next_state_id",
             [],
         ),
     )
@@ -2033,8 +2033,8 @@ class MotionState(Model):
         is_view_field=True,
         write_fields=(
             "nm_motion_state_next_state_ids_motion_state_t",
-            "previous_state_id",
             "next_state_id",
+            "previous_state_id",
             [],
         ),
     )
