@@ -350,19 +350,12 @@ class Attribute(Node):
             foreign_type = foreign.field_def.get("type", "")
             if "relation-list" == field_type == foreign_type:
                 table_name = HelperGetNames.get_nm_table_name(own, foreign)
-                field1 = HelperGetNames.get_field_in_n_m_relation_list(
-                    own, foreign.table
-                )
-                field2 = HelperGetNames.get_field_in_n_m_relation_list(
-                    foreign, own.table
-                )
+                field1 = HelperGetNames.get_field_in_n_m_relation_list(own, foreign)
+                field2 = HelperGetNames.get_field_in_n_m_relation_list(foreign, own)
                 if field1 == field2:
                     field1 += "_1"
                     field2 += "_2"
-                if own.table == foreign.table:
-                    write_fields = (table_name, field2, field1, [])
-                else:
-                    write_fields = (table_name, field1, field2, [])
+                write_fields = (table_name, field1, field2, [])
             elif "generic-relation-list" in (field_type, foreign_type):
                 write_fields = self.get_write_fields_for_generic(
                     own, foreign_fields, primary
