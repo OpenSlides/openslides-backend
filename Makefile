@@ -48,6 +48,9 @@ check-all: validate-models-yml check-models check-initial-data-json check-exampl
 generate-schema:
 	make -C meta/dev generate-relational-schema
 
+join-models-yml:
+	make -C meta/dev join-models-yml
+
 generate-db: | generate-schema create-database-with-schema
 
 generate-models:
@@ -74,6 +77,16 @@ check-initial-data-json:
 
 check-example-data-json:
 	python cli/check_json.py data/example-data.json
+
+# The commands below can be called in the container to open the gunicorn control socket interfaces
+# for the action and presenter services respectively.
+# Environment setting OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET needs to be true for this to be possible.
+
+open-gunicornc-action:
+	gunicornc -s "openslides-action.ctl"
+
+open-gunicornc-presenter:
+	gunicornc -s "openslides-presenter.ctl"
 
 
 
@@ -146,8 +159,8 @@ pip-check: | deprecation-warning
 	pip-check -H
 
 
-extract-translations: | deprecation-warning
-	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
+extract-translations:
+	pybabel extract --no-location --sort-output -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
 drop-database:
 	make -C meta/dev drop-database

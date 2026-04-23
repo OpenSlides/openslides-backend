@@ -593,9 +593,30 @@ l,m,n,"""
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "File 'file_7' already exists in folder 'folder_6'."
-            in response.json["message"]
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"\n'
+            + "DETAIL:  Key (title, parent_id, owner_id)=(file_7, 6, meeting/1) already exists.",
+            response.json["message"],
+        )
+
+    def test_create_root_title_owner_id_unique(self) -> None:
+        self.create_meeting()
+        self.create_mediafile(7, 1)
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/1",
+                "title": "file_7",
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"\n'
+            + "DETAIL:  Key (title, parent_id, owner_id)=(file_7, null, meeting/1) already exists.",
+            response.json["message"],
         )
 
     def test_create_directory_owner_access_groups_dont_match(self) -> None:

@@ -9,6 +9,7 @@
 // Optional
     description: string;
     location: string;
+    time_zone: string;
     start_time: datetime;
     end_time: datetime;
     organization_tag_ids: Id[];
@@ -24,6 +25,8 @@ Creates a meeting.
 
 Checks whether the `organization.limit_of_meetings` is unlimited (=0) or lower than the amount of active meetings in `organization.active_meeting_ids`.
  
+`time_zone` must be a valid timezone string (see [presenter](../presenters/get_valid_timezones.md)).
+
 The following objects are created, too:
 - Groups: `Default`, `Admin`, `Delegates`, `Staff`, `Committees`. The first one is set as `meeting/default_group_id`, the second one as `meeting/admin_group_id`. The permissions can be found in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/data/initial-data.json)).
 - Projector: One projector named `"Default projector"` is created and set as `meeting/reference_projector_id`.

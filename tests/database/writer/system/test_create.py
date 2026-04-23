@@ -211,13 +211,39 @@ def test_create_11_field_as_1n() -> None:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(write_requests)
     assert (
-        "Relation from agenda_item/2 violates UNIQUE constraint: "
+        "agenda_item/2: Agenda item with content_object_id_motion_id 1 already exists."
         in e_info.value.message
     )
     assert_model("motion/2", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 2})
     assert_model("motion/1", {"title": "2", "meeting_id": 1, "state_id": 1, "id": 1})
     assert_no_model("agenda_item/1")
     assert_no_model("agenda_item/2")
+
+
+def test_create_error_own_field_unique(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    create_models(get_data())
+    with get_new_os_conn() as conn:
+        with pytest.raises(RelationException) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Create,
+                                    "fqid": "user/2",
+                                    "fields": {"username": "1", "first_name": "Alice"},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+    assert "user/2: User with username '1' already exists." in e_info.value.message
+    assert_no_model("user/2")
 
 
 def test_create_error_own_field_not_null(
@@ -244,6 +270,7 @@ def test_create_error_own_field_not_null(
     assert (
         "Missing fields 'username' in 'user/1'. Ooopsy Daisy!" in e_info.value.message
     )
+    assert_no_model("user/1")
 
 
 def test_create_error_1_1_not_null(

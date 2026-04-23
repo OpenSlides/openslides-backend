@@ -7,7 +7,14 @@ from .base import BasePresenterTestCase
 
 class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_mediafile_context_simple(self) -> None:
-        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "title": "the one and only",
+                }
+            }
+        )
         status_code, data = self.request(
             "get_mediafile_context", {"mediafile_ids": [1]}
         )
@@ -102,7 +109,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 },
                 "projection/1": get_projection(1, 1, 1, "history"),
                 "projection/2": get_projection(1, 4, 1, "preview"),
-                "projector/2": {"meeting_id": 1},
+                "projector/2": {"meeting_id": 1, "name": "Projector 2"},
                 "projection/8": get_projection(1, 1, 2, "current"),
                 "meeting_mediafile/1": get_m_mediafile(
                     1,

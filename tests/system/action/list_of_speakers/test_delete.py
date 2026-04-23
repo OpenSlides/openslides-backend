@@ -29,9 +29,7 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
                     "current_projector_id": 1,
                     "meeting_id": 78,
                 },
-                "projector/1": {
-                    "meeting_id": 78,
-                },
+                "projector/1": {"meeting_id": 78, "name": "main"},
             }
         )
 

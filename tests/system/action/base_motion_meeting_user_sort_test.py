@@ -14,6 +14,7 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
             self.create_meeting()
             self.create_motion(1, 222)
             self.create_user_for_meeting(1)
+            self.create_user_for_meeting(1)
             self.permission_test_models: dict[str, dict[str, Any]] = {
                 f"{collection}/31": {
                     "motion_id": 222,
@@ -23,7 +24,7 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
                 f"{collection}/32": {
                     "motion_id": 222,
                     "meeting_id": 1,
-                    "meeting_user_id": 1,
+                    "meeting_user_id": 2,
                 },
             }
 
@@ -59,12 +60,13 @@ def build_motion_meeting_user_sort_test(collection: str) -> type[BaseActionTestC
 
         def test_sort_another_section_db(self) -> None:
             self.set_models(self.permission_test_models)
+            self.create_user_for_meeting(1)
             self.set_models(
                 {
                     f"{collection}/33": {
                         "motion_id": 222,
                         "meeting_id": 1,
-                        "meeting_user_id": 1,
+                        "meeting_user_id": 3,
                     }
                 }
             )
