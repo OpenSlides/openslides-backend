@@ -1021,7 +1021,7 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
     poll_default_onehundred_percent_base = fields.CharField(
-        default="YNA",
+        default="valid",
         constraints={
             "enum": [
                 "no_general",
@@ -1599,9 +1599,7 @@ class MeetingUser(Model):
         ),
     )
     poll_option_ids = fields.RelationListField(
-        to={"poll_config_option": "meeting_user_id"},
-        is_view_field=True,
-        is_primary=True,
+        to={"poll_option": "meeting_user_id"}, is_view_field=True, is_primary=True
     )
     acting_ballot_ids = fields.RelationListField(
         to={"ballot": "acting_meeting_user_id"}, is_view_field=True
@@ -2432,6 +2430,11 @@ class Poll(Model, PollModelMixin):
         },
         required=True,
     )
+    option_ids = fields.RelationListField(
+        to={"poll_option": "poll_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
     visibility = fields.CharField(
         required=True, constraints={"enum": ["manually", "named", "open", "secret"]}
     )
@@ -2513,11 +2516,6 @@ class PollConfigApproval(Model):
     poll_id = fields.RelationField(
         to={"poll": "config_id"}, is_view_field=True, required=True
     )
-    option_ids = fields.RelationListField(
-        to={"poll_config_option": "poll_config_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
-    )
     allow_abstain = fields.BooleanField(default=True)
     onehundred_percent_base = fields.CharField(
         required=True,
@@ -2534,26 +2532,6 @@ class PollConfigApproval(Model):
     )
 
 
-class PollConfigOption(Model):
-    collection = "poll_config_option"
-    verbose_name = "poll config option"
-
-    id = fields.IntegerField(required=True, constant=True)
-    poll_config_id = fields.GenericRelationField(
-        to={
-            "poll_config_stv_scottish": "option_ids",
-            "poll_config_rating_approval": "option_ids",
-            "poll_config_rating_score": "option_ids",
-            "poll_config_selection": "option_ids",
-            "poll_config_approval": "option_ids",
-        },
-        required=True,
-    )
-    weight = fields.IntegerField()
-    text = fields.CharField()
-    meeting_user_id = fields.RelationField(to={"meeting_user": "poll_option_ids"})
-
-
 class PollConfigRatingApproval(Model):
     collection = "poll_config_rating_approval"
     verbose_name = "poll config rating approval"
@@ -2561,11 +2539,6 @@ class PollConfigRatingApproval(Model):
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
         to={"poll": "config_id"}, is_view_field=True, required=True
-    )
-    option_ids = fields.RelationListField(
-        to={"poll_config_option": "poll_config_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
     )
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
@@ -2592,11 +2565,6 @@ class PollConfigRatingScore(Model):
     id = fields.IntegerField(required=True, constant=True)
     poll_id = fields.RelationField(
         to={"poll": "config_id"}, is_view_field=True, required=True
-    )
-    option_ids = fields.RelationListField(
-        to={"poll_config_option": "poll_config_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
     )
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
@@ -2626,11 +2594,6 @@ class PollConfigSelection(Model):
     poll_id = fields.RelationField(
         to={"poll": "config_id"}, is_view_field=True, required=True
     )
-    option_ids = fields.RelationListField(
-        to={"poll_config_option": "poll_config_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
-    )
     max_options_amount = fields.IntegerField(default=0)
     min_options_amount = fields.IntegerField(default=0)
     allow_nota = fields.BooleanField(default=False)
@@ -2658,12 +2621,18 @@ class PollConfigStvScottish(Model):
     poll_id = fields.RelationField(
         to={"poll": "config_id"}, is_view_field=True, required=True
     )
-    option_ids = fields.RelationListField(
-        to={"poll_config_option": "poll_config_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
-    )
     posts = fields.IntegerField(default=1, constraints={"minimum": 1})
+
+
+class PollOption(Model):
+    collection = "poll_option"
+    verbose_name = "poll option"
+
+    id = fields.IntegerField(required=True, constant=True)
+    poll_id = fields.RelationField(to={"poll": "option_ids"}, required=True)
+    weight = fields.IntegerField()
+    text = fields.CharField()
+    meeting_user_id = fields.RelationField(to={"meeting_user": "poll_option_ids"})
 
 
 class Projection(Model):

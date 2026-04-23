@@ -1905,6 +1905,7 @@
             "title": "2",
             "config_id": "poll_config_approval/2",
             "visibility": "manually",
+            "option_ids": [1, 2],
             "state": "finished",
             "published": true,
             "allow_invalid": false,
@@ -1917,6 +1918,7 @@
             "title": "3",
             "config_id": "poll_config_selection/1",
             "visibility": "open",
+            "option_ids": [3, 4, 5],
             "state": "started",
             "published": false,
             "allow_invalid": false,
@@ -1931,6 +1933,7 @@
             "title": "4",
             "config_id": "poll_config_rating_score/1",
             "visibility": "secret",
+            "option_ids": [6, 7],
             "state": "created",
             "published": false,
             "allow_invalid": false,
@@ -1943,6 +1946,7 @@
             "title": "5",
             "config_id": "poll_config_rating_approval/1",
             "visibility": "manually",
+            "option_ids": [8, 9, 10],
             "state": "finished",
             "published": false,
             "allow_invalid": false,
@@ -1970,7 +1974,6 @@
             "id": 2,
             "poll_id": 2,
             "allow_abstain": true,
-            "option_ids": [1, 2],
             "onehundred_percent_base": "valid"
         }
     },
@@ -1978,7 +1981,6 @@
         "1": {
             "id": 1,
             "poll_id": 3,
-            "option_ids": [3, 4, 5],
             "max_options_amount": 2,
             "min_options_amount": 1,
             "allow_nota": true,
@@ -1990,7 +1992,6 @@
         "1": {
             "id": 1,
             "poll_id": 4,
-            "option_ids": [6, 7],
             "max_options_amount": 2,
             "min_options_amount": 2,
             "max_votes_per_option": 0,
@@ -2006,61 +2007,60 @@
             "max_options_amount": 0,
             "min_options_amount": 0,
             "allow_abstain": true,
-            "option_ids": [8, 9, 10],
             "onehundred_percent_base": "valid"
         }
     },
-    "poll_config_option": {
+    "poll_option": {
         "1": {
             "id": 1,
             "weight": 1,
-            "poll_config_id": "poll_config_approval/2",
+            "poll_id": 2,
             "meeting_user_id": 1
         },
         "2": {
             "id": 2,
             "weight": 2,
-            "poll_config_id": "poll_config_approval/2",
+            "poll_id": 2,
             "meeting_user_id": 3
         },
         "3": {
             "id": 3,
-            "poll_config_id": "poll_config_selection/1",
+            "poll_id": 3,
             "text": "Option 3"
         },
         "4": {
             "id": 4,
-            "poll_config_id": "poll_config_selection/1",
+            "poll_id": 3,
             "text": "Option 4"
         },
         "5": {
             "id": 5,
-            "poll_config_id": "poll_config_selection/1",
+            "poll_id": 3,
             "text": "Option 5"
         },
         "6": {
             "id": 6,
-            "poll_config_id": "poll_config_rating_score/1",
+            "poll_id": 4,
             "text": "option 6"
         },
         "7": {
             "id": 7,
-            "poll_config_id": "poll_config_rating_score/1",
+            "poll_id": 4,
             "text": "option 7"
         },
         "8": {
             "id": 8,
-            "poll_config_id": "poll_config_rating_approval/1",
+            "poll_id": 5,
             "meeting_user_id": 1
         },
         "9": {
             "id": 9,
-            "poll_config_id": "poll_config_rating_approval/1",
+            "poll_id": 5,
             "meeting_user_id": 2
         },
         "10": {
             "id": 10,
-            "poll_config_id": "poll_config_rating_approval/1",
+            "poll_id": 5,
             "meeting_user_id": 3
         }
     },
