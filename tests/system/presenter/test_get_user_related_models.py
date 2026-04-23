@@ -55,6 +55,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             }
         }
 
+    def test_get_user_related_models_no_info(self) -> None:
+        bob_id = self.create_user("bob")
+        status_code, data = self.request(
+            "get_user_related_models", {"user_ids": [bob_id]}
+        )
+        self.assertEqual(status_code, 200)
+        assert data == {"2": {}}
+
     def test_get_user_related_models_committee(self) -> None:
         self.set_models(
             {
@@ -76,9 +84,9 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "committee/1": {"name": "test", "manager_ids": [1, 2]},
-                "user/1": {"username": "na"},
-                "user/2": {"username": "na"},
-                "user/3": {"username": "na", "home_committee_id": 1},
+                "user/1": {"username": "jack"},
+                "user/2": {"username": "john"},
+                "user/3": {"username": "jill", "home_committee_id": 1},
             }
         )
         status_code, data = self.request(

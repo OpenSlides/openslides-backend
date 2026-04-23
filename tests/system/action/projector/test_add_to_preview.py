@@ -17,8 +17,8 @@ class ProjectorAddToPreview(BaseActionTestCase):
                     "content_object_id": "assignment/1",
                     "meeting_id": 1,
                 },
-                "projector/2": {"meeting_id": 1},
-                "projector/3": {"meeting_id": 1},
+                "projector/2": {"meeting_id": 1, "name": "Projector 2"},
+                "projector/3": {"meeting_id": 1, "name": "Projector 3"},
                 "projection/10": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",
@@ -172,7 +172,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertEqual(
-            "The following models do not belong to meeting 1: ['motion/42']",
+            "Model 'motion/42' does not exist.",
             response.json["message"],
         )
 
@@ -283,7 +283,9 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
 
     def test_unpublished_mediafile_as_content_object(self) -> None:
-        self.set_models({"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID}})
+        self.set_models(
+            {"mediafile/1": {"owner_id": ONE_ORGANIZATION_FQID, "title": "private"}}
+        )
         response = self.request(
             "projector.add_to_preview",
             {"ids": [2], "content_object_id": "mediafile/1", "meeting_id": 1},

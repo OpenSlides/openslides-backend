@@ -1690,10 +1690,10 @@ class UserMergeTogether(BaseVoteTestCase):
         add_personal_note(8, 4, 43, star=False)
         add_personal_note(9, 4, 44, star=True)
 
-        add_personal_note(10, 5, 43, "User 3's note")
+        add_personal_note(10, 5, 73, "User 3's note")
 
-        add_personal_note(11, 6, 44, "User 4's note", star=False)
-        add_personal_note(12, 6, 43, "User 3's other note")
+        add_personal_note(11, 6, 74, "User 4's note", star=False)
+        add_personal_note(12, 6, 73, "User 3's other note")
         self.set_models(data)
 
         # merge users 3 and 4 into 2
@@ -2028,14 +2028,14 @@ class UserMergeTogether(BaseVoteTestCase):
                         "list_of_speakers_id": base_id,
                         "initial_time": 5,
                         "remaining_time": 5,
-                        "meeting_id": 1,
+                        "meeting_id": meeting_id,
                     },
                     f"structure_level_list_of_speakers/{base_id * 2}": {
                         "structure_level_id": meeting_id + 3,
                         "list_of_speakers_id": base_id,
                         "initial_time": 5,
                         "remaining_time": 5,
-                        "meeting_id": 1,
+                        "meeting_id": meeting_id,
                     },
                 }
             )

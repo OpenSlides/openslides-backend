@@ -6,6 +6,7 @@ from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, InternalHelper
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
+from openslides_backend.shared.exceptions import BadCodingException
 from openslides_backend.shared.typing import Model
 
 from .base import BaseActionTestCase
@@ -65,21 +66,29 @@ class BaseGenericTestCase(BaseActionTestCase):
         InternalHelper.MODELS = yaml.safe_load(yml)
 
         (
+            enum_definions,
             pre_code,
             table_name_code,
             view_name_code,
             alter_table_code,
             final_info_code,
             missing_handled_attributes,
+            missing_handled_collections_meta_attributes,
             im_table_code,
             create_trigger_partitioned_sequences_code,
             create_trigger_1_1_relation_not_null_code,
             create_trigger_1_n_relation_not_null_code,
             create_trigger_n_m_relation_not_null_code,
             create_trigger_unique_ids_pair_code,
+            create_trigger_equal_fields_code,
             create_trigger_notify_code,
             errors,
         ) = GenerateCodeBlocks.generate_the_code()
+
+        if errors:
+            raise BadCodingException(
+                f"Failed relational schema generation: {'; '.join(errors)}"
+            )
 
         sql = (
             table_name_code
@@ -90,6 +99,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             + create_trigger_1_n_relation_not_null_code
             + create_trigger_n_m_relation_not_null_code
             + create_trigger_unique_ids_pair_code
+            + create_trigger_equal_fields_code
         )
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:

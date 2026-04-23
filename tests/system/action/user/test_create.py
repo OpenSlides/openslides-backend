@@ -326,7 +326,8 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            response.json["message"] == "A user with the username admin already exists."
+            response.json["message"]
+            == "user/2: User with username 'admin' already exists."
         )
 
     def test_member_number_already_exists(self) -> None:
@@ -342,7 +343,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "A user with the member_number 14m4m3m832 already exists."
+            == "user/3: User with member_number '14m4m3m832' already exists."
         )
 
     def test_member_number_none(self) -> None:
@@ -352,6 +353,14 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"member_number": None})
+
+    def test_member_number_empty(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "user2", "member_number": ""},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("This member_number is forbidden.", response.json["message"])
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         self.create_meeting()
@@ -1195,7 +1204,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"username": "timtari", "is_active": True},
-                "user/3": {"username": "timtari", "is_active": True},
+                "user/3": {"username": "sarah", "is_active": True},
             }
         )
         response = self.request(
@@ -1638,7 +1647,8 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "A user with the saml_id 123saml already exists.", response.json["message"]
+            "user/3: User with saml_id '123saml' already exists.",
+            response.json["message"],
         )
 
     def test_create_saml_id_but_duplicate_error2(self) -> None:
@@ -1653,7 +1663,8 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "A user with the username 123saml already exists.", response.json["message"]
+            "user/3: User with username '123saml' already exists.",
+            response.json["message"],
         )
 
     def test_create_anonymous_group_id(self) -> None:

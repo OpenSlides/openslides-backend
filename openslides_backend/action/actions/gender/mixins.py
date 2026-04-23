@@ -1,23 +1,8 @@
 from typing import Any
 
 from openslides_backend.action.action import Action
-from openslides_backend.shared.exceptions import ActionException, PermissionException
+from openslides_backend.shared.exceptions import PermissionException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
-
-from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
-
-
-class GenderUniqueMixin(CheckUniqueInContextMixin):
-    def validate_instance(self, instance: dict[str, Any]) -> None:
-        if instance.get("name") == "":
-            raise ActionException("Empty gender name not allowed.")
-        super().validate_instance(instance)
-        self.check_unique_in_context(
-            "name",
-            instance.get("name", ""),
-            "Gender '" + instance.get("name", "") + "' already exists.",
-            instance.get("id"),
-        )
 
 
 class GenderPermissionMixin(Action):

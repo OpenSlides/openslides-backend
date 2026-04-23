@@ -1,11 +1,12 @@
 from psycopg import sql
 
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import Field
 from openslides_backend.shared.exceptions import BadCodingException, InvalidFormat
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 
+from .interface import SqlArguments
 from .mapped_fields import MappedFields
-
-SqlArguments = list[str | int]
 
 
 # TODO move insert and select creation into this class?
@@ -14,16 +15,49 @@ class SqlQueryHelper:
         self, mapped_fields: MappedFields
     ) -> sql.Composed:
         """
-        returns an sql.Composed string of the mapped fields.
-        returns only * if all fields are needed.
+        Returns an sql.Composed string:
+        - of the mapped fields if mapped fields are provided
+        - of all the fields explicitly if any of them must be fetched with a custom sql and the whole model is required
+        Returns only * otherwise.
         """
-        if mapped_fields.needs_whole_model:
-            # at least one collection needs all fields, so we just select data and
-            # calculate the mapped_fields later
+        unique_fields = (
+            [] if mapped_fields.needs_whole_model else mapped_fields.unique_fields
+        )
+        enum_array_sql = {}
+
+        def create_sql_for_enum_array(collection: str, field: str) -> sql.Composed:
+            return sql.Composed(
+                [
+                    sql.SQL("array(SELECT unnest("),
+                    sql.Identifier(collection),
+                    sql.SQL("."),
+                    sql.Identifier(field),
+                    sql.SQL(f")::text) AS {field}"),
+                ]
+            )
+
+        if collection := mapped_fields.collection:
+            model = model_registry.get(collection)
+            if model:
+                enum_array_sql = {
+                    field.get_own_field_name(): create_sql_for_enum_array(
+                        collection, field.get_own_field_name()
+                    )
+                    for field in model().get_enum_array_fields()
+                }
+                if enum_array_sql and not unique_fields:
+                    unique_fields = [
+                        val.get_own_field_name() for val in model().get_fields()
+                    ]
+
+        if not unique_fields:
             return sql.SQL("*")  # type: ignore
         else:
             return sql.SQL(", ").join(
-                sql.Identifier(field) for field in {*mapped_fields.unique_fields, "id"}
+                [
+                    enum_array_sql.get(field) or sql.Identifier(field)
+                    for field in {*unique_fields, "id"}
+                ]
             )
 
     def build_filter_query(
@@ -41,6 +75,7 @@ class SqlQueryHelper:
         arguments: SqlArguments = []
 
         if mapped_fields:
+            mapped_fields.collection = collection
             aggregate_function = self.build_select_from_mapped_fields(mapped_fields)
         query = sql.SQL("SELECT {columns} FROM {view}").format(
             view=sql.Identifier(collection),
@@ -48,7 +83,7 @@ class SqlQueryHelper:
         )
         if filter_:
             query += sql.SQL(" WHERE ({filter_str})").format(
-                filter_str=self.build_filter_str(filter_, arguments)
+                filter_str=self.build_filter_str(filter_, arguments, collection)
             )
         return (
             query,
@@ -59,6 +94,7 @@ class SqlQueryHelper:
         self,
         filter_: Filter,
         arguments: SqlArguments,
+        collection: str,
         table_alias: str = "",
     ) -> sql.Composed | sql.Identifier:
         """
@@ -68,20 +104,24 @@ class SqlQueryHelper:
         if isinstance(filter_, Not):
             return sql.SQL("NOT ({filter_str})").format(
                 filter_str=self.build_filter_str(
-                    filter_.not_filter, arguments, table_alias
+                    filter_.not_filter, arguments, collection, table_alias
                 )
             )
         elif isinstance(filter_, Or):
             return sql.SQL(" OR ").join(
                 sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                    filter_str=self.build_filter_str(
+                        part, arguments, collection, table_alias
+                    )
                 )
                 for part in filter_.or_filter
             )
         elif isinstance(filter_, And):
             return sql.SQL(" AND ").join(
                 sql.SQL("({filter_str})").format(
-                    filter_str=self.build_filter_str(part, arguments, table_alias)
+                    filter_str=self.build_filter_str(
+                        part, arguments, collection, table_alias
+                    )
                 )
                 for part in filter_.and_filter
             )
@@ -129,13 +169,15 @@ class SqlQueryHelper:
                 elif filter_.operator in ("=", "!=") and isinstance(
                     filter_.value, list
                 ):
+                    field = model_registry[collection]().get_field(filter_.field)
                     condition = sql.SQL(
                         "{table_column} {filter_operator} %s{type}"
                     ).format(
                         table_column=table_column,
                         filter_operator=sql.SQL(filter_.operator),
                         type=self.get_array_type(
-                            type(next(iter(filter_.value))) if filter_.value else int,
+                            field,
+                            (type(next(iter(filter_.value))) if filter_.value else int),
                         ),
                     )
                 else:
@@ -148,10 +190,11 @@ class SqlQueryHelper:
         else:
             raise BadCodingException("Invalid filter type")
 
-    def get_array_type(self, list_type: type) -> sql.Composable:
+    def get_array_type(self, field: Field, list_type: type) -> sql.Composable:
         if list_type == int:
             return sql.SQL("::integer[]")
+        elif enum_name := getattr(field, "enum_name", None):
+            return sql.SQL(f"::{enum_name}")
         elif list_type == str:
             return sql.SQL("::text[]")
-        else:
-            raise ValueError("Only integer or string lists are supported.")
+        raise ValueError("Only integer, string or enum lists are supported.")
