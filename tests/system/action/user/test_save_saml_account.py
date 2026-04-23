@@ -1227,7 +1227,9 @@ class UserAddToGroup(UserBaseSamlAccount):
             * user stays in group 2
             * structure_level/1 left untouched structure_level/2 added
         """
-        # self.meeting_mappers[0]["groups"] = [{"default": "Default"}]
+        self.meeting_mappers[0]["mappings"]["groups"] = [  # type: ignore
+            {"default": "Staff"}
+        ]
         self.set_user_groups(1, [2])
         self.set_models(
             {
@@ -1237,6 +1239,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                     "meeting_user_ids": [1],
                     "meeting_id": 1,
                 },
+                "group/42": {"name": "Staff", "external_id": "Staff"},
                 "meeting_user/1": {"structure_level_ids": [1]},
             }
         )
@@ -1247,7 +1250,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "member_number": "LV_Königholz",
                 "email": "holzi@holz.de",
                 "participant_number": "MG_1254",
-                "idp_group_attribute": "",
+                "groups": "Admin",  # should be ignored
                 "structure": "structure2",
             },
         )
@@ -1265,7 +1268,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             "meeting_user/1",
             {
                 "user_id": 1,
-                "group_ids": [2, 1],
+                "group_ids": [2],
                 "meeting_id": 1,
                 "structure_level_ids": [1, 2],
             },
@@ -1281,6 +1284,49 @@ class UserAddToGroup(UserBaseSamlAccount):
             "structure_level/2", {"name": "structure2", "meeting_user_ids": [1]}
         )
         self.assert_model_not_exists("structure_level/3")
+
+    def test_update_user_participant_already_in_group_updates_default(self) -> None:
+        """
+        Shows when no idp group is send but mapping with inexistent group set:
+            * user stays in group 2 and shouldn't get a default group
+        """
+        self.set_user_groups(1, [2])
+        self.set_models({"organization/1": self.organization})
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["admin_saml"],
+                "member_number": "LV_Königholz",
+                "email": "holzi@holz.de",
+                "participant_number": "MG_1254",
+                "groups": "Admin",  # should be ignored
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 1,
+                "group_ids": [2],
+                "meeting_id": 1,
+            },
+        )
+        self.assert_model_not_exists("meeting_user/2")
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": None, "external_id": "Default"}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
 
     def test_update_user_add_group_to_existing_groups(self) -> None:
         """group added, user created and logged in"""

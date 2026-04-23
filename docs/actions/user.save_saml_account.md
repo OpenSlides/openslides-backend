@@ -37,7 +37,7 @@ Extras to do on creation:
 - The saml attribute mapping can have a list of 'meeting_mappers' that can be used to assign users meeting related data. (See example below. A full example can be found in the [organization.update.md](organization.update.md))
     - A mapper can be given a 'name' for debugging purposes.
     - The 'external_id' maps to the meeting and is required (logged as warning if meeting does not exist). Multiple mappers can map to the same meeting.
-    - If 'allow_update' is set to false, the mapper is only used if the user does not already exist in the meeting. If it is not given it defaults to true. This option should only be used if you are sure that users aren't deleted from meetings. Alternatively they can be locked out from the meeting.
+    - If 'allow_update' is set to false, the mapper is only used to create a new participant if the user does not already exist in the meeting. If it is not given it defaults to true. This option should only be used if you are sure that users aren't deleted from meetings. Alternatively they can be locked out from the meeting.
     - Mappers are only used if every condition in the list of 'conditions' resolves to true. For this 
         - the value for 'attribute' in the payload data has to match the string or regex given in 'condition'. 
         - if no condition is given this defaults to true. 
@@ -50,7 +50,7 @@ Extras to do on creation:
 - On conflict of multiple mappers mappings on a same meetings field the last given mappers data for that field is used. Exception to this are groups and structure levels. Their data is combined. 
 - Values for groups and structure levels can additionally be given in comma separated lists composed as a single string.
 - Values for groups are interpreted as their external ID and structure levels as their name within that meeting.
-- If no group exists for a meeting and no default is given, the meetings default group is used. (Logged as warning)
+- If no group exists for a newly created participant and no default is given, the meetings default group is used. (Logged as warning)
 - If a structure level does not exist, it is created.
 - Vote weights need to be given as 6 digit decimal strings.
 

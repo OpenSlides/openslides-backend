@@ -362,12 +362,15 @@ class UserSaveSamlAccount(
                 )
             ):
                 continue
-            if is_update and get_meeting_user(
-                self.datastore,
-                meeting_id,
-                user_id,
-                ["id"],
-            ):
+            db_meeting_user_exists = bool(
+                get_meeting_user(
+                    self.datastore,
+                    meeting_id,
+                    user_id,
+                    ["id"],
+                )
+            )
+            if is_update and db_meeting_user_exists:
                 instance_meeting_user = instance_meeting_user_data.get("for_update")
             else:
                 instance_meeting_user = instance_meeting_user_data.get("for_create")
@@ -378,10 +381,13 @@ class UserSaveSamlAccount(
                     names = sorted(
                         instance_meeting_user.pop(saml_meeting_user_field, [])
                     )
-                    if saml_meeting_user_field == "groups":
-                        ids = self.get_group_ids(names, meeting)
-                    elif saml_meeting_user_field == "structure_levels":
-                        ids = self.get_structure_level_ids(names, meeting)
+                    match saml_meeting_user_field:
+                        case "groups":
+                            ids = self.get_group_ids(
+                                names, meeting, db_meeting_user_exists
+                            )
+                        case "structure_levels":
+                            ids = self.get_structure_level_ids(names, meeting)
                     if ids:
                         instance_meeting_user[
                             f"{saml_meeting_user_field.rstrip('s')}_ids"
@@ -408,11 +414,13 @@ class UserSaveSamlAccount(
                 ["id", "group_ids", "structure_level_ids"],
             ):
                 for field_name in ["group_ids", "structure_level_ids"]:
+                    # TODO use sets
                     if old_ids := meeting_user_db.get(field_name):
                         ids = meeting_user.get(field_name, [])
                         for _id in ids:
                             if _id not in old_ids:
-                                meeting_user[field_name] = old_ids + [_id]
+                                old_ids.append(_id)
+                        meeting_user[field_name] = old_ids
 
     def get_field_data(
         self,
@@ -490,7 +498,9 @@ class UserSaveSamlAccount(
                 f"Meeting mapper: {mapper_name} could not find value in idp data for fields: {fields}. Using default if available."
             )
 
-    def get_group_ids(self, group_names: list[str], meeting: dict) -> list[int]:
+    def get_group_ids(
+        self, group_names: list[str], meeting: dict, db_meeting_user_exists: bool
+    ) -> list[int]:
         """
         Gets the group ids from given group names in that meeting.
         If none of the groups exists in the meeting, the meetings default group is returned.
@@ -510,13 +520,18 @@ class UserSaveSamlAccount(
             if len(groups) > 0:
                 return sorted(groups)
         if default_group_id := meeting["default_group_id"]:
-            external_meeting_id = meeting["external_id"]
-            self.logger.warning(
-                f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"
-            )
-            return [default_group_id]
+            if db_meeting_user_exists:
+                return []
+            else:
+                external_meeting_id = meeting["external_id"]
+                self.logger.warning(
+                    f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"
+                )
+                return [default_group_id]
         else:
-            assert False
+            raise ActionException(
+                "Invalid data state: mapped meeting does not have default group."
+            )
 
     def get_structure_level_ids(
         self, structure_level_names: list[str], meeting: dict[str, Any]
