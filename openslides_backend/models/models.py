@@ -1658,8 +1658,8 @@ class Motion(Model):
         is_primary=True,
         write_fields=(
             "nm_motion_identical_motion_ids_motion_t",
-            "identical_motion_id_2",
             "identical_motion_id_1",
+            "identical_motion_id_2",
             [],
         ),
     )
