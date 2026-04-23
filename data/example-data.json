@@ -387,6 +387,17 @@
                 2,
                 3
             ],
+            "ballot_ids": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+            ],
             "poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "poll_ballot_paper_number": 8,
             "poll_sort_poll_result_by_votes": true,
@@ -2072,56 +2083,64 @@
             "weight": "2.000000",
             "value": "yes",
             "split": false,
-            "poll_id": 1
+            "poll_id": 1,
+            "meeting_id": 1
         },
         "2": {
             "id": 2,
             "weight": "4.000000",
             "value": "no",
             "split": false,
-            "poll_id": 1
+            "poll_id": 1,
+            "meeting_id": 1
         },
         "3": {
             "id": 3,
             "weight": "1.000000",
             "value": "abstain",
             "split": false,
-            "poll_id": 1
+            "poll_id": 1,
+            "meeting_id": 1
         },
         "4": {
             "id": 4,
             "value": "{\"1\":\"yes\",\"2\":\"abstain\",\"3\":\"yes\"}",
             "weight": "3.000000",
             "split": false,
-            "poll_id": 5
+            "poll_id": 5,
+            "meeting_id": 1
         },
         "5": {
             "id": 5,
             "value": "{\"1\":\"no\",\"2\":\"yes\",\"3\":\"yes\"}",
             "weight": "7.000000",
             "split": false,
-            "poll_id": 5
+            "poll_id": 5,
+            "meeting_id": 1
         },
         "6": {
             "id": 6,
             "value": "{\"1\":\"yes\",\"2\":\"no\",\"3\":\"no\"}",
             "weight": "2.000000",
             "split": false,
-            "poll_id": 5
+            "poll_id": 5,
+            "meeting_id": 1
         },
         "7": {
             "id": 7,
             "value": "{\"1\":\"no\",\"2\":\"no\",\"3\":\"yes\"}",
             "weight": "2.000000",
             "split": false,
-            "poll_id": 5
+            "poll_id": 5,
+            "meeting_id": 1
         },
         "8": {
             "id": 8,
             "value": "{\"1\":\"abstain\",\"2\":\"yes\",\"3\":\"abstain\"}",
             "weight": "1.000000",
             "split": false,
-            "poll_id": 5
+            "poll_id": 5,
+            "meeting_id": 1
         },
         "9": {
             "id": 9,
@@ -2130,7 +2149,8 @@
             "acting_meeting_user_id": 1,
             "represented_meeting_user_id": 1,
             "split": false,
-            "poll_id": 3
+            "poll_id": 3,
+            "meeting_id": 1
         }
     },
     "assignment": {
