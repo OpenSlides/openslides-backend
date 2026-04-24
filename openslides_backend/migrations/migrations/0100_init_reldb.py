@@ -261,7 +261,7 @@ def check_prerequisites(curs: Cursor[DictRow]) -> str:
     if not is_truthy(i_read_docs):
         errors += f"{i_read_docs} is no acceptable value for MIG0100_I_READ_DOCS"
     pg_time_zones = [
-        tz["abbrev"] for tz in curs.execute("SELECT abbrev FROM pg_timezone_names;")
+        tz["name"] for tz in curs.execute("SELECT name FROM pg_timezone_names;")
     ]
     if time_zone not in (pg_time_zones):
         errors += f"{time_zone} is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
