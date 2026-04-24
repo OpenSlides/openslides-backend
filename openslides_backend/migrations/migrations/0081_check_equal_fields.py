@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from datastore.migrations import BaseModelMigration
@@ -27,7 +26,7 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         relations = self.get_relations()
-        errors: list[str] = []
+        errors: set[str] = set()
         for ((collection1, field1), (collection2, field2)), (
             eq_fields,
             field_def1,
@@ -72,11 +71,11 @@ class Migration(BaseModelMigration):
                             ]
                         )
                     )
-                    errors.append(
+                    errors.add(
                         f"Detected different equal_fields: {the_problem} for equal_fields {tuple(sorted_eqfs)}"
                     )
         if len(errors):
-            raise MigrationException(errors)
+            raise MigrationException(list(errors))
         return None
 
     def find_matches(
@@ -161,7 +160,7 @@ class Migration(BaseModelMigration):
                             list({field1, *eq_fields}),
                         )
                     ]
-                )
+                )[collection1]
             )
         if other_affected_model_ids2 := self.get_other_affected_model_ids(
             field1, field_def1, affected_models1, collection2, affected_models2
@@ -181,7 +180,7 @@ class Migration(BaseModelMigration):
                                 ),
                             )
                         ]
-                    )
+                    )[collection2]
                 )
             else:
                 affected_models2.update(
@@ -193,7 +192,7 @@ class Migration(BaseModelMigration):
                                 list({field2, *eq_fields}),
                             )
                         ]
-                    )
+                    )[collection2]
                 )
         return affected_models1, affected_models2
 
@@ -224,8 +223,8 @@ class Migration(BaseModelMigration):
                     coll, id_ = collection_and_id_from_fqid(fqid)
                     if coll == collection2 and id_ not in affected_models2:
                         missing_ids.add(id_)
-            elif (id_ := (model.get(field1))) and id_ not in affected_models2:
-                missing_ids.add(id_)
+            elif (id_val := (model.get(field1))) and id_val not in affected_models2:
+                missing_ids.add(id_val)
         return sorted(missing_ids)
 
     def get_relations(
@@ -271,13 +270,16 @@ class Migration(BaseModelMigration):
                                     collection == "user" or back_collection == "user"
                                 ) and "meeting_id" in full_eq:
                                     full_eq.remove("meeting_id")
-                                if full_eq and self.is_a_main_relation(
-                                    collection,
-                                    field,
-                                    field_def,
-                                    back_collection,
-                                    back_field,
-                                    back_field_def,
+                                if full_eq and (
+                                    self.is_a_main_relation(
+                                        collection,
+                                        field,
+                                        field_def,
+                                        back_collection,
+                                        back_field,
+                                        back_field_def,
+                                    )
+                                    or "equal_fields" not in back_field_def
                                 ):
                                     if collection == "meeting":
                                         relations[
@@ -337,5 +339,5 @@ class Migration(BaseModelMigration):
         if list_a != list_b:
             return list_b
         if coll_a == coll_b:
-            return field_a < field_b
+            return field_a <= field_b
         return coll_a < coll_b
