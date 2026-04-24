@@ -61,7 +61,9 @@ class Client(WerkzeugClient):
             )
         except AuthenticateException as e:
             raise AuthenticationException(str(e))
-        assert response.status_code == 200
+        assert (
+            response.status_code == 200
+        ), f"Auth Service: {response.status_code} {response.reason} {response.content.decode()}"
         # save access token and refresh id for subsequent requests
         self.update_auth_data(
             {
