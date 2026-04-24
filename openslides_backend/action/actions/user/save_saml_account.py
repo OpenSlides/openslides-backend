@@ -421,6 +421,10 @@ class UserSaveSamlAccount(
                             if _id not in old_ids:
                                 old_ids.append(_id)
                         meeting_user[field_name] = old_ids
+                    
+                default_group_id = self.datastore.get(f"meeting/{meeting_id}", ["default_group_id"])["default_group_id"]
+                if len(meeting_user["group_ids"]) > 1 and default_group_id in meeting_user["group_ids"]:
+                    meeting_user["group_ids"].remove(default_group_id)
 
     def get_field_data(
         self,
@@ -519,15 +523,15 @@ class UserSaveSamlAccount(
             )
             if len(groups) > 0:
                 return sorted(groups)
-        if default_group_id := meeting["default_group_id"]:
-            if db_meeting_user_exists:
-                return []
-            else:
-                external_meeting_id = meeting["external_id"]
-                self.logger.warning(
-                    f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"
-                )
-                return [default_group_id]
+        # Because we don't know the db instance here, we can't determine if the meeting_user has no groups which leads to remaining without any group.
+        if db_meeting_user_exists:
+            return []
+        elif default_group_id := meeting["default_group_id"]:
+            external_meeting_id = meeting["external_id"]
+            self.logger.warning(
+                f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"
+            )
+            return [default_group_id]
         else:
             raise ActionException(
                 "Invalid data state: mapped meeting does not have default group."

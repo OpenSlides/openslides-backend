@@ -1329,7 +1329,12 @@ class UserAddToGroup(UserBaseSamlAccount):
         )
 
     def test_update_user_add_group_to_existing_groups(self) -> None:
-        """group added, user created and logged in"""
+        """
+        Shows:
+            * group added
+            * user created and logged in
+            * default group removed as it's not legal next to other groups
+        """
         self.set_user_groups(1, [1, 3])
         response = self.request(
             "user.save_saml_account",
@@ -1354,7 +1359,7 @@ class UserAddToGroup(UserBaseSamlAccount):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"user_id": 1, "group_ids": [1, 3, 2], "meeting_id": 1}
+            "meeting_user/1", {"user_id": 1, "group_ids": [3, 2], "meeting_id": 1}
         )
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "group_ids": [5], "meeting_id": 4}
