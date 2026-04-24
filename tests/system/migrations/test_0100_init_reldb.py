@@ -134,7 +134,7 @@ For more information, see
 
     def setUp(self):
         # 0) Set up environment
-        os.environ["MIG0100_TIMEZONE"] = "CET"
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
         os.environ["MIG0100_I_READ_DOCS"] = "YES"
 
         # 1) Create old idempotent key-value-store schema and relational schema on top
@@ -334,12 +334,12 @@ For more information, see
                 assert cur.execute(
                     "SELECT start_time, end_time, time_zone FROM meeting_t;"
                 ).fetchone() == {
-                    # Meeting begins and ends at midnight CET.
-                    # UTC value is epxected to be shifted by the CET offset one hour or two hours considering dst.
+                    # Meeting begins and ends at midnight Europe/Berlin.
+                    # UTC value is epxected to be shifted by the Europe/Berlin offset one hour or two hours considering dst.
                     # Client will calculate the display time from UTC considering the meetings `time_zone`.
                     "start_time": datetime(2020, 1, 17, 23, tzinfo=ZoneInfo("UTC")),
                     "end_time": datetime(2020, 6, 17, 22, tzinfo=ZoneInfo("UTC")),
-                    "time_zone": "CET",
+                    "time_zone": "Europe/Berlin",
                 }
         # END TEST CASES
 
@@ -495,7 +495,7 @@ For more information, see
             "success": True,
             "status": MigrationState.MIGRATION_PREPARING,
             "output": self.EXPECTED_INTRODUCTION
-            + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
 
         # Test before and after setting migration states. (Committing points of transaction)
@@ -506,7 +506,7 @@ For more information, see
             "stats": {
                 "status": MigrationState.MIGRATION_PREPARING,
                 "output": self.EXPECTED_INTRODUCTION
-                + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
+                + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -578,7 +578,7 @@ For more information, see
             "success": True,
             "status": MigrationState.MIGRATION_PREPARING,
             "output": self.EXPECTED_INTRODUCTION
-            + "For setting organization and meeting time zones using 'CET'.\nmigration started\n",
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
