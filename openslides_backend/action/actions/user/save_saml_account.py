@@ -363,12 +363,15 @@ class UserSaveSamlAccount(
             ):
                 continue
             db_meeting_user_exists = bool(
-                get_meeting_user(
-                    self.datastore,
-                    meeting_id,
-                    user_id,
-                    ["id"],
-                )
+                (
+                    get_meeting_user(
+                        self.datastore,
+                        meeting_id,
+                        user_id,
+                        ["group_ids"],
+                    )
+                    or {}
+                ).get("group_ids")
             )
             if is_update and db_meeting_user_exists:
                 instance_meeting_user = instance_meeting_user_data.get("for_update")
@@ -421,9 +424,14 @@ class UserSaveSamlAccount(
                             if _id not in old_ids:
                                 old_ids.append(_id)
                         meeting_user[field_name] = old_ids
-                    
-                default_group_id = self.datastore.get(f"meeting/{meeting_id}", ["default_group_id"])["default_group_id"]
-                if len(meeting_user["group_ids"]) > 1 and default_group_id in meeting_user["group_ids"]:
+
+                default_group_id = self.datastore.get(
+                    f"meeting/{meeting_id}", ["default_group_id"]
+                )["default_group_id"]
+                if (
+                    len(meeting_user["group_ids"]) > 1
+                    and default_group_id in meeting_user["group_ids"]
+                ):
                     meeting_user["group_ids"].remove(default_group_id)
 
     def get_field_data(

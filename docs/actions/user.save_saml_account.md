@@ -51,6 +51,7 @@ Extras to do on creation:
 - Values for groups and structure levels can additionally be given in comma separated lists composed as a single string.
 - Values for groups are interpreted as their external ID and structure levels as their name within that meeting.
 - If no group exists for a newly created participant and no default is given, the meetings default group is used. (Logged as warning)
+- For consistency with client behavior the meetings default group is removed from meeting_user if more than one group would be in the final result.
 - If a structure level does not exist, it is created.
 - Vote weights need to be given as 6 digit decimal strings.
 
