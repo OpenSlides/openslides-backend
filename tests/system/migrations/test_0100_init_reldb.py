@@ -213,7 +213,7 @@ class BaseMigrationTestCase(TestCase):
             if error_message:
                 assert result, error_message
             else:
-                assert result
+                assert result, f"Database did not contain a result for this query. {query}"
             if value is not None:
                 assert result == value
 
@@ -293,9 +293,9 @@ class BaseMigrationTestCase(TestCase):
 
                 # 6.7) Recreated triggers
                 for trigger_name in [
-                    "tr_i_topic_agenda_item_id",  # check_not_null_for_1_1
-                    "tr_i_meeting_default_projector_agenda_item_list_ids",  # check_not_null_for_relation_lists
-                    "restrict_motion_identical_motion_ids",  # check_unique_ids_pair
+                    "tr_i_not_null_topic_agenda_item_id",  # check_not_null_for_1_1
+                    "tr_i_not_null_meeting_default_projector_agenda_item_list_ids",  # check_not_null_for_relation_lists
+                    "tr_restrict_unique_ids_pair_motion_identical_motion_ids",  # check_unique_ids_pair
                     "tr_generate_sequence_motion_block_sequential_number",
                     "tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids_t",
                 ]:

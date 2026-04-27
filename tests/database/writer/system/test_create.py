@@ -301,7 +301,7 @@ def test_create_error_1_1_not_null(
             )
             conn.commit()
     assert (
-        "Trigger tr_i_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id"
+        "Trigger tr_i_not_null_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id"
         in e_info.value.args[0]
     )
 
@@ -319,7 +319,7 @@ def test_create_error_1_n_not_null(
             extended_database.write(create_write_requests(events))
             conn.commit()
     assert (
-        "Trigger tr_i_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids"
+        "Trigger tr_i_not_null_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids"
         in e_info.value.args[0]
     )
 
@@ -356,7 +356,7 @@ def test_create_error_n_m_not_null(
             )
             conn.commit()
         assert (
-            "Trigger tr_i_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids"
+            "Trigger tr_i_not_null_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids"
             in e_info.value.args[0]
         )
 
