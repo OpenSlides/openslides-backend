@@ -142,10 +142,10 @@ class ActionHandler(BaseHandler):
 
                             def transform_to_list(
                                 tuple: tuple[WriteRequest | None, ActionResults | None],
-                            ) -> tuple[list[WriteRequest], ActionResults | None]:
+                            ) -> tuple[list[WriteRequest], ActionResults]:
                                 return (
                                     [tuple[0]] if tuple[0] is not None else [],
-                                    tuple[1],
+                                    tuple[1] if tuple[1] is not None else [],
                                 )
 
                             for element in payload:
