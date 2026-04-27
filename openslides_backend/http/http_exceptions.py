@@ -7,6 +7,7 @@ from werkzeug.exceptions import HTTPException as BaseHTTPException
 from werkzeug.exceptions import InternalServerError as BaseInternalServerError
 from werkzeug.exceptions import MethodNotAllowed as BaseMethodNotAllowed
 from werkzeug.exceptions import NotFound as BaseNotFound
+from werkzeug.exceptions import NotImplemented as BaseNotImplemented
 from werkzeug.exceptions import Unauthorized as BaseUnauthorized
 
 from openslides_backend.shared.exceptions import ViewException
@@ -61,4 +62,8 @@ class NotFound(HTTPException, BaseNotFound):
 
 
 class InternalServerError(HTTPException, BaseInternalServerError):
+    pass
+
+
+class InternalNotImplemented(HTTPException, BaseNotImplemented):
     pass

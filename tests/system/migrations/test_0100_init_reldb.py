@@ -7,10 +7,10 @@ from importlib import import_module
 from io import StringIO
 from threading import Lock
 from time import sleep
-from typing import Any, cast
-from unittest import TestCase
+from typing import Any
 from unittest.mock import DEFAULT as mockdefault
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 from meta.dev.src.generate_sql_schema import GenerateCodeBlocks
 from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
@@ -33,13 +33,14 @@ from openslides_backend.services.postgresql.db_connection_handling import (
     get_unpooled_db_connection,
     os_conn_pool,
 )
-from openslides_backend.shared.env import DEV_PASSWORD, Environment
+from openslides_backend.shared.env import DEV_PASSWORD
 from tests.conftest import OLD_TABLES, get_rel_db_table_names
 from tests.conftest_helper import (
     deactivate_notify_triggers,
     generate_sql_for_test_initiation,
 )
 from tests.system.action.util import get_internal_auth_header
+from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import AuthData, Client, Response
 
@@ -63,7 +64,7 @@ created_fqids: set()
 data: dict[str, any] = {}
 
 
-class BaseMigrationTestCase(TestCase):
+class TestMigration100(BaseMigrationTestCase):
     """
     Commentary:
         The test cases initially may seem to be spartanic caused by the lack of testing of integrity
@@ -80,6 +81,12 @@ class BaseMigrationTestCase(TestCase):
     auth: AuthenticationService
     # Save auth data as class variable
     auth_data: AuthData | None = None
+    MAX_WAIT = 15
+    EXPECTED_INTRODUCTION = """This is migration 100, part of the OpenSlides 4.3.0 release.
+This migration will fundamentally restructure all data.
+For more information, see
+  https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md
+\n"""
 
     def wait_for_lock(self, wait_lock: Lock, indicator_lock: Lock) -> Callable:
         """
@@ -101,6 +108,9 @@ class BaseMigrationTestCase(TestCase):
         # 8) Final Cleanup
         drop_db()
         cls.apply_test_relational_schema()
+        for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
+            if os.getenv(key):
+                del os.environ[key]
         super().tearDownClass()
 
     @staticmethod
@@ -114,18 +124,20 @@ class BaseMigrationTestCase(TestCase):
 
     def tearDown(self) -> None:
         migration_module.Sql_helper.offset = 0
-        MigrationHelper.table_translations = dict()
-        MigrationHelper.migrate_thread_stream = None
         # Reset tables to ensure that init sql doesn't write garbage.
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
                 for collection in self.used_collections:
                     curs.execute(f"DELETE FROM {collection}_t CASCADE;")
                     curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
+        super().tearDown()
 
     def setUp(self):
+        # 0) Set up environment
+        os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
+        os.environ["MIG0100_I_READ_DOCS"] = "YES"
+
         # 1) Create old idempotent key-value-store schema and relational schema on top
-        # self.drop_tables()
         drop_db()
         create_db()
         with get_new_os_conn() as conn:
@@ -134,12 +146,7 @@ class BaseMigrationTestCase(TestCase):
 
         # 1.1) Create services and login.
         self.app = create_action_test_application()
-        # self.logger = cast(MagicMock, self.app.logger)
-        self.services = self.app.services
-        self.env = cast(Environment, self.app.env)
-        self.auth = self.services.authentication()
         self.client = Client(self.app)
-        self.client.auth = self.auth  # type: ignore
         self.used_collections = set()
         self.setup_data()
         self.apply_test_relational_schema()
@@ -322,6 +329,18 @@ class BaseMigrationTestCase(TestCase):
 
                 # 6.9) Recreated views
                 assert_content_not_none("SELECT 1 from organization;")
+
+                # 6.10) Created correct timestamp
+                assert cur.execute(
+                    "SELECT start_time, end_time, time_zone FROM meeting_t;"
+                ).fetchone() == {
+                    # Meeting begins and ends at midnight Europe/Berlin.
+                    # UTC value is epxected to be shifted by the Europe/Berlin offset one hour or two hours considering dst.
+                    # Client will calculate the display time from UTC considering the meetings `time_zone`.
+                    "start_time": datetime(2020, 1, 17, 23, tzinfo=ZoneInfo("UTC")),
+                    "end_time": datetime(2020, 6, 17, 22, tzinfo=ZoneInfo("UTC")),
+                    "time_zone": "Europe/Berlin",
+                }
         # END TEST CASES
 
     def assert_indices_state(self, state: MigrationState) -> None:
@@ -337,6 +356,35 @@ class BaseMigrationTestCase(TestCase):
                         "migration_state": state,
                     } == row
 
+    def test_migration_fail_prerequisites(self) -> None:
+        del os.environ["MIG0100_TIMEZONE"]
+        del os.environ["MIG0100_I_READ_DOCS"]
+        response = self.request("migrate")
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        response = self.request("stats")
+        assert response.json["stats"] == {
+            "status": MigrationState.MIGRATION_REQUIRED,
+            "exception": "Pre check for migration 0100_init_reldb failed.\nRequired env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE",
+            "output": self.EXPECTED_INTRODUCTION,
+            "current_migration_index": 73,
+            "target_migration_index": 100,
+        }
+        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+
+    def test_migration_fail_time_zone(self) -> None:
+        os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
+        response = self.request("migrate")
+        self.wait_for_migration_thread(self.MAX_WAIT)
+        response = self.request("stats")
+        assert response.json["stats"] == {
+            "status": MigrationState.MIGRATION_REQUIRED,
+            "exception": "Pre check for migration 0100_init_reldb failed.\nJST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available.",
+            "output": self.EXPECTED_INTRODUCTION,
+            "current_migration_index": 73,
+            "target_migration_index": 100,
+        }
+        self.assert_indices_state(MigrationState.MIGRATION_REQUIRED)
+
     def test_migration_handler(self) -> None:
         # Prepare what manager would.
         MigrationHelper.load_migrations()
@@ -345,9 +393,7 @@ class BaseMigrationTestCase(TestCase):
         # 5) Call data_manipulation of module
         with get_new_os_conn() as conn:
             with conn.cursor() as curs:
-                handler = MigrationHandler(
-                    curs, self.env, self.services, self.app.logging
-                )
+                handler = MigrationHandler(curs, Mock(), Mock(), self.app.logging)
                 handler.execute_command("migrate")
                 self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
                 handler.execute_command("finalize")
@@ -357,17 +403,10 @@ class BaseMigrationTestCase(TestCase):
 
     def test_migration_manager(self) -> None:
         # 5) Call data_manipulation of module
-        manager = MigrationManager(self.env, self.services, self.app.logging)
+        manager = MigrationManager(Mock(), Mock(), self.app.logging)
         manager.handle_request({"cmd": "migrate", "verbose": True})
 
-        with get_new_os_conn() as conn:
-            with conn.cursor() as curs:
-                while (
-                    MigrationHelper.get_migration_state(curs)
-                    != MigrationState.FINALIZATION_REQUIRED
-                ):
-                    sleep(0.1)
-                    curs.connection.commit()
+        self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
 
         manager.handle_request({"cmd": "finalize", "verbose": True})
@@ -454,8 +493,9 @@ class BaseMigrationTestCase(TestCase):
         response = self.request("migrate")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_RUNNING,
-            "output": "started\n",
+            "status": MigrationState.MIGRATION_PREPARING,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
 
         # Test before and after setting migration states. (Committing points of transaction)
@@ -464,8 +504,9 @@ class BaseMigrationTestCase(TestCase):
         assert response.json == {
             "success": True,
             "stats": {
-                "status": MigrationState.MIGRATION_RUNNING,
-                "output": "started\n",
+                "status": MigrationState.MIGRATION_PREPARING,
+                "output": self.EXPECTED_INTRODUCTION
+                + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": response.json["stats"]["migratable_models"],
@@ -474,13 +515,24 @@ class BaseMigrationTestCase(TestCase):
         wait_lock.release()
 
         # Wait for migrate with a sec delay per iteration.
-        max_time = timedelta(seconds=15)
+        max_time = timedelta(seconds=self.MAX_WAIT)
         start = datetime.now()
-        while (response := self.request("progress").json) != {
+        expected_response = {
             "success": True,
             "status": MigrationState.FINALIZATION_REQUIRED,
-            "output": "finished\n",
-        }:
+            "output": "migration finished\n",
+        }
+        while not (
+            # fmt: off
+            (response := self.request("progress").json) == expected_response
+            or response == expected_response | {
+                "output": "100 of 161 models written to tables.\n161 of 161 models written to tables.\nmigration finished\n",
+            }
+            or response == expected_response | {
+                "output": "161 of 161 models written to tables.\nmigration finished\n",
+            }
+            # fmt: on
+        ):
             sleep(0.1)
             if datetime.now() - start > max_time:
                 raise Exception(
@@ -524,12 +576,13 @@ class BaseMigrationTestCase(TestCase):
         response = self.request("finalize")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_RUNNING,
-            "output": "started\n",
+            "status": MigrationState.MIGRATION_PREPARING,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
 
         # Wait for migrate with a sec delay per iteration. TODO centralize this
-        max_time = timedelta(seconds=15)
+        max_time = timedelta(seconds=self.MAX_WAIT)
         start = datetime.now()
         while (response := self.request("migrate").json) != {
             "success": True,

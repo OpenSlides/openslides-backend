@@ -3,6 +3,7 @@ import os
 import sys
 from json import dumps
 
+import openslides_backend.models.models  # noqa
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
