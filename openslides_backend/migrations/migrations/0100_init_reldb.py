@@ -3,12 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
-<<<<<<< HEAD
 from typing import Any
-=======
-from typing import Any, cast
 from zoneinfo import ZoneInfo
->>>>>>> 684d1b6c (Migration 100 guided (#3356))
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
