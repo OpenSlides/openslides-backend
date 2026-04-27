@@ -1,15 +1,16 @@
-from typing import Any
+from typing import Any, cast
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core import GetManyRequestPart
 from datastore.writer.core.write_request import BaseRequestEvent
 
-from cli.util.util import open_yml_file
-from openslides_backend.shared.patterns import (
-    collection_and_id_from_fqid,
-    collection_from_collectionfield,
-    field_from_collectionfield,
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import (
+    BaseRelationField,
+    GenericRelationField,
+    GenericRelationListField,
 )
+from openslides_backend.shared.patterns import collection_and_id_from_fqid
 
 from ...shared.filters import And, FilterOperator
 from ..exceptions import MigrationException
@@ -109,8 +110,7 @@ class Migration(BaseModelMigration):
         return matches
 
     def get_relation_flags(self, field_def: dict[str, Any]) -> tuple[bool, bool]:
-        typ: str = field_def["type"]
-        return typ.startswith("generic-"), typ.endswith("-list")
+        return field_def["is_generic"], field_def["is_list_relation"]
 
     def get_affected_models(
         self,
@@ -204,11 +204,10 @@ class Migration(BaseModelMigration):
         collection2: str,
         affected_models2: dict[int, dict[str, Any]],
     ) -> list[int]:
-        typ: str = field_def1["type"]
-        is_generic = typ.startswith("generic-")
+        is_generic = field_def1["is_generic"]
         missing_ids: set[int] = set()
         for model in affected_models1.values():
-            if typ.endswith("-list"):
+            if field_def1["is_list_relation"]:
                 for entry in model.get(field1) or []:
                     if is_generic:
                         coll, id_ = collection_and_id_from_fqid(entry)
@@ -233,7 +232,30 @@ class Migration(BaseModelMigration):
         tuple[tuple[str, str], tuple[str, str]],
         tuple[set[str], dict[str, Any], dict[str, Any]],
     ]:
-        self.models = open_yml_file("./meta/models.yml")
+        self.models: dict[str, dict[str, dict[str, Any]]] = {
+            collection: {
+                field.own_field_name: (
+                    {
+                        "to": cast(BaseRelationField, field).to,
+                        "equal_fields": cast(BaseRelationField, field).equal_fields,
+                        "is_relation": True,
+                        "is_generic": isinstance(field, GenericRelationField)
+                        or isinstance(field, GenericRelationListField),
+                        "is_list_relation": cast(
+                            BaseRelationField, field
+                        ).is_list_field,
+                    }
+                    if hasattr(field, "to")
+                    else {
+                        "is_relation": False,
+                        "is_generic": False,
+                        "is_list_relation": False,
+                    }
+                )
+                for field in Model().get_fields()
+            }
+            for collection, Model in model_registry.items()
+        }
         # main_coll, main_field, back_coll, back_field -> equal_fields, main_field_def, back_field_def
         relations: dict[
             tuple[tuple[str, str], tuple[str, str]],
@@ -243,15 +265,11 @@ class Migration(BaseModelMigration):
         for collection, fields in self.models.items():
             if collection != "_meta":
                 for field, field_def in fields.items():
-                    if eq := field_def.get("equal_fields"):
-                        if isinstance(eq, str):
-                            eq_fields: set[str] = {eq}
-                        else:
-                            eq_fields = {*eq}
-                        if "relation" in field_def["type"].split("-"):
+                    if eq := set(field_def.get("equal_fields", [])):
+                        if field_def["is_relation"]:
                             back_data = (
                                 self.get_generic_back_relation_data(field_def)
-                                if field_def["type"].startswith("generic-")
+                                if field_def["is_generic"]
                                 else self.get_non_generic_back_relation_data(field_def)
                             )
                         else:
@@ -260,12 +278,12 @@ class Migration(BaseModelMigration):
                             for back_field, back_field_def in back_field_data.items():
                                 if back_eq := back_field_def.get("equal_fields"):
                                     full_eq = (
-                                        {*eq_fields, back_eq}
+                                        {*eq, back_eq}
                                         if isinstance(back_eq, str)
-                                        else eq_fields.union(back_eq)
+                                        else eq.union(back_eq)
                                     )
                                 else:
-                                    full_eq = {*eq_fields}
+                                    full_eq = eq
                                 if (
                                     collection == "user" or back_collection == "user"
                                 ) and "meeting_id" in full_eq:
@@ -279,7 +297,7 @@ class Migration(BaseModelMigration):
                                         back_field,
                                         back_field_def,
                                     )
-                                    or "equal_fields" not in back_field_def
+                                    or not back_field_def.get("equal_fields")
                                 ):
                                     if collection == "meeting":
                                         relations[
@@ -296,30 +314,17 @@ class Migration(BaseModelMigration):
     def get_non_generic_back_relation_data(
         self, field_def: dict[str, Any]
     ) -> dict[str, dict[str, dict[str, Any]]]:
-        back_collection, back_field = field_def["to"].split("/")
+        back_collection, back_field = list(field_def["to"].items())[0]
         back_field_def = self.models[back_collection][back_field]
         return {back_collection: {back_field: back_field_def}}
 
     def get_generic_back_relation_data(
         self, field_def: dict[str, Any]
     ) -> dict[str, dict[str, dict[str, Any]]]:
-        if isinstance(field_def["to"], dict):
-            back_field = field_def["to"]["field"]
-            return {
-                coll: {back_field: self.models[coll][back_field]}
-                for coll in field_def["to"]["collections"]
-            }
-        else:
-            collection_to_field = {
-                collection_from_collectionfield(
-                    collectionfield
-                ): field_from_collectionfield(collectionfield)
-                for collectionfield in field_def["to"]
-            }
-            return {
-                coll: {field: self.models[coll][field]}
-                for coll, field in collection_to_field.items()
-            }
+        return {
+            coll: {back_field: self.models[coll][back_field]}
+            for coll, back_field in field_def["to"].items()
+        }
 
     def is_a_main_relation(
         self,
@@ -330,12 +335,12 @@ class Migration(BaseModelMigration):
         field_b: str,
         field_def_b: dict[str, Any],
     ) -> bool:
-        generic_a = field_def_a["type"].startswith("generic-")
-        generic_b = field_def_b["type"].startswith("generic-")
+        generic_a = field_def_a["is_generic"]
+        generic_b = field_def_b["is_generic"]
         if generic_a != generic_b:
             return generic_b
-        list_a = field_def_a["type"].endswith("-list")
-        list_b = field_def_b["type"].endswith("-list")
+        list_a = field_def_a["is_list_relation"]
+        list_b = field_def_b["is_list_relation"]
         if list_a != list_b:
             return list_b
         if coll_a == coll_b:

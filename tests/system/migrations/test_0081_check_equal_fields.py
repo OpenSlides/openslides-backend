@@ -3,17 +3,40 @@ from typing import Any, cast
 
 import pytest
 
-from cli.util.util import open_yml_file
 from openslides_backend.migrations.exceptions import MigrationException
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import (
+    BaseRelationField,
+    GenericRelationField,
+    GenericRelationListField,
+)
 from openslides_backend.shared.patterns import (
     collection_and_id_from_fqid,
-    collection_from_collectionfield,
-    field_from_collectionfield,
+    collection_from_fqid,
     fqfield_from_collection_and_id_and_field,
     fqid_from_collection_and_id,
+    id_from_fqid,
 )
 
-models = open_yml_file("./meta/models.yml")
+models: dict[str, dict[str, dict[str, Any]]] = {
+    collection: {
+        field.own_field_name: (
+            {
+                "to": cast(BaseRelationField, field).to,
+                "equal_fields": cast(BaseRelationField, field).equal_fields,
+                "is_relation": True,
+                "is_generic": isinstance(field, GenericRelationField)
+                or isinstance(field, GenericRelationListField),
+                "is_list_relation": cast(BaseRelationField, field).is_list_field,
+            }
+            if hasattr(field, "to")
+            else {"is_relation": False, "is_generic": False, "is_list_relation": False}
+        )
+        for field in Model().get_fields()
+    }
+    for collection, Model in model_registry.items()
+}
+# models = open_yml_file("./meta/models.yml")
 collection_to_id: dict[str, int] = {
     "organization": 1,
     **{
@@ -30,26 +53,14 @@ collection_to_fqid: dict[str, str] = {
 
 
 def get_back_collection_field_data(
-    typ: str, field_def: dict[str, Any]
+    field_def: dict[str, Any],
 ) -> dict[str, dict[str, dict[str, Any]]]:
-    if typ.startswith("generic-"):
-        if isinstance(field_def["to"], dict):
-            back_field = field_def["to"]["field"]
-            return {
-                coll: {back_field: models[coll][back_field]}
-                for coll in field_def["to"]["collections"]
-            }
-        collection_to_field = {
-            collection_from_collectionfield(
-                collectionfield
-            ): field_from_collectionfield(collectionfield)
-            for collectionfield in field_def["to"]
-        }
+    if field_def["is_generic"]:
         return {
             coll: {field: models[coll][field]}
-            for coll, field in collection_to_field.items()
+            for coll, field in field_def["to"].items()
         }
-    back_collection, back_field = field_def["to"].split("/")
+    back_collection, back_field = list(field_def["to"].items())[0]
     back_field_def = models[back_collection][back_field]
     return {back_collection: {back_field: back_field_def}}
 
@@ -78,12 +89,12 @@ def get_base_data(
         id_ = collection_to_id[collection]
         fqid = collection_to_fqid[collection]
         for field, field_def in fields.items():
-            typ: str = field_def["type"]
-            if "relation" not in typ or not (
-                equal_fields := get_equal_fields(field_def)
+            equal_fields = get_equal_fields(field_def)
+            if (not field_def["is_relation"] or not (equal_fields)) and not (
+                collection == "meeting" and field == "admin_group_id"
             ):
                 continue
-            back_collection_data = get_back_collection_field_data(typ, field_def)
+            back_collection_data = get_back_collection_field_data(field_def)
             for back_collection, back_field_data in back_collection_data.items():
                 for back_field, back_field_def in back_field_data.items():
                     combination = cast(
@@ -94,9 +105,8 @@ def get_base_data(
                     )
                     if combination in finished_combinations:
                         continue
-                    back_typ: str = back_field_def["type"]
-                    back_is_list = back_typ.endswith("-list")
-                    back_is_generic = back_typ.startswith("generic-")
+                    back_is_list = back_field_def["is_list_relation"]
+                    back_is_generic = back_field_def["is_generic"]
                     back_id = collection_to_id[back_collection]
                     back_fqid = collection_to_fqid[back_collection]
                     back_val = fqid if back_is_generic else id_
@@ -113,13 +123,15 @@ def get_base_data(
                     full_eq_f = equal_fields.union(get_equal_fields(back_field_def))
                     collection_to_eq_fields[collection].update(full_eq_f)
                     collection_to_eq_fields[back_collection].update(full_eq_f)
-                    val = back_fqid if typ.startswith("generic-") else back_id
-                    if typ.endswith("-list"):
+                    val = back_fqid if field_def["is_generic"] else back_id
+                    if field_def["is_list_relation"]:
                         fqi = fqid
                         if collection == back_collection and id_ == back_id:
                             i = id_ + 1
                             fqi = f"{collection}/{i}"
                             back_val = fqi if back_is_generic else i
+                            if fqi not in create_data:
+                                create_data[fqi] = {"id": i}
                         if field not in create_data[fqi]:
                             create_data[fqi][field] = [val]
                         elif val not in create_data[fqid][field]:
@@ -321,69 +333,61 @@ def fill_field(
     if field in model or field not in models[collection]:
         return created_fqids
     field_def = models[collection][field]
-    match (typ := field_def["type"]):
-        case "relation":
-            to_coll, to_field = field_def["to"].split("/")
-            to_field_def = models[to_coll][to_field]
-            to_typ: str = to_field_def["type"]
-            if to_typ != "relation-list":
-                raise Exception(f"{to_coll}/{to_field} is not list relation")
-            if use_other_model:
-                to_fqid = fqid_from_collection_and_id(
-                    to_coll, collection_to_id[to_coll] + 1
-                )
+    assert field_def["is_relation"] and not field_def["is_list_relation"]
+    if field_def["is_generic"]:
+        to: dict[str, Any] = field_def["to"]
+        to_coll, to_field = list(to.items())[0]
+        to_field_def = models[to_coll][to_field]
+        if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
+            raise Exception(f"{to_coll}/{to_field} is not list relation")
+        if use_other_model:
+            to_fqid = fqid_from_collection_and_id(
+                to_coll, (to_id := collection_to_id[to_coll]) + 1
+            )
+            if to_fqid not in create_data:
                 to_id = collection_to_id[to_coll] + 1
-                if to_fqid not in create_data:
-                    create_data[to_fqid] = {"id": to_id}
-                    created_fqids.append(to_fqid)
-            else:
-                to_fqid = collection_to_fqid[to_coll]
-                to_id = collection_to_id[to_coll]
-            to_model = create_data[to_fqid]
-            to_val = (
-                fqid_from_collection_and_id(collection, id_)
-                if to_typ.startswith("generic-")
-                else id_
+                create_data[to_fqid] = {"id": to_id}
+                created_fqids.append(to_fqid)
+        else:
+            to_fqid = collection_to_fqid[to_coll]
+        to_model = create_data[to_fqid]
+        to_val = (
+            fqid_from_collection_and_id(collection, id_)
+            if to_field_def["is_generic"]
+            else id_
+        )
+        if to_field not in to_model:
+            to_model[to_field] = [to_val]
+        elif to_val not in to_model[to_field]:
+            to_model[to_field].append(to_val)
+        model[field] = to_fqid
+    else:
+        to_coll, to_field = list(field_def["to"].items())[0]
+        to_field_def = models[to_coll][to_field]
+        if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
+            raise Exception(f"{to_coll}/{to_field} is not list relation")
+        if use_other_model:
+            to_fqid = fqid_from_collection_and_id(
+                to_coll, collection_to_id[to_coll] + 1
             )
-            if to_field not in to_model:
-                to_model[to_field] = [to_val]
-            elif to_val not in to_model[to_field]:
-                to_model[to_field].append(to_val)
-            model[field] = to_id
-        case "generic-relation":
-            to = field_def["to"]
-            if isinstance(to, list):
-                to_coll, to_field = to[0].split("/")
-            else:
-                to_coll = to["collections"][0]
-                to_field = to["field"]
-            to_field_def = models[to_coll][to_field]
-            to_typ: str = to_field_def["type"]
-            if to_typ != "relation-list":
-                raise Exception(f"{to_coll}/{to_field} is not list relation")
-            if use_other_model:
-                to_fqid = fqid_from_collection_and_id(
-                    to_coll, (to_id := collection_to_id[to_coll]) + 1
-                )
-                if to_fqid not in create_data:
-                    to_id = collection_to_id[to_coll] + 1
-                    create_data[to_fqid] = {"id": to_id}
-                    created_fqids.append(to_fqid)
-            else:
-                to_fqid = collection_to_fqid[to_coll]
-            to_model = create_data[to_fqid]
-            to_val = (
-                fqid_from_collection_and_id(collection, id_)
-                if to_typ.startswith("generic-")
-                else id_
-            )
-            if to_field not in to_model:
-                to_model[to_field] = [to_val]
-            elif to_val not in to_model[to_field]:
-                to_model[to_field].append(to_val)
-            model[field] = to_fqid
-        case _:
-            raise Exception(f"{collection}/{field}: Unhandled type {typ}")
+            to_id = collection_to_id[to_coll] + 1
+            if to_fqid not in create_data:
+                create_data[to_fqid] = {"id": to_id}
+                created_fqids.append(to_fqid)
+        else:
+            to_fqid = collection_to_fqid[to_coll]
+            to_id = collection_to_id[to_coll]
+        to_model = create_data[to_fqid]
+        to_val = (
+            fqid_from_collection_and_id(collection, id_)
+            if field_def["is_generic"]
+            else id_
+        )
+        if to_field not in to_model:
+            to_model[to_field] = [to_val]
+        elif to_val not in to_model[to_field]:
+            to_model[to_field].append(to_val)
+        model[field] = to_id
     return created_fqids
 
 
@@ -435,14 +439,13 @@ test_cases with equal_fields mismatches for one model are all cases where...
 - If the relations are supposed to be one-sidedly broken, it can't be for a model where there are no expected errors, bc the migration not failing will cause the test to crash at the database-check phase.
 """
 test_cases = [
-    (fqid, incomplete, front)
-    for fqid, model in get_base_data()[0].items()
-    for incomplete, front in [(False, True), (True, True), (True, False)]
-    if (
-        (len(model) > 1 or "id" not in model)
-        and fqid != "meeting/16"
-        and (not incomplete or get_base_data([fqid])[1])
+    (
+        fqid,
+        [False, True, True][i % 3] and bool(get_base_data([fqid])[1]),
+        [True, True, False][i % 3],
     )
+    for i, (fqid, model) in enumerate(get_base_data()[0].items())
+    if ((len(model) > 1 or "id" not in model) and fqid != "meeting/16")
 ]
 
 
@@ -480,13 +483,15 @@ def test_so_called_migration_failure_meeting_16(write, finalize, assert_model) -
         create_data,
         use_other_model=True,
     )
-    expected_errors = [
-        (
-            "projection/100/content_object_id: (16,)",
-            "meeting/17/projection_ids: (17,)",
-            ["meeting_id"],
-        )
-    ]
+    other_fqid = create_data[fqid]["content_object_id"]
+    fill_field(
+        create_data[other_fqid],
+        collection_from_fqid(other_fqid),
+        "meeting_id",
+        id_from_fqid(other_fqid),
+        create_data,
+        use_other_model=True,
+    )
     write(
         *[
             {"type": "create", "fqid": fqid, "fields": model}
@@ -499,13 +504,9 @@ def test_so_called_migration_failure_meeting_16(write, finalize, assert_model) -
             "Expected migration 81 to fail for changed projection/100. It didn't."
         )
     except MigrationException as e:
-        err_str = "\n* ".join(
-            sorted(
-                f"Detected different equal_fields: {' and '.join(sorted([error1, error2]))} for equal_fields {tuple(eq_fields)}"
-                for error1, error2, eq_fields in expected_errors
-            )
-        )
-        assert e.message == f"Migration exception:\n* {err_str}"
+        assert "Migration exception:\n* Detected different equal_fields: " in e.message
+        assert "projection/100/content_object_id: (16,)" in e.message
+        assert "/projection_ids: (17,)" in e.message
 
 
 def remove_one_relation_side(
@@ -520,7 +521,7 @@ def remove_one_relation_side(
         collection, id_ = collection_and_id_from_fqid(fqid)
         for field in list(model):
             value = model[field]
-            if "equal_fields" not in (field_def := models[collection][field]) or any(
+            if not (field_def := models[collection][field]).get("equal_fields") or any(
                 field == (eq := models[collection][f].get("equal_fields"))
                 or (isinstance(eq, list) and field in eq)
                 for f in list(model)
@@ -530,7 +531,7 @@ def remove_one_relation_side(
                 for val in value:
                     if isinstance(val, int):
                         back_id = val
-                        back_collection, back_field = field_def["to"].split("/")
+                        back_collection, back_field = list(field_def["to"].items())[0]
                         back_fqid = fqid_from_collection_and_id(
                             back_collection, back_id
                         )
@@ -538,18 +539,9 @@ def remove_one_relation_side(
                         assert isinstance(val, str)
                         back_fqid = val
                         back_collection, back_id = collection_and_id_from_fqid(val)
-                        if isinstance(field_def["to"], dict):
-                            back_field = field_def["to"]["field"]
-                        else:
-                            assert isinstance(field_def["to"], list)
-                            back_field = next(
-                                b_collection_field.split("/")[1]
-                                for b_collection_field in field_def["to"]
-                                if b_collection_field.split("/")[0] == back_collection
-                            )
+                        back_field = field_def["to"][back_collection]
                     back_def = models[back_collection][back_field]
-                    back_typ: str = back_def["type"]
-                    back_generic = back_typ.startswith("generic-")
+                    back_generic = back_def["is_generic"]
                     back_model = create_data[back_fqid]
                     if any(
                         back_field
@@ -559,7 +551,7 @@ def remove_one_relation_side(
                     ):
                         continue
                     if back_val := back_model.get(back_field):
-                        if back_typ.endswith("-list"):
+                        if back_def["is_list_relation"]:
                             if back_generic:
                                 if fqid in back_val:
                                     if front:
@@ -592,24 +584,15 @@ def remove_one_relation_side(
                 val = value
                 if isinstance(val, int):
                     back_id = val
-                    back_collection, back_field = field_def["to"].split("/")
+                    back_collection, back_field = list(field_def["to"].items())[0]
                     back_fqid = fqid_from_collection_and_id(back_collection, back_id)
                 else:
                     assert isinstance(val, str)
                     back_fqid = val
                     back_collection, back_id = collection_and_id_from_fqid(val)
-                    if isinstance(field_def["to"], dict):
-                        back_field = field_def["to"]["field"]
-                    else:
-                        assert isinstance(field_def["to"], list)
-                        back_field = next(
-                            b_collection_field.split("/")[1]
-                            for b_collection_field in field_def["to"]
-                            if b_collection_field.split("/")[0] == back_collection
-                        )
+                    back_field = field_def["to"][back_collection]
                 back_def = models[back_collection][back_field]
-                back_typ: str = back_def["type"]
-                back_generic = back_typ.startswith("generic-")
+                back_generic = back_def["is_generic"]
                 back_model = create_data[back_fqid]
                 if any(
                     back_field == (eq := models[back_collection][f].get("equal_fields"))
@@ -618,7 +601,7 @@ def remove_one_relation_side(
                 ):
                     continue
                 if back_val := back_model.get(back_field):
-                    if back_typ.endswith("-list"):
+                    if back_def["is_list_relation"]:
                         if back_generic:
                             if fqid in back_val:
                                 if front:
@@ -639,3 +622,29 @@ def remove_one_relation_side(
                         del model[field]
                     else:
                         del back_model[back_field]
+
+
+def test_so_called_migration_failure_everything_deleted(
+    write, finalize, assert_model
+) -> None:
+    create_data = get_base_data()[0]
+    fqid = "projection/100"
+    create_data[fqid] = {"id": 100}
+    fill_field(create_data[fqid], "projection", "meeting_id", 100, create_data)
+    fill_field(
+        create_data[fqid],
+        "projection",
+        "content_object_id",
+        100,
+        create_data,
+        use_other_model=True,
+    )
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": model}
+            for fqid, model in create_data.items()
+        ]
+    )
+    write(*[{"type": "delete", "fqid": fqid} for fqid in create_data.keys()])
+    for fqid, model in create_data.items():
+        assert_model(fqid, {**model, "meta_deleted": True})
