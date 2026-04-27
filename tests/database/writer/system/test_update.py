@@ -215,38 +215,22 @@ def test_update_error_own_field_not_null(
     assert_model("user/1", {"id": 1, "username": "1", "first_name": "1"})
 
 
-def create_models_for_1_1_tests() -> None:
-    data = get_group_base_data()
+def test_update_prevent_updates_error_delete(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_data()
     data[0]["events"].extend(
         [
             {
                 "type": EventType.Create,
-                "fqid": "motion/2",
-                "fields": {
-                    "title": "2",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-            },
-            {
-                "type": EventType.Create,
-                "fqid": "list_of_speakers/3",
-                "fields": {
-                    "content_object_id": "motion/2",
-                    "meeting_id": 1,
-                },
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": 1},
             },
         ]
     )
     create_models(data)
-
-
-def test_update_1_1_not_null_error(
-    db_connection: Connection[rows.DictRow],
-) -> None:
-    create_models_for_1_1_tests()
     with get_new_os_conn() as conn:
-        with pytest.raises(DatabaseError) as e_info:
+        with pytest.raises(InvalidFormat) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(
                 create_write_requests(
@@ -254,18 +238,9 @@ def test_update_1_1_not_null_error(
                         {
                             "events": [
                                 {
-                                    "type": EventType.Create,
-                                    "fqid": "motion/3",
-                                    "fields": {
-                                        "title": "3",
-                                        "meeting_id": 1,
-                                        "state_id": 1,
-                                    },
-                                },
-                                {
                                     "type": EventType.Update,
-                                    "fqid": "list_of_speakers/3",
-                                    "fields": {"content_object_id": "motion/3"},
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": None},
                                 },
                             ]
                         }
@@ -274,15 +249,69 @@ def test_update_1_1_not_null_error(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id from relationship before list_of_speakers/3/content_object_id"
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
         in e_info.value.args[0]
     )
 
 
-def test_update_1_1_not_null_success(
+def test_update_prevent_updates_error_swap(
     db_connection: Connection[rows.DictRow],
 ) -> None:
-    create_models_for_1_1_tests()
+    data = get_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "user/2",
+                "fields": {"username": "2", "first_name": "2"},
+            },
+            {
+                "type": EventType.Create,
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": 1},
+            },
+        ]
+    )
+    create_models(data)
+    with get_new_os_conn() as conn:
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": 2},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+    assert (
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
+        in e_info.value.args[0]
+    )
+
+
+def test_update_prevent_updates_success(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": None},
+            },
+        ]
+    )
+    create_models(data)
     with get_new_os_conn() as conn:
         extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
         extended_database.write(
@@ -291,26 +320,9 @@ def test_update_1_1_not_null_success(
                     {
                         "events": [
                             {
-                                "type": EventType.Create,
-                                "fqid": "motion/3",
-                                "fields": {
-                                    "title": "3",
-                                    "meeting_id": 1,
-                                    "state_id": 1,
-                                },
-                            },
-                            {
                                 "type": EventType.Update,
-                                "fqid": "list_of_speakers/3",
-                                "fields": {"content_object_id": "motion/3"},
-                            },
-                            {
-                                "type": EventType.Create,
-                                "fqid": "list_of_speakers/4",
-                                "fields": {
-                                    "content_object_id": "motion/2",
-                                    "meeting_id": 1,
-                                },
+                                "fqid": "history_position/2",
+                                "fields": {"original_user_id": 1},
                             },
                         ]
                     }
@@ -319,20 +331,12 @@ def test_update_1_1_not_null_success(
         )
         conn.commit()
     assert_model(
-        "motion/2",
-        {"id": 2, "list_of_speakers_id": 4},
+        "history_position/2",
+        {"id": 2, "original_user_id": 1},
     )
     assert_model(
-        "motion/3",
-        {"id": 3, "list_of_speakers_id": 3},
-    )
-    assert_model(
-        "list_of_speakers/3",
-        {"id": 3, "content_object_id": "motion/3"},
-    )
-    assert_model(
-        "list_of_speakers/4",
-        {"id": 4, "content_object_id": "motion/2"},
+        "user/1",
+        {"id": 1, "username": "1", "first_name": "1"},
     )
 
 
