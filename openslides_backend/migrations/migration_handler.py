@@ -289,7 +289,9 @@ class MigrationHandler(BaseHandler):
         stored in MigrationHelper.migrations.
         """
         for index, module_name in MigrationHelper.migrations.items():
-            migration_module = import_module(f"{MODULE_PATH}{module_name}")
+            mig_class = getattr(
+                import_module(f"{MODULE_PATH}{module_name}"), "Migration"
+            )
 
             self.logger.info("Executing migration: " + module_name)
             MigrationHelper.set_database_migration_info(
@@ -297,10 +299,8 @@ class MigrationHandler(BaseHandler):
             )
 
             # checks wether the methods are available and executes them.
-            if callable(getattr(migration_module, "data_definition", None)):
-                migration_module.data_definition(self.cursor)
-            if callable(getattr(migration_module, "data_manipulation", None)):
-                migration_module.data_manipulation(self.cursor)
+            mig_class.data_definition(self.cursor)
+            mig_class.data_manipulation(self.cursor)
 
             MigrationHelper.set_database_migration_info(
                 self.cursor, index, MigrationState.FINALIZATION_REQUIRED
@@ -328,19 +328,22 @@ class MigrationHandler(BaseHandler):
                     )
                 # Check prerequisites
                 for index, module_name in MigrationHelper.migrations.items():
-                    migration_module = import_module(f"{MODULE_PATH}{module_name}")
+                    mig_class = getattr(
+                        import_module(f"{MODULE_PATH}{module_name}"), "Migration"
+                    )
                     self.logger.info("Pre check: " + module_name + " ...")
-                    if callable(getattr(migration_module, "check_prerequisites", None)):
-                        if errors := migration_module.check_prerequisites(self.cursor):
-                            if minimum_required_index:
-                                MigrationHelper.set_database_migration_info(
-                                    self.cursor,
-                                    minimum_required_index["min"],
-                                    MigrationState.MIGRATION_REQUIRED,
-                                )
-                            errors = f"Pre check for migration {module_name} failed.\n{errors}"
-                            self.logger.info(errors)
-                            raise MigrationSetupException(errors)
+                    if errors := mig_class.check_prerequisites(self.cursor):
+                        if minimum_required_index:
+                            MigrationHelper.set_database_migration_info(
+                                self.cursor,
+                                minimum_required_index["min"],
+                                MigrationState.MIGRATION_REQUIRED,
+                            )
+                        errors = (
+                            f"Pre check for migration {module_name} failed.\n{errors}"
+                        )
+                        self.logger.info(errors)
+                        raise MigrationSetupException(errors)
                 MigrationHelper.write_line("migration started")
                 self.set_public_tables_read_only()
                 self.setup_migration_relations()
@@ -446,9 +449,10 @@ class MigrationHandler(BaseHandler):
 
         MigrationHelper.write_line("finalization started")
         for index, module_name in MigrationHelper.migrations.items():
-            migration_module = import_module(f"{MODULE_PATH}{module_name}")
-            if callable(getattr(migration_module, "cleanup", None)):
-                migration_module.cleanup(self.cursor)
+            mig_class = getattr(
+                import_module(f"{MODULE_PATH}{module_name}"), "Migration"
+            )
+            mig_class.cleanup(self.cursor)
 
         unified_replace_tables, relevant_mis = (
             MigrationHelper.get_unified_replace_tables_from_database(self.cursor)
