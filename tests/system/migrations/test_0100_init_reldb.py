@@ -220,7 +220,9 @@ For more information, see
             if error_message:
                 assert result, error_message
             else:
-                assert result
+                assert (
+                    result
+                ), f"Database did not contain a result for this query.\n{query}"
             if value is not None:
                 assert result == value
 
