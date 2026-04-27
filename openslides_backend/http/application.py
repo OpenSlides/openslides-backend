@@ -19,6 +19,7 @@ from .http_exceptions import (
     BadRequest,
     Forbidden,
     HTTPException,
+    InternalNotImplemented,
     InternalServerError,
     Unauthorized,
 )
@@ -112,6 +113,8 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 return Forbidden(exception)
             elif exception.status_code == 500:
                 return InternalServerError(exception)
+            elif exception.status_code == 501:
+                return InternalNotImplemented(exception)
             else:
                 text = (
                     f"Unknown ViewException with status_code {exception.status_code} "
