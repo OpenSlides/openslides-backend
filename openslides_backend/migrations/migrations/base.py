@@ -17,8 +17,8 @@ class BaseMigration:
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
         """
-        Apllies all manual SQL DDL changes necessary.
-        Triggers are automatically recreated.
+        Applies all manual SQL DDL changes necessary.
+        Triggers and views are automatically recreated.
         """
 
     @staticmethod
