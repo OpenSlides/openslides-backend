@@ -67,7 +67,7 @@ def main() -> int:
         return 1
     else:
         try:
-            manager.handle_request({"cmd": args.command})
+            print(manager.handle_request({"cmd": args.command}))
         except InvalidMigrationCommand:
             print(f"Unknown command {args.command}\n")
             parser.print_help()
