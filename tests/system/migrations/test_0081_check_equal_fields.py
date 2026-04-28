@@ -104,27 +104,6 @@ collection_to_fqid: dict[str, str] = {
 }
 
 
-def get_back_collection_field_data(
-    field_def: dict[str, Any],
-) -> dict[str, dict[str, dict[str, Any]]]:
-    if field_def["is_generic"]:
-        return {
-            coll: {field: models[coll][field]}
-            for coll, field in field_def["to"].items()
-        }
-    back_collection, back_field = list(field_def["to"].items())[0]
-    back_field_def = models[back_collection][back_field]
-    return {back_collection: {back_field: back_field_def}}
-
-
-def get_equal_fields(field_def: dict[str, Any]) -> set[str]:
-    if not (eq_fields := field_def.get("equal_fields")):
-        return set()
-    if isinstance(eq_fields, list):
-        return set(eq_fields)
-    return {eq_fields}
-
-
 def get_base_data(
     break_eq_fields_for_fqids: list[str] = [],
 ) -> tuple[dict[str, dict[str, Any]], list[tuple[str, str, list[str]]]]:
@@ -136,19 +115,18 @@ def get_base_data(
     collection_to_eq_fields: dict[str, set[str]] = defaultdict(set)
     finished_combinations: set[tuple[tuple[str, str], tuple[str, str]]] = set()
     for collection, fields in models.items():
-        if collection == "_meta":
-            continue
         id_ = collection_to_id[collection]
         fqid = collection_to_fqid[collection]
         for field, field_def in fields.items():
             equal_fields = get_equal_fields(field_def)
-            if (not field_def["is_relation"] or not (equal_fields)) and not (
+            if (not field_def["is_relation"] or not equal_fields) and not (
                 collection == "meeting" and field == "admin_group_id"
             ):
                 continue
             back_collection_data = get_back_collection_field_data(field_def)
             for back_collection, back_field_data in back_collection_data.items():
                 for back_field, back_field_def in back_field_data.items():
+                    # Ensure no combination of collection_fields is handled twice
                     combination = cast(
                         tuple[tuple[str, str], tuple[str, str]],
                         tuple(
@@ -157,79 +135,56 @@ def get_base_data(
                     )
                     if combination in finished_combinations:
                         continue
-                    back_is_list = back_field_def["is_list_relation"]
-                    back_is_generic = back_field_def["is_generic"]
-                    back_id = collection_to_id[back_collection]
-                    back_fqid = collection_to_fqid[back_collection]
-                    back_val = fqid if back_is_generic else id_
-                    if not back_is_list:
-                        while (
-                            back_field in create_data[back_fqid]
-                            and back_val != create_data[back_fqid][back_field]
-                        ):
-                            back_id += 1
-                            back_fqid = f"{back_collection}/{back_id}"
-                            back_val = fqid if back_is_generic else id_
-                            if back_fqid not in create_data:
-                                create_data[back_fqid] = {"id": back_id}
+                    finished_combinations.add(combination)
+
+                    # Calculate back-collection data
+                    back_is_list, back_is_generic, back_id, back_fqid, back_val = (
+                        get_relation_side_data(
+                            back_collection,
+                            back_field,
+                            back_field_def,
+                            fqid,
+                            id_,
+                            create_data,
+                        )
+                    )
+
+                    # Calculate relevant equal_fields,
+                    # ensure they can be filled in the collections later
                     full_eq_f = equal_fields.union(get_equal_fields(back_field_def))
                     collection_to_eq_fields[collection].update(full_eq_f)
                     collection_to_eq_fields[back_collection].update(full_eq_f)
-                    val = back_fqid if field_def["is_generic"] else back_id
-                    if field_def["is_list_relation"]:
-                        fqi = fqid
-                        if collection == back_collection and id_ == back_id:
-                            i = id_ + 1
-                            fqi = f"{collection}/{i}"
-                            back_val = fqi if back_is_generic else i
-                            if fqi not in create_data:
-                                create_data[fqi] = {"id": i}
-                        if field not in create_data[fqi]:
-                            create_data[fqi][field] = [val]
-                        elif val not in create_data[fqid][field]:
-                            create_data[fqi][field].append(val)
-                    elif field not in create_data[fqid] and not (
-                        collection == back_collection and id_ == back_id
-                    ):
-                        create_data[fqid][field] = val
-                    elif (
-                        collection == back_collection and id_ == back_id
-                    ) or val != create_data[fqid][field]:
-                        i = id_ + 1
-                        fqi = f"{collection}/{i}"
-                        done = False
-                        while not done:
-                            if collection == back_collection and i == back_id:
-                                i += 1
-                                fqi = f"{collection}/{i}"
-                            if fqi not in create_data:
-                                create_data[fqi] = {"id": i, field: val}
-                                done = True
-                            elif field not in create_data[fqi]:
-                                create_data[fqi][field] = val
-                                done = True
-                            elif create_data[fqi][field] == val:
-                                done = True
-                            else:
-                                i += 1
-                                fqi = f"{collection}/{i}"
-                            back_val = fqi if back_is_generic else i
+
+                    # Calculate and write front-collection data
+                    is_list, _, i, fqi, val = get_relation_side_data(
+                        collection,
+                        field,
+                        field_def,
+                        back_fqid,
+                        back_id,
+                        create_data,
+                        back_collection,
+                    )
+
+                    # Re-calculate in case the id changed
+                    back_val = fqi if back_is_generic else i
+
+                    # Write collection data.
+                    if not is_list:
+                        create_data[fqi][field] = val
+                    elif field not in create_data[fqi]:
+                        create_data[fqi][field] = [val]
+                    elif val not in create_data[fqi][field]:
+                        create_data[fqi][field].append(val)
                     if not back_is_list:
                         create_data[back_fqid][back_field] = back_val
                     elif back_field not in create_data[back_fqid]:
                         create_data[back_fqid][back_field] = [back_val]
                     elif back_val not in create_data[back_fqid][back_field]:
                         create_data[back_fqid][back_field].append(back_val)
-                    finished_combinations.add(
-                        cast(
-                            tuple[tuple[str, str], tuple[str, str]],
-                            tuple(
-                                sorted(
-                                    [(collection, field), (back_collection, back_field)]
-                                )
-                            ),
-                        )
-                    )
+
+    # Fill all equal_fields for the collection for every generated fqids
+    # Also fill fields needed to pass the datastore check
     created_fqids = sorted(create_data)
     while len(created_fqids):
         fqid = created_fqids.pop()
@@ -259,6 +214,7 @@ def get_base_data(
             case "group":
                 if ag_ids := model["meeting_mediafile_access_group_ids"]:
                     model["meeting_mediafile_inherited_access_group_ids"] = ag_ids
+    # Generate data for expected errors
     eq_fields_combinations: dict[tuple[str, str], dict[str, str]] = defaultdict(dict)
     for combinations in finished_combinations:
         eq_fields_combinations[combinations[0]][combinations[1][0]] = combinations[1][1]
@@ -273,104 +229,162 @@ def get_base_data(
                 continue
             field_def = models[collection][field]
             if isinstance(val, list):
-                for sub_val in val:
-                    if isinstance(sub_val, str):
-                        back_fqid = sub_val
-                        back_coll, back_id = collection_and_id_from_fqid(back_fqid)
-                        back_field = back_combinations[back_coll]
-                        back_field_def = models[back_coll][back_field]
-                        back_model = create_data[back_fqid]
-                        merged_eq_fields = sorted(
-                            get_equal_fields(field_def).union(
-                                get_equal_fields(back_field_def)
-                            )
-                        )
-                        if "user" in [collection, back_coll]:
-                            merged_eq_fields = [
-                                field
-                                for field in merged_eq_fields
-                                if field != "meeting_id"
-                            ]
-                        if len(merged_eq_fields):
-                            expect_errors_for.append(
-                                (
-                                    f"{fqfield_from_collection_and_id_and_field(collection, id_, field)}: {tuple(model[f] if not (collection =='meeting' and f =='meeting_id') else id_ for f in merged_eq_fields)}",
-                                    f"{fqfield_from_collection_and_id_and_field(back_coll, back_id, back_field)}: {tuple(back_model[f] if not (back_coll =='meeting' and f =='meeting_id') else back_id for f in merged_eq_fields)}",
-                                    merged_eq_fields,
-                                )
-                            )
-                    else:
-                        assert isinstance(sub_val, int)
-                        assert len(back_combinations) == 1
-                        back_id = sub_val
-                        back_coll, back_field = list(back_combinations.items())[0]
-                        back_fqid = fqid_from_collection_and_id(back_coll, back_id)
-                        back_field_def = models[back_coll][back_field]
-                        back_model = create_data[back_fqid]
-                        merged_eq_fields = sorted(
-                            get_equal_fields(field_def).union(
-                                get_equal_fields(back_field_def)
-                            )
-                        )
-                        if "user" in [collection, back_coll]:
-                            merged_eq_fields = [
-                                field
-                                for field in merged_eq_fields
-                                if field != "meeting_id"
-                            ]
-                        if len(merged_eq_fields):
-                            expect_errors_for.append(
-                                (
-                                    f"{fqfield_from_collection_and_id_and_field(collection, id_, field)}: {tuple(model[f] if not (collection =='meeting' and f =='meeting_id') else id_ for f in merged_eq_fields)}",
-                                    f"{fqfield_from_collection_and_id_and_field(back_coll, back_id, back_field)}: {tuple(back_model[f] if not (back_coll =='meeting' and f =='meeting_id') else back_id for f in merged_eq_fields)}",
-                                    merged_eq_fields,
-                                )
-                            )
-            elif isinstance(val, str):
-                back_fqid = val
-                back_coll, back_id = collection_and_id_from_fqid(back_fqid)
-                back_field = back_combinations[back_coll]
-                back_field_def = models[back_coll][back_field]
-                back_model = create_data[back_fqid]
-                merged_eq_fields = sorted(
-                    get_equal_fields(field_def).union(get_equal_fields(back_field_def))
-                )
-                if "user" in [collection, back_coll]:
-                    merged_eq_fields = [
-                        field for field in merged_eq_fields if field != "meeting_id"
-                    ]
-                if len(merged_eq_fields):
-                    expect_errors_for.append(
-                        (
-                            f"{fqfield_from_collection_and_id_and_field(collection, id_, field)}: {tuple(model[f] if not (collection =='meeting' and f =='meeting_id') else id_ for f in merged_eq_fields)}",
-                            f"{fqfield_from_collection_and_id_and_field(back_coll, back_id, back_field)}: {tuple(back_model[f] if not (back_coll =='meeting' and f =='meeting_id') else back_id for f in merged_eq_fields)}",
-                            merged_eq_fields,
-                        )
+                expect_errors_for.extend(
+                    get_expected_errors_for_list(
+                        collection,
+                        id_,
+                        field,
+                        field_def,
+                        model,
+                        val,
+                        back_combinations,
+                        create_data,
                     )
-            else:
-                assert isinstance(val, int)
-                assert len(back_combinations) == 1
-                back_id = val
-                back_coll, back_field = list(back_combinations.items())[0]
-                back_fqid = fqid_from_collection_and_id(back_coll, back_id)
-                back_field_def = models[back_coll][back_field]
-                back_model = create_data[back_fqid]
-                merged_eq_fields = sorted(
-                    get_equal_fields(field_def).union(get_equal_fields(back_field_def))
                 )
-                if "user" in [collection, back_coll]:
-                    merged_eq_fields = [
-                        field for field in merged_eq_fields if field != "meeting_id"
-                    ]
-                if len(merged_eq_fields):
-                    expect_errors_for.append(
-                        (
-                            f"{fqfield_from_collection_and_id_and_field(collection, id_, field)}: {tuple(model[f] if not (collection =='meeting' and f =='meeting_id') else id_ for f in merged_eq_fields)}",
-                            f"{fqfield_from_collection_and_id_and_field(back_coll, back_id, back_field)}: {tuple(back_model[f] if not (back_coll =='meeting' and f =='meeting_id') else back_id for f in merged_eq_fields)}",
-                            merged_eq_fields,
-                        )
-                    )
+            elif error := get_expected_error_for_single(
+                collection,
+                id_,
+                field,
+                field_def,
+                model,
+                val,
+                back_combinations,
+                create_data,
+            ):
+                expect_errors_for.append(error)
     return create_data, expect_errors_for
+
+
+def get_back_collection_field_data(
+    field_def: dict[str, Any],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    if field_def["is_generic"]:
+        return {
+            coll: {field: models[coll][field]}
+            for coll, field in field_def["to"].items()
+        }
+    back_collection, back_field = list(field_def["to"].items())[0]
+    back_field_def = models[back_collection][back_field]
+    return {back_collection: {back_field: back_field_def}}
+
+
+def get_equal_fields(field_def: dict[str, Any]) -> set[str]:
+    if not (eq_fields := field_def.get("equal_fields")):
+        return set()
+    if isinstance(eq_fields, list):
+        return set(eq_fields)
+    return {eq_fields}
+
+
+def get_relation_side_data(
+    collection: str,
+    field: str,
+    field_def: dict[str, Any],
+    back_fqid: str,
+    back_id: int,
+    create_data: dict[str, dict[str, Any]],
+    check_back_collection: str = "",
+) -> tuple[bool, bool, int, str, str | int]:
+    """
+    Calculates
+    - whether the relation is a list relation
+    - whether the relation is a generic relation
+    - the id to which the relation_data should be written
+    - the fqid that corresponds
+    - the single value that needs to be written into the field
+    Also creates new create_data-entires in case there is a necessity
+    """
+    is_list = field_def["is_list_relation"]
+    is_generic = field_def["is_generic"]
+    id_ = collection_to_id[collection]
+    fqid = collection_to_fqid[collection]
+    val = back_fqid if is_generic else back_id
+    if is_list:
+        if collection == check_back_collection and id_ == back_id:
+            id_ += 1
+            fqid = f"{collection}/{id_}"
+            if fqid not in create_data:
+                create_data[fqid] = {"id": id_}
+    elif field not in create_data[fqid] and not (
+        collection == check_back_collection and id_ == back_id
+    ):
+        create_data[fqid][field] = val
+    else:
+        while (collection == check_back_collection and id_ == back_id) or (
+            field in create_data[fqid] and val != create_data[fqid][field]
+        ):
+            id_ += 1
+            fqid = f"{collection}/{id_}"
+            if collection == check_back_collection and id_ == back_id:
+                id_ += 1
+                fqid = f"{collection}/{id_}"
+            if fqid not in create_data:
+                create_data[fqid] = {"id": id_}
+    return (is_list, is_generic, id_, fqid, val)
+
+
+def get_expected_errors_for_list(
+    collection: str,
+    id_: int,
+    field: str,
+    field_def: dict[str, Any],
+    model: dict[str, Any],
+    val: list[str] | list[int],
+    back_combinations: dict[str, str],
+    create_data: dict[str, dict[str, Any]],
+) -> list[tuple[str, str, list[str]]]:
+    expect_errors_for: list[tuple[str, str, list[str]]] = []
+    if isinstance(val, list):
+        for sub_val in val:
+            if error := get_expected_error_for_single(
+                collection,
+                id_,
+                field,
+                field_def,
+                model,
+                sub_val,
+                back_combinations,
+                create_data,
+            ):
+                expect_errors_for.append(error)
+    return expect_errors_for
+
+
+def get_expected_error_for_single(
+    collection: str,
+    id_: int,
+    field: str,
+    field_def: dict[str, Any],
+    model: dict[str, Any],
+    val: str | int,
+    back_combinations: dict[str, str],
+    create_data: dict[str, dict[str, Any]],
+) -> None | tuple[str, str, list[str]]:
+    if isinstance(val, str):
+        back_fqid = val
+        back_coll, back_id = collection_and_id_from_fqid(back_fqid)
+        back_field = back_combinations[back_coll]
+    else:
+        assert isinstance(val, int)
+        assert len(back_combinations) == 1
+        back_id = val
+        back_coll, back_field = list(back_combinations.items())[0]
+        back_fqid = fqid_from_collection_and_id(back_coll, back_id)
+    back_field_def = models[back_coll][back_field]
+    back_model = create_data[back_fqid]
+    merged_eq_fields = sorted(
+        get_equal_fields(field_def).union(get_equal_fields(back_field_def))
+    )
+    if "user" in [collection, back_coll]:
+        merged_eq_fields = [
+            field for field in merged_eq_fields if field != "meeting_id"
+        ]
+    if len(merged_eq_fields):
+        return (
+            f"{fqfield_from_collection_and_id_and_field(collection, id_, field)}: {tuple(model[f] if not (collection =='meeting' and f =='meeting_id') else id_ for f in merged_eq_fields)}",
+            f"{fqfield_from_collection_and_id_and_field(back_coll, back_id, back_field)}: {tuple(back_model[f] if not (back_coll =='meeting' and f =='meeting_id') else back_id for f in merged_eq_fields)}",
+            merged_eq_fields,
+        )
 
 
 def fill_field(
@@ -386,61 +400,119 @@ def fill_field(
         return created_fqids
     field_def = models[collection][field]
     assert field_def["is_relation"] and not field_def["is_list_relation"]
+    to_coll, to_field = list(field_def["to"].items())[0]
+    to_field_def = models[to_coll][to_field]
+    if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
+        raise Exception(f"{to_coll}/{to_field} is not list relation")
+    if use_other_model:
+        to_id = collection_to_id[to_coll] + 1
+        to_fqid = fqid_from_collection_and_id(to_coll, to_id)
+        if to_fqid not in create_data:
+            create_data[to_fqid] = {"id": to_id}
+            created_fqids.append(to_fqid)
+    else:
+        to_fqid = collection_to_fqid[to_coll]
+        to_id = collection_to_id[to_coll]
+    to_model = create_data[to_fqid]
+    to_val = (
+        fqid_from_collection_and_id(collection, id_)
+        if to_field_def["is_generic"]
+        else id_
+    )
+    if to_field not in to_model:
+        to_model[to_field] = [to_val]
+    elif to_val not in to_model[to_field]:
+        to_model[to_field].append(to_val)
     if field_def["is_generic"]:
-        to: dict[str, Any] = field_def["to"]
-        to_coll, to_field = list(to.items())[0]
-        to_field_def = models[to_coll][to_field]
-        if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
-            raise Exception(f"{to_coll}/{to_field} is not list relation")
-        if use_other_model:
-            to_fqid = fqid_from_collection_and_id(
-                to_coll, (to_id := collection_to_id[to_coll]) + 1
-            )
-            if to_fqid not in create_data:
-                to_id = collection_to_id[to_coll] + 1
-                create_data[to_fqid] = {"id": to_id}
-                created_fqids.append(to_fqid)
-        else:
-            to_fqid = collection_to_fqid[to_coll]
-        to_model = create_data[to_fqid]
-        to_val = (
-            fqid_from_collection_and_id(collection, id_)
-            if to_field_def["is_generic"]
-            else id_
-        )
-        if to_field not in to_model:
-            to_model[to_field] = [to_val]
-        elif to_val not in to_model[to_field]:
-            to_model[to_field].append(to_val)
         model[field] = to_fqid
     else:
-        to_coll, to_field = list(field_def["to"].items())[0]
-        to_field_def = models[to_coll][to_field]
-        if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
-            raise Exception(f"{to_coll}/{to_field} is not list relation")
-        if use_other_model:
-            to_fqid = fqid_from_collection_and_id(
-                to_coll, collection_to_id[to_coll] + 1
-            )
-            to_id = collection_to_id[to_coll] + 1
-            if to_fqid not in create_data:
-                create_data[to_fqid] = {"id": to_id}
-                created_fqids.append(to_fqid)
-        else:
-            to_fqid = collection_to_fqid[to_coll]
-            to_id = collection_to_id[to_coll]
-        to_model = create_data[to_fqid]
-        to_val = (
-            fqid_from_collection_and_id(collection, id_)
-            if field_def["is_generic"]
-            else id_
-        )
-        if to_field not in to_model:
-            to_model[to_field] = [to_val]
-        elif to_val not in to_model[to_field]:
-            to_model[to_field].append(to_val)
         model[field] = to_id
     return created_fqids
+
+
+def remove_one_relation_side(
+    create_data: dict[str, dict[str, Any]], front: bool = True
+) -> None:
+    """
+    Removes one side from each relation that
+    1. has equal_fields
+    2. is not an equal_field of any other relation
+    """
+    for fqid, model in create_data.items():
+        collection, id_ = collection_and_id_from_fqid(fqid)
+        for field in list(model):
+            value = model[field]
+            if not (field_def := models[collection][field]).get("equal_fields") or any(
+                field == (eq := models[collection][f].get("equal_fields"))
+                or (isinstance(eq, list) and field in eq)
+                for f in list(model)
+            ):
+                continue
+            if isinstance(value, list):
+                for val in value:
+                    remove_val_from_single(
+                        fqid,
+                        id_,
+                        field,
+                        field_def,
+                        model,
+                        val,
+                        create_data,
+                        front,
+                        from_list=True,
+                    )
+            else:
+                remove_val_from_single(
+                    fqid, id_, field, field_def, model, value, create_data, front
+                )
+
+
+def remove_val_from_single(
+    fqid: str,
+    id_: int,
+    field: str,
+    field_def: dict[str, Any],
+    model: dict[str, Any],
+    val: str | int,
+    create_data: dict[str, dict[str, Any]],
+    front: bool,
+    from_list: bool = False,
+) -> None:
+    if isinstance(val, int):
+        back_id = val
+        back_collection, back_field = list(field_def["to"].items())[0]
+        back_fqid = fqid_from_collection_and_id(back_collection, back_id)
+    else:
+        assert isinstance(val, str)
+        back_fqid = val
+        back_collection, back_id = collection_and_id_from_fqid(val)
+        back_field = field_def["to"][back_collection]
+    back_def = models[back_collection][back_field]
+    back_generic = back_def["is_generic"]
+    back_model = create_data[back_fqid]
+    if any(
+        back_field == (eq := models[back_collection][f].get("equal_fields"))
+        or (isinstance(eq, list) and back_field in eq)
+        for f in list(back_model)
+    ):
+        return
+    if back_val := back_model.get(back_field):
+        if front:
+            if from_list:
+                model[field] = [v for v in model[field] if v == val]
+            else:
+                del model[field]
+        elif back_def["is_list_relation"]:
+            if back_generic:
+                to_del_at_back = fqid
+            else:
+                to_del_at_back = id_
+            if to_del_at_back in back_val:
+                back_model[back_field] = [
+                    v for v in back_model[back_field] if v != to_del_at_back
+                ]
+        else:
+            del back_model[back_field]
 
 
 def base_test_fn(
@@ -561,121 +633,6 @@ def test_so_called_migration_failure_meeting_16(write, finalize, assert_model) -
         assert "/projection_ids: (17,)" in e.message
 
 
-def remove_one_relation_side(
-    create_data: dict[str, dict[str, Any]], front: bool = True
-) -> None:
-    """
-    Removes one side from each relation that
-    1. has equal_fields
-    2. is not an equal_field of any other relation
-    """
-    for fqid, model in create_data.items():
-        collection, id_ = collection_and_id_from_fqid(fqid)
-        for field in list(model):
-            value = model[field]
-            if not (field_def := models[collection][field]).get("equal_fields") or any(
-                field == (eq := models[collection][f].get("equal_fields"))
-                or (isinstance(eq, list) and field in eq)
-                for f in list(model)
-            ):
-                continue
-            if isinstance(value, list):
-                for val in value:
-                    if isinstance(val, int):
-                        back_id = val
-                        back_collection, back_field = list(field_def["to"].items())[0]
-                        back_fqid = fqid_from_collection_and_id(
-                            back_collection, back_id
-                        )
-                    else:
-                        assert isinstance(val, str)
-                        back_fqid = val
-                        back_collection, back_id = collection_and_id_from_fqid(val)
-                        back_field = field_def["to"][back_collection]
-                    back_def = models[back_collection][back_field]
-                    back_generic = back_def["is_generic"]
-                    back_model = create_data[back_fqid]
-                    if any(
-                        back_field
-                        == (eq := models[back_collection][f].get("equal_fields"))
-                        or (isinstance(eq, list) and back_field in eq)
-                        for f in list(back_model)
-                    ):
-                        continue
-                    if back_val := back_model.get(back_field):
-                        if back_def["is_list_relation"]:
-                            if back_generic:
-                                if fqid in back_val:
-                                    if front:
-                                        model[field] = [
-                                            v for v in model[field] if v == val
-                                        ]
-                                    else:
-                                        back_model[back_field] = [
-                                            v
-                                            for v in back_model[back_field]
-                                            if v != fqid
-                                        ]
-                            else:
-                                if id_ in back_val:
-                                    if front:
-                                        model[field] = [
-                                            v for v in model[field] if v == val
-                                        ]
-                                    else:
-                                        back_model[back_field] = [
-                                            v
-                                            for v in back_model[back_field]
-                                            if v != id_
-                                        ]
-                        elif front:
-                            model[field] = [v for v in model[field] if v == val]
-                        else:
-                            del back_model[back_field]
-            else:
-                val = value
-                if isinstance(val, int):
-                    back_id = val
-                    back_collection, back_field = list(field_def["to"].items())[0]
-                    back_fqid = fqid_from_collection_and_id(back_collection, back_id)
-                else:
-                    assert isinstance(val, str)
-                    back_fqid = val
-                    back_collection, back_id = collection_and_id_from_fqid(val)
-                    back_field = field_def["to"][back_collection]
-                back_def = models[back_collection][back_field]
-                back_generic = back_def["is_generic"]
-                back_model = create_data[back_fqid]
-                if any(
-                    back_field == (eq := models[back_collection][f].get("equal_fields"))
-                    or (isinstance(eq, list) and back_field in eq)
-                    for f in list(back_model)
-                ):
-                    continue
-                if back_val := back_model.get(back_field):
-                    if back_def["is_list_relation"]:
-                        if back_generic:
-                            if fqid in back_val:
-                                if front:
-                                    del model[field]
-                                else:
-                                    back_model[back_field] = [
-                                        v for v in back_model[back_field] if v != fqid
-                                    ]
-                        else:
-                            if id_ in back_val:
-                                if front:
-                                    del model[field]
-                                else:
-                                    back_model[back_field] = [
-                                        v for v in back_model[back_field] if v != id_
-                                    ]
-                    elif front:
-                        del model[field]
-                    else:
-                        del back_model[back_field]
-
-
 def test_so_called_migration_failure_everything_deleted(
     write, finalize, assert_model
 ) -> None:
@@ -698,5 +655,6 @@ def test_so_called_migration_failure_everything_deleted(
         ]
     )
     write(*[{"type": "delete", "fqid": fqid} for fqid in create_data.keys()])
+    finalize("0081_check_equal_fields")
     for fqid, model in create_data.items():
         assert_model(fqid, {**model, "meta_deleted": True})
