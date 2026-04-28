@@ -2561,10 +2561,16 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         self.assert_model_exists("motion/2", {"diff_version": "0.1.2"})
 
     def test_forward_with_deleted_submitters(self) -> None:
-        self.create_meeting(1)
+        self.create_meeting(
+            1,
+            meeting_data={"language": "it"},  # shouldn't matter
+        )
         self.create_meeting(4)
-        self.create_meeting(7)
-        self.create_meeting(10)
+        self.create_meeting(7, meeting_data={"language": "de"})
+        self.create_meeting(
+            10,
+            meeting_data={"language": None},  # Should use orga default lang
+        )
         self.create_user("alice", [1])
         self.create_user("bob", [1])
         self.create_user("colin", [1])
@@ -2593,9 +2599,6 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
             {
                 "organization/1": {"default_language": "fr"},
                 "committee/60": {"forward_to_committee_ids": [63, 66, 69]},
-                "meeting/1": {"language": "it"},  # shouldn't matter
-                "meeting/7": {"language": "de"},
-                "meeting/10": {"language": None},  # Should use orga default lang
                 "motion_state/1": {
                     "allow_motion_forwarding": True,
                     "allow_amendment_forwarding": True,

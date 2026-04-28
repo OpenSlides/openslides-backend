@@ -581,7 +581,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         self,
     ) -> None:
         self.create_meeting(1)
-        self.create_meeting(4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_models(
             {
                 "user/1": {"organization_management_level": None},
@@ -594,7 +594,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "can_change_own_password": True,
                     "password": "secretcrypted",
                 },
-                "meeting/4": {"committee_id": 60},
                 "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
                 "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
                 "group/1": {"meeting_user_ids": [11]},

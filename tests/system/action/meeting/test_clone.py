@@ -1673,10 +1673,9 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_forwarded_motion(self) -> None:
         self.set_test_data_with_admin()
-        self.create_meeting(4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_models(
             {
-                "meeting/4": {"committee_id": 60},
                 "motion/1": {
                     "meeting_id": 1,
                     "all_derived_motion_ids": [2],

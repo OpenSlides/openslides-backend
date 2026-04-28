@@ -10,11 +10,8 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingDeleteActionTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.create_meeting()
-
     def test_delete_no_permissions(self) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
         )
@@ -26,6 +23,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_permissions_can_manage_organization(self) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
@@ -34,6 +32,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting/1")
 
     def test_delete_permissions_can_manage_committee(self) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
         )
@@ -118,6 +117,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_not_exists(f"chat_group/{i+1}")
 
     def test_delete_with_tag_and_motion(self) -> None:
+        self.create_meeting()
         self.create_motion(1)
         self.set_models(
             {
@@ -136,6 +136,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("motion/1")
 
     def test_delete_with_history_projection(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
                 "projection/42": {
@@ -155,6 +156,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("projection/42")
 
     def test_delete_meeting_with_relations(self) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
         )
@@ -296,6 +298,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("history_entry/116")
 
     def test_delete_archived_meeting(self) -> None:
+        self.create_meeting()
         self.set_models({"meeting/1": {"is_active_in_organization_id": None}})
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -307,6 +310,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting/1")
 
     def test_delete_with_poll_candidates_and_speakers(self) -> None:
+        self.create_meeting()
         self.set_committee_management_level([60])
         self.create_user("user/2", [3])
         self.create_user("user/3", [3])
@@ -411,6 +415,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_permissions_oml_locked_meeting_not_allowed(
         self,
     ) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
@@ -422,6 +427,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_permissions_committee_admin_locked_meeting_not_allowed(
         self,
     ) -> None:
+        self.create_meeting()
         self.set_organization_management_level(None)
         self.set_committee_management_level([60])
         self.set_models({"meeting/1": {"locked_from_inside": True}})
@@ -432,6 +438,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_permissions_committee_admin_locked_meeting_with_oml(
         self,
     ) -> None:
+        self.create_meeting()
         self.set_committee_management_level([60])
         self.set_models({"meeting/1": {"locked_from_inside": True}})
         response = self.request("meeting.delete", {"id": 1})
@@ -441,6 +448,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_permissions_oml_locked_meeting_with_can_manage_settings(
         self,
     ) -> None:
+        self.create_meeting()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
@@ -452,6 +460,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting/1")
 
     def test_delete_with_public_orga_file(self) -> None:
+        self.create_meeting()
         self.create_mediafile()
         self.set_models(
             {
