@@ -18,6 +18,59 @@ from openslides_backend.shared.patterns import (
     id_from_fqid,
 )
 
+# real_collections is necessary bc otherwise it'll list fake_models
+# from generic tests so long as those have run before (ew)
+real_collections: list[str] = [
+    "organization",
+    "user",
+    "meeting_user",
+    "gender",
+    "organization_tag",
+    "theme",
+    "committee",
+    "meeting",
+    "structure_level",
+    "group",
+    "personal_note",
+    "tag",
+    "agenda_item",
+    "list_of_speakers",
+    "structure_level_list_of_speakers",
+    "point_of_order_category",
+    "speaker",
+    "topic",
+    "motion",
+    "motion_submitter",
+    "motion_supporter",
+    "motion_editor",
+    "motion_working_group_speaker",
+    "motion_comment",
+    "motion_comment_section",
+    "motion_category",
+    "motion_block",
+    "motion_change_recommendation",
+    "motion_state",
+    "motion_workflow",
+    "poll",
+    "option",
+    "vote",
+    "assignment",
+    "assignment_candidate",
+    "poll_candidate_list",
+    "poll_candidate",
+    "mediafile",
+    "meeting_mediafile",
+    "projector",
+    "projection",
+    "projector_message",
+    "projector_countdown",
+    "chat_group",
+    "chat_message",
+    "action_worker",
+    "import_preview",
+    "history_position",
+    "history_entry",
+]
 models: dict[str, dict[str, dict[str, Any]]] = {
     collection: {
         field.own_field_name: (
@@ -32,11 +85,10 @@ models: dict[str, dict[str, dict[str, Any]]] = {
             if hasattr(field, "to")
             else {"is_relation": False, "is_generic": False, "is_list_relation": False}
         )
-        for field in Model().get_fields()
+        for field in model_registry[collection]().get_fields()
     }
-    for collection, Model in model_registry.items()
+    for collection in real_collections
 }
-# models = open_yml_file("./meta/models.yml")
 collection_to_id: dict[str, int] = {
     "organization": 1,
     **{
