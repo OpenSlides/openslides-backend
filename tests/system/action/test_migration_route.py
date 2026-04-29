@@ -1,27 +1,24 @@
 from collections.abc import Callable
 from threading import Lock
-from time import sleep
 from typing import Any
 from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations.exceptions import MigrationException
-from openslides_backend.migrations.migration_handler import (
-    MigrationHandler,
-    MigrationState,
-)
+from openslides_backend.migrations.migration_handler import MigrationState
 from openslides_backend.migrations.migration_helper import (
     MIN_NON_REL_MIGRATION,
     MigrationHelper,
 )
 from openslides_backend.shared.env import DEV_PASSWORD
+from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 from tests.system.util import RouteFunction, disable_dev_mode
 from tests.util import Response
 
 from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
-class BaseMigrationRouteTest(BaseInternalRequestTest):
+class BaseMigrationRouteTest(BaseInternalRequestTest, BaseMigrationTestCase):
     """
     Uses the anonymous client to call the migration route.
     """
@@ -29,24 +26,16 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     backend_migration_index = MigrationHelper.get_backend_migration_index()
     route: RouteFunction = ActionView.migrations_route
 
-    def setUp(self) -> None:
-        MigrationHelper.migrate_thread_exception = None
-        if MigrationHelper.migrate_thread_stream:
-            MigrationHandler.close_migrate_thread_stream()
-        super().setUp()
-
-    def wait_for_migration_thread(self, error: bool = False) -> None:
-        if error:
-            while not MigrationHelper.migrate_thread_exception:
-                sleep(0.02)
-        else:
-            with self.connection.cursor() as curs:
-                while (
-                    MigrationHelper.get_migration_state(curs)
-                    != MigrationState.FINALIZED
-                ):
-                    sleep(0.02)
-                    self.connection.commit()
+    def wait_for_migration_thread_and_state(self, state: MigrationState) -> None:
+        """
+        Waits for the thread to terminate for two seconds and asserts the state.
+        If state is MIGRATION_FAILED: asserts a migrate_thread_exception.
+        """
+        super().wait_for_migration_thread(2)
+        if state == MigrationState.MIGRATION_FAILED:
+            assert MigrationHelper.migrate_thread_exception
+        with self.connection.cursor() as curs:
+            assert MigrationHelper.get_migration_state(curs) == state
 
     def migration_request(
         self,
@@ -79,7 +68,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_migrate_success(self) -> None:
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
-        self.wait_for_migration_thread()
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZED)
         with self.connection.cursor() as curs:
             assert (
                 MigrationHelper.get_database_migration_index(curs)
@@ -94,12 +83,24 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_unknown_command(self) -> None:
         response = self.migration_request("unknown")
         self.assert_status_code(response, 400)
+        assert response.json == {
+            "success": False,
+            "message": "Unknown command: unknown",
+        }
 
 
 @patch(
     "openslides_backend.migrations.migration_handler.MigrationHandler.execute_command"
 )
 class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTest):
+    def setUp(self) -> None:
+        super().setUp()
+        with self.connection.cursor() as curs:
+            curs.execute("TRUNCATE TABLE version")
+            MigrationHelper.set_database_migration_info(
+                curs, MIN_NON_REL_MIGRATION, MigrationState.FINALIZED
+            )
+
     def wait_for_lock(
         self,
         wait_lock: Lock,
@@ -113,25 +114,34 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         """
 
         def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
-            MigrationHelper.write_line("started")
+            match args[0]:
+                case "migrate":
+                    state = MigrationState.MIGRATION_RUNNING
+                    MigrationHelper.write_line("migration started")
+                case "finalize":
+                    state = MigrationState.FINALIZATION_RUNNING
+                    MigrationHelper.write_line("finalization started")
             with self.connection.cursor() as curs:
                 MigrationHelper.set_database_migration_info(
-                    curs, MIN_NON_REL_MIGRATION, MigrationState.FINALIZED
+                    curs, self.backend_migration_index, state
                 )
-                MigrationHelper.set_database_migration_info(
-                    curs, self.backend_migration_index, MigrationState.MIGRATION_RUNNING
-                )
+            match args[0]:
+                case "migrate":
+                    state = MigrationState.FINALIZATION_REQUIRED
+                    finished_message = "migration finished"
+                case "finalize":
+                    state = MigrationState.FINALIZED
+                    finished_message = "finalization finished"
+            # This is wonky in some tests as the thread may stop later than the test itself.
             indicator_lock.release()
             wait_lock.acquire()
             if error:
                 raise MigrationException("test")
             with self.connection.cursor() as curs:
                 MigrationHelper.set_database_migration_info(
-                    curs,
-                    self.backend_migration_index,
-                    MigrationState.FINALIZED,
+                    curs, self.backend_migration_index, state
                 )
-            MigrationHelper.write_line("finished")
+            MigrationHelper.write_line(finished_message)
 
         return _wait_for_lock
 
@@ -143,28 +153,32 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         execute_command.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
+        assert response.json == {
+            "status": MigrationState.MIGRATION_RUNNING,
+            "success": True,
+            "output": "migration started\n",
+        }
 
         indicator_lock.acquire()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "started\n"
+        assert response.json["output"] == "migration started\n"
 
         wait_lock.release()
-        self.wait_for_migration_thread()
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZATION_REQUIRED)
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "finished\n"
+        assert response.json["output"] == "migration finished\n"
 
         # check that the output is preserved for future progress requests
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "finished\n"
+        assert response.json["output"] == "migration finished\n"
 
     def test_stats_during_migration(self, execute_command: Mock) -> None:
         # TODO this test is very hard wired and prone to break with the next migration.
         # needs automatic migration index handling and possibly actual execution of a migration
         with self.connection.cursor() as curs:
-            curs.execute("TRUNCATE TABLE version")
             curs.execute("CREATE TABLE models (fqid varchar(256), deleted boolean);")
             curs.execute(
                 "INSERT INTO models (fqid, deleted) VALUES (%s, %s);",
@@ -183,25 +197,31 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         execute_command.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
         response = self.migration_request("finalize")
         self.assert_status_code(response, 200)
+        assert response.json == {
+            "status": MigrationState.FINALIZATION_RUNNING,
+            "success": True,
+            "output": "finalization started\n",
+        }
 
         indicator_lock.acquire()
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
-            "status": MigrationState.MIGRATION_RUNNING,
-            "output": "started\n",
+            "status": MigrationState.FINALIZATION_RUNNING,
+            "output": "finalization started\n",
             "current_migration_index": MIN_NON_REL_MIGRATION,
             "target_migration_index": self.backend_migration_index,
-            "migratable_models": {"organization": {"count": 1, "migrated": 1}},
+            "migratable_models": {},
+            # "migratable_models": {"organization": {"count": 1, "migrated": 1}},
         }
 
         wait_lock.release()
-        self.wait_for_migration_thread()
+        self.wait_for_migration_thread_and_state(MigrationState.FINALIZED)
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finished\n",
+            "output": "finalization finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -213,7 +233,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finished\n",
+            "output": "finalization finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -251,14 +271,14 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["output"] == "started\n"
+        assert response.json["output"] == "migration started\n"
 
         wait_lock.release()
-        self.wait_for_migration_thread(True)
+        self.wait_for_migration_thread_and_state(MigrationState.MIGRATION_FAILED)
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["output"] == "started\n"
+        assert response.json["output"] == "migration started\n"
         assert response.json["exception"] == "test"
 
 
