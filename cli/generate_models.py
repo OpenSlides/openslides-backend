@@ -233,6 +233,7 @@ class Attribute(Node):
                     "deferred",
                     "unique",
                     "equal_fields",
+                    "log_triggers",
                 ):
                     if k == "enum" and isinstance(v, str):
                         enum_name = HelperGetNames.get_enum_name(v)
