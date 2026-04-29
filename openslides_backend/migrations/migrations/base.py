@@ -8,7 +8,7 @@ class BaseMigration:
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
         """
-        This function should be overridden by subclasses to implement the desired behavior.
+        This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Checks all prerequisites for the migration.
         Input:
@@ -21,7 +21,7 @@ class BaseMigration:
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
         """
-        This function should be overridden by subclasses to implement the desired behavior.
+        This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Applies all manual SQL DDL changes necessary.
             (Triggers and views are automatically recreated by the framework.)
@@ -32,7 +32,7 @@ class BaseMigration:
     @staticmethod
     def data_manipulation(curs: Cursor[DictRow]) -> None:
         """
-        This function should be overridden by subclasses to implement the desired behavior.
+        This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Writes all data changes necessary after the DDL changes.
         Input:
@@ -42,7 +42,7 @@ class BaseMigration:
     @staticmethod
     def cleanup(curs: Cursor[DictRow]) -> None:
         """
-        This function should be overridden by subclasses to implement the desired behavior.
+        This function can be overridden by subclasses in order to implement the desired behavior.
         Purpose:
             Deletes leftovers of the migration.
         Input:
