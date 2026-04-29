@@ -400,7 +400,7 @@ class Migration(BaseModelMigration):
         affected_models: dict[int, dict[str, Any]],
         sorted_eqfs: tuple[str, ...],
     ) -> tuple[Any, ...]:
-        model = affected_models[id_]
+        model = affected_models.get(id_, {})
         return tuple(
             [
                 (

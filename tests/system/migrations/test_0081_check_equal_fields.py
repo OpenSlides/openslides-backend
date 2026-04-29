@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from typing import Any, cast
 
@@ -658,3 +659,42 @@ def test_so_called_migration_failure_everything_deleted(
     finalize("0081_check_equal_fields")
     for fqid, model in create_data.items():
         assert_model(fqid, {**model, "meta_deleted": True})
+
+
+def test_so_called_migration_failure_delete_only_meeting(
+    write, finalize, assert_model
+) -> None:
+    create_data = get_base_data()[0]
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": model}
+            for fqid, model in create_data.items()
+        ]
+    )
+    write({"type": "delete", "fqid": (fqid := collection_to_fqid["group"])})
+    try:
+        finalize("0081_check_equal_fields")
+        raise pytest.fail(
+            f"Expected migration 81 to fail for deleted {fqid}. It didn't."
+        )
+    except MigrationException as e:
+        assert "Migration exception:\n* Detected different equal_fields: " in e.message
+        assert f"{fqid}/" in e.message
+        substrs = []
+        for part in e.message.split(":"):
+            if fqid in part:
+                i = part.index(fqid)
+                substrs.append(part[i:])
+        assert sorted(substrs) == sorted(
+            [
+                "group/10/meeting_user_ids",
+                "group/10/meeting_mediafile_access_group_ids",
+                "group/10/read_comment_section_ids",
+                "group/10/write_comment_section_ids",
+                "group/10/read_chat_group_ids",
+                "group/10/write_chat_group_ids",
+                "group/10/poll_ids",
+            ]
+        )
+        for substr in substrs:
+            assert re.search(f".*{substr}: \\((None,)*(None,|None)\\) .*", e.message)
