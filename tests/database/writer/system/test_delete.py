@@ -108,7 +108,7 @@ def test_delete_1_1_not_null_error(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id from relationship before list_of_speakers/3/content_object_id"
+        "Trigger tr_ud_not_null_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id from relationship before list_of_speakers/3/content_object_id"
         in e_info.value.args[0]
     )
 
@@ -224,7 +224,7 @@ def test_delete_1_n_not_null_error(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_meeting_default_projector_agenda_item_list_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_agenda_item_list_ids from relationship before projector/1/used_as_default_projector_for_agenda_item_list_in_meeting_id"
+        "Trigger tr_ud_not_null_meeting_default_projector_agenda_item_list_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_agenda_item_list_ids from relationship before projector/1/used_as_default_projector_for_agenda_item_list_in_meeting_id"
         in e_info.value.args[0]
     )
 
@@ -386,7 +386,7 @@ def test_delete_n_m_not_null_error(
             )
             conn.commit()
         assert (
-            "Trigger tr_d_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids from relationship before group/4/meeting_user_ids"
+            "Trigger tr_d_not_null_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids from relationship before group/4/meeting_user_ids"
             in e_info.value.args[0]
         )
 
