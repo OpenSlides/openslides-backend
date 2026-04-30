@@ -394,10 +394,22 @@ class UpdatePollTestCase(BasePollTestCase):
 
     def test_motion_history_information(self) -> None:
         self.create_motion(1, 2)
-        self.set_models({"poll/1": {"content_object_id": "motion/2"}})
+        self.set_models(
+            {
+                "poll/3": {
+                    "title": "motion poll",
+                    "pollmethod": "Y",
+                    "onehundred_percent_base": "Y",
+                    "state": Poll.STATE_CREATED,
+                    "type": Poll.TYPE_NAMED,
+                    "meeting_id": 1,
+                    "content_object_id": "motion/2",
+                },
+            }
+        )
         response = self.request(
             "poll.update",
-            {"id": 1, "title": "test"},
+            {"id": 3, "title": "test"},
         )
         self.assert_status_code(response, 200)
         self.assert_history_information("motion/2", ["Voting updated"])
@@ -705,44 +717,22 @@ class UpdatePollTestCase(BasePollTestCase):
         self.base_test_live_voting(Poll.TYPE_NAMED, True, False, poll_id=2)
 
     def test_live_voting_named_assignment_poll_one_option_yna(self) -> None:
-        self.set_models(
-            {
-                "poll/2": {
-                    "content_object_id": "assignment/1",
-                    "title": "test_live_voting_named_list_poll",
-                    "pollmethod": "YNA",
-                    "type": Poll.TYPE_NAMED,
-                    "onehundred_percent_base": "Y",
-                    "state": Poll.STATE_CREATED,
-                    "meeting_id": 1,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                },
-                "option/1": {"poll_id": 2},
-            }
+        self.base_test_live_voting(
+            Poll.TYPE_NAMED,
+            True,
+            False,
+            {"content_object_id": "assignment/1"},
+            poll_id=2,
         )
-        self.base_test_live_voting(Poll.TYPE_NAMED, True, False, poll_id=2)
 
     def test_live_voting_named_assignment_poll_one_option_yn(self) -> None:
-        self.set_models(
-            {
-                "poll/2": {
-                    "content_object_id": "assignment/1",
-                    "title": "test_live_voting_named_list_poll",
-                    "pollmethod": "YN",
-                    "type": Poll.TYPE_NAMED,
-                    "onehundred_percent_base": "Y",
-                    "state": Poll.STATE_CREATED,
-                    "meeting_id": 1,
-                    "min_votes_amount": 1,
-                    "max_votes_amount": 1,
-                    "max_votes_per_option": 1,
-                },
-                "option/1": {"poll_id": 2},
-            }
+        self.base_test_live_voting(
+            Poll.TYPE_NAMED,
+            True,
+            False,
+            {"content_object_id": "assignment/1"},
+            poll_id=2,
         )
-        self.base_test_live_voting(Poll.TYPE_NAMED, True, False, poll_id=2)
 
     def test_live_voting_wrong_type_analog(self) -> None:
         self.base_test_live_voting(Poll.TYPE_ANALOG, False, True)
@@ -769,18 +759,34 @@ class UpdatePollTestCase(BasePollTestCase):
         poll_type: str,
         is_allowed: bool,
         is_motion_poll: bool,
-        poll_changes: dict[str, Any] | None = None,
+        poll_changes: dict[str, Any] = {},
         poll_id: int = 1,
     ) -> None:
-        poll_updates: dict[str, Any] = {"type": poll_type}
+        poll_data: dict[str, Any] = {"type": poll_type, **poll_changes}
 
-        if is_motion_poll:
-            self.create_motion(1, 3)
-            self.set_models({"motion_state/1": {"allow_create_poll": True}})
-            poll_updates["content_object_id"] = "motion/3"
-        elif poll_changes:
-            poll_updates.update(poll_changes)
-        self.update_model(f"poll/{poll_id}", poll_updates)
+        if poll_id == 1 and "content_object_id" not in poll_changes:
+            self.update_model("poll/1", poll_data)
+            poll_id = 1
+        else:
+            if is_motion_poll:
+                self.create_motion(1, 3)
+                self.set_models({"motion_state/1": {"allow_create_poll": True}})
+                poll_data["content_object_id"] = "motion/3"
+            self.set_models(
+                {
+                    **({"group/1": {"poll_ids": [1, poll_id]}} if poll_id != 1 else {}),
+                    f"poll/{poll_id}": {
+                        "title": "motion live voting",
+                        "pollmethod": "Y",
+                        "onehundred_percent_base": "Y",
+                        "state": Poll.STATE_CREATED,
+                        "meeting_id": 1,
+                        **poll_data,
+                    },
+                    "option/3": {"meeting_id": 1, "poll_id": 2},
+                    "option/4": {"meeting_id": 1, "poll_id": 2},
+                }
+            )
 
         response = self.request(
             "poll.update", {"id": poll_id, "live_voting_enabled": True}

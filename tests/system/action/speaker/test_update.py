@@ -556,9 +556,10 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"list_of_speakers_enable_point_of_order_speakers": True},
-                "meeting_user/7": {"user_id": 1},
             }
         )
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request("speaker.update", {"id": 890, "point_of_order": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/890", {"point_of_order": True})
