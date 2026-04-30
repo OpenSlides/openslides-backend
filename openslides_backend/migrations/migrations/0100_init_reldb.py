@@ -1,12 +1,13 @@
+import os
 from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
 from typing import Any, cast
+from zoneinfo import ZoneInfo
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
-from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
 from openslides_backend.migrations.migration_helper import (
@@ -14,6 +15,7 @@ from openslides_backend.migrations.migration_helper import (
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.migrations.migrations.base import BaseMigration
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
     DecimalField,
@@ -25,11 +27,7 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import *  # type: ignore # noqa # necessary to fill model_registry
-from openslides_backend.shared.patterns import (
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-)
-from openslides_backend.shared.typing import Collection
+from openslides_backend.shared.env import is_truthy
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
 # TODO update before merging into main.
@@ -163,7 +161,7 @@ class Sql_helper:
             else:
                 data = Decimal(data)
         elif isinstance(field, TimestampField):
-            data = datetime.fromtimestamp(data)
+            data = datetime.fromtimestamp(data, ZoneInfo("UTC"))
         elif isinstance(field, JSONField):
             data = json_dumps(data)
 
@@ -231,157 +229,176 @@ class Sql_helper:
 
     # END OF FUNCTION
 
-    @staticmethod
-    def get_select_collection_command(
-        collection: Collection, mapped_fields: list[str]
-    ) -> str:
-        """
-        Purpose:
-            Generates SQL to get all of the collections models from the models->>data column.
-        Input:
-            - collection: collection that will be retrieved.
-            - mapped_fields: the fields/columns that are to be retrieved.
-        Returns:
-            - sql string that can be executed.
-        """
-        mf_string = ",".join(mapped_fields)
-        return f"""
-            SELECT {mf_string} FROM models
-            WHERE fqid LIKE '{fqid_from_collection_and_id(collection, '%')}';
-            """
-
-    # END OF FUNCTION
-
-    @staticmethod
-    def get_update_models_command(
-        models: list[dict[str, Any]],
-    ) -> tuple[str, list[tuple[Jsonb, FullQualifiedId],]]:
-        """
-        Purpose:
-            Generates SQL to be executed with executemany for updating models by overwriting their models->>data column.
-        Input:
-            - models: list of all elements that need to be updated. Its dicts must contain 'fqid' and 'data'.
-        Returns:
-            - SQL string that can be executed.
-            - Argument list to be directly passed with SQL. Holding a tuple for each model with Jsonb and the fqid.
-        """
-        return (
-            """UPDATE models SET data=%s WHERE fqid=%s""",
-            [(Jsonb(elem["data"]), elem["fqid"]) for elem in models],
-        )
-
-    # END OF FUNCTION
-
 
 # END HELPER CLASS
 
 
-def data_manipulation(curs: Cursor[DictRow]) -> None:
-    """
-    Purpose:
-        Iterates over chunks of the DB table models and writes the data into the respective DB tables
-    """
-    Sql_helper.cursor = curs
-
-    data_chunk: list[dict[str, Any]]
-    collection: str
-    table_name: str
-    data: dict[str, Any]
-    model: Model
-    insert_intermediate_t_commands: list
-    sql_fields: str
-    sql_values: list
-
-    insert_intermediate_t_commands = []
-
-    result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
-    assert result
-    models_count = result["count"]
-    found_collections = set()
-    # 1) Chunkwise loop trough all data_rows for the models table
-    for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
-        data_chunk = Sql_helper.get_next_data_row_chunk()
-
-        for data_row in data_chunk:
-            collection = data_row["fqid"].split("/")[0]
-            found_collections.add(collection)
-            table_name = HelperGetNames.get_table_name(collection, True)
-            data = data_row["data"]
-
-            if collection == "action_worker":
-                # shorten name to fit into 256 bytes.
-                action_names = data["name"].split(",")
-                if len(action_names) > 1:
-                    data["name"] = f"{action_names[0]}_({len(action_names)})"
-
-            model = model_registry[collection]()
-            sql_fields = ""
-            sql_placeholder = ""
-            sql_values = []
-
-            # 2) Iterate over any field found in the data_row
-            for field_name in data.keys():
-                # 3) Check wether field exists in models.py too
-                if field := model.try_get_field(field_name):
-
-                    # 3.1) If field is RelationListField write the other tables
-                    if (
-                        isinstance(field, tuple(RELATION_LIST_FIELD_CLASSES))
-                        and cast(Field, field).is_primary
-                        and cast(Field, field).write_fields is not None
-                    ):
-                        insert_intermediate_t_commands.extend(
-                            Sql_helper.get_insert_intermediate_t_commands(
-                                cast(Field, field), data
-                            )
-                        )
-
-                    # 3.2) If field is non writable skip
-                    if Sql_helper.is_non_writable_sql_field(field):
-                        continue
-
-                    # 3.3) If field is non relational simply write
-                    value = Sql_helper.transform_data(data[field_name], field)
-                    if len(sql_fields) == 0:
-                        sql_fields = field_name
-                        sql_placeholder = "%s"
-                        sql_values = [value]
-                    else:
-                        sql_fields += f", {field_name}"
-                        sql_placeholder += ", %s"
-                        sql_values.append(value)
-            # END LOOP data.keys()
-            curs.execute(
-                f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
-                sql_values,
-            )
-        # END LOOP data_rows
+class Migration(BaseMigration):
+    @staticmethod
+    def check_prerequisites(curs: Cursor[DictRow]) -> str:
+        errors = ""
         MigrationHelper.write_line(
-            f"{min(Sql_helper.offset, models_count)} of {models_count} models written to tables."
+            "This is migration 100, part of the OpenSlides 4.3.0 release."
         )
-    # END LOOP data chunks
+        MigrationHelper.write_line(
+            "This migration will fundamentally restructure all data."
+        )
+        MigrationHelper.write_line("For more information, see")
+        MigrationHelper.write_line(
+            "  https://github.com/OpenSlides/OpenSlides/blob/main/UPDATE_TO_4.3.md"
+        )
+        MigrationHelper.write_line("")
 
-    # 4) INSERT intermediate tables
-    for command, values in insert_intermediate_t_commands:
-        curs.execute(command, values)
+        for key in ["MIG0100_I_READ_DOCS", "MIG0100_TIMEZONE"]:
+            if not os.getenv(key, ""):
+                if not errors:
+                    errors += f"Required env vars not set - aborting.\nMissing: {key}"
+                else:
+                    errors += f", {key}"
+        if errors:
+            return errors
 
-    # clear replace tables as this migration writes the tables directly
-    MigrationHelper.set_database_migration_info(
-        curs,
-        100,
-        MigrationState.FINALIZATION_REQUIRED,
-    )
+        i_read_docs = os.environ["MIG0100_I_READ_DOCS"]
+        time_zone = os.environ["MIG0100_TIMEZONE"]
 
+        if not is_truthy(i_read_docs):
+            errors += f"{i_read_docs} is no acceptable value for MIG0100_I_READ_DOCS"
+        pg_time_zones = [
+            tz["name"] for tz in curs.execute("SELECT name FROM pg_timezone_names;")
+        ]
+        if time_zone not in (pg_time_zones):
+            errors += f"{time_zone} is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
+        if errors:
+            return errors
 
-def cleanup(curs: Cursor[DictRow]) -> None:
-    """
-    Purpose:
-        Deletes the old tables
-    Input:
-        cursor
-    """
-    for table_name in OLD_TABLES:
-        curs.execute(f"DROP TABLE {table_name} CASCADE;")
+        MigrationHelper.write_line(
+            f"For setting organization and meeting time zones using '{time_zone}'."
+        )
+        if not "UTC" == str(local_time_zone := datetime.now().astimezone().tzinfo):
+            MigrationHelper.write_line(
+                f"OS is not UTC but using {local_time_zone} during migration."
+            )
+        return ""
 
+    @staticmethod
+    def data_manipulation(curs: Cursor[DictRow]) -> None:
+        """
+        Purpose:
+            Iterates over chunks of the DB table models and writes the data into the respective DB tables
+        """
+        Sql_helper.cursor = curs
 
-# END OF FUNCTION
+        data_chunk: list[dict[str, Any]]
+        collection: str
+        table_name: str
+        data: dict[str, Any]
+        model: Model
+        insert_intermediate_t_commands: list
+        sql_fields: str
+        sql_values: list
+
+        insert_intermediate_t_commands = []
+
+        result = curs.execute("SELECT COUNT(*) FROM models;").fetchone()
+        assert result
+        models_count = result["count"]
+        found_collections = set()
+        # 1) Chunkwise loop trough all data_rows for the models table
+        for _ in range(0, ceil(Sql_helper.get_row_count() / Sql_helper.LIMIT)):
+            data_chunk = Sql_helper.get_next_data_row_chunk()
+
+            for data_row in data_chunk:
+                collection = data_row["fqid"].split("/")[0]
+                found_collections.add(collection)
+                table_name = HelperGetNames.get_table_name(collection, True)
+                data = data_row["data"]
+
+                match collection:
+                    case "action_worker":
+                        # shorten name to fit into 256 bytes.
+                        action_names = data["name"].split(",")
+                        if len(action_names) > 1:
+                            data["name"] = f"{action_names[0]}_({len(action_names)})"
+                    case "organization" | "meeting":
+                        data["time_zone"] = os.environ["MIG0100_TIMEZONE"]
+
+                model = model_registry[collection]()
+                sql_fields = ""
+                sql_placeholder = ""
+                sql_values = []
+
+                # 2) Iterate over any field found in the data_row
+                for field_name in data.keys():
+                    # 3) Check wether field exists in models.py too
+                    if field := model.try_get_field(field_name):
+
+                        # 3.1) If field is RelationListField write the other tables
+                        if (
+                            isinstance(field, tuple(RELATION_LIST_FIELD_CLASSES))
+                            and cast(Field, field).is_primary
+                            and cast(Field, field).write_fields is not None
+                        ):
+                            insert_intermediate_t_commands.extend(
+                                Sql_helper.get_insert_intermediate_t_commands(
+                                    cast(Field, field), data
+                                )
+                            )
+
+                        # 3.2) If field is non writable skip
+                        if Sql_helper.is_non_writable_sql_field(field):
+                            continue
+
+                        # 3.3) If field is non relational simply write
+                        value = Sql_helper.transform_data(data[field_name], field)
+                        if len(sql_fields) == 0:
+                            sql_fields = field_name
+                            sql_placeholder = "%s"
+                            sql_values = [value]
+                        else:
+                            sql_fields += f", {field_name}"
+                            sql_placeholder += ", %s"
+                            sql_values.append(value)
+                # END LOOP data.keys()
+                curs.execute(
+                    f"INSERT INTO {table_name} ({sql_fields}) VALUES ({sql_placeholder})",
+                    sql_values,
+                )
+            # END LOOP data_rows
+            MigrationHelper.write_line(
+                f"{min(Sql_helper.offset, models_count)} of {models_count} models written to tables."
+            )
+        # END LOOP data chunks
+
+        # 4) INSERT intermediate tables
+        for command, values in insert_intermediate_t_commands:
+            curs.execute(command, values)
+
+        # clear replace tables as this migration writes the tables directly
+        MigrationHelper.set_database_migration_info(
+            curs,
+            100,
+            MigrationState.FINALIZATION_REQUIRED,
+        )
+
+    @staticmethod
+    def cleanup(curs: Cursor[DictRow]) -> None:
+        """
+        Purpose:
+            Deletes the old tables
+        Input:
+            cursor
+        """
+
+        try:
+            i_read_code = os.environ["MIG0100_I_READ_CODE"]
+        except KeyError:
+            i_read_code = None
+        if i_read_code is not None:
+            if is_truthy(i_read_code):
+                print("(┛◉Д◉)┛彡┻━┻")
+                MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
+
+        for table_name in OLD_TABLES:
+            curs.execute(f"DROP TABLE {table_name} CASCADE;")
+
+    # END OF FUNCTION
