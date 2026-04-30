@@ -115,7 +115,7 @@ class TestCreateRelation(PatchModelRegistryMixin, BaseGenericTestCase):
         id_field: &id_field
             type: number
             restriction_mode: A
-            constant: true
+            constant_strict: true
             required: true
     {collection_a}:
         fields:

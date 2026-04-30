@@ -221,7 +221,7 @@ class Attribute(Node):
             self.required = value.pop("required", False)
             self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
-            self.constant = value.pop("constant", False)
+            self.constant = value.pop("constant", False) or value.pop("constant_strict", False)
             self.default = value.pop("default", None)
             for k, v in value.items():
                 if k not in (

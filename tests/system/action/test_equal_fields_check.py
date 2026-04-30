@@ -158,7 +158,7 @@ def generate_collection_fields(
         id_field: &id_field
             type: number
             restriction_mode: A
-            constant: true
+            constant_strict: true
             required: true
     {collection_a}:
         fields:
@@ -186,7 +186,7 @@ def generate_collection_fields(
                 type: number
             meeting_id:
                 type: relation
-                constant: true
+                constant_strict: true
                 to: {collection_a}/{b_coll}_id
                 reference: {collection_a}
             {field_group_1}
@@ -197,7 +197,7 @@ def generate_collection_fields(
                 type: number
             meeting_id:
                 type: relation
-                constant: true
+                constant_strict: true
                 to: {collection_a}/{c_coll}_ids
                 reference: {collection_a}
             {field_group_2}"""
