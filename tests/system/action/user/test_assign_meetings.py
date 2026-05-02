@@ -1,9 +1,11 @@
+from typing import Any
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_correct(self) -> None:
-        meeting_data = {
+        meeting_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing"},
             7: {"name": "success(added)", "committee_id": 63},
@@ -57,7 +59,7 @@ class UserAssignMeetings(BaseActionTestCase):
         """
         ...and don't ignore groups that are just named "Anonymous"
         """
-        meeting_data = {
+        meeting_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing", "committee_id": 60},
             7: {
@@ -332,7 +334,7 @@ class UserAssignMeetings(BaseActionTestCase):
         )
 
     def test_assign_meetings_with_locked_meetings(self) -> None:
-        meeting_data = {
+        meeting_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing", "committee_id": 60, "locked_from_inside": True},
             7: {"name": "success(added)", "committee_id": 60},
