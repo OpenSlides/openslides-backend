@@ -1578,13 +1578,9 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_with_personal_notes(self) -> None:
         # create personal notes, motions, and meetings
-        meeting_ids = list(range(1, 8, 3))
-        for meeting_id in meeting_ids:
-            self.create_meeting(meeting_id)
-
         map_motion_id_to_meeting_id = {
             motion_id: meeting_id
-            for meeting_id in meeting_ids
+            for meeting_id in list(range(1, 8, 3))
             for motion_id in list(
                 range(
                     int((meeting_id - 1) / 3) * 2 + 1, int((meeting_id - 1) / 3) * 2 + 3

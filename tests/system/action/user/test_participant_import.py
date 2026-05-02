@@ -1412,7 +1412,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action participant.import. Missing permissions: Permission user.can_manage in meeting 1 or OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action participant.import. Missing permissions: Permission user.can_manage in meeting 1 or OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 
