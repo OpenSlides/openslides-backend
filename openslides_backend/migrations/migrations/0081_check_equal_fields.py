@@ -109,8 +109,6 @@ class Migration(BaseModelMigration):
         for collection, fields in self.models.items():
             for field, field_def in fields.items():
                 if eq := set(field_def.get("equal_fields", [])):
-                    if not field_def["is_relation"]:
-                        continue
                     back_data = self.get_relation_data(field_def)
                     for back_collection, back_field_data in back_data.items():
                         for back_field, back_field_def in back_field_data.items():
@@ -130,16 +128,10 @@ class Migration(BaseModelMigration):
                                 or not back_field_def.get("equal_fields")
                             ):
                                 full_eq_tup = tuple(sorted(full_eq))
-                                if collection == "meeting":
-                                    relations[
-                                        (back_collection, back_field),
-                                        (collection, field),
-                                    ] = (full_eq_tup, back_field_def, field_def)
-                                else:
-                                    relations[
-                                        (collection, field),
-                                        (back_collection, back_field),
-                                    ] = (full_eq_tup, field_def, back_field_def)
+                                relations[
+                                    (collection, field),
+                                    (back_collection, back_field),
+                                ] = (full_eq_tup, field_def, back_field_def)
         return relations
 
     def get_relation_data(
@@ -295,8 +287,8 @@ class Migration(BaseModelMigration):
             if field_def1["is_list_relation"]:
                 for entry in model.get(field1) or []:
                     if is_generic:
-                        coll, id_ = collection_and_id_from_fqid(entry)
-                        if coll != collection2:
+                        coll2, id_ = collection_and_id_from_fqid(entry)
+                        if coll2 != collection2:
                             continue
                     else:
                         id_ = entry
@@ -304,8 +296,8 @@ class Migration(BaseModelMigration):
                         missing_ids.add(id_)
             elif is_generic:
                 if fqid := model.get(field1):
-                    coll, id_ = collection_and_id_from_fqid(fqid)
-                    if coll == collection2 and id_ not in affected_models2:
+                    coll2, id_ = collection_and_id_from_fqid(fqid)
+                    if coll2 == collection2 and id_ not in affected_models2:
                         missing_ids.add(id_)
             elif (id_val := (model.get(field1))) and id_val not in affected_models2:
                 missing_ids.add(id_val)
