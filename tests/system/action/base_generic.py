@@ -79,6 +79,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             create_trigger_1_1_relation_not_null_code,
             create_trigger_1_n_relation_not_null_code,
             create_trigger_n_m_relation_not_null_code,
+            create_trigger_prevent_updates_code,
             create_trigger_unique_ids_pair_code,
             create_trigger_equal_fields_code,
             create_trigger_notify_code,
@@ -98,6 +99,7 @@ class BaseGenericTestCase(BaseActionTestCase):
             + create_trigger_1_1_relation_not_null_code
             + create_trigger_1_n_relation_not_null_code
             + create_trigger_n_m_relation_not_null_code
+            + create_trigger_prevent_updates_code
             + create_trigger_unique_ids_pair_code
             + create_trigger_equal_fields_code
         )

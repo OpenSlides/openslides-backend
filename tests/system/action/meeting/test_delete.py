@@ -42,81 +42,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("meeting/1")
 
-    def test_delete_full_meeting(self) -> None:
-        self.load_example_data()
-        self.set_models(
-            {
-                "projection/5": {
-                    "current_projector_id": None,
-                    "preview_projector_id": None,
-                    "history_projector_id": 1,
-                    "content_object_id": "meeting/1",
-                    "stable": False,
-                    "type": None,
-                    "weight": 1,
-                    "options": Jsonb({}),
-                    "meeting_id": 1,
-                },
-            }
-        )
-        response = self.request("meeting.delete", {"id": 1})
-        self.assert_status_code(response, 200)
-        self.assert_model_not_exists("meeting/1")
-        self.assert_model_exists("committee/1", {"meeting_ids": None})
-        # assert all related models are deleted
-        for i in range(5):
-            self.assert_model_not_exists(f"group/{i+1}")
-        self.assert_model_not_exists("personal_note/1")
-        for i in range(3):
-            self.assert_model_not_exists(f"tag/{i+1}")
-        for i in range(15):
-            self.assert_model_not_exists(f"agenda_item/{i+1}")
-        for i in range(16):
-            self.assert_model_not_exists(f"list_of_speakers/{i+1}")
-        for i in range(13):
-            self.assert_model_not_exists(f"speaker/{i+1}")
-        for i in range(8):
-            self.assert_model_not_exists(f"topic/{i+1}")
-        for i in range(4):
-            self.assert_model_not_exists(f"motion/{i+1}")
-        for i in range(4):
-            self.assert_model_not_exists(f"motion_submitter/{i+1}")
-        self.assert_model_not_exists("motion_comment/1")
-        self.assert_model_not_exists("motion_supporter/1")
-        self.assert_model_not_exists("motion_comment_section/1")
-        for i in range(2):
-            self.assert_model_not_exists(f"motion_category/{i+1}")
-        self.assert_model_not_exists("motion_block/1")
-        for i in range(2):
-            self.assert_model_not_exists(f"motion_change_recommendation/{i+4}")
-        for i in range(14):
-            self.assert_model_not_exists(f"motion_state/{i+1}")
-        for i in range(2):
-            self.assert_model_not_exists(f"motion_workflow/{i+1}")
-        for i in range(5):
-            self.assert_model_not_exists(f"poll/{i+1}")
-        for i in range(13):
-            self.assert_model_not_exists(f"option/{i+1}")
-        for i in range(9):
-            self.assert_model_not_exists(f"vote/{i+1}")
-        for i in range(2):
-            self.assert_model_not_exists(f"assignment/{i+1}")
-        for i in range(5):
-            self.assert_model_not_exists(f"assignment_candidate/{i+1}")
-        for i in range(1):
-            self.assert_model_not_exists(f"mediafile/{i+1}")
-        for i in range(1):
-            self.assert_model_not_exists(f"meeting_mediafile/{i+1}")
-        for i in range(2):
-            self.assert_model_not_exists(f"projector/{i+1}")
-        for i in range(5):
-            self.assert_model_not_exists(f"projection/{i+1}")
-        self.assert_model_not_exists("projector_message/1")
-        for i in range(2):
-            self.assert_model_not_exists(f"projector_countdown/{i+1}")
-        for i in range(2):
-            self.assert_model_not_exists(f"chat_group/{i+1}")
-
     def test_delete_with_tag_and_motion(self) -> None:
         self.create_motion(1)
         self.set_models(
@@ -467,3 +392,80 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting_mediafile/2")
         self.assert_model_exists("mediafile/1", {"meeting_mediafile_ids": None})
+
+
+class MeetingDeleteActionFullDataTest(BaseActionTestCase):
+    def test_delete_full_meeting(self) -> None:
+        self.load_example_data()
+        self.set_models(
+            {
+                "projection/5": {
+                    "current_projector_id": None,
+                    "preview_projector_id": None,
+                    "history_projector_id": 1,
+                    "content_object_id": "meeting/1",
+                    "stable": False,
+                    "type": None,
+                    "weight": 1,
+                    "options": Jsonb({}),
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_exists("committee/1", {"meeting_ids": None})
+        # assert all related models are deleted
+        for i in range(5):
+            self.assert_model_not_exists(f"group/{i+1}")
+        self.assert_model_not_exists("personal_note/1")
+        for i in range(3):
+            self.assert_model_not_exists(f"tag/{i+1}")
+        for i in range(15):
+            self.assert_model_not_exists(f"agenda_item/{i+1}")
+        for i in range(16):
+            self.assert_model_not_exists(f"list_of_speakers/{i+1}")
+        for i in range(13):
+            self.assert_model_not_exists(f"speaker/{i+1}")
+        for i in range(8):
+            self.assert_model_not_exists(f"topic/{i+1}")
+        for i in range(4):
+            self.assert_model_not_exists(f"motion/{i+1}")
+        for i in range(4):
+            self.assert_model_not_exists(f"motion_submitter/{i+1}")
+        self.assert_model_not_exists("motion_comment/1")
+        self.assert_model_not_exists("motion_supporter/1")
+        self.assert_model_not_exists("motion_comment_section/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"motion_category/{i+1}")
+        self.assert_model_not_exists("motion_block/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"motion_change_recommendation/{i+4}")
+        for i in range(14):
+            self.assert_model_not_exists(f"motion_state/{i+1}")
+        for i in range(2):
+            self.assert_model_not_exists(f"motion_workflow/{i+1}")
+        for i in range(5):
+            self.assert_model_not_exists(f"poll/{i+1}")
+        for i in range(13):
+            self.assert_model_not_exists(f"option/{i+1}")
+        for i in range(9):
+            self.assert_model_not_exists(f"vote/{i+1}")
+        for i in range(2):
+            self.assert_model_not_exists(f"assignment/{i+1}")
+        for i in range(5):
+            self.assert_model_not_exists(f"assignment_candidate/{i+1}")
+        for i in range(1):
+            self.assert_model_not_exists(f"mediafile/{i+1}")
+        for i in range(1):
+            self.assert_model_not_exists(f"meeting_mediafile/{i+1}")
+        for i in range(2):
+            self.assert_model_not_exists(f"projector/{i+1}")
+        for i in range(5):
+            self.assert_model_not_exists(f"projection/{i+1}")
+        self.assert_model_not_exists("projector_message/1")
+        for i in range(2):
+            self.assert_model_not_exists(f"projector_countdown/{i+1}")
+        for i in range(2):
+            self.assert_model_not_exists(f"chat_group/{i+1}")

@@ -61,30 +61,24 @@ class GroupDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/24": {"name": "name_srtgb123", "meeting_id": 1},
-            },
+            {"group/4": {"name": "name_srtgb123", "meeting_id": 1}},
             "group.delete",
-            {"id": 24},
+            {"id": 4},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/24": {"name": "name_srtgb123", "meeting_id": 1},
-            },
+            {"group/4": {"name": "name_srtgb123", "meeting_id": 1}},
             "group.delete",
-            {"id": 24},
+            {"id": 4},
             Permissions.User.CAN_MANAGE,
         )
 
     def test_delete_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            {
-                "group/24": {"name": "name_srtgb123", "meeting_id": 1},
-            },
+            {"group/4": {"name": "name_srtgb123", "meeting_id": 1}},
             "group.delete",
-            {"id": 24},
+            {"id": 4},
         )
 
     def test_delete_mediafile1(self) -> None:

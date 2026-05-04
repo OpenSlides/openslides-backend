@@ -24,7 +24,8 @@ class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
         for meeting_id in range(1, 11, 3):
-            self.create_meeting(meeting_id)
+            meeting_data = {"committee_id": 60} if meeting_id == 4 else {}
+            self.create_meeting(meeting_id, meeting_data=meeting_data)
         models: dict[str, dict[str, Any]] = {
             "user/2": {
                 "username": "user2",
@@ -91,7 +92,6 @@ class UserMergeTogether(BaseVoteTestCase):
             "meeting/4": {
                 "name": "Meeting 2",
                 "users_enable_vote_delegations": True,
-                "committee_id": 60,  # same as in meeting/1
                 "admin_group_id": 4,
                 "default_group_id": 6,
                 "meeting_user_ids": [42, 43, 44],
@@ -1578,13 +1578,9 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_with_personal_notes(self) -> None:
         # create personal notes, motions, and meetings
-        meeting_ids = list(range(1, 8, 3))
-        for meeting_id in meeting_ids:
-            self.create_meeting(meeting_id)
-
         map_motion_id_to_meeting_id = {
             motion_id: meeting_id
-            for meeting_id in meeting_ids
+            for meeting_id in list(range(1, 8, 3))
             for motion_id in list(
                 range(
                     int((meeting_id - 1) / 3) * 2 + 1, int((meeting_id - 1) / 3) * 2 + 3
