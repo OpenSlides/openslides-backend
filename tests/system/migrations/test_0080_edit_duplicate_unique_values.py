@@ -37,7 +37,7 @@ def do_test(write, finalize, assert_model, test_data: TestData) -> None:
     if isinstance(expect_or_error, list):
         try:
             finalize("0080_edit_duplicate_unique_values")
-            raise pytest.fail("Expected migration to fail. It didn't.")
+            raise pytest.fail("Expected migration 80 to fail. It didn't.")
         except MigrationException as e:
             err_str = "\n* ".join(sorted(expect_or_error))
             assert e.message == f"Migration exception:\n* {err_str}"
