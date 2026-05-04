@@ -9,7 +9,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class ParticipantJsonUpload(BaseActionTestCase):
-    def set_up_meeting_1(self) -> None:
+    def set_up_test_models(self) -> None:
         self.create_meeting()
         self.set_models(
             {
@@ -31,7 +31,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_simple(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         start_time = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "participant.json_upload",
@@ -92,7 +92,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert start_time <= import_preview["created"] <= end_time
 
     def test_json_upload_remove_last_admin(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.create_user("bob", [7])
         response = self.request(
             "participant.json_upload",
@@ -120,7 +120,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_remove_last_admins(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.create_user("bob", [7])
         self.create_user("alice", [7])
         response = self.request(
@@ -164,7 +164,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_empty_data(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {"data": [], "meeting_id": 1},
@@ -173,7 +173,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert "data.data must contain at least 1 items" in response.json["message"]
 
     def test_json_upload_without_meeting(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {"data": []},
@@ -182,7 +182,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert "data must contain ['meeting_id'] properties" in response.json["message"]
 
     def test_json_upload_not_existing_meeting(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {"data": [{"username": "test"}], "meeting_id": 111},
@@ -193,7 +193,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_without_names_error(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {
@@ -220,7 +220,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_results(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {
@@ -335,7 +335,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_no_permission(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.base_permission_test(
             {},
             "participant.json_upload",
@@ -343,7 +343,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_permission(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.base_permission_test(
             {},
             "participant.json_upload",
@@ -352,7 +352,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_permission_2(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.base_permission_test(
             {},
             "participant.json_upload",
@@ -429,7 +429,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_locked_meeting(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.base_locked_out_superadmin_permission_test(
             {},
             "participant.json_upload",
@@ -437,7 +437,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_names_and_email_find_add_meeting_data(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.set_models(
             {
                 "user/34": {
@@ -494,7 +494,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             assert row["data"][key]["value"] == fix_fields[key]
 
     def test_json_upload_names_generate_username_password_create_meeting(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.set_models(
             {
                 "user/34": {
@@ -559,7 +559,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_invalid_vote_weight(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {
@@ -1126,7 +1126,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
     def test_json_upload_perm_superadmin_self_set_inactive_error(self) -> None:
         """SUPERADMIN may not set himself inactive."""
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         response = self.request(
             "participant.json_upload",
             {
@@ -1321,7 +1321,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_set_home_committee_multiple_found(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.create_committee(1, name="There are two")
         self.create_committee(2, name="There are two")
         self.create_user("BobWillFail")
@@ -1362,7 +1362,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_set_home_committee_and_set_external_to_true(self) -> None:
-        self.set_up_meeting_1()
+        self.set_up_test_models()
         self.create_committee(1, name="Home")
         self.create_user("BobWillFail", group_ids=[1])
         response = self.request(
