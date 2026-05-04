@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from psycopg import Connection, rows
-from psycopg.errors import DatabaseError, RaiseException
+from psycopg.errors import DatabaseError
 
 from openslides_backend.services.database.extended_database import ExtendedDatabase
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -230,7 +230,7 @@ def test_update_prevent_updates_error_delete(
     )
     create_models(data)
     with get_new_os_conn() as conn:
-        with pytest.raises(RaiseException) as e_info:
+        with pytest.raises(InvalidFormat) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(
                 create_write_requests(
@@ -274,7 +274,7 @@ def test_update_prevent_updates_error_swap(
     )
     create_models(data)
     with get_new_os_conn() as conn:
-        with pytest.raises(RaiseException) as e_info:
+        with pytest.raises(InvalidFormat) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(
                 create_write_requests(
