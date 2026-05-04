@@ -5,15 +5,15 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_correct(self) -> None:
-        meeting_data: dict[int, dict[str, Any]] = {
+        meetings_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing"},
             7: {"name": "success(added)", "committee_id": 63},
             10: {"name": "standard", "committee_id": 63},
             13: {"name": "success(added)", "committee_id": 63},
         }
-        for i in range(1, 14, 3):
-            self.create_meeting(i, meeting_data=meeting_data[i])
+        for id_, meeting_data in meetings_data.items():
+            self.create_meeting(id_, meeting_data=meeting_data)
         self.set_models(
             {
                 "group/1": {"name": "to_find", "meeting_user_ids": [1]},
@@ -59,7 +59,7 @@ class UserAssignMeetings(BaseActionTestCase):
         """
         ...and don't ignore groups that are just named "Anonymous"
         """
-        meeting_data: dict[int, dict[str, Any]] = {
+        meetings_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing", "committee_id": 60},
             7: {
@@ -75,8 +75,8 @@ class UserAssignMeetings(BaseActionTestCase):
                 "anonymous_group_id": 14,
             },
         }
-        for i in range(1, 14, 3):
-            self.create_meeting(i, meeting_data=meeting_data[i])
+        for id_, meeting_data in meetings_data.items():
+            self.create_meeting(id_, meeting_data=meeting_data)
         self.set_models(
             {
                 "group/1": {"name": "Anonymous", "meeting_user_ids": [1]},
@@ -334,15 +334,15 @@ class UserAssignMeetings(BaseActionTestCase):
         )
 
     def test_assign_meetings_with_locked_meetings(self) -> None:
-        meeting_data: dict[int, dict[str, Any]] = {
+        meetings_data: dict[int, dict[str, Any]] = {
             1: {"name": "success(existing)"},
             4: {"name": "nothing", "committee_id": 60, "locked_from_inside": True},
             7: {"name": "success(added)", "committee_id": 60},
             10: {"name": "standard", "committee_id": 60, "locked_from_inside": True},
             13: {"name": "success(added)", "committee_id": 60},
         }
-        for i in range(1, 14, 3):
-            self.create_meeting(i, meeting_data=meeting_data[i])
+        for id_, meeting_data in meetings_data.items():
+            self.create_meeting(id_, meeting_data=meeting_data)
         self.set_models(
             {
                 "group/1": {"name": "to_find", "meeting_user_ids": [1]},
