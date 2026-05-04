@@ -29,7 +29,7 @@ class BaseRelationsTestCase(PatchModelRegistryMixin, BaseGenericTestCase):
         id_field: &id_field
             type: number
             restriction_mode: A
-            constant_strict: true
+            constant: true
             required: true
     {collection_a}:
         fields:

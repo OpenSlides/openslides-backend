@@ -222,7 +222,7 @@ class Attribute(Node):
             self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
             self.constant = value.pop("constant", False) or value.pop(
-                "constant_strict", False
+                "constant_legacy", False
             )
             self.default = value.pop("default", None)
             for k, v in value.items():
