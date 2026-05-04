@@ -765,6 +765,8 @@ class UpdatePollTestCase(BasePollTestCase):
         poll_data: dict[str, Any] = {"type": poll_type, **poll_changes}
 
         if poll_id == 1 and "content_object_id" not in poll_changes:
+            # Avoid creating new poll unless specific poll_id other than 1 is needed
+            # and content_object_id is equal to poll/1/content_object_id
             self.update_model("poll/1", poll_data)
             poll_id = 1
         else:
@@ -772,6 +774,8 @@ class UpdatePollTestCase(BasePollTestCase):
                 self.create_motion(1, 3)
                 self.set_models({"motion_state/1": {"allow_create_poll": True}})
                 poll_data["content_object_id"] = "motion/3"
+            if poll_id == 1:
+                poll_id = 2  # Default if if no custom poll_id is provided
             self.set_models(
                 {
                     **({"group/1": {"poll_ids": [1, poll_id]}} if poll_id != 1 else {}),
@@ -783,8 +787,8 @@ class UpdatePollTestCase(BasePollTestCase):
                         "meeting_id": 1,
                         **poll_data,
                     },
-                    "option/3": {"meeting_id": 1, "poll_id": 2},
-                    "option/4": {"meeting_id": 1, "poll_id": 2},
+                    "option/3": {"meeting_id": 1, "poll_id": poll_id},
+                    "option/4": {"meeting_id": 1, "poll_id": poll_id},
                 }
             )
 
