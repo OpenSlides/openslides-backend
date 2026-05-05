@@ -15,7 +15,7 @@ def test_simple(write, finalize, assert_model):
         ]
     )
 
-    finalize("0075_remove_broken_projection_connection")
+    finalize("0076_remove_broken_projection_connection")
 
     assert_model(
         "meeting/1",
@@ -48,7 +48,7 @@ def test_deleted(write, finalize, assert_model):
         {"type": "delete", "fqid": "projection/3"},
     )
 
-    finalize("0075_remove_broken_projection_connection")
+    finalize("0076_remove_broken_projection_connection")
 
     assert_model(
         "meeting/1",
@@ -78,7 +78,7 @@ def test_unrecoverable(write, finalize, assert_model):
         ]
     )
 
-    finalize("0075_remove_broken_projection_connection")
+    finalize("0076_remove_broken_projection_connection")
 
     assert_model(
         "meeting/1",

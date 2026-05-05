@@ -29,7 +29,7 @@ class Migration(BaseModelMigration):
     It throws an aggregate error listing everything that is broken.
     """
 
-    target_migration_index = 82
+    target_migration_index = 75
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         self.load_models()

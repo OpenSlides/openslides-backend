@@ -12,7 +12,7 @@ class Migration(BaseModelMigration):
     Also removes duplicates from recommendation_extension_reference_ids.
     """
 
-    target_migration_index = 79
+    target_migration_index = 80
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         all_existing_meeting_ids = set(self.reader.get_all("meeting", ["id"]))

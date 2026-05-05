@@ -535,7 +535,7 @@ def base_test_fn(
     )
     if expected_errors:
         try:
-            finalize("0081_check_equal_fields")
+            finalize("0074_check_equal_fields")
             raise pytest.fail(
                 f"Expected migration 81 to fail for changed fqids {break_eq_fields_for_fqids}. It didn't."
             )
@@ -548,7 +548,7 @@ def base_test_fn(
             )
             assert e.message == f"Migration exception:\n* {err_str}"
     else:
-        finalize("0081_check_equal_fields")
+        finalize("0074_check_equal_fields")
         for fqid, model in create_data.items():
             assert_model(fqid, model)
 
@@ -624,7 +624,7 @@ def test_so_called_migration_failure_meeting_16(write, finalize, assert_model) -
         ]
     )
     try:
-        finalize("0081_check_equal_fields")
+        finalize("0074_check_equal_fields")
         raise pytest.fail(
             "Expected migration 81 to fail for changed projection/100. It didn't."
         )
@@ -656,7 +656,7 @@ def test_so_called_migration_failure_everything_deleted(
         ]
     )
     write(*[{"type": "delete", "fqid": fqid} for fqid in create_data.keys()])
-    finalize("0081_check_equal_fields")
+    finalize("0074_check_equal_fields")
     for fqid, model in create_data.items():
         assert_model(fqid, {**model, "meta_deleted": True})
 
@@ -673,7 +673,7 @@ def test_so_called_migration_failure_delete_only_meeting(
     )
     write({"type": "delete", "fqid": (fqid := collection_to_fqid["group"])})
     try:
-        finalize("0081_check_equal_fields")
+        finalize("0074_check_equal_fields")
         raise pytest.fail(
             f"Expected migration 81 to fail for deleted {fqid}. It didn't."
         )

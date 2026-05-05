@@ -29,7 +29,7 @@ class Migration(BaseModelMigration):
         "option": "text",
         "user": "member_number",
     }
-    target_migration_index = 80
+    target_migration_index = 81
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

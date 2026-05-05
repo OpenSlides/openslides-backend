@@ -11,7 +11,7 @@ class Migration(BaseModelMigration):
     This migration sets scroll of projectors below the minimum of 0 to 0.
     """
 
-    target_migration_index = 77
+    target_migration_index = 78
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         filter_ = And(

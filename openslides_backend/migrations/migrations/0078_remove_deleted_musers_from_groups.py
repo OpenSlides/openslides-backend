@@ -9,7 +9,7 @@ class Migration(BaseModelMigration):
     This migration removes the ids of non-existant or deleted meeting_users from group/meeting_user_ids
     """
 
-    target_migration_index = 78
+    target_migration_index = 79
     model_to_field_and_target_model: dict[str, tuple[str, str]] = {
         "group": ("meeting_user_ids", "meeting_user"),
         "meeting": ("present_user_ids", "user"),

@@ -76,7 +76,7 @@ def test_simple(write, finalize, assert_model):
         {"type": "delete", "fqid": "motion/6"},
     )
 
-    finalize("0078_clean_up_motions")
+    finalize("0079_clean_up_motions")
 
     assert_model("meeting/1", {"name": "exists", "forwarded_motion_ids": [1, 2]})
     assert_model(
