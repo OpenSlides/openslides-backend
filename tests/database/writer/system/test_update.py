@@ -249,7 +249,7 @@ def test_update_prevent_updates_error_delete(
             )
             conn.commit()
     assert (
-        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
         in e_info.value.args[0]
     )
 
@@ -293,7 +293,7 @@ def test_update_prevent_updates_error_swap(
             )
             conn.commit()
     assert (
-        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
         in e_info.value.args[0]
     )
 
@@ -332,7 +332,7 @@ def test_update_prevent_updates_error_swap_from_from_null(
             )
             conn.commit()
     assert (
-        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
         in e_info.value.args[0]
     )
 
