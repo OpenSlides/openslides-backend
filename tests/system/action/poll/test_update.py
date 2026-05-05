@@ -764,7 +764,7 @@ class UpdatePollTestCase(BasePollTestCase):
     ) -> None:
         poll_data: dict[str, Any] = {"type": poll_type, **poll_changes}
 
-        if poll_id == 1 and "content_object_id" not in poll_changes:
+        if poll_id == 1 and ("content_object_id" not in poll_changes or poll_changes["content_object_id"] == "assignment/1"):
             # Avoid creating new poll unless specific poll_id other than 1 is needed
             # and content_object_id is equal to poll/1/content_object_id
             self.update_model("poll/1", poll_data)
