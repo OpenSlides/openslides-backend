@@ -572,14 +572,32 @@ test_cases = [
     for i, (fqid, model) in enumerate(get_base_data()[0].items())
     if ((len(model) > 1 or "id" not in model) and fqid != "meeting/16")
 ]
+test_cases_summarized: list[tuple[list[str], bool, bool]] = [
+    ([test_cases[0][0]], test_cases[0][1], test_cases[0][2])
+]
+for fqid, incomplete, front in test_cases[1:]:
+    if cas := [
+        case
+        for case in test_cases_summarized
+        if case[1] == incomplete
+        and case[2] == front
+        and not any(
+            collection_from_fqid(target) in field_def.get("to", {})
+            for field_def in models[collection_from_fqid(fqid)].values()
+            for target in case[0]
+        )
+    ]:
+        cas[0][0].append(fqid)
+    else:
+        test_cases_summarized.append(([fqid], incomplete, front))
 
 
 @pytest.mark.parametrize(
     "break_eq_fields_for_fqids,incomplete,front",
-    [([fqid], incomplete, front) for fqid, incomplete, front in test_cases],
+    [(fqids, incomplete, front) for fqids, incomplete, front in test_cases_summarized],
     ids=[
-        f"{fqid}{'' if not incomplete else '_fronts_removed' if front else '_backs_removed'}"
-        for fqid, incomplete, front in test_cases
+        f"{fqids}{'' if not incomplete else '_fronts_removed' if front else '_backs_removed'}"
+        for fqids, incomplete, front in test_cases_summarized
     ],
 )
 def test_so_called_migration_failure(
