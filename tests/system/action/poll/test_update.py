@@ -775,7 +775,7 @@ class UpdatePollTestCase(BasePollTestCase):
                 self.set_models({"motion_state/1": {"allow_create_poll": True}})
                 poll_data["content_object_id"] = "motion/3"
             if poll_id == 1:
-                poll_id = 2  # Default if if no custom poll_id is provided
+                poll_id = 2  # Default if no custom poll_id is provided
             self.set_models(
                 {
                     **({"group/1": {"poll_ids": [1, poll_id]}} if poll_id != 1 else {}),
