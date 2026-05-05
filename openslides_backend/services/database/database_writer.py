@@ -565,6 +565,8 @@ class DatabaseWriter(SqlQueryHelper):
         The constraint from the relational schema:
         {constraint}        The postgres statement: {real_statement.query.decode()}""")
         except ProgrammingError as e:
+            if "Constant value constraint violated for " in e.args[0]:
+                raise InvalidFormat(e.args[0])
             raise InvalidFormat(f"Invalid data for '{error_fqid}': {e}")
         except StringDataRightTruncation as e:
             raise InvalidData(

@@ -336,7 +336,7 @@ class Gender(Model):
     id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True, unique=True)
     organization_id = fields.OrganizationField(
-        to={"organization": "gender_ids"}, required=True, default=1
+        to={"organization": "gender_ids"}, required=True, constant=True, default=1
     )
     user_ids = fields.RelationListField(
         to={"user": "gender_id"}, is_view_field=True, is_primary=True
@@ -1392,7 +1392,7 @@ class MeetingMediafile(Model):
         to={"mediafile": "meeting_mediafile_ids"}, required=True
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "meeting_mediafile_ids"}, required=True
+        to={"meeting": "meeting_mediafile_ids"}, required=True, constant=True
     )
     is_public = fields.BooleanField(
         required=True,
@@ -2275,7 +2275,10 @@ class OrganizationTag(Model):
         ),
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "organization_tag_ids"}, required=True, default=1
+        to={"organization": "organization_tag_ids"},
+        required=True,
+        constant=True,
+        default=1,
     )
 
 
@@ -2696,7 +2699,7 @@ class StructureLevel(Model):
         is_view_field=True,
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "structure_level_ids"}, required=True
+        to={"meeting": "structure_level_ids"}, required=True, constant=True
     )
 
 
@@ -2738,7 +2741,9 @@ class StructureLevelListOfSpeakers(Model):
         }
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "structure_level_list_of_speakers_ids"}, required=True
+        to={"meeting": "structure_level_list_of_speakers_ids"},
+        required=True,
+        constant=True,
     )
 
 
@@ -2824,7 +2829,7 @@ class Theme(Model):
         to={"organization": "theme_id"}, is_view_field=True
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "theme_ids"}, required=True, default=1
+        to={"organization": "theme_ids"}, required=True, constant=True, default=1
     )
 
 
