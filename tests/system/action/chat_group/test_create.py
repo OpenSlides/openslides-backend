@@ -142,11 +142,10 @@ class ChatGroupCreate(BaseActionTestCase):
 
     def test_create_same_name_in_two_meetings(self) -> None:
         self.create_meeting()
-        self.create_meeting(4)
+        self.create_meeting(4, meeting_data={"committee_id": 60})
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
-                "meeting/4": {"committee_id": 60},
                 "chat_group/21": {"meeting_id": 1, "name": "test"},
             }
         )

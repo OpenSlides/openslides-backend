@@ -812,11 +812,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_access_group_different_owner(self) -> None:
         self.create_meeting(4)
-        self.permission_test_models["group/3"] = {"meeting_id": 4}
         self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update",
-            {"id": 111, "meeting_id": 1, "access_group_ids": [3]},
+            {"id": 111, "meeting_id": 1, "access_group_ids": [4]},
         )
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]

@@ -3508,7 +3508,13 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             - if forwarding to the same committee works
         """
         self.create_meeting()
-        self.create_meeting(4)
+        self.create_meeting(
+            4,
+            meeting_data={
+                "committee_id": 60,
+                "list_of_speakers_default_structure_level_time": 60,
+            },
+        )
         self.create_topic_agenda_item(
             1,
             11,
@@ -3527,10 +3533,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
         self.set_models(
             {
-                "meeting/4": {
-                    "committee_id": 60,
-                    "list_of_speakers_default_structure_level_time": 60,
-                },
                 "group/1": {"name": "Default"},
                 "group/2": {"name": "Admin"},
                 "group/3": {"name": "Delegate"},
