@@ -298,7 +298,7 @@ def test_update_prevent_updates_error_swap(
     )
 
 
-def test_update_prevent_updates_success(
+def test_update_prevent_updates_error_swap_from_from_null(
     db_connection: Connection[rows.DictRow],
 ) -> None:
     data = get_data()
@@ -313,30 +313,27 @@ def test_update_prevent_updates_success(
     )
     create_models(data)
     with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(
-            create_write_requests(
-                [
-                    {
-                        "events": [
-                            {
-                                "type": EventType.Update,
-                                "fqid": "history_position/2",
-                                "fields": {"original_user_id": 1},
-                            },
-                        ]
-                    }
-                ]
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": 1},
+                                },
+                            ]
+                        }
+                    ]
+                )
             )
-        )
-        conn.commit()
-    assert_model(
-        "history_position/2",
-        {"id": 2, "original_user_id": 1},
-    )
-    assert_model(
-        "user/1",
-        {"id": 1, "username": "1", "first_name": "1"},
+            conn.commit()
+    assert (
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated once set."
+        in e_info.value.args[0]
     )
 
 
