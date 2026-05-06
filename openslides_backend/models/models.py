@@ -186,9 +186,6 @@ class Ballot(Model):
     weight = fields.DecimalField(constant=True, default="1.000000")
     split = fields.BooleanField(default=False)
     value = fields.TextField(constant=True)
-    meeting_id = fields.RelationField(
-        to={"meeting": "ballot_ids"}, required=True, constant=True
-    )
     poll_id = fields.RelationField(
         to={"poll": "ballot_ids"}, required=True, constant=True
     )
@@ -1165,12 +1162,6 @@ class Meeting(Model, MeetingModelMixin):
     )
     poll_ids = fields.RelationListField(
         to={"poll": "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        is_view_field=True,
-        is_primary=True,
-    )
-    ballot_ids = fields.RelationListField(
-        to={"ballot": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
