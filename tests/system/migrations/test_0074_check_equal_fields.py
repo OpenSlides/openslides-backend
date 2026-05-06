@@ -315,9 +315,6 @@ def get_relation_side_data(
         ):
             id_ += 1
             fqid = f"{collection}/{id_}"
-            if collection == check_back_collection and id_ == back_id:
-                id_ += 1
-                fqid = f"{collection}/{id_}"
             if fqid not in create_data:
                 create_data[fqid] = {"id": id_}
     return (is_list, is_generic, id_, fqid, val)
@@ -402,7 +399,7 @@ def fill_field(
     assert field_def["is_relation"] and not field_def["is_list_relation"]
     to_coll, to_field = list(field_def["to"].items())[0]
     to_field_def = models[to_coll][to_field]
-    if not to_field_def["is_list_relation"] or to_field_def["is_generic"]:
+    if not to_field_def["is_list_relation"]:
         raise Exception(f"{to_coll}/{to_field} is not list relation")
     if use_other_model:
         to_id = collection_to_id[to_coll] + 1
@@ -536,7 +533,7 @@ def base_test_fn(
         try:
             finalize("0074_check_equal_fields")
             raise pytest.fail(
-                f"Expected migration 81 to fail for changed fqids {break_eq_fields_for_fqids}. It didn't."
+                f"Expected migration 74 to fail for changed fqids {break_eq_fields_for_fqids}. It didn't."
             )
         except MigrationException as e:
             err_str = "\n* ".join(
@@ -643,7 +640,7 @@ def test_so_called_migration_failure_meeting_16(write, finalize, assert_model) -
     try:
         finalize("0074_check_equal_fields")
         raise pytest.fail(
-            "Expected migration 81 to fail for changed projection/100. It didn't."
+            "Expected migration 74 to fail for changed projection/100. It didn't."
         )
     except MigrationException as e:
         assert "Migration exception:\n* Detected different equal_fields: " in e.message
