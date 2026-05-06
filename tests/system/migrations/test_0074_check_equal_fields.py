@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from typing import Any, cast
 
@@ -679,7 +678,7 @@ def test_so_called_migration_failure_everything_deleted(
         assert_model(fqid, {**model, "meta_deleted": True})
 
 
-def test_so_called_migration_failure_delete_only_meeting(
+def test_so_called_migration_failure_delete_only_group(
     write, finalize, assert_model
 ) -> None:
     create_data = get_base_data()[0]
@@ -689,30 +688,78 @@ def test_so_called_migration_failure_delete_only_meeting(
             for fqid, model in create_data.items()
         ]
     )
-    write({"type": "delete", "fqid": (fqid := collection_to_fqid["group"])})
-    try:
-        finalize("0074_check_equal_fields")
-        raise pytest.fail(
-            f"Expected migration 81 to fail for deleted {fqid}. It didn't."
-        )
-    except MigrationException as e:
-        assert "Migration exception:\n* Detected different equal_fields: " in e.message
-        assert f"{fqid}/" in e.message
-        substrs = []
-        for part in e.message.split(":"):
-            if fqid in part:
-                i = part.index(fqid)
-                substrs.append(part[i:])
-        assert sorted(substrs) == sorted(
+    fqid = collection_to_fqid["group"]
+
+    def get_reduced_group_ids(
+        collection: str, field: str, group_field: str
+    ) -> dict[int, dict[str, list[int]]]:
+        return {
+            id_: {
+                field: [
+                    group_id
+                    for group_id in create_data[
+                        fqid_from_collection_and_id(collection, id_)
+                    ][field]
+                    if group_id != 10
+                ]
+            }
+            for id_ in create_data[fqid][group_field]
+        }
+
+    def merge_reduced_group_ids(
+        to_merge: list[dict[int, dict[str, list[int]]]],
+    ) -> dict[int, dict[str, list[int]]]:
+        return {
+            id_: {
+                field: value
+                for group in to_merge
+                for field, value in group.get(id_, {}).items()
+            }
+            for id_ in {i for group in to_merge for i in group}
+        }
+
+    changed_models = {
+        "meeting_user": get_reduced_group_ids(
+            "meeting_user", "group_ids", "meeting_user_ids"
+        ),
+        "meeting_mediafile": get_reduced_group_ids(
+            "meeting_mediafile",
+            "access_group_ids",
+            "meeting_mediafile_access_group_ids",
+        ),
+        "poll": get_reduced_group_ids("poll", "entitled_group_ids", "poll_ids"),
+        "motion_comment_section": merge_reduced_group_ids(
             [
-                "group/10/meeting_user_ids",
-                "group/10/meeting_mediafile_access_group_ids",
-                "group/10/read_comment_section_ids",
-                "group/10/write_comment_section_ids",
-                "group/10/read_chat_group_ids",
-                "group/10/write_chat_group_ids",
-                "group/10/poll_ids",
+                get_reduced_group_ids(
+                    "motion_comment_section",
+                    "read_group_ids",
+                    "read_comment_section_ids",
+                ),
+                get_reduced_group_ids(
+                    "motion_comment_section",
+                    "write_group_ids",
+                    "write_comment_section_ids",
+                ),
             ]
-        )
-        for substr in substrs:
-            assert re.search(f".*{substr}: \\((None,)*(None,|None)\\) .*", e.message)
+        ),
+        "chat_group": merge_reduced_group_ids(
+            [
+                get_reduced_group_ids(
+                    "chat_group", "read_group_ids", "read_chat_group_ids"
+                ),
+                get_reduced_group_ids(
+                    "chat_group", "write_group_ids", "write_chat_group_ids"
+                ),
+            ]
+        ),
+    }
+    write({"type": "delete", "fqid": fqid})
+    finalize("0074_check_equal_fields")
+    skip: set[str] = {"group/10"}
+    for collection, data in changed_models.items():
+        for id_, model_data in data.items():
+            model_fqid = fqid_from_collection_and_id(collection, id_)
+            skip.add(model_fqid)
+            assert_model(model_fqid, {**create_data[model_fqid], **model_data})
+    for fqid in set(create_data).difference(skip):
+        assert_model(fqid, create_data[fqid])

@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from datastore.migrations import BaseModelMigration
 from datastore.reader.core import GetManyRequestPart
-from datastore.writer.core.write_request import BaseRequestEvent
+from datastore.writer.core.write_request import BaseRequestEvent, RequestUpdateEvent
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
@@ -10,7 +10,10 @@ from openslides_backend.models.fields import (
     GenericRelationField,
     GenericRelationListField,
 )
-from openslides_backend.shared.patterns import collection_and_id_from_fqid
+from openslides_backend.shared.patterns import (
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+)
 
 from ...shared.filters import And, FilterOperator
 from ..exceptions import MigrationException
@@ -35,6 +38,7 @@ class Migration(BaseModelMigration):
         self.load_models()
         relations = self.get_relations()
         errors: set[str] = set()
+        events: list[BaseRequestEvent] = []
         for ((collection1, field1), (collection2, field2)), (
             eq_fields,
             field_def1,
@@ -60,20 +64,25 @@ class Migration(BaseModelMigration):
                 affected_models2,
             )
             for match in matches:
-                if error := self.check_equal_data(
+                if check_result := self.check_equal_data(
                     match,
                     collection1,
                     field1,
+                    field_def1,
                     affected_models1,
                     collection2,
                     field2,
+                    field_def2,
                     affected_models2,
                     eq_fields,
                 ):
-                    errors.add(error)
+                    if isinstance(check_result, str):
+                        errors.add(check_result)
+                    else:
+                        events.append(check_result)
         if len(errors):
             raise MigrationException(list(errors))
-        return None
+        return events
 
     def load_models(self) -> None:
         self.models: dict[str, dict[str, dict[str, Any]]] = {
@@ -356,12 +365,14 @@ class Migration(BaseModelMigration):
         match: tuple[int, int],
         collection1: str,
         field1: str,
+        field_def1: dict[str, Any],
         affected_models1: dict[int, dict[str, Any]],
         collection2: str,
         field2: str,
+        field_def2: dict[str, Any],
         affected_models2: dict[int, dict[str, Any]],
         equal_fields: tuple[str, ...],
-    ) -> str | None:
+    ) -> RequestUpdateEvent | str | None:
         """
         Checks equal_data between two entries.
         Returns an error-string if there is a difference
@@ -373,7 +384,15 @@ class Migration(BaseModelMigration):
         eq_data_tup2 = self.get_equal_data_tuple(
             collection2, id2, affected_models2, equal_fields
         )
-        if eq_data_tup1 != eq_data_tup2:
+        if eq_data_tup1 is None:
+            return self.get_cleanup_event(
+                collection2, id2, field2, field_def2, collection1, id1
+            )
+        elif eq_data_tup2 is None:
+            return self.get_cleanup_event(
+                collection1, id1, field1, field_def1, collection2, id2
+            )
+        elif eq_data_tup1 != eq_data_tup2:
             the_problem = " and ".join(
                 sorted(
                     [
@@ -385,14 +404,47 @@ class Migration(BaseModelMigration):
             return f"Detected different equal_fields: {the_problem} for equal_fields {equal_fields}"
         return None
 
+    def get_cleanup_event(
+        self,
+        collection1: str,
+        id1: int,
+        field1: str,
+        field_def1: dict[str, Any],
+        collection2: str,
+        id2: int,
+    ) -> RequestUpdateEvent:
+        if field_def1["is_list_relation"]:
+            return RequestUpdateEvent(
+                fqid=fqid_from_collection_and_id(collection1, id1),
+                fields={},
+                list_fields={
+                    "remove": {
+                        field1: [
+                            (
+                                fqid_from_collection_and_id(collection2, id2)
+                                if field_def1["is_generic"]
+                                else id2
+                            )
+                        ]
+                    }
+                },
+            )
+        else:
+            return RequestUpdateEvent(
+                fqid=fqid_from_collection_and_id(collection1, id1),
+                fields={field1: None},
+            )
+
     def get_equal_data_tuple(
         self,
         collection: str,
         id_: int,
         affected_models: dict[int, dict[str, Any]],
         sorted_eqfs: tuple[str, ...],
-    ) -> tuple[Any, ...]:
-        model = affected_models.get(id_, {})
+    ) -> tuple[Any, ...] | None:
+        model = affected_models.get(id_)
+        if model is None:
+            return None
         return tuple(
             [
                 (
