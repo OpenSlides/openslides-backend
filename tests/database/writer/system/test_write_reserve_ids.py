@@ -1,4 +1,3 @@
-from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,22 +11,6 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 from openslides_backend.shared.exceptions import InvalidFormat
 from openslides_backend.shared.patterns import collection_from_fqid
 from tests.database.writer.system.util import create_models, get_data
-
-
-@pytest.fixture(autouse=True)
-def reset_ids_on_teardown(db_connection: Connection) -> Generator:
-    yield "Halt until test finishes."
-    data = get_data()
-    for request in data:
-        for event in request["events"]:
-            if fqid := event.get("fqid"):
-                table_name = collection_from_fqid(fqid) + "_t"
-            else:
-                table_name = event["collection"] + "_t"
-            with db_connection.cursor() as curs:
-                curs.execute(
-                    "INSERT INTO truncate_tables (tablename) VALUES(%s)", (table_name,)
-                )
 
 
 def test_single(db_connection: Connection) -> None:
@@ -135,7 +118,9 @@ def test_reserve_create(db_connection: Connection) -> None:
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
         assert curs.fetchone() == {"is_called": True, "last_value": 5}
+
     create_models(get_data())
+
     with db_connection.cursor() as curs:
         curs.execute("""SELECT last_value, is_called FROM user_t_id_seq;""")
         assert curs.fetchone() == {"is_called": True, "last_value": 5}

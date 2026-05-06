@@ -104,19 +104,6 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_model_exists("motion/4", {"number": "B 003 X 001"})
         self.assert_model_exists("motion/5", {"number": "B 003 X 002"})
 
-    def test_already_existing_number(self) -> None:
-        self.create_motion_category(1, 111, {"prefix": "prefix_A"})
-        self.create_motion(
-            1, 69, motion_data={"category_id": 111, "number": "prefix_A01"}
-        )
-        self.create_motion(1, 70, motion_data={"number": "prefix_A01"})
-        response = self.request("motion_category.number_motions", {"id": 111})
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            'Numbering aborted because the motion identifier "prefix_A01" already exists.',
-            response.json["message"],
-        )
-
     def test_sort_categories(self) -> None:
         self.create_motion_category(1, 1)
         self.create_motion_category(

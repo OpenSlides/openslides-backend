@@ -80,6 +80,7 @@ def db_connection() -> Generator[Connection[DictRow], None, None]:
             curs.execute("SELECT init_table_contents();")
         conn.commit()
         yield conn
+        conn.commit()
         with conn.cursor() as curs, suppress(AdminShutdown):
             # AdminShutdown will happen when the database is dropped during first rel-db migration tests
             curs.execute("SELECT truncate_testdata_tables();")

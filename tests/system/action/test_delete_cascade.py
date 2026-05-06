@@ -121,62 +121,66 @@ class TestDeleteCascade(PatchModelRegistryMixin, BaseGenericTestCase):
             constant: true
             required: true
     {collection_a}:
-        id: *id_field
-        {collection_b}:
-            type: relation
-            to: {collection_b}/{collection_a}
-            on_delete: CASCADE
-        {collection_c}:
-            type: relation
-            to: {collection_c}/{collection_a}
-            on_delete: CASCADE
-        {collection_b}_set_null:
-            type: relation
-            to: {collection_b}/{collection_a}_set_null
-            on_delete: SET_NULL
-        {collection_d}_set_null_required:
-            type: relation
-            to: {collection_d}/{collection_a}_set_null_required
-            on_delete: SET_NULL
+        fields:
+            id: *id_field
+            {collection_b}:
+                type: relation
+                to: {collection_b}/{collection_a}
+                on_delete: CASCADE
+            {collection_c}:
+                type: relation
+                to: {collection_c}/{collection_a}
+                on_delete: CASCADE
+            {collection_b}_set_null:
+                type: relation
+                to: {collection_b}/{collection_a}_set_null
+                on_delete: SET_NULL
+            {collection_d}_set_null_required:
+                type: relation
+                to: {collection_d}/{collection_a}_set_null_required
+                on_delete: SET_NULL
     {collection_b}:
-        id: *id_field
-        {collection_a}:
-            type: relation
-            to: {collection_a}/{collection_b}
-            reference: {collection_a}
-        {collection_c}_protect:
-            type: relation
-            to: {collection_c}/{collection_b}_protected
-            on_delete: PROTECT
-        {collection_c}_cascade:
-            type: relation
-            to: {collection_c}/{collection_b}_cascaded
-            on_delete: CASCADE
-        {collection_a}_set_null:
-            type: relation
-            to: {collection_a}/{collection_b}_set_null
-            reference: {collection_a}
+        fields:
+            id: *id_field
+            {collection_a}:
+                type: relation
+                to: {collection_a}/{collection_b}
+                reference: {collection_a}
+            {collection_c}_protect:
+                type: relation
+                to: {collection_c}/{collection_b}_protected
+                on_delete: PROTECT
+            {collection_c}_cascade:
+                type: relation
+                to: {collection_c}/{collection_b}_cascaded
+                on_delete: CASCADE
+            {collection_a}_set_null:
+                type: relation
+                to: {collection_a}/{collection_b}_set_null
+                reference: {collection_a}
     {collection_c}:
-        id: *id_field
-        {collection_a}:
-            type: relation
-            to: {collection_a}/{collection_c}
-            reference: {collection_a}
-        {collection_b}_protected:
-            type: relation
-            to: {collection_b}/{collection_c}_protect
-            reference: {collection_b}
-        {collection_b}_cascaded:
-            type: relation
-            to: {collection_b}/{collection_c}_cascade
-            reference: {collection_b}
+        fields:
+            id: *id_field
+            {collection_a}:
+                type: relation
+                to: {collection_a}/{collection_c}
+                reference: {collection_a}
+            {collection_b}_protected:
+                type: relation
+                to: {collection_b}/{collection_c}_protect
+                reference: {collection_b}
+            {collection_b}_cascaded:
+                type: relation
+                to: {collection_b}/{collection_c}_cascade
+                reference: {collection_b}
     {collection_d}:
-        id: *id_field
-        {collection_a}_set_null_required:
-            type: relation
-            to: {collection_a}/{collection_d}_set_null_required
-            reference: {collection_a}
-            required: true
+        fields:
+            id: *id_field
+            {collection_a}_set_null_required:
+                type: relation
+                to: {collection_a}/{collection_d}_set_null_required
+                reference: {collection_a}
+                required: true
     """
 
     def test_simple(self) -> None:

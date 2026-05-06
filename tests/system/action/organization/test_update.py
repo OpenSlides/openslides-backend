@@ -43,6 +43,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "enable_anonymous": True,
+                "time_zone": "Asia/Tokyo",
             },
         )
         self.assert_status_code(response, 200)
@@ -54,6 +55,24 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "enable_anonymous": True,
             },
+        )
+
+    def test_update_with_invalid_time_zone(self) -> None:
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+                "enable_anonymous": True,
+                "time_zone": "Mars/Elysium_Planitia",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'new row for relation "organization_t" violates check constraint "timezone_organization_time_zone"',
+            response.json["message"],
         )
 
     def test_update_with_meeting(self) -> None:

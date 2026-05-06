@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from json import dumps as json_dumps
 from math import ceil
-from typing import Any
+from typing import Any, cast
 
 from psycopg import Cursor
 from psycopg.rows import DictRow
@@ -327,11 +327,13 @@ def data_manipulation(curs: Cursor[DictRow]) -> None:
                     # 3.1) If field is RelationListField write the other tables
                     if (
                         isinstance(field, tuple(RELATION_LIST_FIELD_CLASSES))
-                        and field.is_primary
-                        and field.write_fields is not None
+                        and cast(Field, field).is_primary
+                        and cast(Field, field).write_fields is not None
                     ):
                         insert_intermediate_t_commands.extend(
-                            Sql_helper.get_insert_intermediate_t_commands(field, data)
+                            Sql_helper.get_insert_intermediate_t_commands(
+                                cast(Field, field), data
+                            )
                         )
 
                     # 3.2) If field is non writable skip

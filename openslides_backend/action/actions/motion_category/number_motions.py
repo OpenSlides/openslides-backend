@@ -35,12 +35,6 @@ class MotionCategoryNumberMotions(UpdateAction):
 
             affected_categories = self.get_affected_categories(instance["id"])
             affected_motions = self.get_affected_motions(affected_categories)
-            non_affected_motion_ids = [
-                id for id in self.mem_motions if id not in affected_motions
-            ]
-            non_affected_numbers = [
-                self.mem_motions[id].get("number") for id in non_affected_motion_ids
-            ]
 
             # check for missing lead_motion_ids in affected_motions.
             for motion_id in affected_motions:
@@ -65,11 +59,6 @@ class MotionCategoryNumberMotions(UpdateAction):
 
             for motion_id in affected_motions:
                 number, number_value = self.get_number(motion_id, number_value_map)
-                if number in non_affected_numbers:
-                    raise ActionException(
-                        f'Numbering aborted because the motion identifier "{number}" already exists.'
-                    )
-
                 yield {
                     "id": motion_id,
                     "number": number,

@@ -570,9 +570,10 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "File 'file_7' already exists in folder 'folder_6'."
-            in response.json["message"]
+        self.assertIn(
+            'mediafile/8: duplicate key value violates unique constraint "unique_mediafile_title_parent_id_owner_id"\n'
+            + "DETAIL:  Key (title, parent_id, owner_id)=(file_7, 6, meeting/1) already exists.",
+            response.json["message"],
         )
 
     def test_create_directory_owner_access_groups_dont_match(self) -> None:

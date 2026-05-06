@@ -27,6 +27,8 @@ class Environment(Env):
 
     vars = {
         "ACTION_PORT": "9002",
+        "ACTION_MAX_RETRIES": "3",
+        "ACTION_RETRY_TIMEOUT": "0.4",
         "INTERNAL_AUTH_PASSWORD_FILE": "",
         "MEDIA_HOST": "localhost",
         "MEDIA_PATH": "/internal/media",
@@ -39,6 +41,7 @@ class Environment(Env):
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT": "1",
         "OPENSLIDES_BACKEND_CREATE_INITIAL_DATA": "false",
+        "OPENSLIDES_BACKEND_ENABLE_CONTROL_SOCKET": "false",
         "SUPERADMIN_PASSWORD_FILE": "/run/secrets/superadmin",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,

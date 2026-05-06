@@ -91,9 +91,9 @@ class ChatGroupCreate(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The following models do not belong to meeting 1: ['group/4']"
-            in response.json["message"]
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['group/4']",
+            response.json["message"],
         )
 
     def test_create_no_permissions(self) -> None:
@@ -134,7 +134,11 @@ class ChatGroupCreate(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "The name of a chat group must be unique." == response.json["message"]
+        self.assertIn(
+            'chat_group/22: duplicate key value violates unique constraint "unique_chat_group_meeting_id_name"\n'
+            + "DETAIL:  Key (meeting_id, name)=(1, test) already exists.",
+            response.json["message"],
+        )
 
     def test_create_same_name_in_two_meetings(self) -> None:
         self.create_meeting()

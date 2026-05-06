@@ -149,7 +149,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                 "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
             )
         self.assert_status_code(response, 200)
-        assert counter.calls == 15  # TODO this was 4 #befour
+        assert counter.calls == 11  # TODO this was 4 #befour
         agenda_item_7 = self.get_model("agenda_item/7")
         assert agenda_item_7.get("child_ids") == [8, 9]
         assert agenda_item_7.get("parent_id") is None

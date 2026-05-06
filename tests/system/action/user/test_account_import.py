@@ -790,7 +790,6 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.request("user.delete", {"id": 2})
         self.set_models(
             {
-                "user/10": {"username": "doubler3", "saml_id": "saml3"},
                 "user/4": {"username": "user4_married"},
                 "user/11": {"username": "new_user_5", "saml_id": "saml5"},
                 "user/12": {"username": "doubler6", "saml_id": "new_saml6"},
@@ -814,20 +813,6 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"id": 2, "info": ImportState.ERROR, "value": "user2"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "default_vote_weight": {"value": "2.345678", "info": ImportState.DONE},
-        }
-
-        row = result["rows"][1]
-        assert row["state"] == ImportState.ERROR
-        assert row["messages"] == [
-            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Error: saml_id 'saml3' is duplicated in import.",
-        ]
-        assert row["data"] == {
-            "id": 3,
-            "saml_id": {"info": ImportState.ERROR, "value": "saml3"},
-            "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
-            "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": {"value": "3.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][2]

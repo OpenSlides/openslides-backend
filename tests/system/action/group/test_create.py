@@ -17,7 +17,7 @@ class GroupCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
                 "meeting_id": 22,
-                "permissions": None,
+                "permissions": [],
                 "weight": 1,
             },
         )
@@ -199,25 +199,23 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            'group/25: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n'
+            + "DETAIL:  Key (meeting_id, external_id)=(22, external_id) already exists.",
             response.json["message"],
         )
 
-    def test_create_external_id_empty_special_case(self) -> None:
+    def test_create_external_id_empty_not_unique(self) -> None:
         external_id = ""
         self.set_models({"group/23": {"external_id": external_id}})
         response = self.request(
             "group.create",
             {"name": "test_name", "external_id": external_id, "meeting_id": 22},
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "group/25",
-            {
-                "name": "test_name",
-                "meeting_id": 22,
-                "external_id": external_id,
-            },
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'group/25: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n'
+            + "DETAIL:  Key (meeting_id, external_id)=(22, ) already exists.",
+            response.json["message"],
         )
 
     def test_create_as_parent_committee_admin(self) -> None:

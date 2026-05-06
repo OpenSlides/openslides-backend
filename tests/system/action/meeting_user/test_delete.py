@@ -31,7 +31,7 @@ class MeetingUserDelete(BaseActionTestCase):
                     "title": "tipic",
                     "meeting_id": 10,
                 },
-                "agenda_item/6": {"content_object_id": "topic/11", "meeting_id": 101},
+                "agenda_item/6": {"content_object_id": "topic/11", "meeting_id": 10},
                 "list_of_speakers/11": {
                     "content_object_id": "topic/11",
                     "meeting_id": 10,

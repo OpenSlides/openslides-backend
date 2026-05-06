@@ -82,7 +82,7 @@ def main() -> None:
             # check group.permissions enum in models.yml, if possible
             collection_to_filename = get_collection_names_and_filenames()
             group_fields = load_fields(collection_to_filename["group"])
-            enum = set(group_fields["permissions"]["items"]["enum"])
+            enum = set(group_fields["fields"]["permissions"]["items"]["enum"])
             permissions = {
                 str(permission)
                 for permissions in all_permissions.values()

@@ -53,23 +53,6 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
             data, {"id": None, "error": "No item with '2other' was found."}
         )
 
-    def test_many_found(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "group/2": {"external_id": "1ex"},
-                "group/3": {"external_id": "1ex"},
-            }
-        )
-        status_code, data = self.request(
-            "search_for_id_by_external_id",
-            {"collection": "group", "external_id": "1ex", "context_id": 1},
-        )
-        self.assertEqual(status_code, 200)
-        self.assertEqual(
-            data, {"id": None, "error": "More then one item with '1ex' were found."}
-        )
-
     def test_wrong_collection(self) -> None:
         status_code, data = self.request(
             "search_for_id_by_external_id",

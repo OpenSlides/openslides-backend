@@ -13,14 +13,16 @@ class MappedFields:
     """
 
     unique_fields: list[Field]
-    collections: list[Collection]
+    collection: Collection | None
     fqids: list[FullQualifiedId]
     needs_whole_model: bool
 
-    def __init__(self, mapped_fields: list[Field] = []) -> None:
+    def __init__(
+        self, mapped_fields: list[Field] = [], collection: Collection | None = None
+    ) -> None:
         self.validate_mapped_fields(mapped_fields)
         self.unique_fields = mapped_fields
-        self.collections = []
+        self.collection = collection
         self.post_init()
 
     def post_init(self) -> None:
