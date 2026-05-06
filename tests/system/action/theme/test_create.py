@@ -15,7 +15,7 @@ class ThemeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "theme/1",
+            "theme/2",
             {
                 "name": "test_Xcdfgee",
                 "primary_500": "#111222",
@@ -41,7 +41,7 @@ class ThemeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "theme/1",
+            "theme/2",
             {
                 "name": "test_Xcdfgee",
                 "primary_500": "#111222",
@@ -58,8 +58,8 @@ class ThemeCreateActionTest(BaseActionTestCase):
     def test_create_empty_data(self) -> None:
         response = self.request("theme.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['accent_500', 'name', 'primary_500', 'warn_500'] properties",
+        self.assertEqual(
+            "Action theme.create: data must contain ['accent_500', 'name', 'primary_500', 'warn_500'] properties",
             response.json["message"],
         )
 

@@ -1,11 +1,12 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -65,7 +66,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             instance["state_extension_reference_ids"] = (
                 recommendation_extension_reference_ids or []
             )
-        instance["last_modified"] = round(time.time())
+        instance["last_modified"] = datetime.now(ZoneInfo("UTC"))
         return instance
 
     def get_history_information(self) -> HistoryInformation | None:

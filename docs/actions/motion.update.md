@@ -1,4 +1,4 @@
-## Payload 
+## Payload
 Includes workflow_timestamp from Issue2112
 ```js
 {
@@ -7,7 +7,7 @@ Includes workflow_timestamp from Issue2112
 
 // Optional
     title: string;
-    number: string;
+    number: string;  // unique in the meeting
     additional_submitter: string;
     text: HTMLStrict;
     reason: HTMLStrict;

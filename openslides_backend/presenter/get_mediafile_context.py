@@ -8,7 +8,7 @@ from ..models.models import Meeting
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permissions
-from ..services.datastore.commands import GetManyRequest
+from ..services.database.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.patterns import KEYSEPARATOR
 from ..shared.schema import schema_version

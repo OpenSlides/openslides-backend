@@ -1,3 +1,7 @@
+from datetime import datetime
+
+from psycopg.types.json import Jsonb
+
 from openslides_backend.action.mixins.import_mixins import ImportState
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.topic.test_json_upload import TopicJsonUploadForUseInImport
@@ -12,18 +16,24 @@ class TopicJsonImport(BaseActionTestCase):
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "topic",
-                    "result": {
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "title": {"value": "test", "info": ImportState.NEW},
-                                    "meeting_id": 22,
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "rows": [
+                                {
+                                    "state": ImportState.NEW,
+                                    "messages": [],
+                                    "data": {
+                                        "title": {
+                                            "value": "test",
+                                            "info": ImportState.NEW,
+                                        },
+                                        "meeting_id": 22,
+                                    },
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -65,31 +75,34 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_exists("import_preview/2")
 
     def test_import_found_id_and_text_field(self) -> None:
+        self.create_topic(1, 22)
         self.set_models(
             {
-                "topic/1": {"title": "test", "meeting_id": 22},
-                "meeting/22": {"topic_ids": [1]},
                 "import_preview/2": {
                     "state": ImportState.DONE,
-                    "result": {
-                        "import": "topic",
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": ["Existing topic will be updated."],
-                                "data": {
-                                    "title": {
-                                        "value": "test",
-                                        "info": ImportState.WARNING,
+                    "name": "topic",
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "import": "topic",
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": ["Existing topic will be updated."],
+                                    "data": {
+                                        "title": {
+                                            "value": "test",
+                                            "info": ImportState.WARNING,
+                                            "id": 1,
+                                        },
                                         "id": 1,
+                                        "meeting_id": 22,
+                                        "text": "this should be updated",
                                     },
-                                    "id": 1,
-                                    "meeting_id": 22,
-                                    "text": "this should be updated",
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -101,38 +114,37 @@ class TopicJsonImport(BaseActionTestCase):
         )
 
     def test_import_found_id_and_agenda_fields(self) -> None:
+        self.create_topic(1, 22)
         self.set_models(
             {
-                "topic/1": {"title": "test", "meeting_id": 22, "agenda_item_id": 7},
-                "agenda_item/7": {
-                    "content_object_id": "topic/1",
-                    "meeting_id": 22,
-                    "duration": 20,
-                },
-                "meeting/22": {"topic_ids": [1]},
+                "agenda_item/1": {"duration": 20},
                 "import_preview/2": {
                     "state": ImportState.DONE,
-                    "result": {
-                        "import": "topic",
-                        "rows": [
-                            {
-                                "state": ImportState.DONE,
-                                "messages": ["Existing topic will be updated."],
-                                "data": {
-                                    "title": {
-                                        "value": "test",
-                                        "info": ImportState.WARNING,
+                    "name": "topic",
+                    "created": datetime.now(),
+                    "result": Jsonb(
+                        {
+                            "import": "topic",
+                            "rows": [
+                                {
+                                    "state": ImportState.DONE,
+                                    "messages": ["Existing topic will be updated."],
+                                    "data": {
+                                        "title": {
+                                            "value": "test",
+                                            "info": ImportState.WARNING,
+                                            "id": 1,
+                                        },
                                         "id": 1,
+                                        "meeting_id": 22,
+                                        "agenda_comment": "test",
+                                        "agenda_type": "hidden",
+                                        "agenda_duration": 40,
                                     },
-                                    "id": 1,
-                                    "meeting_id": 22,
-                                    "agenda_comment": "test",
-                                    "agenda_type": "hidden",
-                                    "agenda_duration": 40,
                                 },
-                            },
-                        ],
-                    },
+                            ],
+                        }
+                    ),
                 },
             }
         )
@@ -140,10 +152,10 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "topic/1",
-            {"title": "test", "meeting_id": 22, "agenda_item_id": 7},
+            {"title": "test", "meeting_id": 22, "agenda_item_id": 1},
         )
         self.assert_model_exists(
-            "agenda_item/7",
+            "agenda_item/1",
             {
                 "content_object_id": "topic/1",
                 "comment": "test",
@@ -153,28 +165,15 @@ class TopicJsonImport(BaseActionTestCase):
         )
 
     def test_import_duplicate_and_topic_deleted(self) -> None:
-        self.set_models(
-            {
-                "topic/1": {"title": "test", "meeting_id": 22},
-                "meeting/22": {"topic_ids": [1]},
-            }
-        )
+        self.create_topic(1, 22)
         response = self.request(
-            "topic.json_upload",
-            {
-                "meeting_id": 22,
-                "data": [
-                    {
-                        "title": "test",
-                    }
-                ],
-            },
+            "topic.json_upload", {"meeting_id": 22, "data": [{"title": "test"}]}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("import_preview/3")
         response = self.request("topic.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("topic/1")
+        self.assert_model_not_exists("topic/1")
         response = self.request("topic.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -218,7 +217,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
     def test_import_done_switched_to_new(self) -> None:
         self.json_upload_duplicate_in_db()
         self.request("topic.delete", {"id": 3})
-        self.assert_model_deleted("topic/3")
+        self.assert_model_not_exists("topic/3")
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -231,8 +230,8 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
     def test_import_topic_switched_id(self) -> None:
         self.json_upload_duplicate_in_db()
         self.request("topic.delete", {"id": 3})
-        self.assert_model_deleted("topic/3", {"title": "test", "meeting_id": 22})
-        self.create_model("topic/4", {"title": "test", "meeting_id": 22})
+        self.assert_model_not_exists("topic/3")
+        self.create_topic(4, 22)
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
@@ -244,7 +243,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
 
     def test_import_topic_duplicate_id(self) -> None:
         self.json_upload_duplicate_in_db()
-        self.create_model("topic/4", {"title": "test", "meeting_id": 22})
+        self.create_topic(4, 22)
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]

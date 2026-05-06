@@ -1,7 +1,7 @@
 from typing import cast
 
 from openslides_backend.action.util.typing import ActionData
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....models.models import Vote
 from ...mixins.create_action_with_inferred_meeting import (
@@ -61,6 +61,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )["meeting_user"]
 
         self.datastore.get_many(
@@ -72,4 +73,5 @@ class VoteCreate(CreateActionWithInferredMeeting):
                 ),
             ],
             use_changed_models=False,
+            lock_result=False,
         )

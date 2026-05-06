@@ -78,7 +78,7 @@ Now, we are numbering `(B) Bildung 2`. Settings:
     |-10 "S 007"
 ```
 
-#### Failure case 1
+#### Failure case
 Numbering `(B) Bildung 2` does not work:
 ```
 (A) Allgemein 1
@@ -98,26 +98,6 @@ Numbering `(B) Bildung 2` does not work:
     |-10
 ```
 The error should be something like `Amendment "3" cannot be numbered, because it's lead motion (1) is not in category B - Bildung or any subcategory.`
-
-#### Failure case 2
-```
-(A) Allgemein 1
-|- 1 with number "B 002" <-- Changed
-|- 2
-|-(B) Bildung 2
-    |-3 (lead_motion_id=7)
-    |-4
-    |-() Sonstiges 3
-    |   |-5
-    |   |-6
-    |   |-(K) Unter-Sonstiges 4 
-    |      |-7
-    |      |-8
-    |-(S) Schule 5
-    |-9
-    |-10
-```
-Should fail with an error like: `Numbering aborted because the motion identifier "B 002" already exists in category A - Allgemein.`
 
 ## Permissions
 The request user needs `motion.can_manage`.

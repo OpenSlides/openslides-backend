@@ -11,38 +11,20 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSupporterDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting(meeting_data={"motions_supporters_min_amount": 1})
+        self.create_motion(1, 1)
         self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting_user/1": {
                 "meeting_id": 1,
                 "user_id": 2,
-                "motion_supporter_ids": [2],
             },
+            "group/1": {"meeting_user_ids": [1]},
             "motion_supporter/2": {
                 "meeting_user_id": 1,
                 "motion_id": 1,
                 "meeting_id": 1,
             },
-            "motion/1": {
-                "supporter_ids": [2],
-                "title": "motion_1",
-                "meeting_id": 1,
-                "state_id": 1,
-            },
-            "meeting/1": {
-                "name": "name_meeting_1",
-                "motion_ids": [1],
-                "motions_supporters_min_amount": 1,
-                "is_active_in_organization_id": 1,
-                "committee_id": 60,
-                "motion_supporter_ids": [2],
-            },
-            "motion_state/1": {
-                "name": "state_1",
-                "allow_support": True,
-                "motion_ids": [1],
-                "meeting_id": 1,
-            },
-            "committee/60": {"meeting_ids": [1]},
+            "motion_state/1": {"allow_support": True},
         }
 
     def create_delegator_test_data(
@@ -52,38 +34,16 @@ class MotionSupporterDeleteActionTest(BaseActionTestCase):
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_supporter",
         disable_delegations: bool = False,
     ) -> None:
-        self.create_meeting(1)
+        self.set_user_groups(1, [1])
         self.set_models(
             {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "motion_supporter_ids": [2],
-                },
                 "motion_supporter/2": {
                     "meeting_user_id": 1,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
-                "motion/1": {
-                    "supporter_ids": [2],
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
-                "user/1": {"meeting_user_ids": [1]},
+                "motion_state/1": {"allow_support": True},
                 "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                    "meeting_user_ids": [1],
-                    "motion_supporter_ids": [2],
                     **(
                         {}
                         if disable_delegations
@@ -95,158 +55,79 @@ class MotionSupporterDeleteActionTest(BaseActionTestCase):
         )
         if is_delegator:
             self.create_user("delegatee", [1])
-            self.set_models(
-                {
-                    "meeting_user/1": {"vote_delegated_to_id": 2},
-                    "meeting_user/2": {"vote_delegations_from_ids": [1]},
-                }
-            )
+            self.set_models({"meeting_user/1": {"vote_delegated_to_id": 2}})
         self.set_organization_management_level(None)
         self.set_group_permissions(1, [perm])
-        self.set_user_groups(1, [1])
 
     def test_delete_meeting_support_system_deactivated(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_models(
             {
-                "motion_supporter/2": {"motion_id": 1, "meeting_id": 1},
-                "motion/1": {
-                    "title": "motion_1",
+                "motion_supporter/2": {
+                    "motion_id": 1,
                     "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [2],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 0,
-                    "motion_supporter_ids": [2],
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
                     "meeting_id": 1,
                 },
+                "meeting/1": {"motions_supporters_min_amount": 0},
+                "motion_state/1": {"allow_support": False},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
         self.assert_status_code(response, 400)
-        assert "Motion supporters system deactivated." in response.json.get(
-            "message", ""
+        self.assertEqual(
+            "Motion supporters system deactivated.", response.json.get("message", "")
         )
 
     def test_delete_state_doesnt_allow_support(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
         self.set_models(
             {
-                "meeting_user/1": {"motion_supporter_ids": [2]},
                 "motion_supporter/2": {
                     "motion_id": 1,
                     "meeting_id": 1,
                     "meeting_user_id": 1,
                 },
-                "motion/1": {
-                    "supporter_ids": [2],
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                    "motion_supporter_ids": [2],
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": False},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
         self.assert_status_code(response, 400)
-        assert "The state does not allow support." in response.json["message"]
+        self.assertEqual("The state does not allow support.", response.json["message"])
 
     def test_delete_state_doesnt_allow_support_meta_perm(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_organization_management_level(None)
         self.set_models(
             {
                 "motion_supporter/2": {"motion_id": 1, "meeting_id": 1},
-                "motion/1": {
-                    "supporter_ids": [2],
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
-                    "motion_supporter_ids": [2],
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": False,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": False},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_supporter/2")
+        self.assert_model_not_exists("motion_supporter/2")
 
     def test_delete_unsupport(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SUPPORT])
         self.set_organization_management_level(None)
         self.set_models(
             {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "motion_supporter_ids": [2],
-                },
                 "motion_supporter/2": {
                     "meeting_user_id": 1,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [2],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motion_supporter_ids": [2],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": True},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_supporter/2")
+        self.assert_model_not_exists("motion_supporter/2")
         self.assert_model_exists("meeting_user/1")
         self.assert_model_exists("motion/1")
 
@@ -273,39 +154,19 @@ class MotionSupporterDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_delegator_setting(self) -> None:
-        self.create_meeting(1)
+        self.set_user_groups(1, [3])
         self.set_models(
             {
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "motion_supporter_ids": [2],
-                },
                 "motion_supporter/2": {
                     "meeting_user_id": 1,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
-                "motion/1": {
-                    "supporter_ids": [2],
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
                 "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motions_supporters_min_amount": 1,
                     "users_forbid_delegator_as_submitter": True,
                     "users_enable_vote_delegations": True,
-                    "motion_supporter_ids": [2],
                 },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": True},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
@@ -349,44 +210,23 @@ class MotionSupporterDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_delete_unsupport_on_other(self) -> None:
-        self.create_meeting(1)
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_organization_management_level(None)
         self.create_user("bob", [3])
         self.set_models(
             {
-                "meeting_user/2": {
-                    "motion_supporter_ids": [2],
-                },
                 "motion_supporter/2": {
                     "meeting_user_id": 1,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
-                "motion/1": {
-                    "title": "motion_1",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                    "supporter_ids": [2],
-                },
-                "meeting/1": {
-                    "name": "name_meeting_1",
-                    "motion_ids": [1],
-                    "motion_supporter_ids": [2],
-                    "motions_supporters_min_amount": 1,
-                },
-                "motion_state/1": {
-                    "name": "state_1",
-                    "allow_support": True,
-                    "motion_ids": [1],
-                    "meeting_id": 1,
-                },
+                "motion_state/1": {"allow_support": True},
             }
         )
         response = self.request("motion_supporter.delete", {"id": 2})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("motion_supporter/2")
+        self.assert_model_not_exists("motion_supporter/2")
         self.assert_model_exists("meeting_user/1")
         self.assert_model_exists("motion/1")
 

@@ -8,18 +8,17 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.create_meeting()
         self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"enable_chat": True},
-            "committee/2": {"meeting_ids": [1]},
-            "meeting/1": {"is_active_in_organization_id": 1, "committee_id": 2},
-            "chat_group/1": {"meeting_id": 1, "name": "redekreis1"},
+            "chat_group/1": {"name": "redekreis1", "meeting_id": 1},
         }
 
     def test_delete(self) -> None:
         self.set_models(self.test_models)
         response = self.request("chat_group.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("chat_group/1")
+        self.assert_model_not_exists("chat_group/1")
 
     def test_delete_not_enabled(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["enable_chat"] = False

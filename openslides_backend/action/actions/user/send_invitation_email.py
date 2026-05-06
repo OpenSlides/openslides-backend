@@ -1,6 +1,7 @@
 from collections import defaultdict
+from datetime import datetime
 from email.headerregistry import Address
-from enum import Enum
+from enum import StrEnum
 from smtplib import (
     SMTPAuthenticationError,
     SMTPDataError,
@@ -9,8 +10,8 @@ from smtplib import (
     SMTPServerDisconnected,
 )
 from ssl import SSLCertVerificationError
-from time import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from fastjsonschema import JsonSchemaException
 
@@ -18,14 +19,18 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....models.models import User
-from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from ....permissions.permission_helper import (
+    has_committee_management_level,
     has_organization_management_level,
     has_perm,
 )
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import DatastoreException, MissingPermission
+from ....services.database.commands import GetManyRequest
+from ....shared.exceptions import DatabaseException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
@@ -37,7 +42,7 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 
 
-class EmailErrorType(str, Enum):
+class EmailErrorType(StrEnum):
     USER_ERROR = "user_error"
     SETTINGS_ERROR = "settings_error"
     CONFIGURATION_ERROR = "configuration_error"
@@ -100,8 +105,8 @@ class UserSendInvitationMail(UpdateAction):
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
                         result["type"] = EmailErrorType.OTHER_ERROR
-                    except DatastoreException as e:
-                        result["message"] = f"DatastoreException: {str(e)}"
+                    except DatabaseException as e:
+                        result["message"] = f"DatabaseException: {e.message}"
                         result["type"] = EmailErrorType.OTHER_ERROR
                     except MissingPermission as e:
                         result["message"] = e.message
@@ -268,7 +273,7 @@ class UserSendInvitationMail(UpdateAction):
             html=False,
         )
         result["sent"] = True
-        instance["last_email_sent"] = round(time())
+        instance["last_email_sent"] = datetime.now(ZoneInfo("UTC"))
         return super().update_instance(instance)
 
     def get_data_from_meeting_or_organization(
@@ -334,11 +339,28 @@ class UserSendInvitationMail(UpdateAction):
             instance["meeting_id"],
         ):
             return
-        if not instance.get("meeting_id") and has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
+        comm_ids: list[int] = []
+        if not instance.get("meeting_id"):
+            if has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_USERS,
+            ):
+                return
+            comm_ids = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]), ["committee_ids"]
+            ).get("committee_ids", [])
+            if any(
+                has_committee_management_level(self.datastore, self.user_id, comm_id)
+                for comm_id in comm_ids
+            ):
+                return
         if instance.get("meeting_id"):
             raise MissingPermission(Permissions.User.CAN_UPDATE)
         else:
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: set(comm_ids),
+                }
+            )

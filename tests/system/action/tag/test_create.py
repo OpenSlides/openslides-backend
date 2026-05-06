@@ -8,15 +8,13 @@ class TagActionTest(BaseActionTestCase):
             "tag.create", {"name": "test_Xcdfgee", "meeting_id": 577}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("tag/1")
-        self.assertEqual(model.get("name"), "test_Xcdfgee")
-        self.assertEqual(model.get("meeting_id"), 577)
+        self.assert_model_exists("tag/1", {"name": "test_Xcdfgee", "meeting_id": 577})
 
     def test_create_empty_data(self) -> None:
         response = self.request("tag.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['meeting_id', 'name'] properties",
+        self.assertEqual(
+            "Action tag.create: data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 
@@ -31,8 +29,8 @@ class TagActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must not contain {'wrong_field'} properties",
+        self.assertEqual(
+            "Action tag.create: data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
 
@@ -44,7 +42,7 @@ class TagActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assert_model_not_exists("tag/1")
-        self.assertIn(
+        self.assertEqual(
             "You are not allowed to perform action tag.create. Missing Permission: tag.can_manage",
             response.json["message"],
         )

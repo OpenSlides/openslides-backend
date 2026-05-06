@@ -1,5 +1,5 @@
-import time
-from typing import Any
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -8,125 +8,68 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_meeting(222)
-        self.permission_test_models: dict[str, dict[str, Any]] = {
-            "motion_workflow/34": {
-                "meeting_id": 1,
-            },
-            "motion_state/66": {
-                "meeting_id": 1,
-                "motion_ids": [22],
-                "workflow_id": 34,
-            },
-            "motion_state/77": {
-                "meeting_id": 1,
-                "workflow_id": 34,
-                "recommendation_label": "blablabal",
-            },
-            "motion/22": {"meeting_id": 1, "state_id": 66},
-        }
-
-    def test_set_recommendation_correct(self) -> None:
-        check_time = round(time.time())
+        self.create_meeting()
+        self.create_motion(1, 22)
         self.set_models(
             {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
-                },
-                "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
-                },
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "workflow_id": 34,
+                    "name": "recommendation",
+                    "meeting_id": 1,
+                    "workflow_id": 1,
+                    "weight": 77,
                     "recommendation_label": "blablabal",
-                },
-                "motion/22": {"meeting_id": 222, "state_id": 66},
+                }
             }
         )
+
+    def test_set_recommendation_correct(self) -> None:
+        check_time = datetime.now(ZoneInfo("UTC"))
         response = self.request(
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/22")
-        assert model.get("recommendation_id") == 77
-        assert model.get("last_modified", 0) >= check_time
+        model = self.assert_model_exists("motion/22", {"recommendation_id": 77})
+        assert (
+            model.get("last_modified", datetime.fromtimestamp(0, ZoneInfo("UTC")))
+            >= check_time
+        )
         self.assert_history_information(
             "motion/22", ["Recommendation set to {}", "motion_state/77"]
         )
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
-        self.set_models(
-            {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
-                },
-                "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
-                },
-                "motion_state/77": {"meeting_id": 222, "workflow_id": 34},
-                "motion/22": {"meeting_id": 222, "state_id": 66},
-            }
-        )
+        self.set_models({"motion_state/77": {"recommendation_label": None}})
         response = self.request(
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
         self.assert_status_code(response, 400)
-        assert "Recommendation label of a recommendation must be set." in str(
-            response.json["message"]
+        self.assertEqual(
+            "Recommendation label of a recommendation must be set.",
+            response.json["message"],
         )
 
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:
         self.set_models(
             {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
+                "motion_workflow/2": {
+                    "name": "motion_workflow 2",
+                    "first_state_id": 77,
+                    "meeting_id": 1,
                 },
-                "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
-                },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "workflow_id": 123,
-                    "recommendation_label": "blablabal",
-                },
-                "motion/22": {"meeting_id": 222, "state_id": 66},
+                "motion_state/77": {"workflow_id": 2},
             }
         )
         response = self.request(
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
         self.assert_status_code(response, 400)
-        assert "State is from a different workflow as motion." in response.json.get(
-            "message", ""
+        self.assertEqual(
+            "Cannot set recommendation. State is from a different workflow as motion.",
+            response.json["message"],
         )
 
     def test_history_multiple_actions(self) -> None:
-        self.set_models(
-            {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
-                },
-                "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
-                },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "workflow_id": 34,
-                    "recommendation_label": "blablabal",
-                },
-                "motion/22": {"meeting_id": 222, "state_id": 66},
-                "motion/23": {"meeting_id": 222, "state_id": 66},
-            }
-        )
+        self.create_motion(1, 23)
         response = self.request_multi(
             "motion.set_recommendation",
             [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 77}],
@@ -140,25 +83,16 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_history_multiple_actions_different_states(self) -> None:
+        self.create_motion(1, 23)
         self.set_models(
             {
-                "motion_workflow/34": {
-                    "meeting_id": 222,
-                },
                 "motion_state/66": {
-                    "meeting_id": 222,
-                    "motion_ids": [22],
-                    "workflow_id": 34,
+                    "name": "recommendation2",
+                    "meeting_id": 1,
+                    "workflow_id": 1,
+                    "weight": 66,
                     "recommendation_label": "blablabal",
                 },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "motion_ids": [23],
-                    "workflow_id": 34,
-                    "recommendation_label": "blablabal",
-                },
-                "motion/22": {"meeting_id": 222, "state_id": 66},
-                "motion/23": {"meeting_id": 222, "state_id": 77},
             }
         )
         response = self.request_multi(
@@ -175,14 +109,12 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
 
     def test_set_recommendation_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
-            "motion.set_recommendation",
-            {"id": 22, "recommendation_id": 77},
+            {}, "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
 
     def test_set_recommendation_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion.set_recommendation",
             {"id": 22, "recommendation_id": 77},
             Permissions.Motion.CAN_MANAGE_METADATA,
@@ -190,7 +122,5 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
 
     def test_set_recommendation_permission_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(
-            self.permission_test_models,
-            "motion.set_recommendation",
-            {"id": 22, "recommendation_id": 77},
+            {}, "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )

@@ -1,8 +1,7 @@
-from ..action.base import BaseActionTestCase
-from .setup import FakeModelA, SingleRelationHandlerWithContext
+from .setup import BaseRelationsTestCase, FakeModelA, SingleRelationHandlerWithContext
 
 
-class RelationHandlerTest(BaseActionTestCase):
+class RelationHandlerTest(BaseRelationsTestCase):
     def test_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandlerWithContext(

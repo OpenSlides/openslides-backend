@@ -1,5 +1,6 @@
-import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -24,5 +25,5 @@ class MotionResetRecommendationAction(UpdateAction):
         Set recommendation to None.
         """
         instance["recommendation_id"] = None
-        instance["last_modified"] = round(time.time())
+        instance["last_modified"] = datetime.now(ZoneInfo("UTC"))
         return instance

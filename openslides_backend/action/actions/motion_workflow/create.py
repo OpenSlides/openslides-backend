@@ -4,7 +4,6 @@ from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ...action import Action
-from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.action_type import ActionType
@@ -44,7 +43,7 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
 @register_action(
     "motion_workflow.create_simple_workflow", action_type=ActionType.BACKEND_INTERNAL
 )
-class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAction):
+class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin):
     """
     Action to create a simple motion workflow.
     """
@@ -114,7 +113,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
 @register_action(
     "motion_workflow.create_complex_workflow", action_type=ActionType.BACKEND_INTERNAL
 )
-class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAction):
+class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin):
     """
     Action to create a complex motion workflow.
     """

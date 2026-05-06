@@ -1,5 +1,6 @@
-from time import time
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
@@ -63,9 +64,9 @@ class SpeakerUnpause(SingularActionMixin, CountdownControl, UpdateAction):
         if result:
             self.execute_other_action(SpeakerPause, [{"id": next(iter(result.keys()))}])
 
-        instance["unpause_time"] = now = round(time())
-        instance["total_pause"] = (
-            db_instance.get("total_pause", 0) + now - db_instance["pause_time"]
+        instance["unpause_time"] = now = datetime.now(ZoneInfo("UTC"))
+        instance["total_pause"] = db_instance.get("total_pause", 0) + int(
+            (now - db_instance["pause_time"]).total_seconds()
         )
         instance["pause_time"] = None
 

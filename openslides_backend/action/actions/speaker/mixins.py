@@ -3,7 +3,7 @@ from typing import Any
 from openslides_backend.action.actions.structure_level_list_of_speakers.create import (
     StructureLevelListOfSpeakersCreateAction,
 )
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions

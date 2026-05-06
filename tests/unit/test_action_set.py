@@ -6,12 +6,12 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.util.register import register_action_set
-from openslides_backend.models.base import Model
+from tests.patch_model_registry_helper import FakeModel
 
 dummy_schema: dict = {}
 
 
-class DummyModelVcioluoffl(Model):
+class DummyModelVcioluoffl(FakeModel):
     collection = "dummy_model_vcioluoffl"
 
 

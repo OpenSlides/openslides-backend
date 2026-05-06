@@ -1,14 +1,15 @@
 from typing import Any
 
 import fastjsonschema
-from datastore.shared.util import is_reserved_field
 
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.shared.export_helper import get_fields_for_export
+from openslides_backend.shared.patterns import is_reserved_field
 
 from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..services.datastore.interface import DatastoreService
+from ..services.database.interface import Database
 from ..shared.exceptions import PermissionDenied
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -25,21 +26,25 @@ check_database_schema = fastjsonschema.compile(
 )
 
 
-def check_everything(datastore: DatastoreService) -> None:
+def check_everything(datastore: Database) -> None:
     result = datastore.get_everything()
     data: dict[str, Any] = {
         collection: {
             str(id): {
                 field: value
                 for field, value in model.items()
-                if not is_reserved_field(field)
+                if (
+                    field in get_fields_for_export(collection)
+                    and not is_reserved_field(field)
+                    and value is not None
+                )
             }
             for id, model in models.items()
         }
         for collection, models in result.items()
         if collection not in ["action_worker", "import_preview"]
     }
-    data["_migration_index"] = get_backend_migration_index()
+    data["_migration_index"] = MigrationHelper.get_backend_migration_index()
     Checker(
         data=data,
         mode="all",
@@ -67,3 +72,5 @@ class CheckDatabaseAll(BasePresenter):
             return {"ok": True}
         except CheckException as ce:
             return {"ok": False, "errors": str(ce)}
+        except Exception as e:
+            return {"ok": False, "errors": str(e)}

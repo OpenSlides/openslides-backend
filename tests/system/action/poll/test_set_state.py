@@ -1,28 +1,28 @@
+from decimal import Decimal
+
 from .base_poll_test import BasePollTestCase
 
 
 class PollSetState(BasePollTestCase):
     def test_set_state(self) -> None:
+        self.create_meeting(110)
+        self.create_assignment(1, 110)
         self.set_models(
             {
-                "meeting/110": {
-                    "name": "meeting_110",
-                    "is_active_in_organization_id": 1,
-                },
                 "poll/65": {
+                    "title": "Title 65",
                     "type": "analog",
                     "state": "created",
                     "pollmethod": "YNA",
                     "meeting_id": 110,
-                    "option_ids": [57],
+                    "content_object_id": "assignment/1",
                 },
                 "option/57": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
+                    "yes": Decimal("0.000000"),
+                    "no": Decimal("0.000000"),
+                    "abstain": Decimal("0.000000"),
                     "meeting_id": 110,
                     "poll_id": 65,
-                    "vote_ids": [],
                 },
             }
         )

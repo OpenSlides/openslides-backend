@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from openslides_backend.action.actions.meeting.clone import MeetingClone
@@ -6,7 +7,7 @@ from openslides_backend.action.actions.organization_tag.create import (
     OrganizationTagCreate,
 )
 from openslides_backend.action.util.typing import ActionData, ActionResults
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -181,11 +182,17 @@ class CommitteeImport(BaseImportAction, CommitteeImportMixin):
                         "start_time",
                         "end_time",
                         "admin_ids",
+                        "time_zone",
                     )
                     if (meeting_field := f"meeting_{field}") in entry
                 } | {
                     "committee_id": entry["id"],
                 }
+                for field_name in ["start_time", "end_time"]:
+                    if (value := action_data.get(field_name)) and isinstance(
+                        value, int
+                    ):
+                        action_data[field_name] = datetime.fromtimestamp(value)
                 if template_id := entry.get("meeting_template"):
                     action_data["meeting_id"] = template_id
                     clone_meeting_data.append(action_data)

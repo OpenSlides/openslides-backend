@@ -7,6 +7,7 @@ from openslides_backend.http.views.action_view import (
 )
 from openslides_backend.http.views.base_view import RouteFunction
 from openslides_backend.shared.env import DEV_PASSWORD
+from openslides_backend.shared.typing import DeletedModel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.util import disable_dev_mode, get_route_path
 from tests.util import Response
@@ -87,6 +88,14 @@ class TestInternalActionsDev(BaseInternalActionTest):
     Hint: This test assumes that OPENSLIDES_DEVELOPMENT is truthy.
     """
 
+    def setUp(self) -> None:
+        if self._testMethodName in (
+            "test_internal_organization_initial_import",
+            "test_internal_execute_stack_internal_via_public_route",
+        ):
+            self.init_with_login = False
+        super().setUp()
+
     def test_internal_user_create(self) -> None:
         response = self.internal_request("user.create", {"username": "test"})
         self.assert_status_code(response, 200)
@@ -100,7 +109,7 @@ class TestInternalActionsDev(BaseInternalActionTest):
     def test_internal_user_delete(self) -> None:
         response = self.internal_request("user.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/1")
+        self.assert_model_not_exists("user/1")
 
     def test_internal_user_set_password(self) -> None:
         response = self.internal_request(
@@ -111,7 +120,12 @@ class TestInternalActionsDev(BaseInternalActionTest):
         assert self.auth.is_equal("new_password", model["password"])
 
     def test_internal_organization_initial_import(self) -> None:
-        self.datastore.truncate_db()
+        self.set_models(
+            {
+                "theme/1": DeletedModel(),
+                ONE_ORGANIZATION_FQID: DeletedModel(),
+            }
+        )
         response = self.internal_request("organization.initial_import", {"data": {}})
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID)
@@ -135,7 +149,9 @@ class TestInternalActionsDev(BaseInternalActionTest):
         self.assert_model_not_exists("user/2")
 
     def test_internal_execute_stack_internal_via_public_route(self) -> None:
-        self.datastore.truncate_db()
+        self.set_models(
+            {"theme/1": DeletedModel(), ONE_ORGANIZATION_FQID: DeletedModel()}
+        )
         response = self.request(
             "organization.initial_import", {"data": {}}, internal=False
         )
@@ -178,6 +194,11 @@ class TestInternalActionsProdWithPasswordFile(
     Same as TestInternalActionsProd but with a server-side password set.
     """
 
+    def setUp(self) -> None:
+        if self._testMethodName in ("test_internal_execute_stack_internal_action"):
+            self.init_with_login = False
+        super().setUp()
+
     def test_internal_wrong_password(self) -> None:
         response = self.internal_request("user.create", {"username": "test"}, "wrong")
         self.assert_status_code(response, 401)
@@ -191,7 +212,9 @@ class TestInternalActionsProdWithPasswordFile(
         self.assert_model_exists("user/2")
 
     def test_internal_execute_stack_internal_action(self) -> None:
-        self.datastore.truncate_db()
+        self.set_models(
+            {"theme/1": DeletedModel(), ONE_ORGANIZATION_FQID: DeletedModel()}
+        )
         response = self.internal_request(
             "organization.initial_import", {"data": {}}, self.internal_auth_password
         )

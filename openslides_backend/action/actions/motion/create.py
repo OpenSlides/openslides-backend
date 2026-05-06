@@ -1,11 +1,13 @@
 from collections import defaultdict
 from typing import Any, cast
 
+from psycopg.types.json import Jsonb
+
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import (
@@ -53,7 +55,7 @@ class MotionCreate(
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "submitter_ids": id_list_schema,
+            "submitter_meeting_user_ids": id_list_schema,
             "amendment_paragraphs": number_string_json_schema,
             "attachment_mediafile_ids": id_list_schema,
             "supporter_meeting_user_ids": id_list_schema,
@@ -105,8 +107,9 @@ class MotionCreate(
                 del instance["amendment_paragraphs"]
             if instance.get("amendment_paragraphs") and "text" in instance:
                 del instance["text"]
-        if instance.get("amendment_paragraphs"):
+        if amendment_paragraphs := instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
+            instance["amendment_paragraphs"] = Jsonb(amendment_paragraphs)
         # if amendment and no category set, use category from the lead motion
         if instance.get("lead_motion_id") and "category_id" not in instance:
             lead_motion = self.datastore.get(
@@ -129,7 +132,6 @@ class MotionCreate(
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
         self.create_supporters(instance)
-        self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
         instance = super().update_instance(instance)
@@ -148,6 +150,41 @@ class MotionCreate(
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
+        extra_submitter_perms: list[Permission] = [
+            Permissions.User.CAN_SEE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        ]
+        if (
+            (submitter_mu_ids := instance.get("submitter_meeting_user_ids"))
+            and (
+                len(submitter_mu_ids) > 1
+                or (
+                    submitter_mu_ids[0]
+                    != (
+                        self.get_meeting_user(
+                            instance["meeting_id"], self.user_id, ["id"]
+                        )
+                        or {}
+                    ).get("id")
+                )
+            )
+            and len(
+                missing_perms := {
+                    perm: instance["meeting_id"]
+                    for perm in extra_submitter_perms
+                    if not has_perm(
+                        self.datastore,
+                        self.user_id,
+                        perm,
+                        instance["meeting_id"],
+                    )
+                }
+            )
+        ):
+            raise MissingPermission(
+                {key: val for key, val in missing_perms.items()}, use_and=True
+            )
+
         # Whitelist the fields depending on the user's permissions. Each field can require multiple conjunctive permissions.
         can_manage_whitelist = set()
         forbidden_fields = defaultdict(set)
@@ -156,9 +193,7 @@ class MotionCreate(
             Permissions.Mediafile.CAN_SEE: ["attachment_mediafile_ids"],
             Permissions.Motion.CAN_MANAGE_METADATA: [
                 "additional_submitter",
-                "submitter_ids",
             ],
-            Permissions.User.CAN_SEE: ["submitter_ids"],
         }
         for perm, fields in permission_to_fields.items():
             has_permission = has_perm(
@@ -191,6 +226,7 @@ class MotionCreate(
                     "workflow_id",
                     "id",
                     "meeting_id",
+                    "submitter_meeting_user_ids",
                 ]
             )
             if instance.get("lead_motion_id"):

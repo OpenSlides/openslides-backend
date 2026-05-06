@@ -13,7 +13,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.reset_redis()
 
     def test_update_correct(self) -> None:
-        self.create_model("user/2", {"password": "old_pw"})
+        self.create_model("user/2", {"username": "klaus", "password": "old_pw"})
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
@@ -36,8 +36,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_out()
 
     def test_scope_meeting_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(None)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -48,8 +48,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_meeting_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -59,8 +59,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_in()
 
     def test_scope_meeting_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -78,8 +78,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def assert_scope_meeting_permission_in_meeting(
         self, permission: Permission
     ) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting, permission)
         self.setup_scoped_user(UserScope.Meeting)
+        self.setup_admin_scope_permissions(UserScope.Meeting, permission)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -89,8 +89,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_in()
 
     def test_scope_committee_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(None)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -101,8 +101,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_committee_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -112,8 +112,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_in()
 
     def test_scope_committee_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -123,8 +123,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_in()
 
     def test_scope_committee_permission_in_meeting(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Committee)
+        self.setup_admin_scope_permissions(UserScope.Meeting)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -135,8 +135,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_organization_no_permission(self) -> None:
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(None)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -147,8 +147,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_organization_permission_in_organization(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -158,22 +158,12 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_logged_in()
 
     def test_scope_organization_permission_in_committee(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1]},
-                "committee/2": {"meeting_ids": [2]},
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                "user/111": {"id": 111},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
+                "user/111": {"username": "peter", "id": 111},
             }
         )
         response = self.request(
@@ -186,8 +176,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_multi_committee_permission_in_committee(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(UserScope.Committee)
         response = self.request(
             "user.set_password", {"id": 111, "password": self.PASSWORD}
         )
@@ -248,8 +238,8 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_scope_superadmin_with_oml_usermanager(self) -> None:
-        self.setup_admin_scope_permissions(UserScope.Organization)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(UserScope.Organization)
         self.set_models(
             {
                 "user/111": {
@@ -267,7 +257,9 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
 
     def test_saml_id_error(self) -> None:
-        self.create_model("user/2", {"password": "pw", "saml_id": "111"})
+        self.create_model(
+            "user/2", {"username": "giesela", "password": "pw", "saml_id": "111"}
+        )
         response = self.request(
             "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
@@ -285,10 +277,9 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         alice_id = self.create_user("alice")
         bob_id = self.create_user("bob")
         self.set_committee_management_level([59], alice_id)
-        self.set_user_groups(bob_id, [3])
 
         self.create_meeting(4)
-        self.set_user_groups(bob_id, [6])
+        self.set_user_groups(bob_id, [3, 6])
 
         self.login(alice_id)
 

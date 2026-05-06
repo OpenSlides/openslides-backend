@@ -5,7 +5,7 @@ from typing import Any
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.shared.interfaces.event import Event, EventType
 
-from ....services.datastore.interface import GetManyRequest
+from ....services.database.interface import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.typing import HistoryInformation
 from ...action import Action
@@ -255,7 +255,7 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
             group_information: list[str] = []
             if added and removed:
                 group_information.append("Groups changed")
-            else:
+            elif added or removed:
                 if added:
                     group_information.append("Participant added to")
                 else:
@@ -272,7 +272,8 @@ class MeetingUserHistoryMixin(ExtendHistoryMixin, Action):
                 group_information.append(
                     fqid_from_collection_and_id("meeting", meeting_id)
                 )
-            instance_information.append(tuple(group_information))
+            if group_information:
+                instance_information.append(tuple(group_information))
 
     def handle_delegations(
         self,

@@ -5,7 +5,7 @@ from openslides_backend.action.util.register import register_action
 
 from ....models.models import MotionChangeRecommendation
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ...action import original_instances

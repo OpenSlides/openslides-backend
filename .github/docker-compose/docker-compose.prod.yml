@@ -1,65 +1,33 @@
-version: "3"
 services:
     backend-action:
-        build: ../..
+        build: 
+            context: ../..
+            target: "prod"
+            args:
+                CONTEXT: "prod"
         image: openslides-backend
         ports:
             - "9002:9002"
         environment:
             - OPENSLIDES_BACKEND_COMPONENT=action
-            - DATASTORE_READER_HOST=datastore-reader
-            - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=datastore-writer
-            - DATASTORE_WRITER_PORT=9011
             - DATABASE_HOST=postgres
         depends_on:
-            - datastore-writer
-            - datastore-reader
+            - postgres
+            - redis
         secrets:
             - postgres_password
     backend-presenter:
-        build: ../..
+        build: 
+            context: ../..
+            target: "prod"
+            args:
+                CONTEXT: "prod"
         image: openslides-backend
         ports:
             - "9003:9003"
         environment:
             - OPENSLIDES_BACKEND_COMPONENT=presenter
-            - DATASTORE_READER_HOST=datastore-reader
-            - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=datastore-writer
-            - DATASTORE_WRITER_PORT=9011
             - DATABASE_HOST=postgres
-        depends_on:
-            - datastore-writer
-            - datastore-reader
-        secrets:
-            - postgres_password
-    datastore-reader:
-        build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
-            args:
-                MODULE: "reader"
-                PORT: "9010"
-        image: openslides-datastore-reader
-        environment:
-            - DATABASE_HOST=postgres
-        ports:
-            - "9010:9010"
-        depends_on:
-            - postgres
-        secrets:
-            - postgres_password
-    datastore-writer:
-        build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
-            args:
-                MODULE: "writer"
-                PORT: "9011"
-        image: openslides-datastore-writer
-        environment:
-            - DATABASE_HOST=postgres
-        ports:
-            - "9011:9011"
         depends_on:
             - postgres
             - redis

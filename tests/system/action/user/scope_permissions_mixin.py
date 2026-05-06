@@ -15,8 +15,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         If no scope is given, the user has no permissions.
         Additionally creates a default admin for meetings 1 and 4 - user/777.
         """
-        self.create_meeting()
-        self.create_meeting(4)
         if scope is None:
             self.set_organization_management_level(None)
         elif scope == UserScope.Organization:
@@ -44,20 +42,21 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         """
         Helper function to setup user 111 in different scopes.
         """
+        self.create_meeting()
+        self.create_meeting(
+            4,
+            meeting_data=({"committee_id": 60} if scope == UserScope.Committee else {}),
+        )
         if scope == UserScope.Organization:
             self.set_models(
                 {
                     "meeting/1": {
-                        "user_ids": [111],
                         "group_ids": [1, 2, 3, 11],
                     },
                     "meeting/4": {
-                        "user_ids": [111],
                         "group_ids": [4, 5, 6, 22],
                     },
                     "user/111": {
-                        "meeting_ids": [1, 4],
-                        "committee_ids": [60, 63],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -86,19 +85,14 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "committee/60": {"meeting_ids": [1, 4]},
                     "meeting/1": {
-                        "user_ids": [111],
                         "group_ids": [11],
                     },
                     "meeting/4": {
                         "user_ids": [111],
-                        "committee_id": 60,
-                        "group_ids": [11],
+                        "group_ids": [22],
                     },
                     "user/111": {
-                        "meeting_ids": [1, 4],
-                        "committee_ids": [60],
                         "username": "user111",
                         "meeting_user_ids": [11, 22],
                     },
@@ -128,9 +122,6 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             self.set_models(
                 {
                     "user/111": {
-                        "meeting_user_ids": [1111],
-                        "meeting_ids": [1],
-                        "committee_ids": [60],
                         "username": "user111",
                     },
                     "meeting_user/1111": {
@@ -153,8 +144,8 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             have admin rights in them
         Test user by default doesn't have admin rights, CML or OML.
         """
-        self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Organization)
+        self.setup_admin_scope_permissions(None)
         self.set_models(
             {
                 "user/111": {"password": "old_pw"},

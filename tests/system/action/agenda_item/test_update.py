@@ -9,12 +9,19 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "topic/102": {"agenda_item_id": 1, "meeting_id": 1},
+                "topic/102": {
+                    "title": "tropic",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "content_object_id": "topic/102",
+                    "meeting_id": 1,
+                },
                 "agenda_item/111": {
                     "item_number": "101",
                     "duration": 600,
                     "meeting_id": 1,
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/102",
                 },
             }
         )
@@ -22,7 +29,7 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_all_fields(self) -> None:
         self.set_models(
             {
-                "tag/1": {"meeting_id": 1},
+                "tag/1": {"name": "day/1", "meeting_id": 1},
             }
         )
         response = self.request(
@@ -51,14 +58,18 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.set_models(
             {
-                "agenda_item/111": {
-                    "child_ids": [222],
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 1,
                 },
+                "agenda_item/111": {"child_ids": [222]},
                 "agenda_item/222": {
                     "type": AgendaItem.AGENDA_ITEM,
                     "item_number": "102",
                     "parent_id": 111,
                     "meeting_id": 1,
+                    "content_object_id": "topic/1",
                 },
             }
         )
@@ -90,43 +101,75 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.test_update_tag_ids_add()
         response = self.request("agenda_item.update", {"id": 111, "tag_ids": []})
         self.assert_status_code(response, 200)
-        agenda_item = self.get_model("agenda_item/111")
-        self.assertEqual(agenda_item.get("tag_ids"), [])
+        self.assert_model_exists("agenda_item/111", {"tag_ids": None})
 
     def test_update_multiple_with_tag(self) -> None:
         self.set_models(
             {
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "jungle"},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 1,
+                },
                 "tag/1": {
                     "name": "tag",
                     "meeting_id": 1,
                     "tagged_ids": ["agenda_item/1", "agenda_item/2"],
                 },
-                "agenda_item/1": {"comment": "test", "meeting_id": 1, "tag_ids": [1]},
-                "agenda_item/2": {"comment": "test", "meeting_id": 1, "tag_ids": [1]},
+                "agenda_item/1": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
+                    "tag_ids": [1],
+                },
+                "agenda_item/2": {
+                    "comment": "test",
+                    "meeting_id": 1,
+                    "content_object_id": "topic/2",
+                    "tag_ids": [1],
+                },
             }
         )
         response = self.request_multi(
             "agenda_item.update", [{"id": 1, "tag_ids": []}, {"id": 2, "tag_ids": []}]
         )
         self.assert_status_code(response, 200)
-        agenda_item = self.get_model("agenda_item/1")
-        self.assertEqual(agenda_item.get("tag_ids"), [])
-        agenda_item = self.get_model("agenda_item/2")
-        self.assertEqual(agenda_item.get("tag_ids"), [])
-        tag = self.get_model("tag/1")
-        self.assertEqual(tag.get("tagged_ids"), [])
+        self.assert_model_exists("agenda_item/1", {"tag_ids": None})
+        self.assert_model_exists("agenda_item/2", {"tag_ids": None})
+        self.assert_model_exists("tag/1", {"tagged_ids": None})
 
     def update_multiple_with_type_variations(
         self, variations: list[dict[str, int | str]]
     ) -> None:
         self.set_models(
             {
+                "topic/1": {"meeting_id": 1, "title": "tropic"},
+                "topic/2": {"meeting_id": 1, "title": "jungle"},
+                "topic/3": {"meeting_id": 1, "title": "jungle"},
+                "list_of_speakers/42": {
+                    "content_object_id": "topic/1",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/64": {
+                    "content_object_id": "topic/2",
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/128": {
+                    "content_object_id": "topic/3",
+                    "meeting_id": 1,
+                },
                 "agenda_item/1": {
                     "comment": "test1",
                     "meeting_id": 1,
                     "type": "internal",
                     "child_ids": [2],
                     "is_internal": True,
+                    "content_object_id": "topic/1",
                 },
                 "agenda_item/2": {
                     "comment": "test2",
@@ -135,6 +178,7 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "parent_id": 1,
                     "child_ids": [3],
                     "is_internal": True,
+                    "content_object_id": "topic/2",
                 },
                 "agenda_item/3": {
                     "comment": "test3",
@@ -142,6 +186,7 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "type": "internal",
                     "parent_id": 2,
                     "is_internal": True,
+                    "content_object_id": "topic/3",
                 },
             }
         )

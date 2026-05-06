@@ -3,8 +3,8 @@ from openslides_backend.action.mixins.meeting_user_helper import (
     get_meeting_user,
 )
 
-from ..services.datastore.commands import GetManyRequest
-from ..services.datastore.interface import DatastoreService
+from ..services.database.commands import GetManyRequest
+from ..services.database.interface import Database
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import OrganizationManagementLevel
@@ -12,7 +12,7 @@ from .permissions import Permission, Permissions, permission_parents
 
 
 def has_perm(
-    datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
+    datastore: Database, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
@@ -91,7 +91,7 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
 
 
 def has_organization_management_level(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     expected_level: OrganizationManagementLevel,
 ) -> bool:
@@ -102,13 +102,13 @@ def has_organization_management_level(
             ["organization_management_level"],
         )
         return expected_level <= OrganizationManagementLevel(
-            user.get("organization_management_level")
+            user.get("organization_management_level", "")
         )
     return False
 
 
 def get_failing_committee_management_levels(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     committee_ids: list[int],
 ) -> list[int]:
@@ -147,7 +147,7 @@ def get_failing_committee_management_levels(
 
 
 def has_committee_management_level(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     committee_id: int,
 ) -> bool:
@@ -178,7 +178,7 @@ def has_committee_management_level(
 
 
 def get_shared_committee_management_levels(
-    datastore: DatastoreService,
+    datastore: Database,
     user_id: int,
     committee_ids: list[int],
 ) -> list[int]:
@@ -225,7 +225,7 @@ def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permis
     return reduced_permissions
 
 
-def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
+def is_admin(datastore: Database, user_id: int, meeting_id: int) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
         ["admin_group_id", "locked_from_inside", "committee_id"],

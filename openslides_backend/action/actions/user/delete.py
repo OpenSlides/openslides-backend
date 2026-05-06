@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.database.commands import GetManyRequest
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData

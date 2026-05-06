@@ -56,7 +56,9 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         self.assertIn("Failed to verify token.", response.json["message"])
 
     def test_forget_password_confirm_used_token(self) -> None:
-        self.set_models({"user/2": {"password": "old", "email": self.EMAIL}})
+        self.set_models(
+            {"user/2": {"username": "dreamy", "password": "old", "email": self.EMAIL}}
+        )
         token = self.get_token(2)
         response = self.request(
             "user.forget_password_confirm",

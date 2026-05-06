@@ -7,7 +7,6 @@ from ....shared.patterns import (
     fqid_from_collection_and_id,
     id_from_fqid,
 )
-from ....shared.typing import DeletedModel
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -25,20 +24,18 @@ class AgendaItemDelete(DeleteAction):
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        """Deletes the topic before the relation handling can try to create a faulty update to it."""
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         agenda_item = self.datastore.get(
             fqid,
             ["content_object_id"],
         )
-        if agenda_item.get("content_object_id"):
-            content_object_fqid = agenda_item["content_object_id"]
+        if content_object_fqid := agenda_item.get("content_object_id"):
             if collection_from_fqid(
                 content_object_fqid
-            ) == "topic" and not self.datastore.is_deleted(content_object_fqid):
-                self.apply_instance(DeletedModel(), fqid)
+            ) == "topic" and not self.datastore.is_to_be_deleted(content_object_fqid):
                 self.execute_other_action(
                     TopicDelete,
                     [{"id": id_from_fqid(content_object_fqid)}],
                 )
-                self.apply_instance(DeletedModel(), content_object_fqid)
         return instance

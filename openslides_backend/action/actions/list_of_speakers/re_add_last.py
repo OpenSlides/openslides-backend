@@ -56,7 +56,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         last_speaker, lowest_weight = None, None
         has_current_speaker = False
         for speaker in speakers.values():
-            speaker_weight = speaker.get("weight") or 0
+            speaker_weight = speaker["weight"]
             if lowest_weight is None or speaker_weight < lowest_weight:
                 lowest_weight = speaker_weight
 
@@ -118,7 +118,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         3. Between multiple interposed questions, the weight decides.
         """
         return (
-            -instance["end_time"],
+            -instance["end_time"].timestamp(),
             instance["speech_state"] == SpeechState.INTERPOSED_QUESTION,
             instance["weight"],
         )

@@ -4,25 +4,36 @@ from .base import BasePresenterTestCase
 
 
 class TestGetUsers(BasePresenterTestCase):
-    def test_pagenation(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
+        self.user2 = {
+            "username": "florian",
+            "first_name": "Florian",
+            "last_name": "Freiheit",
+        }
+        self.user3 = {
+            "username": "test",
+            "first_name": "Testy",
+            "last_name": "Tester",
+        }
+        self.user4 = {
+            "username": "john",
+            "first_name": "John",
+            "last_name": "Xylon",
+        }
+        self.user5 = {
+            "username": "xorr",
+            "first_name": "John",
+            "last_name": "Xorr",
+        }
+
+    def test_pagination(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1"},
-                "user/2": {
-                    "username": "florian",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
-                },
-                "user/3": {
-                    "username": "goofi",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                },
-                "user/4": {
-                    "username": "john",
-                    "first_name": "John",
-                    "last_name": "Xylon",
-                },
+                "user/2": self.user2,
+                "user/3": {**self.user3, "username": "goofi"},
+                "user/4": self.user4,
             }
         )
         status_code, data = self.request(
@@ -38,29 +49,13 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(data, {"users": [2, 3]})
 
     def test_keywords_filter(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1"},
-                "user/2": {
-                    "username": "florian",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
-                },
-                "user/3": {
-                    "username": "test",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                },
-                "user/4": {
-                    "username": "john",
-                    "first_name": "John",
-                    "last_name": "Xylon",
-                },
-                "user/5": {
-                    "username": "xorr",
-                    "first_name": "John",
-                    "last_name": "Xorr",
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
+                "user/5": self.user5,
             }
         )
         status_code, data = self.request(
@@ -76,30 +71,14 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [5, 4]})
 
-    def test_keywords_pagenated(self) -> None:
+    def test_keywords_paginated(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1"},
-                "user/2": {
-                    "username": "florian",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
-                },
-                "user/3": {
-                    "username": "test",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                },
-                "user/4": {
-                    "username": "john",
-                    "first_name": "John",
-                    "last_name": "Xylon",
-                },
-                "user/5": {
-                    "username": "xorr",
-                    "first_name": "John",
-                    "last_name": "Xorr",
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
+                "user/5": self.user5,
             }
         )
         status_code, data = self.request(
@@ -116,29 +95,13 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(data, {"users": [4]})
 
     def test_check_defaults(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1"},
-                "user/2": {
-                    "username": "florian",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
-                },
-                "user/3": {
-                    "username": "test",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                },
-                "user/4": {
-                    "username": "john",
-                    "first_name": "John",
-                    "last_name": "Xylon",
-                },
-                "user/5": {
-                    "username": "xorr",
-                    "first_name": "John",
-                    "last_name": "Xzrr",
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
+                "user/5": {**self.user5, "last_name": "Xzrr"},
             }
         )
         status_code, data = self.request("get_users", {})
@@ -146,32 +109,13 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(data, {"users": [1, 2, 3, 4, 5]})
 
     def test_check_sort_title(self) -> None:
+        self.create_meeting()
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1"},
-                "user/2": {
-                    "username": "florian",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
-                    "title": "Accc",
-                },
-                "user/3": {
-                    "username": "test",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                    "title": "Cbbb",
-                },
-                "user/4": {
-                    "username": "john",
-                    "first_name": "John",
-                    "last_name": "Xylon",
-                    "title": "Edfff",
-                },
-                "user/5": {
-                    "username": "xorr",
-                    "first_name": "John",
-                    "last_name": "Xorr",
-                },
+                "user/2": {**self.user2, "title": "Accc"},
+                "user/3": {**self.user3, "title": "Cbbb"},
+                "user/4": {**self.user4, "title": "Edfff"},
+                "user/5": self.user5,
             }
         )
         status_code, data = self.request(

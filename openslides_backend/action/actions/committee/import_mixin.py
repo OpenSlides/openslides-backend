@@ -2,7 +2,7 @@ from typing import Any
 
 from openslides_backend.shared.filters import FilterOperator
 
-from ....services.datastore.commands import GetManyRequest
+from ....services.database.commands import GetManyRequest
 from ...action import Action
 from ...mixins.import_mixins import ImportRow, ImportState
 from .functions import detect_circles

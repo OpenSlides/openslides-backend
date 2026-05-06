@@ -53,25 +53,19 @@ class StructureLevelUpdateTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The name of the structure level must be unique.",
+            'structure_level/1: duplicate key value violates unique constraint "unique_structure_level_meeting_id_name"\n'
+            + "DETAIL:  Key (meeting_id, name)=(1, test2) already exists.",
             response.json["message"],
         )
         self.assert_model_exists("structure_level/1", {"name": "test"})
 
     def test_update_duplicate_name_in_other_meeting(self) -> None:
         self.create_meeting()
+        self.create_meeting(4)
         self.set_models(
             {
-                "meeting/1": {
-                    "structure_level_ids": [1],
-                },
-                "meeting/2": {
-                    "is_active_in_organization_id": 1,
-                    "structure_level_ids": [2],
-                    "committee_id": 1,
-                },
                 "structure_level/1": {"meeting_id": 1, "name": "test"},
-                "structure_level/2": {"meeting_id": 2, "name": "test2"},
+                "structure_level/2": {"meeting_id": 4, "name": "test2"},
             }
         )
         response = self.request(

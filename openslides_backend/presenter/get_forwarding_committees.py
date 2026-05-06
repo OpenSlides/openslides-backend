@@ -50,9 +50,6 @@ class GetForwardingCommittees(BasePresenter):
             ["committee_id"],
         )
 
-        if not meeting.get("committee_id"):
-            return []
-
         committee = self.datastore.get(
             fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["receive_forwardings_from_committee_ids"],

@@ -5,58 +5,48 @@ from .base import BasePresenterTestCase
 
 class TestGetUSerScope(BasePresenterTestCase):
     def test_good(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": 1,
-                },
-                # archived meeting
-                "meeting/2": {
-                    "committee_id": 2,
-                    "is_active_in_organization_id": None,
-                    "is_archived_in_organization_id": 1,
-                },
-                "committee/1": {},
-                "committee/2": {"meeting_ids": [1, 2]},
-                "user/2": {
-                    "username": "only_oml_level",
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                },
-                "user/3": {
-                    "username": "only_cml_level",
-                    "committee_management_ids": [1],
-                    "meeting_ids": [],
-                },
-                "user/4": {
-                    "username": "cml_and_meeting",
-                    "meeting_ids": [1],
-                    "committee_management_ids": [2],
-                },
-                "user/5": {
-                    "username": "no_organization",
-                    "meeting_ids": [],
-                },
-                "user/6": {
-                    "username": "oml_and_meeting",
-                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                    "meeting_ids": [1],
-                },
-                "user/7": {
-                    "username": "meeting_and_archived_meeting",
-                    "meeting_ids": [1, 2],
-                },
-                "user/8": {
-                    "username": "with_home_committee",
-                    "home_committee_id": 2,
-                },
-                "user/9": {
-                    "username": "with_home_committee_and_meeting",
-                    "home_committee_id": 1,
-                    "meeting_ids": [1, 2],
-                },
-            }
+        self.create_meeting()
+        self.create_meeting(
+            4,
+            meeting_data={
+                "committee_id": 60,
+                "is_active_in_organization_id": None,
+                "is_archived_in_organization_id": 1,
+            },
         )
+        self.create_user(
+            "only_oml_level",
+            organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
+        )
+        self.create_user(
+            "only_cml_level",
+            committee_management_ids=[63],
+        )
+        self.create_user(
+            "cml_and_meeting",
+            group_ids=[1],
+            committee_management_ids=[60],
+        )
+        self.create_user("no_organization")
+        self.create_user(
+            "oml_and_meeting",
+            organization_management_level=OrganizationManagementLevel.SUPERADMIN,
+            group_ids=[1],
+        )
+        self.create_user(
+            "meeting_and_archived_meeting",
+            group_ids=[1, 4],
+        )
+        self.create_user(
+            "with_home_committee",
+            home_committee_id=60,
+        )
+        self.create_user(
+            "with_home_committee_and_meetings",
+            group_ids=[1, 4],
+            home_committee_id=63,
+        )
+
         status_code, data = self.request(
             "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7, 8, 9]}
         )
@@ -74,9 +64,9 @@ class TestGetUSerScope(BasePresenterTestCase):
                 },
                 "3": {
                     "collection": "committee",
-                    "id": 1,
+                    "id": 63,
                     "user_oml": "",
-                    "committee_ids": [1],
+                    "committee_ids": [63],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
                 },
@@ -84,7 +74,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": "",
-                    "committee_ids": [2],
+                    "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
                 },
@@ -100,7 +90,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
-                    "committee_ids": [2],
+                    "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
                 },
@@ -108,25 +98,25 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": "",
-                    "committee_ids": [2],
+                    "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
                     "home_committee_id": None,
                 },
                 "8": {
                     "collection": "committee",
-                    "id": 2,
+                    "id": 60,
                     "user_oml": "",
                     "committee_ids": [],
                     "user_in_archived_meetings_only": False,
-                    "home_committee_id": 2,
+                    "home_committee_id": 60,
                 },
                 "9": {
                     "collection": "committee",
-                    "id": 1,
+                    "id": 63,
                     "user_oml": "",
-                    "committee_ids": [2],
+                    "committee_ids": [60],
                     "user_in_archived_meetings_only": False,
-                    "home_committee_id": 1,
+                    "home_committee_id": 63,
                 },
             },
         )

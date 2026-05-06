@@ -26,7 +26,7 @@ class StructureLevelDeleteTest(BaseActionTestCase):
             },
             Permissions.User.CAN_MANAGE,
         )
-        self.assert_model_deleted("structure_level/1")
+        self.assert_model_not_exists("structure_level/1")
 
     def test_delete_permissions_locked_meeting(self) -> None:
         self.base_locked_out_superadmin_permission_test(

@@ -32,7 +32,7 @@ class StructureLevelListOfSpeakersCreateAction(CreateActionWithInferredMeeting):
             FilterOperator("list_of_speakers_id", "=", instance["list_of_speakers_id"]),
             FilterOperator("meeting_id", "=", instance["meeting_id"]),
         )
-        if self.datastore.exists(collection=self.model.collection, filter=filter):
+        if self.datastore.exists(collection=self.model.collection, filter_=filter):
             raise ActionException(
                 "(structure_level_id, list_of_speakers_id) must be unique."
             )

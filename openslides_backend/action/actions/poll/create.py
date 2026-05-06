@@ -6,7 +6,6 @@ from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_fqid_schema
-from ...generics.create import CreateAction
 from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
@@ -34,7 +33,6 @@ options_schema = {
 class PollCreateAction(
     PollValidationMixin,
     SequentialNumbersMixin,
-    CreateAction,
     PollPermissionMixin,
     PollHistoryMixin,
     ForbidAnonymousGroupMixin,
@@ -88,6 +86,7 @@ class PollCreateAction(
         is_assignment_poll = (
             collection_from_fqid(instance["content_object_id"]) == "assignment"
         )
+        is_list_poll = "poll_candidate_user_ids" in instance.get("options", [{}])[0]
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
@@ -105,14 +104,26 @@ class PollCreateAction(
                 is_motion_poll
                 or (
                     is_assignment_poll
-                    and not instance.get("global_yes")
-                    and instance["pollmethod"] == "Y"
-                    and instance.get("max_votes_amount") == 1
+                    and (
+                        (
+                            not instance.get("global_yes")
+                            and instance["pollmethod"] == "Y"
+                            and instance.get("max_votes_amount") == 1
+                        )
+                        or is_list_poll
+                        or (
+                            (
+                                instance["pollmethod"] == "YNA"
+                                or instance["pollmethod"] == "YN"
+                            )
+                            and len(instance.get("options", [])) == 1
+                        )
+                    )
                 )
             )
         ):
             raise ActionException(
-                "live_voting_enabled only allowed for named motion polls and named Yes assignment polls."
+                "live_voting_enabled only allowed for named motion polls and some named assignment polls."
             )
 
         # check entitled_group_ids and analog

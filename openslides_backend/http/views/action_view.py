@@ -5,9 +5,10 @@ from pathlib import Path
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
-from ...migrations import assert_migration_index
-from ...migrations.migration_handler import MigrationHandler
+from ...migrations.migration_helper import MigrationHelper
+from ...migrations.migration_manager import MigrationManager
 from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
+from ...services.postgresql.db_connection_handling import get_new_os_conn
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
 from ...shared.interfaces.wsgi import RouteResponse
@@ -31,8 +32,9 @@ class ActionView(BaseView):
     def action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching action request.")
 
-        assert_migration_index()
-
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
         # Get user id.
         user_id, access_token = self.get_user_id_from_headers(
             request.headers, request.cookies
@@ -56,7 +58,9 @@ class ActionView(BaseView):
     def internal_action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching internal action request.")
 
-        assert_migration_index()
+        with get_new_os_conn() as conn:
+            with conn.cursor() as curs:
+                MigrationHelper.assert_migration_index(curs)
         self.check_internal_auth_password(request)
 
         handler = ActionHandler(self.env, self.services, self.logging)
@@ -71,8 +75,8 @@ class ActionView(BaseView):
     def migrations_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start executing migrations request.")
         self.check_internal_auth_password(request)
-        handler = MigrationHandler(self.env, self.services, self.logging)
-        response = handler.handle_request(request.json)
+        manager = MigrationManager(self.env, self.services, self.logging)
+        response = manager.handle_request(request.json)
         self.logger.debug("Migrations request finished successfully.")
         return {"success": True, **response}, None
 
