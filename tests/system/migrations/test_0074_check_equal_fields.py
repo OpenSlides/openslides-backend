@@ -760,3 +760,68 @@ def test_so_called_migration_failure_delete_only_group(
             assert_model(model_fqid, {**create_data[model_fqid], **model_data})
     for fqid in set(create_data).difference(skip):
         assert_model(fqid, create_data[fqid])
+
+
+def test_so_called_migration_failure_delete_only_projector(
+    write, finalize, assert_model
+) -> None:
+    create_data = get_base_data()[0]
+    write(
+        *[
+            {"type": "create", "fqid": fqid, "fields": model}
+            for fqid, model in create_data.items()
+        ]
+    )
+    fqid = collection_to_fqid["projector"]
+
+    def get_reduced_projector_ids(
+        collection: str, field: str, projector_field: str
+    ) -> dict[int, set[str]]:
+        return {id_: {field} for id_ in create_data[fqid][projector_field]}
+
+    def merge_reduced_projector_ids(
+        to_merge: list[dict[int, set[str]]],
+    ) -> dict[int, set[str]]:
+        return {
+            id_: {field for group in to_merge for field in group.get(id_, {})}
+            for id_ in {i for group in to_merge for i in group}
+        }
+
+    changed_models = {
+        "projection": merge_reduced_projector_ids(
+            [
+                get_reduced_projector_ids(
+                    "projection",
+                    "current_projector_id",
+                    "current_projection_ids",
+                ),
+                get_reduced_projector_ids(
+                    "projection",
+                    "preview_projector_id",
+                    "preview_projection_ids",
+                ),
+                get_reduced_projector_ids(
+                    "projection",
+                    "history_projector_id",
+                    "history_projection_ids",
+                ),
+            ]
+        ),
+    }
+    write({"type": "delete", "fqid": fqid})
+    finalize("0074_check_equal_fields")
+    skip: set[str] = {fqid}
+    for collection, data in changed_models.items():
+        for id_, model_data in data.items():
+            model_fqid = fqid_from_collection_and_id(collection, id_)
+            skip.add(model_fqid)
+            assert_model(
+                model_fqid,
+                {
+                    field: val
+                    for field, val in create_data[model_fqid].items()
+                    if field not in model_data
+                },
+            )
+    for fqid in set(create_data).difference(skip):
+        assert_model(fqid, create_data[fqid])
