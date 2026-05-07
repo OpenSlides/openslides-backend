@@ -158,6 +158,10 @@ class ServerError(ViewException):
     status_code = 500
 
 
+class CommandNotImplemented(ViewException):
+    status_code = 501
+
+
 class AnonymousNotAllowed(PermissionDenied):
     def __init__(self, action_name: str) -> None:
         super().__init__(f"Anonymous is not allowed to execute {action_name}")

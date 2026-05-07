@@ -838,9 +838,9 @@ class MotionCreateForwardedTest(CreateForwardedBaseTestCase):
                     "meeting_id": 1,
                 },
                 "motion_submitter/13": {
-                    "meeting_user_id": 1,
+                    "meeting_user_id": 2,
                     "motion_id": 13,
-                    "meeting_id": 1,
+                    "meeting_id": 4,
                 },
             }
         )
@@ -2322,8 +2322,8 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
         if not allow_amendment_forwarding:
             self.set_models(
                 {
-                    "motion_state/4": {"allow_motion_forwarding": True},
-                    "motion/13": {"state_id": 4},
+                    "motion_state/1": {"allow_amendment_forwarding": False},
+                    "motion/13": {"state_id": 1},
                 }
             )
         response = self.request(
@@ -2538,11 +2538,39 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
             },
         )
 
-    def test_forward_with_deleted_submitters(self) -> None:
-        self.create_meeting(1)
+    def test_forward_with_diff_version(self) -> None:
+        self.create_meeting()
         self.create_meeting(4)
-        self.create_meeting(7)
-        self.create_meeting(10)
+        self.create_motion(1, 1, motion_data={"diff_version": "0.1.2"})
+        self.set_models(
+            {
+                "motion_state/1": {"allow_motion_forwarding": True},
+                "committee/60": {"forward_to_committee_ids": [63]},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "Motion 2",
+                "text": "text",
+                "meeting_id": 4,
+                "origin_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/2", {"diff_version": "0.1.2"})
+
+    def test_forward_with_deleted_submitters(self) -> None:
+        self.create_meeting(
+            1,
+            meeting_data={"language": "it"},  # shouldn't matter
+        )
+        self.create_meeting(4)
+        self.create_meeting(7, meeting_data={"language": "de"})
+        self.create_meeting(
+            10,
+            meeting_data={"language": None},  # Should use orga default lang
+        )
         self.create_user("alice", [1])
         self.create_user("bob", [1])
         self.create_user("colin", [1])
@@ -2571,9 +2599,6 @@ class CreateForwardedTestWithAttachmentsAndAmendments(
             {
                 "organization/1": {"default_language": "fr"},
                 "committee/60": {"forward_to_committee_ids": [63, 66, 69]},
-                "meeting/1": {"language": "it"},  # shouldn't matter
-                "meeting/7": {"language": "de"},
-                "meeting/10": {"language": None},  # Should use orga default lang
                 "motion_state/1": {
                     "allow_motion_forwarding": True,
                     "allow_amendment_forwarding": True,

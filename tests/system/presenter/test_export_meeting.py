@@ -190,6 +190,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "meeting_user_id": 2,
                     "meeting_id": 1,
                     "note": "note_in_meeting1",
+                    "content_object_id": "motion/1",
                 },
             }
         )
@@ -262,6 +263,8 @@ class TestExportMeeting(BasePresenterTestCase):
                     "user_id": 14,
                     "user_token": "asdfgh",
                     "option_id": 1,
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
                 "option/1": {"meeting_id": 1},
             }

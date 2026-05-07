@@ -45,7 +45,7 @@ class ChatGroupUpdate(BaseActionTestCase):
 
     def test_update_group_from_different_meeting(self) -> None:
         self.create_meeting()
-        self.create_meeting(2)
+        self.create_meeting(4)
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_chat": True},
@@ -91,7 +91,11 @@ class ChatGroupUpdate(BaseActionTestCase):
         )
         response = self.request("chat_group.update", {"id": 1, "name": "test"})
         self.assert_status_code(response, 400)
-        assert "The name of a chat group must be unique." == response.json["message"]
+        self.assertIn(
+            'chat_group/1: duplicate key value violates unique constraint "unique_chat_group_meeting_id_name"\n'
+            + "DETAIL:  Key (meeting_id, name)=(1, test) already exists.",
+            response.json["message"],
+        )
 
     def test_update_anonymous_may_read(self) -> None:
         self.set_models(self.test_models)

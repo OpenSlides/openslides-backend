@@ -183,8 +183,7 @@ def test_update_error_own_field_unique(
                     ]
                 )
             )
-    assert "Relation from user/2 violates UNIQUE constraint: " in e_info.value.message
-    assert "Key (username)=(unique) already exists." in e_info.value.message
+    assert "user/2: User with username 'unique' already exists." in e_info.value.message
     assert_model("user/2", {"id": 2, "username": "ordinary", "first_name": "2"})
 
 
@@ -216,38 +215,22 @@ def test_update_error_own_field_not_null(
     assert_model("user/1", {"id": 1, "username": "1", "first_name": "1"})
 
 
-def create_models_for_1_1_tests() -> None:
-    data = get_group_base_data()
+def test_update_prevent_updates_error_delete(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_data()
     data[0]["events"].extend(
         [
             {
                 "type": EventType.Create,
-                "fqid": "motion/2",
-                "fields": {
-                    "title": "2",
-                    "meeting_id": 1,
-                    "state_id": 1,
-                },
-            },
-            {
-                "type": EventType.Create,
-                "fqid": "list_of_speakers/3",
-                "fields": {
-                    "content_object_id": "motion/2",
-                    "meeting_id": 1,
-                },
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": 1},
             },
         ]
     )
     create_models(data)
-
-
-def test_update_1_1_not_null_error(
-    db_connection: Connection[rows.DictRow],
-) -> None:
-    create_models_for_1_1_tests()
     with get_new_os_conn() as conn:
-        with pytest.raises(DatabaseError) as e_info:
+        with pytest.raises(InvalidFormat) as e_info:
             extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
             extended_database.write(
                 create_write_requests(
@@ -255,18 +238,9 @@ def test_update_1_1_not_null_error(
                         {
                             "events": [
                                 {
-                                    "type": EventType.Create,
-                                    "fqid": "motion/3",
-                                    "fields": {
-                                        "title": "3",
-                                        "meeting_id": 1,
-                                        "state_id": 1,
-                                    },
-                                },
-                                {
                                     "type": EventType.Update,
-                                    "fqid": "list_of_speakers/3",
-                                    "fields": {"content_object_id": "motion/3"},
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": None},
                                 },
                             ]
                         }
@@ -275,65 +249,91 @@ def test_update_1_1_not_null_error(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_motion_list_of_speakers_id: NOT NULL CONSTRAINT VIOLATED for motion/2/list_of_speakers_id from relationship before list_of_speakers/3/content_object_id"
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
         in e_info.value.args[0]
     )
 
 
-def test_update_1_1_not_null_success(
+def test_update_prevent_updates_error_swap(
     db_connection: Connection[rows.DictRow],
 ) -> None:
-    create_models_for_1_1_tests()
+    data = get_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "user/2",
+                "fields": {"username": "2", "first_name": "2"},
+            },
+            {
+                "type": EventType.Create,
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": 1},
+            },
+        ]
+    )
+    create_models(data)
     with get_new_os_conn() as conn:
-        extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
-        extended_database.write(
-            create_write_requests(
-                [
-                    {
-                        "events": [
-                            {
-                                "type": EventType.Create,
-                                "fqid": "motion/3",
-                                "fields": {
-                                    "title": "3",
-                                    "meeting_id": 1,
-                                    "state_id": 1,
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": 2},
                                 },
-                            },
-                            {
-                                "type": EventType.Update,
-                                "fqid": "list_of_speakers/3",
-                                "fields": {"content_object_id": "motion/3"},
-                            },
-                            {
-                                "type": EventType.Create,
-                                "fqid": "list_of_speakers/4",
-                                "fields": {
-                                    "content_object_id": "motion/2",
-                                    "meeting_id": 1,
-                                },
-                            },
-                        ]
-                    }
-                ]
+                            ]
+                        }
+                    ]
+                )
             )
-        )
-        conn.commit()
-    assert_model(
-        "motion/2",
-        {"id": 2, "list_of_speakers_id": 4},
+            conn.commit()
+    assert (
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
+        in e_info.value.args[0]
     )
-    assert_model(
-        "motion/3",
-        {"id": 3, "list_of_speakers_id": 3},
+
+
+def test_update_prevent_updates_error_swap_from_from_null(
+    db_connection: Connection[rows.DictRow],
+) -> None:
+    data = get_data()
+    data[0]["events"].extend(
+        [
+            {
+                "type": EventType.Create,
+                "fqid": "history_position/2",
+                "fields": {"original_user_id": None},
+            },
+        ]
     )
-    assert_model(
-        "list_of_speakers/3",
-        {"id": 3, "content_object_id": "motion/3"},
-    )
-    assert_model(
-        "list_of_speakers/4",
-        {"id": 4, "content_object_id": "motion/2"},
+    create_models(data)
+    with get_new_os_conn() as conn:
+        with pytest.raises(InvalidFormat) as e_info:
+            extended_database = ExtendedDatabase(conn, MagicMock(), MagicMock())
+            extended_database.write(
+                create_write_requests(
+                    [
+                        {
+                            "events": [
+                                {
+                                    "type": EventType.Update,
+                                    "fqid": "history_position/2",
+                                    "fields": {"original_user_id": 1},
+                                },
+                            ]
+                        }
+                    ]
+                )
+            )
+            conn.commit()
+    assert (
+        "Constant value constraint violated for history_position/2: original_user_id can not be updated."
+        in e_info.value.args[0]
     )
 
 
@@ -363,7 +363,7 @@ def test_update_1_n_not_null_error_remove_relation(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
+        "Trigger tr_ud_not_null_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
         in e_info.value.args[0]
     )
 
@@ -395,7 +395,7 @@ def test_update_1_n_not_null_error_change_relation(
             )
             conn.commit()
     assert (
-        "Trigger tr_ud_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
+        "Trigger tr_ud_not_null_meeting_default_projector_topic_ids: NOT NULL CONSTRAINT VIOLATED for meeting/1/default_projector_topic_ids from relationship before projector/1/used_as_default_projector_for_topic_in_meeting_id"
         in e_info.value.args[0]
     )
 
@@ -496,7 +496,7 @@ def test_update_n_m_nt_ntR_not_null_error(
             )
             conn.commit()
         assert (
-            "Trigger tr_d_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids from relationship before group/4/meeting_user_ids"
+            "Trigger tr_d_not_null_meeting_user_group_ids: NOT NULL CONSTRAINT VIOLATED for meeting_user/3/group_ids from relationship before group/4/meeting_user_ids"
             in e_info.value.args[0]
         )
 

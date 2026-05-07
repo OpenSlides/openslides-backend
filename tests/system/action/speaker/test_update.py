@@ -11,11 +11,16 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting()
+        user_7_password = "geKUf6erKJ#K87f"
         self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_enable_pro_contra_speech": True,
             },
-            "user/7": {"username": "test_username1"},
+            "user/7": {
+                "username": "test_username1",
+                "default_password": user_7_password,
+                "password": self.auth.hash(user_7_password),
+            },
             "meeting_user/7": {"meeting_id": 1, "user_id": 7},
             "group/1": {"meeting_user_ids": [7]},
             "topic/1337": {
@@ -65,15 +70,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         assert model.get("speech_state") == SpeechState.CONTRIBUTION
 
     def test_update_contribution_fail(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": None},
-                "meeting_user/7": {"user_id": 1},
-            }
-        )
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_SEE])
 
         response = self.request(
             "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
@@ -111,16 +109,13 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         assert model.get("speech_state") is None
 
     def test_update_unset_contribution_fail(self) -> None:
-        self.create_meeting()
         self.set_models(
             {
-                "user/1": {"organization_management_level": None},
-                "meeting_user/7": {"user_id": 1},
                 "speaker/890": {"speech_state": SpeechState.CONTRIBUTION},
             }
         )
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
         self.assert_status_code(response, 400)
         assert "Self contribution is not allowed" in response.json["message"]
@@ -179,50 +174,29 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_check_request_user_is_user_not_can_see(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": None},
-                "meeting_user/7": {"user_id": 1},
-            }
-        )
+        self.login(7)
         response = self.request(
             "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
         )
         self.assert_status_code(response, 403)
 
     def test_update_check_request_user_is_user_permission_can_see(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": None},
-                "meeting_user/7": {"user_id": 1},
-            }
-        )
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request(
             "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
         )
         self.assert_status_code(response, 200)
 
     def test_update_check_request_user_is_user_permission_can_be_speaker(self) -> None:
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": None},
-                "meeting_user/7": {"user_id": 1},
-            }
-        )
-        self.set_user_groups(1, [3])
-        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         response = self.request(
             "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
         )
         self.assert_status_code(response, 200)
 
     def test_update_can_see_but_not_request_user_eq_user(self) -> None:
-        self.create_meeting()
         self.set_models(
             {
                 "user/1": {"organization_management_level": None},
@@ -582,9 +556,10 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"list_of_speakers_enable_point_of_order_speakers": True},
-                "meeting_user/7": {"user_id": 1},
             }
         )
+        self.login(7)
+        self.set_group_permissions(1, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request("speaker.update", {"id": 890, "point_of_order": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/890", {"point_of_order": True})

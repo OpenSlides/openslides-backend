@@ -17,7 +17,7 @@ class GroupCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
                 "meeting_id": 22,
-                "permissions": None,
+                "permissions": [],
                 "weight": 1,
             },
         )
@@ -199,7 +199,8 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            'group/25: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n'
+            + "DETAIL:  Key (meeting_id, external_id)=(22, external_id) already exists.",
             response.json["message"],
         )
 
@@ -212,7 +213,8 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The external_id of the group is not unique in the meeting scope.",
+            'group/25: duplicate key value violates unique constraint "unique_group_meeting_id_external_id"\n'
+            + "DETAIL:  Key (meeting_id, external_id)=(22, ) already exists.",
             response.json["message"],
         )
 

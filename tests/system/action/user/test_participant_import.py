@@ -410,7 +410,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert user37["default_password"]
         assert user37["password"]
 
-        group7 = self.assert_model_exists(
+        self.assert_model_exists(
             "group/7",
             {
                 "id": 7,
@@ -418,9 +418,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "weight": 1,
                 "meeting_id": 1,
                 "meeting_user_ids": [2],
+                "permissions": [],
             },
         )
-        assert "permissions" not in group7
 
         self.assert_model_not_exists("import_preview/1")
 
@@ -1412,7 +1412,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action participant.import. Missing permissions: Permission user.can_manage in meeting 1 or OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action participant.import. Missing permissions: Permission user.can_manage in meeting 1 or OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 60",
             response.json["message"],
         )
 

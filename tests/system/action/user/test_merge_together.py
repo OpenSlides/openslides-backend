@@ -24,7 +24,8 @@ class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
         for meeting_id in range(1, 11, 3):
-            self.create_meeting(meeting_id)
+            meeting_data = {"committee_id": 60} if meeting_id == 4 else {}
+            self.create_meeting(meeting_id, meeting_data=meeting_data)
         models: dict[str, dict[str, Any]] = {
             "user/2": {
                 "username": "user2",
@@ -91,7 +92,6 @@ class UserMergeTogether(BaseVoteTestCase):
             "meeting/4": {
                 "name": "Meeting 2",
                 "users_enable_vote_delegations": True,
-                "committee_id": 60,  # same as in meeting/1
                 "admin_group_id": 4,
                 "default_group_id": 6,
                 "meeting_user_ids": [42, 43, 44],
@@ -1578,13 +1578,9 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_with_personal_notes(self) -> None:
         # create personal notes, motions, and meetings
-        meeting_ids = list(range(1, 8, 3))
-        for meeting_id in meeting_ids:
-            self.create_meeting(meeting_id)
-
         map_motion_id_to_meeting_id = {
             motion_id: meeting_id
-            for meeting_id in meeting_ids
+            for meeting_id in list(range(1, 8, 3))
             for motion_id in list(
                 range(
                     int((meeting_id - 1) / 3) * 2 + 1, int((meeting_id - 1) / 3) * 2 + 3
@@ -1629,10 +1625,10 @@ class UserMergeTogether(BaseVoteTestCase):
         add_personal_note(8, 4, 43, star=False)
         add_personal_note(9, 4, 44, star=True)
 
-        add_personal_note(10, 5, 43, "User 3's note")
+        add_personal_note(10, 5, 73, "User 3's note")
 
-        add_personal_note(11, 6, 44, "User 4's note", star=False)
-        add_personal_note(12, 6, 43, "User 3's other note")
+        add_personal_note(11, 6, 74, "User 4's note", star=False)
+        add_personal_note(12, 6, 73, "User 3's other note")
         self.set_models(data)
 
         # merge users 3 and 4 into 2
@@ -1967,14 +1963,14 @@ class UserMergeTogether(BaseVoteTestCase):
                         "list_of_speakers_id": base_id,
                         "initial_time": 5,
                         "remaining_time": 5,
-                        "meeting_id": 1,
+                        "meeting_id": meeting_id,
                     },
                     f"structure_level_list_of_speakers/{base_id * 2}": {
                         "structure_level_id": meeting_id + 3,
                         "list_of_speakers_id": base_id,
                         "initial_time": 5,
                         "remaining_time": 5,
-                        "meeting_id": 1,
+                        "meeting_id": meeting_id,
                     },
                 }
             )

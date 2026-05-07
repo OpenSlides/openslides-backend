@@ -19,19 +19,24 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/1")
-        assert model.get("username") == "username_Xcdfgee"
-        assert model.get("email") == "email1@example.com"
-        assert model.get("pronoun") == "Test"
-        assert model.get("gender_id") == 1
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "username_Xcdfgee",
+                "email": "email1@example.com",
+                "pronoun": "Test",
+                "gender_id": 1,
+            },
+        )
         self.assert_history_information("user/1", ["Personal data changed"])
 
     def test_username_already_given(self) -> None:
         self.create_model("user/222", {"username": "user"})
         response = self.request("user.update_self", {"username": "user"})
         self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "A user with the username user already exists."
+        self.assertEqual(
+            response.json["message"],
+            "user/1: User with username 'user' already exists.",
         )
 
     def test_update_self_anonymus(self) -> None:
@@ -58,9 +63,11 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        model = self.get_model("user/1")
-        assert model.get("username") == "username_srtgb123"
-        assert "This username is forbidden." in response.json["message"]
+        self.assert_model_exists("user/1", {"username": "username_srtgb123"})
+        self.assertIn(
+            "Update of user/1: You try to set following required fields to an empty value: ['username']",
+            response.json["message"],
+        )
 
     def test_update_self_strip_space(self) -> None:
         response = self.request(
@@ -89,7 +96,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "email must be valid email." in response.json["message"]
+        self.assertIn("email must be valid email.", response.json["message"])
 
     def test_update_delegation(self) -> None:
         self.create_meeting()
@@ -153,9 +160,9 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Can't add delegations from other people with user.update_self."
-            in response.json["message"]
+        self.assertIn(
+            "Can't add delegations from other people with user.update_self.",
+            response.json["message"],
         )
 
     def test_update_reverse_delegation(self) -> None:

@@ -6,6 +6,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.create_meeting(111)
         self.set_user_groups(1, [111])
+        self.create_motion(111, 1)
         self.set_models(
             {
                 "personal_note/1": {
@@ -13,6 +14,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
                     "note": "blablabla",
                     "meeting_user_id": 1,
                     "meeting_id": 111,
+                    "content_object_id": "motion/1",
                 },
             }
         )

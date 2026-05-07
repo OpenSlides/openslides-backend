@@ -14,6 +14,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                 "is_directory": False,
                 "mimetype": "image/png",
                 "owner_id": "meeting/1",
+                "filename": "new_final_finalest_final_for_sure_1_1.png",
+                "title": "approved logo",
             },
             "meeting_mediafile/7": {
                 "meeting_id": 1,
@@ -60,6 +62,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         self.permission_test_models["mediafile/17"] = {
             "owner_id": "meeting/1",
             "is_directory": True,
+            "title": "logos",
         }
         self.set_models(self.permission_test_models)
         response = self.request(
@@ -87,6 +90,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "is_directory": False,
                     "mimetype": "image/png",
                     "owner_id": ONE_ORGANIZATION_FQID,
+                    "filename": "DRAFT_NOT_PUBLISH.png",
+                    "title": "logo_2026",
                 },
             }
         )
@@ -124,6 +129,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "logo_monochrome.png",
+                    "title": "logo-bw",
                 },
             }
         )
@@ -152,6 +159,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                     "child_ids": [17],
+                    "title": "logos",
                 },
                 "mediafile/17": {
                     "parent_id": 16,
@@ -159,6 +167,8 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                     "owner_id": ONE_ORGANIZATION_FQID,
                     "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+                    "filename": "logo_2026.png",
+                    "title": "logo (new)",
                 },
             }
         )

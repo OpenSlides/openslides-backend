@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -12,6 +14,8 @@ class VoteDeleteTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_id": 12,
                     "user_token": "aaaabbbbccccdddd",
+                    "weight": Decimal("1.000000"),
+                    "value": "Y",
                 },
             }
         )

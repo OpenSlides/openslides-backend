@@ -695,6 +695,26 @@ class CreatePoll(BasePollTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("poll/1", {"state": "created"})
 
+    def test_not_state_change_wrong_meeting(self) -> None:
+        self.create_meeting(4)
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 4,
+                "options": [{"text": "test1"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            "The following models do not belong to meeting 4: ['assignment/1']",
+            response.json["message"],
+        )
+
     def test_create_user_option_valid(self) -> None:
         self.set_user_groups(1, [1])
         response = self.request(
@@ -717,29 +737,6 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists(
             "option/1",
             {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 1},
-        )
-
-    def test_create_user_option_invalid(self) -> None:
-        self.create_meeting(7)
-        self.create_meeting(42)
-        self.set_user_groups(1, [42])
-
-        response = self.request(
-            "poll.create",
-            {
-                "title": "test",
-                "type": "analog",
-                "pollmethod": "YNA",
-                "options": [{"content_object_id": "user/1"}],
-                "meeting_id": 7,
-                "onehundred_percent_base": "YN",
-                "content_object_id": "assignment/1",
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            "The following models do not belong to meeting 7: ['user/1']",
-            response.json["message"],
         )
 
     def test_create_without_content_object(self) -> None:

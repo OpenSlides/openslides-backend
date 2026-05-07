@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from psycopg import Connection
 
+from openslides_backend.models.models import Meeting
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
@@ -199,6 +200,70 @@ standard_responses: dict[str, dict[int, dict[str, Any]]] = {
             "parent_id": None,
             "receive_forwardings_from_committee_ids": None,
             "user_ids": None,
+        },
+    },
+}
+
+
+meeting_data: dict[str, dict[int, Any]] = {
+    "group": {
+        1: {
+            "name": "default",
+            "meeting_id": 1,
+            "permissions": [
+                "agenda_item.can_see_internal",
+                "assignment.can_see",
+                "list_of_speakers.can_see",
+                "mediafile.can_see",
+                "meeting.can_see_frontpage",
+                "motion.can_see",
+                "projector.can_see",
+                "user.can_see",
+            ],
+        },
+        2: {
+            "name": "staff",
+            "meeting_id": 1,
+            "permissions": [
+                "agenda_item.can_manage",
+                "assignment.can_manage",
+                "assignment.can_manage_polls",
+                "assignment.can_nominate_self",
+                "list_of_speakers.can_be_speaker",
+                "list_of_speakers.can_manage",
+                "mediafile.can_manage",
+                "meeting.can_see_frontpage",
+                "meeting.can_see_history",
+                "motion.can_manage",
+                "motion.can_manage_polls",
+                "poll.can_manage",
+                "projector.can_manage",
+                "tag.can_manage",
+                "user.can_manage",
+            ],
+        },
+    },
+    "projector": {
+        1: {
+            "name": "first projector",
+            "meeting_id": 1,
+            **{field: 1 for field in Meeting.reverse_default_projectors()},
+        }
+    },
+    "motion_state": {
+        1: {"weight": 1, "name": "first state", "meeting_id": 1, "workflow_id": 1}
+    },
+    "motion_workflow": {
+        1: {"name": "first workflow", "meeting_id": 1, "first_state_id": 1}
+    },
+    "meeting": {
+        1: {
+            "committee_id": 1,
+            "motions_default_workflow_id": 1,
+            "motions_default_amendment_workflow_id": 1,
+            "reference_projector_id": 1,
+            "default_group_id": 1,
+            "admin_group_id": 1,
         },
     },
 }

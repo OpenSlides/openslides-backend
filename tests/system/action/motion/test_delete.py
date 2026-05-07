@@ -166,7 +166,12 @@ class MotionDeleteActionTest(BaseMotionDeleteActionTest):
                     "motion_id": 111,
                     "meeting_user_id": 1,
                 },
-                "motion_change_recommendation/1": {"meeting_id": 1, "motion_id": 111},
+                "motion_change_recommendation/1": {
+                    "meeting_id": 1,
+                    "motion_id": 111,
+                    "line_from": 14,
+                    "line_to": 15,
+                },
             }
         )
         response = self.request("motion.delete", {"id": 111})

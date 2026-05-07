@@ -19,10 +19,9 @@ from openslides_backend.shared.typing import LockResult, Model, PartialModel
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ..database.commands import GetManyRequest
+from .interface import SqlArgumentsExtended
 from .mapped_fields import MappedFields
-from .query_helper import SqlArguments, SqlQueryHelper
-
-SqlArgumentsExtended = tuple[list[Id]] | SqlArguments
+from .query_helper import SqlQueryHelper
 
 
 class DatabaseReader(SqlQueryHelper):
@@ -59,7 +58,9 @@ class DatabaseReader(SqlQueryHelper):
             for id_ in ids:
                 if not id_ > 0:
                     raise InvalidFormat("Id must be positive.")
-            mapped_fields = MappedFields(list(get_many_request.mapped_fields))
+            mapped_fields = MappedFields(
+                list(get_many_request.mapped_fields), collection
+            )
             if "id" not in mapped_fields.unique_fields:
                 mapped_fields.unique_fields.append("id")
 
@@ -85,6 +86,7 @@ class DatabaseReader(SqlQueryHelper):
     ) -> dict[Id, PartialModel]:
         if mapped_fields is None:
             mapped_fields = MappedFields()
+        mapped_fields.collection = collection
         mapped_fields_sql = self.build_select_from_mapped_fields(mapped_fields)
         query = sql.SQL("""SELECT {columns} FROM {collection}""").format(
             columns=mapped_fields_sql,
@@ -220,6 +222,17 @@ class DatabaseReader(SqlQueryHelper):
         #                + f"Minimum is {min_migration_index}, maximum is {max_migration_index}."
         #            )
         return -1
+
+    def execute_custom_select(
+        self,
+        query: sql.Composed | sql.SQL,
+        lock_result: LockResult,
+        arguments: SqlArgumentsExtended = [],
+    ) -> list[PartialModel]:
+        if isinstance(query, sql.SQL):
+            query = sql.Composed([query])
+        query = sql.SQL("SELECT ") + query
+        return self.execute_query("custom", query, lock_result, None, arguments)
 
     @retry_on_db_failure
     def execute_query(

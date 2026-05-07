@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM python:3.12.9-slim-bookworm AS base
+FROM python:3.12.13-slim-trixie AS base
 
 ## Setup
 ARG CONTEXT
@@ -16,11 +16,9 @@ RUN CONTEXT_INSTALLS=$(case "$APP_CONTEXT" in \
     IGNORE_INSTALL_RECOMMENDS=${prod:+"--no-install-recommends"} && \
     apt-get -y update && apt-get -y upgrade && apt-get install ${IGNORE_INSTALL_RECOMMENDS} -y \
     curl \
-    git \
-    gcc \
-    libpq-dev \
+    git \ 
     libmagic1 \
-    mime-support \
+    media-types \
     ncat \
     postgresql-client \
     ${CONTEXT_INSTALLS} && \
@@ -100,6 +98,7 @@ RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts
 COPY cli/create_schema.py cli/create_schema.py
+COPY cli/get_everything.py cli/get_everything.py
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
 COPY data data

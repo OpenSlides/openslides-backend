@@ -206,7 +206,7 @@ class ActionWorkerTest(BaseActionTestCase):
                     "username": "test",
                 },
                 {
-                    "username": "admin",
+                    "username": "test with spaces",
                 },
             ],
         )

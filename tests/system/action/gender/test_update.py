@@ -36,9 +36,11 @@ class GenderUpdateActionTest(BaseActionTestCase):
             "gender.update", {"id": self.gender_id, "name": new_name}
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Empty gender name not allowed.", response.json["message"])
-        model = self.get_model(self.gender_fqid)
-        self.assertEqual(model.get("name"), self.gender_name)
+        self.assertIn(
+            "Action gender.update: data.name must be longer than or equal to 1 characters",
+            response.json["message"],
+        )
+        self.assert_model_exists(self.gender_fqid, {"name": self.gender_name})
 
     def test_update_empty(self) -> None:
         self.create_data()

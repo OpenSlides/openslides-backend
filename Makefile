@@ -159,8 +159,8 @@ pip-check: | deprecation-warning
 	pip-check -H
 
 
-extract-translations: | deprecation-warning
-	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
+extract-translations:
+	pybabel extract --no-location --sort-output -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
 drop-database:
 	make -C meta/dev drop-database

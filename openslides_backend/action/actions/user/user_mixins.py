@@ -119,17 +119,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
             if what in instance:
                 if not instance[what]:
                     raise ActionException(f"This {what} is forbidden.")
-                result = self.datastore.filter(
-                    "user",
-                    FilterOperator(what, "=", instance[what]),
-                    ["id"],
-                )
-                if result and instance["id"] not in result.keys():
-                    raise ActionException(
-                        f"A user with the {what} {instance[what]} already exists."
-                    )
 
-        check_existence("username")
         check_existence("saml_id")
         if instance.get("member_number") is not None:
             check_existence("member_number")

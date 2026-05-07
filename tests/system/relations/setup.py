@@ -166,7 +166,6 @@ class FakeModelA(FakeModel):
         to={"fake_model_b": "fake_model_a_mm"},
         is_view_field=True,
         is_primary=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_fake_model_a_fake_model_b_mm_fake_model_b_t",
             "fake_model_a_id",
@@ -220,7 +219,6 @@ class FakeModelB(FakeModel):
     fake_model_a_mm = fields.RelationListField(
         to={"fake_model_a": "fake_model_b_mm"},
         is_view_field=True,
-        equal_fields="meeting_id",
         write_fields=(
             "nm_fake_model_a_fake_model_b_mm_fake_model_b_t",
             "fake_model_b_id",

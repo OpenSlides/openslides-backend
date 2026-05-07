@@ -1,4 +1,7 @@
-class MigrationException(Exception):
+from openslides_backend.shared.exceptions import View400Exception
+
+
+class MigrationException(View400Exception):
     pass
 
 

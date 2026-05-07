@@ -183,7 +183,6 @@ class Attribute(Node):
     constant: bool = False
     default: Any = None
     on_delete: OnDelete | None = None
-    equal_fields: str | list[str] | None = None
     constraints: dict[str, Any]
     is_view_field: bool = False
     is_primary: bool = False
@@ -222,9 +221,10 @@ class Attribute(Node):
             self.required = value.pop("required", False)
             self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
-            self.constant = value.pop("constant", False)
+            self.constant = value.pop("constant", False) or value.pop(
+                "constant_legacy", False
+            )
             self.default = value.pop("default", None)
-            self.equal_fields = value.pop("equal_fields", None)
             for k, v in value.items():
                 if k not in (
                     "items",
@@ -234,10 +234,26 @@ class Attribute(Node):
                     "sql",
                     "deferred",
                     "unique",
+                    "equal_fields",
+                    "log_triggers",
                 ):
-                    self.constraints[k] = v
-                elif self.type in ("string[]", "number[]", "text[]") and k == "items":
-                    self.in_array_constraints.update(v)
+                    if k == "enum" and isinstance(v, str):
+                        enum_name = HelperGetNames.get_enum_name(v)
+                        self.constraints[k] = InternalHelper.ENUMS[enum_name]
+                    else:
+                        self.constraints[k] = v
+                elif self.type in ("string[]", "text[]") and k == "items":
+                    enum = v["enum"]
+                    if isinstance(enum, str):
+                        enum_name = HelperGetNames.get_enum_name(enum)
+                        enum = InternalHelper.ENUMS[enum_name]
+                    else:
+                        enum_name = HelperGetNames.get_enum_name_for_column(
+                            collection_name, field_name
+                        )
+                    self.in_array_constraints.update(
+                        {"enum": enum, "enum_name": f"{enum_name}[]"}
+                    )
 
     def get_code(self, field_name: str) -> str:
         if field_name == "organization_id":
@@ -264,8 +280,6 @@ class Attribute(Node):
             properties += "constant=True, "
         if self.default is not None:
             properties += f"default={repr(self.default)}, "
-        if self.equal_fields is not None:
-            properties += f"equal_fields={repr(self.equal_fields)}, "
         if self.constraints:
             properties += f"constraints={repr(self.constraints)}, "
         if self.write_fields is not None:
@@ -339,19 +353,12 @@ class Attribute(Node):
             foreign_type = foreign.field_def.get("type", "")
             if "relation-list" == field_type == foreign_type:
                 table_name = HelperGetNames.get_nm_table_name(own, foreign)
-                field1 = HelperGetNames.get_field_in_n_m_relation_list(
-                    own, foreign.table
-                )
-                field2 = HelperGetNames.get_field_in_n_m_relation_list(
-                    foreign, own.table
-                )
+                field1 = HelperGetNames.get_field_in_n_m_relation_list(own, foreign)
+                field2 = HelperGetNames.get_field_in_n_m_relation_list(foreign, own)
                 if field1 == field2:
                     field1 += "_1"
                     field2 += "_2"
-                if own.table == foreign.table:
-                    write_fields = (table_name, field2, field1, [])
-                else:
-                    write_fields = (table_name, field1, field2, [])
+                write_fields = (table_name, field1, field2, [])
             elif "generic-relation-list" in (field_type, foreign_type):
                 write_fields = self.get_write_fields_for_generic(
                     own, foreign_fields, primary

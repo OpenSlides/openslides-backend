@@ -949,7 +949,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             for group_id, name in meeting_group_data.items():
                 self.assert_model_exists(
                     f"group/{group_id}",
-                    {"meeting_id": meeting_id, "name": name, "permissions": None},
+                    {"meeting_id": meeting_id, "name": name, "permissions": []},
                 )
 
     def assert_structure_level_data(
@@ -3508,7 +3508,13 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
             - if forwarding to the same committee works
         """
         self.create_meeting()
-        self.create_meeting(4)
+        self.create_meeting(
+            4,
+            meeting_data={
+                "committee_id": 60,
+                "list_of_speakers_default_structure_level_time": 60,
+            },
+        )
         self.create_topic_agenda_item(
             1,
             11,
@@ -3527,10 +3533,6 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
         )
         self.set_models(
             {
-                "meeting/4": {
-                    "committee_id": 60,
-                    "list_of_speakers_default_structure_level_time": 60,
-                },
                 "group/1": {"name": "Default"},
                 "group/2": {"name": "Admin"},
                 "group/3": {"name": "Delegate"},
@@ -3551,7 +3553,7 @@ class AgendaItemForwardActionTest(BaseActionTestCase):
                 },
             }
         )
-        self.set_user_groups(1, [4])
+        self.set_user_groups(1, [7])
         self.create_user("bob", [1])  # 2, musers: 2
         self.create_user("colin", [2])  # 3, musers: 3
         self.create_user("dan", [3])  # 4, musers: 4
