@@ -58,7 +58,7 @@ def test_simple(write, finalize, assert_model):
         {"type": "delete", "fqid": "user/6"},
     )
 
-    finalize("0077_remove_deleted_musers_from_groups")
+    finalize("0078_remove_deleted_musers_from_groups")
 
     assert_model("group/1", {"meeting_user_ids": [1]})
     assert_model("group/2", {"meeting_user_ids": [4]})

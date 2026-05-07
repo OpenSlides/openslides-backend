@@ -16,7 +16,7 @@ class Migration(BaseModelMigration):
     Deletes the projection if no model can be found.
     """
 
-    target_migration_index = 76
+    target_migration_index = 77
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

@@ -79,7 +79,7 @@ class Migration(BaseModelMigration):
         },
     }
 
-    target_migration_index = 81
+    target_migration_index = 82
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         collections = {

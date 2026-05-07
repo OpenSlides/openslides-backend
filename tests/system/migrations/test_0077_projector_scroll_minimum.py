@@ -17,7 +17,7 @@ def test_simple(write, finalize, assert_model):
     )
     write({"type": "delete", "fqid": "projector/4"})
 
-    finalize("0076_projector_scroll_minimum")
+    finalize("0077_projector_scroll_minimum")
 
     test_data["projector/1"]["scroll"] = 0
     test_data["projector/4"]["meta_deleted"] = True

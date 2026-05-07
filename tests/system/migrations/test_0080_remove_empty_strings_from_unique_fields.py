@@ -28,7 +28,7 @@ def assert_collection(
         ]
     )
 
-    finalize("0079_remove_empty_strings_from_unique_fields")
+    finalize("0080_remove_empty_strings_from_unique_fields")
 
     for collection, field in collection_to_field.items():
         del test_data[f"{collection}/2"][field]
