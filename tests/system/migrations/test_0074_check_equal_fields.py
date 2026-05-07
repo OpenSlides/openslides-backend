@@ -774,16 +774,14 @@ def test_so_called_migration_failure_delete_only_projector(
     )
     fqid = collection_to_fqid["projector"]
 
-    def get_reduced_projector_ids(
-        collection: str, field: str, projector_field: str
-    ) -> dict[int, set[str]]:
-        return {id_: {field} for id_ in create_data[fqid][projector_field]}
+    def get_reduced_projector_ids(field: str, projector_field: str) -> dict[int, str]:
+        return {id_: field for id_ in create_data[fqid][projector_field]}
 
     def merge_reduced_projector_ids(
-        to_merge: list[dict[int, set[str]]],
+        to_merge: list[dict[int, str]],
     ) -> dict[int, set[str]]:
         return {
-            id_: {field for group in to_merge for field in group.get(id_, {})}
+            id_: {field for group in to_merge if (field := group.get(id_))}
             for id_ in {i for group in to_merge for i in group}
         }
 
@@ -791,17 +789,14 @@ def test_so_called_migration_failure_delete_only_projector(
         "projection": merge_reduced_projector_ids(
             [
                 get_reduced_projector_ids(
-                    "projection",
                     "current_projector_id",
                     "current_projection_ids",
                 ),
                 get_reduced_projector_ids(
-                    "projection",
                     "preview_projector_id",
                     "preview_projection_ids",
                 ),
                 get_reduced_projector_ids(
-                    "projection",
                     "history_projector_id",
                     "history_projection_ids",
                 ),
