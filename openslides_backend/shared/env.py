@@ -16,7 +16,7 @@ class Loglevel(Enum):
 
 
 def is_truthy(value: str) -> bool:
-    truthy = ("1", "on", "true")
+    truthy = ("1", "yes", "on", "true")
     return value.lower() in truthy
 
 

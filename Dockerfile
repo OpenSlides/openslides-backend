@@ -98,6 +98,7 @@ RUN adduser --system --no-create-home appuser
 
 COPY scripts scripts
 COPY cli/create_schema.py cli/create_schema.py
+COPY cli/get_everything.py cli/get_everything.py
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
 COPY data data
