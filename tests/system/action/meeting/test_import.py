@@ -1,7 +1,6 @@
 import base64
 import time
 from copy import deepcopy
-from decimal import Decimal
 from typing import Any
 
 from psycopg.types.json import Jsonb

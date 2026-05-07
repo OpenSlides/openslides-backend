@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
 from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
