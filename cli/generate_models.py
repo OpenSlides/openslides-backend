@@ -221,7 +221,9 @@ class Attribute(Node):
             self.required = value.pop("required", False)
             self.unique = value.pop("unique", False)
             self.read_only = value.pop("read_only", False)
-            self.constant = value.pop("constant", False)
+            self.constant = value.pop("constant", False) or value.pop(
+                "constant_legacy", False
+            )
             self.default = value.pop("default", None)
             for k, v in value.items():
                 if k not in (
@@ -233,6 +235,7 @@ class Attribute(Node):
                     "deferred",
                     "unique",
                     "equal_fields",
+                    "log_triggers",
                 ):
                     if k == "enum" and isinstance(v, str):
                         enum_name = HelperGetNames.get_enum_name(v)
