@@ -363,15 +363,12 @@ class UserSaveSamlAccount(
             ):
                 continue
             db_meeting_user_exists = bool(
-                (
-                    get_meeting_user(
-                        self.datastore,
-                        meeting_id,
-                        user_id,
-                        ["group_ids"],
-                    )
-                    or {}
-                ).get("group_ids")
+                get_meeting_user(
+                    self.datastore,
+                    meeting_id,
+                    user_id,
+                    ["id"],
+                )
             )
             if is_update and db_meeting_user_exists:
                 instance_meeting_user = instance_meeting_user_data.get("for_update")
@@ -416,14 +413,11 @@ class UserSaveSamlAccount(
                 user_id,
                 ["id", "group_ids", "structure_level_ids"],
             ):
-                # TODO use sets
                 for field_name in ["group_ids", "structure_level_ids"]:
-                    if old_ids := meeting_user_db.get(field_name):
+                    if old_ids := set(meeting_user_db.get(field_name) or []):
                         ids = meeting_user.get(field_name, [])
-                        for _id in ids:
-                            if _id not in old_ids:
-                                old_ids.append(_id)
-                        meeting_user[field_name] = old_ids
+                        old_ids.update(ids)
+                        meeting_user[field_name] = list(old_ids)
 
                 default_group_id = self.datastore.get(
                     f"meeting/{meeting_id}", ["default_group_id"]
@@ -534,16 +528,12 @@ class UserSaveSamlAccount(
         # Because we don't know the db instance here, we can't determine if the meeting_user has no groups which leads to remaining without any group.
         if db_meeting_user_exists:
             return []
-        elif default_group_id := meeting["default_group_id"]:
+        else:
             external_meeting_id = meeting["external_id"]
             self.logger.warning(
                 f"save_saml_account found no group in meeting '{external_meeting_id}' for {group_names}, but used default_group of meeting"
             )
-            return [default_group_id]
-        else:
-            raise ActionException(
-                "Invalid data state: mapped meeting does not have default group."
-            )
+            return [meeting["default_group_id"]]
 
     def get_structure_level_ids(
         self, structure_level_names: list[str], meeting: dict[str, Any]
