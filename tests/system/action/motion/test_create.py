@@ -1075,6 +1075,9 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.foreign_meeting_user_test("supporter_meeting_user_ids")
 
     def test_create_motion_with_diff_version(self) -> None:
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
         response = self.request(
             "motion.create",
             {
