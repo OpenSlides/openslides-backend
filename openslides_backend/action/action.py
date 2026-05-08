@@ -19,7 +19,6 @@ from ..permissions.management_levels import (
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
-from ..presenter.base import BasePresenter
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from ..shared.exceptions import (
@@ -756,19 +755,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         after an error appeared in an action.
         """
         return None
-
-    def execute_presenter(
-        self, PresenterClass: type[BasePresenter], payload: Any
-    ) -> Any:
-        presenter_instance = PresenterClass(
-            payload,
-            self.services,
-            self.datastore,
-            self.logging,
-            self.user_id,
-        )
-        presenter_instance.validate()
-        return presenter_instance.get_result()
 
     def get_post_edit_function(self) -> EditFunction | None:
         """
