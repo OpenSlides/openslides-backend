@@ -6,9 +6,10 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from ....shared.exceptions import ActionException
 from ...action import Action
 from ...util.typing import ActionData
+from ...mixins.keycloak_mixin import KeycloakMixin
 
 
-class SetPasswordMixin(Action):
+class SetPasswordMixin(Action, KeycloakMixin):
     def reset_password(self, instance: dict[str, Any]) -> None:
         instance["password"] = instance["default_password"]
         self.set_password(instance)
@@ -32,9 +33,8 @@ class SetPasswordMixin(Action):
             )
 
         password = instance.pop("password")
-        instance["password"] = self.auth.hash(password)
-        if instance.pop("set_as_default", False):
-            instance["default_password"] = password
+        
+        self.update_password(instance["keycloak_id"], password)
 
 
 class ClearSessionsMixin(Action):
