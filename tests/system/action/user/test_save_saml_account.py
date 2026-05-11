@@ -1141,7 +1141,7 @@ class UserAddToGroup(UserBaseSamlAccount):
         Shows:
             * user stays in group 2
             * structure_level/1 left untouched structure_level/2 added
-            * second mapper is used in spite of allow_update being false since 'Kreistag meeting' is a create
+            * second mapper is used in spite of allow_update being false since 'Kreistag' meeting is a create
         """
         self.meeting_mappers[1]["allow_update"] = "False"
         self.set_user_groups(1, [2])
