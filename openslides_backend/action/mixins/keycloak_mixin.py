@@ -138,7 +138,7 @@ class KeycloakMixin(Action):
     def hash_padding(self, to_pad):
         return to_pad + '=' * (-len(to_pad) % 4)
 
-    def update_password(self, keycloak_id, password):
+    def update_password(self, keycloak_id, plaintext_password):
         # Prepare Password. An argon2 encrypted password is expected
         hashed_password = self.auth.hash(plaintext_password)
 
