@@ -438,7 +438,7 @@ class UserMergeTogether(
                         ["poll_config_id"],
                     ),
                     GetManyRequest(
-                        "ballot",
+                        "poll_ballot",
                         v_ids,
                         ["poll_id"],
                     ),
@@ -496,7 +496,7 @@ class UserMergeTogether(
                         },
                     }
 
-                ballot_data = many_models["ballot"]
+                ballot_data = many_models["poll_ballot"]
                 ballot_poll_ids_per_user_id[model["user_id"]] = {
                     *ballot_poll_ids_per_user_id.get(model["user_id"], set()),
                     *{
