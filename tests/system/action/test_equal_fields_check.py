@@ -322,7 +322,7 @@ class TestEqualFieldsCheck(PatchModelRegistryMixin, BaseGenericTestCase):
         equal_field: str,
     ) -> None:
         coll = get_collection_name(rel_type, collection, equal_field)
-        ef_model = Model(coll, loaded_yml[coll]["fields"])
+        ef_model = Model(coll, "backend", loaded_yml[coll]["fields"])
         field_name = generate_collection_field_name(
             rel_type.split(":")[0 if coll_abbrev == "b" else 1], coll_abbrev == "c"
         )[0]
