@@ -7,6 +7,8 @@ import base64
 
 from ..action import Action
 
+logger = logging.getLogger(__name__)
+
 class KeycloakMixin(Action):
     """
     Provides a mixin for keycloak
@@ -30,18 +32,18 @@ class KeycloakMixin(Action):
     keycloak_admin_route = f"{keycloak_url}/admin/realms/{keycloak_realm}/"
 
     _keycloak_admin_key = ""
-    
-    def _get_admin_key():
+
+    def _get_admin_key(self):
         if self._keycloak_admin_key != "":
             return self._keycloak_admin_key
-        
+
         # Fetch key if empty
         try:
-            response = requests.post(f"{keycloak_url}/realms/master/protocol/openid-connect/token",
+            response = requests.post(f"{self.keycloak_url}/realms/master/protocol/openid-connect/token",
                 data={
                     'client_id': "admin-cli",
-                    'username': admin_username,
-                    'password': admin_password,
+                    'username': self.admin_username,
+                    'password': self.admin_password,
                     'grant_type': "password",
                 },
                 headers={
@@ -59,19 +61,19 @@ class KeycloakMixin(Action):
         except Exception as e:
             logger.error(f"Error receiving keycloak admin token: {e}")
         return ""
-    
-    def create_user(user, plaintext_password):
+
+    def create_user(self, user, plaintext_password):
         keycloak_admin_key = self._get_admin_key()
 
         username = user["username"]
         email = user["email"]
         keycloak_id = user["keycloak_id"]
 
-        if keycloak_id is None or existing_keycloak_id == "":
+        if keycloak_id is None or keycloak_id == "":
             # No Keycloak ID set. This OS User likely has no Keycloak Account yet
             try:
                 ## Upload OS user to Keycloak
-                response = requests.post(keycloak_admin_route + "users",
+                response = requests.post(self.keycloak_admin_route + "users",
                     json={
                         'username': username,
                         'email': email,
@@ -86,24 +88,24 @@ class KeycloakMixin(Action):
                     keycloak_id = response.json()[0]['id']
                 elif response.status_code == 409:
                     raise Exception(f"A user named {username} already exists in keycloak.")
-                elif keycloak_user_id == None:
+                elif keycloak_id == None:
                     raise Exception(f"ID returned by keycloak is empty")
             except Exception as e:
                 logger.error(f"Error creating user: {e}")
-                
+
         else:
-            # A Keycloak ID already exists. 
+            # A Keycloak ID already exists.
             # TODO: Should this be an error? What's to do here?
             raise Exception(f"Error creating user {username} in keycloak: They already have a keycloak ID")
 
         ## Update passowrd
-        update_password(keycloak_user_id, plaintext_password)
+        self.update_password(keycloak_id, plaintext_password)
 
-        ## Set 
+        ## Set
         user['keycloak_id'] = keycloak_id
 
-    
-    def delete_user(user, keycloak_id):
+
+    def delete_user(self, user, keycloak_id):
         keycloak_admin_key = self._get_admin_key()
 
         ## Unset keycloak id
@@ -111,7 +113,7 @@ class KeycloakMixin(Action):
 
         try:
             ## Delete OS user from Keycloak
-            response = requests.delete(keycloak_admin_route + "users/" + keycloak_id,
+            response = requests.delete(self.keycloak_admin_route + "users/" + keycloak_id,
                 headers={
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }
@@ -120,27 +122,30 @@ class KeycloakMixin(Action):
                 raise Exception(f"{response.json()}")
         except Exception as e:
             logger.error(f"Error deleting user: {e}")
-                
 
-    
-    def update_user(keycloak_id, password, email):
-        update_email(keycloak_id, email)
-        update_password(keycloak_id, password)
 
-    def update_email(keycloak_id, email):
+
+    def update_user(self, keycloak_id, password, email):
+        self.update_email(keycloak_id, email)
+        self.update_password(keycloak_id, password)
+
+    def update_email(self, keycloak_id, email):
         keycloak_admin_key = self._get_admin_key()
 
         # TODO
 
+    # This adds '=' for argon2 padding at the end of a password or salt. It needs to pad until the length of the string is divisible by 4
+    def hash_padding(self, to_pad):
+        return to_pad + '=' * (-len(to_pad) % 4)
 
-    def update_password(keycloak_id, password):
+    def update_password(self, keycloak_id, password):
         # Prepare Password. An argon2 encrypted password is expected
         hashed_password = self.auth.hash(password)
 
         keycloak_admin_key = self._get_admin_key()
 
         try:
-            response = requests.put(keycloak_admin_route + "users/" + keycloak_id,
+            response = requests.put(self.keycloak_admin_route + "users/" + keycloak_id,
                 json={
                     'credentials' : [{
                         'type': 'password',
