@@ -15,7 +15,7 @@ from ..models.fields import (
     RelationField,
     RelationListField,
 )
-from ..models.models import Ballot, Meeting
+from ..models.models import Meeting, PollBallot
 from ..services.database.commands import GetManyRequest
 from ..services.database.interface import Database
 from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
@@ -217,14 +217,18 @@ def export_meeting(
         ]
         if ballot_ids:
             ballots = datastore.get_many(
-                [GetManyRequest("ballot", ballot_ids, get_fields_for_export("ballot"))],
+                [
+                    GetManyRequest(
+                        "poll_ballot", ballot_ids, get_fields_for_export("poll_ballot")
+                    )
+                ],
                 lock_result=False,
                 use_changed_models=False,
-            )["ballot"]
+            )["poll_ballot"]
             for ballot_id, instance in ballots.items():
-                export.setdefault("ballot", {})[str(ballot_id)] = instance
+                export.setdefault("poll_ballot", {})[str(ballot_id)] = instance
                 for field_name, value in instance.items():
-                    model_field = Ballot().get_field(field_name)
+                    model_field = PollBallot().get_field(field_name)
                     if (
                         not isinstance(model_field, RelationField)
                         or model_field.get_own_field_name() == "poll_id"

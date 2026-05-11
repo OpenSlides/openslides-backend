@@ -4,7 +4,6 @@ from openslides_backend.services.database.interface import PartialModel
 
 from ....models.models import (
     AssignmentCandidate,
-    Ballot,
     MeetingUser,
     MotionEditor,
     MotionSubmitter,
@@ -12,6 +11,7 @@ from ....models.models import (
     MotionWorkingGroupSpeaker,
     PersonalNote,
     Poll,
+    PollBallot,
     PollOption,
     Speaker,
 )
@@ -217,11 +217,11 @@ class PollOptionMergeMixin(BaseMergeMixin):
         )
 
 
-class BallotMergeMixin(BaseMergeMixin):
+class PollBallotMergeMixin(BaseMergeMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
-            Ballot,
+            PollBallot,
             {},
             "meeting_user_id",
         )
@@ -235,8 +235,8 @@ class MeetingUserMergeMixin(
     MotionSupporterMergeMixin,
     AssignmentCandidateMergeMixin,
     PollMergeMixin,
+    PollBallotMergeMixin,
     PollOptionMergeMixin,
-    BallotMergeMixin,
     SpeakerMergeMixin,
 ):
     def __init__(self, *args: Any, **kwargs: Any) -> None:

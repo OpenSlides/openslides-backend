@@ -2066,7 +2066,7 @@
             "meeting_user_id": 3
         }
     },
-    "ballot": {
+    "poll_ballot": {
         "1": {
             "id": 1,
             "weight": "2.000000",

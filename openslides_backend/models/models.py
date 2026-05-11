@@ -178,25 +178,6 @@ class AssignmentCandidate(Model):
     )
 
 
-class Ballot(Model):
-    collection = "ballot"
-    verbose_name = "ballot"
-
-    id = fields.IntegerField(required=True, constant=True)
-    weight = fields.DecimalField(constant=True, default="1.000000")
-    split = fields.BooleanField(default=False)
-    value = fields.TextField(constant=True)
-    poll_id = fields.RelationField(
-        to={"poll": "ballot_ids"}, required=True, constant=True
-    )
-    acting_meeting_user_id = fields.RelationField(
-        to={"meeting_user": "acting_ballot_ids"}
-    )
-    represented_meeting_user_id = fields.RelationField(
-        to={"meeting_user": "represented_ballot_ids"}
-    )
-
-
 class ChatGroup(Model):
     collection = "chat_group"
     verbose_name = "chat group"
@@ -1558,10 +1539,10 @@ class MeetingUser(Model):
         to={"poll_option": "meeting_user_id"}, is_view_field=True, is_primary=True
     )
     acting_ballot_ids = fields.RelationListField(
-        to={"ballot": "acting_meeting_user_id"}, is_view_field=True
+        to={"poll_ballot": "acting_meeting_user_id"}, is_view_field=True
     )
     represented_ballot_ids = fields.RelationListField(
-        to={"ballot": "represented_meeting_user_id"}, is_view_field=True
+        to={"poll_ballot": "represented_meeting_user_id"}, is_view_field=True
     )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_user_id"}, is_view_field=True
@@ -2327,6 +2308,12 @@ class Poll(Model, PollModelMixin):
     published = fields.BooleanField(
         default=False, constraints={"description": "If true, users can see the result."}
     )
+    anonymized = fields.BooleanField(
+        default=False,
+        constraints={
+            "description": "Set to true, after finished was called with anonymize."
+        },
+    )
     allow_invalid = fields.BooleanField(
         default=False,
         constraints={
@@ -2336,6 +2323,10 @@ class Poll(Model, PollModelMixin):
     allow_vote_split = fields.BooleanField(
         default=False,
         constraints={"description": "If true, users can split there vote."},
+    )
+    live_voting_enabled = fields.BooleanField(
+        default=False,
+        constraints={"description": "If true, on start, publish will be set to true."},
     )
     sequential_number = fields.IntegerField(
         required=True,
@@ -2352,7 +2343,7 @@ class Poll(Model, PollModelMixin):
         constant=True,
     )
     ballot_ids = fields.RelationListField(
-        to={"ballot": "poll_id"},
+        to={"poll_ballot": "poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         is_view_field=True,
         is_primary=True,
@@ -2379,6 +2370,25 @@ class Poll(Model, PollModelMixin):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "poll_ids"}, required=True, constant=True
+    )
+
+
+class PollBallot(Model):
+    collection = "poll_ballot"
+    verbose_name = "poll ballot"
+
+    id = fields.IntegerField(required=True, constant=True)
+    weight = fields.DecimalField(constant=True, default="1.000000")
+    split = fields.BooleanField(default=False)
+    value = fields.TextField(constant=True)
+    poll_id = fields.RelationField(
+        to={"poll": "ballot_ids"}, required=True, constant=True
+    )
+    acting_meeting_user_id = fields.RelationField(
+        to={"meeting_user": "acting_ballot_ids"}
+    )
+    represented_meeting_user_id = fields.RelationField(
+        to={"meeting_user": "represented_ballot_ids"}
     )
 
 
@@ -2485,6 +2495,7 @@ class PollConfigSelection(Model):
             ]
         },
     )
+    display_chart = fields.CharField()
 
 
 class PollConfigStvScottish(Model):

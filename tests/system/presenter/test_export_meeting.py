@@ -288,8 +288,8 @@ class TestExportMeeting(BasePresenterTestCase):
 
         assert data["poll"]["80"]["voted_ids"] == [114]
         assert data["meeting_user"]["114"]["poll_voted_ids"] == [80]
-        assert data["ballot"]["120"]["c"] == 114
-        assert data["ballot"]["120"]["represented_meeting_user_id"] == 114
+        assert data["poll_ballot"]["120"]["c"] == 114
+        assert data["poll_ballot"]["120"]["represented_meeting_user_id"] == 114
         assert data["meeting_user"]["114"]["acting_ballot_ids"] == [120]
         assert data["meeting_user"]["114"]["represented_ballot_ids"] == [120]
 

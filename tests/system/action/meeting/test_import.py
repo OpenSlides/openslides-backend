@@ -2337,7 +2337,7 @@ class MeetingImport(BaseActionTestCase):
         )
         data = self.create_request_data(
             {
-                "ballot": {
+                "poll_ballot": {
                     "1": {
                         "id": 1,
                         "acting_meeting_user_id": 1,
@@ -2541,7 +2541,7 @@ class MeetingImport(BaseActionTestCase):
         )
         data = self.create_request_data(
             {
-                "ballot": {
+                "poll_ballot": {
                     "1": {
                         "id": 1,
                         "acting_meeting_user_id": 1,
