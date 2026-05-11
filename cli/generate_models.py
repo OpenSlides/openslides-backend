@@ -106,7 +106,7 @@ def main() -> None:
         for collection, data in InternalHelper.MODELS.items():
             if collection.startswith("_"):
                 continue
-            model = Model(collection, data["fields"])
+            model = Model(collection, data.get("managed_by"), data["fields"])
             dest.write(model.get_code())
 
         if args.check:
@@ -128,17 +128,26 @@ class Node:
 
 class Model(Node):
     collection: str
+    managed_by: str
     attributes: dict[str, "Attribute"]
 
     MODEL_TEMPLATE = string.Template(dedent("""
             class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
+                managed_by = "${managed_by}"
             """))
 
-    def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
+    def __init__(
+        self, collection: str, managed_by: str | None, fields: dict[str, dict[str, Any]]
+    ) -> None:
         self.collection = collection
         assert collection
+        self.managed_by = managed_by or "backend"
+        assert self.managed_by in [
+            "backend",
+            "vote",
+        ], f"Forbidden value for {collection}/managed_by: '{managed_by}'. Available options are: 'backend', 'vote'."
         self.attributes = {}
         for field_name, field in fields.items():
             if field_name == "_meta":
@@ -161,6 +170,7 @@ class Model(Node):
                     "base_classes": ", ".join(cls.__name__ for cls in base_classes),
                     "collection": self.collection,
                     "verbose_name": verbose_name,
+                    "managed_by": self.managed_by,
                 }
             )
             + "\n"

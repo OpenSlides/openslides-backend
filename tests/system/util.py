@@ -1,4 +1,3 @@
-import copy
 import cProfile
 import os
 from abc import abstractmethod
@@ -39,18 +38,13 @@ class TestVoteService(VoteService):
     url: str
 
     @abstractmethod
-    def vote(self, data: dict[str, Any]) -> Response: ...
+    def vote(self, poll_id: int, payload: dict[str, Any]) -> Response: ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):
-    def vote(self, data: dict[str, Any]) -> Response:
-        data_copy = copy.deepcopy(data)
-        del data_copy["id"]
-        response = self.make_request(
-            self.url.replace("internal", "system") + f"?id={data['id']}",
-            data_copy,
-        )
-        return convert_to_test_response(response)
+    def vote(self, poll_id: int, payload: dict[str, Any]) -> Response:
+        endpoint = self.url + f"?id={poll_id}"
+        return self.retrieve(endpoint, payload)
 
 
 def create_action_test_application() -> OpenSlidesBackendWSGIApplication:

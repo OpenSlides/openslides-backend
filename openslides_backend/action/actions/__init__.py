@@ -33,14 +33,10 @@ def prepare_actions_map() -> None:
         motion_supporter,
         motion_workflow,
         motion_working_group_speaker,
-        option,
         organization,
         organization_tag,
         personal_note,
         point_of_order_category,
-        poll,
-        poll_candidate,
-        poll_candidate_list,
         projection,
         projector,
         projector_countdown,
@@ -52,7 +48,6 @@ def prepare_actions_map() -> None:
         theme,
         topic,
         user,
-        vote,
     )
 
 
