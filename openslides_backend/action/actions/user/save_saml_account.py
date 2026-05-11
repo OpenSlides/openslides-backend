@@ -381,6 +381,7 @@ class UserSaveSamlAccount(
                     names = sorted(
                         instance_meeting_user.pop(saml_meeting_user_field, [])
                     )
+                    ids = []
                     match saml_meeting_user_field:
                         case "groups":
                             ids = self.get_group_ids(
@@ -525,7 +526,6 @@ class UserSaveSamlAccount(
             )
             if len(groups) > 0:
                 return sorted(groups)
-        # Because we don't know the db instance here, we can't determine if the meeting_user has no groups which leads to remaining without any group.
         if db_meeting_user_exists:
             return []
         else:
