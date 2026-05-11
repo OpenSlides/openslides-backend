@@ -85,7 +85,7 @@ class KeycloakMixin(Action):
                 )
 
                 if response.status_code == 201:
-                    keycloak_id = response.json()[0]['id']
+                    keycloak_id = response.headers.get('Location').split('/')[-1]
                 elif response.status_code == 409:
                     raise Exception(f"A user named {username} already exists in keycloak.")
                 elif keycloak_id == None:
@@ -140,7 +140,7 @@ class KeycloakMixin(Action):
 
     def update_password(self, keycloak_id, password):
         # Prepare Password. An argon2 encrypted password is expected
-        hashed_password = self.auth.hash(password)
+        hashed_password = self.auth.hash(plaintext_password)
 
         keycloak_admin_key = self._get_admin_key()
 
@@ -161,8 +161,8 @@ class KeycloakMixin(Action):
                             }
                         }),
                         'secretData': json.dumps({
-                            'value': hash_padding(password.split('$')[5]),
-                            'salt': hash_padding(password.split('$')[4]),
+                            'value': self.hash_padding(hashed_password.split('$')[5]),
+                            'salt': self.hash_padding(hashed_password.split('$')[4]),
                         }),
                     }]
                 },
