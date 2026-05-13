@@ -1,7 +1,7 @@
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
-from os import SEEK_END, listdir
+from os import listdir
 from re import Match, match
 from threading import Thread
 from typing import Any
@@ -79,7 +79,7 @@ class MigrationHelper:
         Writes a single line with \n to the migration threads io stream.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
-        MigrationHelper.migrate_thread_stream.write(message + "\n")
+        stream.write(message + "\n")
 
     @staticmethod
     def read_stream(all: bool = False) -> str:

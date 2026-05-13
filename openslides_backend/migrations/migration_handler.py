@@ -413,17 +413,16 @@ class MigrationHandler(BaseHandler):
                 )
 
     @classmethod
-    def close_migrate_thread_stream(cls) -> str:
+    def close_migrate_thread_stream(cls) -> None:
         """
         Closes the migration threads io stream.
         """
-        assert (stream := MigrationHelper.migrate_thread_stream)
-        output = stream.getvalue()
-        stream.close()
+        assert MigrationHelper.migrate_thread_stream
+
+        MigrationHelper.migrate_thread_stream.close()
         MigrationHelper.migrate_thread_stream = None
         MigrationHelper.migrate_thread_stream_can_be_closed = False
         MigrationHelper.migrate_thread_exception = None
-        return output
 
     def finalize(self) -> None:
         """
