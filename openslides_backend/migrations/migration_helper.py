@@ -86,7 +86,8 @@ class MigrationHelper:
         """
         Reads all lines since the last time reading.
         If `all` is set, all lines present in buffer are returned without
-        moving the cursor at all.
+        - moving the cursor on the stream
+        - or updating migrate_thread_stream_read_pos.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
 
