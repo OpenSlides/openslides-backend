@@ -317,7 +317,7 @@ class MigrationHelper:
         if not states_and_indices:
             return MigrationState.FINALIZED
         states = {elem.get("migration_state") for elem in states_and_indices}
-        # 1. migration, 2. finalization -> failed > running > required
+        # 1. migration, 2. finalization | both: failed > running > required
         for state in [
             MigrationState.MIGRATION_FAILED,
             MigrationState.MIGRATION_RUNNING,
