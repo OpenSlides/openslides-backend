@@ -293,11 +293,7 @@ class MigrationHandler(BaseHandler):
             mig_class = getattr(
                 import_module(f"{MODULE_PATH}{module_name}"), "Migration"
             )
-
             self.logger.info("Executing migration: " + module_name)
-            MigrationHelper.set_database_migration_info(
-                self.cursor, index, MigrationState.MIGRATION_RUNNING
-            )
 
             # checks wether the methods are available and executes them.
             mig_class.data_definition(self.cursor)
@@ -325,7 +321,7 @@ class MigrationHandler(BaseHandler):
                     MigrationHelper.set_database_migration_info(
                         self.cursor,
                         minimum_required_index["min"],
-                        MigrationState.MIGRATION_PREPARING,
+                        MigrationState.MIGRATION_RUNNING,
                     )
                 # Check prerequisites
                 for index, module_name in MigrationHelper.migrations.items():
@@ -355,7 +351,7 @@ class MigrationHandler(BaseHandler):
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.FINALIZED:
                 self.logger.info("No migration needed.")
-            case MigrationState.MIGRATION_RUNNING | MigrationState.MIGRATION_PREPARING:
+            case MigrationState.MIGRATION_RUNNING:
                 self.logger.info("There is already a migration running.")
             case _:
                 raise MigrationException(
