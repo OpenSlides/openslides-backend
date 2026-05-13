@@ -1,7 +1,7 @@
+import os
 from enum import StrEnum
 from importlib import import_module
 from io import StringIO
-from os import SEEK_END, listdir
 from re import Match, match
 from threading import Thread
 from typing import Any
@@ -10,6 +10,7 @@ from psycopg import Cursor, sql
 from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.models.base import model_registry
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -86,7 +87,7 @@ class MigrationHelper:
         if MigrationHelper.migrate_thread_stream_just_read:
             MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
             MigrationHelper.migrate_thread_stream_just_read = False
-        stream.seek(0, SEEK_END)
+        stream.seek(0, os.SEEK_END)
         MigrationHelper.migrate_thread_stream.write(message + "\n")
 
     @staticmethod
@@ -117,7 +118,8 @@ class MigrationHelper:
         migration_number: int
         reMatch: Match[str] | None
 
-        migrations = listdir(MIGRATIONS_PATH)
+        MigrationHelper.migrations = {}
+        migrations = os.listdir(MIGRATIONS_PATH)
 
         for migration in migrations:
             reMatch = match(r"(?P<migration>\d{4}_.*)\.py", migration)
@@ -225,7 +227,7 @@ class MigrationHelper:
 
         if backend_migration_index > database_migration_index:
             raise ActionException(
-                f"Missing {backend_migration_index-database_migration_index} migrations to apply."
+                f"Missing {backend_migration_index-database_migration_index} migrations to be applied."
             )
 
         if backend_migration_index < database_migration_index:
@@ -348,6 +350,13 @@ class MigrationHelper:
         ]
 
     @staticmethod
+    def get_migration_class(module_name: str) -> Any:
+        """
+        Returns the class Migration within the specified module.
+        """
+        return getattr(import_module(f"{MODULE_PATH}{module_name}"), "Migration")
+
+    @staticmethod
     def get_replace_tables(
         migration_number: int,
     ) -> dict[str, dict[str, str | list[str]]]:
@@ -355,7 +364,9 @@ class MigrationHelper:
         Returns the replace tables mapping origin table to its migration copy.
         """
         module_name = MigrationHelper.migrations[migration_number]
-        migration_module = import_module(f"{MODULE_PATH}{module_name}")
+        migration_class = MigrationHelper.get_migration_class(module_name)
+        # TODO Problem we can't rely on the ORIGIN_TABLES as we also rely on intermediate table information.
+        # That information would ultimately have to come from the yml files and that get's changed with every migration.
         return {
             col: {
                 "table": col + "_m",
@@ -366,7 +377,7 @@ class MigrationHelper:
                     if field.write_fields
                 ],
             }
-            for col in migration_module.ORIGIN_COLLECTIONS
+            for col in migration_class.ORIGIN_COLLECTIONS
         }
 
     @staticmethod
@@ -407,4 +418,53 @@ class MigrationHelper:
                 ).items()
             },
             relevant_mis,
+        )
+
+    @staticmethod
+    def get_view_definition(curs: Cursor[DictRow], collection: str) -> str:
+        curs.execute(
+            """
+            SELECT pg_get_viewdef(%s::regclass, true) AS viewdef
+            FROM pg_class
+            WHERE relname = %s AND relkind = 'v';
+            """,
+            (collection, collection),
+        )
+        row = curs.fetchone()
+        if not row:
+            raise ValueError(f"Source view not found: {collection}")
+        return row["viewdef"]
+
+    @staticmethod
+    def get_all_view_definitions(curs: Cursor[DictRow]) -> list[dict[str, Any]]:
+        curs.execute("""
+            SELECT relname, pg_get_viewdef(relname::regclass, true) AS viewdef
+            FROM pg_class
+            WHERE relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+                AND relkind = 'v';
+            """)
+        result = curs.fetchall()
+        if not result:
+            raise ValueError("No views found.")
+        return result
+
+    # # # actual migration functions # # #
+
+    @staticmethod
+    def delete_field(curs: Cursor[DictRow], collection: str, field_name: str) -> None:
+        viewdef = MigrationHelper.get_view_definition(curs, collection)
+
+        curs.execute(
+            sql.SQL("CREATE OR REPLACE VIEW {} AS {};").format(
+                sql.Identifier(collection + "vm"),
+                sql.SQL(viewdef),
+            )
+        )
+        curs.execute(
+            sql.SQL("ALTER TABLE {} DROP COLUMN {};").format(
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+                sql.Identifier(field_name),
+            )
         )

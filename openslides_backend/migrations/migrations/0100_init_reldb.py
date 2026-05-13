@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
-from meta.dev.src.helper_get_names import HelperGetNames  # type: ignore # noqa
+from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.migration_helper import (
     OLD_TABLES,
     MigrationHelper,
@@ -30,58 +30,6 @@ from openslides_backend.models.models import *  # type: ignore # noqa # necessar
 from openslides_backend.shared.env import is_truthy
 
 RELATION_LIST_FIELD_CLASSES = [RelationListField, GenericRelationListField]
-# TODO update before merging into main.
-ORIGIN_COLLECTIONS = [
-    "organization",
-    "user",
-    "meeting_user",
-    "gender",
-    "organization_tag",
-    "theme",
-    "committee",
-    "meeting",
-    "structure_level",
-    "group",
-    "personal_note",
-    "tag",
-    "agenda_item",
-    "list_of_speakers",
-    "structure_level_list_of_speakers",
-    "point_of_order_category",
-    "speaker",
-    "topic",
-    "motion",
-    "motion_submitter",
-    "motion_supporter",
-    "motion_editor",
-    "motion_working_group_speaker",
-    "motion_comment",
-    "motion_comment_section",
-    "motion_category",
-    "motion_block",
-    "motion_change_recommendation",
-    "motion_state",
-    "motion_workflow",
-    "poll",
-    "option",
-    "vote",
-    "assignment",
-    "assignment_candidate",
-    "poll_candidate_list",
-    "poll_candidate",
-    "mediafile",
-    "meeting_mediafile",
-    "projector",
-    "projection",
-    "projector_message",
-    "projector_countdown",
-    "chat_group",
-    "chat_message",
-    "action_worker",
-    "import_preview",
-    "history_position",
-    "history_entry",
-]
 
 
 class Sql_helper:
@@ -234,6 +182,58 @@ class Sql_helper:
 
 
 class Migration(BaseMigration):
+    ORIGIN_COLLECTIONS = [
+        "organization",
+        "user",
+        "meeting_user",
+        "gender",
+        "organization_tag",
+        "theme",
+        "committee",
+        "meeting",
+        "structure_level",
+        "group",
+        "personal_note",
+        "tag",
+        "agenda_item",
+        "list_of_speakers",
+        "structure_level_list_of_speakers",
+        "point_of_order_category",
+        "speaker",
+        "topic",
+        "motion",
+        "motion_submitter",
+        "motion_supporter",
+        "motion_editor",
+        "motion_working_group_speaker",
+        "motion_comment",
+        "motion_comment_section",
+        "motion_category",
+        "motion_block",
+        "motion_change_recommendation",
+        "motion_state",
+        "motion_workflow",
+        "poll",
+        "option",
+        "vote",
+        "assignment",
+        "assignment_candidate",
+        "poll_candidate_list",
+        "poll_candidate",
+        "mediafile",
+        "meeting_mediafile",
+        "projector",
+        "projection",
+        "projector_message",
+        "projector_countdown",
+        "chat_group",
+        "chat_message",
+        "action_worker",
+        "import_preview",
+        "history_position",
+        "history_entry",
+    ]
+
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:
         errors = ""
@@ -395,7 +395,6 @@ class Migration(BaseMigration):
             i_read_code = None
         if i_read_code is not None:
             if is_truthy(i_read_code):
-                print("(┛◉Д◉)┛彡┻━┻")
                 MigrationHelper.write_line("(┛◉Д◉)┛彡┻━┻")
 
         for table_name in OLD_TABLES:
