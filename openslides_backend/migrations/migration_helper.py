@@ -89,14 +89,21 @@ class MigrationHelper:
         MigrationHelper.migrate_thread_stream.write(message + "\n")
 
     @staticmethod
-    def read_stream() -> str:
+    def read_stream(all=False) -> str:
         """
         Reads all lines since reading last.
         Also signals the write process on the buffer that it was just read.
         This is to preserve lines for read until new lines were written.
+        If `all` is set, all lines present in buffer are returned without
+        moving the cursor or providing additional signaling.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
-        stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
+
+        if all:
+            return stream.getvalue()
+
+        if not MigrationHelper.migrate_thread_stream_just_read:
+            stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
         result = stream.read()
         MigrationHelper.migrate_thread_stream_just_read = True
         return result

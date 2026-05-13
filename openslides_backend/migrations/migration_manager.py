@@ -59,18 +59,21 @@ class MigrationManager:
 
     def handle_progress_command(self) -> dict[str, Any]:
         """
-        # TODO delete once tooling will handle the stats route instead.
+        Returns an intermediate result of the running migration, reading all
+        new output written since the last regular read (i.e. since last
+        progress call).
         """
         return self.get_migration_result()
 
-    def get_migration_result(self) -> dict[str, Any]:
+    def get_migration_result(self, all=False) -> dict[str, Any]:
         """
-        Gets the 'status' and migration threads 'output' string. 'exception' if an exception occured.
+        Gets the 'status' and migration threads 'output' string. 'exception' if
+        an exception occured.
         """
         state = MigrationHelper.get_migration_state(self.cursor)
         result = {"status": str(state)}
         if MigrationHelper.migrate_thread_stream and (
-            output := MigrationHelper.read_stream()
+            output := MigrationHelper.read_stream(all)
         ):
             result["output"] = output
         if state in (
@@ -142,7 +145,9 @@ class MigrationManager:
             }
 
         return {
-            **self.get_migration_result(),
+            # stats returns all output without disturbing concurrent progress calls
+            # -> all=True
+            **self.get_migration_result(all=True),
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             **(
