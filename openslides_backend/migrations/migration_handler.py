@@ -335,7 +335,7 @@ class MigrationHandler(BaseHandler):
         """
         Starts the migration process.
         """
-        self.logger.info("Preparing migrations ...")
+        self.logger.info("Checking migratability ...")
         state = MigrationHelper.get_migration_state(self.cursor)
         match state:
             case MigrationState.MIGRATION_REQUIRED:
@@ -368,6 +368,7 @@ class MigrationHandler(BaseHandler):
                         self.logger.info(errors)
                         raise MigrationSetupException(errors)
                 MigrationHelper.write_line("migration started")
+                self.logger.info("Preparing migrations ...")
                 self.set_public_tables_read_only()
                 self.setup_migration_relations()
                 self.execute_migrations()
