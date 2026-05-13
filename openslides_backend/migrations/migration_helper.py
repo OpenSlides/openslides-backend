@@ -70,7 +70,6 @@ class MigrationHelper:
     migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_read_pos: int = 0
-    migrate_thread_stream_just_read: bool = False
     migrate_thread_stream_can_be_closed = False
     migrate_thread_exception: Exception | None = None
 
@@ -78,34 +77,25 @@ class MigrationHelper:
     def write_line(message: str) -> None:
         """
         Writes a single line with \n to the migration threads io stream.
-        Also moves the read head if stream was read just before.
-        This is to preserve lines for read until new lines were written.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
-        if MigrationHelper.migrate_thread_stream_just_read:
-            MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
-            MigrationHelper.migrate_thread_stream_just_read = False
-        stream.seek(0, SEEK_END)
         MigrationHelper.migrate_thread_stream.write(message + "\n")
 
     @staticmethod
-    def read_stream(all=False) -> str:
+    def read_stream(all: bool = False) -> str:
         """
-        Reads all lines since reading last.
-        Also signals the write process on the buffer that it was just read.
-        This is to preserve lines for read until new lines were written.
+        Reads all lines since the last time reading.
         If `all` is set, all lines present in buffer are returned without
-        moving the cursor or providing additional signaling.
+        moving the cursor at all.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
 
         if all:
             return stream.getvalue()
 
-        if not MigrationHelper.migrate_thread_stream_just_read:
-            stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
+        stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
         result = stream.read()
-        MigrationHelper.migrate_thread_stream_just_read = True
+        MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
         return result
 
     @staticmethod

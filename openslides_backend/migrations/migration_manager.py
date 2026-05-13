@@ -65,7 +65,7 @@ class MigrationManager:
         """
         return self.get_migration_result()
 
-    def get_migration_result(self, all=False) -> dict[str, Any]:
+    def get_migration_result(self, all: bool = False) -> dict[str, Any]:
         """
         Gets the 'status' and migration threads 'output' string. 'exception' if
         an exception occured.
@@ -209,6 +209,9 @@ class MigrationManager:
                 verbose = payload.get("verbose", False)
                 if command in iter(MigrationCommand):
                     MigrationHelper.migrate_thread_stream = StringIO()
+                    MigrationHelper.migrate_thread_stream_read_pos = (
+                        MigrationHelper.migrate_thread_stream.tell()
+                    )
                     MigrationHelper.migrate_thread = thread = Thread(
                         target=self.execute_migrate_command, args=[command, verbose]
                     )
