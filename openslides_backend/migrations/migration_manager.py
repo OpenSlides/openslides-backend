@@ -71,16 +71,17 @@ class MigrationManager:
         an exception occured.
         """
         state = MigrationHelper.get_migration_state(self.cursor)
-        result = {"status": str(state)}
-        if MigrationHelper.migrate_thread_stream and (
-            output := MigrationHelper.read_stream(all)
-        ):
-            result["output"] = output
+        result = {"status": str(state), "output": ""}
+
+        if MigrationHelper.migrate_thread_stream:
+            result["output"] = MigrationHelper.read_stream(all)
+
         if state in (
             MigrationState.MIGRATION_FAILED,
             MigrationState.FINALIZATION_FAILED,
         ):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
+
         return result
 
     def get_stats(self) -> dict[str, Any]:

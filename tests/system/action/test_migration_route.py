@@ -52,6 +52,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
+            "output": "",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -78,7 +79,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_progress_no_migration(self) -> None:
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert "output" not in response.json
+        assert response.json["output"] == ""
 
     def test_unknown_command(self) -> None:
         response = self.migration_request("unknown")
@@ -162,15 +163,10 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         indicator_lock.acquire()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["output"] == "migration started\n"
+        assert response.json["output"] == ""
 
         wait_lock.release()
         self.wait_for_migration_thread_and_state(MigrationState.FINALIZATION_REQUIRED)
-        response = self.migration_request("progress")
-        self.assert_status_code(response, 200)
-        assert response.json["output"] == "migration finished\n"
-
-        # check that the output is preserved for future progress requests
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["output"] == "migration finished\n"
@@ -221,19 +217,19 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finalization finished\n",
+            "output": "finalization started\nfinalization finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
         }
 
-        # check that the output is preserved for future stats requests
+        # check that the stats request still returns the whole output
         wait_lock.release()
         response = self.migration_request("stats")
         self.assert_status_code(response, 200)
         assert response.json["stats"] == {
             "status": MigrationState.FINALIZED,
-            "output": "finalization finished\n",
+            "output": "finalization started\nfinalization finished\n",
             "current_migration_index": self.backend_migration_index,
             "target_migration_index": self.backend_migration_index,
             "migratable_models": {},
@@ -278,7 +274,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["output"] == "migration started\n"
+        assert response.json["output"] == ""
         assert response.json["exception"] == "test"
 
 

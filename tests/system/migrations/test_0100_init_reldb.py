@@ -450,6 +450,7 @@ For more information, see
             "stats": {
                 # TODO only migrate one index? Would require altering the test-visible migration files.
                 "status": MigrationState.MIGRATION_REQUIRED,
+                "output": "",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": {
@@ -494,6 +495,7 @@ For more information, see
                 },
             },
         }
+
         response = self.request("migrate")
         assert response.json == {
             "success": True,
@@ -567,6 +569,7 @@ For more information, see
         assert response == {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }
 
         self.assert_indices_state(MigrationState.FINALIZED)
@@ -591,6 +594,7 @@ For more information, see
         while (response := self.request("migrate").json) != {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }:
             sleep(0.1)
             if datetime.now() - start > max_time:
@@ -600,6 +604,7 @@ For more information, see
         assert response == {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }
 
         self.assert_indices_state(MigrationState.FINALIZED)
