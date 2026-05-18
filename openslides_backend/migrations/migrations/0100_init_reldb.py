@@ -256,6 +256,7 @@ class Migration(BaseMigration):
                 else:
                     errors += f", {key}"
         if errors:
+            MigrationHelper.write_line(errors)
             return errors
 
         i_read_docs = os.environ["MIG0100_I_READ_DOCS"]
@@ -269,6 +270,7 @@ class Migration(BaseMigration):
         if time_zone not in (pg_time_zones):
             errors += f"{time_zone} is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
         if errors:
+            MigrationHelper.write_line(errors)
             return errors
 
         MigrationHelper.write_line(

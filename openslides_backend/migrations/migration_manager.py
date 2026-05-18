@@ -58,25 +58,29 @@ class MigrationManager:
 
     def handle_progress_command(self) -> dict[str, Any]:
         """
-        # TODO delete once tooling will handle the stats route instead.
+        Returns an intermediate result of the running migration, reading all
+        new output written since the last regular read (i.e. since last
+        progress call).
         """
         return self.get_migration_result()
 
-    def get_migration_result(self) -> dict[str, Any]:
+    def get_migration_result(self, all: bool = False) -> dict[str, Any]:
         """
-        Gets the 'status' and migration threads 'output' string. 'exception' if an exception occured.
+        Gets the 'status' and migration threads 'output' string. 'exception' if
+        an exception occured.
         """
         state = MigrationHelper.get_migration_state(self.cursor)
-        result = {"status": str(state)}
-        if MigrationHelper.migrate_thread_stream and (
-            output := MigrationHelper.read_stream()
-        ):
-            result["output"] = output
+        result = {"status": str(state), "output": ""}
+
+        if MigrationHelper.migrate_thread_stream:
+            result["output"] = MigrationHelper.read_stream(all)
+
         if state in (
             MigrationState.MIGRATION_FAILED,
             MigrationState.FINALIZATION_FAILED,
         ):
             result["exception"] = str(MigrationHelper.migrate_thread_exception)
+
         return result
 
     def get_stats(self) -> dict[str, Any]:
@@ -119,7 +123,6 @@ class MigrationManager:
                 in (
                     MigrationState.MIGRATION_REQUIRED,
                     MigrationState.MIGRATION_RUNNING,
-                    MigrationState.MIGRATION_PREPARING,
                 )
                 for collection, r_tables in MigrationHelper.get_replace_tables(
                     mi
@@ -134,7 +137,9 @@ class MigrationManager:
         if exc := MigrationHelper.migrate_thread_exception:
             module_name = getattr(exc, "__module__", "")
         return {
-            **self.get_migration_result(),
+            # stats returns all output without disturbing concurrent progress calls
+            # -> all=True
+            **self.get_migration_result(all=True),
             "current_migration_index": current_migration_index,
             "target_migration_index": self.target_migration_index,
             **(
@@ -181,10 +186,7 @@ class MigrationManager:
                     self.assert_valid_migration_index()
 
                     match state:
-                        case (
-                            MigrationState.MIGRATION_RUNNING
-                            | MigrationState.MIGRATION_PREPARING
-                        ):
+                        case MigrationState.MIGRATION_RUNNING:
                             process = "Migration"
                         case MigrationState.FINALIZATION_RUNNING:
                             process = "Finalization"
@@ -204,6 +206,9 @@ class MigrationManager:
 
                 verbose = payload.get("verbose", False)
                 MigrationHelper.migrate_thread_stream = StringIO()
+                MigrationHelper.migrate_thread_stream_read_pos = (
+                    MigrationHelper.migrate_thread_stream.tell()
+                )
                 MigrationHelper.migrate_thread = thread = Thread(
                     target=self.execute_migrate_command, args=[command, verbose]
                 )

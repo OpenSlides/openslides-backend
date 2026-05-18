@@ -458,25 +458,29 @@ class BaseMotionCreateForwarded(
         meeting_mediafile_replace_map: dict[int, dict[int, int]],
     ) -> tuple[dict[int, set[int]], dict[int, dict[int, int]]]:
         # Extract mediafiles and meeting_mediafiles data
-        motion_target_meeting_ids_map: dict[int, set[int]] = (
-            self._extract_motion_target_meeting_ids(action_data)
-        )
-        origin_attachments_data: dict[int, dict[str, Any]] = (
-            self._fetch_origin_attachments_data(
-                list(motion_target_meeting_ids_map.keys())
+        if not self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["disable_forward_with_attachments"]
+        ).get("disable_forward_with_attachments"):
+            motion_target_meeting_ids_map: dict[int, set[int]] = (
+                self._extract_motion_target_meeting_ids(action_data)
             )
-        )
-        fetched_data = self._prepare_mediafiles_data(
-            motion_target_meeting_ids_map,
-            origin_attachments_data,
-            forwarded_attachments,
-        )
+            origin_attachments_data: dict[int, dict[str, Any]] = (
+                self._fetch_origin_attachments_data(
+                    list(motion_target_meeting_ids_map.keys())
+                )
+            )
+            fetched_data = self._prepare_mediafiles_data(
+                motion_target_meeting_ids_map,
+                origin_attachments_data,
+                forwarded_attachments,
+            )
 
-        # Calculate new ids and execute dublication actions
-        meeting_mediafile_replace_map = self.perform_mediafiles_duplication(
-            fetched_data, meeting_mediafile_replace_map
-        )
-        return forwarded_attachments, meeting_mediafile_replace_map
+            # Calculate new ids and execute dublication actions
+            meeting_mediafile_replace_map = self.perform_mediafiles_duplication(
+                fetched_data, meeting_mediafile_replace_map
+            )
+            return forwarded_attachments, meeting_mediafile_replace_map
+        return {}, {}
 
     def _extract_motion_target_meeting_ids(
         self, action_data: ActionData

@@ -46,7 +46,6 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         MigrationHelper.migrate_thread = None
         MigrationHelper.migrate_thread_exception = None
         MigrationHelper.migrate_thread_stream_read_pos = 0
-        MigrationHelper.migrate_thread_stream_just_read = False
         if MigrationHelper.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
         super().tearDown()

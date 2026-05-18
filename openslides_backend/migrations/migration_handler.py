@@ -319,9 +319,6 @@ class MigrationHandler(BaseHandler):
             mig_class = MigrationHelper.get_migration_class(module_name)
 
             self.logger.info("Executing migration: " + module_name)
-            MigrationHelper.set_database_migration_info(
-                self.cursor, index, MigrationState.MIGRATION_RUNNING
-            )
 
             # checks wether the methods are available and executes them.
             mig_class.data_definition(self.cursor)
@@ -349,7 +346,7 @@ class MigrationHandler(BaseHandler):
                     MigrationHelper.set_database_migration_info(
                         self.cursor,
                         minimum_required_index["min"],
-                        MigrationState.MIGRATION_PREPARING,
+                        MigrationState.MIGRATION_RUNNING,
                     )
                 # Check prerequisites
                 for module_name in MigrationHelper.migrations.values():
@@ -378,7 +375,7 @@ class MigrationHandler(BaseHandler):
                 self.logger.info("Done. Finalizing is still needed.")
             case MigrationState.FINALIZED:
                 self.logger.info("No migration needed.")
-            case MigrationState.MIGRATION_RUNNING | MigrationState.MIGRATION_PREPARING:
+            case MigrationState.MIGRATION_RUNNING:
                 self.logger.info("There is already a migration running.")
             case _:
                 raise MigrationException(
@@ -440,17 +437,16 @@ class MigrationHandler(BaseHandler):
                 )
 
     @classmethod
-    def close_migrate_thread_stream(cls) -> str:
+    def close_migrate_thread_stream(cls) -> None:
         """
         Closes the migration threads io stream.
         """
-        assert (stream := MigrationHelper.migrate_thread_stream)
-        output = stream.getvalue()
-        stream.close()
+        assert MigrationHelper.migrate_thread_stream
+
+        MigrationHelper.migrate_thread_stream.close()
         MigrationHelper.migrate_thread_stream = None
         MigrationHelper.migrate_thread_stream_can_be_closed = False
         MigrationHelper.migrate_thread_exception = None
-        return output
 
     def finalize(self) -> None:
         """
@@ -594,7 +590,7 @@ class MigrationHandler(BaseHandler):
                     and table_match.group(1) in real_replace_tables
                     and (fkey_match := fkey_re.search(block))
                 ):
-                    # `col_or_im` is an origin table that does not get replaced (not in 
+                    # `col_or_im` is an origin table that does not get replaced (not in
                     # real_replace_tables) but loses its foreign keys to `table_match`
                     relevant_blocks.append(fkey_match.group(1))
         sql_text = "".join(relevant_blocks)

@@ -40,13 +40,12 @@ class MigrationState(StrEnum):
     """
 
     MIGRATION_REQUIRED = "migration_required"
-    MIGRATION_PREPARING = "migration_preparing"
     MIGRATION_RUNNING = "migration_running"
     MIGRATION_FAILED = "migration_failed"
     FINALIZATION_REQUIRED = "finalization_required"
     FINALIZATION_RUNNING = "finalization_running"
-    FINALIZED = "finalized"
     FINALIZATION_FAILED = "finalization_failed"
+    FINALIZED = "finalized"
 
 
 class MigrationCommand(StrEnum):
@@ -72,7 +71,6 @@ class MigrationHelper:
     migrate_thread: Thread | None = None
     migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_read_pos: int = 0
-    migrate_thread_stream_just_read: bool = False
     migrate_thread_stream_can_be_closed = False
     migrate_thread_exception: Exception | None = None
 
@@ -80,27 +78,26 @@ class MigrationHelper:
     def write_line(message: str) -> None:
         """
         Writes a single line with \n to the migration threads io stream.
-        Also moves the read head if stream was read just before.
-        This is to preserve lines for read until new lines were written.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
-        if MigrationHelper.migrate_thread_stream_just_read:
-            MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
-            MigrationHelper.migrate_thread_stream_just_read = False
-        stream.seek(0, os.SEEK_END)
-        MigrationHelper.migrate_thread_stream.write(message + "\n")
+        stream.write(message + "\n")
 
     @staticmethod
-    def read_stream() -> str:
+    def read_stream(all: bool = False) -> str:
         """
-        Reads all lines since reading last.
-        Also signals the write process on the buffer that it was just read.
-        This is to preserve lines for read until new lines were written.
+        Reads all lines since the last time reading.
+        If `all` is set, all lines present in buffer are returned without
+        - moving the cursor on the stream
+        - or updating migrate_thread_stream_read_pos.
         """
         assert (stream := MigrationHelper.migrate_thread_stream)
+
+        if all:
+            return stream.getvalue()
+
         stream.seek(MigrationHelper.migrate_thread_stream_read_pos)
         result = stream.read()
-        MigrationHelper.migrate_thread_stream_just_read = True
+        MigrationHelper.migrate_thread_stream_read_pos = stream.tell()
         return result
 
     @staticmethod
@@ -322,10 +319,9 @@ class MigrationHelper:
         if not states_and_indices:
             return MigrationState.FINALIZED
         states = {elem.get("migration_state") for elem in states_and_indices}
-        # 1. migration, 2. finalization | -> failed > (preparing >) running > required
+        # 1. migration, 2. finalization | both: failed > running > required
         for state in [
             MigrationState.MIGRATION_FAILED,
-            MigrationState.MIGRATION_PREPARING,
             MigrationState.MIGRATION_RUNNING,
             MigrationState.MIGRATION_REQUIRED,
             MigrationState.FINALIZATION_FAILED,
