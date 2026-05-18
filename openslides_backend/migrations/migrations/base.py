@@ -1,9 +1,14 @@
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
+from openslides_backend.shared.typing import Collection
+
 
 class BaseMigration:
     """Interface class for all migrations"""
+
+    # Needs to be set by subclass to define the collections that need to be copied into migration tables.
+    ORIGIN_COLLECTIONS: list[Collection]
 
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:

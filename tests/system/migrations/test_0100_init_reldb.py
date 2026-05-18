@@ -60,8 +60,8 @@ DEPR_SQL_PATH = os.path.realpath(
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
-created_fqids: set()
-data: dict[str, any] = {}
+# created_fqids: set()
+data: dict[str, Any] = {}
 
 
 class TestMigration100(BaseMigrationTestCase):
@@ -77,6 +77,7 @@ class TestMigration100(BaseMigrationTestCase):
         once the actual connection context is entered the first time after the database was dropped and recreated.
     """
 
+    migration_file = "0100_init_reldb.py"
     app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
     # Save auth data as class variable
@@ -132,7 +133,7 @@ For more information, see
                     curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
         super().tearDown()
 
-    def setUp(self):
+    def setUp(self) -> None:
         # 0) Set up environment
         os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
         os.environ["MIG0100_I_READ_DOCS"] = "YES"
@@ -147,7 +148,7 @@ For more information, see
         # 1.1) Create services and login.
         self.app = create_action_test_application()
         self.client = Client(self.app)
-        self.used_collections = set()
+        super().setUp()
         self.setup_data()
         self.apply_test_relational_schema()
 
@@ -168,12 +169,11 @@ For more information, see
         return response
 
     def setup_data(self) -> None:
-        raw_data: dict[str, any]
         json_blob: str
 
         # 2) reading json data from file
         with open(EXAMPLE_DATA_PATH) as file:
-            raw_data = json.loads(file.read())
+            raw_data: dict[str, Any] = json.loads(file.read())
 
         # 2.1) fill data dictionary without meta_ fields and _migration_index
         for collection, models in raw_data.items():
@@ -184,9 +184,6 @@ For more information, see
                 data[f"{collection}/{model_id}"] = {
                     f: v for f, v in model.items() if not f.startswith("meta_")
                 }
-
-        # 3) Open os_connection_pool
-        os_conn_pool.open()
 
         # 4) Write models into db table models
         with os_conn_pool.connection() as conn:
@@ -208,36 +205,20 @@ For more information, see
                 )
 
     def check_data(self) -> None:
-        def assert_content_not_none(
-            query: str, value: dict[str:Any] | None = None, error_message: str = ""
-        ) -> None:
-            """
-            Checks whether the first element of the result for `query` matches `value`.
-            `value` should be None if the expected result is just not None.
-            Because of this behavior, it can't be compared to an expected result of None.
-            """
-            result = cur.execute(query).fetchone()
-            if error_message:
-                assert result, error_message
-            else:
-                assert (
-                    result
-                ), f"Database did not contain a result for this query.\n{query}"
-            if value is not None:
-                assert result == value
-
         # 6) TEST CASES
         with os_conn_pool.connection() as conn:
             with conn.cursor() as cur:
                 # 6.1) 1:1 relation
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT theme_id FROM organization_t WHERE id=1;",
                     None,
                     "1:1 relation in organization not filled.",
                 )
 
                 # 6.1.1) 1G:1 relation
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT type, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM agenda_item_t WHERE id=1;",
                     {
                         "type": "common",
@@ -248,12 +229,13 @@ For more information, see
                 )
 
                 # 6.2) 1:n relation
-                assert_content_not_none(
-                    "SELECT gender_id FROM user_t WHERE id=1;", {"gender_id": 1}
+                self.assert_content_not_none(
+                    cur, "SELECT gender_id FROM user_t WHERE id=1;", {"gender_id": 1}
                 )
 
                 # 6.2.1) 1G:n relation
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT title, content_object_id, content_object_id_motion_id, content_object_id_topic_id FROM poll_t WHERE id=1;",
                     {
                         "title": "1",
@@ -264,26 +246,31 @@ For more information, see
                 )
 
                 # 6.3) n:m relation
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT user_id, committee_id FROM nm_committee_manager_ids_user_t WHERE committee_id=1 ORDER BY user_id;",
                     {"user_id": 1, "committee_id": 1},
                 )
                 # 6.3.1) nG:m relation
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT tagged_id FROM gm_organization_tag_tagged_ids_t WHERE organization_tag_id=1 AND tagged_id LIKE 'committee/1';",
                 )
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT tagged_id FROM gm_organization_tag_tagged_ids_t WHERE organization_tag_id=1 AND tagged_id LIKE 'meeting/1';",
                 )
 
                 # 6.4) Set id sequences correctly
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT last_value FROM gender_t_id_seq;",
                     {"last_value": 4},
                 )
 
                 # 6.4.1) Set sequential_number sequences correctly
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     "SELECT last_value FROM projector_t_meeting_id1_sequential_number_seq;",
                     {"last_value": 2},
                 )
@@ -296,8 +283,9 @@ For more information, see
                     assert cur.fetchone() is None
 
                 # 6.6) Recreated constraints
-                assert_content_not_none(
-                    "SELECT 1 FROM information_schema.constraint_column_usage WHERE constraint_name = 'fk_option_t_content_object_id_poll_candidate_list_id_pold428251';"
+                self.assert_content_not_none(
+                    cur,
+                    "SELECT 1 FROM information_schema.constraint_column_usage WHERE constraint_name = 'fk_option_t_content_object_id_poll_candidate_list_id_pold428251';",
                 )
 
                 # 6.7) Recreated triggers
@@ -308,12 +296,14 @@ For more information, see
                     "tr_generate_sequence_motion_block_sequential_number",
                     "tr_log_tagged_id_meeting_id_gm_organization_tag_tagged_ids_t",
                 ]:
-                    assert_content_not_none(
-                        f"SELECT 1 FROM pg_trigger WHERE tgname = '{trigger_name}';"
+                    self.assert_content_not_none(
+                        cur,
+                        f"SELECT 1 FROM pg_trigger WHERE tgname = '{trigger_name}';",
                     )
 
                 # 6.8 Recreated foreign key constraints
-                assert_content_not_none(
+                self.assert_content_not_none(
+                    cur,
                     """SELECT 1
                     FROM information_schema.table_constraints AS tc
                     JOIN information_schema.key_column_usage AS kcu
@@ -326,11 +316,11 @@ For more information, see
                         AND ccu.table_name = 'theme_t'
                         AND kcu.column_name = 'theme_id'
                         AND ccu.column_name = 'id'
-                        AND tc.constraint_name = 'fk_organization_t_theme_id_theme_t_id';"""
+                        AND tc.constraint_name = 'fk_organization_t_theme_id_theme_t_id';""",
                 )
 
                 # 6.9) Recreated views
-                assert_content_not_none("SELECT 1 from organization;")
+                self.assert_content_not_none(cur, "SELECT 1 from organization;")
 
                 # 6.10) Created correct timestamp
                 assert cur.execute(
@@ -367,7 +357,7 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": f"Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 73,
             "target_migration_index": 100,
@@ -382,7 +372,7 @@ For more information, see
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": f"Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "exception": f"openslides_backend.migrations.exceptions.MigrationSetupException: Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
             "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 73,
             "target_migration_index": 100,
@@ -408,7 +398,12 @@ For more information, see
     def test_migration_manager(self) -> None:
         # 5) Call data_manipulation of module
         manager = MigrationManager(Mock(), Mock(), self.app.logging)
-        manager.handle_request({"cmd": "migrate", "verbose": True})
+        result = manager.handle_request({"cmd": "migrate", "verbose": True})
+        assert result == {
+            "status": MigrationState.MIGRATION_RUNNING,
+            "output": self.EXPECTED_INTRODUCTION
+            + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
+        }
 
         self.wait_for_migration_thread(self.MAX_WAIT)
         self.assert_indices_state(MigrationState.FINALIZATION_REQUIRED)
@@ -454,44 +449,44 @@ For more information, see
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": {
-                    "agenda_item": {"count": 15, "migrated": 0},
-                    "assignment": {"count": 2, "migrated": 0},
-                    "assignment_candidate": {"count": 5, "migrated": 0},
-                    "chat_group": {"count": 2, "migrated": 0},
-                    "committee": {"count": 1, "migrated": 0},
-                    "gender": {"count": 4, "migrated": 0},
-                    "group": {"count": 5, "migrated": 0},
-                    "list_of_speakers": {"count": 16, "migrated": 0},
-                    "mediafile": {"count": 1, "migrated": 0},
-                    "meeting": {"count": 1, "migrated": 0},
-                    "meeting_mediafile": {"count": 1, "migrated": 0},
-                    "meeting_user": {"count": 3, "migrated": 0},
-                    "motion": {"count": 4, "migrated": 0},
-                    "motion_block": {"count": 1, "migrated": 0},
-                    "motion_category": {"count": 2, "migrated": 0},
-                    "motion_change_recommendation": {"count": 2, "migrated": 0},
-                    "motion_comment": {"count": 1, "migrated": 0},
-                    "motion_comment_section": {"count": 1, "migrated": 0},
-                    "motion_state": {"count": 15, "migrated": 0},
-                    "motion_submitter": {"count": 4, "migrated": 0},
-                    "motion_supporter": {"count": 1, "migrated": 0},
-                    "motion_workflow": {"count": 2, "migrated": 0},
-                    "option": {"count": 13, "migrated": 0},
-                    "organization": {"count": 1, "migrated": 0},
-                    "organization_tag": {"count": 1, "migrated": 0},
-                    "personal_note": {"count": 1, "migrated": 0},
-                    "poll": {"count": 5, "migrated": 0},
-                    "projection": {"count": 4, "migrated": 0},
-                    "projector": {"count": 2, "migrated": 0},
-                    "projector_countdown": {"count": 2, "migrated": 0},
-                    "projector_message": {"count": 1, "migrated": 0},
-                    "speaker": {"count": 13, "migrated": 0},
-                    "structure_level": {"count": 3, "migrated": 0},
-                    "tag": {"count": 3, "migrated": 0},
-                    "theme": {"count": 3, "migrated": 0},
-                    "topic": {"count": 8, "migrated": 0},
-                    "user": {"count": 3, "migrated": 0},
-                    "vote": {"count": 9, "migrated": 0},
+                    "agenda_item": 15,
+                    "assignment": 2,
+                    "assignment_candidate": 5,
+                    "chat_group": 2,
+                    "committee": 1,
+                    "gender": 4,
+                    "group": 5,
+                    "list_of_speakers": 16,
+                    "mediafile": 1,
+                    "meeting": 1,
+                    "meeting_mediafile": 1,
+                    "meeting_user": 3,
+                    "motion": 4,
+                    "motion_block": 1,
+                    "motion_category": 2,
+                    "motion_change_recommendation": 2,
+                    "motion_comment": 1,
+                    "motion_comment_section": 1,
+                    "motion_state": 15,
+                    "motion_submitter": 4,
+                    "motion_supporter": 1,
+                    "motion_workflow": 2,
+                    "option": 13,
+                    "organization": 1,
+                    "organization_tag": 1,
+                    "personal_note": 1,
+                    "poll": 5,
+                    "projection": 4,
+                    "projector": 2,
+                    "projector_countdown": 2,
+                    "projector_message": 1,
+                    "speaker": 13,
+                    "structure_level": 3,
+                    "tag": 3,
+                    "theme": 3,
+                    "topic": 8,
+                    "user": 3,
+                    "vote": 9,
                 },
             },
         }
