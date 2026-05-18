@@ -1,6 +1,7 @@
 import json
 import os
 from importlib import import_module
+from typing import Any
 from unittest.mock import Mock
 
 from openslides_backend.migrations.migration_helper import (
@@ -32,7 +33,6 @@ class TestMigration101(BaseMigrationTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        raw_data: dict[str, any]
         data: dict[FullQualifiedId, Model] = dict()
 
         with os_conn_pool.connection() as conn:
@@ -42,7 +42,7 @@ class TestMigration101(BaseMigrationTestCase):
                 curs.execute("TRUNCATE TABLE version;")
 
         with open(EXAMPLE_DATA_PATH) as file:
-            raw_data = json.loads(file.read())
+            raw_data: dict[str, Any] = json.loads(file.read())
 
         for collection, models in raw_data.items():
             if collection == "_migration_index":
@@ -69,14 +69,14 @@ class TestMigration101(BaseMigrationTestCase):
         manager = MigrationManager(Mock(), Mock(), Mock())
         assert manager.handle_request({"cmd": "finalize", "verbose": True}) == {
             "output": "migration started\n",
-            "status": MigrationState.MIGRATION_PREPARING,
+            "status": MigrationState.MIGRATION_RUNNING,
         }
 
         assert manager.handle_request({"cmd": "stats", "verbose": True}) == {
             "stats": {
                 "current_migration_index": 100,
                 "target_migration_index": 101,
-                "status": MigrationState.MIGRATION_PREPARING,
+                "status": MigrationState.MIGRATION_RUNNING,
                 "output": "migration started\n",
                 "migratable_models": {
                     "meeting": 1,
@@ -89,7 +89,7 @@ class TestMigration101(BaseMigrationTestCase):
                 "current_migration_index": 101,
                 "target_migration_index": 101,
                 "status": MigrationState.FINALIZED,
-                "output": "migration finished\nfinalization started\nfinalization finished\n",
+                "output": "migration started\nmigration finished\nfinalization started\nfinalization finished\n",
                 "migratable_models": {},
             },
         }

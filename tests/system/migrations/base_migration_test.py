@@ -22,6 +22,7 @@ from tests.system.base import BaseSystemTestCase
 class BaseMigrationTestCase(BaseSystemTestCase):
     # has to be set by subclass
     migration_file: str
+    patcher: Any
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -38,7 +39,7 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         """
         Does not call super class to prevent usage of client and so forth.
         """
-        self.used_collections = set()
+        self.used_collections: set[str] = set()
         self.created_fqids: set[str] = set()
         self.deleted_fqids: set[str] = set()
 
@@ -54,7 +55,7 @@ class BaseMigrationTestCase(BaseSystemTestCase):
         self,
         cur: Cursor[DictRow],
         query: str,
-        value: dict[str:Any] | None = None,
+        value: dict[str, Any] | None = None,
         error_message: str = "",
     ) -> None:
         """

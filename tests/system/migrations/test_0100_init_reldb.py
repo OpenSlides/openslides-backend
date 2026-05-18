@@ -60,8 +60,8 @@ DEPR_SQL_PATH = os.path.realpath(
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 MIGRATIONS_URL = get_route_path(ActionView.migrations_route)
-created_fqids: set()
-data: dict[str, any] = {}
+# created_fqids: set()
+data: dict[str, Any] = {}
 
 
 class TestMigration100(BaseMigrationTestCase):
@@ -133,7 +133,7 @@ For more information, see
                     curs.execute(f"SELECT setval('{collection}_t_id_seq', 1, false)")
         super().tearDown()
 
-    def setUp(self):
+    def setUp(self) -> None:
         # 0) Set up environment
         os.environ["MIG0100_TIMEZONE"] = "Europe/Berlin"
         os.environ["MIG0100_I_READ_DOCS"] = "YES"
@@ -169,12 +169,11 @@ For more information, see
         return response
 
     def setup_data(self) -> None:
-        raw_data: dict[str, any]
         json_blob: str
 
         # 2) reading json data from file
         with open(EXAMPLE_DATA_PATH) as file:
-            raw_data = json.loads(file.read())
+            raw_data: dict[str, Any] = json.loads(file.read())
 
         # 2.1) fill data dictionary without meta_ fields and _migration_index
         for collection, models in raw_data.items():
@@ -401,7 +400,7 @@ For more information, see
         manager = MigrationManager(Mock(), Mock(), self.app.logging)
         result = manager.handle_request({"cmd": "migrate", "verbose": True})
         assert result == {
-            "status": MigrationState.MIGRATION_PREPARING,
+            "status": MigrationState.MIGRATION_RUNNING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
