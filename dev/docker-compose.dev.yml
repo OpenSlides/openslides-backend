@@ -50,7 +50,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#${COMPOSE_REFERENCE_BRANCH:-main}"
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#feature/vote"  # TODO: change branch back to the main
             target: "dev"
             args:
                 CONTEXT: "dev"
