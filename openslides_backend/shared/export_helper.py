@@ -239,31 +239,31 @@ def export_meeting(
                         relation_field, []
                     ).append(ballot_id)
 
-        config_ids = [poll.get("config_id") for poll in polls.values()]
+    config_ids = [poll.get("config_id") for poll in polls.values()]
 
-        for config_fqid in config_ids:
-            collection, id_ = config_fqid.split("/")
-            instance = datastore.get(
-                config_fqid,
-                list(get_fields_for_export(collection)),
+    for config_fqid in config_ids:
+        collection, id_ = config_fqid.split("/")
+        instance = datastore.get(
+            config_fqid,
+            list(get_fields_for_export(collection)),
+            lock_result=False,
+            use_changed_models=False,
+        )
+        export.setdefault(collection, {})[str(id_)] = instance
+        if option_ids := instance.get("option_ids"):
+            options = datastore.get_many(
+                [
+                    GetManyRequest(
+                        "poll_config_option",
+                        option_ids,
+                        get_fields_for_export("poll_config_option"),
+                    )
+                ],
                 lock_result=False,
                 use_changed_models=False,
-            )
-            export.setdefault(collection, {})[str(id_)] = instance
-            if option_ids := instance.get("option_ids"):
-                options = datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "poll_config_option",
-                            option_ids,
-                            get_fields_for_export("poll_config_option"),
-                        )
-                    ],
-                    lock_result=False,
-                    use_changed_models=False,
-                )["poll_config_option"]
-                for id_, option in options.items():
-                    export.setdefault("poll_config_option", {})[str(id_)] = option
+            )["poll_config_option"]
+            for id_, option in options.items():
+                export.setdefault("poll_config_option", {})[str(id_)] = option
 
     # Sort instances by id within each collection
     for collection, instances in export.items():
