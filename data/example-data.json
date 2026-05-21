@@ -355,6 +355,7 @@
             "motions_export_preamble": "",
             "motions_export_submitter_recommendation": true,
             "motions_export_follow_recommendation": false,
+            "motions_enable_restricted_editor_for_non_manager": true,
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
