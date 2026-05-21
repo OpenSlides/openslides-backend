@@ -18,15 +18,20 @@ class VoteAdapter(VoteService, AuthenticatedService):
         self.url = vote_url
         self.logger = logging.getLogger(__name__)
 
-    def retrieve(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
-        response = self.make_request(endpoint, payload)
+    def retrieve(
+        self,
+        endpoint: str,
+        request_method: Literal["post", "delete"] = "post",
+        payload: dict[str, Any] | None = None,
+    ) -> Any:
+        response = self.make_request(endpoint, request_method, payload)
         message = f"Vote service sends HTTP {response.status_code} with the following content: {str(response.content)}."
         if response.status_code < 400:
             self.logger.debug(message)
         elif response.status_code == 500:
             self.logger.error(message)
             raise VoteServiceException(
-                "Vote service sends HTTP 500 Internal Server Error."
+                f"Vote service sends HTTP 500 Internal Server Error with the message: {message}."
             )
         else:
             self.logger.error(message)
@@ -34,11 +39,25 @@ class VoteAdapter(VoteService, AuthenticatedService):
         if response.content:
             return response.json()
 
-    def make_request(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
+    def make_request(
+        self,
+        endpoint: str,
+        request_method: Literal["post", "delete"],
+        payload: dict[str, Any] | None = None,
+    ) -> Any:
         if not self.access_token or not self.refresh_id:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
+            if request_method == "delete":
+                return requests.delete(
+                    url=endpoint,
+                    headers={
+                        "Content-Type": "application/json",
+                        **self.get_auth_header(),
+                    },
+                    cookies=self.get_auth_cookie(),
+                )
             return requests.post(
                 url=endpoint,
                 data=payload_json,
@@ -55,19 +74,19 @@ class VoteAdapter(VoteService, AuthenticatedService):
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
     def create(self, payload: dict[str, Any]) -> dict[str, Any]:
-        endpoint = self.get_endpoint("create")
+        endpoint = self.get_endpoint()
         return self.retrieve(endpoint, payload)
 
     def update(self, id: int, payload: dict[str, Any]) -> dict[str, Any]:
-        endpoint = self.get_endpoint("update", id)
+        endpoint = self.get_endpoint(id)
         return self.retrieve(endpoint, payload)
 
     def delete(self, id: int) -> dict[str, Any]:
-        endpoint = self.get_endpoint("delete", id)
-        return self.retrieve(endpoint)
+        endpoint = self.get_endpoint(id)
+        return self.retrieve(endpoint, "delete")
 
     def start(self, id: int) -> dict[str, Any]:
-        endpoint = self.get_endpoint("start", id)
+        endpoint = self.get_endpoint(id, "start")
         return self.retrieve(endpoint)
 
     def finalize(
@@ -75,14 +94,22 @@ class VoteAdapter(VoteService, AuthenticatedService):
         id: int,
         optional_attributes: list[Literal["publish", "anonymize"]] = [],
     ) -> dict[str, Any]:
-        endpoint = self.get_endpoint("finalize", id)
+        endpoint = self.get_endpoint(id, "finalize")
         if optional_attributes:
-            endpoint += f"&{'&'.join(optional_attributes)}"
+            endpoint += f"?{'&'.join(optional_attributes)}"
         return self.retrieve(endpoint)
 
     def reset(self, id: int) -> dict[str, Any]:
-        endpoint = self.get_endpoint("reset", id)
+        endpoint = self.get_endpoint(id, "reset")
         return self.retrieve(endpoint)
 
-    def get_endpoint(self, route: str, id: int | None = None) -> str:
-        return f"{self.url}/{route}" + (f"?id={id}" if id else "")
+    def vote(self, id: int) -> dict[str, Any]:
+        endpoint = self.get_endpoint(id, "vote")
+        return self.retrieve(endpoint)
+
+    def get_endpoint(self, id: int | None = None, route: str | None = None) -> str:
+        return (
+            f"{self.url}/poll"
+            + (f"/{id}" if id else "")
+            + (f"/{route}" if route else "")
+        )
