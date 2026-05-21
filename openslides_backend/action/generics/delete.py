@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from typing import Any, cast
 
+from ...models.base import collections_managed_by_vote
 from ...models.fields import BaseRelationField, OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import Event, EventType
@@ -27,6 +28,7 @@ class DeleteAction(Action):
         Takes care of on_delete handling.
         """
         this_fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
+        poll_ids_to_delete: list[int] = []
 
         if self.datastore.is_to_be_deleted(this_fqid):
             return instance
@@ -55,7 +57,8 @@ class DeleteAction(Action):
             field = cast(BaseRelationField, self.model.get_field(field_name))
             # Check on_delete.
             # Extract all foreign keys as fqids from the model
-            foreign_fqids = transform_to_fqids(value, field.get_target_collection())
+            collection_from_field = field.get_target_collection()
+            foreign_fqids = transform_to_fqids(value, collection_from_field)
             if field.on_delete != OnDelete.SET_NULL:
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [
@@ -65,6 +68,17 @@ class DeleteAction(Action):
                     ]
                     if protected_fqids:
                         raise ProtectedModelsException(this_fqid, protected_fqids)
+                elif collection_from_field in collections_managed_by_vote:
+                    if collection_from_field == "poll":
+                        poll_ids_to_delete = [
+                            id_
+                            for id_ in value
+                            if not self.is_to_be_deleted(
+                                fqid_from_collection_and_id("poll", id_)
+                            )
+                        ]
+                    for fqid in foreign_fqids:
+                        self.datastore.apply_to_be_deleted(fqid)
                 else:
                     # case: field.on_delete == OnDelete.CASCADE
                     # Execute the delete action for all fqids
@@ -91,6 +105,8 @@ class DeleteAction(Action):
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
         all_protected_fqids: list[FullQualifiedId] = []
+        for id_ in poll_ids_to_delete:
+            self.vote_service.delete(id_)
         for fqid, delete_action_class, delete_action_data in delete_actions:
             try:
                 # Skip models that were deleted in the meantime
