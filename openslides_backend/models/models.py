@@ -856,7 +856,7 @@ class Meeting(Model, MeetingModelMixin):
     motions_export_submitter_recommendation = fields.BooleanField(default=True)
     motions_export_follow_recommendation = fields.BooleanField(default=False)
     motions_enable_restricted_editor_for_manager = fields.BooleanField()
-    motions_enable_restricted_editor_for_non_manager = fields.BooleanField()
+    motions_enable_restricted_editor_for_non_manager = fields.BooleanField(default=True)
     motion_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",
         constraints={
