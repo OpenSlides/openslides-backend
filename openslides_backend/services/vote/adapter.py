@@ -5,6 +5,7 @@ import simplejson as json
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
+from ..request_methods import REQUEST_METHOD
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import VoteService
 
@@ -21,7 +22,9 @@ class VoteAdapter(VoteService, AuthenticatedService):
     def retrieve(
         self,
         endpoint: str,
-        request_method: Literal["post", "delete"] = "post",
+        request_method: Literal[
+            REQUEST_METHOD.POST, REQUEST_METHOD.DELETE
+        ] = REQUEST_METHOD.POST,
         payload: dict[str, Any] | None = None,
     ) -> Any:
         response = self.make_request(endpoint, request_method, payload)
@@ -42,14 +45,14 @@ class VoteAdapter(VoteService, AuthenticatedService):
     def make_request(
         self,
         endpoint: str,
-        request_method: Literal["post", "delete"],
+        request_method: Literal[REQUEST_METHOD.POST, REQUEST_METHOD.DELETE],
         payload: dict[str, Any] | None = None,
     ) -> Any:
         if not self.access_token or not self.refresh_id:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
-            if request_method == "delete":
+            if request_method == REQUEST_METHOD.DELETE:
                 return requests.delete(
                     url=endpoint,
                     headers={
@@ -83,7 +86,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
 
     def delete(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint(id)
-        return self.retrieve(endpoint, "delete")
+        return self.retrieve(endpoint, REQUEST_METHOD.DELETE)
 
     def start(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint(id, "start")
