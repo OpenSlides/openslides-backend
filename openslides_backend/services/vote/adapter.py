@@ -78,11 +78,11 @@ class VoteAdapter(VoteService, AuthenticatedService):
 
     def create(self, payload: dict[str, Any]) -> dict[str, Any]:
         endpoint = self.get_endpoint()
-        return self.retrieve(endpoint, payload)
+        return self.retrieve(endpoint, payload=payload)
 
     def update(self, id: int, payload: dict[str, Any]) -> dict[str, Any]:
         endpoint = self.get_endpoint(id)
-        return self.retrieve(endpoint, payload)
+        return self.retrieve(endpoint, payload=payload)
 
     def delete(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint(id)
