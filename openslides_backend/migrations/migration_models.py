@@ -1,34 +1,42 @@
-
-from typing import Iterable, cast
+from collections.abc import Iterable
+from typing import cast
 
 from openslides_backend.models import fields
+
 
 class MigrationModelMetaClass(type):
     def __new__(metaclass, class_name, class_parents, class_attributes):  # type: ignore
         new_class = super().__new__(
             metaclass, class_name, class_parents, class_attributes
         )
-        if class_name not in ["CreateUpdateModel", "DeleteModel",
-            "MigrationModelCreateUpdate", "MigrationModelDelete"
+        if class_name not in [
+            "CreateUpdateModel",
+            "DeleteModel",
+            "MigrationModelCreateUpdate",
+            "MigrationModelDelete",
+            "Model",
         ]:
             for attr_name in class_attributes:
                 attr = getattr(new_class, attr_name)
                 if isinstance(attr, fields.Field):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
-            new_class.registry.migration_changes[new_class.collection] = new_class
+            new_class._migration_registry.migration_changes[new_class.collection] = (
+                new_class
+            )
         return new_class
 
+
 class MigrationModel:
+    collection: str
     delete_model: bool = False
-    registry: "MigrationModelRegistry"
+    _migration_registry: "MigrationModelRegistry"
 
 
-class MigrationModelCreateUpdate(MigrationModel,metaclass=MigrationModelMetaClass):
-    collection:str
-    verbose_name:str
+class MigrationModelCreateUpdate(MigrationModel, metaclass=MigrationModelMetaClass):
+    verbose_name: str
     id = fields.IntegerField(required=True, constant=True)
-    
+
     def __str__(self) -> str:
         return self.verbose_name
 
@@ -121,30 +129,40 @@ class MigrationModelCreateUpdate(MigrationModel,metaclass=MigrationModelMetaClas
                 yield model_field
 
 
-class MigrationModelDelete(MigrationModel,metaclass=MigrationModelMetaClass):
+class MigrationModelDelete(MigrationModel, metaclass=MigrationModelMetaClass):
     delete_model = True
+
 
 class MigrationModelRegistry:
     def __init__(
         self,
-        previous_model_registry: dict[str,type[MigrationModelCreateUpdate]] = {},
+        previous_model_registry: dict[str, type[MigrationModelCreateUpdate]] = {},
     ) -> None:
         super().__init__()
-        self.previous_model_registry=previous_model_registry
-        self.migration_changes: dict[str,type[MigrationModelCreateUpdate]| type[MigrationModelDelete]] = {}
-    
-    def get_model_registry(self) -> None:
-        model_registry = {col:model for col, model in self.previous_model_registry.items()}
+        self.previous_model_registry = previous_model_registry
+        self.migration_changes: dict[
+            str, type[MigrationModelCreateUpdate] | type[MigrationModelDelete]
+        ] = {}
+
+    def get_model_registry(self) -> dict[str, type[MigrationModelCreateUpdate]]:
+        model_registry = {
+            col: model for col, model in self.previous_model_registry.items()
+        }
         for col, model in self.migration_changes.items():
             if model.delete_model:
                 if col in model_registry:
                     del model_registry[col]
             else:
-                model_registry[col] = cast(type[MigrationModelCreateUpdate],model)
+                model_registry[col] = cast(type[MigrationModelCreateUpdate], model)
+        return model_registry
 
-    def get_migration_model_base_classes(self) -> tuple[type[MigrationModelCreateUpdate], type[MigrationModelDelete]]:
+    def get_migration_model_base_classes(
+        self,
+    ) -> tuple[type[MigrationModelCreateUpdate], type[MigrationModelDelete]]:
         class CreateUpdateModel(MigrationModelCreateUpdate):
-            registry=self
+            _migration_registry = self
+
         class DeleteModel(MigrationModelDelete):
-            registry=self
-        return CreateUpdateModel,DeleteModel
+            _migration_registry = self
+
+        return CreateUpdateModel, DeleteModel

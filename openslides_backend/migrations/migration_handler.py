@@ -405,6 +405,7 @@ class MigrationHandler(BaseHandler):
         """
         for table in MigrationHelper.get_public_tables(self.cursor):
             trigger_name = f"tr_lock_{table}"
+            # TODO: This code does nothing. Delete it or fix it by putting a not in front of the if clause or smth.
             if self.cursor.execute(
                 sql.SQL(
                     "SELECT 1 FROM pg_trigger WHERE tgname = {trigger_name};"

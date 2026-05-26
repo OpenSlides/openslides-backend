@@ -10,13 +10,16 @@ from psycopg import Cursor
 from psycopg.rows import DictRow
 
 from meta.dev.src.helper_get_names import HelperGetNames
+from openslides_backend.migrations.data.mig_0100_resulting_models import model_registry
 from openslides_backend.migrations.migration_helper import (
     OLD_TABLES,
     MigrationHelper,
     MigrationState,
 )
+from openslides_backend.migrations.migration_models import (
+    MigrationModelCreateUpdate as Model,
+)
 from openslides_backend.migrations.migrations.base import BaseMigration
-from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import (
     DecimalField,
     Field,
@@ -233,6 +236,8 @@ class Migration(BaseMigration):
         "history_position",
         "history_entry",
     ]
+    RESULTING_MODEL_REGISTRY = model_registry
+    PREVIOUS_MODEL_REGISTRY = model_registry
 
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:

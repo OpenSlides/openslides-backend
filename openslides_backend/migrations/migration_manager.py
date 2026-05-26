@@ -115,6 +115,9 @@ class MigrationManager:
             state_per_mi = MigrationHelper.get_database_migration_states(
                 self.cursor, migration_indices
             )
+            # TODO: Does that work with consecutive migrations or will it overwrite
+            # older replace tables with newer ones.
+            # If it does: is that good or bad?
             unmigrated_collections = {
                 collection: cast(str, r_tables["table"])
                 for mi in migration_indices
@@ -125,9 +128,13 @@ class MigrationManager:
                     MigrationState.MIGRATION_RUNNING,
                 )
                 for collection, r_tables in MigrationHelper.get_replace_tables(
-                    mi
+                    mi, use_previous_models=True
                 ).items()
             }
+            # TODO: This would include collections removed in previous migrations and added collections
+            # for whom the migrations have not been finalized yet.
+            # Those will likely break.
+            # Maybe remove those from the unmigrated_collections
             stats = {
                 collection: amount
                 for collection, migration_table in unmigrated_collections.items()

@@ -19,7 +19,7 @@ from openslides_backend.shared.typing import Model
 from tests.system.migrations.base_migration_test import BaseMigrationTestCase
 
 migration_module = import_module(
-    "openslides_backend.migrations.migrations.0101_new_vote"
+    "openslides_backend.migrations.migrations.0101_test_migration"
 )
 EXAMPLE_DATA_PATH = os.path.realpath(
     os.path.join(
@@ -29,7 +29,14 @@ EXAMPLE_DATA_PATH = os.path.realpath(
 
 
 class TestMigration101(BaseMigrationTestCase):
-    migration_file = "0101_new_vote.py"
+    """
+    TODO: This is not an actual valid migration with intended migration activities.
+    It is a development thing.
+    A place to check if everything works as intended.
+    Do NOT merge it into main.
+    """
+
+    migration_file = "0101_test_migration.py"
 
     def setUp(self) -> None:
         super().setUp()
@@ -79,7 +86,10 @@ class TestMigration101(BaseMigrationTestCase):
                 "status": MigrationState.MIGRATION_RUNNING,
                 "output": "migration started\n",
                 "migratable_models": {
+                    "assignment": 2,
+                    "assignment_candidate": 5,
                     "meeting": 1,
+                    "meeting_user": 3,
                 },
             },
         }
@@ -117,4 +127,13 @@ class TestMigration101(BaseMigrationTestCase):
                     curs,
                     "SELECT 1 FROM pg_indexes where indexname='idx_committee_t_default_meeting_id';",
                 )
-        self.assert_model_exists("meeting/1", {"motion_poll_default_backend": None})
+                self.assert_content_not_none(
+                    curs,
+                    """SELECT EXISTS (
+                        SELECT * FROM information_schema.tables
+                        WHERE table_name = 'assignment_candidate_t'
+                    )
+                    """,
+                    value={"exists": False},
+                )
+        self.assert_model_exists("meeting/1", {"motions_number_type": None})

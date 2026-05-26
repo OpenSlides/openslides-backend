@@ -11,7 +11,7 @@
 # class AssignmentCategory(MigrationModelCreateUpdate):
 #     collection = "assignment_category"
 #     verbose_name = "assignment category"
-    
+
 #     name = fields.CharField(required=True)
 #     prefix = fields.CharField()
 #     weight = fields.IntegerField(default=10000)
@@ -45,7 +45,7 @@
 #         on_delete=fields.OnDelete.CASCADE,
 #         is_view_field=True,
 #     )
-    
+
 #     # Rename motions_number_type to motions_assignments_number_type
 #     motions_assignments_number_type = fields.CharField(
 #         default="per_category",
@@ -54,8 +54,8 @@
 #     motions_number_type = None
 #     # relations to deleted models
 #     assignment_candidate_ids = None
-    
-# class Assignment(prev_registry["meeting"]):
+
+# class Assignment(prev_registry["assignment"]):
 #     category_id = fields.RelationField(to={"assignment_category": "motion_ids"})
 #     # relations to deleted models
 #     candidate_ids = None

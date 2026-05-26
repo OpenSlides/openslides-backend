@@ -1,8 +1,8 @@
 from psycopg import Cursor
 from psycopg.rows import DictRow
 
-from openslides_backend.shared.typing import Collection
 from openslides_backend.migrations.migration_models import MigrationModelCreateUpdate
+from openslides_backend.shared.typing import Collection
 
 
 class BaseMigration:
@@ -11,6 +11,7 @@ class BaseMigration:
     # Needs to be set by subclass to define the collections that need to be copied into migration tables.
     ORIGIN_COLLECTIONS: list[Collection]
     RESULTING_MODEL_REGISTRY: dict[str, type[MigrationModelCreateUpdate]]
+    PREVIOUS_MODEL_REGISTRY: dict[str, type[MigrationModelCreateUpdate]]
 
     @staticmethod
     def check_prerequisites(curs: Cursor[DictRow]) -> str:

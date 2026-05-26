@@ -1,0 +1,113 @@
+from psycopg import Cursor
+from psycopg.rows import DictRow
+
+from openslides_backend.migrations.data.mig_0100_resulting_models import (
+    model_registry as prev_model_registry,
+)
+from openslides_backend.migrations.migration_helper import MigrationHelper
+from openslides_backend.migrations.migration_models import MigrationModelRegistry
+from openslides_backend.migrations.migrations.base import BaseMigration
+from openslides_backend.models import fields
+
+registry_class = MigrationModelRegistry(prev_model_registry)
+
+MigrationModelCreateUpdate, MigrationModelDelete = (
+    registry_class.get_migration_model_base_classes()
+)
+
+
+# newly created
+class AssignmentCategory(MigrationModelCreateUpdate):
+    collection = "assignment_category"
+    verbose_name = "assignment category"
+
+    name = fields.CharField(required=True)
+    prefix = fields.CharField()
+    weight = fields.IntegerField(default=10000)
+    level = fields.IntegerField(
+        read_only=True, constraints={"description": "Calculated field."}
+    )
+    sequential_number = fields.IntegerField(
+        required=True,
+        read_only=True,
+        constant=True,
+        constraints={
+            "sequence_scope": "meeting_id",
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.",
+        },
+    )
+    parent_id = fields.RelationField(to={"assignment_category": "child_ids"})
+    child_ids = fields.RelationListField(
+        to={"assignment_category": "parent_id"}, is_view_field=True
+    )
+    assignment_ids = fields.RelationListField(
+        to={"assignment": "category_id"}, is_view_field=True
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "assignment_category_ids"}, required=True, constant=True
+    )
+
+
+# updated
+class Meeting(prev_model_registry["meeting"]):
+    assignment_category_ids = fields.RelationListField(
+        to={"assignment_category": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
+    )
+
+    # Rename motions_number_type to motions_assignments_number_type
+    motions_assignments_number_type = fields.CharField(
+        default="per_category",
+        constraints={"enum": ["per_category", "serially_numbered", "manually"]},
+    )
+    motions_number_type = None
+    # relations to deleted models
+    assignment_candidate_ids = None
+
+
+class Assignment(prev_model_registry["assignment"]):
+    category_id = fields.RelationField(to={"assignment_category": "motion_ids"})
+    # relations to deleted models
+    candidate_ids = None
+
+
+class MeetingUser(prev_model_registry["meeting_user"]):
+    # relations to deleted models
+    assignment_candidate_ids = None
+
+
+# deleted
+class AssignmentCandidate(MigrationModelDelete):
+    collection = "assignment_candidate"
+
+
+model_registry = registry_class.get_model_registry()
+
+
+class Migration(BaseMigration):
+    ORIGIN_COLLECTIONS = [
+        "meeting",
+        "assignment",
+        "meeting_user",
+        "assignment_candidate",
+    ]
+    RESULTING_MODEL_REGISTRY = model_registry
+    PREVIOUS_MODEL_REGISTRY = prev_model_registry
+
+    @staticmethod
+    def data_definition(curs: Cursor[DictRow]) -> None:
+        MigrationHelper.delete_field(curs, "meeting", "motions_number_type")
+
+        # relations to deleted models
+        # MigrationHelper.delete_field(curs, "meeting", "assignment_candidate_ids")
+        # MigrationHelper.delete_field(curs, "assignment", "candidate_ids")
+        # MigrationHelper.delete_field(curs, "meeting_user", "assignment_candidate_ids")
+
+    @staticmethod
+    def data_manipulation(curs: Cursor[DictRow]) -> None:
+        pass
+
+    @staticmethod
+    def cleanup(curs: Cursor[DictRow]) -> None:
+        pass

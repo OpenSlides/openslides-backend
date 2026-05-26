@@ -12,7 +12,7 @@ from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames
 from openslides_backend.migrations.exceptions import MigrationException
-from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import BaseRelationField
 from openslides_backend.services.postgresql.db_connection_handling import (
     get_new_os_conn,
 )
@@ -258,7 +258,7 @@ class MigrationHelper:
             "ON CONFLICT (migration_index) DO UPDATE SET {updates}"
         ).format(
             fields=sql.SQL(", ").join(sql.Identifier(k) for k in params),
-            values=sql.SQL(", ").join(sql.Placeholder() for _ in range(len(params))),
+            values=sql.SQL(", ").join(sql.Placeholder() for _ in params),
             updates=sql.SQL(", ").join(updates),
         )
         curs.execute(statement, tuple(params.values()))
@@ -354,13 +354,20 @@ class MigrationHelper:
 
     @staticmethod
     def get_replace_tables(
-        migration_number: int,
+        migration_number: int, use_previous_models: bool = False
     ) -> dict[str, dict[str, str | list[str]]]:
         """
         Returns the replace tables mapping origin table to its migration copy.
         """
         module_name = MigrationHelper.migrations[migration_number]
         migration_class = MigrationHelper.get_migration_class(module_name)
+        # TODO: I think this should use the PREVIOUS_MODEL_REGISTRY?
+        # It is used in the manager __init__, it is also used in the stats though
+        model_registry = (
+            migration_class.PREVIOUS_MODEL_REGISTRY
+            if use_previous_models
+            else migration_class.RESULTING_MODEL_REGISTRY
+        )
         # TODO Problem we can't rely on the ORIGIN_TABLES as we also rely on intermediate table information.
         # That information would ultimately have to come from the yml files and that get's changed with every migration.
         return {
@@ -371,9 +378,14 @@ class MigrationHelper:
                     field.write_fields[0]
                     for field in model_registry[col]().get_relation_fields()
                     if field.write_fields
+                    and (
+                        not isinstance(field, BaseRelationField)
+                        or (any(coll in model_registry for coll in field.to))
+                    )
                 ],
             }
             for col in migration_class.ORIGIN_COLLECTIONS
+            if col in model_registry
         }
 
     @staticmethod
