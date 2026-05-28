@@ -155,13 +155,16 @@ def assert_model(read_model):
     def compare_models(model, expected):
         # fix order of lists
         for key, value in expected.items():
-            if (
-                key in model
-                and isinstance(model[key], list)
-                and isinstance(value, list)
-                and sorted(model[key]) == sorted(value)
-            ):
-                expected[key] = model[key]
+            try:
+                if (
+                    key in model
+                    and isinstance(model[key], list)
+                    and isinstance(value, list)
+                    and sorted(model[key]) == sorted(value)
+                ):
+                    expected[key] = model[key]
+            except Exception:
+                pass
         assert model == expected
 
     def _assert_model(
