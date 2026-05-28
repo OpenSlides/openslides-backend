@@ -128,7 +128,7 @@ class MigrationManager:
                     MigrationState.MIGRATION_RUNNING,
                 )
                 for collection, r_tables in MigrationHelper.get_replace_tables(
-                    mi, use_previous_models=True
+                    mi
                 ).items()
             }
             # TODO: This would include collections removed in previous migrations and added collections

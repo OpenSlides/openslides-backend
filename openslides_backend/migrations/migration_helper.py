@@ -11,6 +11,7 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames
+from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper as SqlHelper
 from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.models.fields import BaseRelationField
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -354,8 +355,8 @@ class MigrationHelper:
 
     @staticmethod
     def get_replace_tables(
-        migration_number: int, use_previous_models: bool = False
-    ) -> dict[str, dict[str, str | list[str]]]:
+        migration_number: int,
+    ) -> dict[str, dict[str, bool | str | list[str]]]:
         """
         Returns the replace tables mapping origin table to its migration copy.
         """
@@ -363,29 +364,39 @@ class MigrationHelper:
         migration_class = MigrationHelper.get_migration_class(module_name)
         # TODO: I think this should use the PREVIOUS_MODEL_REGISTRY?
         # It is used in the manager __init__, it is also used in the stats though
-        model_registry = (
-            migration_class.PREVIOUS_MODEL_REGISTRY
-            if use_previous_models
-            else migration_class.RESULTING_MODEL_REGISTRY
-        )
+        # model_registry = (
+        #     migration_class.PREVIOUS_MODEL_REGISTRY
+        #     if use_previous_models
+        #     else migration_class.RESULTING_MODEL_REGISTRY
+        # )
         # TODO Problem we can't rely on the ORIGIN_TABLES as we also rely on intermediate table information.
         # That information would ultimately have to come from the yml files and that get's changed with every migration.
         return {
             col: {
+                "to_delete": col in migration_class.PREVIOUS_MODEL_REGISTRY
+                and col not in migration_class.RESULTING_MODEL_REGISTRY,
                 "table": col + "_m",
                 "view": col + "vm",
                 "im_tables": [
                     field.write_fields[0]
-                    for field in model_registry[col]().get_relation_fields()
+                    for field in (
+                        migration_class.RESULTING_MODEL_REGISTRY.get(col)
+                        or migration_class.PREVIOUS_MODEL_REGISTRY[col]
+                    )().get_relation_fields()
                     if field.write_fields
                     and (
                         not isinstance(field, BaseRelationField)
-                        or (any(coll in model_registry for coll in field.to))
+                        or col not in migration_class.RESULTING_MODEL_REGISTRY
+                        or (
+                            any(
+                                coll in migration_class.RESULTING_MODEL_REGISTRY
+                                for coll in field.to
+                            )
+                        )
                     )
                 ],
             }
             for col in migration_class.ORIGIN_COLLECTIONS
-            if col in model_registry
         }
 
     @staticmethod
@@ -474,5 +485,55 @@ class MigrationHelper:
                     HelperGetNames.get_table_name(collection, migration=True)
                 ),
                 sql.Identifier(field_name),
+            )
+        )
+
+    @staticmethod
+    def delete_collection(curs: Cursor[DictRow], collection: str) -> None:
+        curs.execute(
+            sql.SQL("DROP VIEW IF EXISTS {};").format(
+                sql.Identifier(collection + "vm"),
+            )
+        )
+        curs.execute(
+            sql.SQL("DROP TABLE IF EXISTS {} CASCADE;").format(
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+            )
+        )
+
+    @staticmethod
+    def rename_field(curs: Cursor[DictRow], collection: str, old_field_name: str, new_field_name: str) -> None:
+        curs.execute(
+            sql.SQL("ALTER TABLE {} RENAME {} TO {};").format(
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+                sql.Identifier(
+                    old_field_name
+                ),
+                sql.Identifier(
+                    new_field_name
+                )
+            )
+        )
+
+    @staticmethod
+    def create_collection(curs: Cursor[DictRow], collection: str) -> None:
+        # TODO: fields!
+        curs.execute(
+            sql.SQL("CREATE TABLE {} ();").format(
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
+            )
+        )
+        curs.execute(
+            sql.SQL("CREATE VIEW {} AS SELECT * FROM {};").format(
+                sql.Identifier(collection + "vm"),
+                sql.Identifier(
+                    HelperGetNames.get_table_name(collection, migration=True)
+                ),
             )
         )

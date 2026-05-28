@@ -1,11 +1,17 @@
 from openslides_backend.models import fields
-from openslides_backend.models.mixins import *
+from openslides_backend.models.mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+)
 
-from ..migration_models import MigrationModelRegistry
+from ..migration_models import MigrationModelCreateUpdate, MigrationModelRegistry
 
 model_registry_class = MigrationModelRegistry()
 
-Model, MigrationModelDelete = model_registry_class.get_migration_model_base_classes()
+
+class Model(MigrationModelCreateUpdate):
+    _migration_registry = model_registry_class
 
 
 class ActionWorker(Model):

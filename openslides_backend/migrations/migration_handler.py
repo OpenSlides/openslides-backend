@@ -91,7 +91,8 @@ class MigrationHandler(BaseHandler):
 
         # COPY fkey constraints
         for table_name in im_tables | {
-            r_tables["table"] for r_tables in unified_replace_tables.values()
+            r_tables["table"]
+            for r_tables in unified_replace_tables.values()
         }:
             self.cursor.execute(
                 sql.SQL("""SELECT
@@ -119,7 +120,10 @@ class MigrationHandler(BaseHandler):
             results = self.cursor.fetchall()
 
             for result in results:
-                if result["foreign_table_name"][:-2] in unified_replace_tables:
+                foreign_collection = result["foreign_table_name"][:-2]
+                # TODO: find out how to do this.
+                # if not unified_replace_tables[foreign_collection].get("to_delete"):
+                if foreign_collection in unified_replace_tables:
                     f_table_name = HelperGetNames.get_table_name(
                         result["foreign_table_name"], migration=True
                     )
@@ -500,14 +504,16 @@ class MigrationHandler(BaseHandler):
                 )
             )
             self.cursor.execute(
-                sql.SQL("ALTER TABLE {migration_name} RENAME TO {real_name}").format(
+                sql.SQL(
+                    "ALTER TABLE IF EXISTS {migration_name} RENAME TO {real_name}"
+                ).format(
                     real_name=sql.Identifier(collection + "_t"),
                     migration_name=sql.Identifier(migration_names["table"]),
                 )
             )
             self.cursor.execute(
                 sql.SQL(
-                    "ALTER SEQUENCE {collection}_m_id_seq RENAME TO {collection}_t_id_seq;"
+                    "ALTER SEQUENCE IF EXISTS {collection}_m_id_seq RENAME TO {collection}_t_id_seq;"
                 ).format(collection=sql.SQL(collection))
             )
             # Will be recreated for origin table below.
@@ -528,7 +534,9 @@ class MigrationHandler(BaseHandler):
                 )
             )
             self.cursor.execute(
-                sql.SQL("ALTER TABLE {migration_name} RENAME TO {real_name}").format(
+                sql.SQL(
+                    "ALTER TABLE IF EXISTS {migration_name} RENAME TO {real_name}"
+                ).format(
                     real_name=sql.Identifier(table_name),
                     migration_name=sql.Identifier(
                         HelperGetNames.get_table_name(table_name, migration=True)
@@ -562,6 +570,8 @@ class MigrationHandler(BaseHandler):
         # TODO doesn't this need to happen early on? Like before renaming? No, but the idx isn't needed for those pointing to a mig table.
         # Maybe there is a way to reimplement generate_the_code behaviour to get only deleted views.
         # Or use detection similar to trigger blocks
+        # TODO this fails for 101 bc the table assignment_category_t doesn't exist.
+        # Why hasn't it been created before?
         self.cursor.execute((view_name_code).replace("CREATE", "CREATE OR REPLACE"))
 
         # Recreate fkeys and indices

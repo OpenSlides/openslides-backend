@@ -9,7 +9,7 @@ class MigrationModelMetaClass(type):
         new_class = super().__new__(
             metaclass, class_name, class_parents, class_attributes
         )
-        if class_name not in [
+        if getattr(new_class, "collection", None) and class_name not in [
             "CreateUpdateModel",
             "DeleteModel",
             "MigrationModelCreateUpdate",
@@ -155,14 +155,3 @@ class MigrationModelRegistry:
             else:
                 model_registry[col] = cast(type[MigrationModelCreateUpdate], model)
         return model_registry
-
-    def get_migration_model_base_classes(
-        self,
-    ) -> tuple[type[MigrationModelCreateUpdate], type[MigrationModelDelete]]:
-        class CreateUpdateModel(MigrationModelCreateUpdate):
-            _migration_registry = self
-
-        class DeleteModel(MigrationModelDelete):
-            _migration_registry = self
-
-        return CreateUpdateModel, DeleteModel
