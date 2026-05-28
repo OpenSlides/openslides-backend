@@ -16,7 +16,7 @@ python-magic==0.4.27
 python-sql==1.8.1
 pygments==2.20.0
 pyyaml==6.0.3
-sqlfluff==4.1.0
+sqlfluff==4.2.1
 
 # opentelemetry
 opentelemetry-api==1.41.1
