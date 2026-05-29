@@ -9,7 +9,7 @@ from ...util.typing import ActionData
 from ...mixins.keycloak_mixin import KeycloakMixin
 
 
-class SetPasswordMixin(Action, KeycloakMixin):
+class SetPasswordMixin(KeycloakMixin):
     def reset_password(self, instance: dict[str, Any]) -> None:
         instance["password"] = instance["default_password"]
         self.set_password(instance)
@@ -33,8 +33,12 @@ class SetPasswordMixin(Action, KeycloakMixin):
             )
 
         password = instance.pop("password")
-        
-        self.update_password(instance["keycloak_id"], password)
+
+        hashed_password = self.auth.hash(password)
+
+        self.update_password(instance["keycloak_id"], hashed_password)
+
+        instance["password"] = hashed_password
 
 
 class ClearSessionsMixin(Action):

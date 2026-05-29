@@ -13,6 +13,7 @@ from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.keycloak_mixin import KeycloakMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -32,6 +33,7 @@ class UserCreate(
     LimitOfUserMixin,
     UsernameMixin,
     CheckLockOutPermissionMixin,
+    KeycloakMixin
 ):
     """
     Action to create a user.
@@ -42,6 +44,7 @@ class UserCreate(
         optional_properties=[
             "title",
             "username",
+            "keycloak_id",
             "pronoun",
             "first_name",
             "last_name",
@@ -96,9 +99,14 @@ class UserCreate(
                     f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
                 )
         else:
+            # TODO: How should default passwords be managed?
             if not instance.get("default_password"):
                 instance["default_password"] = get_random_password()
+
+            self.create_user(instance, self.auth.hash(instance["default_password"]))
+
             self.reset_password(instance)
+
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_exists(self.datastore, instance)
         if instance.get("external") and instance.get("home_committee_id"):

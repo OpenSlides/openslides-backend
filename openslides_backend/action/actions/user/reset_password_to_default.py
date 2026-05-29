@@ -11,10 +11,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .password_mixins import ClearSessionsMixin
+from ...mixins.keycloak_mixin import KeycloakMixin
 
 
 class UserResetPasswordToDefaultMixin(
-    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin, KeycloakMixin
 ):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
@@ -32,6 +33,8 @@ class UserResetPasswordToDefaultMixin(
             )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password
+
+        self.update_password(instance["keycloak_id"], default_password)
         return instance
 
 

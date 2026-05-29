@@ -103,12 +103,15 @@ def get_name_of_keycloak_user(keycloak_admin_key, keycloak_id):
 
 # Creates a keycloak user for given OS user. Returns keycloak id of newly created user.
 # Returns existing keycloak users id, if a keycloak user of given username already exists
-def migrate_and_create_user(keycloak_admin_key, username):
+def migrate_and_create_user(keycloak_admin_key, username, os_id):
     try:
         response = requests.post(keycloak_admin_route + "users",
             json={
                 'username': username,
                 'enabled': True,
+                "attributes": {
+                    "os_id": os_id
+                },
             },
             headers={
                 'Authorization': f'Bearer {keycloak_admin_key}',
@@ -130,31 +133,23 @@ def hash_padding(to_pad):
 # Exports password to keycloak user
 def migrate_password(keycloak_admin_key, keycloak_id, password):
     if len(password) == 152:
+        # This password is likely SHA512 encoded. The user must therefore reset their password
+        logger.warning(f"{keycloak_id} has a deprecated SHA512-encrypted password. They must reset their password on next visit")
         try:
-            # SHA512 password
-            response = requests.put(keycloak_admin_route + "users/" + keycloak_id,
-                json={
-                    'credentials' : [{
-                        'type': 'password',
-                        'credentialData': json.dumps({
-                            'algorithm': 'sha512',
-                            'hashIterations': 1
-                        }),
-                        'secretData': json.dumps({
-                            'value': base64.b64encode((password[64:]).encode('utf-8')).decode('utf-8'),
-                            'salt': base64.b64encode((password[:64]).encode('utf-8')).decode('utf-8')
-                        }),
-                    }]
-                },
+            response = requests.put(keycloak_admin_route + "users/" + keycloak_id + "/execute-actions-email",
+                json=[
+                        'UPDATE_PASSWORD'
+                    ]
+                ,
                 headers={
                     'Authorization': f'Bearer {keycloak_admin_key}',
                 }
             )
 
             if response.status_code != 204:
-                raise Exception(f"{response.status_code} {response.json()}")
+                raise Exception(f"{response.status_code}, {response.json()}")
         except Exception as e:
-            logger.error(f"Error migrating password for keycloak user {keycloak_id}: {e}")
+            logger.error(f"Error sending password reset email to user: {e}")
     else:
         try:
             # argon2 password
@@ -214,17 +209,17 @@ def main() -> None:
     keycloak_admin_key = get_admin_key()
 
     user_keycloak_map = {}
-
     ## Iterate all OS Users
     with conn.cursor() as cursor:
 
-        cursor.execute("SELECT username, password, email, keycloak_id FROM user_t;")
+        cursor.execute("SELECT username, password, email, keycloak_id, id FROM user_t;")
 
         for user in cursor:
             username = user[0]
             password = user[1]
             email = user[2]
             existing_keycloak_id = user[3]
+            os_id = user[4]
 
             if email == None:
                 email = f"{username}@missing-email.com"
@@ -233,7 +228,7 @@ def main() -> None:
                 # No Keycloak ID set. This OS User likely has no Keycloak Account yet
 
                 ## Upload OS user to Keycloak
-                keycloak_user_id = migrate_and_create_user(keycloak_admin_key, username)
+                keycloak_user_id = migrate_and_create_user(keycloak_admin_key, username, os_id)
 
                 if keycloak_user_id == None:
                     raise Exception(f"Error migrating or finding user {username}")
@@ -243,7 +238,7 @@ def main() -> None:
 
                 if keycloak_username is None:
                     # No user with that id exists at all, create new one
-                    keycloak_user_id = migrate_and_create_user(keycloak_admin_key, username)
+                    keycloak_user_id = migrate_and_create_user(keycloak_admin_key, username, os_id)
 
                     if keycloak_user_id == None:
                         raise Exception(f"Error migrating or finding user {username}")

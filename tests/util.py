@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any, TypedDict, cast
 
 import simplejson as json
-from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
+from osauthlib import AuthenticateException
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
@@ -30,12 +30,10 @@ class Response(ResponseWrapper, TestResponse):
 
 class AuthData(TypedDict, total=False):
     """
-    TypedDict for the authentication data. access_token must be inserted into the headers and the
-    refresh_id as a cookie.
+    TypedDict for the authentication data. access_token must be inserted into the headers.
     """
 
     access_token: str
-    refresh_id: str
 
 
 class Client(WerkzeugClient):
@@ -73,8 +71,7 @@ class Client(WerkzeugClient):
         # save access token and refresh id for subsequent requests
         self.update_auth_data(
             {
-                "access_token": response.headers.get(AUTHENTICATION_HEADER),
-                "refresh_id": response.cookies.get(COOKIE_NAME),
+                "access_token": response.headers.get("Authorization")
             }
         )
 
@@ -83,8 +80,6 @@ class Client(WerkzeugClient):
         (Partially) updates the auth_data.
         """
         self.auth_data.update(auth_data)
-        if "refresh_id" in self.auth_data:
-            self.set_cookie(COOKIE_NAME, self.auth_data["refresh_id"])
         if self.on_auth_data_changed:
             self.on_auth_data_changed(self.auth_data)
 
@@ -101,10 +96,10 @@ class Client(WerkzeugClient):
         """
         headers = kwargs.pop("headers", {})
         if "access_token" in self.auth_data:
-            headers[AUTHENTICATION_HEADER] = self.auth_data["access_token"]
+            headers["Authorization"] = self.auth_data["access_token"]
         response = cast(Response, super().post(*args, headers=headers, **kwargs))
-        if AUTHENTICATION_HEADER in response.headers:
+        if "Authorization" in response.headers:
             self.update_auth_data(
-                {"access_token": response.headers[AUTHENTICATION_HEADER]}
+                {"access_token": response.headers["Authorization"]}
             )
         return response

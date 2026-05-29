@@ -1,7 +1,5 @@
 from typing import Any, Protocol
 
-from osauthlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
-
 from ..shared.authenticated_service import AuthenticatedServiceInterface
 
 

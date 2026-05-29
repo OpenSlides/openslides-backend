@@ -11,6 +11,8 @@ pytest==9.0.2
 pytest-cov==7.1.0
 pytest-profiling==1.8.1
 pyupgrade==3.21.2
+PyJWT>=2.8.0
+cryptography>=41.0.0
 
 # typing
 types-babel==2.11.0.15

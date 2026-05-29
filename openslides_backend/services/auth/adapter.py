@@ -1,14 +1,5 @@
 from urllib import parse
 
-from osauthlib import (
-    ANONYMOUS_USER,
-    AUTHORIZATION_HEADER,
-    AuthenticateException,
-    AuthHandler,
-    AuthorizationException,
-    InvalidCredentialsException,
-)
-
 from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
 from ..shared.authenticated_service import AuthenticatedService
@@ -22,7 +13,6 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
 
     def __init__(self, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
-        self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
 
     def authenticate(self) -> tuple[int, str | None]:
@@ -30,12 +20,13 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         Fetches user id from authentication service using request headers.
         Returns a new access token, too, if one is received from auth service.
         """
+
         self.logger.debug(
-            f"Start request to authentication service with the following data: access_token: {self.access_token}, cookie: {self.refresh_id}"
+            f"Start request to authentication service with the following data: access_token: {self.access_token}"
         )
         try:
             return self.auth_handler.authenticate(
-                self.access_token, parse.unquote(self.refresh_id)
+                self.access_token
             )
         except (AuthenticateException, InvalidCredentialsException) as e:
             self.logger.debug(f"Error in auth service: {e.message}")
@@ -66,7 +57,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
 
     def clear_all_sessions(self) -> None:
         self.auth_handler.clear_all_sessions(
-            self.access_token, parse.unquote(self.refresh_id)
+            self.access_token
         )
 
     def clear_sessions_by_user_id(self, user_id: int) -> None:
