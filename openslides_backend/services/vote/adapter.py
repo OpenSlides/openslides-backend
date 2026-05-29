@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Any, Literal
 
 import requests
@@ -5,9 +6,13 @@ import simplejson as json
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
-from ..request_methods import REQUEST_METHOD
 from ..shared.authenticated_service import AuthenticatedService
 from .interface import VoteService
+
+
+class RequestMethod(StrEnum):
+    POST = "post"
+    DELETE = "delete"
 
 
 class VoteAdapter(VoteService, AuthenticatedService):
@@ -22,9 +27,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
     def retrieve(
         self,
         endpoint: str,
-        request_method: Literal[
-            REQUEST_METHOD.POST, REQUEST_METHOD.DELETE
-        ] = REQUEST_METHOD.POST,
+        request_method: RequestMethod = RequestMethod.POST,
         payload: dict[str, Any] | None = None,
     ) -> Any:
         response = self.make_request(endpoint, request_method, payload)
@@ -45,14 +48,14 @@ class VoteAdapter(VoteService, AuthenticatedService):
     def make_request(
         self,
         endpoint: str,
-        request_method: Literal[REQUEST_METHOD.POST, REQUEST_METHOD.DELETE],
+        request_method: RequestMethod,
         payload: dict[str, Any] | None = None,
     ) -> Any:
         if not self.access_token or not self.refresh_id:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
-            if request_method == REQUEST_METHOD.DELETE:
+            if request_method == RequestMethod.DELETE:
                 return requests.delete(
                     url=endpoint,
                     headers={
@@ -86,7 +89,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
 
     def delete(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint(id)
-        return self.retrieve(endpoint, REQUEST_METHOD.DELETE)
+        return self.retrieve(endpoint, RequestMethod.DELETE)
 
     def start(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint(id, "start")
