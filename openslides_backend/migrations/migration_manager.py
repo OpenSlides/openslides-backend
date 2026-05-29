@@ -93,6 +93,15 @@ class MigrationManager:
             Doesn't respect initial migration if executed on a higher target migration index.
         """
 
+        current_migration_index = MigrationHelper.get_database_migration_index(
+            self.cursor
+        )
+
+        if current_migration_index >= 100:
+            tables = MigrationHelper.get_public_tables(self.cursor)
+        else:
+            tables = []
+
         def count(table: str) -> int:
             if MIN_NON_REL_MIGRATION <= current_migration_index < 100:
                 # initial migration uses the models instead of table_t to count models
@@ -100,15 +109,13 @@ class MigrationManager:
                     "models WHERE fqid LIKE '{collection}/%' and deleted = false"
                 ).format(collection=sql.SQL(table[:-2]))
             else:
+                if table not in tables:
+                    return 0
                 statement_part = sql.SQL("{table}").format(table=sql.Identifier(table))
             response = self.cursor.execute(
                 sql.SQL("SELECT COUNT(*) FROM ") + statement_part
             ).fetchone()
             return (response or {}).get("count", 0)
-
-        current_migration_index = MigrationHelper.get_database_migration_index(
-            self.cursor
-        )
 
         if not MigrationHelper.migrate_thread_exception:
             migration_indices = MigrationHelper.get_indices_from_database(self.cursor)
@@ -130,6 +137,7 @@ class MigrationManager:
                 for collection, r_tables in MigrationHelper.get_replace_tables(
                     mi
                 ).items()
+                if not r_tables["to_create"]
             }
             # TODO: This would include collections removed in previous migrations and added collections
             # for whom the migrations have not been finalized yet.

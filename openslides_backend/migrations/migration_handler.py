@@ -81,8 +81,9 @@ class MigrationHandler(BaseHandler):
         im_tables = set()
         # COPY collection tables
         for collection, r_tables in unified_replace_tables.items():
-            self.copy_table(collection + "_t")
-            im_tables.update(r_tables["im_tables"])
+            if not r_tables["to_create"]:
+                self.copy_table(collection + "_t")
+                im_tables.update(r_tables["im_tables"])
         im_tables_without_suffix = {table[:-2] for table in im_tables}
 
         # COPY intermediate tables
@@ -93,6 +94,7 @@ class MigrationHandler(BaseHandler):
         for table_name in im_tables | {
             r_tables["table"]
             for r_tables in unified_replace_tables.values()
+            if not r_tables["to_create"]
         }:
             self.cursor.execute(
                 sql.SQL("""SELECT
@@ -171,7 +173,8 @@ class MigrationHandler(BaseHandler):
 
         all_tables_to_be_replaced = {
             HelperGetNames.get_table_name(collection)
-            for collection in unified_replace_tables
+            for collection, r_tables in unified_replace_tables.items()
+            if not r_tables["to_create"]
         }
         all_tables_to_be_replaced |= im_tables
         all_tables_to_be_replaced_without_suffix = (
@@ -499,7 +502,7 @@ class MigrationHandler(BaseHandler):
                 continue
             # Will also drop attached intermediate tables and views.
             self.cursor.execute(
-                sql.SQL("DROP TABLE {real_name} CASCADE;").format(
+                sql.SQL("DROP TABLE IF EXISTS {real_name} CASCADE;").format(
                     real_name=sql.Identifier(collection + "_t")
                 )
             )
@@ -529,7 +532,7 @@ class MigrationHandler(BaseHandler):
         # TODO move this entire block before handling of main tables
         for table_name in im_tables:
             self.cursor.execute(
-                sql.SQL("DROP TABLE {real_name};").format(
+                sql.SQL("DROP TABLE IF EXISTS {real_name};").format(
                     real_name=sql.Identifier(table_name)
                 )
             )
@@ -570,8 +573,7 @@ class MigrationHandler(BaseHandler):
         # TODO doesn't this need to happen early on? Like before renaming? No, but the idx isn't needed for those pointing to a mig table.
         # Maybe there is a way to reimplement generate_the_code behaviour to get only deleted views.
         # Or use detection similar to trigger blocks
-        # TODO this fails for 101 bc the table assignment_category_t doesn't exist.
-        # Why hasn't it been created before?
+        # TODO this fails for 101 bc the table assignment_category_m doesn't have an id.
         self.cursor.execute((view_name_code).replace("CREATE", "CREATE OR REPLACE"))
 
         # Recreate fkeys and indices

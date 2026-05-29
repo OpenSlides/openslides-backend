@@ -74,6 +74,17 @@ class MigrationModelCreateUpdate(MigrationModel, metaclass=MigrationModelMetaCla
             if isinstance(attr, fields.Field):
                 yield attr
 
+    def get_fields_dict(self) -> dict[str, fields.Field]:
+        """
+        Yields all fields of this model.
+        """
+        dic: dict[str, fields.Field] = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if isinstance(attr, fields.Field):
+                dic[attr_name] = attr
+        return dic
+
     def get_relation_fields(self) -> Iterable[fields.BaseRelationField]:
         """
         Yields all relation fields (using BaseRelationField).

@@ -11,7 +11,6 @@ from psycopg.rows import DictRow
 from psycopg.types.json import Jsonb
 
 from meta.dev.src.helper_get_names import HelperGetNames
-from meta.dev.src.generate_sql_schema import GenerateCodeBlocks, Helper as SqlHelper
 from openslides_backend.migrations.exceptions import MigrationException
 from openslides_backend.models.fields import BaseRelationField
 from openslides_backend.services.postgresql.db_connection_handling import (
@@ -19,6 +18,7 @@ from openslides_backend.services.postgresql.db_connection_handling import (
 )
 
 from ..shared.exceptions import ActionException
+from .migration_models import MigrationModelCreateUpdate
 
 OLD_TABLES = (
     "models",
@@ -238,7 +238,7 @@ class MigrationHelper:
         curs: Cursor[DictRow],
         migration_index: int,
         state: str,
-        replace_tables: dict[str, dict[str, str | list[str]]] | None = None,
+        replace_tables: dict[str, dict[str, bool | str | list[str]]] | None = None,
     ) -> None:
         """
         Overwrites the databases migration info in the version table at the given migration index and commits the transaction.
@@ -371,10 +371,14 @@ class MigrationHelper:
         # )
         # TODO Problem we can't rely on the ORIGIN_TABLES as we also rely on intermediate table information.
         # That information would ultimately have to come from the yml files and that get's changed with every migration.
+        classes_to_create = set(migration_class.RESULTING_MODEL_REGISTRY).difference(
+            migration_class.PREVIOUS_MODEL_REGISTRY
+        )
         return {
             col: {
                 "to_delete": col in migration_class.PREVIOUS_MODEL_REGISTRY
                 and col not in migration_class.RESULTING_MODEL_REGISTRY,
+                "to_create": col in classes_to_create,
                 "table": col + "_m",
                 "view": col + "vm",
                 "im_tables": [
@@ -396,7 +400,7 @@ class MigrationHelper:
                     )
                 ],
             }
-            for col in migration_class.ORIGIN_COLLECTIONS
+            for col in classes_to_create | set(migration_class.ORIGIN_COLLECTIONS)
         }
 
     @staticmethod
@@ -504,24 +508,27 @@ class MigrationHelper:
         )
 
     @staticmethod
-    def rename_field(curs: Cursor[DictRow], collection: str, old_field_name: str, new_field_name: str) -> None:
+    def rename_field(
+        curs: Cursor[DictRow], collection: str, old_field_name: str, new_field_name: str
+    ) -> None:
         curs.execute(
             sql.SQL("ALTER TABLE {} RENAME {} TO {};").format(
                 sql.Identifier(
                     HelperGetNames.get_table_name(collection, migration=True)
                 ),
-                sql.Identifier(
-                    old_field_name
-                ),
-                sql.Identifier(
-                    new_field_name
-                )
+                sql.Identifier(old_field_name),
+                sql.Identifier(new_field_name),
             )
         )
 
     @staticmethod
-    def create_collection(curs: Cursor[DictRow], collection: str) -> None:
-        # TODO: fields!
+    def create_collection(
+        curs: Cursor[DictRow],
+        collection: str,
+        migrationModelClass: type[MigrationModelCreateUpdate],
+    ) -> None:
+        # TODO: implement fields
+        fields = migrationModelClass().get_fields_dict()
         curs.execute(
             sql.SQL("CREATE TABLE {} ();").format(
                 sql.Identifier(

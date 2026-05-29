@@ -114,9 +114,13 @@ class Migration(BaseMigration):
 
     @staticmethod
     def data_definition(curs: Cursor[DictRow]) -> None:
-        MigrationHelper.rename_field(curs, "meeting", "motions_number_type", "motions_assignments_number_type")
+        MigrationHelper.rename_field(
+            curs, "meeting", "motions_number_type", "motions_assignments_number_type"
+        )
         MigrationHelper.delete_collection(curs, "assignment_candidate")
-        MigrationHelper.create_collection(curs, "assignment_category")
+        MigrationHelper.create_collection(
+            curs, "assignment_category", AssignmentCategory
+        )
         # relations to deleted models
         # MigrationHelper.delete_field(curs, "meeting", "assignment_candidate_ids")
         # MigrationHelper.delete_field(curs, "assignment", "candidate_ids")
