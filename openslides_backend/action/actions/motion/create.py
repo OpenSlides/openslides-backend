@@ -228,6 +228,7 @@ class MotionCreate(
                     "id",
                     "meeting_id",
                     "submitter_meeting_user_ids",
+                    "diff_version",
                 ]
             )
             if instance.get("lead_motion_id"):

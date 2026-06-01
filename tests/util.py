@@ -68,7 +68,9 @@ class Client(WerkzeugClient):
             if response.status_code == 500 and retries < 10:
                 retries += 1
                 continue
-            assert response.status_code == 200
+            assert (
+                response.status_code == 200
+            ), f"Auth Service: {response.status_code} {response.reason} {response.content.decode()}"
             break
         # save access token and refresh id for subsequent requests
         self.update_auth_data(

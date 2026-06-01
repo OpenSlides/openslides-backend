@@ -363,11 +363,12 @@ For more information, see
         del os.environ["MIG0100_I_READ_DOCS"]
         response = self.request("migrate")
         self.wait_for_migration_thread(self.MAX_WAIT)
+        expected_error_message = "Required env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE"
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": "Pre check for migration 0100_init_reldb failed.\nRequired env vars not set - aborting.\nMissing: MIG0100_I_READ_DOCS, MIG0100_TIMEZONE",
-            "output": self.EXPECTED_INTRODUCTION,
+            "exception": f"Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 73,
             "target_migration_index": 100,
         }
@@ -377,11 +378,12 @@ For more information, see
         os.environ["MIG0100_TIMEZONE"] = "JST/Kame Hausu"
         response = self.request("migrate")
         self.wait_for_migration_thread(self.MAX_WAIT)
+        expected_error_message = "JST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available."
         response = self.request("stats")
         assert response.json["stats"] == {
             "status": MigrationState.MIGRATION_REQUIRED,
-            "exception": "Pre check for migration 0100_init_reldb failed.\nJST/Kame Hausu is no accepted value for MIG0100_TIMEZONE. Please refer to the documentation on how to obtain a full list of all options available.",
-            "output": self.EXPECTED_INTRODUCTION,
+            "exception": f"Pre check for migration 0100_init_reldb failed.\n{expected_error_message}",
+            "output": f"{self.EXPECTED_INTRODUCTION}{expected_error_message}\n",
             "current_migration_index": 73,
             "target_migration_index": 100,
         }
@@ -448,6 +450,7 @@ For more information, see
             "stats": {
                 # TODO only migrate one index? Would require altering the test-visible migration files.
                 "status": MigrationState.MIGRATION_REQUIRED,
+                "output": "",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
                 "target_migration_index": 100,
                 "migratable_models": {
@@ -492,10 +495,11 @@ For more information, see
                 },
             },
         }
+
         response = self.request("migrate")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_PREPARING,
+            "status": MigrationState.MIGRATION_RUNNING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
@@ -506,7 +510,7 @@ For more information, see
         assert response.json == {
             "success": True,
             "stats": {
-                "status": MigrationState.MIGRATION_PREPARING,
+                "status": MigrationState.MIGRATION_RUNNING,
                 "output": self.EXPECTED_INTRODUCTION
                 + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
                 "current_migration_index": MIN_NON_REL_MIGRATION,
@@ -565,6 +569,7 @@ For more information, see
         assert response == {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }
 
         self.assert_indices_state(MigrationState.FINALIZED)
@@ -578,7 +583,7 @@ For more information, see
         response = self.request("finalize")
         assert response.json == {
             "success": True,
-            "status": MigrationState.MIGRATION_PREPARING,
+            "status": MigrationState.MIGRATION_RUNNING,
             "output": self.EXPECTED_INTRODUCTION
             + "For setting organization and meeting time zones using 'Europe/Berlin'.\nmigration started\n",
         }
@@ -589,6 +594,7 @@ For more information, see
         while (response := self.request("migrate").json) != {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }:
             sleep(0.1)
             if datetime.now() - start > max_time:
@@ -598,6 +604,7 @@ For more information, see
         assert response == {
             "success": True,
             "status": MigrationState.FINALIZED,
+            "output": "",
         }
 
         self.assert_indices_state(MigrationState.FINALIZED)
