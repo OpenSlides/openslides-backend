@@ -74,46 +74,7 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_not_exists("topic/1")
         self.assert_model_exists("import_preview/2")
 
-    def test_import_found_id_and_text_field(self) -> None:
-        self.create_topic(1, 22)
-        self.set_models(
-            {
-                "import_preview/2": {
-                    "state": ImportState.DONE,
-                    "name": "topic",
-                    "created": datetime.now(),
-                    "result": Jsonb(
-                        {
-                            "import": "topic",
-                            "rows": [
-                                {
-                                    "state": ImportState.DONE,
-                                    "messages": ["Existing topic will be updated."],
-                                    "data": {
-                                        "title": {
-                                            "value": "test",
-                                            "info": ImportState.WARNING,
-                                            "id": 1,
-                                        },
-                                        "id": 1,
-                                        "meeting_id": 22,
-                                        "text": "this should be updated",
-                                    },
-                                },
-                            ],
-                        }
-                    ),
-                },
-            }
-        )
-        response = self.request("topic.import", {"id": 2, "import": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "topic/1",
-            {"title": "test", "meeting_id": 22, "text": "this should be updated"},
-        )
-
-    def test_import_found_id_and_agenda_fields(self) -> None:
+    def test_import_agenda_fields(self) -> None:
         self.create_topic(1, 22)
         self.set_models(
             {
@@ -127,15 +88,13 @@ class TopicJsonImport(BaseActionTestCase):
                             "import": "topic",
                             "rows": [
                                 {
-                                    "state": ImportState.DONE,
+                                    "state": ImportState.NEW,
                                     "messages": ["Existing topic will be updated."],
                                     "data": {
                                         "title": {
                                             "value": "test",
-                                            "info": ImportState.WARNING,
-                                            "id": 1,
+                                            "info": ImportState.NEW,
                                         },
-                                        "id": 1,
                                         "meeting_id": 22,
                                         "agenda_comment": "test",
                                         "agenda_type": "hidden",
@@ -151,13 +110,13 @@ class TopicJsonImport(BaseActionTestCase):
         response = self.request("topic.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "topic/1",
-            {"title": "test", "meeting_id": 22, "agenda_item_id": 1},
+            "topic/2",
+            {"title": "test", "meeting_id": 22, "agenda_item_id": 2},
         )
         self.assert_model_exists(
-            "agenda_item/1",
+            "agenda_item/2",
             {
-                "content_object_id": "topic/1",
+                "content_object_id": "topic/2",
                 "comment": "test",
                 "type": "hidden",
                 "duration": 40,
@@ -178,18 +137,14 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"][0] == {
-            "state": ImportState.ERROR,
-            "messages": [
-                "Existing topic will be updated.",
-                "Error: topic 1 not found anymore for updating topic 'test'.",
-            ],
+            "state": ImportState.NEW,
+            "messages": [],
             "data": {
-                "id": 1,
-                "title": {"id": 1, "info": "error", "value": "test"},
+                "title": {"info": "new", "value": "test"},
                 "meeting_id": 22,
             },
         }
-        self.assert_model_not_exists("topic/2")
+        self.assert_model_exists("topic/2")
 
 
 class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
@@ -210,9 +165,8 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
         result = response.json["results"][0][0]
         assert result["state"] == ImportState.DONE
         self.assert_model_exists(
-            "topic/3", {"title": "test", "text": "new one", "meeting_id": 22}
+            "topic/4", {"title": "test", "text": "new one", "meeting_id": 22}
         )
-        self.assert_model_not_exists("topic/4")
 
     def test_import_done_switched_to_new(self) -> None:
         self.json_upload_duplicate_in_db()
@@ -221,11 +175,10 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == [
-            "Existing topic will be updated.",
-            "Error: topic 3 not found anymore for updating topic 'test'.",
-        ]
+        assert result["state"] == ImportState.DONE
+        self.assert_model_exists(
+            "topic/4", {"title": "test", "text": "new one", "meeting_id": 22}
+        )
 
     def test_import_topic_switched_id(self) -> None:
         self.json_upload_duplicate_in_db()
@@ -235,11 +188,10 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == [
-            "Existing topic will be updated.",
-            "Error: topic 'test' found in different id (4 instead of 3)",
-        ]
+        assert result["state"] == ImportState.DONE
+        self.assert_model_exists(
+            "topic/5", {"title": "test", "text": "new one", "meeting_id": 22}
+        )
 
     def test_import_topic_duplicate_id(self) -> None:
         self.json_upload_duplicate_in_db()
@@ -247,8 +199,7 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
         response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == [
-            "Existing topic will be updated.",
-            "Error: topic 'test' is duplicated in import.",
-        ]
+        assert result["state"] == ImportState.DONE
+        self.assert_model_exists(
+            "topic/5", {"title": "test", "text": "new one", "meeting_id": 22}
+        )
