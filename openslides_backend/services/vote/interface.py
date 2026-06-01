@@ -28,3 +28,6 @@ class VoteService(AuthenticatedServiceInterface, Protocol):
 
     @abstractmethod
     def reset(self, id: int) -> dict[str, Any]: ...
+
+    @abstractmethod
+    def vote(self, id: int, payload: dict[str, Any]) -> dict[str, Any]: ...
