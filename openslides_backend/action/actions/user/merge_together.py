@@ -575,9 +575,10 @@ class UserMergeTogether(
                         )
                     return None
                 case "is_present_in_meeting_ids":
-                    all_meeting_ids = self.get_meeting_ids_per_user(
-                        [into_, *ranked_others]
-                    )
+                    all_meeting_ids = {
+                        user["id"]: set(user.get("meeting_ids", []))
+                        for user in [into_, *ranked_others]
+                    }
                     check_meeting_ids = all_meeting_ids[into_["id"]]
                     present_meeting_ids: set[int] = set(into_.get(field, []))
                     for other in ranked_others:
@@ -607,30 +608,6 @@ class UserMergeTogether(
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
         )
-
-    def get_meeting_ids_per_user(
-        self, users: list[PartialModel]
-    ) -> dict[int, set[int]]:
-        meeting_users = self.datastore.filter(
-            "meeting_user",
-            And(
-                FilterOperator("group_ids", "!=", []),
-                Or(FilterOperator("user_id", "=", user["id"]) for user in users),
-            ),
-            ["meeting_id"],
-        )
-        return {
-            user["id"]: {
-                meeting_id
-                for meeting_user_id in user.get("meeting_user_ids", [])
-                if (
-                    meeting_id := meeting_users.get(meeting_user_id, {}).get(
-                        "meeting_id"
-                    )
-                )
-            }
-            for user in users
-        }
 
     def get_full_history_information(self) -> HistoryInformation | None:
         information = super().get_full_history_information() or {}
