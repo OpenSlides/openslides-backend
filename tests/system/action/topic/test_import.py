@@ -89,7 +89,7 @@ class TopicJsonImport(BaseActionTestCase):
                             "rows": [
                                 {
                                     "state": ImportState.NEW,
-                                    "messages": ["Existing topic will be updated."],
+                                    "messages": [],
                                     "data": {
                                         "title": {
                                             "value": "test",

@@ -25,8 +25,7 @@ class TopicImport(BaseImportAction):
             create_action_payload: list[dict[str, Any]] = []
             rows = self.flatten_copied_object_fields()
             for row in rows:
-                entry = row["data"]
-                create_action_payload.append(entry)
+                create_action_payload.append(row["data"])
             if create_action_payload:
                 self.execute_other_action(TopicCreate, create_action_payload)
 
